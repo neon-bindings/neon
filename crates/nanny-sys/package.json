@@ -6,7 +6,7 @@
   },
   "devDependencies": {
     "nan": "2.0.8",
-    "node-gyp": "2.0.2"
+    "node-gyp": "3.0.3"
   },
   "dependencies": {
     "bindings": "1.2.1"
