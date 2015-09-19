@@ -1,0 +1,9 @@
+[package]
+name = "nanny"
+version = "0.0.1"
+authors = ["Dave Herman <dherman@mozilla.com>"]
+description = "Safe native abstractions for Node."
+license = "MIT"
+
+[dependencies]
+nanny-sys = { version = "0.0.1", path = "crates/nanny-sys" }

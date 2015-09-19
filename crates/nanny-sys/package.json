@@ -1,0 +1,14 @@
+{
+  "main": "index.js",
+  "scripts": {
+    "configure": "node-gyp configure",
+    "build": "node-gyp build"
+  },
+  "devDependencies": {
+    "nan": "2.0.8",
+    "node-gyp": "2.0.2"
+  },
+  "dependencies": {
+    "bindings": "1.2.1"
+  }
+}
