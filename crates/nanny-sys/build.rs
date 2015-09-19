@@ -23,18 +23,10 @@ fn build_object_file() {
     Command::new("npm").arg("install").status().ok().unwrap();
 
     // Run the package.json `configure` script, which invokes `node-gyp configure` from the local node_modules.
-    let mut config_args = vec!["run", "configure"];
-    if debug() {
-        config_args.push("-d");
-    }
-    Command::new("npm").args(&config_args[..]).status().ok().unwrap();
+    Command::new("npm").arg("run").arg(if debug() { "configure-debug" } else { "configure-release" }).status().ok().unwrap();
 
     // Run the package.json `build` script, which invokes `node-gyp build` from the local node_modules.
-    let mut build_args = vec!["run", "build"];
-    if debug() {
-        build_args.push("-d");
-    }
-    Command::new("npm").args(&build_args[..]).status().ok().unwrap();
+    Command::new("npm").arg("run").arg(if debug() { "build-debug" } else { "build-release" }).status().ok().unwrap();
 }
 
 fn link_library() {

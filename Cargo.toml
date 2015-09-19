@@ -3,6 +3,7 @@ name = "nanny"
 version = "0.0.1"
 authors = ["Dave Herman <dherman@mozilla.com>"]
 description = "Safe native abstractions for Node."
+repository = "https://github.com/dherman/nanny"
 license = "MIT"
 
 [dependencies]

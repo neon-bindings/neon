@@ -1,8 +1,10 @@
 {
   "main": "index.js",
   "scripts": {
-    "configure": "node-gyp configure",
-    "build": "node-gyp build"
+    "configure-release": "node-gyp configure",
+    "build-release": "node-gyp build",
+    "configure-debug": "node-gyp configure -d",
+    "build-debug": "node-gyp build -d"
   },
   "devDependencies": {
     "nan": "2.0.8",
