@@ -10,12 +10,12 @@ use nanny_sys::raw;
 use nanny_sys::{Nan_FunctionCallbackInfo_SetReturnValue, Nan_Export, Nan_NewObject, /*Nan_MaybeLocalString_ToOption, Nan_MaybeLocalString_IsEmpty,*/ Nan_Scoped, Nan_EscapeScoped, Nan_NewInteger, Nan_NewNumber, Nan_NewArray, Nan_ArraySet};
 
 #[repr(C)]
-pub struct FunctionCallbackInfo(raw::FunctionCallbackInfo);
+pub struct Call(raw::FunctionCallbackInfo);
 
-impl FunctionCallbackInfo {
+impl Call {
     // GC: Storing a Local in a ReturnValue keeps it alive independent of any HandleScope.
     pub fn set_return<'a, 'b, T: Clone + Value>(&'a mut self, value: Local<'b, T>) {
-        let &mut FunctionCallbackInfo(ref mut info) = self;
+        let &mut Call(ref mut info) = self;
         unsafe {
             Nan_FunctionCallbackInfo_SetReturnValue(info, value.to_raw());
         }
@@ -156,7 +156,7 @@ impl Object {
         result
     }
 
-    pub fn export(&mut self, name: &CStr, f: extern fn(&mut FunctionCallbackInfo)) {
+    pub fn export(&mut self, name: &CStr, f: extern fn(&mut Call)) {
         let &mut Object(ref mut object) = self;
         unsafe {
             Nan_Export(object, mem::transmute(name.as_ptr()), mem::transmute(f));
@@ -279,7 +279,7 @@ impl LocalObject {
         }
     }
 
-    pub fn export(&mut self, name: &CStr, f: extern fn(&mut FunctionCallbackInfo)) {
+    pub fn export(&mut self, name: &CStr, f: extern fn(&mut Call)) {
         let &mut LocalObject(ref mut object) = self;
         unsafe {
             Nan_Export(object, mem::transmute(name.as_ptr()), mem::transmute(f));
