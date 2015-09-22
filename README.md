@@ -8,7 +8,26 @@ Automating the process of building native Node modules in Rust.
 
 I would love to work with people on fixing these limitations!
 
+# Setup
+
+**Note: this is currently only working on OS X.**
+
+### OS X
+
+* [XCode](https://developer.apple.com/xcode/download/)
+* Node: io.js v3 or later. I recommend using [nvm](https://github.com/creationix/nvm#install-script):
+
+```
+% nvm install iojs
+```
+
+* [multirust](https://github.com/brson/multirust#quick-installation)
+
+*Right now multirust is a mandatory dependency because it's used to run on Rust nightly by default. Once the [fix for a jemalloc linking bug](https://github.com/rust-lang/rust/pull/27400) makes it through the trains to stable, multirust will be an optional dependency and rust-bindings will default to the system Rust compiler.*
+
 # Usage
+
+## Project Structure
 
 Set up your project as both a node package and a Rust project. Rust source files go in `src` as usual and Node source files go wherever you like, such as the root directory or the `lib` directory:
 
@@ -19,13 +38,34 @@ Set up your project as both a node package and a Rust project. Rust source files
 └── lib/
 ```
 
-Make sure you have io.js and Rust installed. Unless you override the default `multirust` configuration option, you need to have [multirust](https://github.com/brson/multirust) installed as well.
+## package.json
 
-Unless you provide a `name` configuration option, your `Cargo.toml` file must include a package name, which will be used as the name of the native module. Your `Cargo.toml` can include any dependencies you like. You don't need to specify a `[lib]` section; this is automated.
+You should have `rust-bindings` in your dependencies, and a `prepublish` script set to run `rust-bindings generate`. This will ensure that the necessary project boilerplate (the `binding.gyp` build manifest and top-level C++ addon file) are generated before publishing.
+```json
+  ...
+  "dependencies": {
+    "rust-bindings": "0.0.4"
+  },
+  "scripts": {
+    "prepublish": "rust-bindings generate"
+  }
+  ...
+```
 
-The only thing you need in your `package.json` file is the `rust-bindings` dependency.
+## Building
 
-Building the native module is completely automated by `rust-bindings`:
+To work on your native module, you currently have to run `npm install` twice:
+
+```
+% npm install
+% npm install
+```
+
+Clients of your native module don't have to do anything special.
+
+## Requiring
+
+You can easily require your native module from JS without having to specify the build directory; `rust-bindings` figures this out for you:
 
 ```javascript
 var my_native_module = require('rust-bindings')();
