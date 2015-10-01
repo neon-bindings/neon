@@ -40,28 +40,25 @@ Set up your project as both a node package and a Rust project. Rust source files
 
 ## package.json
 
-You should have `rust-bindings` in your dependencies, and a `prepublish` script set to run `rust-bindings generate`. This will ensure that the necessary project boilerplate (the `binding.gyp` build manifest and top-level C++ addon file) are generated before publishing.
+You should have `rust-bindings` in your dependencies, and a `postinstall` script set to run `rust-bindings build`. This will ensure that the necessary project boilerplate (the `binding.gyp` build manifest and top-level C++ addon file) are generated before publishing.
 ```json
   ...
   "dependencies": {
-    "rust-bindings": "0.0.4"
+    "rust-bindings": "0.0.5"
   },
   "scripts": {
-    "prepublish": "rust-bindings generate"
+    "postinstall": "rust-bindings build"
   }
   ...
 ```
 
+If you want a debug build, change the `postinstall` command to `"rust-bindings build --debug"`.
+
 ## Building
 
-To work on your native module, you currently have to run `npm install` twice:
+Build your native module simply by running `npm install` from the project directory.
 
-```
-% npm install
-% npm install
-```
-
-Clients of your native module don't have to do anything special.
+Clients who depend on your native module, directly or indirectly, don't have to do anything special. (However, they do have to have the required build tools installed on their machine. Hopefully we can improve this situation in the future.)
 
 ## Requiring
 
@@ -71,22 +68,13 @@ You can easily require your native module from JS without having to specify the 
 var my_native_module = require('rust-bindings')();
 ```
 
-# Configuration
+You can override defaults by passing an optional options object to the `rust-bindings` module:
 
-currently working:
-
-| Option    | Type                               | Default                                                                  |
-| --------- | ---------------------------------- | ------------------------------------------------------------------------ |
-| root      | string                             | nearest containing directory of caller with package.json or node_modules |
-| name      | string                             | parse($manifest).package.name                                            |
-
-not currently working:
-
-| Option    | Type                               | Default                                                                  |
-| --------- | ---------------------------------- | ------------------------------------------------------------------------ |
-| mode      | 'debug' or 'release'               | 'release'                                                                |
-| manifest  | path                               | $root/Cargo.toml                                                         |
-| multirust | 'nightly' or 'stable' or undefined | 'nightly' (eventually will switch to undefined)                          |
+| Option    | Description   | Type     | Default                                                                  |
+| --------- | ------------- | -------- | ------------------------------------------------------------------------ |
+| root      | project root  | string   | nearest containing directory of caller with package.json or node_modules |
+| name      | library name  | string   | parse($manifest).package.name                                            |
+| manifest  | manifest path | path     | $root/Cargo.toml                                                         |
 
 
 # License

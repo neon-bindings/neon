@@ -1,48 +1,69 @@
 #!/usr/bin/env node
 
 var bindings = require('bindings');
+var path = require('path');
+var fs = require('fs');
+var minimist = require('minimist');
+var project = require('../lib/project.js');
 
-function getRoot() {
-  return bindings.getRoot(bindings.getFileName(__filename));
+function fileExists(filename) {
+  try {
+    return fs.statSync(filename).isFile();
+  } catch (e) {
+    return false;
+  }
 }
 
-if (process.argv.length !== 3) {
+if (process.argv.length < 3) {
   printUsage();
   process.exit(1);
 }
 
-switch (process.argv[2]) {
-case 'include':
+var command = process.argv[2];
+var args = minimist(process.argv.slice(3));
+var pwd = process.cwd();
+
+switch (command) {
+case 'include-path':
   require('nan');
   break;
 
-case 'generate':
-  var root = getRoot();
-  var manifest = root + "/Cargo.toml";
-  var project = require('../lib/project.js')(root, manifest);
-  var generate = require('../lib/generate.js')(project);
-  generate.addon();
-  generate.gyp();
+case 'build':
+  // argument validation
+  if (args.rust === true || args.r === true) {
+    printUsage();
+    process.exit(1);
+  }
+  var build = require('../lib/build.js')(project(pwd),
+                                         args.rust || args.r || 'nightly', // ISSUE: https://github.com/dherman/rust-bindings/issues/2
+                                         (args.debug || args.d) ? 'debug' : 'release');
+  if (build.isStale()) {
+    build.run();
+  }
   break;
 
-case 'build':
-  var Project = require('../lib/project.js');
-  var root = getRoot();
-  var manifest = root + "/Cargo.toml";
-  var project = new Project(root, manifest);
-
-  require('../lib/build.js')(project);
+case 'generate':
+  // argument validation
+  if (args._.length === 0) {
+    printUsage();
+    process.exit(1);
+  }
+  var addon = require('../lib/addon.js')(project(pwd));
+  addon.generate(args._[0]);
+  break;
 }
 
+// FIXME: allow the build command to take a --manifest path and a --name string
+
 function printUsage() {
-  console.log("rust-bindings generate");
-  console.log("  generate build manifest and C++ wrapper");
-  console.log("  (run by developer of Rust module)");
+  console.log("Usage:");
   console.log();
-  console.log("rust-bindings build");
-  console.log("  build the dynamic library and print its path");
-  console.log("  (run by client of Rust module)");
+  console.log("  rust-bindings build [--rust|-r nightly|stable|default] [--debug|-d]");
+  console.log("    build the native module");
   console.log();
-  console.log("rust-bindings include");
-  console.log("  print the path to the C++ include directory");
+  console.log("  rust-bindings generate filename");
+  console.log("    generate the native module's C++ wrapper at filename");
+  console.log();
+  console.log("  rust-bindings include-path");
+  console.log("    print the path to the C++ include directory");
 }

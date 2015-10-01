@@ -12,10 +12,12 @@
   "license": "MIT",
   "dependencies": {
     "bindings": "1.2.1",
-    "toml": "2.3.0",
-    "js-beautify": "1.5.10",
+    "find": "^0.2.3",
+    "handlebars": "^4.0.3",
+    "minimist": "^1.2.0",
     "nan": "2.0.8",
-    "node-gyp": "3.0.3"
+    "node-gyp": "3.0.3",
+    "toml": "2.3.0"
   },
   "bugs": {
     "url": "https://github.com/dherman/rust-bindings/issues"
