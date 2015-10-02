@@ -1,0 +1,59 @@
+{{!
+
+Required context:
+
+    project
+    ├── name: string (with "-" replaced by "_")
+    └── rust
+        └── inputs: [string]
+
+    build
+    ├── cfg
+    │   ├── gyp: "Debug" or "Release"
+    │   └── cargo: "debug" or "release"
+    ├── release: boolean
+    └── cargo
+        └── cmd: ["multirust", "run", ("nightly" or "stable")] or []
+
+}}# THIS FILE WAS AUTOMATICALLY GENERATED. DO NOT EDIT.
+
+{
+    "target_defaults": {
+        "default_configuration": "{{build.cfg.gyp}}"
+    },
+
+    "targets": [{
+        "target_name": "{{project.name}}",
+
+        "variables": {
+            "rust_inputs": [{{#each project.rust.inputs}}{{#unless @first}}, {{/unless}}"{{this}}"{{/each}}],
+            "static_lib": "target/{{build.cfg.cargo}}/<(STATIC_LIB_PREFIX){{project.name}}<(STATIC_LIB_SUFFIX)",
+            "shared_lib": "target/{{build.cfg.cargo}}/<(SHARED_LIB_PREFIX){{project.name}}<(SHARED_LIB_SUFFIX)"
+        },
+
+        "sources": ["<(INTERMEDIATE_DIR)/binding.cc"],      {{! built client-side }}
+
+        "include_dirs": ["<!(rust-bindings include-path)"], {{! computed client-side }}
+
+        "libraries": ["../<(shared_lib)"],                  {{! gyp weirdly determines libraries from a subdirectory so ../ is needed }}
+
+        "actions": [{
+            "action_name": "cargo",
+            "inputs": ["<@(rust_inputs)"],
+            "outputs": ["../<(static_lib)"],
+            "action": [{{#each build.cargo.cmd}}"{{this}}", {{/each}}"cargo", "rustc", {{#if build.release}}"--release", {{/if}}"--", "--crate-type", "staticlib"]
+        }, {
+            "action_name": "shared_lib",
+            "inputs": ["<(static_lib)"],
+            "outputs": ["../<(shared_lib)"],
+            # FIXME: OSX-specific
+            "action": ["gcc", "-dynamiclib", "-Wl,-undefined,dynamic_lookup", "-Wl,-force_load,<(static_lib)", "-o", "<(shared_lib)"]
+        }, {
+            "action_name": "generate",
+            "inputs": [],
+            "outputs": ["<(INTERMEDIATE_DIR)/binding.cc"],
+            "action": ["rust-bindings", "generate", "<(INTERMEDIATE_DIR)/binding.cc"]
+        }]
+    }]
+
+}
