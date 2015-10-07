@@ -40,6 +40,10 @@ extern "C" void Nan_NewNull(v8::Local<v8::Primitive> *out) {
   *out = Nan::Null();
 }
 
+extern "C" void Nan_NewBoolean(v8::Local<v8::Boolean> *out, bool b) {
+  *out = b ? Nan::True() : Nan::False();
+}
+
 extern "C" void Nan_NewInteger(v8::Local<v8::Integer> *out, int32_t x) {
   // FIXME: stop using GetCurrent() and pass in the isolate as a parameter
   v8::Isolate *isolate = v8::Isolate::GetCurrent();

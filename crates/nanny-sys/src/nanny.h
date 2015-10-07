@@ -17,6 +17,7 @@ extern "C" {
   void Nan_NewArray(v8::Local<v8::Array> *out, uint32_t length);
   void Nan_NewUndefined(v8::Local<v8::Primitive> *out);
   void Nan_NewNull(v8::Local<v8::Primitive> *out);
+  void Nan_NewBoolean(v8::Local<v8::Boolean> *out, bool b);
 
   bool Nan_ArraySet(v8::Local<v8::Array> *array, uint32_t index, v8::Local<v8::Value> value);
 

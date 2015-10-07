@@ -8,7 +8,7 @@ use std::ops::{Deref, DerefMut};
 use std::ffi::CStr;
 use std::cell::{RefCell, UnsafeCell};
 use nanny_sys::raw;
-use nanny_sys::{Nan_FunctionCallbackInfo_SetReturnValue, Nan_FunctionCallbackInfo_GetIsolate, Nan_Export, Nan_NewObject, /*Nan_MaybeLocalString_ToOption, Nan_MaybeLocalString_IsEmpty,*/ Nan_Root, Nan_Nested, Nan_Chained, Nan_NewUndefined, Nan_NewNull, Nan_NewInteger, Nan_NewNumber, Nan_NewArray, Nan_ArraySet, Nan_EscapableHandleScope_Escape};
+use nanny_sys::{Nan_FunctionCallbackInfo_SetReturnValue, Nan_FunctionCallbackInfo_GetIsolate, Nan_Export, Nan_NewObject, Nan_Root, Nan_Nested, Nan_Chained, Nan_NewUndefined, Nan_NewNull, Nan_NewBoolean, Nan_NewInteger, Nan_NewNumber, Nan_NewArray, Nan_ArraySet, Nan_EscapableHandleScope_Escape};
 
 // FIXME: split this up into a number of separate modules (values, locals, vm, scopes)
 
@@ -166,6 +166,39 @@ impl Null {
 }
 
 #[repr(C)]
+#[derive(Clone)]
+pub struct Boolean(raw::Local);
+
+impl Value for Boolean {
+    fn to_raw_ref(&self) -> &raw::Local {
+        let &Boolean(ref local) = self;
+        local
+    }
+
+    fn to_raw_mut_ref(&mut self) -> &mut raw::Local {
+        let &mut Boolean(ref mut local) = self;
+        local
+    }
+}
+
+impl Boolean {
+    fn new<'a>(b: bool) -> Local<'a, Boolean> {
+        let mut result = Local {
+            value: Boolean(unsafe { mem::uninitialized() }),
+            phantom: PhantomData
+        };
+        match &mut result {
+            &mut Local { value: Boolean(ref mut boolean), .. } => {
+                unsafe {
+                    Nan_NewBoolean(boolean, b);
+                }
+            }
+        }
+        result
+    }
+}
+
+#[repr(C)]
 pub struct String(raw::Local);
 
 impl Value for String {
@@ -302,22 +335,6 @@ impl Value for Array {
     }
 }
 
-// alternative and much more verbose upcast implementation:
-/*
-        let mut result = Local {
-            value: Any(unsafe { mem::uninitialized() }),
-            phantom: PhantomData
-        };
-        match &mut result {
-            &mut Local { value: Any(ref mut any), .. } => {
-                unsafe {
-                    Nan_UpcastArray(any, local.to_raw());
-                }
-            }
-        }
-        result
-*/
-
 impl Array {
     fn new<'a>(len: u32) -> Local<'a, Array> {
         let mut result = Local {
@@ -391,7 +408,10 @@ pub trait Scope<'root>: Sized {
         Null::new()
     }
 
-    // FIXME: boolean
+    fn boolean(&self, b: bool) -> Local<Boolean> {
+        ensure_active(self);
+        Boolean::new(b)
+    }
 
     fn integer(&self, i: i32) -> Local<Integer> {
         ensure_active(self);
