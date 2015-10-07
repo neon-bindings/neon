@@ -230,7 +230,7 @@ impl Value for Integer {
 }
 
 impl Integer {
-    fn new<'a>(i: i32) -> Local<'a, Integer> {
+    fn new<'a, 'root>(realm: &'root Realm, i: i32) -> Local<'a, Integer> {
         let mut result = Local {
             value: Integer(unsafe { mem::uninitialized() }),
             phantom: PhantomData
@@ -238,7 +238,7 @@ impl Integer {
         match &mut result {
             &mut Local { value: Integer(ref mut integer), .. } => {
                 unsafe {
-                    Nan_NewInteger(integer, i);
+                    Nan_NewInteger(integer, mem::transmute(realm), i);
                 }
             }
         }
@@ -263,7 +263,7 @@ impl Value for Number {
 }
 
 impl Number {
-    fn new<'a>(v: f64) -> Local<'a, Number> {
+    fn new<'a, 'root>(realm: &'root Realm, v: f64) -> Local<'a, Number> {
         let mut result = Local {
             value: Number(unsafe { mem::uninitialized() }),
             phantom: PhantomData
@@ -271,7 +271,7 @@ impl Number {
         match &mut result {
             &mut Local { value: Number(ref mut number), .. } => {
                 unsafe {
-                    Nan_NewNumber(number, v);
+                    Nan_NewNumber(number, mem::transmute(realm), v);
                 }
             }
         }
@@ -336,7 +336,7 @@ impl Value for Array {
 }
 
 impl Array {
-    fn new<'a>(len: u32) -> Local<'a, Array> {
+    fn new<'a, 'root>(realm: &'root Realm, len: u32) -> Local<'a, Array> {
         let mut result = Local {
             value: Array(unsafe { mem::uninitialized() }),
             phantom: PhantomData
@@ -344,7 +344,7 @@ impl Array {
         match &mut result {
             &mut Local { value: Array(ref mut array), .. } => {
                 unsafe {
-                    Nan_NewArray(array, len);
+                    Nan_NewArray(array, mem::transmute(realm), len);
                 }
             }
         }
@@ -415,17 +415,17 @@ pub trait Scope<'root>: Sized {
 
     fn integer(&self, i: i32) -> Local<Integer> {
         ensure_active(self);
-        Integer::new(i)
+        Integer::new(self.realm(), i)
     }
 
     fn number(&self, v: f64) -> Local<Number> {
         ensure_active(self);
-        Number::new(v)
+        Number::new(self.realm(), v)
     }
 
     fn array(&self, len: u32) -> Local<Array> {
         ensure_active(self);
-        Array::new(len)
+        Array::new(self.realm(), len)
     }
 
     fn object(&self) -> Local<Object> {

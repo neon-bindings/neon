@@ -12,9 +12,9 @@ extern "C" {
   void Nan_Export(v8::Local<v8::Object> *target, const char *name, Nan::FunctionCallback f);
 
   void Nan_NewObject(v8::Local<v8::Object> *out);
-  void Nan_NewInteger(v8::Local<v8::Integer> *out, int32_t x);
-  void Nan_NewNumber(v8::Local<v8::Number> *out, double value);
-  void Nan_NewArray(v8::Local<v8::Array> *out, uint32_t length);
+  void Nan_NewInteger(v8::Local<v8::Integer> *out, v8::Isolate *isolate, int32_t x);
+  void Nan_NewNumber(v8::Local<v8::Number> *out, v8::Isolate *isolate, double value);
+  void Nan_NewArray(v8::Local<v8::Array> *out, v8::Isolate *isolate, uint32_t length);
   void Nan_NewUndefined(v8::Local<v8::Primitive> *out);
   void Nan_NewNull(v8::Local<v8::Primitive> *out);
   void Nan_NewBoolean(v8::Local<v8::Boolean> *out, bool b);

@@ -44,21 +44,15 @@ extern "C" void Nan_NewBoolean(v8::Local<v8::Boolean> *out, bool b) {
   *out = b ? Nan::True() : Nan::False();
 }
 
-extern "C" void Nan_NewInteger(v8::Local<v8::Integer> *out, int32_t x) {
-  // FIXME: stop using GetCurrent() and pass in the isolate as a parameter
-  v8::Isolate *isolate = v8::Isolate::GetCurrent();
+extern "C" void Nan_NewInteger(v8::Local<v8::Integer> *out, v8::Isolate *isolate, int32_t x) {
   *out = v8::Integer::New(isolate, x);
 }
 
-extern "C" void Nan_NewNumber(v8::Local<v8::Number> *out, double value) {
-  // FIXME: stop using GetCurrent() and pass in the isolate as a parameter
-  v8::Isolate *isolate = v8::Isolate::GetCurrent();
+extern "C" void Nan_NewNumber(v8::Local<v8::Number> *out, v8::Isolate *isolate, double value) {
   *out = v8::Number::New(isolate, value);
 }
 
-extern "C" void Nan_NewArray(v8::Local<v8::Array> *out, uint32_t length) {
-  // FIXME: stop using GetCurrent() and pass in the isolate as a parameter
-  v8::Isolate *isolate = v8::Isolate::GetCurrent();
+extern "C" void Nan_NewArray(v8::Local<v8::Array> *out, v8::Isolate *isolate, uint32_t length) {
   *out = v8::Array::New(isolate, length);
 }
 

@@ -18,9 +18,9 @@ extern "system" {
     pub fn Nan_NewUndefined(out: &mut Local);
     pub fn Nan_NewNull(out: &mut Local);
     pub fn Nan_NewBoolean(out: &mut Local, b: bool);
-    pub fn Nan_NewInteger(out: &mut Local, x: i32);
-    pub fn Nan_NewNumber(out: &mut Local, v: f64);
-    pub fn Nan_NewArray(out: &mut Local, length: u32);
+    pub fn Nan_NewInteger(out: &mut Local, isolate: *mut Isolate, x: i32);
+    pub fn Nan_NewNumber(out: &mut Local, isolate: *mut Isolate, v: f64);
+    pub fn Nan_NewArray(out: &mut Local, isolate: *mut Isolate, length: u32);
     pub fn Nan_ArraySet(array: &mut Local, index: u32, value: Local) -> bool;
 
     /*
