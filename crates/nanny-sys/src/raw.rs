@@ -8,3 +8,7 @@ pub struct Local {
 }
 
 pub type FunctionCallbackInfo = c_void;
+
+pub type Isolate = c_void;
+
+pub type EscapableHandleScope = c_void;
