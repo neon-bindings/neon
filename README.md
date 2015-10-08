@@ -1,6 +1,10 @@
 # Nanny
 
-A Rust library providing a safe API around native abstractions for Node.
+<img align="right" src="silhouette.png" alt="silhouette"/>A Rust library providing a safe API around native abstractions for Node.
+
+Nanny collaborates with the V8 embedding API to safely monitor stack-allocated handles to garbage-collected objects. This ensures that all objects rooted in the stack are safely tracked by the garbage collector.
+
+*A good nanny keeps the nursery safe.*
 
 # Example
 
