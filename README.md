@@ -13,7 +13,8 @@ A JS function is represented in Rust as an extern function that takes a referenc
 ```rust
 #[no_mangle]
 extern fn make_an_array(call: &Call) {
-    call.realm().scoped(|scope| {
+    let realm = call.realm(); // current VM execution context
+    realm.scoped(|scope| {    // create a scope for rooting handles
         let mut array: Handle<Array> = scope.array(3);
         array.set(0, scope.integer(9000));
         array.set(1, scope.object());
