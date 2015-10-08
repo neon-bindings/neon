@@ -1,29 +1,11 @@
-Automating the process of building native Node modules in Rust.
+# Rust Bindings
 
-# Known Limitations
+An npm package that automates the process of building native Node modules in Rust.
 
-* I've only gotten this working on OS X with io.js >= 3.
-* It would be ideal to make Rust available as npm packages, to avoid clients of a native module having to install Rust on their system.
-* There's no way to fallback on [precompiled](https://github.com/mapbox/node-pre-gyp) or [portable](http://insertafter.com/en/blog/native-node-module.html) implementations.
+# Example
 
-I would love to work with people on fixing these limitations!
+See the [nanny-demo](https://github.com/dherman/nanny-demo) repository for a simple but complete example of a native Rust module built with `rust-bindings`.
 
-# Setup
-
-**Note: this is currently only working on OS X.**
-
-### OS X
-
-* [XCode](https://developer.apple.com/xcode/download/)
-* Node: io.js v3 or later. I recommend using [nvm](https://github.com/creationix/nvm#install-script):
-
-```
-% nvm install iojs
-```
-
-* [multirust](https://github.com/brson/multirust#quick-installation)
-
-*Right now multirust is a mandatory dependency because it's used to run on Rust nightly by default. Once the [fix for a jemalloc linking bug](https://github.com/rust-lang/rust/pull/27400) makes it through the trains to stable, multirust will be an optional dependency and rust-bindings will default to the system Rust compiler.*
 
 # Usage
 
@@ -75,6 +57,33 @@ You can override defaults by passing an optional options object to the `rust-bin
 | root      | project root  | string   | nearest containing directory of caller with package.json or node_modules |
 | name      | library name  | string   | parse($manifest).package.name                                            |
 | manifest  | manifest path | path     | $root/Cargo.toml                                                         |
+
+
+# Setup
+
+**Note: this is currently only working on OS X.**
+
+### OS X
+
+* [XCode](https://developer.apple.com/xcode/download/)
+* Node: io.js v3 or later. I recommend using [nvm](https://github.com/creationix/nvm#install-script):
+
+```
+% nvm install iojs
+```
+
+* [multirust](https://github.com/brson/multirust#quick-installation)
+
+*Right now multirust is a mandatory dependency because it's used to run on Rust nightly by default. Once the [fix for a jemalloc linking bug](https://github.com/rust-lang/rust/pull/27400) makes it through the trains to stable, multirust will be an optional dependency and rust-bindings will default to the system Rust compiler.*
+
+
+# Known Limitations
+
+* I've only gotten this working on OS X with io.js >= 3.
+* It would be ideal to make Rust available as npm packages, to avoid clients of a native module having to install Rust on their system.
+* There's no way to fallback on [precompiled](https://github.com/mapbox/node-pre-gyp) or [portable](http://insertafter.com/en/blog/native-node-module.html) implementations.
+
+I would love to work with people on fixing these limitations!
 
 
 # License
