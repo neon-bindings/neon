@@ -4,7 +4,7 @@ use std::os::raw::c_void;
 use std::cell::{RefCell, UnsafeCell};
 use nanny_sys::raw;
 use nanny_sys::{Nan_FunctionCallbackInfo_SetReturnValue, Nan_FunctionCallbackInfo_GetIsolate, Nan_Root};
-use local::Local;
+use mem::Handle;
 use value::Value;
 use internal::scope::{RootScope, RootScopeInternal};
 
@@ -33,8 +33,8 @@ impl Call {
 }
 
 impl Activation {
-    // GC: Storing a Local in a ReturnValue keeps it alive independent of any HandleScope.
-    pub fn set_return<'a, 'b, T: Clone + Value>(&'a mut self, value: Local<'b, T>) {
+    // GC: Storing a Handle in a return value keeps it alive independent of any Scope.
+    pub fn set_return<'a, 'b, T: Clone + Value>(&'a mut self, value: Handle<'b, T>) {
          unsafe {
             Nan_FunctionCallbackInfo_SetReturnValue(&mut self.info, value.to_raw());
         }
@@ -70,12 +70,6 @@ extern "C" fn root_callback<'root, T, F>(out: &mut Box<Option<T>>,
           F: FnOnce(&RootScope<'root>) -> T
 {
     let root = RootScope::new(realm, RefCell::new(true));
-/*
-    let root = RootScope {
-        realm: realm,
-        active: RefCell::new(true)
-    };
-*/
     let result = f(&root);
     **out = Some(result);
 }

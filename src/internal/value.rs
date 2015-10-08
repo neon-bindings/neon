@@ -2,7 +2,7 @@ use std::mem;
 use std::ffi::CStr;
 use nanny_sys::raw;
 use nanny_sys::{Nan_Export, Nan_NewObject, Nan_NewUndefined, Nan_NewNull, Nan_NewBoolean, Nan_NewInteger, Nan_NewNumber, Nan_NewArray, Nan_ArraySet};
-use internal::local::{Local, LocalInternal};
+use internal::mem::{Handle, HandleInternal};
 use vm::{Call, Realm};
 
 pub trait ValueInternal {
@@ -36,12 +36,12 @@ impl ValueInternal for Any {
 }
 
 pub trait AnyInternal {
-    fn new<'a>(value: raw::Local) -> Local<'a, Any>;
+    fn new<'a>(value: raw::Local) -> Handle<'a, Any>;
 }
 
 impl AnyInternal for Any {
-    fn new<'a>(value: raw::Local) -> Local<'a, Any> {
-        Local::new(Any(value))
+    fn new<'a>(value: raw::Local) -> Handle<'a, Any> {
+        Handle::new(Any(value))
     }
 }
 
@@ -64,12 +64,12 @@ impl ValueInternal for Undefined {
 }
 
 pub trait UndefinedInternal {
-    fn new<'a>() -> Local<'a, Undefined>;
+    fn new<'a>() -> Handle<'a, Undefined>;
 }
 
 impl UndefinedInternal for Undefined {
-    fn new<'a>() -> Local<'a, Undefined> {
-        let mut result = Local::new(Undefined(unsafe { mem::zeroed() }));
+    fn new<'a>() -> Handle<'a, Undefined> {
+        let mut result = Handle::new(Undefined(unsafe { mem::zeroed() }));
         unsafe {
             Nan_NewUndefined(result.to_raw_mut_ref());
         }
@@ -96,12 +96,12 @@ impl ValueInternal for Null {
 }
 
 pub trait NullInternal {
-    fn new<'a>() -> Local<'a, Null>;
+    fn new<'a>() -> Handle<'a, Null>;
 }
 
 impl NullInternal for Null {
-    fn new<'a>() -> Local<'a, Null> {
-        let mut result = Local::new(Null(unsafe { mem::zeroed() }));
+    fn new<'a>() -> Handle<'a, Null> {
+        let mut result = Handle::new(Null(unsafe { mem::zeroed() }));
         unsafe {
             Nan_NewNull(result.to_raw_mut_ref());
         }
@@ -128,12 +128,12 @@ impl ValueInternal for Boolean {
 }
 
 pub trait BooleanInternal {
-    fn new<'a>(b: bool) -> Local<'a, Boolean>;
+    fn new<'a>(b: bool) -> Handle<'a, Boolean>;
 }
 
 impl BooleanInternal for Boolean {
-    fn new<'a>(b: bool) -> Local<'a, Boolean> {
-        let mut result = Local::new(Boolean(unsafe { mem::zeroed() }));
+    fn new<'a>(b: bool) -> Handle<'a, Boolean> {
+        let mut result = Handle::new(Boolean(unsafe { mem::zeroed() }));
         unsafe {
             Nan_NewBoolean(result.to_raw_mut_ref(), b);
         }
@@ -177,12 +177,12 @@ impl ValueInternal for Integer {
 }
 
 pub trait IntegerInternal {
-    fn new<'a, 'root>(realm: &'root Realm, i: i32) -> Local<'a, Integer>;
+    fn new<'a, 'root>(realm: &'root Realm, i: i32) -> Handle<'a, Integer>;
 }
 
 impl IntegerInternal for Integer {
-    fn new<'a, 'root>(realm: &'root Realm, i: i32) -> Local<'a, Integer> {
-        let mut result = Local::new(Integer(unsafe { mem::zeroed() }));
+    fn new<'a, 'root>(realm: &'root Realm, i: i32) -> Handle<'a, Integer> {
+        let mut result = Handle::new(Integer(unsafe { mem::zeroed() }));
         unsafe {
             Nan_NewInteger(result.to_raw_mut_ref(), mem::transmute(realm), i);
         }
@@ -209,12 +209,12 @@ impl ValueInternal for Number {
 }
 
 pub trait NumberInternal {
-    fn new<'a, 'root>(realm: &'root Realm, v: f64) -> Local<'a, Number>;
+    fn new<'a, 'root>(realm: &'root Realm, v: f64) -> Handle<'a, Number>;
 }
 
 impl NumberInternal for Number {
-    fn new<'a, 'root>(realm: &'root Realm, v: f64) -> Local<'a, Number> {
-        let mut result = Local::new(Number(unsafe { mem::zeroed() }));
+    fn new<'a, 'root>(realm: &'root Realm, v: f64) -> Handle<'a, Number> {
+        let mut result = Handle::new(Number(unsafe { mem::zeroed() }));
         unsafe {
             Nan_NewNumber(result.to_raw_mut_ref(), mem::transmute(realm), v);
         }
@@ -241,12 +241,12 @@ impl ValueInternal for Object {
 }
 
 pub trait ObjectInternal {
-    fn new<'a>() -> Local<'a, Object>;
+    fn new<'a>() -> Handle<'a, Object>;
 }
 
 impl ObjectInternal for Object {
-    fn new<'a>() -> Local<'a, Object> {
-        let mut result = Local::new(Object(unsafe { mem::zeroed() }));
+    fn new<'a>() -> Handle<'a, Object> {
+        let mut result = Handle::new(Object(unsafe { mem::zeroed() }));
         unsafe {
             Nan_NewObject(result.to_raw_mut_ref());
         }
@@ -282,12 +282,12 @@ impl ValueInternal for Array {
 }
 
 pub trait ArrayInternal {
-    fn new<'a, 'root>(realm: &'root Realm, len: u32) -> Local<'a, Array>;
+    fn new<'a, 'root>(realm: &'root Realm, len: u32) -> Handle<'a, Array>;
 }
 
 impl ArrayInternal for Array {
-    fn new<'a, 'root>(realm: &'root Realm, len: u32) -> Local<'a, Array> {
-        let mut result = Local::new(Array(unsafe { mem::zeroed() }));
+    fn new<'a, 'root>(realm: &'root Realm, len: u32) -> Handle<'a, Array> {
+        let mut result = Handle::new(Array(unsafe { mem::zeroed() }));
         unsafe {
             Nan_NewArray(result.to_raw_mut_ref(), mem::transmute(realm), len);
         }
@@ -296,7 +296,7 @@ impl ArrayInternal for Array {
 }
 
 impl Array {
-    pub fn set<'a, T: Clone + Value>(&mut self, index: u32, value: Local<'a, T>) -> bool {
+    pub fn set<'a, T: Clone + Value>(&mut self, index: u32, value: Handle<'a, T>) -> bool {
         unsafe {
             Nan_ArraySet(self.to_raw_mut_ref(), index, value.to_raw())
         }

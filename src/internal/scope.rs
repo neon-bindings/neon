@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 use std::cell::{RefCell, UnsafeCell};
 use nanny_sys::raw;
 use nanny_sys::{Nan_Nested, Nan_Chained, Nan_EscapableHandleScope_Escape};
-use internal::local::{Local, LocalInternal};
+use internal::mem::{Handle, HandleInternal};
 use internal::value::{Value, Undefined, Null, Boolean, Integer, Number, Object, Array};
 use internal::value::{ValueInternal, UndefinedInternal, NullInternal, BooleanInternal, IntegerInternal, NumberInternal, ObjectInternal, ArrayInternal};
 use vm::Realm;
@@ -24,37 +24,37 @@ pub trait Scope<'root>: Sized {
     // FIXME: define this in a private subtrait?
     fn active(&self) -> bool;
 
-    fn undefined(&self) -> Local<Undefined> {
+    fn undefined(&self) -> Handle<Undefined> {
         ensure_active(self);
         Undefined::new()
     }
 
-    fn null(&self) -> Local<Null> {
+    fn null(&self) -> Handle<Null> {
         ensure_active(self);
         Null::new()
     }
 
-    fn boolean(&self, b: bool) -> Local<Boolean> {
+    fn boolean(&self, b: bool) -> Handle<Boolean> {
         ensure_active(self);
         Boolean::new(b)
     }
 
-    fn integer(&self, i: i32) -> Local<Integer> {
+    fn integer(&self, i: i32) -> Handle<Integer> {
         ensure_active(self);
         Integer::new(self.realm(), i)
     }
 
-    fn number(&self, v: f64) -> Local<Number> {
+    fn number(&self, v: f64) -> Handle<Number> {
         ensure_active(self);
         Number::new(self.realm(), v)
     }
 
-    fn array(&self, len: u32) -> Local<Array> {
+    fn array(&self, len: u32) -> Handle<Array> {
         ensure_active(self);
         Array::new(self.realm(), len)
     }
 
-    fn object(&self) -> Local<Object> {
+    fn object(&self) -> Handle<Object> {
         ensure_active(self);
         Object::new()
     }
@@ -82,8 +82,8 @@ pub struct ChainedScope<'root, 'parent> {
 }
 
 impl<'root, 'parent> ChainedScope<'root, 'parent> {
-    pub fn escape<'me, T: Clone + Value>(&'me self, local: Local<'me, T>) -> Local<'parent, T> {
-        let result: UnsafeCell<Local<'parent, T>> = UnsafeCell::new(Local::new(unsafe { mem::zeroed() }));
+    pub fn escape<'me, T: Clone + Value>(&'me self, local: Handle<'me, T>) -> Handle<'parent, T> {
+        let result: UnsafeCell<Handle<'parent, T>> = UnsafeCell::new(Handle::new(unsafe { mem::zeroed() }));
         unsafe {
             Nan_EscapableHandleScope_Escape((*result.get()).to_raw_mut_ref(), self.v8, local.to_raw());
             result.into_inner()
