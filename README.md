@@ -26,7 +26,7 @@ You should have `rust-bindings` in your dependencies, and a `postinstall` script
 ```json
   ...
   "dependencies": {
-    "rust-bindings": "0.0.5"
+    "rust-bindings": "0.0.6"
   },
   "scripts": {
     "postinstall": "rust-bindings build"

@@ -15,7 +15,9 @@ Required context:
     └── cargo
         └── cmd: ["multirust", "run", ("nightly" or "stable")] or []
 
-}}# THIS FILE WAS AUTOMATICALLY GENERATED. DO NOT EDIT.
+~}}
+
+# THIS FILE WAS AUTOMATICALLY GENERATED. DO NOT EDIT.
 
 {
     "target_defaults": {
@@ -31,11 +33,11 @@ Required context:
             "shared_lib": "target/{{build.cfg.cargo}}/<(SHARED_LIB_PREFIX){{project.name}}<(SHARED_LIB_SUFFIX)"
         },
 
-        "sources": ["<(INTERMEDIATE_DIR)/binding.cc"],      {{! built client-side }}
+        "sources": ["<(INTERMEDIATE_DIR)/binding.cc"],      {{~! built client-side }}
 
-        "include_dirs": ["<!(rust-bindings include-path)"], {{! computed client-side }}
+        "include_dirs": ["<!(rust-bindings include-path)"], {{~! computed client-side }}
 
-        "libraries": ["../<(shared_lib)"],                  {{! gyp weirdly determines libraries from a subdirectory so ../ is needed }}
+        "libraries": ["../<(shared_lib)"],                  {{~! gyp weirdly determines libraries from a subdirectory so ../ is needed }}
 
         "actions": [{
             "action_name": "cargo",
