@@ -6,15 +6,8 @@ use std::cell::{RefCell, UnsafeCell};
 use nanny_sys::raw;
 use nanny_sys::{Nan_Nested, Nan_Chained, Nan_EscapableHandleScope_Escape};
 use internal::mem::{Handle, HandleInternal};
-use internal::value::{Value, Undefined, Null, Boolean, Integer, Number, Object, Array};
-use internal::value::{ValueInternal, UndefinedInternal, NullInternal, BooleanInternal, IntegerInternal, NumberInternal, ObjectInternal, ArrayInternal};
+use internal::value::Value;
 use vm::Realm;
-
-fn ensure_active<'root, T: Scope<'root>>(scope: &T) {
-    if !scope.active() {
-        panic!("illegal attempt to allocate local for inactive scope");
-    }
-}
 
 pub trait Scope<'root>: Sized {
     fn realm(&self) -> &'root Realm;
@@ -23,41 +16,6 @@ pub trait Scope<'root>: Sized {
 
     // FIXME: define this in a private subtrait?
     fn active(&self) -> bool;
-
-    fn undefined(&self) -> Handle<Undefined> {
-        ensure_active(self);
-        Undefined::new()
-    }
-
-    fn null(&self) -> Handle<Null> {
-        ensure_active(self);
-        Null::new()
-    }
-
-    fn boolean(&self, b: bool) -> Handle<Boolean> {
-        ensure_active(self);
-        Boolean::new(b)
-    }
-
-    fn integer(&self, i: i32) -> Handle<Integer> {
-        ensure_active(self);
-        Integer::new(self.realm(), i)
-    }
-
-    fn number(&self, v: f64) -> Handle<Number> {
-        ensure_active(self);
-        Number::new(self.realm(), v)
-    }
-
-    fn array(&self, len: u32) -> Handle<Array> {
-        ensure_active(self);
-        Array::new(self.realm(), len)
-    }
-
-    fn object(&self) -> Handle<Object> {
-        ensure_active(self);
-        Object::new()
-    }
 }
 
 trait ScopeInternal<'root>: Scope<'root> {

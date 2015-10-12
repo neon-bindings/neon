@@ -1,6 +1,6 @@
 [package]
 name = "nanny"
-version = "0.0.4"
+version = "0.0.5"
 authors = ["Dave Herman <dherman@mozilla.com>"]
 description = "Safe native abstractions for Node."
 repository = "https://github.com/dherman/nanny"

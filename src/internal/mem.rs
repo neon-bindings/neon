@@ -33,7 +33,7 @@ impl<'a, T: Clone + Value + 'a> HandleInternal<'a, T> for Handle<'a, T> {
 
 impl<'a, T: Clone + Value> Handle<'a, T> {
     pub fn upcast(&self) -> Handle<'a, Any> {
-        Any::new(self.value.to_raw())
+        Any::new_internal(self.value.to_raw())
     }
 }
 
