@@ -6,6 +6,10 @@ extern "C" {
 
   void Nan_FunctionCallbackInfo_SetReturnValue(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> value);
   void *Nan_FunctionCallbackInfo_GetIsolate(Nan::FunctionCallbackInfo<v8::Value> *info);
+  bool Nan_FunctionCallbackInfo_IsConstructCall(Nan::FunctionCallbackInfo<v8::Value> *info);
+  void Nan_FunctionCallbackInfo_This(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out);
+  int32_t Nan_FunctionCallbackInfo_Length(Nan::FunctionCallbackInfo<v8::Value> *info);
+  void Nan_FunctionCallbackInfo_Get(Nan::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out);
 
   void Nan_EscapableHandleScope_Escape(v8::Local<v8::Value> *out, Nan::EscapableHandleScope *scope, v8::Local<v8::Value> value);
 

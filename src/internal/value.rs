@@ -45,11 +45,16 @@ impl ValueInternal for Any {
 
 pub trait AnyInternal {
     fn new_internal<'a>(value: raw::Local) -> Handle<'a, Any>;
+    unsafe fn zero_internal<'a>() -> Handle<'a, Any>;
 }
 
 impl AnyInternal for Any {
     fn new_internal<'a>(value: raw::Local) -> Handle<'a, Any> {
         Handle::new(Any(value))
+    }
+
+    unsafe fn zero_internal<'a>() -> Handle<'a, Any> {
+        Handle::new(Any(mem::zeroed()))
     }
 }
 
@@ -292,15 +297,20 @@ impl ValueInternal for Object {
 
 pub trait ObjectInternal {
     fn new_internal<'a>() -> Handle<'a, Object>;
+    unsafe fn zero_internal<'a>() -> Handle<'a, Object>;
 }
 
 impl ObjectInternal for Object {
+    unsafe fn zero_internal<'a>() -> Handle<'a, Object> {
+        Handle::new(Object(mem::zeroed()))
+    }
+
     fn new_internal<'a>() -> Handle<'a, Object> {
-        let mut result = Handle::new(Object(unsafe { mem::zeroed() }));
         unsafe {
+            let mut result = Object::zero_internal();
             Nan_NewObject(result.to_raw_mut_ref());
+            result
         }
-        result
     }
 }
 

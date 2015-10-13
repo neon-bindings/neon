@@ -12,6 +12,22 @@ extern "C" void *Nan_FunctionCallbackInfo_GetIsolate(Nan::FunctionCallbackInfo<v
   return (void *)info->GetIsolate();
 }
 
+extern "C" bool Nan_FunctionCallbackInfo_IsConstructCall(Nan::FunctionCallbackInfo<v8::Value> *info) {
+  return info->IsConstructCall();
+}
+
+extern "C" void Nan_FunctionCallbackInfo_This(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out) {
+  *out = info->This();
+}
+
+extern "C" int32_t Nan_FunctionCallbackInfo_Length(Nan::FunctionCallbackInfo<v8::Value> *info) {
+  return info->Length();
+}
+
+extern "C" void Nan_FunctionCallbackInfo_Get(Nan::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out) {
+  *out = (*info)[i];
+}
+
 extern "C" void Nan_EscapableHandleScope_Escape(v8::Local<v8::Value> *out, Nan::EscapableHandleScope *scope, v8::Local<v8::Value> value) {
   *out = scope->Escape(value);
 }

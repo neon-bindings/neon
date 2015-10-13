@@ -6,6 +6,10 @@ use raw::{FunctionCallbackInfo, EscapableHandleScope, Isolate, Local};
 extern "system" {
     pub fn Nan_FunctionCallbackInfo_SetReturnValue(info: &mut FunctionCallbackInfo, value: Local);
     pub fn Nan_FunctionCallbackInfo_GetIsolate(info: &FunctionCallbackInfo) -> &Isolate;
+    pub fn Nan_FunctionCallbackInfo_IsConstructCall(info: &FunctionCallbackInfo) -> bool;
+    pub fn Nan_FunctionCallbackInfo_This(info: &FunctionCallbackInfo, out: &mut Local);
+    pub fn Nan_FunctionCallbackInfo_Length(info: &FunctionCallbackInfo) -> i32;
+    pub fn Nan_FunctionCallbackInfo_Get(info: &FunctionCallbackInfo, i: i32, out: &mut Local);
 
     pub fn Nan_EscapableHandleScope_Escape(out: &mut Local, scope: *mut EscapableHandleScope, value: Local);
 

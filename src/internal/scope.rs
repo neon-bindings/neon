@@ -1,4 +1,3 @@
-use std::fmt::Debug;
 use std::mem;
 use std::os::raw::c_void;
 use std::marker::PhantomData;
@@ -11,8 +10,8 @@ use vm::Realm;
 
 pub trait Scope<'root>: Sized {
     fn realm(&self) -> &'root Realm;
-    fn nested<'outer, T: Debug, F: FnOnce(&NestedScope<'root>) -> T>(&'outer self, f: F) -> T;
-    fn chained<'outer, T: Debug, F: FnOnce(&ChainedScope<'root, 'outer>) -> T>(&'outer self, f: F) -> T;
+    fn nested<'outer, T, F: FnOnce(&NestedScope<'root>) -> T>(&'outer self, f: F) -> T;
+    fn chained<'outer, T, F: FnOnce(&ChainedScope<'root, 'outer>) -> T>(&'outer self, f: F) -> T;
 
     // FIXME: define this in a private subtrait?
     fn active(&self) -> bool;
@@ -69,11 +68,11 @@ impl<'root> Scope<'root> for RootScope<'root> {
         *self.active.borrow()
     }
 
-    fn nested<'me, T: Debug, F: FnOnce(&NestedScope<'root>) -> T>(&'me self, f: F) -> T {
+    fn nested<'me, T, F: FnOnce(&NestedScope<'root>) -> T>(&'me self, f: F) -> T {
         nest(self, f)
     }
 
-    fn chained<'me, T: Debug, F: FnOnce(&ChainedScope<'root, 'me>) -> T>(&'me self, f: F) -> T {
+    fn chained<'me, T, F: FnOnce(&ChainedScope<'root, 'me>) -> T>(&'me self, f: F) -> T {
         chain(self, f)
     }
 }
@@ -82,8 +81,7 @@ extern "C" fn chained_callback<'root, 'parent, T, P, F>(out: &mut Box<Option<T>>
                                                         parent: &'parent P,
                                                         v8: *mut raw::EscapableHandleScope,
                                                         f: Box<F>)
-    where T: Debug,
-          P: Scope<'root>,
+    where P: Scope<'root>,
           F: FnOnce(&ChainedScope<'root, 'parent>) -> T
 {
     let chained = ChainedScope {
@@ -103,8 +101,7 @@ impl<'root> ScopeInternal<'root> for RootScope<'root> {
 }
 
 fn chain<'root, 'me, T, S, F>(outer: &'me S, f: F) -> T
-    where T: Debug,
-          S: ScopeInternal<'root>,
+    where S: ScopeInternal<'root>,
           F: FnOnce(&ChainedScope<'root, 'me>) -> T
 {
     let closure: Box<F> = Box::new(f);
@@ -126,8 +123,7 @@ fn chain<'root, 'me, T, S, F>(outer: &'me S, f: F) -> T
 }
 
 fn nest<'root, 'me, T, S, F>(outer: &'me S, f: F) -> T
-    where T: Debug,
-          S: ScopeInternal<'root>,
+    where S: ScopeInternal<'root>,
           F: FnOnce(&NestedScope<'root>) -> T
 {
     let closure: Box<F> = Box::new(f);
@@ -151,8 +147,7 @@ fn nest<'root, 'me, T, S, F>(outer: &'me S, f: F) -> T
 extern "C" fn nested_callback<'root, T, F>(out: &mut Box<Option<T>>,
                                            realm: &'root Realm,
                                            f: Box<F>)
-    where T: Debug,
-          F: FnOnce(&NestedScope<'root>) -> T
+    where F: FnOnce(&NestedScope<'root>) -> T
 {
     let nested = NestedScope {
         realm: realm,
@@ -169,11 +164,11 @@ impl<'root> Scope<'root> for NestedScope<'root> {
         *self.active.borrow()
     }
 
-    fn nested<'me, T: Debug, F: FnOnce(&NestedScope<'root>) -> T>(&'me self, f: F) -> T {
+    fn nested<'me, T, F: FnOnce(&NestedScope<'root>) -> T>(&'me self, f: F) -> T {
         nest(self, f)
     }
 
-    fn chained<'outer, T: Debug, F: FnOnce(&ChainedScope<'root, 'outer>) -> T>(&'outer self, f: F) -> T {
+    fn chained<'outer, T, F: FnOnce(&ChainedScope<'root, 'outer>) -> T>(&'outer self, f: F) -> T {
         chain(self, f)
     }
 }
@@ -191,11 +186,11 @@ impl<'root, 'parent> Scope<'root> for ChainedScope<'root, 'parent> {
         *self.active.borrow()
     }
 
-    fn nested<'me, T: Debug, F: FnOnce(&NestedScope<'root>) -> T>(&'me self, f: F) -> T {
+    fn nested<'me, T, F: FnOnce(&NestedScope<'root>) -> T>(&'me self, f: F) -> T {
         nest(self, f)
     }
 
-    fn chained<'outer, T: Debug, F: FnOnce(&ChainedScope<'root, 'outer>) -> T>(&'outer self, f: F) -> T {
+    fn chained<'outer, T, F: FnOnce(&ChainedScope<'root, 'outer>) -> T>(&'outer self, f: F) -> T {
         chain(self, f)
     }
 }
