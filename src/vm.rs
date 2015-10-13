@@ -46,7 +46,7 @@ impl Call {
         }
     }
 
-    pub fn this<'root, 'scope, T: Scope<'root>>(&self, _: &'scope T) -> Handle<'scope, Object> {
+    pub fn this<'fun, 'block, 'scope, T: Scope<'fun, 'block>>(&self, _: &'scope mut T) -> Handle<'block, Object> {
         unsafe {
             let mut result = Object::zero_internal();
             Nan_FunctionCallbackInfo_This(self.info(), result.to_raw_mut_ref());
@@ -85,7 +85,7 @@ impl Arguments {
         }
     }
 
-    pub fn get<'root, 'scope, T: Scope<'root>>(&self, _: &'scope T, i: i32) -> Handle<'scope, Any> {
+    pub fn get<'fun, 'block, 'scope, T: Scope<'fun, 'block>>(&self, _: &'scope mut T, i: i32) -> Handle<'block, Any> {
         if i < 0 || i >= self.len() {
             panic!("arguments vector index out of range: {}", i);
         }
@@ -101,9 +101,9 @@ impl Arguments {
 pub struct Realm(raw::Isolate);
 
 impl Realm {
-    pub fn scoped<'root, T, F: FnOnce(&RootScope<'root>) -> T>(&'root self, f: F) -> T {
+    pub fn scoped<'fun, T, F: for<'block> FnOnce(&mut RootScope<'fun, 'block>) -> T>(&'fun self, f: F) -> T {
         let closure: Box<F> = Box::new(f);
-        let callback: extern "C" fn(&mut Box<Option<T>>, &'root Realm, Box<F>) = root_callback::<'root, T, F>;
+        let callback: extern "C" fn(&mut Box<Option<T>>, &'fun Realm, Box<F>) = root_callback::<'fun, T, F>;
         let mut result: Box<Option<T>> = Box::new(None);
         {
             let out: &mut Box<Option<T>> = &mut result;
@@ -119,12 +119,12 @@ impl Realm {
     }
 }
 
-extern "C" fn root_callback<'root, T, F>(out: &mut Box<Option<T>>,
-                                         realm: &'root Realm,
-                                         f: Box<F>)
-    where F: FnOnce(&RootScope<'root>) -> T
+extern "C" fn root_callback<'fun, T, F>(out: &mut Box<Option<T>>,
+                                        realm: &'fun Realm,
+                                        f: Box<F>)
+    where F: for<'block> FnOnce(&mut RootScope<'fun, 'block>) -> T
 {
-    let root = RootScope::new(realm, RefCell::new(true));
-    let result = f(&root);
+    let mut root = RootScope::new(realm, RefCell::new(true));
+    let result = f(&mut root);
     **out = Some(result);
 }
