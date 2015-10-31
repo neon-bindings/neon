@@ -23,12 +23,6 @@ pub trait Value: ValueInternal { }
 #[derive(Clone)]
 pub struct Any(raw::Local);
 
-fn ensure_active<'root, T: Scope<'root>>(scope: &T) {
-    if !scope.active() {
-        panic!("illegal attempt to allocate local for inactive scope");
-    }
-}
-
 impl Value for Any { }
 
 impl ValueInternal for Any {
@@ -63,8 +57,7 @@ impl AnyInternal for Any {
 pub struct Undefined(raw::Local);
 
 impl Undefined {
-    pub fn new<'root, T: Scope<'root>>(scope: &T) -> Handle<Undefined> {
-        ensure_active(scope);
+    pub fn new<'fun, 'block, T: Scope<'fun, 'block>>(_: &mut T) -> Handle<'block, Undefined> {
         Undefined::new_internal()
     }
 }
@@ -102,8 +95,7 @@ impl UndefinedInternal for Undefined {
 pub struct Null(raw::Local);
 
 impl Null {
-    pub fn new<'root, T: Scope<'root>>(scope: &T) -> Handle<Null> {
-        ensure_active(scope);
+    pub fn new<'fun, 'block, T: Scope<'fun, 'block>>(_: &mut T) -> Handle<'block, Null> {
         Null::new_internal()
     }
 }
@@ -141,8 +133,7 @@ impl NullInternal for Null {
 pub struct Boolean(raw::Local);
 
 impl Boolean {
-    pub fn new<'root, T: Scope<'root>>(scope: &T, b: bool) -> Handle<Boolean> {
-        ensure_active(scope);
+    pub fn new<'fun, 'block, T: Scope<'fun, 'block>>(_: &mut T, b: bool) -> Handle<'block, Boolean> {
         Boolean::new_internal(b)
     }
 }
@@ -197,8 +188,7 @@ impl ValueInternal for String {
 pub struct Integer(raw::Local);
 
 impl Integer {
-    pub fn new<'root, T: Scope<'root>>(scope: &T, i: i32) -> Handle<Integer> {
-        ensure_active(scope);
+    pub fn new<'fun, 'block, T: Scope<'fun, 'block>>(scope: &mut T, i: i32) -> Handle<'block, Integer> {
         Integer::new_internal(scope.realm(), i)
     }
 }
@@ -218,11 +208,11 @@ impl ValueInternal for Integer {
 }
 
 pub trait IntegerInternal {
-    fn new_internal<'a, 'root>(realm: &'root Realm, i: i32) -> Handle<'a, Integer>;
+    fn new_internal<'a, 'fun>(realm: &'fun Realm, i: i32) -> Handle<'a, Integer>;
 }
 
 impl IntegerInternal for Integer {
-    fn new_internal<'a, 'root>(realm: &'root Realm, i: i32) -> Handle<'a, Integer> {
+    fn new_internal<'a, 'fun>(realm: &'fun Realm, i: i32) -> Handle<'a, Integer> {
         let mut result = Handle::new(Integer(unsafe { mem::zeroed() }));
         unsafe {
             Nan_NewInteger(result.to_raw_mut_ref(), mem::transmute(realm), i);
@@ -236,8 +226,7 @@ impl IntegerInternal for Integer {
 pub struct Number(raw::Local);
 
 impl Number {
-    pub fn new<'root, T: Scope<'root>>(scope: &T, v: f64) -> Handle<Number> {
-        ensure_active(scope);
+    pub fn new<'fun, 'block, T: Scope<'fun, 'block>>(scope: &mut T, v: f64) -> Handle<'block, Number> {
         Number::new_internal(scope.realm(), v)
     }
 }
@@ -257,11 +246,11 @@ impl ValueInternal for Number {
 }
 
 pub trait NumberInternal {
-    fn new_internal<'a, 'root>(realm: &'root Realm, v: f64) -> Handle<'a, Number>;
+    fn new_internal<'a, 'fun>(realm: &'fun Realm, v: f64) -> Handle<'a, Number>;
 }
 
 impl NumberInternal for Number {
-    fn new_internal<'a, 'root>(realm: &'root Realm, v: f64) -> Handle<'a, Number> {
+    fn new_internal<'a, 'fun>(realm: &'fun Realm, v: f64) -> Handle<'a, Number> {
         let mut result = Handle::new(Number(unsafe { mem::zeroed() }));
         unsafe {
             Nan_NewNumber(result.to_raw_mut_ref(), mem::transmute(realm), v);
@@ -275,8 +264,7 @@ impl NumberInternal for Number {
 pub struct Object(raw::Local);
 
 impl Object {
-    pub fn new<'root, T: Scope<'root>>(scope: &T) -> Handle<Object> {
-        ensure_active(scope);
+    pub fn new<'fun, 'block, T: Scope<'fun, 'block>>(_: &mut T) -> Handle<'block, Object> {
         Object::new_internal()
     }
 }
@@ -328,8 +316,7 @@ impl Object {
 pub struct Array(raw::Local);
 
 impl Array {
-    pub fn new<'root, T: Scope<'root>>(scope: &T, len: u32) -> Handle<Array> {
-        ensure_active(scope);
+    pub fn new<'fun, 'block, T: Scope<'fun, 'block>>(scope: &mut T, len: u32) -> Handle<'block, Array> {
         Array::new_internal(scope.realm(), len)
     }
 }
@@ -349,11 +336,11 @@ impl ValueInternal for Array {
 }
 
 pub trait ArrayInternal {
-    fn new_internal<'a, 'root>(realm: &'root Realm, len: u32) -> Handle<'a, Array>;
+    fn new_internal<'a, 'fun>(realm: &'fun Realm, len: u32) -> Handle<'a, Array>;
 }
 
 impl ArrayInternal for Array {
-    fn new_internal<'a, 'root>(realm: &'root Realm, len: u32) -> Handle<'a, Array> {
+    fn new_internal<'a, 'fun>(realm: &'fun Realm, len: u32) -> Handle<'a, Array> {
         let mut result = Handle::new(Array(unsafe { mem::zeroed() }));
         unsafe {
             Nan_NewArray(result.to_raw_mut_ref(), mem::transmute(realm), len);

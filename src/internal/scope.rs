@@ -8,38 +8,44 @@ use internal::mem::{Handle, HandleInternal};
 use internal::value::Value;
 use vm::Realm;
 
-pub trait Scope<'root>: Sized {
-    fn realm(&self) -> &'root Realm;
-    fn nested<'outer, T, F: FnOnce(&NestedScope<'root>) -> T>(&'outer self, f: F) -> T;
-    fn chained<'outer, T, F: FnOnce(&ChainedScope<'root, 'outer>) -> T>(&'outer self, f: F) -> T;
-
-    // FIXME: define this in a private subtrait?
-    fn active(&self) -> bool;
+pub trait Scope<'fun, 'block>: Sized {
+    fn realm(&self) -> &'fun Realm;
+    fn nested<'outer, T, F: for<'nested> FnOnce(&mut NestedScope<'fun, 'nested>) -> T>(&'outer self, f: F) -> T;
+    fn chained<'outer, T, F: for<'chained> FnOnce(&mut ChainedScope<'fun, 'chained, 'block>) -> T>(&'outer self, f: F) -> T;
 }
 
-trait ScopeInternal<'root>: Scope<'root> {
+trait ScopeInternal<'fun, 'block>: Scope<'fun, 'block> {
     fn active_cell(&self) -> &RefCell<bool>;
 }
 
-pub struct RootScope<'root> {
-    realm: &'root Realm,
-    active: RefCell<bool>
+fn ensure_active<'fun, 'block, T: ScopeInternal<'fun, 'block>>(scope: &T) {
+    if !*scope.active_cell().borrow() {
+        panic!("illegal attempt to nest in inactive scope");
+    }
 }
 
-pub struct NestedScope<'root> {
-    realm: &'root Realm,
-    active: RefCell<bool>
+pub struct RootScope<'fun, 'block> {
+    realm: &'fun Realm,
+    active: RefCell<bool>,
+    phantom: PhantomData<&'block ()>
 }
 
-pub struct ChainedScope<'root, 'parent> {
-    realm: &'root Realm,
+pub struct NestedScope<'fun, 'block> {
+    realm: &'fun Realm,
+    active: RefCell<bool>,
+    phantom: PhantomData<&'block ()>
+}
+
+pub struct ChainedScope<'fun, 'block, 'parent> {
+    realm: &'fun Realm,
     active: RefCell<bool>,
     v8: *mut raw::EscapableHandleScope,
-    parent: PhantomData<&'parent ()>
+    parent: PhantomData<&'parent ()>,
+    phantom: PhantomData<&'block ()>
 }
 
-impl<'root, 'parent> ChainedScope<'root, 'parent> {
-    pub fn escape<'me, T: Clone + Value>(&'me self, local: Handle<'me, T>) -> Handle<'parent, T> {
+impl<'fun, 'block, 'parent> ChainedScope<'fun, 'block, 'parent> {
+    pub fn escape<'me, T: Clone + Value>(&'me self, local: Handle<'block, T>) -> Handle<'parent, T> {
         let result: UnsafeCell<Handle<'parent, T>> = UnsafeCell::new(Handle::new(unsafe { mem::zeroed() }));
         unsafe {
             Nan_EscapableHandleScope_Escape((*result.get()).to_raw_mut_ref(), self.v8, local.to_raw());
@@ -48,64 +54,64 @@ impl<'root, 'parent> ChainedScope<'root, 'parent> {
     }
 }
 
-pub trait RootScopeInternal<'root> {
-    fn new(realm: &'root Realm, active: RefCell<bool>) -> RootScope<'root>;
+pub trait RootScopeInternal<'fun, 'block> {
+    fn new(realm: &'fun Realm, active: RefCell<bool>) -> RootScope<'fun, 'block>;
 }
 
-impl<'root> RootScopeInternal<'root> for RootScope<'root> {
-    fn new(realm: &'root Realm, active: RefCell<bool>) -> RootScope<'root> {
+impl<'fun, 'block> RootScopeInternal<'fun, 'block> for RootScope<'fun, 'block> {
+    fn new(realm: &'fun Realm, active: RefCell<bool>) -> RootScope<'fun, 'block> {
         RootScope {
             realm: realm,
-            active: active
+            active: active,
+            phantom: PhantomData
         }
     }
 }
 
-impl<'root> Scope<'root> for RootScope<'root> {
-    fn realm(&self) -> &'root Realm { self.realm }
+impl<'fun, 'block> Scope<'fun, 'block> for RootScope<'fun, 'block> {
+    fn realm(&self) -> &'fun Realm { self.realm }
 
-    fn active(&self) -> bool {
-        *self.active.borrow()
-    }
-
-    fn nested<'me, T, F: FnOnce(&NestedScope<'root>) -> T>(&'me self, f: F) -> T {
+    fn nested<'me, T, F: for<'nested> FnOnce(&mut NestedScope<'fun, 'nested>) -> T>(&'me self, f: F) -> T {
         nest(self, f)
     }
 
-    fn chained<'me, T, F: FnOnce(&ChainedScope<'root, 'me>) -> T>(&'me self, f: F) -> T {
+    fn chained<'me, T, F: for<'chained> FnOnce(&mut ChainedScope<'fun, 'chained, 'block>) -> T>(&'me self, f: F) -> T {
         chain(self, f)
     }
 }
 
-extern "C" fn chained_callback<'root, 'parent, T, P, F>(out: &mut Box<Option<T>>,
-                                                        parent: &'parent P,
-                                                        v8: *mut raw::EscapableHandleScope,
-                                                        f: Box<F>)
-    where P: Scope<'root>,
-          F: FnOnce(&ChainedScope<'root, 'parent>) -> T
+extern "C" fn chained_callback<'fun, 'block, T, P, F>(out: &mut Box<Option<T>>,
+                                                      parent: &P,
+                                                      v8: *mut raw::EscapableHandleScope,
+                                                      f: Box<F>)
+    where P: Scope<'fun, 'block>,
+          F: for<'chained> FnOnce(&mut ChainedScope<'fun, 'chained, 'block>) -> T
 {
-    let chained = ChainedScope {
+    let mut chained = ChainedScope {
         realm: parent.realm(),
         active: RefCell::new(true),
         v8: v8,
-        parent: PhantomData
+        parent: PhantomData,
+        phantom: PhantomData
+        //shadow: &shadow
     };
-    let result = f(&chained);
+    let result = f(&mut chained);
     **out = Some(result);
 }
 
-impl<'root> ScopeInternal<'root> for RootScope<'root> {
+impl<'fun, 'block> ScopeInternal<'fun, 'block> for RootScope<'fun, 'block> {
     fn active_cell(&self) -> &RefCell<bool> {
         &self.active
     }
 }
 
-fn chain<'root, 'me, T, S, F>(outer: &'me S, f: F) -> T
-    where S: ScopeInternal<'root>,
-          F: FnOnce(&ChainedScope<'root, 'me>) -> T
+fn chain<'fun, 'block, 'me, T, S, F>(outer: &'me S, f: F) -> T
+    where S: ScopeInternal<'fun, 'block>,
+          F: for<'chained> FnOnce(&mut ChainedScope<'fun, 'chained, 'block>) -> T
 {
+    ensure_active(outer);
     let closure: Box<F> = Box::new(f);
-    let callback: extern "C" fn(&mut Box<Option<T>>, &'me S, *mut raw::EscapableHandleScope, Box<F>) = chained_callback::<'root, 'me, T, S, F>;
+    let callback: extern "C" fn(&mut Box<Option<T>>, &S, *mut raw::EscapableHandleScope, Box<F>) = chained_callback::<'fun, 'block, T, S, F>;
     let mut result: Box<Option<T>> = Box::new(None);
     {
         let out: &mut Box<Option<T>> = &mut result;
@@ -122,12 +128,13 @@ fn chain<'root, 'me, T, S, F>(outer: &'me S, f: F) -> T
     result.unwrap()
 }
 
-fn nest<'root, 'me, T, S, F>(outer: &'me S, f: F) -> T
-    where S: ScopeInternal<'root>,
-          F: FnOnce(&NestedScope<'root>) -> T
+fn nest<'fun, 'block, 'me, T, S, F>(outer: &'me S, f: F) -> T
+    where S: ScopeInternal<'fun, 'block>,
+          F: for<'nested> FnOnce(&mut NestedScope<'fun, 'nested>) -> T
 {
+    ensure_active(outer);
     let closure: Box<F> = Box::new(f);
-    let callback: extern "C" fn(&mut Box<Option<T>>, &'root Realm, Box<F>) = nested_callback::<'root, T, F>;
+    let callback: extern "C" fn(&mut Box<Option<T>>, &'fun Realm, Box<F>) = nested_callback::<'fun, T, F>;
     let mut result: Box<Option<T>> = Box::new(None);
     {
         let out: &mut Box<Option<T>> = &mut result;
@@ -144,58 +151,51 @@ fn nest<'root, 'me, T, S, F>(outer: &'me S, f: F) -> T
     result.unwrap()
 }
 
-extern "C" fn nested_callback<'root, T, F>(out: &mut Box<Option<T>>,
-                                           realm: &'root Realm,
-                                           f: Box<F>)
-    where F: FnOnce(&NestedScope<'root>) -> T
+extern "C" fn nested_callback<'fun, T, F>(out: &mut Box<Option<T>>,
+                                          realm: &'fun Realm,
+                                          f: Box<F>)
+    where F: for<'nested> FnOnce(&mut NestedScope<'fun, 'nested>) -> T
 {
-    let nested = NestedScope {
+    let mut nested = NestedScope {
         realm: realm,
-        active: RefCell::new(true)
+        active: RefCell::new(true),
+        phantom: PhantomData
     };
-    let result = f(&nested);
+    let result = f(&mut nested);
     **out = Some(result);
 }
 
-impl<'root> Scope<'root> for NestedScope<'root> {
-    fn realm(&self) -> &'root Realm { self.realm }
+impl<'fun, 'block> Scope<'fun, 'block> for NestedScope<'fun, 'block> {
+    fn realm(&self) -> &'fun Realm { self.realm }
 
-    fn active(&self) -> bool {
-        *self.active.borrow()
-    }
-
-    fn nested<'me, T, F: FnOnce(&NestedScope<'root>) -> T>(&'me self, f: F) -> T {
+    fn nested<'me, T, F: for<'nested> FnOnce(&mut NestedScope<'fun, 'nested>) -> T>(&'me self, f: F) -> T {
         nest(self, f)
     }
 
-    fn chained<'outer, T, F: FnOnce(&ChainedScope<'root, 'outer>) -> T>(&'outer self, f: F) -> T {
+    fn chained<'outer, T, F: for<'chained> FnOnce(&mut ChainedScope<'fun, 'chained, 'block>) -> T>(&'outer self, f: F) -> T {
         chain(self, f)
     }
 }
 
-impl<'root> ScopeInternal<'root> for NestedScope<'root> {
+impl<'fun, 'block> ScopeInternal<'fun, 'block> for NestedScope<'fun, 'block> {
     fn active_cell(&self) -> &RefCell<bool> {
         &self.active
     }
 }
 
-impl<'root, 'parent> Scope<'root> for ChainedScope<'root, 'parent> {
-    fn realm(&self) -> &'root Realm { self.realm }
+impl<'fun, 'block, 'parent> Scope<'fun, 'block> for ChainedScope<'fun, 'block, 'parent> {
+    fn realm(&self) -> &'fun Realm { self.realm }
 
-    fn active(&self) -> bool {
-        *self.active.borrow()
-    }
-
-    fn nested<'me, T, F: FnOnce(&NestedScope<'root>) -> T>(&'me self, f: F) -> T {
+    fn nested<'me, T, F: for<'nested> FnOnce(&mut NestedScope<'fun, 'nested>) -> T>(&'me self, f: F) -> T {
         nest(self, f)
     }
 
-    fn chained<'outer, T, F: FnOnce(&ChainedScope<'root, 'outer>) -> T>(&'outer self, f: F) -> T {
+    fn chained<'outer, T, F: for<'chained> FnOnce(&mut ChainedScope<'fun, 'chained, 'block>) -> T>(&'outer self, f: F) -> T {
         chain(self, f)
     }
 }
 
-impl<'root, 'parent> ScopeInternal<'root> for ChainedScope<'root, 'parent> {
+impl<'fun, 'block, 'parent> ScopeInternal<'fun, 'block> for ChainedScope<'fun, 'block, 'parent> {
     fn active_cell(&self) -> &RefCell<bool> {
         &self.active
     }
