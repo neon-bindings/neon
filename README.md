@@ -12,18 +12,16 @@ A complete example can be found in the [nanny-demo](https://github.com/dherman/n
 
 ## A Node function in Rust
 
-A JS function is represented in Rust as an extern function that takes a reference to a `Call` object. The `Call` object allows you to create memory management scopes, which safely manage the rooting of handles to garbage-collected JS values:
+A JS function is represented in Rust as an extern function that takes a `Call` object. The `Call` object provides access to a memory management scope, which safely manages the rooting of handles to garbage-collected JS values:
 
 ```rust
-extern "C" fn make_an_array(call: &Call) {
-    let realm = call.realm(); // current VM execution context
-    realm.scoped(|scope| {    // create a scope for rooting handles
-        let mut array: Handle<Array> = Array::new(scope, 3);
-        array.set(0, Integer::new(scope, 9000));
-        array.set(1, Object::new(scope));
-        array.set(2, Number::new(scope, 3.14159));
-        call.activation().set_return(array);
-    });
+fn make_an_array(call: Call) -> JS<Array> {
+    let scope = call.scope; // the current scope for rooting handles
+    let mut array: Handle<Array> = Array::new(scope, 3);
+    array.set(0, Integer::new(scope, 9000));
+    array.set(1, Object::new(scope));
+    array.set(2, Number::new(scope, 3.14159));
+    Ok(array)
 }
 ```
 
