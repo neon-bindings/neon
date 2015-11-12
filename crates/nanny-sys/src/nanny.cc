@@ -20,6 +20,14 @@ extern "C" void Nan_FunctionCallbackInfo_This(Nan::FunctionCallbackInfo<v8::Valu
   *out = info->This();
 }
 
+extern "C" void Nan_FunctionCallbackInfo_Callee(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Function> *out) {
+  *out = info->Callee();
+}
+
+extern "C" void Nan_FunctionCallbackInfo_Data(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> *out) {
+  *out = info->Data();
+}
+
 extern "C" int32_t Nan_FunctionCallbackInfo_Length(Nan::FunctionCallbackInfo<v8::Value> *info) {
   return info->Length();
 }
@@ -32,20 +40,17 @@ extern "C" void Nan_EscapableHandleScope_Escape(v8::Local<v8::Value> *out, Nan::
   *out = scope->Escape(value);
 }
 
-extern "C" void Nan_Export(v8::Local<v8::Object> *target, const char *name, Nan::FunctionCallback f) {
-  Nan::Export(*target, name, f);
-}
-
-// extern "C" void Nan_UpcastArray(v8::Local<v8::Value> *out, v8::Local<v8::Array> array) {
-//   *out = v8::Local<v8::Value>::Cast(array);
-// }
-
-// extern "C" void Nan_UpcastPrimitive(v8::Local<v8::Value> *out, v8::Local<v8::Primitive> prim) {
-//   *out = v8::Local<v8::Value>::Cast(prim);
-// }
-
 extern "C" void Nan_NewObject(v8::Local<v8::Object> *out) {
   *out = Nan::New<v8::Object>();
+}
+
+extern "C" bool Nan_GetOwnPropertyNames(v8::Local<v8::Array> *out, v8::Local<v8::Object> *obj) {
+  Nan::MaybeLocal<v8::Array> maybe = Nan::GetOwnPropertyNames(*obj);
+  return maybe.ToLocal(out);
+}
+
+extern "C" void *Nan_Object_GetIsolate(v8::Local<v8::Object> *obj) {
+  return (*obj)->GetIsolate();
 }
 
 extern "C" void Nan_NewUndefined(v8::Local<v8::Primitive> *out) {
@@ -64,6 +69,11 @@ extern "C" void Nan_NewInteger(v8::Local<v8::Integer> *out, v8::Isolate *isolate
   *out = v8::Integer::New(isolate, x);
 }
 
+extern "C" bool Nan_NewString(v8::Local<v8::String> *out, v8::Isolate *isolate, const uint8_t *data, int32_t len) {
+  Nan::MaybeLocal<v8::String> maybe = v8::String::NewFromOneByte(isolate, data, v8::NewStringType::kNormal, len);
+  return maybe.ToLocal(out);
+}
+
 extern "C" void Nan_NewNumber(v8::Local<v8::Number> *out, v8::Isolate *isolate, double value) {
   *out = v8::Number::New(isolate, value);
 }
@@ -72,8 +82,63 @@ extern "C" void Nan_NewArray(v8::Local<v8::Array> *out, v8::Isolate *isolate, ui
   *out = v8::Array::New(isolate, length);
 }
 
-extern "C" bool Nan_ArraySet(v8::Local<v8::Array> *array, uint32_t index, v8::Local<v8::Value> value) {
+extern "C" bool Node_ArraySet(v8::Local<v8::Array> *array, uint32_t index, v8::Local<v8::Value> value) {
   return (*array)->Set(index, value);
+}
+
+extern "C" bool Nan_Get_Index(v8::Local<v8::Value> *out, v8::Local<v8::Object> *obj, uint32_t index) {
+  Nan::MaybeLocal<v8::Value> maybe = Nan::Get(*obj, index);
+  return maybe.ToLocal(out);
+}
+
+extern "C" bool Nan_Get(v8::Local<v8::Value> *out, v8::Local<v8::Object> *obj, v8::Local<v8::Value> *key) {
+  Nan::MaybeLocal<v8::Value> maybe = Nan::Get(*obj, *key);
+  return maybe.ToLocal(out);
+}
+
+extern "C" bool Nan_Set(bool *out, v8::Local<v8::Object> *obj, v8::Local<v8::Value> *key, v8::Local<v8::Value> *val) {
+  Nan::Maybe<bool> maybe = Nan::Set(*obj, *key, *val);
+  if (maybe.IsJust()) {
+    *out = maybe.FromJust();
+    return true;
+  }
+  return false;
+}
+
+extern "C" uint32_t Node_ArrayLength(v8::Local<v8::Array> *array) {
+  return (*array)->Length();
+}
+
+extern "C" int32_t Nan_String_Utf8Length(v8::Local<v8::String> *str) {
+  return (*str)->Utf8Length();
+}
+
+extern "C" bool Nan_Value_ToString(v8::Local<v8::String> *out, v8::Local<v8::Value> *value) {
+  Nan::MaybeLocal<v8::String> maybe = Nan::To<v8::String>(*value);
+  return maybe.ToLocal(out);
+}
+
+extern "C" bool Nan_Value_ToObject(v8::Local<v8::Object> *out, v8::Local<v8::Value> *value) {
+  Nan::MaybeLocal<v8::Object> maybe = Nan::To<v8::Object>(*value);
+  return maybe.ToLocal(out);
+}
+
+extern "C" bool Nan_NewBuffer(v8::Local<v8::Object> *out, uint32_t size) {
+  Nan::MaybeLocal<v8::Object> maybe = Nan::NewBuffer(size);
+  return maybe.ToLocal(out);
+}
+
+extern "C" void Node_Buffer_Data(buf_t *out, v8::Local<v8::Object> *obj) {
+  out->data = node::Buffer::Data(*obj);
+  out->len = node::Buffer::Length(*obj);
+}
+
+extern "C" bool Node_Buffer_Object_HasInstance(v8::Local<v8::Object> *obj) {
+  return node::Buffer::HasInstance(*obj);
+}
+
+extern "C" bool Node_Buffer_Value_HasInstance(v8::Local<v8::Value> *obj) {
+  return node::Buffer::HasInstance(*obj);
 }
 
 extern "C" void Nan_Chained(void *out, void *closure, Nan_ChainedScopeCallback callback, void *parent_scope) {
@@ -86,25 +151,42 @@ extern "C" void Nan_Nested(void *out, void *closure, Nan_NestedScopeCallback cal
   callback(out, realm, closure);
 }
 
-extern "C" void Nan_Root(void *out, void *closure, Nan_RootScopeCallback callback, void *isolate) {
+extern "C" void Nanny_ExecFunctionBody(void *closure, Nan_RootScopeCallback callback, Nan::FunctionCallbackInfo<v8::Value> *info, void *scope) {
   Nan::HandleScope v8_scope;
-  callback(out, isolate, closure);
+  callback(info, closure, scope);
 }
 
-/*
-extern "C" void Nan_NewString(Nan::MaybeLocal<v8::String> *out, const char *value) {
-  *out = Nan::New<v8::String>(value);
+extern "C" void Nanny_ExecModuleBody(void *kernel, Nan_ModuleScopeCallback callback, v8::Local<v8::Object> *exports, void *scope) {
+  Nan::HandleScope v8_scope;
+  callback(kernel, exports, scope);
 }
 
-extern "C" void Nan_NewStringN(Nan::MaybeLocal<v8::String> *out, const char *value, int32_t length) {
-  *out = Nan::New<v8::String>(value, length);
+class KernelWrapper : public Nan::ObjectWrap {
+public:
+  inline void *GetKernel() { return this->kernel; }
+  static inline void SetKernel(v8::Local<v8::Object> obj, void *kernel) {
+    KernelWrapper *wrapper = new KernelWrapper(kernel);
+    wrapper->Wrap(obj);
+  }
+private:
+  explicit KernelWrapper(void *kernel) : kernel(kernel) { }
+  ~KernelWrapper() { }
+  void *kernel;
+};
+
+extern "C" bool Nanny_NewFunction(v8::Local<v8::Function> *out, v8::Isolate *isolate, Nan::FunctionCallback callback, void *kernel) {
+  v8::Local<v8::ObjectTemplate> env_tmpl = v8::ObjectTemplate::New(isolate);
+  env_tmpl->SetInternalFieldCount(1);
+  v8::MaybeLocal<v8::Object> maybe_env = env_tmpl->NewInstance(isolate->GetCurrentContext());
+  v8::Local<v8::Object> env;
+  if (!maybe_env.ToLocal(&env)) {
+    return false;
+  }
+  KernelWrapper::SetKernel(env, kernel);
+  Nan::MaybeLocal<v8::Function> maybe_result = Nan::New<v8::Function>(callback, env);
+  return maybe_result.ToLocal(out);
 }
 
-extern "C" bool Nan_MaybeLocalString_IsEmpty(Nan::MaybeLocal<v8::String> *maybe) {
-  return maybe->IsEmpty();
+extern "C" void *Nanny_FunctionKernel(v8::Local<v8::Object> *obj) {
+  return Nan::ObjectWrap::Unwrap<KernelWrapper>(*obj)->GetKernel();
 }
-
-extern "C" bool Nan_MaybeLocalString_ToLocal(Nan::MaybeLocal<v8::String> *maybe, Nan::Local<v8::String> *out) {
-  return maybe->ToLocal(out);
-}
-*/

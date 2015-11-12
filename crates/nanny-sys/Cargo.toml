@@ -1,6 +1,6 @@
 [package]
 name = "nanny-sys"
-version = "0.0.3"
+version = "0.0.4"
 authors = ["Dave Herman <dherman@mozilla.com>"]
 description = "Exposes Node and V8 C++ API's for use by nanny."
 repository = "https://github.com/dherman/nanny"

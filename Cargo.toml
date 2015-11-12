@@ -8,4 +8,4 @@ license = "MIT"
 exclude = ["silhouette.png"]
 
 [dependencies]
-nanny-sys = { version = "0.0.3", path = "crates/nanny-sys" }
+nanny-sys = { version = "0.0.4", path = "crates/nanny-sys" }

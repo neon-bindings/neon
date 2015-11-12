@@ -2,7 +2,7 @@ use std::os::raw::c_void;
 
 #[repr(C)]
 #[allow(raw_pointer_derive)]
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Local {
     pub handle: *mut c_void
 }
