@@ -1,7 +1,13 @@
 /* THIS FILE WAS AUTOMATICALLY GENERATED. DO NOT EDIT. */
 
 #include <nan.h>
+#include <stdio.h>
 
-extern "C" void node_main(v8::Local<v8::Object> module);
+extern "C" void node_main();
+extern "C" void nanny_init(v8::Local<v8::Object> module, void *f);
 
-NODE_MODULE({{project.name}}, node_main)
+void __node_main__(v8::Local<v8::Object> module) {
+  nanny_init(module, (void *)node_main);
+}
+
+NODE_MODULE({{project.name}}, __node_main__)
