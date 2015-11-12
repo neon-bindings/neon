@@ -12,7 +12,7 @@ A complete example can be found in the [nanny-demo](https://github.com/dherman/n
 
 ## A Node function in Rust
 
-A JS function is represented in Rust as an extern function that takes a `Call` object. The `Call` object provides access to a memory management scope, which safely manages the rooting of handles to garbage-collected JS values:
+A JS function is represented in Rust as a function that takes a `Call` object and produces either a JS value or the `Throw` constant, indicating that an exception has been thrown. The `Call` object provides access to a memory management scope, which safely manages the rooting of handles to garbage-collected JS values:
 
 ```rust
 fn make_an_array(call: Call) -> JS<Array> {
