@@ -45,7 +45,7 @@ pub struct ChainedScope<'a, 'outer> {
 }
 
 impl<'a, 'outer> ChainedScope<'a, 'outer> {
-    pub fn escape<T: Copy + Tagged>(&self, local: Handle<'a, T>) -> Handle<'outer, T> {
+    pub fn escape<T: Tagged>(&self, local: Handle<'a, T>) -> Handle<'outer, T> {
         let result: UnsafeCell<Handle<'outer, T>> = UnsafeCell::new(Handle::new(unsafe { mem::zeroed() }));
         unsafe {
             Nan_EscapableHandleScope_Escape((*result.get()).to_raw_mut_ref(), self.v8, local.to_raw());

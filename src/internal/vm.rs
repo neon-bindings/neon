@@ -28,7 +28,7 @@ impl CallbackInfo {
         }
     }
 
-    pub fn set_return<'a, 'b, T: Copy + Tagged>(&'a self, value: Handle<'b, T>) {
+    pub fn set_return<'a, 'b, T: Tagged>(&'a self, value: Handle<'b, T>) {
         unsafe {
             Nan_FunctionCallbackInfo_SetReturnValue(&self.info, value.to_raw())
         }
@@ -54,7 +54,7 @@ impl<'a> Module<'a> {
 }
 
 impl<'a> Module<'a> {
-    pub fn export<T: Copy + Tagged>(&mut self, key: &str, f: fn(Call) -> JS<T>) -> Result<()> {
+    pub fn export<T: Tagged>(&mut self, key: &str, f: fn(Call) -> JS<T>) -> Result<()> {
         let value = try!(Function::new(self.scope, f).ok_or(Throw)).upcast();
         try!(self.exports.set(self.scope, key, value));
         Ok(())

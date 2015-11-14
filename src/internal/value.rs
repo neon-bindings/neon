@@ -7,7 +7,7 @@ use internal::mem::{Handle, HandleInternal};
 use internal::scope::{Scope, RootScope, RootScopeInternal};
 use internal::vm::{Result, Throw, JS, Isolate, CallbackInfo, Call, exec_function_body};
 
-pub trait TaggedInternal {
+pub trait TaggedInternal: Copy {
     fn to_raw_mut_ref(&mut self) -> &mut raw::Local;
 
     fn to_raw_ref(&self) -> &raw::Local;
@@ -16,7 +16,7 @@ pub trait TaggedInternal {
         self.to_raw_ref().clone()
     }
 
-    fn cast<'a, 'b, T: Copy + Tagged, F: FnOnce(raw::Local) -> T>(&'a self, f: F) -> Handle<'b, T> {
+    fn cast<'a, 'b, T: Tagged, F: FnOnce(raw::Local) -> T>(&'a self, f: F) -> Handle<'b, T> {
         Handle::new(f(self.to_raw_ref().clone()))
     }
 }
@@ -466,7 +466,7 @@ impl ArrayInternal for Array {
 }
 
 impl Array {
-    pub fn set<'a, T: Copy + Tagged>(&mut self, index: u32, value: Handle<'a, T>) -> bool {
+    pub fn set<'a, T: Tagged>(&mut self, index: u32, value: Handle<'a, T>) -> bool {
         unsafe {
             Node_ArraySet(self.to_raw_mut_ref(), index, value.to_raw())
         }
@@ -513,7 +513,7 @@ impl Array {
 pub struct Function(raw::Local);
 
 impl Function {
-    pub fn new<'a, T: Scope<'a>, U: Copy + Tagged>(scope: &mut T, f: fn(Call) -> JS<U>) -> Option<Handle<'a, Function>> {
+    pub fn new<'a, T: Scope<'a>, U: Tagged>(scope: &mut T, f: fn(Call) -> JS<U>) -> Option<Handle<'a, Function>> {
         unsafe {
             let mut result = Function::zero_internal();
             let isolate: *mut c_void = mem::transmute(scope.isolate());
@@ -539,7 +539,7 @@ impl FunctionInternal for Function {
     }
 }
 
-extern "C" fn invoke_nanny_function<U: Copy + Tagged>(info: &CallbackInfo) {
+extern "C" fn invoke_nanny_function<U: Tagged>(info: &CallbackInfo) {
     let mut scope = RootScope::new(unsafe { mem::transmute(Nan_FunctionCallbackInfo_GetIsolate(mem::transmute(info))) });
     exec_function_body(info, &mut scope, |call| {
         let data = info.data();
