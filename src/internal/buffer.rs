@@ -28,7 +28,7 @@ impl IndexMut<usize> for Buffer {
 }
 
 impl Buffer {
-    pub fn new<'fun, 'block, T: Scope<'fun, 'block>>(_: &mut T, size: u32) -> Option<Handle<'block, Object>> {
+    pub fn new<'a, T: Scope<'a>>(_: &mut T, size: u32) -> Option<Handle<'a, Object>> {
         Object::build_opt(|out| { unsafe { Nan_NewBuffer(out, size) } })
     }
 
@@ -53,7 +53,7 @@ impl Buffer {
 }
 
 impl Value {
-    pub fn as_buffer<'fun, 'block, 'scope, T: Scope<'fun, 'block>>(&self, _: &'scope mut T) -> Option<Handle<'block, Buffer>> {
+    pub fn as_buffer<'a, T: Scope<'a>>(&self, _: &mut T) -> Option<Handle<'a, Buffer>> {
         if unsafe { Node_Buffer_Value_HasInstance(self.to_raw_ref()) } {
             Some(self.cast(Buffer))
         } else {
@@ -63,7 +63,7 @@ impl Value {
 }
 
 impl Object {
-    pub fn as_buffer<'fun, 'block, 'scope, T: Scope<'fun, 'block>>(&self, _: &'scope mut T) -> Option<Handle<'block, Buffer>> {
+    pub fn as_buffer<'a, T: Scope<'a>>(&self, _: &mut T) -> Option<Handle<'a, Buffer>> {
         if unsafe { Node_Buffer_Object_HasInstance(self.to_raw_ref()) } {
             Some(self.cast(Buffer))
         } else {
@@ -71,7 +71,7 @@ impl Object {
         }
     }
 
-    pub fn check_buffer<'fun, 'block, 'scope, T: Scope<'fun, 'block>>(&self, scope: &'scope mut T) -> Result<Handle<'block, Buffer>, Throw> {
+    pub fn check_buffer<'a, T: Scope<'a>>(&self, scope: &mut T) -> Result<Handle<'a, Buffer>, Throw> {
         self.as_buffer(scope).ok_or_else(|| {
             // FIXME: throw a type error
             Throw

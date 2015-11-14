@@ -22,7 +22,7 @@ pub trait TaggedInternal {
 }
 
 pub trait Tagged: TaggedInternal {
-    fn to_string<'fun, 'block, 'scope, T: Scope<'fun, 'block>>(&mut self, _: &'scope mut T) -> JS<'block, String> {
+    fn to_string<'a, T: Scope<'a>>(&mut self, _: &mut T) -> JS<'a, String> {
         // FIXME: String could use a build_opt abstraction too
         unsafe {
             let mut result = Handle::new(String(mem::zeroed()));
@@ -54,11 +54,11 @@ impl TaggedInternal for Value {
 }
 
 impl Value {
-    pub fn as_object<'fun, 'block, 'scope, T: Scope<'fun, 'block>>(&self, _: &'scope mut T) -> Option<Handle<'block, Object>> {
+    pub fn as_object<'a, T: Scope<'a>>(&self, _: &mut T) -> Option<Handle<'a, Object>> {
         Object::build_opt(|out| { unsafe { Nan_Value_ToObject(out, self.to_raw_ref()) } })
     }
 
-    pub fn check_object<'fun, 'block, 'scope, T: Scope<'fun, 'block>>(&self, _: &'scope mut T) -> JS<'block, Object> {
+    pub fn check_object<'a,  T: Scope<'a>>(&self, _: &mut T) -> JS<'a, Object> {
         Object::build_opt(|out| { unsafe { Nan_Value_ToObject(out, self.to_raw_ref()) } })
             .ok_or_else(|| {
                 // FIXME: throw a type error
@@ -87,7 +87,7 @@ impl ValueInternal for Value {
 pub struct Undefined(raw::Local);
 
 impl Undefined {
-    pub fn new<'fun, 'block, T: Scope<'fun, 'block>>(_: &mut T) -> Handle<'block, Undefined> {
+    pub fn new<'a, T: Scope<'a>>(_: &mut T) -> Handle<'a, Undefined> {
         Undefined::new_internal()
     }
 }
@@ -125,7 +125,7 @@ impl UndefinedInternal for Undefined {
 pub struct Null(raw::Local);
 
 impl Null {
-    pub fn new<'fun, 'block, T: Scope<'fun, 'block>>(_: &mut T) -> Handle<'block, Null> {
+    pub fn new<'a, T: Scope<'a>>(_: &mut T) -> Handle<'a, Null> {
         Null::new_internal()
     }
 }
@@ -163,7 +163,7 @@ impl NullInternal for Null {
 pub struct Boolean(raw::Local);
 
 impl Boolean {
-    pub fn new<'fun, 'block, T: Scope<'fun, 'block>>(_: &mut T, b: bool) -> Handle<'block, Boolean> {
+    pub fn new<'a, T: Scope<'a>>(_: &mut T, b: bool) -> Handle<'a, Boolean> {
         Boolean::new_internal(b)
     }
 }
@@ -221,17 +221,17 @@ impl String {
         }
     }
 
-    pub fn new<'fun, 'block, T: Scope<'fun, 'block>>(scope: &mut T, val: &str) -> Option<Handle<'block, String>> {
+    pub fn new<'a, T: Scope<'a>>(scope: &mut T, val: &str) -> Option<Handle<'a, String>> {
         CString::new(val).ok().and_then(|str| String::new_internal(scope.isolate(), &str))
     }
 }
 
 pub trait StringInternal {
-    fn new_internal<'a, 'fun>(isolate: &'fun Isolate, val: &CStr) -> Option<Handle<'a, String>>;
+    fn new_internal<'a>(isolate: *mut Isolate, val: &CStr) -> Option<Handle<'a, String>>;
 }
 
 impl StringInternal for String {
-    fn new_internal<'a, 'fun>(isolate: &'fun Isolate, val: &CStr) -> Option<Handle<'a, String>> {
+    fn new_internal<'a>(isolate: *mut Isolate, val: &CStr) -> Option<Handle<'a, String>> {
         unsafe {
             let mut result = Handle::new(String(mem::zeroed()));
             // FIXME: this is currently traversing the string twice (see the note in the CStr::as_ptr docs)
@@ -251,7 +251,7 @@ impl StringInternal for String {
 pub struct Integer(raw::Local);
 
 impl Integer {
-    pub fn new<'fun, 'block, T: Scope<'fun, 'block>>(scope: &mut T, i: i32) -> Handle<'block, Integer> {
+    pub fn new<'a, T: Scope<'a>>(scope: &mut T, i: i32) -> Handle<'a, Integer> {
         Integer::new_internal(scope.isolate(), i)
     }
 }
@@ -271,11 +271,11 @@ impl TaggedInternal for Integer {
 }
 
 pub trait IntegerInternal {
-    fn new_internal<'a, 'fun>(isolate: &'fun Isolate, i: i32) -> Handle<'a, Integer>;
+    fn new_internal<'a>(isolate: *mut Isolate, i: i32) -> Handle<'a, Integer>;
 }
 
 impl IntegerInternal for Integer {
-    fn new_internal<'a, 'fun>(isolate: &'fun Isolate, i: i32) -> Handle<'a, Integer> {
+    fn new_internal<'a>(isolate: *mut Isolate, i: i32) -> Handle<'a, Integer> {
         let mut result = Handle::new(Integer(unsafe { mem::zeroed() }));
         unsafe {
             Nan_NewInteger(result.to_raw_mut_ref(), mem::transmute(isolate), i);
@@ -289,7 +289,7 @@ impl IntegerInternal for Integer {
 pub struct Number(raw::Local);
 
 impl Number {
-    pub fn new<'fun, 'block, T: Scope<'fun, 'block>>(scope: &mut T, v: f64) -> Handle<'block, Number> {
+    pub fn new<'a, T: Scope<'a>>(scope: &mut T, v: f64) -> Handle<'a, Number> {
         Number::new_internal(scope.isolate(), v)
     }
 }
@@ -309,11 +309,11 @@ impl TaggedInternal for Number {
 }
 
 pub trait NumberInternal {
-    fn new_internal<'a, 'fun>(isolate: &'fun Isolate, v: f64) -> Handle<'a, Number>;
+    fn new_internal<'a>(isolate: *mut Isolate, v: f64) -> Handle<'a, Number>;
 }
 
 impl NumberInternal for Number {
-    fn new_internal<'a, 'fun>(isolate: &'fun Isolate, v: f64) -> Handle<'a, Number> {
+    fn new_internal<'a>(isolate: *mut Isolate, v: f64) -> Handle<'a, Number> {
         let mut result = Handle::new(Number(unsafe { mem::zeroed() }));
         unsafe {
             Nan_NewNumber(result.to_raw_mut_ref(), mem::transmute(isolate), v);
@@ -328,11 +328,11 @@ pub struct Object(raw::Local);
 
 impl Object {
     // FIXME: shouldn't this be fallible?
-    pub fn new<'fun, 'block, T: Scope<'fun, 'block>>(_: &mut T) -> Handle<'block, Object> {
+    pub fn new<'a, T: Scope<'a>>(_: &mut T) -> Handle<'a, Object> {
         Object::new_internal()
     }
 
-    pub fn get_own_property_names<'fun, 'block, T: Scope<'fun, 'block>>(&self, _: &mut T) -> JS<'block, Array> {
+    pub fn get_own_property_names<'a, T: Scope<'a>>(&self, _: &mut T) -> JS<'a, Array> {
         // FIXME: Array could use a build_opt abstraction too
         unsafe {
             let mut result = Handle::new(Array(mem::zeroed()));
@@ -399,7 +399,7 @@ impl ObjectInternal for Object {
 impl Object {
     // FIXME: make get/set overloadable with a `PropertyName` trait that has private unsafe get/set methods
     // FIXME: make it generic instead of Value
-    pub fn get<'fun, 'block, T: Scope<'fun, 'block>>(&mut self, _: &mut T, mut key: Handle<Value>) -> JS<'block, Value> {
+    pub fn get<'a, T: Scope<'a>>(&mut self, _: &mut T, mut key: Handle<Value>) -> JS<'a, Value> {
         unsafe {
             // FIXME: could use a Value build_opt
             let mut result = Value::zero_internal();
@@ -413,7 +413,8 @@ impl Object {
 
     // FIXME: overloadable with a `PropertyName` trait
     // FIXME: make it generic instead of Value
-    pub fn set<'fun, 'block, T: Scope<'fun, 'block>>(&mut self, scope: &mut T, key: &str, val: Handle<Value>) -> Result<bool> {
+    // FIXME: kill the scope argument here?
+    pub fn set<'a, T: Scope<'a>>(&mut self, scope: &mut T, key: &str, val: Handle<Value>) -> Result<bool> {
         let mut key = try!(String::new(scope, key).ok_or(Throw));
         let mut result = false;
         if unsafe { Nan_Set(&mut result, self.to_raw_mut_ref(), key.to_raw_mut_ref(), val.to_raw_ref()) } {
@@ -431,7 +432,7 @@ impl Object {
 pub struct Array(raw::Local);
 
 impl Array {
-    pub fn new<'fun, 'block, T: Scope<'fun, 'block>>(scope: &mut T, len: u32) -> Handle<'block, Array> {
+    pub fn new<'a, T: Scope<'a>>(scope: &mut T, len: u32) -> Handle<'a, Array> {
         Array::new_internal(scope.isolate(), len)
     }
 }
@@ -451,11 +452,11 @@ impl TaggedInternal for Array {
 }
 
 pub trait ArrayInternal {
-    fn new_internal<'a, 'fun>(isolate: &'fun Isolate, len: u32) -> Handle<'a, Array>;
+    fn new_internal<'a>(isolate: *mut Isolate, len: u32) -> Handle<'a, Array>;
 }
 
 impl ArrayInternal for Array {
-    fn new_internal<'a, 'fun>(isolate: &'fun Isolate, len: u32) -> Handle<'a, Array> {
+    fn new_internal<'a>(isolate: *mut Isolate, len: u32) -> Handle<'a, Array> {
         let mut result = Handle::new(Array(unsafe { mem::zeroed() }));
         unsafe {
             Nan_NewArray(result.to_raw_mut_ref(), mem::transmute(isolate), len);
@@ -471,7 +472,7 @@ impl Array {
         }
     }
 
-    pub fn get_index<'fun, 'block, T: Scope<'fun, 'block>>(&mut self, _: &mut T, index: u32) -> Option<Handle<'block, Value>> {
+    pub fn get_index<'a, T: Scope<'a>>(&mut self, _: &mut T, index: u32) -> Option<Handle<'a, Value>> {
         unsafe {
             // FIXME: could use a Value build_opt
             let mut result = Value::zero_internal();
@@ -483,7 +484,7 @@ impl Array {
         }
     }
 
-    pub fn to_vec<'fun, 'block, T: Scope<'fun, 'block>>(&mut self, scope: &mut T) -> Result<Vec<Handle<'block, Value>>> {
+    pub fn to_vec<'a, T: Scope<'a>>(&mut self, scope: &mut T) -> Result<Vec<Handle<'a, Value>>> {
         let mut result = Vec::with_capacity(self.len() as usize);
         let mut i = 0;
         loop {
@@ -512,7 +513,7 @@ impl Array {
 pub struct Function(raw::Local);
 
 impl Function {
-    pub fn new<'fun, 'block, T: Scope<'fun, 'block>, U: Copy + Tagged>(scope: &mut T, f: fn(Call) -> JS<U>) -> Option<Handle<'block, Function>> {
+    pub fn new<'a, T: Scope<'a>, U: Copy + Tagged>(scope: &mut T, f: fn(Call) -> JS<U>) -> Option<Handle<'a, Function>> {
         unsafe {
             let mut result = Function::zero_internal();
             let isolate: *mut c_void = mem::transmute(scope.isolate());
