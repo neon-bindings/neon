@@ -20,7 +20,7 @@ pub struct CallbackInfo {
 }
 
 impl CallbackInfo {
-    pub fn data<'block>(&self) -> Handle<'block, Value> {
+    pub fn data<'a>(&self) -> Handle<'a, Value> {
         unsafe {
             let mut result = Value::zero_internal();
             Nan_FunctionCallbackInfo_Data(&self.info, result.to_raw_mut_ref());
@@ -35,12 +35,12 @@ impl CallbackInfo {
     }
 }
 
-pub struct Module<'top> {
-    pub exports: &'top mut Handle<'top, Object>,
-    pub scope: &'top mut RootScope<'top, 'top>
+pub struct Module<'a> {
+    pub exports: &'a mut Handle<'a, Object>,
+    pub scope: &'a mut RootScope<'a>
 }
 
-impl<'top> Module<'top> {
+impl<'a> Module<'a> {
     pub fn initialize(exports: &mut Handle<Object>, init: fn(Module) -> Result<()>) {
         let mut scope = RootScope::new(unsafe { mem::transmute(Nan_Object_GetIsolate(exports.to_raw_ref())) });
         unsafe {
@@ -53,7 +53,7 @@ impl<'top> Module<'top> {
     }
 }
 
-impl<'top> Module<'top> {
+impl<'a> Module<'a> {
     pub fn export<T: Copy + Tagged>(&mut self, key: &str, f: fn(Call) -> JS<T>) -> Result<()> {
         let value = try!(Function::new(self.scope, f).ok_or(Throw)).upcast();
         try!(self.exports.set(self.scope, key, value));
@@ -61,17 +61,17 @@ impl<'top> Module<'top> {
     }
 }
 
-extern "C" fn module_body_callback<'top>(body: fn(Module) -> Result<()>, exports: &'top mut Handle<'top, Object>, scope: &'top mut RootScope<'top, 'top>) {
+extern "C" fn module_body_callback<'a>(body: fn(Module) -> Result<()>, exports: &'a mut Handle<'a, Object>, scope: &'a mut RootScope<'a>) {
     let _ = body(Module {
         exports: exports,
         scope: scope
     });
 }
 
-pub struct Call<'fun> {
-    info: &'fun CallbackInfo,
-    pub scope: &'fun mut RootScope<'fun, 'fun>,
-    pub arguments: Arguments<'fun>
+pub struct Call<'a> {
+    info: &'a CallbackInfo,
+    pub scope: &'a mut RootScope<'a>,
+    pub arguments: Arguments<'a>
 }
 
 pub enum CallKind {
@@ -79,7 +79,7 @@ pub enum CallKind {
     Call
 }
 
-impl<'fun> Call<'fun> {
+impl<'a> Call<'a> {
     pub fn kind(&self) -> CallKind {
         if unsafe { Nan_FunctionCallbackInfo_IsConstructCall(mem::transmute(self.info)) } {
             CallKind::Construct
@@ -88,7 +88,7 @@ impl<'fun> Call<'fun> {
         }
     }
 
-    pub fn this<'block, 'scope, T: Scope<'fun, 'block>>(&self, _: &'scope mut T) -> Handle<'block, Object> {
+    pub fn this<'b, T: Scope<'b>>(&self, _: &mut T) -> Handle<'b, Object> {
         unsafe {
             let mut result = Object::zero_internal();
             Nan_FunctionCallbackInfo_This(mem::transmute(self.info), result.to_raw_mut_ref());
@@ -96,7 +96,7 @@ impl<'fun> Call<'fun> {
         }
     }
 
-    pub fn callee<'block, 'scope, T: Scope<'fun, 'block>>(&self, _: &'scope mut T) -> Handle<'block, Function> {
+    pub fn callee<'b, T: Scope<'b>>(&self, _: &mut T) -> Handle<'b, Function> {
         unsafe {
             let mut result = Function::zero_internal();
             Nan_FunctionCallbackInfo_Callee(mem::transmute(self.info), result.to_raw_mut_ref());
@@ -106,18 +106,18 @@ impl<'fun> Call<'fun> {
 }
 
 #[repr(C)]
-pub struct Arguments<'fun> {
-    info: &'fun raw::FunctionCallbackInfo
+pub struct Arguments<'a> {
+    info: &'a raw::FunctionCallbackInfo
 }
 
-impl<'fun> Arguments<'fun> {
+impl<'a> Arguments<'a> {
     pub fn len(&self) -> i32 {
         unsafe {
             Nan_FunctionCallbackInfo_Length(&self.info)
         }
     }
 
-    pub fn get<'block, 'scope, T: Scope<'fun, 'block>>(&self, _: &'scope mut T, i: i32) -> Option<Handle<'block, Value>> {
+    pub fn get<'b, T: Scope<'b>>(&self, _: &mut T, i: i32) -> Option<Handle<'b, Value>> {
         if i < 0 || i >= self.len() {
             return None;
         }
@@ -128,7 +128,7 @@ impl<'fun> Arguments<'fun> {
         }
     }
 
-    pub fn require<'block, 'scope, T: Scope<'fun, 'block>>(&self, _: &'scope mut T, i: i32) -> JS<'block, Value> {
+    pub fn require<'b, T: Scope<'b>>(&self, _: &mut T, i: i32) -> JS<'b, Value> {
         if i < 0 || i >= self.len() {
             // FIXME: throw a type error
             return Err(Throw);
@@ -141,11 +141,11 @@ impl<'fun> Arguments<'fun> {
     }
 }
 
-pub fn exec_function_body<'fun, F>(info: &'fun CallbackInfo, scope: &'fun mut RootScope<'fun, 'fun>, f: F)
-    where F: FnOnce(Call<'fun>)
+pub fn exec_function_body<'a, F>(info: &'a CallbackInfo, scope: &'a mut RootScope<'a>, f: F)
+    where F: FnOnce(Call<'a>)
 {
     let closure: Box<F> = Box::new(f);
-    let callback: extern "C" fn(&'fun CallbackInfo, Box<F>, &'fun mut RootScope<'fun, 'fun>) = function_body_callback::<'fun, F>;
+    let callback: extern "C" fn(&'a CallbackInfo, Box<F>, &'a mut RootScope<'a>) = function_body_callback::<'a, F>;
     unsafe {
         let closure: *mut c_void = mem::transmute(closure);
         let callback: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = mem::transmute(callback);
@@ -155,8 +155,8 @@ pub fn exec_function_body<'fun, F>(info: &'fun CallbackInfo, scope: &'fun mut Ro
     }
 }
 
-extern "C" fn function_body_callback<'fun, F>(info: &'fun CallbackInfo, body: Box<F>, scope: &'fun mut RootScope<'fun, 'fun>)
-    where F: FnOnce(Call<'fun>)
+extern "C" fn function_body_callback<'a, F>(info: &'a CallbackInfo, body: Box<F>, scope: &'a mut RootScope<'a>)
+    where F: FnOnce(Call<'a>)
 {
     body(Call {
         info: info,
