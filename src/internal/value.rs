@@ -399,7 +399,7 @@ impl ObjectInternal for Object {
 impl Object {
     // FIXME: make get/set overloadable with a `PropertyName` trait that has private unsafe get/set methods
     // FIXME: make it generic instead of Value
-    pub fn get<'a, T: Scope<'a>>(&mut self, _: &mut T, mut key: Handle<Value>) -> JS<'a, Value> {
+    pub fn get<'a, T: Scope<'a>, K: Tagged>(&mut self, _: &mut T, mut key: Handle<K>) -> JS<'a, Value> {
         unsafe {
             // FIXME: could use a Value build_opt
             let mut result = Value::zero_internal();
@@ -414,7 +414,7 @@ impl Object {
     // FIXME: overloadable with a `PropertyName` trait
     // FIXME: make it generic instead of Value
     // FIXME: kill the scope argument here?
-    pub fn set<'a, T: Scope<'a>>(&mut self, scope: &mut T, key: &str, val: Handle<Value>) -> Result<bool> {
+    pub fn set<'a, T: Scope<'a>, V: Tagged>(&mut self, scope: &mut T, key: &str, val: Handle<V>) -> Result<bool> {
         let mut key = try!(String::new(scope, key).ok_or(Throw));
         let mut result = false;
         if unsafe { Nan_Set(&mut result, self.to_raw_mut_ref(), key.to_raw_mut_ref(), val.to_raw_ref()) } {
