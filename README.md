@@ -18,9 +18,9 @@ A JS function is represented in Rust as a function that takes a `Call` object an
 fn make_an_array(call: Call) -> JS<Array> {
     let scope = call.scope; // the current scope for rooting handles
     let mut array: Handle<Array> = Array::new(scope, 3);
-    array.set(0, Integer::new(scope, 9000));
-    array.set(1, Object::new(scope));
-    array.set(2, Number::new(scope, 3.14159));
+    try!(array.set(0, Integer::new(scope, 9000)));
+    try!(array.set(1, Object::new(scope)));
+    try!(array.set(2, Number::new(scope, 3.14159)));
     Ok(array)
 }
 ```
@@ -28,4 +28,3 @@ fn make_an_array(call: Call) -> JS<Array> {
 # License
 
 MIT
-
