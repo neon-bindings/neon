@@ -3,10 +3,11 @@ use std::str;
 use std::str::Utf8Error;
 
 use vm::Throw;
-use internal::value::{Value, Object, ObjectInternal, Tagged, TaggedInternal};
+use internal::error::TypeError;
+use internal::value::{SomeObject, Any, AnyInternal, Object, build};
 use internal::mem::Handle;
 use nanny_sys::raw;
-use nanny_sys::{Nan_NewBuffer, Node_Buffer_Data, Node_Buffer_Value_HasInstance, Node_Buffer_Object_HasInstance};
+use nanny_sys::{Nan_NewBuffer, Node_Buffer_Data, Node_Buffer_Value_HasInstance};
 use scope::Scope;
 use nanny_sys::buf::Buf;
 
@@ -28,8 +29,8 @@ impl IndexMut<usize> for Buffer {
 }
 
 impl Buffer {
-    pub fn new<'a, T: Scope<'a>>(_: &mut T, size: u32) -> Option<Handle<'a, Object>> {
-        Object::build_opt(|out| { unsafe { Nan_NewBuffer(out, size) } })
+    pub fn new<'a, T: Scope<'a>>(_: &mut T, size: u32) -> Result<Handle<'a, SomeObject>, Throw> {
+        build(|out| { unsafe { Nan_NewBuffer(out, size) } })
     }
 
     pub fn data(&self) -> Buf {
@@ -46,40 +47,12 @@ impl Buffer {
 
     pub fn check_str(&self) -> Result<&str, Throw> {
         self.as_str().map_err(|_| {
-            // FIXME: throw a type error
-            Throw
+            TypeError::throw::<()>("buffer contents are invalid UTF-8").err().unwrap()
         })
     }
 }
 
-impl Value {
-    pub fn as_buffer<'a, T: Scope<'a>>(&self, _: &mut T) -> Option<Handle<'a, Buffer>> {
-        if unsafe { Node_Buffer_Value_HasInstance(self.to_raw_ref()) } {
-            Some(self.cast(Buffer))
-        } else {
-            None
-        }
-    }
-}
-
-impl Object {
-    pub fn as_buffer<'a, T: Scope<'a>>(&self, _: &mut T) -> Option<Handle<'a, Buffer>> {
-        if unsafe { Node_Buffer_Object_HasInstance(self.to_raw_ref()) } {
-            Some(self.cast(Buffer))
-        } else {
-            None
-        }
-    }
-
-    pub fn check_buffer<'a, T: Scope<'a>>(&self, scope: &mut T) -> Result<Handle<'a, Buffer>, Throw> {
-        self.as_buffer(scope).ok_or_else(|| {
-            // FIXME: throw a type error
-            Throw
-        })
-    }
-}
-
-impl TaggedInternal for Buffer {
+impl AnyInternal for Buffer {
     fn to_raw_mut_ref(&mut self) -> &mut raw::Local {
         let &mut Buffer(ref mut local) = self;
         local
@@ -89,6 +62,14 @@ impl TaggedInternal for Buffer {
         let &Buffer(ref local) = self;
         local
     }
+
+    fn from_raw(h: raw::Local) -> Self { Buffer(h) }
+
+    fn is_typeof<Other: Any>(other: Other) -> bool {
+        unsafe { Node_Buffer_Value_HasInstance(other.to_raw_ref()) }
+    }
 }
 
-impl Tagged for Buffer { }
+impl Any for Buffer { }
+
+impl Object for Buffer { }

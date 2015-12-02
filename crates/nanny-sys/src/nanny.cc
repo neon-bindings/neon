@@ -91,6 +91,34 @@ extern "C" bool Nan_Get_Index(v8::Local<v8::Value> *out, v8::Local<v8::Object> *
   return maybe.ToLocal(out);
 }
 
+extern "C" bool Nanny_Set_Index(bool *out, v8::Local<v8::Object> *object, uint32_t index, v8::Local<v8::Value> *val) {
+  Nan::Maybe<bool> maybe = Nan::Set(*object, index, *val);
+  return maybe.IsJust() && (*out = maybe.FromJust(), true);
+}
+
+extern "C" bool Nanny_Get_Bytes(v8::Local<v8::Value> *out, v8::Local<v8::Object> *obj, const uint8_t *data, int32_t len) {
+  Nan::HandleScope scope;
+  Nan::MaybeLocal<v8::String> maybe_key = v8::String::NewFromOneByte(v8::Isolate::GetCurrent(), data, v8::NewStringType::kNormal, len);
+  v8::Local<v8::String> key;
+  if (!maybe_key.ToLocal(&key)) {
+    return false;
+  }
+  Nan::MaybeLocal<v8::Value> maybe = Nan::Get(*obj, key);
+  return maybe.ToLocal(out);
+}
+
+extern "C" bool Nanny_Set_Bytes(bool *out, v8::Local<v8::Object> *obj, const uint8_t *data, int32_t len, v8::Local<v8::Value> *val) {
+  // FIXME: abstract the key construction logic to avoid duplication with ^^
+  Nan::HandleScope scope;
+  Nan::MaybeLocal<v8::String> maybe_key = v8::String::NewFromOneByte(v8::Isolate::GetCurrent(), data, v8::NewStringType::kNormal, len);
+  v8::Local<v8::String> key;
+  if (!maybe_key.ToLocal(&key)) {
+    return false;
+  }
+  Nan::Maybe<bool> maybe = Nan::Set(*obj, key, *val);
+  return maybe.IsJust() && (*out = maybe.FromJust(), true);
+}
+
 extern "C" bool Nan_Get(v8::Local<v8::Value> *out, v8::Local<v8::Object> *obj, v8::Local<v8::Value> *key) {
   Nan::MaybeLocal<v8::Value> maybe = Nan::Get(*obj, *key);
   return maybe.ToLocal(out);
@@ -189,4 +217,82 @@ extern "C" bool Nanny_NewFunction(v8::Local<v8::Function> *out, v8::Isolate *iso
 
 extern "C" void *Nanny_FunctionKernel(v8::Local<v8::Object> *obj) {
   return Nan::ObjectWrap::Unwrap<KernelWrapper>(*obj)->GetKernel();
+}
+
+extern "C" tag_t Nanny_TagOf(v8::Local<v8::Value> *p) {
+  v8::Local<v8::Value> val = *p;
+  return val->IsNull()                    ? tag_null
+    : val->IsUndefined()                  ? tag_undefined
+    : (val->IsTrue() || val->IsFalse())   ? tag_boolean
+    : (val->IsInt32() || val->IsUint32()) ? tag_integer // FIXME: this isn't right for large int64s
+    : val->IsNumber()                     ? tag_number
+    : val->IsString()                     ? tag_string
+    : val->IsArray()                      ? tag_array
+    : val->IsFunction()                   ? tag_function
+    : val->IsObject()                     ? tag_object
+                                          : tag_other;
+}
+
+extern "C" bool Nanny_IsUndefined(v8::Local<v8::Value> *p) {
+  v8::Local<v8::Value> val = *p;
+  return val->IsUndefined();
+}
+
+extern "C" bool Nanny_IsNull(v8::Local<v8::Value> *p) {
+  v8::Local<v8::Value> val = *p;
+  return val->IsNull();
+}
+
+extern "C" bool Nanny_IsInteger(v8::Local<v8::Value> *p) {
+  v8::Local<v8::Value> val = *p;
+  return val->IsInt32() || val->IsUint32();
+}
+
+extern "C" bool Nanny_IsNumber(v8::Local<v8::Value> *p) {
+  v8::Local<v8::Value> val = *p;
+  return val->IsNumber();
+}
+
+extern "C" bool Nanny_IsBoolean(v8::Local<v8::Value> *p) {
+  v8::Local<v8::Value> val = *p;
+  return val->IsBoolean();
+}
+
+extern "C" bool Nanny_IsString(v8::Local<v8::Value> *p) {
+  v8::Local<v8::Value> val = *p;
+  return val->IsString();
+}
+
+extern "C" bool Nanny_IsObject(v8::Local<v8::Value> *p) {
+  v8::Local<v8::Value> val = *p;
+  // FIXME: is the null check superfluous?
+  return val->IsObject() && !val->IsNull();
+}
+
+extern "C" bool Nanny_IsArray(v8::Local<v8::Value> *p) {
+  v8::Local<v8::Value> val = *p;
+  return val->IsArray();
+}
+
+extern "C" bool Nanny_IsFunction(v8::Local<v8::Value> *p) {
+  v8::Local<v8::Value> val = *p;
+  return val->IsFunction();
+}
+
+extern "C" bool Nanny_IsTypeError(v8::Local<v8::Value> *p) {
+  v8::Local<v8::Value> val = *p;
+  return false; // FIXME: implement this
+}
+
+extern "C" void Nanny_ThrowAny(v8::Local<v8::Value> *val) {
+  Nan::ThrowError(*val);
+}
+
+extern "C" bool Nanny_NewTypeError(v8::Local<v8::Value> *out, const char *msg) {
+  *out = Nan::TypeError(msg);
+  return true;
+}
+
+extern "C" void Nanny_ThrowTypeError(const char *msg) {
+  Nan::ThrowTypeError(msg);
 }

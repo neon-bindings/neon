@@ -5,6 +5,22 @@ use std::os::raw::c_void;
 use raw::{FunctionCallbackInfo, EscapableHandleScope, Isolate, Local};
 use buf::Buf;
 
+// analog C enum `tag_t` defined in nanny.h
+#[repr(C)]
+#[derive(PartialEq, Eq)]
+pub enum Tag {
+    Null,
+    Undefined,
+    Boolean,
+    Integer,
+    Number,
+    String,
+    Object,
+    Array,
+    Function,
+    Other
+}
+
 extern "system" {
     pub fn Nan_FunctionCallbackInfo_SetReturnValue(info: &FunctionCallbackInfo, value: Local);
     pub fn Nan_FunctionCallbackInfo_GetIsolate(info: &FunctionCallbackInfo) -> &Isolate;
@@ -30,6 +46,9 @@ extern "system" {
     pub fn Nan_NewArray(out: &mut Local, isolate: *mut Isolate, length: u32);
     pub fn Node_ArraySet(array: &mut Local, index: u32, value: Local) -> bool;
     pub fn Nan_Get_Index(out: &mut Local, object: &mut Local, index: u32) -> bool;
+    pub fn Nanny_Set_Index(out: &mut bool, object: &mut Local, index: u32, val: &mut Local) -> bool;
+    pub fn Nanny_Get_Bytes(out: &mut Local, object: &mut Local, key: *const u8, len: i32) -> bool;
+    pub fn Nanny_Set_Bytes(out: &mut bool, object: &mut Local, key: *const u8, len: i32, val: &mut Local) -> bool;
     pub fn Nan_Get(out: &mut Local, object: &mut Local, key: &mut Local) -> bool;
     pub fn Nan_Set(out: &mut bool, object: &mut Local, key: &mut Local, val: &Local) -> bool;
     pub fn Node_ArrayLength(array: &Local) -> u32;
@@ -50,4 +69,19 @@ extern "system" {
 
     pub fn Nanny_FunctionKernel(obj: &Local) -> *mut c_void;
     pub fn Nanny_NewFunction(out: &mut Local, isolate: *mut c_void, callback: *mut c_void, kernel: *mut c_void) -> bool;
+    pub fn Nanny_TagOf(val: &Local) -> Tag;
+    pub fn Nanny_IsUndefined(val: &Local) -> bool;
+    pub fn Nanny_IsNull(val: &Local) -> bool;
+    pub fn Nanny_IsInteger(val: &Local) -> bool;
+    pub fn Nanny_IsNumber(val: &Local) -> bool;
+    pub fn Nanny_IsBoolean(val: &Local) -> bool;
+    pub fn Nanny_IsString(val: &Local) -> bool;
+    pub fn Nanny_IsObject(val: &Local) -> bool;
+    pub fn Nanny_IsArray(val: &Local) -> bool;
+    pub fn Nanny_IsFunction(val: &Local) -> bool;
+    pub fn Nanny_IsTypeError(val: &Local) -> bool;
+
+    pub fn Nanny_ThrowAny(val: &Local);
+    pub fn Nanny_NewTypeError(out: &mut Local, msg: *const u8) -> bool;
+    pub fn Nanny_ThrowTypeError(msg: *const u8);
 }

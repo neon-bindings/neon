@@ -3,9 +3,23 @@
 #include <v8.h>
 
 typedef struct {
-    void* data;
-    size_t len;
+  void* data;
+  size_t len;
 } buf_t;
+
+// analog Rust enum `Tag` defined in lib.rs
+typedef enum {
+  tag_null,
+  tag_undefined,
+  tag_boolean,
+  tag_integer,
+  tag_number,
+  tag_string,
+  tag_object,
+  tag_array,
+  tag_function,
+  tag_other
+} tag_t;
 
 extern "C" {
 
@@ -35,6 +49,9 @@ extern "C" {
   bool Node_ArraySet(v8::Local<v8::Array> *array, uint32_t index, v8::Local<v8::Value> value);
   uint32_t Node_ArrayLength(v8::Local<v8::Array> *array);
   bool Nan_Get_Index(v8::Local<v8::Value> *out, v8::Local<v8::Object> *object, uint32_t index);
+  bool Nanny_Set_Index(bool *out, v8::Local<v8::Object> *object, uint32_t index, v8::Local<v8::Value> *val);
+  bool Nanny_Get_Bytes(v8::Local<v8::Value> *out, v8::Local<v8::Object> *object, const uint8_t *key, int32_t len);
+  bool Nanny_Set_Bytes(bool *out, v8::Local<v8::Object> *object, const uint8_t *key, int32_t len, v8::Local<v8::Value> *val);
   bool Nan_Get(v8::Local<v8::Value> *out, v8::Local<v8::Object> *object, v8::Local<v8::Value> *key);
   bool Nan_Set(bool *out, v8::Local<v8::Object> *obj, v8::Local<v8::Value> *key, v8::Local<v8::Value> *val);
 
@@ -61,4 +78,20 @@ extern "C" {
 
   bool Nanny_NewFunction(v8::Local<v8::Function> *out, v8::Isolate *isolate, Nan::FunctionCallback callback, void *kernel);
   void *Nanny_FunctionKernel(v8::Local<v8::Object> *obj);
+
+  tag_t Nanny_TagOf(v8::Local<v8::Value> *val);
+  bool Nanny_IsUndefined(v8::Local<v8::Value> *val);
+  bool Nanny_IsNull(v8::Local<v8::Value> *val);
+  bool Nanny_IsBoolean(v8::Local<v8::Value> *val);
+  bool Nanny_IsInteger(v8::Local<v8::Value> *val);
+  bool Nanny_IsNumber(v8::Local<v8::Value> *val);
+  bool Nanny_IsString(v8::Local<v8::Value> *val);
+  bool Nanny_IsObject(v8::Local<v8::Value> *val);
+  bool Nanny_IsArray(v8::Local<v8::Value> *val);
+  bool Nanny_IsFunction(v8::Local<v8::Value> *val);
+  bool Nanny_IsTypeError(v8::Local<v8::Value> *val);
+
+  void Nanny_ThrowAny(v8::Local<v8::Value> *val);
+  bool Nanny_NewTypeError(v8::Local<v8::Value> *out, const char *msg);
+  void Nanny_ThrowTypeError(const char *msg);
 }

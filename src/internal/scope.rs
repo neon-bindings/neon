@@ -5,7 +5,7 @@ use std::cell::{RefCell, UnsafeCell};
 use nanny_sys::raw;
 use nanny_sys::{Nan_Nested, Nan_Chained, Nan_EscapableHandleScope_Escape};
 use internal::mem::{Handle, HandleInternal};
-use internal::value::Tagged;
+use internal::value::Any;
 use internal::vm::Isolate;
 
 pub trait ScopeInternal: Sized {
@@ -45,7 +45,7 @@ pub struct ChainedScope<'a, 'outer> {
 }
 
 impl<'a, 'outer> ChainedScope<'a, 'outer> {
-    pub fn escape<T: Tagged>(&self, local: Handle<'a, T>) -> Handle<'outer, T> {
+    pub fn escape<T: Any>(&self, local: Handle<'a, T>) -> Handle<'outer, T> {
         let result: UnsafeCell<Handle<'outer, T>> = UnsafeCell::new(Handle::new(unsafe { mem::zeroed() }));
         unsafe {
             Nan_EscapableHandleScope_Escape((*result.get()).to_raw_mut_ref(), self.v8, local.to_raw());
