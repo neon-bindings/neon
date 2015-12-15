@@ -296,3 +296,7 @@ extern "C" bool Nanny_NewTypeError(v8::Local<v8::Value> *out, const char *msg) {
 extern "C" void Nanny_ThrowTypeError(const char *msg) {
   Nan::ThrowTypeError(msg);
 }
+
+extern "C" bool Nanny_SameHandle(v8::Local<v8::Value> *v1, v8::Local<v8::Value> *v2) {
+  return (*v1) == (*v2);
+}

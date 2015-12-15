@@ -94,4 +94,6 @@ extern "C" {
   void Nanny_ThrowAny(v8::Local<v8::Value> *val);
   bool Nanny_NewTypeError(v8::Local<v8::Value> *out, const char *msg);
   void Nanny_ThrowTypeError(const char *msg);
+
+  bool Nanny_SameHandle(v8::Local<v8::Value> *v1, v8::Local<v8::Value> *v2);
 }

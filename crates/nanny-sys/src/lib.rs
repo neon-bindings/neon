@@ -84,4 +84,6 @@ extern "system" {
     pub fn Nanny_ThrowAny(val: &Local);
     pub fn Nanny_NewTypeError(out: &mut Local, msg: *const u8) -> bool;
     pub fn Nanny_ThrowTypeError(msg: *const u8);
+
+    pub fn Nanny_SameHandle(h1: &Local, h2: &Local) -> bool;
 }

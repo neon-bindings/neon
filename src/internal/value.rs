@@ -6,6 +6,7 @@ use nanny_sys::{Nan_NewObject, Nan_NewUndefined, Nan_NewNull, Nan_NewBoolean, Na
 use internal::mem::{Handle, HandleInternal};
 use internal::scope::{Scope, RootScope, RootScopeInternal};
 use internal::vm::{Result, Throw, JS, Isolate, CallbackInfo, Call, exec_function_body};
+use internal::error::TypeError;
 
 pub trait AnyInternal: Copy {
     fn to_raw_mut_ref(&mut self) -> &mut raw::Local;
@@ -304,6 +305,14 @@ impl String {
 
     pub fn new<'a, T: Scope<'a>>(scope: &mut T, val: &str) -> Option<Handle<'a, String>> {
         CString::new(val).ok().and_then(|str| String::new_internal(scope.isolate(), &str))
+    }
+
+    pub fn new_or_throw<'a, T: Scope<'a>>(scope: &mut T, val: &str) -> Result<Handle<'a, String>> {
+        match String::new(scope, val) {
+            Some(v) => Ok(v),
+            // FIXME: should this be a different error type?
+            None => TypeError::throw("invalid string contents")
+        }
     }
 }
 

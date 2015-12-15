@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
-use nanny_sys::raw;
+use nanny_sys::Nanny_SameHandle;
 use internal::value::{Any, AnyInternal, SuperType};
 use internal::error::TypeError;
 use internal::vm::JS;
@@ -12,9 +12,16 @@ pub struct Handle<'a, T: Any + 'a> {
     phantom: PhantomData<&'a T>
 }
 
+impl<'a, T: Any + 'a> PartialEq for Handle<'a, T> {
+    fn eq(&self, other: &Self) -> bool {
+        unsafe { Nanny_SameHandle(self.to_raw_ref(), other.to_raw_ref()) }
+    }
+}
+
+impl<'a, T: Any + 'a> Eq for Handle<'a, T> { }
+
 pub trait HandleInternal<'a, T: Any + 'a> {
     fn new(value: T) -> Handle<'a, T>;
-    fn to_raw_mut_ref(&mut self) -> &mut raw::Local;
 }
 
 impl<'a, T: Any + 'a> HandleInternal<'a, T> for Handle<'a, T> {
@@ -22,14 +29,6 @@ impl<'a, T: Any + 'a> HandleInternal<'a, T> for Handle<'a, T> {
         Handle {
             value: value,
             phantom: PhantomData
-        }
-    }
-
-    fn to_raw_mut_ref(&mut self) -> &mut raw::Local {
-        match self {
-            &mut Handle { ref mut value, .. } => {
-                value.to_raw_mut_ref()
-            }
         }
     }
 }
