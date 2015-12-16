@@ -35,8 +35,8 @@ extern "C" {
   void Nan_EscapableHandleScope_Escape(v8::Local<v8::Value> *out, Nan::EscapableHandleScope *scope, v8::Local<v8::Value> value);
 
   void Nan_NewObject(v8::Local<v8::Object> *out);
-  bool Nan_GetOwnPropertyNames(v8::Local<v8::Array> *out, v8::Local<v8::Object> *obj);
-  void *Nan_Object_GetIsolate(v8::Local<v8::Object> *obj);
+  bool Nan_GetOwnPropertyNames(v8::Local<v8::Array> *out, v8::Local<v8::Object> obj);
+  void *Nan_Object_GetIsolate(v8::Local<v8::Object> obj);
 
   void Nan_NewInteger(v8::Local<v8::Integer> *out, v8::Isolate *isolate, int32_t x);
   bool Nan_NewString(v8::Local<v8::String> *out, v8::Isolate *isolate, const uint8_t *data, int32_t len);
@@ -47,53 +47,53 @@ extern "C" {
   void Nan_NewBoolean(v8::Local<v8::Boolean> *out, bool b);
 
   bool Node_ArraySet(v8::Local<v8::Array> *array, uint32_t index, v8::Local<v8::Value> value);
-  uint32_t Node_ArrayLength(v8::Local<v8::Array> *array);
-  bool Nan_Get_Index(v8::Local<v8::Value> *out, v8::Local<v8::Object> *object, uint32_t index);
-  bool Nanny_Set_Index(bool *out, v8::Local<v8::Object> *object, uint32_t index, v8::Local<v8::Value> *val);
-  bool Nanny_Get_Bytes(v8::Local<v8::Value> *out, v8::Local<v8::Object> *object, const uint8_t *key, int32_t len);
-  bool Nanny_Set_Bytes(bool *out, v8::Local<v8::Object> *object, const uint8_t *key, int32_t len, v8::Local<v8::Value> *val);
-  bool Nan_Get(v8::Local<v8::Value> *out, v8::Local<v8::Object> *object, v8::Local<v8::Value> *key);
-  bool Nan_Set(bool *out, v8::Local<v8::Object> *obj, v8::Local<v8::Value> *key, v8::Local<v8::Value> *val);
+  uint32_t Node_ArrayLength(v8::Local<v8::Array> array);
+  bool Nan_Get_Index(v8::Local<v8::Value> *out, v8::Local<v8::Object> object, uint32_t index);
+  bool Nanny_Set_Index(bool *out, v8::Local<v8::Object> object, uint32_t index, v8::Local<v8::Value> val);
+  bool Nanny_Get_Bytes(v8::Local<v8::Value> *out, v8::Local<v8::Object> object, const uint8_t *key, int32_t len);
+  bool Nanny_Set_Bytes(bool *out, v8::Local<v8::Object> object, const uint8_t *key, int32_t len, v8::Local<v8::Value> val);
+  bool Nan_Get(v8::Local<v8::Value> *out, v8::Local<v8::Object> object, v8::Local<v8::Value> key);
+  bool Nan_Set(bool *out, v8::Local<v8::Object> obj, v8::Local<v8::Value> key, v8::Local<v8::Value> val);
 
-  int32_t Nan_String_Utf8Length(v8::Local<v8::String> *str);
+  int32_t Nan_String_Utf8Length(v8::Local<v8::String> str);
 
-  bool Nan_Value_ToString(v8::Local<v8::String> *out, v8::Local<v8::Value> *value);
+  bool Nan_Value_ToString(v8::Local<v8::String> *out, v8::Local<v8::Value> value);
   bool Nan_Value_ToObject(v8::Local<v8::Object> *out, v8::Local<v8::Value> *value);
 
   bool Nan_NewBuffer(v8::Local<v8::Object> *out, uint32_t size);
-  void Node_Buffer_Data(buf_t *out, v8::Local<v8::Object> *obj);
+  void Node_Buffer_Data(buf_t *out, v8::Local<v8::Object> obj);
   bool Node_Buffer_Object_HasInstance(v8::Local<v8::Object> *obj);
-  bool Node_Buffer_Value_HasInstance(v8::Local<v8::Value> *obj);
+  bool Node_Buffer_Value_HasInstance(v8::Local<v8::Value> obj);
 
   typedef void(*Nan_ChainedScopeCallback)(void *, void *, void *, void *);
   typedef void(*Nan_NestedScopeCallback)(void *, void *, void *);
   typedef void(*Nan_RootScopeCallback)(void *, void *, void *);
-  typedef void(*Nan_ModuleScopeCallback)(void *, void *, void *);
+  typedef void(*Nan_ModuleScopeCallback)(void *, v8::Local<v8::Object>, void *);
 
   void Nanny_ExecFunctionBody(void *closure, Nan_RootScopeCallback callback, Nan::FunctionCallbackInfo<v8::Value> *info, void *scope);
   void Nan_Nested(void *out, void *closure, Nan_NestedScopeCallback callback, void *realm);
   void Nan_Chained(void *out, void *closure, Nan_ChainedScopeCallback callback, void *parent_scope);
 
-  void Nanny_ExecModuleBody(void *kernel, Nan_ModuleScopeCallback callback, v8::Local<v8::Object> *exports, void *scope);
+  void Nanny_ExecModuleBody(void *kernel, Nan_ModuleScopeCallback callback, v8::Local<v8::Object> exports, void *scope);
 
   bool Nanny_NewFunction(v8::Local<v8::Function> *out, v8::Isolate *isolate, Nan::FunctionCallback callback, void *kernel);
-  void *Nanny_FunctionKernel(v8::Local<v8::Object> *obj);
+  void *Nanny_FunctionKernel(v8::Local<v8::Object> obj);
 
-  tag_t Nanny_TagOf(v8::Local<v8::Value> *val);
-  bool Nanny_IsUndefined(v8::Local<v8::Value> *val);
-  bool Nanny_IsNull(v8::Local<v8::Value> *val);
-  bool Nanny_IsBoolean(v8::Local<v8::Value> *val);
-  bool Nanny_IsInteger(v8::Local<v8::Value> *val);
-  bool Nanny_IsNumber(v8::Local<v8::Value> *val);
-  bool Nanny_IsString(v8::Local<v8::Value> *val);
-  bool Nanny_IsObject(v8::Local<v8::Value> *val);
-  bool Nanny_IsArray(v8::Local<v8::Value> *val);
-  bool Nanny_IsFunction(v8::Local<v8::Value> *val);
-  bool Nanny_IsTypeError(v8::Local<v8::Value> *val);
+  tag_t Nanny_TagOf(v8::Local<v8::Value> val);
+  bool Nanny_IsUndefined(v8::Local<v8::Value> val);
+  bool Nanny_IsNull(v8::Local<v8::Value> val);
+  bool Nanny_IsBoolean(v8::Local<v8::Value> val);
+  bool Nanny_IsInteger(v8::Local<v8::Value> val);
+  bool Nanny_IsNumber(v8::Local<v8::Value> val);
+  bool Nanny_IsString(v8::Local<v8::Value> val);
+  bool Nanny_IsObject(v8::Local<v8::Value> val);
+  bool Nanny_IsArray(v8::Local<v8::Value> val);
+  bool Nanny_IsFunction(v8::Local<v8::Value> val);
+  bool Nanny_IsTypeError(v8::Local<v8::Value> val);
 
-  void Nanny_ThrowAny(v8::Local<v8::Value> *val);
+  void Nanny_ThrowAny(v8::Local<v8::Value> val);
   bool Nanny_NewTypeError(v8::Local<v8::Value> *out, const char *msg);
   void Nanny_ThrowTypeError(const char *msg);
 
-  bool Nanny_SameHandle(v8::Local<v8::Value> *v1, v8::Local<v8::Value> *v2);
+  bool Nanny_SameHandle(v8::Local<v8::Value> v1, v8::Local<v8::Value> v2);
 }

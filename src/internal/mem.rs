@@ -14,7 +14,7 @@ pub struct Handle<'a, T: Any + 'a> {
 
 impl<'a, T: Any + 'a> PartialEq for Handle<'a, T> {
     fn eq(&self, other: &Self) -> bool {
-        unsafe { Nanny_SameHandle(self.to_raw_ref(), other.to_raw_ref()) }
+        unsafe { Nanny_SameHandle(self.to_raw(), other.to_raw()) }
     }
 }
 

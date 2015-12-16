@@ -4,7 +4,7 @@ use std::os::raw::c_void;
 use nanny_sys::raw;
 use nanny_sys::{Nanny_ExecFunctionBody, Nanny_ExecModuleBody, Nan_FunctionCallbackInfo_Data, Nan_FunctionCallbackInfo_SetReturnValue, Nan_FunctionCallbackInfo_Get, Nan_FunctionCallbackInfo_Length, Nan_Object_GetIsolate, Nan_FunctionCallbackInfo_IsConstructCall, Nan_FunctionCallbackInfo_This, Nan_FunctionCallbackInfo_Callee};
 use internal::scope::{Scope, RootScope, RootScopeInternal};
-use internal::value::{Value, Any, AnyInternal, Object, SomeObject, Function, zeroed};
+use internal::value::{Value, Any, AnyInternal, Object, SomeObject, Function};
 use internal::mem::{Handle, HandleInternal};
 
 pub struct Throw;
@@ -22,9 +22,9 @@ pub struct CallbackInfo {
 impl CallbackInfo {
     pub fn data<'a>(&self) -> Handle<'a, Value> {
         unsafe {
-            let mut result = zeroed::<Value>();
-            Nan_FunctionCallbackInfo_Data(&self.info, result.to_raw_mut_ref());
-            result
+            let mut local: raw::Local = mem::zeroed();
+            Nan_FunctionCallbackInfo_Data(&self.info, &mut local);
+            Handle::new(Value::from_raw(local))
         }
     }
 
@@ -36,17 +36,17 @@ impl CallbackInfo {
 }
 
 pub struct Module<'a> {
-    pub exports: &'a mut Handle<'a, SomeObject>,
+    pub exports: Handle<'a, SomeObject>,
     pub scope: &'a mut RootScope<'a>
 }
 
 impl<'a> Module<'a> {
-    pub fn initialize(exports: &mut Handle<SomeObject>, init: fn(Module) -> Result<()>) {
-        let mut scope = RootScope::new(unsafe { mem::transmute(Nan_Object_GetIsolate(exports.to_raw_ref())) });
+    pub fn initialize(exports: Handle<SomeObject>, init: fn(Module) -> Result<()>) {
+        let mut scope = RootScope::new(unsafe { mem::transmute(Nan_Object_GetIsolate(exports.to_raw())) });
         unsafe {
             let kernel: *mut c_void = mem::transmute(init);
             let callback: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = mem::transmute(module_body_callback);
-            let exports: &mut raw::Local = exports.to_raw_mut_ref();
+            let exports: raw::Local = exports.to_raw();
             let scope: *mut c_void = mem::transmute(&mut scope);
             Nanny_ExecModuleBody(kernel, callback, exports, scope);
         }
@@ -61,7 +61,7 @@ impl<'a> Module<'a> {
     }
 }
 
-extern "C" fn module_body_callback<'a>(body: fn(Module) -> Result<()>, exports: &'a mut Handle<'a, SomeObject>, scope: &'a mut RootScope<'a>) {
+extern "C" fn module_body_callback<'a>(body: fn(Module) -> Result<()>, exports: Handle<'a, SomeObject>, scope: &'a mut RootScope<'a>) {
     let _ = body(Module {
         exports: exports,
         scope: scope
@@ -90,17 +90,17 @@ impl<'a> Call<'a> {
 
     pub fn this<'b, T: Scope<'b>>(&self, _: &mut T) -> Handle<'b, SomeObject> {
         unsafe {
-            let mut result = zeroed::<SomeObject>();
-            Nan_FunctionCallbackInfo_This(mem::transmute(self.info), result.to_raw_mut_ref());
-            result
+            let mut local: raw::Local = mem::zeroed();
+            Nan_FunctionCallbackInfo_This(mem::transmute(self.info), &mut local);
+            Handle::new(SomeObject::from_raw(local))
         }
     }
 
     pub fn callee<'b, T: Scope<'b>>(&self, _: &mut T) -> Handle<'b, Function> {
         unsafe {
-            let mut result = zeroed::<Function>();
-            Nan_FunctionCallbackInfo_Callee(mem::transmute(self.info), result.to_raw_mut_ref());
-            result
+            let mut local: raw::Local = mem::zeroed();
+            Nan_FunctionCallbackInfo_Callee(mem::transmute(self.info), &mut local);
+            Handle::new(Function::from_raw(local))
         }
     }
 }
@@ -122,9 +122,9 @@ impl<'a> Arguments<'a> {
             return None;
         }
         unsafe {
-            let mut result = zeroed::<Value>();
-            Nan_FunctionCallbackInfo_Get(&self.info, i, result.to_raw_mut_ref());
-            Some(result)
+            let mut local: raw::Local = mem::zeroed();
+            Nan_FunctionCallbackInfo_Get(&self.info, i, &mut local);
+            Some(Handle::new(Value::from_raw(local)))
         }
     }
 
@@ -134,9 +134,9 @@ impl<'a> Arguments<'a> {
             return Err(Throw);
         }
         unsafe {
-            let mut result = zeroed::<Value>();
-            Nan_FunctionCallbackInfo_Get(&self.info, i, result.to_raw_mut_ref());
-            Ok(result)
+            let mut local: raw::Local = mem::zeroed();
+            Nan_FunctionCallbackInfo_Get(&self.info, i, &mut local);
+            Ok(Handle::new(Value::from_raw(local)))
         }
     }
 }

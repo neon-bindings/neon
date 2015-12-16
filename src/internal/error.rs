@@ -11,7 +11,7 @@ use scope::Scope;
 
 pub fn throw<'a, T: Any, U>(v: Handle<'a, T>) -> Result<U> {
     unsafe {
-        Nanny_ThrowAny(v.to_raw_ref());
+        Nanny_ThrowAny(v.to_raw());
     }
     Err(Throw)
 }
@@ -21,20 +21,12 @@ pub fn throw<'a, T: Any, U>(v: Handle<'a, T>) -> Result<U> {
 pub struct TypeError(raw::Local);
 
 impl AnyInternal for TypeError {
-    fn to_raw_mut_ref(&mut self) -> &mut raw::Local {
-        let &mut TypeError(ref mut local) = self;
-        local
-    }
-
-    fn to_raw_ref(&self) -> &raw::Local {
-        let &TypeError(ref local) = self;
-        local
-    }
+    fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { TypeError(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { Nanny_IsTypeError(other.to_raw_ref()) }
+        unsafe { Nanny_IsTypeError(other.to_raw()) }
     }
 }
 

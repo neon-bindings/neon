@@ -9,13 +9,9 @@ use internal::vm::{Result, Throw, JS, Isolate, CallbackInfo, Call, exec_function
 use internal::error::TypeError;
 
 pub trait AnyInternal: Copy {
-    fn to_raw_mut_ref(&mut self) -> &mut raw::Local;
+    fn to_raw(self) -> raw::Local;
 
-    fn to_raw_ref(&self) -> &raw::Local;
-
-    fn to_raw(&self) -> raw::Local {
-        self.to_raw_ref().clone()
-    }
+    fn from_raw(h: raw::Local) -> Self;
 
     fn is_typeof<Other: Any>(other: Other) -> bool;
 
@@ -27,22 +23,16 @@ pub trait AnyInternal: Copy {
         }
     }
 
-    fn cast<'a, 'b, T: Any, F: FnOnce(raw::Local) -> T>(&'a self, f: F) -> Handle<'b, T> {
-        Handle::new(f(self.to_raw_ref().clone()))
+    fn cast<'a, T: Any, F: FnOnce(raw::Local) -> T>(self, f: F) -> Handle<'a, T> {
+        Handle::new(f(self.to_raw()))
     }
-
-    fn from_raw(h: raw::Local) -> Self;
-}
-
-pub unsafe fn zeroed<'a, T: Any>() -> Handle<'a, T> {
-    Handle::new(T::from_raw(mem::zeroed()))
 }
 
 pub fn build<'a, T: Any, F: FnOnce(&mut raw::Local) -> bool>(init: F) -> JS<'a, T> {
     unsafe {
-        let mut result = zeroed::<T>();
-        if init(result.to_raw_mut_ref()) {
-            Ok(result)
+        let mut local: raw::Local = mem::zeroed();
+        if init(&mut local) {
+            Ok(Handle::new(T::from_raw(local)))
         } else {
             Err(Throw)
         }
@@ -66,11 +56,11 @@ impl<T: Object> SuperType<T> for SomeObject {
 }
 
 pub trait Any: AnyInternal {
-    fn to_string<'a, T: Scope<'a>>(&mut self, _: &mut T) -> JS<'a, String> {
-        build(|out| { unsafe { Nan_Value_ToString(out, self.to_raw_mut_ref()) } })
+    fn to_string<'a, T: Scope<'a>>(self, _: &mut T) -> JS<'a, String> {
+        build(|out| { unsafe { Nan_Value_ToString(out, self.to_raw()) } })
     }
 
-    fn value<'a, T: Scope<'a>>(&self, _: &mut T) -> Handle<'a, Value> {
+    fn value<'a, T: Scope<'a>>(self, _: &mut T) -> Handle<'a, Value> {
         Value::new_internal(self.to_raw())
     }
 }
@@ -96,15 +86,7 @@ pub struct Value(raw::Local);
 impl Any for Value { }
 
 impl AnyInternal for Value {
-    fn to_raw_ref(&self) -> &raw::Local {
-        let &Value(ref local) = self;
-        local
-    }
-
-    fn to_raw_mut_ref(&mut self) -> &mut raw::Local {
-        let &mut Value(ref mut local) = self;
-        local
-    }
+    fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { Value(h) }
 
@@ -114,8 +96,8 @@ impl AnyInternal for Value {
 }
 
 impl<'a> Handle<'a, Value> {
-    pub fn variant(&self) -> Variant<'a> {
-        match unsafe { Nanny_TagOf(self.to_raw_ref()) } {
+    pub fn variant(self) -> Variant<'a> {
+        match unsafe { Nanny_TagOf(self.to_raw()) } {
             Tag::Null => Variant::Null(Null::new()),
             Tag::Undefined => Variant::Undefined(Undefined::new()),
             Tag::Boolean => Variant::Boolean(Handle::new(Boolean(self.to_raw()))),
@@ -153,20 +135,12 @@ impl Undefined {
 impl Any for Undefined { }
 
 impl AnyInternal for Undefined {
-    fn to_raw_ref(&self) -> &raw::Local {
-        let &Undefined(ref local) = self;
-        local
-    }
-
-    fn to_raw_mut_ref(&mut self) -> &mut raw::Local {
-        let &mut Undefined(ref mut local) = self;
-        local
-    }
+    fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { Undefined(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { Nanny_IsUndefined(other.to_raw_ref()) }
+        unsafe { Nanny_IsUndefined(other.to_raw()) }
     }
 }
 
@@ -176,11 +150,11 @@ pub trait UndefinedInternal {
 
 impl UndefinedInternal for Undefined {
     fn new_internal<'a>() -> Handle<'a, Undefined> {
-        let mut result = unsafe { zeroed::<Undefined>() };
         unsafe {
-            Nan_NewUndefined(result.to_raw_mut_ref());
+            let mut local: raw::Local = mem::zeroed();
+            Nan_NewUndefined(&mut local);
+            Handle::new(Undefined(local))
         }
-        result
     }
 }
 
@@ -197,20 +171,12 @@ impl Null {
 impl Any for Null { }
 
 impl AnyInternal for Null {
-    fn to_raw_ref(&self) -> &raw::Local {
-        let &Null(ref local) = self;
-        local
-    }
-
-    fn to_raw_mut_ref(&mut self) -> &mut raw::Local {
-        let &mut Null(ref mut local) = self;
-        local
-    }
+    fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { Null(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { Nanny_IsNull(other.to_raw_ref()) }
+        unsafe { Nanny_IsNull(other.to_raw()) }
     }
 }
 
@@ -220,11 +186,11 @@ pub trait NullInternal {
 
 impl NullInternal for Null {
     fn new_internal<'a>() -> Handle<'a, Null> {
-        let mut result = unsafe { zeroed::<Null>() };
         unsafe {
-            Nan_NewNull(result.to_raw_mut_ref());
+            let mut local: raw::Local = mem::zeroed();
+            Nan_NewNull(&mut local);
+            Handle::new(Null(local))
         }
-        result
     }
 }
 
@@ -241,20 +207,12 @@ impl Boolean {
 impl Any for Boolean { }
 
 impl AnyInternal for Boolean {
-    fn to_raw_ref(&self) -> &raw::Local {
-        let &Boolean(ref local) = self;
-        local
-    }
-
-    fn to_raw_mut_ref(&mut self) -> &mut raw::Local {
-        let &mut Boolean(ref mut local) = self;
-        local
-    }
+    fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { Boolean(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { Nanny_IsBoolean(other.to_raw_ref()) }
+        unsafe { Nanny_IsBoolean(other.to_raw()) }
     }
 }
 
@@ -264,11 +222,11 @@ pub trait BooleanInternal {
 
 impl BooleanInternal for Boolean {
     fn new_internal<'a>(b: bool) -> Handle<'a, Boolean> {
-        let mut result = unsafe { zeroed::<Boolean>() };
         unsafe {
-            Nan_NewBoolean(result.to_raw_mut_ref(), b);
+            let mut local: raw::Local = mem::zeroed();
+            Nan_NewBoolean(&mut local, b);
+            Handle::new(Boolean(local))
         }
-        result
     }
 }
 
@@ -279,27 +237,19 @@ pub struct String(raw::Local);
 impl Any for String { }
 
 impl AnyInternal for String {
-    fn to_raw_ref(&self) -> &raw::Local {
-        let &String(ref local) = self;
-        local
-    }
-
-    fn to_raw_mut_ref(&mut self) -> &mut raw::Local {
-        let &mut String(ref mut local) = self;
-        local
-    }
+    fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { String(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { Nanny_IsString(other.to_raw_ref()) }
+        unsafe { Nanny_IsString(other.to_raw()) }
     }
 }
 
 impl String {
-    pub fn size(&self) -> isize {
+    pub fn size(self) -> isize {
         unsafe {
-            Nan_String_Utf8Length(self.to_raw_ref())
+            Nan_String_Utf8Length(self.to_raw())
         }
     }
 
@@ -350,10 +300,10 @@ impl StringInternal for String {
             None => { return None; }
         };
         unsafe {
-            let mut result = zeroed::<String>();
+            let mut local: raw::Local = mem::zeroed();
             // FIXME: this is currently traversing the string twice (see the note in the CStr::as_ptr docs)
-            if Nan_NewString(result.to_raw_mut_ref(), mem::transmute(isolate), ptr, len) {
-                Some(result)
+            if Nan_NewString(&mut local, mem::transmute(isolate), ptr, len) {
+                Some(Handle::new(String(local)))
             } else {
                 None
             }
@@ -375,20 +325,12 @@ impl Integer {
 impl Any for Integer { }
 
 impl AnyInternal for Integer {
-    fn to_raw_ref(&self) -> &raw::Local {
-        let &Integer(ref local) = self;
-        local
-    }
-
-    fn to_raw_mut_ref(&mut self) -> &mut raw::Local {
-        let &mut Integer(ref mut local) = self;
-        local
-    }
+    fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { Integer(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { Nanny_IsInteger(other.to_raw_ref()) }
+        unsafe { Nanny_IsInteger(other.to_raw()) }
     }
 }
 
@@ -398,11 +340,11 @@ pub trait IntegerInternal {
 
 impl IntegerInternal for Integer {
     fn new_internal<'a>(isolate: *mut Isolate, i: i32) -> Handle<'a, Integer> {
-        let mut result = unsafe { zeroed::<Integer>() };
         unsafe {
-            Nan_NewInteger(result.to_raw_mut_ref(), mem::transmute(isolate), i);
+            let mut local: raw::Local = mem::zeroed();
+            Nan_NewInteger(&mut local, mem::transmute(isolate), i);
+            Handle::new(Integer(local))
         }
-        result
     }
 }
 
@@ -419,20 +361,12 @@ impl Number {
 impl Any for Number { }
 
 impl AnyInternal for Number {
-    fn to_raw_ref(&self) -> &raw::Local {
-        let &Number(ref local) = self;
-        local
-    }
-
-    fn to_raw_mut_ref(&mut self) -> &mut raw::Local {
-        let &mut Number(ref mut local) = self;
-        local
-    }
+    fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { Number(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { Nanny_IsNumber(other.to_raw_ref()) }
+        unsafe { Nanny_IsNumber(other.to_raw()) }
     }
 }
 
@@ -442,11 +376,11 @@ pub trait NumberInternal {
 
 impl NumberInternal for Number {
     fn new_internal<'a>(isolate: *mut Isolate, v: f64) -> Handle<'a, Number> {
-        let mut result = unsafe { zeroed::<Number>() };
         unsafe {
-            Nan_NewNumber(result.to_raw_mut_ref(), mem::transmute(isolate), v);
+            let mut local: raw::Local = mem::zeroed();
+            Nan_NewNumber(&mut local, mem::transmute(isolate), v);
+            Handle::new(Number(local))
         }
-        result
     }
 }
 
@@ -457,72 +391,64 @@ pub struct SomeObject(raw::Local);
 impl Any for SomeObject { }
 
 impl AnyInternal for SomeObject {
-    fn to_raw_ref(&self) -> &raw::Local {
-        let &SomeObject(ref local) = self;
-        local
-    }
-
-    fn to_raw_mut_ref(&mut self) -> &mut raw::Local {
-        let &mut SomeObject(ref mut local) = self;
-        local
-    }
+    fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { SomeObject(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { Nanny_IsObject(other.to_raw_ref()) }
+        unsafe { Nanny_IsObject(other.to_raw()) }
     }
 }
 
 trait PropertyName {
-    unsafe fn get(self, out: &mut raw::Local, obj: &mut raw::Local) -> bool;
-    unsafe fn set(self, out: &mut bool, key: &mut raw::Local, val: &mut raw::Local) -> bool;
+    unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool;
+    unsafe fn set(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool;
 }
 
 impl PropertyName for u32 {
-    unsafe fn get(self, out: &mut raw::Local, obj: &mut raw::Local) -> bool {
+    unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool {
         Nan_Get_Index(out, obj, self)
     }
 
-    unsafe fn set(self, out: &mut bool, obj: &mut raw::Local, val: &mut raw::Local) -> bool {
+    unsafe fn set(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
         Nanny_Set_Index(out, obj, self, val)
     }
 }
 
 impl<'a, K: Any> PropertyName for Handle<'a, K> {
-    unsafe fn get(mut self, out: &mut raw::Local, obj: &mut raw::Local) -> bool {
-        Nan_Get(out, obj, self.to_raw_mut_ref())
+    unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool {
+        Nan_Get(out, obj, self.to_raw())
     }
 
-    unsafe fn set(mut self, out: &mut bool, obj: &mut raw::Local, val: &mut raw::Local) -> bool {
-        Nan_Set(out, obj, self.to_raw_mut_ref(), val)
+    unsafe fn set(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
+        Nan_Set(out, obj, self.to_raw(), val)
     }
 }
 
 impl<'a> PropertyName for &'a str {
-    unsafe fn get(self, out: &mut raw::Local, obj: &mut raw::Local) -> bool {
+    unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool {
         let (ptr, len) = lower_str_unwrap(self);
         Nanny_Get_Bytes(out, obj, ptr, len)
     }
 
-    unsafe fn set(self, out: &mut bool, obj: &mut raw::Local, val: &mut raw::Local) -> bool {
+    unsafe fn set(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
         let (ptr, len) = lower_str_unwrap(self);
         Nanny_Set_Bytes(out, obj, ptr, len, val)
     }
 }
 
 pub trait Object: Any {
-    fn get<'a, T: Scope<'a>, K: PropertyName>(&mut self, _: &mut T, key: K) -> Result<Handle<'a, Value>> {
-        build(|out| { unsafe { key.get(out, self.to_raw_mut_ref()) } })
+    fn get<'a, T: Scope<'a>, K: PropertyName>(self, _: &mut T, key: K) -> Result<Handle<'a, Value>> {
+        build(|out| { unsafe { key.get(out, self.to_raw()) } })
     }
 
-    fn get_own_property_names<'a, T: Scope<'a>>(&self, _: &mut T) -> JS<'a, Array> {
-        build(|out| { unsafe { Nan_GetOwnPropertyNames(out, self.to_raw_ref()) } })
+    fn get_own_property_names<'a, T: Scope<'a>>(self, _: &mut T) -> JS<'a, Array> {
+        build(|out| { unsafe { Nan_GetOwnPropertyNames(out, self.to_raw()) } })
     }
 
-    fn set<K: PropertyName, V: Any>(&mut self, key: K, mut val: Handle<V>) -> Result<bool> {
+    fn set<K: PropertyName, V: Any>(self, key: K, val: Handle<V>) -> Result<bool> {
         let mut result = false;
-        if unsafe { key.set(&mut result, self.to_raw_mut_ref(), val.to_raw_mut_ref()) } {
+        if unsafe { key.set(&mut result, self.to_raw(), val.to_raw()) } {
             Ok(result)
         } else {
             Err(Throw)
@@ -544,9 +470,9 @@ impl SomeObjectInternal for SomeObject {
 
     fn build<'a, F: FnOnce(&mut raw::Local)>(init: F) -> Handle<'a, SomeObject> {
         unsafe {
-            let mut result = zeroed::<SomeObject>();
-            init(result.to_raw_mut_ref());
-            result
+            let mut local: raw::Local = mem::zeroed();
+            init(&mut local);
+            Handle::new(SomeObject(local))
         }
     }
 }
@@ -571,20 +497,12 @@ impl Array {
 impl Any for Array { }
 
 impl AnyInternal for Array {
-    fn to_raw_ref(&self) -> &raw::Local {
-        let &Array(ref local) = self;
-        local
-    }
-
-    fn to_raw_mut_ref(&mut self) -> &mut raw::Local {
-        let &mut Array(ref mut local) = self;
-        local
-    }
+    fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { Array(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { Nanny_IsArray(other.to_raw_ref()) }
+        unsafe { Nanny_IsArray(other.to_raw()) }
     }
 }
 
@@ -594,16 +512,16 @@ pub trait ArrayInternal {
 
 impl ArrayInternal for Array {
     fn new_internal<'a>(isolate: *mut Isolate, len: u32) -> Handle<'a, Array> {
-        let mut result = unsafe { zeroed::<Array>() };
         unsafe {
-            Nan_NewArray(result.to_raw_mut_ref(), mem::transmute(isolate), len);
+            let mut local: raw::Local = mem::zeroed();
+            Nan_NewArray(&mut local, mem::transmute(isolate), len);
+            Handle::new(Array(local))
         }
-        result
     }
 }
 
 impl Array {
-    pub fn to_vec<'a, T: Scope<'a>>(&mut self, scope: &mut T) -> Result<Vec<Handle<'a, Value>>> {
+    pub fn to_vec<'a, T: Scope<'a>>(self, scope: &mut T) -> Result<Vec<Handle<'a, Value>>> {
         let mut result = Vec::with_capacity(self.len() as usize);
         let mut i = 0;
         loop {
@@ -617,9 +535,9 @@ impl Array {
         }
     }
 
-    pub fn len(&self) -> u32 {
+    pub fn len(self) -> u32 {
         unsafe {
-            Node_ArrayLength(self.to_raw_ref())
+            Node_ArrayLength(self.to_raw())
         }
     }
 }
@@ -648,7 +566,7 @@ extern "C" fn invoke_nanny_function<U: Any>(info: &CallbackInfo) {
     let mut scope = RootScope::new(unsafe { mem::transmute(Nan_FunctionCallbackInfo_GetIsolate(mem::transmute(info))) });
     exec_function_body(info, &mut scope, |call| {
         let data = info.data();
-        let kernel: fn(Call) -> JS<U> = unsafe { mem::transmute(Nanny_FunctionKernel(data.to_raw_ref())) };
+        let kernel: fn(Call) -> JS<U> = unsafe { mem::transmute(Nanny_FunctionKernel(data.to_raw())) };
         if let Ok(value) = kernel(call) {
             info.set_return(value);
         }
@@ -658,19 +576,11 @@ extern "C" fn invoke_nanny_function<U: Any>(info: &CallbackInfo) {
 impl Any for Function { }
 
 impl AnyInternal for Function {
-    fn to_raw_ref(&self) -> &raw::Local {
-        let &Function(ref local) = self;
-        local
-    }
-
-    fn to_raw_mut_ref(&mut self) -> &mut raw::Local {
-        let &mut Function(ref mut local) = self;
-        local
-    }
+    fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { Function(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { Nanny_IsFunction(other.to_raw_ref()) }
+        unsafe { Nanny_IsFunction(other.to_raw()) }
     }
 }

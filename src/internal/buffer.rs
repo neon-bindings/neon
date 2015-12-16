@@ -36,7 +36,7 @@ impl Buffer {
     pub fn data(&self) -> Buf {
         unsafe {
             let mut result = Buf::uninitialized();
-            Node_Buffer_Data(&mut result, self.to_raw_ref());
+            Node_Buffer_Data(&mut result, self.to_raw());
             result
         }
     }
@@ -53,20 +53,12 @@ impl Buffer {
 }
 
 impl AnyInternal for Buffer {
-    fn to_raw_mut_ref(&mut self) -> &mut raw::Local {
-        let &mut Buffer(ref mut local) = self;
-        local
-    }
-
-    fn to_raw_ref(&self) -> &raw::Local {
-        let &Buffer(ref local) = self;
-        local
-    }
+    fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { Buffer(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { Node_Buffer_Value_HasInstance(other.to_raw_ref()) }
+        unsafe { Node_Buffer_Value_HasInstance(other.to_raw()) }
     }
 }
 
