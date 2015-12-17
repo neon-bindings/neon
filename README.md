@@ -1,12 +1,12 @@
 # Neon
 
-<img align="right" src="neon.jpg" alt="neon"/>A Rust library providing a safe abstraction layer around the JavaScript engine for native Node.js modules.
+<img align="right" src="neon.jpg" alt="neon"/>A safe Rust abstraction layer for native Node.js modules.
 
 Neon protects all handles to the JavaScript heap, even when they're allocated on the Rust stack, ensuring that objects are always safely tracked by the garbage collector.
 
 # Example
 
-A complete example can be found in the [neon-demo](https://github.com/dherman/neon-demo) repository. The demo makes use of the [rust-bindings](https://www.npmjs.com/package/rust-bindings) npm package, which makes building a neon module as simple as adding a single line to `package.json`.
+A complete example can be found in the [neon-demo](https://github.com/dherman/neon-demo) repository. The demo makes use of the [rust-bindings](https://www.npmjs.com/package/rust-bindings) npm package, which makes building a Neon module as simple as adding a single line to `package.json`.
 
 ## A Node function in Rust
 
