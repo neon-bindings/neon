@@ -1,6 +1,6 @@
 {
   "name": "rust-bindings",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Automates the process of building a native Node module in Rust.",
   "author": "Dave Herman <dherman@mozilla.com>",
   "repository": {

@@ -35,7 +35,7 @@ case 'build':
     process.exit(1);
   }
   var build = require('../lib/build.js')(project(pwd),
-                                         args.rust || args.r || 'nightly', // ISSUE: https://github.com/dherman/rust-bindings/issues/2
+                                         args.rust || args.r || 'default',
                                          (args.debug || args.d) ? 'debug' : 'release');
   if (build.isStale()) {
     build.run();
