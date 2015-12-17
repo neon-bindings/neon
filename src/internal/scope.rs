@@ -3,7 +3,7 @@ use std::os::raw::c_void;
 use std::marker::PhantomData;
 use std::cell::RefCell;
 use neon_sys::raw;
-use neon_sys::{Nan_Nested, Nan_Chained, Nan_EscapableHandleScope_Escape};
+use neon_sys::{NeonSys_Nested, NeonSys_Chained, NeonSys_Escape};
 use internal::mem::{Handle, HandleInternal};
 use internal::value::Any;
 use internal::vm::Isolate;
@@ -48,7 +48,7 @@ impl<'a, 'outer> ChainedScope<'a, 'outer> {
     pub fn escape<T: Any>(&self, local: Handle<'a, T>) -> Handle<'outer, T> {
         unsafe {
             let mut result_local: raw::Local = mem::zeroed();
-            Nan_EscapableHandleScope_Escape(&mut result_local, self.v8, local.to_raw());
+            NeonSys_Escape(&mut result_local, self.v8, local.to_raw());
             Handle::new(T::from_raw(result_local))
         }
     }
@@ -120,7 +120,7 @@ fn chain<'a, T, S, F>(outer: &S, f: F) -> T
             let closure: *mut c_void = mem::transmute(closure);
             let callback: extern "C" fn(&mut c_void, *mut c_void, *mut c_void, *mut c_void) = mem::transmute(callback);
             let this: *mut c_void = mem::transmute(outer);
-            Nan_Chained(out, closure, callback, this);
+            NeonSys_Chained(out, closure, callback, this);
         }
         { *outer.active_cell().borrow_mut() = true; }
     }
@@ -143,7 +143,7 @@ fn nest<'me, T, S, F>(outer: &'me S, f: F) -> T
             let closure: *mut c_void = mem::transmute(closure);
             let callback: extern "C" fn(&mut c_void, *mut c_void, *mut c_void) = mem::transmute(callback);
             let isolate: *mut c_void = mem::transmute(outer.isolate());
-            Nan_Nested(out, closure, callback, isolate);
+            NeonSys_Nested(out, closure, callback, isolate);
         }
         { *outer.active_cell().borrow_mut() = true; }
     }

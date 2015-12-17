@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
-use neon_sys::Nanny_SameHandle;
+use neon_sys::NeonSys_SameHandle;
 use internal::value::{Any, AnyInternal, SuperType};
 use internal::error::TypeError;
 use internal::vm::JS;
@@ -14,7 +14,7 @@ pub struct Handle<'a, T: Any + 'a> {
 
 impl<'a, T: Any + 'a> PartialEq for Handle<'a, T> {
     fn eq(&self, other: &Self) -> bool {
-        unsafe { Nanny_SameHandle(self.to_raw(), other.to_raw()) }
+        unsafe { NeonSys_SameHandle(self.to_raw(), other.to_raw()) }
     }
 }
 
