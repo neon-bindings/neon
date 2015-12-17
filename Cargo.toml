@@ -1,11 +1,11 @@
 [package]
-name = "nanny"
+name = "neon"
 version = "0.0.9"
 authors = ["Dave Herman <dherman@mozilla.com>"]
-description = "Safe native abstractions for Node."
-repository = "https://github.com/dherman/nanny"
+description = "A safe abstraction layer for Node.js."
+repository = "https://github.com/dherman/neon"
 license = "MIT"
-exclude = ["silhouette.png"]
+exclude = ["neon.jpg"]
 
 [dependencies]
-nanny-sys = { version = "0.0.6", path = "crates/nanny-sys" }
+neon-sys = { version = "0.0.6", path = "crates/neon-sys" }

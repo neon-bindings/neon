@@ -1,8 +1,8 @@
 use std::mem;
 use std::ffi::CString;
 
-use nanny_sys::{Nanny_ThrowAny, Nanny_NewTypeError, Nanny_IsTypeError, Nanny_ThrowTypeError};
-use nanny_sys::raw;
+use neon_sys::{Nanny_ThrowAny, Nanny_NewTypeError, Nanny_IsTypeError, Nanny_ThrowTypeError};
+use neon_sys::raw;
 
 use internal::vm::{Throw, Result};
 use internal::value::{SomeObject, Any, AnyInternal, Object, build};

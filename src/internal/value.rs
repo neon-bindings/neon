@@ -1,8 +1,8 @@
 use std::mem;
 use std::os::raw::c_void;
 use std::ffi::{CString, CStr};
-use nanny_sys::raw;
-use nanny_sys::{Nan_NewObject, Nan_NewUndefined, Nan_NewNull, Nan_NewBoolean, Nan_NewInteger, Nan_NewString, Nan_NewNumber, Nan_NewArray, Node_ArrayLength, Nan_String_Utf8Length, Nan_Value_ToString, Nan_GetOwnPropertyNames, Nan_Get_Index, Nanny_Set_Index, Nan_Get, Nanny_Get_Bytes, Nanny_Set_Bytes, Nan_Set, Nanny_NewFunction, Nanny_FunctionKernel, Nan_FunctionCallbackInfo_GetIsolate, Nanny_IsUndefined, Nanny_IsNull, Nanny_IsInteger, Nanny_IsNumber, Nanny_IsString, Nanny_IsBoolean, Nanny_IsObject, Nanny_IsArray, Nanny_IsFunction, Nanny_TagOf, Tag};
+use neon_sys::raw;
+use neon_sys::{Nan_NewObject, Nan_NewUndefined, Nan_NewNull, Nan_NewBoolean, Nan_NewInteger, Nan_NewString, Nan_NewNumber, Nan_NewArray, Node_ArrayLength, Nan_String_Utf8Length, Nan_Value_ToString, Nan_GetOwnPropertyNames, Nan_Get_Index, Nanny_Set_Index, Nan_Get, Nanny_Get_Bytes, Nanny_Set_Bytes, Nan_Set, Nanny_NewFunction, Nanny_FunctionKernel, Nan_FunctionCallbackInfo_GetIsolate, Nanny_IsUndefined, Nanny_IsNull, Nanny_IsInteger, Nanny_IsNumber, Nanny_IsString, Nanny_IsBoolean, Nanny_IsObject, Nanny_IsArray, Nanny_IsFunction, Nanny_TagOf, Tag};
 use internal::mem::{Handle, HandleInternal};
 use internal::scope::{Scope, RootScope, RootScopeInternal};
 use internal::vm::{Result, Throw, JS, Isolate, CallbackInfo, Call, exec_function_body};

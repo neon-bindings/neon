@@ -1,0 +1,16 @@
+[package]
+name = "neon-sys"
+version = "0.0.6"
+authors = ["Dave Herman <dherman@mozilla.com>"]
+description = "Exposes Node and V8 C++ API's for use by Neon."
+repository = "https://github.com/dherman/neon"
+license = "MIT"
+
+# libneon.a gets linked in with this package
+links = "neon"
+
+# this script builds libneon.a
+build = "build.rs"
+
+[build-dependencies]
+gcc = "0.3"

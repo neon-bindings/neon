@@ -32,8 +32,8 @@ fn build_object_file() {
 fn link_library() {
     // Link the built object file into a static library.
     gcc::Config::new()
-        .object(object_path("nanny"))
-        .compile("libnanny.a");
+        .object(object_path("neon"))
+        .compile("libneon.a");
 }
 
 fn main() {

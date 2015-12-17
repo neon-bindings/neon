@@ -5,7 +5,7 @@ use std::os::raw::c_void;
 use raw::{FunctionCallbackInfo, EscapableHandleScope, Isolate, Local};
 use buf::Buf;
 
-// analog C enum `tag_t` defined in nanny.h
+// analog C enum `tag_t` defined in neon.h
 #[repr(C)]
 #[derive(PartialEq, Eq)]
 pub enum Tag {

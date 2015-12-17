@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
-use nanny_sys::Nanny_SameHandle;
+use neon_sys::Nanny_SameHandle;
 use internal::value::{Any, AnyInternal, SuperType};
 use internal::error::TypeError;
 use internal::vm::JS;

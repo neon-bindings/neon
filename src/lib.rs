@@ -1,4 +1,4 @@
-extern crate nanny_sys;
+extern crate neon_sys;
 
 mod internal;
 pub mod mem;
@@ -13,6 +13,6 @@ use internal::mem::Handle;
 use internal::value::SomeObject;
 
 #[no_mangle]
-pub extern "C" fn nanny_init(module: Handle<SomeObject>, init: fn(Module) -> Result<(), Throw>) {
+pub extern "C" fn neon_init(module: Handle<SomeObject>, init: fn(Module) -> Result<(), Throw>) {
     Module::initialize(module, init);
 }

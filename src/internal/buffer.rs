@@ -6,10 +6,10 @@ use vm::Throw;
 use internal::error::TypeError;
 use internal::value::{SomeObject, Any, AnyInternal, Object, build};
 use internal::mem::Handle;
-use nanny_sys::raw;
-use nanny_sys::{Nan_NewBuffer, Node_Buffer_Data, Node_Buffer_Value_HasInstance};
 use scope::Scope;
-use nanny_sys::buf::Buf;
+use neon_sys::raw;
+use neon_sys::{Nan_NewBuffer, Node_Buffer_Data, Node_Buffer_Value_HasInstance};
+use neon_sys::buf::Buf;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
