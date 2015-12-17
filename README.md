@@ -8,7 +8,7 @@ Neon protects all handles to the JavaScript heap, even when they're allocated on
 
 A complete example can be found in the [neon-demo](https://github.com/dherman/neon-demo) repository. The demo makes use of the [rust-bindings](https://www.npmjs.com/package/rust-bindings) npm package, which makes building a Neon module as simple as adding a single line to `package.json`.
 
-## A Node function in Rust
+## A simple Neon function
 
 A Neon function takes a `Call` object and produces either a handle to a value or the `Throw` constant (meaning a JS exception was thrown). The `Call` object provides access to a memory management scope, which safely manages the rooting of handles to garbage-collected JS values:
 
