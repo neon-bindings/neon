@@ -4,7 +4,7 @@ Automatically build and load native Rust/[Neon](https://github.com/dherman/neon)
 
 # Example
 
-See the [neon-demo](https://github.com/dherman/neon-demo) repository for a simple but complete example of a native Rust/[Neon](https://github.com/dherman/neon) module using `rust-bindings`.
+See the [neon-demo](https://github.com/dherman/neon-demo) repository for a simple but complete example of a native Rust/[Neon](https://github.com/dherman/neon) module built with `neon-bridge`.
 
 
 # Usage
@@ -22,19 +22,19 @@ Set up your project as both a node package and a Rust project. Rust source files
 
 ## package.json
 
-You should have `rust-bindings` in your dependencies, and a `postinstall` script set to run `rust-bindings build`. This will ensure that the necessary project boilerplate (the `binding.gyp` build manifest and top-level C++ addon file) are generated before publishing.
+You should have `neon-bridge` in your dependencies, and a `postinstall` script set to run `neon-bridge build`. This will ensure that the necessary project boilerplate (the `binding.gyp` build manifest and top-level C++ addon file) are generated before publishing.
 ```json
   ...
   "dependencies": {
-    "rust-bindings": "0.0.9"
+    "neon-bridge": "0.0.10"
   },
   "scripts": {
-    "postinstall": "rust-bindings build"
+    "postinstall": "neon-bridge build"
   }
   ...
 ```
 
-If you want a debug build, change the `postinstall` command to `"rust-bindings build --debug"`.
+If you want a debug build, change the `postinstall` command to `"neon-bridge build --debug"`.
 
 ## Building
 
@@ -44,13 +44,13 @@ Clients who depend on your native module, directly or indirectly, don't have to 
 
 ## Requiring
 
-You can easily require your native module from JS without having to specify the build directory; `rust-bindings` figures this out for you:
+You can easily require your native module from JS without having to specify the build directory; `neon-bridge` figures this out for you:
 
 ```javascript
-var my_native_module = require('rust-bindings')();
+var my_native_module = require('neon-bridge')();
 ```
 
-You can override defaults by passing an optional options object to the `rust-bindings` module:
+You can override defaults by passing an optional options object to the `neon-bridge` module:
 
 | Option    | Description   | Type     | Default                                                                  |
 | --------- | ------------- | -------- | ------------------------------------------------------------------------ |
@@ -76,7 +76,7 @@ Optional:
 
 * [multirust](https://github.com/brson/multirust#quick-installation)
 
-Install multirust if you want to use a different version of Rust than the system default. To use a non-default Rust version, change the `postinstall` command to `"rust-bindings build --rust <toolchain>"` where \<toolchain\> is the Rust toolchain you want multirust to use (e.g. "nightly").
+Install multirust if you want to use a different version of Rust than the system default. To use a non-default Rust version, change the `postinstall` command to `"neon-bridge build --rust <toolchain>"` where \<toolchain\> is the Rust toolchain you want multirust to use (e.g. "nightly").
 
 
 # Known Limitations
