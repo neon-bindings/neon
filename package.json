@@ -1,11 +1,11 @@
 {
-  "name": "rust-bindings",
-  "version": "0.0.9",
-  "description": "Automates the process of building a native Node module in Rust.",
+  "name": "neon-bridge",
+  "version": "0.0.10",
+  "description": "Build and load native Rust/Neon modules.",
   "author": "Dave Herman <dherman@mozilla.com>",
   "repository": {
     "type": "git",
-    "url": "http://github.com/dherman/rust-bindings.git"
+    "url": "http://github.com/dherman/neon-bridge.git"
   },
   "main": "lib/index.js",
   "bin": "./bin/cli.js",
@@ -20,7 +20,7 @@
     "toml": "2.3.0"
   },
   "bugs": {
-    "url": "https://github.com/dherman/rust-bindings/issues"
+    "url": "https://github.com/dherman/neon-bridge/issues"
   },
-  "homepage": "https://github.com/dherman/rust-bindings"
+  "homepage": "https://github.com/dherman/neon-bridge"
 }

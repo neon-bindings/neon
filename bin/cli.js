@@ -58,12 +58,12 @@ case 'generate':
 function printUsage() {
   console.log("Usage:");
   console.log();
-  console.log("  rust-bindings build [--rust|-r nightly|stable|default] [--debug|-d]");
+  console.log("  neon-bridge build [--rust|-r nightly|stable|default] [--debug|-d]");
   console.log("    build the native module");
   console.log();
-  console.log("  rust-bindings generate filename");
+  console.log("  neon-bridge generate filename");
   console.log("    generate the native module's C++ wrapper at filename");
   console.log();
-  console.log("  rust-bindings include-path");
+  console.log("  neon-bridge include-path");
   console.log("    print the path to the C++ include directory");
 }
