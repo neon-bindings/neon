@@ -4,10 +4,10 @@
 #include <stdio.h>
 
 extern "C" void node_main();
-extern "C" void nanny_init(v8::Local<v8::Object> module, void *f);
+extern "C" void neon_init(v8::Local<v8::Object> module, void *f);
 
-void __node_main__(v8::Local<v8::Object> module) {
-  nanny_init(module, (void *)node_main);
+void __neon_main__(v8::Local<v8::Object> module) {
+  neon_init(module, (void *)node_main);
 }
 
-NODE_MODULE({{project.name}}, __node_main__)
+NODE_MODULE({{project.name}}, __neon_main__)
