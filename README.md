@@ -10,7 +10,7 @@ A complete example can be found in the [neon-demo](https://github.com/dherman/ne
 
 ## A simple Neon function
 
-A Neon function takes a `Call` object and produces either a handle to a value or the `Throw` constant (meaning a JS exception was thrown). The `Call` object provides access to a memory management scope, which safely manages the rooting of handles to garbage-collected JS values:
+A Neon function takes a `Call` object and produces either a handle to a value or the `Throw` constant (meaning a JS exception was thrown). The `Call` object provides access to a memory management scope, which safely manages the rooting of handles to heap objects:
 
 ```rust
 fn make_an_array(call: Call) -> JS<Array> {
