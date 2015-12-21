@@ -1,8 +1,10 @@
 use std;
 use std::mem;
+use std::collections::HashSet;
 use std::os::raw::c_void;
 use neon_sys::raw;
 use neon_sys::{NeonSys_ExecFunctionBody, NeonSys_ExecModuleBody, NeonSys_Call_Data, NeonSys_Call_SetReturn, NeonSys_Call_Get, NeonSys_Call_Length, NeonSys_Object_GetIsolate, NeonSys_Call_IsConstruct, NeonSys_Call_This, NeonSys_Call_Callee};
+use neon_sys::buf::Buf;
 use internal::scope::{Scope, RootScope, RootScopeInternal};
 use internal::value::{Value, Any, AnyInternal, Object, SomeObject, Function};
 use internal::mem::{Handle, HandleInternal};
@@ -163,4 +165,57 @@ extern "C" fn function_body_callback<'a, F>(info: &'a CallbackInfo, body: Box<F>
         scope: scope,
         arguments: unsafe { mem::transmute(info) }
     });
+}
+
+pub struct LockState {
+    buffers: HashSet<usize>
+}
+
+impl LockState {
+    pub fn use_buffer(&mut self, buf: &Buf) {
+        let p = buf.as_ptr() as usize;
+        if !self.buffers.insert(p) {
+            panic!("attempt to lock heap with duplicate buffers (0x{:x})", p);
+        }
+    }
+}
+
+pub trait Lock {
+    type Internals;
+
+    unsafe fn expose(self, state: &mut LockState) -> Self::Internals;
+}
+
+// FIXME: make a macro to do this for tuples of many size
+
+impl<T, U> Lock for (T, U)
+    where T: Lock, U: Lock
+{
+    type Internals = (T::Internals, U::Internals);
+
+    unsafe fn expose(self, state: &mut LockState) -> Self::Internals {
+        (self.0.expose(state), self.1.expose(state))
+    }
+}
+
+// FIXME: generalize for all Iterator types?
+impl<T> Lock for Vec<T>
+    where T: Lock
+{
+    type Internals = Vec<T::Internals>;
+
+    unsafe fn expose(self, state: &mut LockState) -> Self::Internals {
+        self.into_iter()
+            .map(|x| x.expose(state))
+            .collect()
+    }
+}
+
+pub fn lock<T, F, U>(v: T, f: F) -> U
+    where T: Lock,
+          F: FnOnce(T::Internals) -> U + Send
+{
+    let mut state = LockState { buffers: HashSet::new() };
+    let internals = unsafe { v.expose(&mut state) };
+    f(internals)
 }

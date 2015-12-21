@@ -1,8 +1,9 @@
+use std;
 use std::mem;
 use std::os::raw::c_void;
 use std::ffi::{CString, CStr};
 use neon_sys::raw;
-use neon_sys::{NeonSys_NewObject, NeonSys_NewUndefined, NeonSys_NewNull, NeonSys_NewBoolean, NeonSys_NewInteger, NeonSys_NewString, NeonSys_NewNumber, NeonSys_NewArray, NeonSys_Array_Length, NeonSys_String_Utf8Length, NeonSys_Value_ToString, NeonSys_Object_GetOwnPropertyNames, NeonSys_Object_Get_Index, NeonSys_Object_Set_Index, NeonSys_Object_Get, NeonSys_Object_Get_Bytes, NeonSys_Object_Set_Bytes, NeonSys_Object_Set, NeonSys_NewFunction, NeonSys_FunctionKernel, NeonSys_Call_GetIsolate, NeonSys_IsUndefined, NeonSys_IsNull, NeonSys_IsInteger, NeonSys_IsNumber, NeonSys_IsString, NeonSys_IsBoolean, NeonSys_IsObject, NeonSys_IsArray, NeonSys_IsFunction, NeonSys_TagOf, Tag};
+use neon_sys::{NeonSys_NewObject, NeonSys_NewUndefined, NeonSys_NewNull, NeonSys_NewBoolean, NeonSys_NewInteger, NeonSys_NewString, NeonSys_NewNumber, NeonSys_NewArray, NeonSys_Array_Length, NeonSys_String_Utf8Length, NeonSys_String_Data, NeonSys_Value_ToString, NeonSys_Object_GetOwnPropertyNames, NeonSys_Object_Get_Index, NeonSys_Object_Set_Index, NeonSys_Object_Get, NeonSys_Object_Get_Bytes, NeonSys_Object_Set_Bytes, NeonSys_Object_Set, NeonSys_NewFunction, NeonSys_FunctionKernel, NeonSys_Call_GetIsolate, NeonSys_IsUndefined, NeonSys_IsNull, NeonSys_IsInteger, NeonSys_IsNumber, NeonSys_IsString, NeonSys_IsBoolean, NeonSys_IsObject, NeonSys_IsArray, NeonSys_IsFunction, NeonSys_TagOf, Tag};
 use internal::mem::{Handle, HandleInternal};
 use internal::scope::{Scope, RootScope, RootScopeInternal};
 use internal::vm::{Result, Throw, JS, Isolate, CallbackInfo, Call, exec_function_body};
@@ -250,6 +251,19 @@ impl String {
     pub fn size(self) -> isize {
         unsafe {
             NeonSys_String_Utf8Length(self.to_raw())
+        }
+    }
+
+    pub fn data(self) -> std::string::String {
+        unsafe {
+            // FIXME: use StringBytes::StorageSize instead?
+            // FIXME: audit all these isize -> usize casts
+            let capacity = NeonSys_String_Utf8Length(self.to_raw());
+            let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
+            let p = buffer.as_mut_ptr();
+            mem::forget(buffer);
+            let len = NeonSys_String_Data(p, capacity, self.to_raw());
+            std::string::String::from_raw_parts(p, len as usize, capacity as usize)
         }
     }
 

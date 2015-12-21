@@ -137,6 +137,10 @@ extern "C" int32_t NeonSys_String_Utf8Length(v8::Local<v8::String> str) {
   return str->Utf8Length();
 }
 
+extern "C" size_t NeonSys_String_Data(char *out, size_t len, v8::Local<v8::Value> str) {
+  return Nan::DecodeWrite(out, len, str, Nan::UTF8);
+}
+
 extern "C" bool NeonSys_Value_ToString(v8::Local<v8::String> *out, v8::Local<v8::Value> value) {
   Nan::MaybeLocal<v8::String> maybe = Nan::To<v8::String>(value);
   return maybe.ToLocal(out);

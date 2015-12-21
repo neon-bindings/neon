@@ -6,6 +6,7 @@ use vm::Throw;
 use internal::error::TypeError;
 use internal::value::{SomeObject, Any, AnyInternal, Object, build};
 use internal::mem::Handle;
+use internal::vm::{Lock, LockState};
 use scope::Scope;
 use neon_sys::raw;
 use neon_sys::{NeonSys_NewBuffer, NeonSys_Buffer_Data, NeonSys_IsBuffer};
@@ -15,6 +16,7 @@ use neon_sys::buf::Buf;
 #[derive(Clone, Copy)]
 pub struct Buffer(raw::Local);
 
+/*
 impl Index<usize> for Buffer {
     type Output = u8;
     fn index<'a>(&'a self, index: usize) -> &'a u8 {
@@ -27,12 +29,14 @@ impl IndexMut<usize> for Buffer {
         self.data().as_mut_slice().unwrap().index_mut(index)
     }
 }
+ */
 
 impl Buffer {
     pub fn new<'a, T: Scope<'a>>(_: &mut T, size: u32) -> Result<Handle<'a, SomeObject>, Throw> {
         build(|out| { unsafe { NeonSys_NewBuffer(out, size) } })
     }
 
+    /*
     pub fn data(&self) -> Buf {
         unsafe {
             let mut result = Buf::uninitialized();
@@ -50,6 +54,7 @@ impl Buffer {
             TypeError::throw::<()>("buffer contents are invalid UTF-8").err().unwrap()
         })
     }
+    */
 }
 
 impl AnyInternal for Buffer {
@@ -65,3 +70,14 @@ impl AnyInternal for Buffer {
 impl Any for Buffer { }
 
 impl Object for Buffer { }
+
+impl<'a> Lock for Handle<'a, Buffer> {
+    type Internals = Buf<'a>;
+
+    unsafe fn expose(self, state: &mut LockState) -> Self::Internals {
+        let mut result = Buf::uninitialized();
+        NeonSys_Buffer_Data(&mut result, self.to_raw());
+        state.use_buffer(&result);
+        result
+    }
+}

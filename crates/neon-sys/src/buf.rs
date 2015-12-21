@@ -2,6 +2,8 @@ use std::{ptr, slice};
 use std::marker::PhantomData;
 use std::mem;
 use std;
+use std::str;
+use std::str::Utf8Error;
 
 #[repr(C)]
 #[allow(raw_pointer_derive)]
@@ -29,7 +31,6 @@ impl<'a> Buf<'a> {
         }
     }
 
-    // FIXME: this is not legit; can't use unchecked without making this method unsafe
     pub fn as_str(self) -> Option<&'a str> {
         if self.ptr == ptr::null_mut() {
             return None;
@@ -37,7 +38,7 @@ impl<'a> Buf<'a> {
 
         unsafe {
             let s = slice::from_raw_parts(self.ptr as *const u8, self.len);
-            Some(std::str::from_utf8_unchecked(s))
+            str::from_utf8(s).ok()
         }
     }
 
@@ -61,6 +62,14 @@ impl<'a> Buf<'a> {
         }
     }
 
+    pub fn as_ptr(&self) -> *const u8 {
+        self.ptr
+    }
+
+    pub fn as_mut_ptr(&mut self) -> *mut u8 {
+        self.ptr
+    }
+
     pub fn len(&self) -> usize {
         self.len
     }
@@ -69,3 +78,5 @@ impl<'a> Buf<'a> {
         self.len = len;
     }
 }
+
+unsafe impl<'a> Sync for Buf<'a> { }

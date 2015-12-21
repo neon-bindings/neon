@@ -1,1 +1,1 @@
-pub use internal::mem::Handle;
+pub use internal::mem::{Handle, LockedHandle};

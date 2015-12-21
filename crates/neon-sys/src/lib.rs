@@ -76,6 +76,7 @@ extern "system" {
     // Strings
 
     pub fn NeonSys_String_Utf8Length(str: Local) -> isize;
+    pub fn NeonSys_String_Data(out: *mut u8, len: isize, str: Local) -> isize;
 
 
     // Arrays

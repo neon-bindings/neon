@@ -58,6 +58,7 @@ extern "C" {
   uint32_t NeonSys_Array_Length(v8::Local<v8::Array> array);
 
   int32_t NeonSys_String_Utf8Length(v8::Local<v8::String> str);
+  size_t NeonSys_String_Data(char *out, size_t len, v8::Local<v8::Value> str);
 
   bool NeonSys_Value_ToString(v8::Local<v8::String> *out, v8::Local<v8::Value> value);
   bool NeonSys_Value_ToObject(v8::Local<v8::Object> *out, v8::Local<v8::Value> *value);

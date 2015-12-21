@@ -3,13 +3,20 @@ use std::ops::{Deref, DerefMut};
 use neon_sys::NeonSys_SameHandle;
 use internal::value::{Any, AnyInternal, SuperType};
 use internal::error::TypeError;
-use internal::vm::JS;
+use internal::vm::{JS, Lock, LockState};
+use internal::scope::Scope;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct Handle<'a, T: Any + 'a> {
     value: T,
     phantom: PhantomData<&'a T>
+}
+
+impl<'a, T: Any + 'a> Handle<'a, T> {
+    pub fn lock(self) -> LockedHandle<'a, T> {
+        LockedHandle::new(self)
+    }
 }
 
 impl<'a, T: Any + 'a> PartialEq for Handle<'a, T> {
@@ -63,5 +70,27 @@ impl<'a, T: Any> Deref for Handle<'a, T> {
 impl<'a, T: Any> DerefMut for Handle<'a, T> {
     fn deref_mut<'b>(&'b mut self) -> &'b mut T {
         &mut self.value
+    }
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct LockedHandle<'a, T: Any + 'a>(Handle<'a, T>);
+
+unsafe impl<'a, T: Any + 'a> Sync for LockedHandle<'a, T> { }
+
+impl<'a, T: Any + 'a> LockedHandle<'a, T> {
+    pub fn new(h: Handle<'a, T>) -> LockedHandle<'a, T> {
+        LockedHandle(h)
+    }
+
+    pub fn unlock<'b, U: Scope<'b>>(self, _: &mut U) -> Handle<'a, T> { self.0 }
+}
+
+impl<'a, T: Any> Lock for LockedHandle<'a, T> {
+    type Internals = LockedHandle<'a, T>;
+
+    unsafe fn expose(self, _: &mut LockState) -> Self::Internals {
+        self
     }
 }
