@@ -1,9 +1,4 @@
-use std::ops::{Index, IndexMut};
-use std::str;
-use std::str::Utf8Error;
-
 use vm::Throw;
-use internal::error::TypeError;
 use internal::value::{SomeObject, Any, AnyInternal, Object, build};
 use internal::mem::Handle;
 use internal::vm::{Lock, LockState};

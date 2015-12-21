@@ -1,9 +1,7 @@
 use std::{ptr, slice};
 use std::marker::PhantomData;
 use std::mem;
-use std;
 use std::str;
-use std::str::Utf8Error;
 
 #[repr(C)]
 #[allow(raw_pointer_derive)]
