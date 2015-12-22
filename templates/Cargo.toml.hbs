@@ -1,0 +1,12 @@
+[package]
+name = "{{project.name}}"
+version = "{{project.version}}"
+{{#if project.author}}
+authors = ["{{project.author}}{{#if project.email}} <{{project.email}}>{{/if}}"]
+{{/if}}
+{{#if project.license}}
+license = "{{project.license}}"
+{{/if}}
+
+[dependencies]
+neon = "0.1"

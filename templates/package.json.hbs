@@ -1,0 +1,27 @@
+{
+  "name": "{{project.name}}",
+  "version": "{{project.version}}",
+  "description": "{{project.description}}",
+  "main": "{{project.node}}",
+{{#if project.git}}
+  "repository": {
+    "type": "git",
+    "url": "{{project.git}}"
+  },
+{{/if}}
+{{#if project.keywords}}
+  "keywords": "{{project.keywords}}",
+{{/if}}
+  "scripts": {
+    "postinstall": "neon-bridge build"
+  },
+{{#if project.author}}
+  "author": "{{project.author}}{{#if project.email}} <{{project.email}}>{{/if}}",
+{{/if}}
+{{#if project.license}}
+  "license": "{{project.license}}",
+{{/if}}
+  "dependencies": {
+    "neon-bridge": "^{{neon-bridge.major}}.{{neon-bridge.minor}}.{{neon-bridge.patch}}"
+  }
+}
