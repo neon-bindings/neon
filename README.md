@@ -1,50 +1,32 @@
-# Rust Bindings
+# Neon-Bridge
 
 Automatically build and load native Rust/[Neon](https://github.com/dherman/neon) modules.
 
-# Example
+![Screencast](screencast.gif)
 
-See the [neon-demo](https://github.com/dherman/neon-demo) repository for a simple but complete example of a native Rust/[Neon](https://github.com/dherman/neon) module built with `neon-bridge`.
+# Getting started
 
-
-# Usage
-
-## Project Structure
-
-Set up your project as both a node package and a Rust project. Rust source files go in `src` as usual and Node source files go wherever you like, such as the root directory or the `lib` directory:
+Install `neon-bridge` as a global package:
 
 ```
-├── package.json
-├── Cargo.toml
-├── src/
-└── lib/
+npm install -g neon-bridge
 ```
 
-## package.json
+To create a new Neon project, use `neon-bridge new`:
 
-You should have `neon-bridge` in your dependencies, and a `postinstall` script set to run `neon-bridge build`. This will ensure that the necessary project boilerplate (the `binding.gyp` build manifest and top-level C++ addon file) are generated before publishing.
-```json
-  ...
-  "dependencies": {
-    "neon-bridge": "0.0.10"
-  },
-  "scripts": {
-    "postinstall": "neon-bridge build"
-  }
-  ...
+```
+neon-bridge new my-project
 ```
 
-If you want a debug build, change the `postinstall` command to `"neon-bridge build --debug"`.
+This will ask you a bunch of questions, and then generate a project skeleton for you. Follow the instructions from there to build and run your project!
 
-## Building
+# Requirements
 
-Build your native module simply by running `npm install` from the project directory.
+So far `neon-bridge` is only working on OS X. You'll need [XCode](https://developer.apple.com/xcode/download/), Node v4 or later, and Rust 1.5 or later.
 
-Clients who depend on your native module, directly or indirectly, don't have to do anything special. (However, they do have to have the required build tools installed on their machine. Hopefully we can improve this situation in the future.)
+# Detailed Docs
 
-## Requiring
-
-You can easily require your native module from JS without having to specify the build directory; `neon-bridge` figures this out for you:
+## API
 
 ```javascript
 var my_native_module = require('neon-bridge')();
@@ -58,26 +40,28 @@ You can override defaults by passing an optional options object to the `neon-bri
 | name      | library name  | string   | parse($manifest).package.name                                            |
 | manifest  | manifest path | path     | $root/Cargo.toml                                                         |
 
+## CLI
 
-# Setup
+### neon-bridge new
 
-**Note: this is currently only working on OS X.**
-
-### OS X
-
-* [XCode](https://developer.apple.com/xcode/download/)
-* Node: v4 or later. I recommend using [nvm](https://github.com/creationix/nvm#install-script):
+Creates a new Neon project skeleton.
 
 ```
-% nvm install 4
+neon-bridge new name
 ```
 
-Optional:
+The `name` is the project name and the name of the subdirectory of the current working directory that will be created.
 
-* [multirust](https://github.com/brson/multirust#quick-installation)
+### neon-bridge build
 
-Install multirust if you want to use a different version of Rust than the system default. To use a non-default Rust version, change the `postinstall` command to `"neon-bridge build --rust <toolchain>"` where \<toolchain\> is the Rust toolchain you want multirust to use (e.g. "nightly").
+Builds a Neon project. This command should be part of the `postinstall` script in your `package.json`, which is automatically set up by `neon-bridge new`.
 
+```
+neon-bridge build [--rust toolchain] [--debug]
+```
+
+* --rust: Use this to specify that [multirust](https://github.com/brson/multirust) should be used instead of the system default Rust installation. The `toolchain` parameter is passed to multirust as the Rust toolchain to use for all build commands.
+* --debug: Use this to create a debug build.
 
 # Known Limitations
 
