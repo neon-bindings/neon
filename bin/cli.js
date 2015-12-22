@@ -51,12 +51,24 @@ case 'generate':
   var addon = require('../lib/addon.js')(project(pwd));
   addon.generate(args._[0]);
   break;
+
+case 'new':
+  if (args._.length !== 0 && args._.length !== 1) {
+    printUsage();
+    process.exit(1);
+  }
+  var create = require('../lib/create.js');
+  create(pwd, args._[0] || '.');
+  break;
 }
 
 // FIXME: allow the build command to take a --manifest path and a --name string
 
 function printUsage() {
   console.log("Usage:");
+  console.log();
+  console.log("  neon-bridge new [dirname]");
+  console.log("    create a new neon project");
   console.log();
   console.log("  neon-bridge build [--rust|-r nightly|stable|default] [--debug|-d]");
   console.log("    build the native module");

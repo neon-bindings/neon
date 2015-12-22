@@ -1,6 +1,6 @@
 {
   "name": "neon-bridge",
-  "version": "0.0.10",
+  "version": "0.1.0",
   "description": "Build and load native Rust/Neon modules.",
   "author": "Dave Herman <dherman@mozilla.com>",
   "repository": {
@@ -14,9 +14,12 @@
     "bindings": "1.2.1",
     "find": "^0.2.3",
     "handlebars": "^4.0.3",
+    "inquirer": "^0.11.0",
     "minimist": "^1.2.0",
+    "mkdirp": "^0.5.1",
     "nan": "2.0.8",
     "node-gyp": "3.0.3",
+    "semver": "^5.1.0",
     "toml": "2.3.0"
   },
   "bugs": {
