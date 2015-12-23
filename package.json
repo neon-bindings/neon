@@ -1,11 +1,11 @@
 {
-  "name": "neon-bridge",
-  "version": "0.1.1",
+  "name": "neon-cli",
+  "version": "0.1.0",
   "description": "Build and load native Rust/Neon modules.",
   "author": "Dave Herman <dherman@mozilla.com>",
   "repository": {
     "type": "git",
-    "url": "http://github.com/dherman/neon-bridge.git"
+    "url": "http://github.com/dherman/neon-cli.git"
   },
   "main": "lib/index.js",
   "bin": "./bin/cli.js",
@@ -23,7 +23,7 @@
     "toml": "2.3.0"
   },
   "bugs": {
-    "url": "https://github.com/dherman/neon-bridge/issues"
+    "url": "https://github.com/dherman/neon-cli/issues"
   },
-  "homepage": "https://github.com/dherman/neon-bridge"
+  "homepage": "https://github.com/dherman/neon-cli"
 }
