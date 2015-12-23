@@ -4,7 +4,7 @@ var bindings = require('bindings');
 var path = require('path');
 var fs = require('fs');
 var minimist = require('minimist');
-var project = require('../lib/project.js');
+var project = require('neon-bridge').project;
 
 function fileExists(filename) {
   try {
@@ -53,12 +53,12 @@ case 'generate':
   break;
 
 case 'new':
-  if (args._.length !== 0 && args._.length !== 1) {
+  if (args._.length !== 1) {
     printUsage();
     process.exit(1);
   }
   var create = require('../lib/create.js');
-  create(pwd, args._[0] || '.');
+  create(pwd, args._[0]);
   break;
 }
 
@@ -67,15 +67,15 @@ case 'new':
 function printUsage() {
   console.log("Usage:");
   console.log();
-  console.log("  neon-bridge new [dirname]");
-  console.log("    create a new neon project");
+  console.log("  neon new name");
+  console.log("    create a new Neon project");
   console.log();
-  console.log("  neon-bridge build [--rust|-r nightly|stable|default] [--debug|-d]");
-  console.log("    build the native module");
+  console.log("  neon build [--rust|-r nightly|stable|default] [--debug|-d]");
+  console.log("    build a Neon native module");
   console.log();
-  console.log("  neon-bridge generate filename");
+  console.log("  neon generate filename");
   console.log("    generate the native module's C++ wrapper at filename");
   console.log();
-  console.log("  neon-bridge include-path");
+  console.log("  neon include-path");
   console.log("    print the path to the C++ include directory");
 }

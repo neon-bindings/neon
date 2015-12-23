@@ -24,25 +24,9 @@ This will ask you a bunch of questions, and then generate a project skeleton for
 
 So far Neon is only working on OS X. You'll need [XCode](https://developer.apple.com/xcode/download/), Node v4 or later, and Rust 1.5 or later.
 
-# Detailed Docs
+# Commands
 
-## API
-
-```javascript
-var myNeonModule = require('neon-cli').load();
-```
-
-You can override defaults by passing an optional options object to `load`:
-
-| Option    | Description   | Type     | Default                                                                  |
-| --------- | ------------- | -------- | ------------------------------------------------------------------------ |
-| root      | project root  | string   | nearest containing directory of caller with package.json or node_modules |
-| name      | library name  | string   | parse($manifest).package.name                                            |
-| manifest  | manifest path | path     | $root/Cargo.toml                                                         |
-
-## CLI
-
-### neon new
+## neon new
 
 Creates a new Neon project skeleton.
 
@@ -52,7 +36,7 @@ neon new name
 
 The `name` is the project name and the name of the subdirectory of the current working directory that will be created.
 
-### neon build
+## neon build
 
 Builds a Neon project. This command should be part of the `postinstall` script in your `package.json`, which is automatically set up by `neon new`.
 
@@ -60,8 +44,8 @@ Builds a Neon project. This command should be part of the `postinstall` script i
 neon build [--rust toolchain] [--debug]
 ```
 
-* --rust: Use this to specify that [multirust](https://github.com/brson/multirust) should be used instead of the system default Rust installation. The `toolchain` parameter is passed to multirust as the Rust toolchain to use for all build commands.
-* --debug: Use this to create a debug build.
+* `--rust`: Use this to specify that [multirust](https://github.com/brson/multirust) should be used instead of the system default Rust installation. The `toolchain` parameter is passed to multirust as the Rust toolchain to use for all build commands.
+* `--debug`: Use this to create a debug build.
 
 # Known Limitations
 

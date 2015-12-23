@@ -35,7 +35,7 @@ Required context:
 
         "sources": ["<(INTERMEDIATE_DIR)/binding.cc"],      {{~! built client-side }}
 
-        "include_dirs": ["<!(neon-bridge include-path)"],   {{~! computed client-side }}
+        "include_dirs": ["<!(neon include-path)"],          {{~! computed client-side }}
 
         "libraries": ["../<(shared_lib)"],                  {{~! gyp weirdly determines libraries from a subdirectory so ../ is needed }}
 
@@ -54,7 +54,7 @@ Required context:
             "action_name": "generate",
             "inputs": [],
             "outputs": ["<(INTERMEDIATE_DIR)/binding.cc"],
-            "action": ["neon-bridge", "generate", "<(INTERMEDIATE_DIR)/binding.cc"]
+            "action": ["neon", "generate", "<(INTERMEDIATE_DIR)/binding.cc"]
         }]
     }]
 
