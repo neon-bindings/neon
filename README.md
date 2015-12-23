@@ -41,6 +41,18 @@ fn make_an_array(call: Call) -> JS<Array> {
 
 For a more complete demonstration, try building a hello world with `neon new`, or check out the slightly bigger [word count demo](https://github.com/dherman/wc-demo).
 
+# Help Wanted
+
+I'm looking for collaborators! I've created a `#NeonNode` IRC channel on freenode. Come play :)
+
+# Known Limitations
+
+* I've only gotten this working on OS X.
+* Currently, downstream clients of a native Rust module have to have Rust installed on their system in order to build it.
+* There's no way to fallback on [precompiled](https://github.com/mapbox/node-pre-gyp) or [portable](http://insertafter.com/en/blog/native-node-module.html) implementations.
+
+I would love to work with people on fixing these limitations!
+
 # License
 
 MIT
