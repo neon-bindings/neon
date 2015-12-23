@@ -13,6 +13,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "neon-bridge": "^0.1.2",
     "bindings": "1.2.1",
     "find": "^0.2.3",
     "handlebars": "^4.0.3",
