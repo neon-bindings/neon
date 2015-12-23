@@ -43,7 +43,7 @@ For a more complete demonstration, try building a hello world with `neon new`, o
 
 # Help Wanted
 
-I'm looking for collaborators! I've created a `#NeonNode` IRC channel on freenode. Come play :)
+I'm looking for collaborators! I've created a [community slack](http://neon-bridge.slack.com) and a `#neon-bridge` IRC channel on freenode. Come play :)
 
 # Known Limitations
 
