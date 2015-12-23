@@ -4,11 +4,27 @@
 
 Neon protects all handles to the JavaScript heap, even when they're allocated on the Rust stack, ensuring that objects are always safely tracked by the garbage collector.
 
-# Example
+# Getting started
 
-A complete example can be found in the [neon-demo](https://github.com/dherman/neon-demo) repository. The demo makes use of the [rust-bindings](https://www.npmjs.com/package/rust-bindings) npm package, which makes building a Neon module as simple as adding a single line to `package.json`.
+Install [neon-cli](https://github.com/dherman/neon-cli) as a global npm package:
 
-## A simple Neon function
+```
+npm install -g neon-cli
+```
+
+To create a new Neon project, use `neon new`:
+
+```
+neon new my-project
+```
+
+This will ask you a few questions and then generate a project skeleton for you. Follow the instructions from there to build and run your project!
+
+# Requirements
+
+So far Neon is only working on OS X. You'll need [XCode](https://developer.apple.com/xcode/download/), Node v4 or later, and Rust 1.5 or later.
+
+# A Taste...
 
 A Neon function takes a `Call` object and produces either a handle to a value or the `Throw` constant (meaning a JS exception was thrown). The `Call` object provides access to a memory management scope, which safely manages the rooting of handles to heap objects:
 
@@ -22,6 +38,8 @@ fn make_an_array(call: Call) -> JS<Array> {
     Ok(array)
 }
 ```
+
+For a more complete demonstration, try building a hello world with `neon new`, or check out the slightly bigger [word count demo](https://github.com/dherman/wc-demo).
 
 # License
 
