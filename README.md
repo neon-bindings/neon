@@ -18,7 +18,7 @@ To create a new Neon project, use `neon new`:
 neon new my-project
 ```
 
-This will ask you a bunch of questions, and then generate a project skeleton for you. Follow the instructions from there to build and run your project!
+This will ask you a few questions and then generate a project skeleton for you. Follow the instructions from there to build and run your project!
 
 # Requirements
 
