@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-var bindings = require('bindings');
 var path = require('path');
 var fs = require('fs');
 var minimist = require('minimist');
@@ -24,6 +23,10 @@ var args = minimist(process.argv.slice(3));
 var pwd = process.cwd();
 
 switch (command) {
+case 'help':
+  printUsage();
+  break;
+
 case 'include-path':
   require('nan');
   break;
@@ -73,9 +76,7 @@ function printUsage() {
   console.log("  neon build [--rust|-r nightly|stable|default] [--debug|-d]");
   console.log("    build a Neon native module");
   console.log();
-  console.log("  neon generate filename");
-  console.log("    generate the native module's C++ wrapper at filename");
+  console.log("  neon help");
+  console.log("    print this usage information");
   console.log();
-  console.log("  neon include-path");
-  console.log("    print the path to the C++ include directory");
 }
