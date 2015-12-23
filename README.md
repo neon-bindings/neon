@@ -49,7 +49,7 @@ neon build [--rust toolchain] [--debug]
 
 # Help Wanted
 
-I'm looking for collaborators! I've created a `#NeonNode` IRC channel on freenode. Come play :)
+I'm looking for collaborators! I've created a [community slack](http://neon-bridge.slack.com) and a `#neon-bridge` IRC channel on freenode. Come play :)
 
 # Known Limitations
 
