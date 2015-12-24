@@ -2,8 +2,8 @@ use std;
 use std::mem;
 use std::collections::HashSet;
 use std::os::raw::c_void;
+use neon_sys;
 use neon_sys::raw;
-use neon_sys::{NeonSys_ExecFunctionBody, NeonSys_ExecModuleBody, NeonSys_Call_Data, NeonSys_Call_SetReturn, NeonSys_Call_Get, NeonSys_Call_Length, NeonSys_Object_GetIsolate, NeonSys_Call_IsConstruct, NeonSys_Call_This, NeonSys_Call_Callee};
 use neon_sys::buf::Buf;
 use internal::scope::{Scope, RootScope, RootScopeInternal};
 use internal::value::{Value, Any, AnyInternal, Object, SomeObject, Function};
@@ -25,14 +25,14 @@ impl CallbackInfo {
     pub fn data<'a>(&self) -> Handle<'a, Value> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            NeonSys_Call_Data(&self.info, &mut local);
+            neon_sys::call::Data(&self.info, &mut local);
             Handle::new(Value::from_raw(local))
         }
     }
 
     pub fn set_return<'a, 'b, T: Any>(&'a self, value: Handle<'b, T>) {
         unsafe {
-            NeonSys_Call_SetReturn(&self.info, value.to_raw())
+            neon_sys::call::SetReturn(&self.info, value.to_raw())
         }
     }
 }
@@ -44,13 +44,13 @@ pub struct Module<'a> {
 
 impl<'a> Module<'a> {
     pub fn initialize(exports: Handle<SomeObject>, init: fn(Module) -> Result<()>) {
-        let mut scope = RootScope::new(unsafe { mem::transmute(NeonSys_Object_GetIsolate(exports.to_raw())) });
+        let mut scope = RootScope::new(unsafe { mem::transmute(neon_sys::object::GetIsolate(exports.to_raw())) });
         unsafe {
             let kernel: *mut c_void = mem::transmute(init);
             let callback: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = mem::transmute(module_body_callback);
             let exports: raw::Local = exports.to_raw();
             let scope: *mut c_void = mem::transmute(&mut scope);
-            NeonSys_ExecModuleBody(kernel, callback, exports, scope);
+            neon_sys::module::ExecBody(kernel, callback, exports, scope);
         }
     }
 }
@@ -83,7 +83,7 @@ pub enum CallKind {
 
 impl<'a> Call<'a> {
     pub fn kind(&self) -> CallKind {
-        if unsafe { NeonSys_Call_IsConstruct(mem::transmute(self.info)) } {
+        if unsafe { neon_sys::call::IsConstruct(mem::transmute(self.info)) } {
             CallKind::Construct
         } else {
             CallKind::Call
@@ -93,7 +93,7 @@ impl<'a> Call<'a> {
     pub fn this<'b, T: Scope<'b>>(&self, _: &mut T) -> Handle<'b, SomeObject> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            NeonSys_Call_This(mem::transmute(self.info), &mut local);
+            neon_sys::call::This(mem::transmute(self.info), &mut local);
             Handle::new(SomeObject::from_raw(local))
         }
     }
@@ -101,7 +101,7 @@ impl<'a> Call<'a> {
     pub fn callee<'b, T: Scope<'b>>(&self, _: &mut T) -> Handle<'b, Function> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            NeonSys_Call_Callee(mem::transmute(self.info), &mut local);
+            neon_sys::call::Callee(mem::transmute(self.info), &mut local);
             Handle::new(Function::from_raw(local))
         }
     }
@@ -115,7 +115,7 @@ pub struct Arguments<'a> {
 impl<'a> Arguments<'a> {
     pub fn len(&self) -> i32 {
         unsafe {
-            NeonSys_Call_Length(&self.info)
+            neon_sys::call::Length(&self.info)
         }
     }
 
@@ -125,7 +125,7 @@ impl<'a> Arguments<'a> {
         }
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            NeonSys_Call_Get(&self.info, i, &mut local);
+            neon_sys::call::Get(&self.info, i, &mut local);
             Some(Handle::new(Value::from_raw(local)))
         }
     }
@@ -137,7 +137,7 @@ impl<'a> Arguments<'a> {
         }
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            NeonSys_Call_Get(&self.info, i, &mut local);
+            neon_sys::call::Get(&self.info, i, &mut local);
             Ok(Handle::new(Value::from_raw(local)))
         }
     }
@@ -153,7 +153,7 @@ pub fn exec_function_body<'a, F>(info: &'a CallbackInfo, scope: &'a mut RootScop
         let callback: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = mem::transmute(callback);
         let info: &c_void = mem::transmute(info);
         let scope: *mut c_void = mem::transmute(scope);
-        NeonSys_ExecFunctionBody(closure, callback, info, scope);
+        neon_sys::fun::ExecBody(closure, callback, info, scope);
     }
 }
 

@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
-use neon_sys::NeonSys_SameHandle;
+use neon_sys;
 use internal::value::{Any, AnyInternal, SuperType};
 use internal::error::TypeError;
 use internal::vm::{JS, Lock, LockState};
@@ -21,7 +21,7 @@ impl<'a, T: Any + 'a> Handle<'a, T> {
 
 impl<'a, T: Any + 'a> PartialEq for Handle<'a, T> {
     fn eq(&self, other: &Self) -> bool {
-        unsafe { NeonSys_SameHandle(self.to_raw(), other.to_raw()) }
+        unsafe { neon_sys::mem::SameHandle(self.to_raw(), other.to_raw()) }
     }
 }
 
