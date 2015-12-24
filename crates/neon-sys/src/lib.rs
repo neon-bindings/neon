@@ -67,8 +67,8 @@ extern "system" {
     pub fn NeonSys_Object_GetIsolate(obj: Local) -> *mut Isolate;
     pub fn NeonSys_Object_Get_Index(out: &mut Local, object: Local, index: u32) -> bool;
     pub fn NeonSys_Object_Set_Index(out: &mut bool, object: Local, index: u32, val: Local) -> bool;
-    pub fn NeonSys_Object_Get_Bytes(out: &mut Local, object: Local, key: *const u8, len: i32) -> bool;
-    pub fn NeonSys_Object_Set_Bytes(out: &mut bool, object: Local, key: *const u8, len: i32, val: Local) -> bool;
+    pub fn NeonSys_Object_Get_String(out: &mut Local, object: Local, key: *const u8, len: i32) -> bool;
+    pub fn NeonSys_Object_Set_String(out: &mut bool, object: Local, key: *const u8, len: i32, val: Local) -> bool;
     pub fn NeonSys_Object_Get(out: &mut Local, object: Local, key: Local) -> bool;
     pub fn NeonSys_Object_Set(out: &mut bool, object: Local, key: Local, val: Local) -> bool;
 
