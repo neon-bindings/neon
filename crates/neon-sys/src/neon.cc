@@ -70,7 +70,7 @@ extern "C" void NeonSys_NewInteger(v8::Local<v8::Integer> *out, v8::Isolate *iso
 }
 
 extern "C" bool NeonSys_NewString(v8::Local<v8::String> *out, v8::Isolate *isolate, const uint8_t *data, int32_t len) {
-  Nan::MaybeLocal<v8::String> maybe = v8::String::NewFromOneByte(isolate, data, v8::NewStringType::kNormal, len);
+  Nan::MaybeLocal<v8::String> maybe = v8::String::NewFromUtf8(isolate, (const char*)data, v8::NewStringType::kNormal, len);
   return maybe.ToLocal(out);
 }
 
@@ -92,9 +92,9 @@ extern "C" bool NeonSys_Object_Set_Index(bool *out, v8::Local<v8::Object> object
   return maybe.IsJust() && (*out = maybe.FromJust(), true);
 }
 
-extern "C" bool NeonSys_Object_Get_Bytes(v8::Local<v8::Value> *out, v8::Local<v8::Object> obj, const uint8_t *data, int32_t len) {
+extern "C" bool NeonSys_Object_Get_String(v8::Local<v8::Value> *out, v8::Local<v8::Object> obj, const uint8_t *data, int32_t len) {
   Nan::HandleScope scope;
-  Nan::MaybeLocal<v8::String> maybe_key = v8::String::NewFromOneByte(v8::Isolate::GetCurrent(), data, v8::NewStringType::kNormal, len);
+  Nan::MaybeLocal<v8::String> maybe_key = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), (const char*)data, v8::NewStringType::kNormal, len);
   v8::Local<v8::String> key;
   if (!maybe_key.ToLocal(&key)) {
     return false;
@@ -103,10 +103,10 @@ extern "C" bool NeonSys_Object_Get_Bytes(v8::Local<v8::Value> *out, v8::Local<v8
   return maybe.ToLocal(out);
 }
 
-extern "C" bool NeonSys_Object_Set_Bytes(bool *out, v8::Local<v8::Object> obj, const uint8_t *data, int32_t len, v8::Local<v8::Value> val) {
+extern "C" bool NeonSys_Object_Set_String(bool *out, v8::Local<v8::Object> obj, const uint8_t *data, int32_t len, v8::Local<v8::Value> val) {
   // FIXME: abstract the key construction logic to avoid duplication with ^^
   Nan::HandleScope scope;
-  Nan::MaybeLocal<v8::String> maybe_key = v8::String::NewFromOneByte(v8::Isolate::GetCurrent(), data, v8::NewStringType::kNormal, len);
+  Nan::MaybeLocal<v8::String> maybe_key = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), (const char*)data, v8::NewStringType::kNormal, len);
   v8::Local<v8::String> key;
   if (!maybe_key.ToLocal(&key)) {
     return false;

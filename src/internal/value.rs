@@ -1,9 +1,7 @@
 use std;
 use std::mem;
 use std::os::raw::c_void;
-use std::ffi::{CString, CStr};
-use neon_sys::raw;
-use neon_sys::{NeonSys_NewObject, NeonSys_NewUndefined, NeonSys_NewNull, NeonSys_NewBoolean, NeonSys_NewInteger, NeonSys_NewString, NeonSys_NewNumber, NeonSys_NewArray, NeonSys_Array_Length, NeonSys_String_Utf8Length, NeonSys_String_Data, NeonSys_Value_ToString, NeonSys_Object_GetOwnPropertyNames, NeonSys_Object_Get_Index, NeonSys_Object_Set_Index, NeonSys_Object_Get, NeonSys_Object_Get_Bytes, NeonSys_Object_Set_Bytes, NeonSys_Object_Set, NeonSys_NewFunction, NeonSys_FunctionKernel, NeonSys_Call_GetIsolate, NeonSys_IsUndefined, NeonSys_IsNull, NeonSys_IsInteger, NeonSys_IsNumber, NeonSys_IsString, NeonSys_IsBoolean, NeonSys_IsObject, NeonSys_IsArray, NeonSys_IsFunction, NeonSys_TagOf, Tag};
+use neon_sys::*;
 use internal::mem::{Handle, HandleInternal};
 use internal::scope::{Scope, RootScope, RootScopeInternal};
 use internal::vm::{Result, Throw, JS, Isolate, CallbackInfo, Call, exec_function_body};
@@ -268,7 +266,7 @@ impl String {
     }
 
     pub fn new<'a, T: Scope<'a>>(scope: &mut T, val: &str) -> Option<Handle<'a, String>> {
-        CString::new(val).ok().and_then(|str| String::new_internal(scope.isolate(), &str))
+        String::new_internal(scope.isolate(), val)
     }
 
     pub fn new_or_throw<'a, T: Scope<'a>>(scope: &mut T, val: &str) -> Result<Handle<'a, String>> {
@@ -281,41 +279,36 @@ impl String {
 }
 
 pub trait StringInternal {
-    fn new_internal<'a>(isolate: *mut Isolate, val: &CStr) -> Option<Handle<'a, String>>;
+    fn new_internal<'a>(isolate: *mut Isolate, val: &str) -> Option<Handle<'a, String>>;
 }
 
-// Lower a &CStr to the types expected by Node: a const *uint8_t buffer and an int32_t length.
-fn lower_cstr(cs: &CStr) -> Option<(*const u8, i32)> {
+// Lower a &str to the types expected by Node: a const *uint8_t buffer and an int32_t length.
+fn lower_str(s: &str) -> Option<(*const u8, i32)> {
     // V8 currently refuses to allocate strings longer than `(1 << 20) - 16` bytes,
     // but in case this changes over time, just ensure the buffer isn't longer than
     // the largest positive signed integer, and delegate the tighter bounds checks
     // to V8.
-    let len = cs.to_bytes().len();
+    let len = s.len();
     if len > (::std::i32::MAX as usize) {
         return None;
     }
-    Some((unsafe { mem::transmute(cs.as_ptr()) }, len as i32))
-}
-
-fn lower_cstr_unwrap(cs: &CStr) -> (*const u8, i32) {
-    lower_cstr(cs).unwrap_or_else(|| {
-        panic!("{} < i32::MAX", cs.to_bytes().len())
-    })
+    Some((s.as_ptr(), len as i32))
 }
 
 fn lower_str_unwrap(s: &str) -> (*const u8, i32) {
-    lower_cstr_unwrap(&CString::new(s).ok().unwrap())
+    lower_str(s).unwrap_or_else(|| {
+        panic!("{} < i32::MAX", s.len())
+    })
 }
 
 impl StringInternal for String {
-    fn new_internal<'a>(isolate: *mut Isolate, val: &CStr) -> Option<Handle<'a, String>> {
-        let (ptr, len) = match lower_cstr(val) {
+    fn new_internal<'a>(isolate: *mut Isolate, val: &str) -> Option<Handle<'a, String>> {
+        let (ptr, len) = match lower_str(val) {
             Some(pair) => pair,
             None => { return None; }
         };
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            // FIXME: this is currently traversing the string twice (see the note in the CStr::as_ptr docs)
             if NeonSys_NewString(&mut local, mem::transmute(isolate), ptr, len) {
                 Some(Handle::new(String(local)))
             } else {
@@ -442,12 +435,12 @@ impl<'a, K: Any> PropertyName for Handle<'a, K> {
 impl<'a> PropertyName for &'a str {
     unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool {
         let (ptr, len) = lower_str_unwrap(self);
-        NeonSys_Object_Get_Bytes(out, obj, ptr, len)
+        NeonSys_Object_Get_String(out, obj, ptr, len)
     }
 
     unsafe fn set(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
         let (ptr, len) = lower_str_unwrap(self);
-        NeonSys_Object_Set_Bytes(out, obj, ptr, len, val)
+        NeonSys_Object_Set_String(out, obj, ptr, len, val)
     }
 }
 
