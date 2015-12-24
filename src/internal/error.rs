@@ -11,7 +11,7 @@ use scope::Scope;
 
 pub fn throw<'a, T: Any, U>(v: Handle<'a, T>) -> Result<U> {
     unsafe {
-        neon_sys::error::ThrowAny(v.to_raw());
+        neon_sys::error::throw(v.to_raw());
     }
     Err(Throw)
 }
@@ -26,7 +26,7 @@ impl AnyInternal for TypeError {
     fn from_raw(h: raw::Local) -> Self { TypeError(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { neon_sys::tag::IsTypeError(other.to_raw()) }
+        unsafe { neon_sys::tag::is_type_error(other.to_raw()) }
     }
 }
 
@@ -42,13 +42,13 @@ impl TypeError {
     // FIXME: use an overload trait to allow either &str or value::String
     pub fn new<'a, T: Scope<'a>>(_: &mut T, msg: &str) -> Result<Handle<'a, SomeObject>> {
         let msg = &message(msg);
-        build(|out| { unsafe { neon_sys::error::NewTypeError(out, mem::transmute(msg.as_ptr())) } })
+        build(|out| { unsafe { neon_sys::error::new_type_error(out, mem::transmute(msg.as_ptr())) } })
     }
 
     pub fn throw<T>(msg: &str) -> Result<T> {
         let msg = &message(msg);
         unsafe {
-            neon_sys::error::ThrowTypeError(mem::transmute(msg.as_ptr()));
+            neon_sys::error::throw_type_error(mem::transmute(msg.as_ptr()));
         }
         Err(Throw)
     }

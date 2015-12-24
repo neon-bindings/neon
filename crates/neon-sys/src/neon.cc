@@ -269,7 +269,7 @@ extern "C" bool NeonSys_Tag_IsTypeError(v8::Local<v8::Value> val) {
   return false; // FIXME: implement this
 }
 
-extern "C" void NeonSys_Error_ThrowAny(v8::Local<v8::Value> val) {
+extern "C" void NeonSys_Error_Throw(v8::Local<v8::Value> val) {
   Nan::ThrowError(val);
 }
 

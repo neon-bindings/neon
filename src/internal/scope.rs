@@ -48,7 +48,7 @@ impl<'a, 'outer> ChainedScope<'a, 'outer> {
     pub fn escape<T: Any>(&self, local: Handle<'a, T>) -> Handle<'outer, T> {
         unsafe {
             let mut result_local: raw::Local = mem::zeroed();
-            neon_sys::scope::Escape(&mut result_local, self.v8, local.to_raw());
+            neon_sys::scope::escape(&mut result_local, self.v8, local.to_raw());
             Handle::new(T::from_raw(result_local))
         }
     }
@@ -120,7 +120,7 @@ fn chain<'a, T, S, F>(outer: &S, f: F) -> T
             let closure: *mut c_void = mem::transmute(closure);
             let callback: extern "C" fn(&mut c_void, *mut c_void, *mut c_void, *mut c_void) = mem::transmute(callback);
             let this: *mut c_void = mem::transmute(outer);
-            neon_sys::scope::Chained(out, closure, callback, this);
+            neon_sys::scope::chained(out, closure, callback, this);
         }
         { *outer.active_cell().borrow_mut() = true; }
     }
@@ -143,7 +143,7 @@ fn nest<'me, T, S, F>(outer: &'me S, f: F) -> T
             let closure: *mut c_void = mem::transmute(closure);
             let callback: extern "C" fn(&mut c_void, *mut c_void, *mut c_void) = mem::transmute(callback);
             let isolate: *mut c_void = mem::transmute(outer.isolate());
-            neon_sys::scope::Nested(out, closure, callback, isolate);
+            neon_sys::scope::nested(out, closure, callback, isolate);
         }
         { *outer.active_cell().borrow_mut() = true; }
     }

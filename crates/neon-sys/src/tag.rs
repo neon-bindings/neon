@@ -19,39 +19,39 @@ pub enum Tag {
 extern "system" {
 
     #[link_name = "NeonSys_Tag_Of"]
-    pub fn Of(val: Local) -> Tag;
+    pub fn of(val: Local) -> Tag;
 
     #[link_name = "NeonSys_Tag_IsUndefined"]
-    pub fn IsUndefined(val: Local) -> bool;
+    pub fn is_undefined(val: Local) -> bool;
 
     #[link_name = "NeonSys_Tag_IsNull"]
-    pub fn IsNull(val: Local) -> bool;
+    pub fn is_null(val: Local) -> bool;
 
     #[link_name = "NeonSys_Tag_IsInteger"]
-    pub fn IsInteger(val: Local) -> bool;
+    pub fn is_integer(val: Local) -> bool;
 
     #[link_name = "NeonSys_Tag_IsNumber"]
-    pub fn IsNumber(val: Local) -> bool;
+    pub fn is_number(val: Local) -> bool;
 
     #[link_name = "NeonSys_Tag_IsBoolean"]
-    pub fn IsBoolean(val: Local) -> bool;
+    pub fn is_boolean(val: Local) -> bool;
 
     #[link_name = "NeonSys_Tag_IsString"]
-    pub fn IsString(val: Local) -> bool;
+    pub fn is_string(val: Local) -> bool;
 
     #[link_name = "NeonSys_Tag_IsObject"]
-    pub fn IsObject(val: Local) -> bool;
+    pub fn is_object(val: Local) -> bool;
 
     #[link_name = "NeonSys_Tag_IsArray"]
-    pub fn IsArray(val: Local) -> bool;
+    pub fn is_array(val: Local) -> bool;
 
     #[link_name = "NeonSys_Tag_IsFunction"]
-    pub fn IsFunction(val: Local) -> bool;
+    pub fn is_function(val: Local) -> bool;
 
     #[link_name = "NeonSys_Tag_IsTypeError"]
-    pub fn IsTypeError(val: Local) -> bool;
+    pub fn is_type_error(val: Local) -> bool;
 
     #[link_name = "NeonSys_Tag_IsBuffer"]
-    pub fn IsBuffer(obj: Local) -> bool;
+    pub fn is_buffer(obj: Local) -> bool;
 
 }

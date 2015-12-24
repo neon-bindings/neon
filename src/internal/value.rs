@@ -58,7 +58,7 @@ impl<T: Object> SuperType<T> for SomeObject {
 
 pub trait Any: AnyInternal {
     fn to_string<'a, T: Scope<'a>>(self, _: &mut T) -> JS<'a, String> {
-        build(|out| { unsafe { neon_sys::convert::ToString(out, self.to_raw()) } })
+        build(|out| { unsafe { neon_sys::convert::to_string(out, self.to_raw()) } })
     }
 
     fn value<'a, T: Scope<'a>>(self, _: &mut T) -> Handle<'a, Value> {
@@ -98,7 +98,7 @@ impl AnyInternal for Value {
 
 impl<'a> Handle<'a, Value> {
     pub fn variant(self) -> Variant<'a> {
-        match unsafe { neon_sys::tag::Of(self.to_raw()) } {
+        match unsafe { neon_sys::tag::of(self.to_raw()) } {
             Tag::Null => Variant::Null(Null::new()),
             Tag::Undefined => Variant::Undefined(Undefined::new()),
             Tag::Boolean => Variant::Boolean(Handle::new(Boolean(self.to_raw()))),
@@ -141,7 +141,7 @@ impl AnyInternal for Undefined {
     fn from_raw(h: raw::Local) -> Self { Undefined(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { neon_sys::tag::IsUndefined(other.to_raw()) }
+        unsafe { neon_sys::tag::is_undefined(other.to_raw()) }
     }
 }
 
@@ -153,7 +153,7 @@ impl UndefinedInternal for Undefined {
     fn new_internal<'a>() -> Handle<'a, Undefined> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            neon_sys::primitive::Undefined(&mut local);
+            neon_sys::primitive::undefined(&mut local);
             Handle::new(Undefined(local))
         }
     }
@@ -177,7 +177,7 @@ impl AnyInternal for Null {
     fn from_raw(h: raw::Local) -> Self { Null(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { neon_sys::tag::IsNull(other.to_raw()) }
+        unsafe { neon_sys::tag::is_null(other.to_raw()) }
     }
 }
 
@@ -189,7 +189,7 @@ impl NullInternal for Null {
     fn new_internal<'a>() -> Handle<'a, Null> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            neon_sys::primitive::Null(&mut local);
+            neon_sys::primitive::null(&mut local);
             Handle::new(Null(local))
         }
     }
@@ -213,7 +213,7 @@ impl AnyInternal for Boolean {
     fn from_raw(h: raw::Local) -> Self { Boolean(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { neon_sys::tag::IsBoolean(other.to_raw()) }
+        unsafe { neon_sys::tag::is_boolean(other.to_raw()) }
     }
 }
 
@@ -225,7 +225,7 @@ impl BooleanInternal for Boolean {
     fn new_internal<'a>(b: bool) -> Handle<'a, Boolean> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            neon_sys::primitive::Boolean(&mut local, b);
+            neon_sys::primitive::boolean(&mut local, b);
             Handle::new(Boolean(local))
         }
     }
@@ -243,14 +243,14 @@ impl AnyInternal for String {
     fn from_raw(h: raw::Local) -> Self { String(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { neon_sys::tag::IsString(other.to_raw()) }
+        unsafe { neon_sys::tag::is_string(other.to_raw()) }
     }
 }
 
 impl String {
     pub fn size(self) -> isize {
         unsafe {
-            neon_sys::string::Utf8Length(self.to_raw())
+            neon_sys::string::utf8_len(self.to_raw())
         }
     }
 
@@ -258,11 +258,11 @@ impl String {
         unsafe {
             // FIXME: use StringBytes::StorageSize instead?
             // FIXME: audit all these isize -> usize casts
-            let capacity = neon_sys::string::Utf8Length(self.to_raw());
+            let capacity = neon_sys::string::utf8_len(self.to_raw());
             let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
             let p = buffer.as_mut_ptr();
             mem::forget(buffer);
-            let len = neon_sys::string::Data(p, capacity, self.to_raw());
+            let len = neon_sys::string::data(p, capacity, self.to_raw());
             std::string::String::from_raw_parts(p, len as usize, capacity as usize)
         }
     }
@@ -311,7 +311,7 @@ impl StringInternal for String {
         };
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            if neon_sys::string::New(&mut local, mem::transmute(isolate), ptr, len) {
+            if neon_sys::string::new(&mut local, mem::transmute(isolate), ptr, len) {
                 Some(Handle::new(String(local)))
             } else {
                 None
@@ -339,7 +339,7 @@ impl AnyInternal for Integer {
     fn from_raw(h: raw::Local) -> Self { Integer(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { neon_sys::tag::IsInteger(other.to_raw()) }
+        unsafe { neon_sys::tag::is_integer(other.to_raw()) }
     }
 }
 
@@ -351,7 +351,7 @@ impl IntegerInternal for Integer {
     fn new_internal<'a>(isolate: *mut Isolate, i: i32) -> Handle<'a, Integer> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            neon_sys::primitive::Integer(&mut local, mem::transmute(isolate), i);
+            neon_sys::primitive::integer(&mut local, mem::transmute(isolate), i);
             Handle::new(Integer(local))
         }
     }
@@ -375,7 +375,7 @@ impl AnyInternal for Number {
     fn from_raw(h: raw::Local) -> Self { Number(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { neon_sys::tag::IsNumber(other.to_raw()) }
+        unsafe { neon_sys::tag::is_number(other.to_raw()) }
     }
 }
 
@@ -387,7 +387,7 @@ impl NumberInternal for Number {
     fn new_internal<'a>(isolate: *mut Isolate, v: f64) -> Handle<'a, Number> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            neon_sys::primitive::Number(&mut local, mem::transmute(isolate), v);
+            neon_sys::primitive::number(&mut local, mem::transmute(isolate), v);
             Handle::new(Number(local))
         }
     }
@@ -405,7 +405,7 @@ impl AnyInternal for SomeObject {
     fn from_raw(h: raw::Local) -> Self { SomeObject(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { neon_sys::tag::IsObject(other.to_raw()) }
+        unsafe { neon_sys::tag::is_object(other.to_raw()) }
     }
 }
 
@@ -416,33 +416,33 @@ trait PropertyName {
 
 impl PropertyName for u32 {
     unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool {
-        neon_sys::object::Get_Index(out, obj, self)
+        neon_sys::object::get_index(out, obj, self)
     }
 
     unsafe fn set(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
-        neon_sys::object::Set_Index(out, obj, self, val)
+        neon_sys::object::set_index(out, obj, self, val)
     }
 }
 
 impl<'a, K: Any> PropertyName for Handle<'a, K> {
     unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool {
-        neon_sys::object::Get(out, obj, self.to_raw())
+        neon_sys::object::get(out, obj, self.to_raw())
     }
 
     unsafe fn set(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
-        neon_sys::object::Set(out, obj, self.to_raw(), val)
+        neon_sys::object::set(out, obj, self.to_raw(), val)
     }
 }
 
 impl<'a> PropertyName for &'a str {
     unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool {
         let (ptr, len) = lower_str_unwrap(self);
-        neon_sys::object::Get_String(out, obj, ptr, len)
+        neon_sys::object::get_string(out, obj, ptr, len)
     }
 
     unsafe fn set(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
         let (ptr, len) = lower_str_unwrap(self);
-        neon_sys::object::Set_String(out, obj, ptr, len, val)
+        neon_sys::object::set_string(out, obj, ptr, len, val)
     }
 }
 
@@ -452,7 +452,7 @@ pub trait Object: Any {
     }
 
     fn get_own_property_names<'a, T: Scope<'a>>(self, _: &mut T) -> JS<'a, Array> {
-        build(|out| { unsafe { neon_sys::object::GetOwnPropertyNames(out, self.to_raw()) } })
+        build(|out| { unsafe { neon_sys::object::get_own_property_names(out, self.to_raw()) } })
     }
 
     fn set<K: PropertyName, V: Any>(self, key: K, val: Handle<V>) -> Result<bool> {
@@ -474,7 +474,7 @@ pub trait SomeObjectInternal {
 
 impl SomeObjectInternal for SomeObject {
     fn new_internal<'a>() -> Handle<'a, SomeObject> {
-        SomeObject::build(|out| { unsafe { neon_sys::object::New(out) } })
+        SomeObject::build(|out| { unsafe { neon_sys::object::new(out) } })
     }
 
     fn build<'a, F: FnOnce(&mut raw::Local)>(init: F) -> Handle<'a, SomeObject> {
@@ -511,7 +511,7 @@ impl AnyInternal for Array {
     fn from_raw(h: raw::Local) -> Self { Array(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { neon_sys::tag::IsArray(other.to_raw()) }
+        unsafe { neon_sys::tag::is_array(other.to_raw()) }
     }
 }
 
@@ -523,7 +523,7 @@ impl ArrayInternal for Array {
     fn new_internal<'a>(isolate: *mut Isolate, len: u32) -> Handle<'a, Array> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            neon_sys::array::New(&mut local, mem::transmute(isolate), len);
+            neon_sys::array::new(&mut local, mem::transmute(isolate), len);
             Handle::new(Array(local))
         }
     }
@@ -546,7 +546,7 @@ impl Array {
 
     pub fn len(self) -> u32 {
         unsafe {
-            neon_sys::array::Length(self.to_raw())
+            neon_sys::array::len(self.to_raw())
         }
     }
 }
@@ -565,17 +565,17 @@ impl Function {
                 let callback: extern "C" fn(&CallbackInfo) = invoke_nanny_function::<U>;
                 let callback: *mut c_void = mem::transmute(callback);
                 let kernel: *mut c_void = mem::transmute(f);
-                neon_sys::fun::New(out, isolate, callback, kernel)
+                neon_sys::fun::new(out, isolate, callback, kernel)
             }
         })
     }
 }
 
 extern "C" fn invoke_nanny_function<U: Any>(info: &CallbackInfo) {
-    let mut scope = RootScope::new(unsafe { mem::transmute(neon_sys::call::GetIsolate(mem::transmute(info))) });
+    let mut scope = RootScope::new(unsafe { mem::transmute(neon_sys::call::get_isolate(mem::transmute(info))) });
     exec_function_body(info, &mut scope, |call| {
         let data = info.data();
-        let kernel: fn(Call) -> JS<U> = unsafe { mem::transmute(neon_sys::fun::GetKernel(data.to_raw())) };
+        let kernel: fn(Call) -> JS<U> = unsafe { mem::transmute(neon_sys::fun::get_kernel(data.to_raw())) };
         if let Ok(value) = kernel(call) {
             info.set_return(value);
         }
@@ -590,6 +590,6 @@ impl AnyInternal for Function {
     fn from_raw(h: raw::Local) -> Self { Function(h) }
 
     fn is_typeof<Other: Any>(other: Other) -> bool {
-        unsafe { neon_sys::tag::IsFunction(other.to_raw()) }
+        unsafe { neon_sys::tag::is_function(other.to_raw()) }
     }
 }

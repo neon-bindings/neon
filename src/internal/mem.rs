@@ -21,7 +21,7 @@ impl<'a, T: Any + 'a> Handle<'a, T> {
 
 impl<'a, T: Any + 'a> PartialEq for Handle<'a, T> {
     fn eq(&self, other: &Self) -> bool {
-        unsafe { neon_sys::mem::SameHandle(self.to_raw(), other.to_raw()) }
+        unsafe { neon_sys::mem::same_handle(self.to_raw(), other.to_raw()) }
     }
 }
 

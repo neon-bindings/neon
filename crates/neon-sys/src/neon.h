@@ -90,7 +90,7 @@ extern "C" {
   bool NeonSys_Tag_IsTypeError(v8::Local<v8::Value> val);
 
   bool NeonSys_Error_NewTypeError(v8::Local<v8::Value> *out, const char *msg);
-  void NeonSys_Error_ThrowAny(v8::Local<v8::Value> val);
+  void NeonSys_Error_Throw(v8::Local<v8::Value> val);
   void NeonSys_Error_ThrowTypeError(const char *msg);
 
   bool NeonSys_Mem_SameHandle(v8::Local<v8::Value> v1, v8::Local<v8::Value> v2);

@@ -3,18 +3,18 @@ use raw::{Local, Isolate};
 extern "system" {
 
     #[link_name = "NeonSys_Primitive_Undefined"]
-    pub fn Undefined(out: &mut Local);
+    pub fn undefined(out: &mut Local);
 
     #[link_name = "NeonSys_Primitive_Null"]
-    pub fn Null(out: &mut Local);
+    pub fn null(out: &mut Local);
 
     #[link_name = "NeonSys_Primitive_Boolean"]
-    pub fn Boolean(out: &mut Local, b: bool);
+    pub fn boolean(out: &mut Local, b: bool);
 
     #[link_name = "NeonSys_Primitive_Integer"]
-    pub fn Integer(out: &mut Local, isolate: *mut Isolate, x: i32);
+    pub fn integer(out: &mut Local, isolate: *mut Isolate, x: i32);
 
     #[link_name = "NeonSys_Primitive_Number"]
-    pub fn Number(out: &mut Local, isolate: *mut Isolate, v: f64);
+    pub fn number(out: &mut Local, isolate: *mut Isolate, v: f64);
 
 }
