@@ -1,28 +1,28 @@
-var fs = require('fs');
-var path = require('path');
-var handlebars = require('handlebars');
-var mkdirp = require('mkdirp');
-var inquirer = require('inquirer');
-var semver = require('semver');
-var bridge = require('neon-bridge');
-var gitconfig = require('git-config');
+let fs = require('fs');
+let path = require('path');
+let handlebars = require('handlebars');
+let mkdirp = require('mkdirp');
+let inquirer = require('inquirer');
+let semver = require('semver');
+let bridge = require('neon-bridge');
+let gitconfig = require('git-config');
 
-var ROOT_DIR = path.resolve(__dirname, "..");
-var TEMPLATES_DIR = path.resolve(ROOT_DIR, "templates");
+const ROOT_DIR = path.resolve(__dirname, "..");
+const TEMPLATES_DIR = path.resolve(ROOT_DIR, "templates");
 
-var NEON_CLI_VERSION = JSON.parse(fs.readFileSync(path.resolve(ROOT_DIR, "package.json"), 'utf8')).version;
-var NEON_BRIDGE_VERSION = bridge.version;
+const NEON_CLI_VERSION = JSON.parse(fs.readFileSync(path.resolve(ROOT_DIR, "package.json"), 'utf8')).version;
+const NEON_BRIDGE_VERSION = bridge.version;
 
 function compile(filename) {
   return handlebars.compile(fs.readFileSync(path.resolve(TEMPLATES_DIR, filename), 'utf8'), { noEscape: true });
 }
 
-var GITIGNORE_TEMPLATE = compile(".gitignore.hbs");
-var CARGO_TEMPLATE = compile("Cargo.toml.hbs");
-var NPM_TEMPLATE = compile("package.json.hbs");
-var INDEXJS_TEMPLATE = compile("index.js.hbs");
-var LIBRS_TEMPLATE = compile("lib.rs.hbs");
-var README_TEMPLATE = compile("README.md.hbs");
+const GITIGNORE_TEMPLATE = compile(".gitignore.hbs");
+const CARGO_TEMPLATE = compile("Cargo.toml.hbs");
+const NPM_TEMPLATE = compile("package.json.hbs");
+const INDEXJS_TEMPLATE = compile("index.js.hbs");
+const LIBRS_TEMPLATE = compile("lib.rs.hbs");
+const README_TEMPLATE = compile("README.md.hbs");
 
 function die(err) {
   console.log(err);
@@ -31,7 +31,7 @@ function die(err) {
 
 function guessAuthor() {
   try {
-    var config = gitconfig.sync();
+    let config = gitconfig.sync();
     if (config.user.name) {
       return {
         author: config.user.name,
@@ -52,8 +52,8 @@ module.exports = exports = function wizard(pwd, name) {
   console.log();
   console.log("Press ^C at any time to quit.");
 
-  var root = path.resolve(pwd, name);
-  var guess = guessAuthor();
+  let root = path.resolve(pwd, name);
+  let guess = guessAuthor();
 
   inquirer.prompt([
     { type: 'input', name: 'name',        message: "name",             default: name           },
@@ -65,7 +65,7 @@ module.exports = exports = function wizard(pwd, name) {
     { type: 'input', name: 'email',       message: "email",            default: guess.email    },
     { type: 'input', name: 'license',     message: "license",          default: "MIT"          }
   ], function(answers) {
-    var ctx = {
+    let ctx = {
       project: answers,
       "neon-cli": {
         major: semver.major(NEON_CLI_VERSION),
@@ -79,8 +79,8 @@ module.exports = exports = function wizard(pwd, name) {
       },
     };
 
-    var lib = path.resolve(root, path.dirname(answers.node));
-    var src = path.resolve(root, "src");
+    let lib = path.resolve(root, path.dirname(answers.node));
+    let src = path.resolve(root, "src");
 
     mkdirp(lib, function(err) {
       if (err) die(err);
@@ -93,9 +93,9 @@ module.exports = exports = function wizard(pwd, name) {
         fs.writeFileSync(path.resolve(root, answers.node), INDEXJS_TEMPLATE(ctx), { flag: 'wx' });
         fs.writeFileSync(path.resolve(src, "lib.rs"), LIBRS_TEMPLATE(ctx), { flag: 'wx' });
 
-        var relativeRoot = path.relative(pwd, root);
-        var relativeNode = path.relative(pwd, path.resolve(root, answers.node));
-        var relativeRust = path.relative(pwd, path.resolve(root, src + "/lib.rs"));
+        let relativeRoot = path.relative(pwd, root);
+        let relativeNode = path.relative(pwd, path.resolve(root, answers.node));
+        let relativeRust = path.relative(pwd, path.resolve(root, src + "/lib.rs"));
 
         console.log();
         console.log("Woo-hoo! Your Neon project has been created in: " + relativeRoot);

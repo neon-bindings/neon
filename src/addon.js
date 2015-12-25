@@ -1,10 +1,10 @@
-var fs = require('fs');
-var path = require('path');
-var handlebars = require('handlebars');
+let fs = require('fs');
+let path = require('path');
+let handlebars = require('handlebars');
 
-var TEMPLATES_DIR = path.resolve(path.resolve(__dirname, ".."), "templates");
+const TEMPLATES_DIR = path.resolve(path.resolve(__dirname, ".."), "templates");
 
-var TEMPLATE = handlebars.compile(fs.readFileSync(path.resolve(TEMPLATES_DIR, "binding.cc.hbs"), 'utf8'), { noEscape: true });
+const TEMPLATE = handlebars.compile(fs.readFileSync(path.resolve(TEMPLATES_DIR, "binding.cc.hbs"), 'utf8'), { noEscape: true });
 
 function Addon(project) {
   this.project = project;
