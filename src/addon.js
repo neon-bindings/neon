@@ -1,6 +1,6 @@
-let fs = require('fs');
-let path = require('path');
-let handlebars = require('handlebars');
+import fs from 'fs';
+import path from 'path';
+import handlebars from 'handlebars';
 
 const TEMPLATES_DIR = path.resolve(path.resolve(__dirname, ".."), "templates");
 
@@ -15,6 +15,6 @@ Addon.prototype.generate = function generate(filename) {
   fs.writeFileSync(filename, TEMPLATE(this.context));
 };
 
-module.exports = exports = function(build) {
+export default function(build) {
   return new Addon(build);
 };

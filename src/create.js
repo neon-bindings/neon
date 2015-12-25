@@ -1,11 +1,11 @@
-let fs = require('fs');
-let path = require('path');
-let handlebars = require('handlebars');
-let mkdirp = require('mkdirp');
-let inquirer = require('inquirer');
-let semver = require('semver');
-let bridge = require('neon-bridge');
-let gitconfig = require('git-config');
+import fs from 'fs';
+import path from 'path';
+import handlebars from 'handlebars';
+import mkdirp from 'mkdirp';
+import inquirer from 'inquirer';
+import semver from 'semver';
+import bridge from 'neon-bridge';
+import gitconfig from 'git-config';
 
 const ROOT_DIR = path.resolve(__dirname, "..");
 const TEMPLATES_DIR = path.resolve(ROOT_DIR, "templates");
@@ -46,7 +46,7 @@ function guessAuthor() {
   }
 }
 
-module.exports = exports = function wizard(pwd, name) {
+export default function wizard(pwd, name) {
   console.log("This utility will walk you through creating a Neon project.");
   console.log("It only covers the most common items, and tries to guess sensible defaults.");
   console.log();

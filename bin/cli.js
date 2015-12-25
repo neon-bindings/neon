@@ -37,9 +37,9 @@ case 'build':
     printUsage();
     process.exit(1);
   }
-  var build = require('../lib/build.js')(project(pwd),
-                                         args.rust || args.r || 'default',
-                                         (args.debug || args.d) ? 'debug' : 'release');
+  var build = require('../lib/build.js').default(project(pwd),
+                                                 args.rust || args.r || 'default',
+                                                 (args.debug || args.d) ? 'debug' : 'release');
   if (build.isStale()) {
     build.run();
   }
@@ -51,7 +51,7 @@ case 'generate':
     printUsage();
     process.exit(1);
   }
-  var addon = require('../lib/addon.js')(project(pwd));
+  var addon = require('../lib/addon.js').default(project(pwd));
   addon.generate(args._[0]);
   break;
 
@@ -60,7 +60,7 @@ case 'new':
     printUsage();
     process.exit(1);
   }
-  var create = require('../lib/create.js');
+  var create = require('../lib/create.js').default;
   create(pwd, args._[0]);
   break;
 }

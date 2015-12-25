@@ -1,7 +1,7 @@
-let fs = require('fs');
-let child = require('child_process');
-let path = require('path');
-let handlebars = require('handlebars');
+import fs from 'fs';
+import child from 'child_process';
+import path from 'path';
+import handlebars from 'handlebars';
 
 const NODE_GYP = path.resolve(path.resolve(path.resolve(path.resolve(path.dirname(require.resolve('node-gyp')), '..'), '..'), '.bin'), 'node-gyp');
 
@@ -60,6 +60,6 @@ Build.prototype.run = function run() {
   }
 };
 
-module.exports = exports = function(project, rust, type) {
+export default function(project, rust, type) {
   return new Build(project, rust, type);
 };
