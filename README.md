@@ -41,9 +41,13 @@ fn make_an_array(call: Call) -> JS<Array> {
 
 For a more complete demonstration, try building a hello world with `neon new`, or check out the slightly bigger [word count demo](https://github.com/dherman/wc-demo).
 
-# Help Wanted
+# Get Involved
 
-I'm looking for collaborators! I've created a [community slack](http://neon-bridge.slack.com) and a `#neon-bridge` IRC channel on freenode. Come play :)
+The Neon community is just getting started and there's tons of fun to be had. Come play! :)
+
+The [community Slack](http://neon-community.slack.com) is open to all; use [the Slackin app](http://neon-community.herokuapp.com) to receive an invitation.
+
+There's also an IRC channel at `#neon` on [Mozilla IRC](https://wiki.mozilla.org/IRC).
 
 # Known Limitations
 
