@@ -47,9 +47,13 @@ neon build [--rust toolchain] [--debug]
 * `--rust`: Use this to specify that [multirust](https://github.com/brson/multirust) should be used instead of the system default Rust installation. The `toolchain` parameter is passed to multirust as the Rust toolchain to use for all build commands.
 * `--debug`: Use this to create a debug build.
 
-# Help Wanted
+# Get Involved
 
-I'm looking for collaborators! I've created a [community slack](http://neon-bridge.slack.com) and a `#neon-bridge` IRC channel on freenode. Come play :)
+The Neon community is just getting started and there's tons of fun to be had. Come play! :)
+
+The [community Slack](http://neon-community.slack.com) is open to all; use [the Slackin app](http://neon-community.herokuapp.com) to receive an invitation.
+
+There's also an IRC channel at `#neon` on [Mozilla IRC](https://wiki.mozilla.org/IRC).
 
 # Known Limitations
 
