@@ -51,7 +51,7 @@ neon build [--rust toolchain] [--debug]
 
 The Neon community is just getting started and there's tons of fun to be had. Come play! :)
 
-The [community Slack](http://neon-community.slack.com) is open to all; use [the Slackin app](http://neon-community.herokuapp.com) to receive an invitation.
+The [community Slack](http://neon-community.slack.com) is open to all; use [the Slackin app](http://neon-community-slackin.herokuapp.com) to receive an invitation.
 
 There's also an IRC channel at `#neon` on [Mozilla IRC](https://wiki.mozilla.org/IRC) (`irc.mozilla.org`).
 
