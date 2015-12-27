@@ -20,7 +20,8 @@ fn object_path(libname: &str) -> String {
 
 fn build_object_file() {
     // Ensure that all package.json dependencies and dev dependencies are installed.
-    Command::new("npm").arg("install").status().ok().unwrap();
+    Command::new("npm").arg("install").status().ok()
+        .expect(r#"failed to run "npm install" for neon-sys"#);
 
     // Run the package.json `configure` script, which invokes `node-gyp configure` from the local node_modules.
     Command::new("npm").arg("run").arg(if debug() { "configure-debug" } else { "configure-release" }).status().ok().unwrap();
