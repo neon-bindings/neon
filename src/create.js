@@ -6,6 +6,8 @@ import inquirer from 'inquirer';
 import semver from 'semver';
 import bridge from 'neon-bridge';
 import gitconfig from 'git-config';
+import validateLicense from 'validate-npm-package-license';
+import validateName from 'validate-npm-package-name';
 
 const ROOT_DIR = path.resolve(__dirname, "..");
 const TEMPLATES_DIR = path.resolve(ROOT_DIR, "templates");
@@ -56,14 +58,50 @@ export default function wizard(pwd, name) {
   let guess = guessAuthor();
 
   inquirer.prompt([
-    { type: 'input', name: 'name',        message: "name",             default: name           },
-    { type: 'input', name: 'version',     message: "version",          default: "0.1.0"        },
+    {
+      type: 'input',
+      name: 'name',
+      message: "name",
+      default: name,
+      validate: function (input) {
+        let its = validateName(input);
+        if (its.validForNewPackages) {
+          return true;
+        }
+        let errors = (its.errors || []).concat(its.warnings || []);
+        return 'Sorry, ' + errors.join(' and ') + '.';
+      }
+    }, {
+      type: 'input',
+      name: 'version',
+      message: "version",
+      default: "0.1.0",
+      validate: function (input) {
+        if (semver.valid(input)) {
+          return true;
+        }
+        return 'Invalid version: ' + input;
+      }
+    },
     { type: 'input', name: 'description', message: "description"                               },
     { type: 'input', name: 'node',        message: "node entry point", default: "lib/index.js" },
     { type: 'input', name: 'git',         message: "git repository"                            },
     { type: 'input', name: 'author',      message: "author",           default: guess.author   },
     { type: 'input', name: 'email',       message: "email",            default: guess.email    },
-    { type: 'input', name: 'license',     message: "license",          default: "MIT"          }
+    {
+      type: 'input',
+      name: 'license',
+      message: "license",
+      default: "MIT",
+      validate: function (input) {
+        let its = validateLicense(input);
+        if (its.validForNewPackages) {
+          return true;
+        }
+        let errors = (its.errors || []).concat(its.warnings || []);
+        return 'Sorry, ' + errors.join(' and ') + '.';
+      }
+    }
   ], function(answers) {
     let ctx = {
       project: answers,

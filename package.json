@@ -22,7 +22,9 @@
     "nan": "2.0.8",
     "neon-bridge": "^0.1.2",
     "node-gyp": "3.0.3",
-    "semver": "^5.1.0"
+    "semver": "^5.1.0",
+    "validate-npm-package-license": "^3.0.1",
+    "validate-npm-package-name": "^2.2.2"
   },
   "devDependencies": {
     "babel-cli": "^6.3.17",
