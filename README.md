@@ -45,7 +45,7 @@ For a more complete demonstration, try building a hello world with `neon new`, o
 
 The Neon community is just getting started and there's tons of fun to be had. Come play! :)
 
-The [community Slack](http://neon-community.slack.com) is open to all; use [the Slackin app](http://neon-community-slackin.herokuapp.com) to receive an invitation.
+The [Rust Bridge community Slack](http://rustbridge.slack.com) is open to all; use [the Slackin app](http://rustbridge-community-slackin.herokuapp.com) to receive an invitation.
 
 There's also an IRC channel at `#neon` on [Mozilla IRC](https://wiki.mozilla.org/IRC) (`irc.mozilla.org`).
 
