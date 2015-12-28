@@ -15,6 +15,7 @@
   "dependencies": {
     "git-config": "0.0.7",
     "handlebars": "^4.0.3",
+    "in-publish": "^2.0.0",
     "inquirer": "^0.11.0",
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
@@ -22,6 +23,14 @@
     "neon-bridge": "^0.1.2",
     "node-gyp": "3.0.3",
     "semver": "^5.1.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.3.17",
+    "babel-preset-es2015": "^6.3.13"
+  },
+  "scripts": {
+    "transpile": "rm -rf lib && babel src -qd lib",
+    "prepublish": "in-install || npm run transpile"
   },
   "bugs": {
     "url": "https://github.com/dherman/neon-cli/issues"
