@@ -38,6 +38,14 @@ Required context:
 
         "libraries": ["../<(static_lib)"],                  {{~! gyp weirdly determines libraries from a subdirectory so ../ is needed }}
 
+        "conditions": [
+            ["OS=='mac'", {
+                "xcode_settings": {
+                    "MACOSX_DEPLOYMENT_TARGET": "10.7"
+                }
+            }]
+        ],
+
         "actions": [{
             "action_name": "cargo",
             "inputs": ["<@(rust_inputs)"],
