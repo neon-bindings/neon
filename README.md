@@ -22,7 +22,16 @@ This will ask you a few questions and then generate a project skeleton for you. 
 
 # Requirements
 
-So far Neon is only working on OS X. You'll need [XCode](https://developer.apple.com/xcode/download/), Node v4 or later, and Rust 1.5 or later.
+You'll need the following on all OSes:
+
+* [Node](http://nodejs.org) v4 or later;
+* [Rust](http://rust-lang.org) v1.5 or later;
+* [multirust](https://github.com/brson/multirust) (only required for Neon projects that override the system default Rust).
+
+For Mac OS X, you'll need:
+
+* OS X 10.7 or later;
+* [XCode](https://developer.apple.com/xcode/download/).
 
 # Commands
 
@@ -54,15 +63,6 @@ The Neon community is just getting started and there's tons of fun to be had. Co
 The [Rust Bridge community Slack](http://rustbridge.slack.com) is open to all; use [the Slackin app](http://rustbridge-community-slackin.herokuapp.com) to receive an invitation.
 
 There's also an IRC channel at `#neon` on [Mozilla IRC](https://wiki.mozilla.org/IRC) (`irc.mozilla.org`).
-
-# Known Limitations
-
-* I've only gotten this working on OS X.
-* Currently, downstream clients of a native Rust module have to have Rust installed on their system in order to build it.
-* There's no way to fallback on [precompiled](https://github.com/mapbox/node-pre-gyp) or [portable](http://insertafter.com/en/blog/native-node-module.html) implementations.
-
-I would love to work with people on fixing these limitations!
-
 
 # License
 
