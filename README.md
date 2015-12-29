@@ -1,6 +1,6 @@
 # Neon-cli
 
-Automatically create and build [Neon](https://github.com/dherman/neon) modules.
+Automatically create and build [Neon](https://github.com/rustbridge/neon) modules.
 
 ![Screencast](screencast.gif)
 
