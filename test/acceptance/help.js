@@ -8,6 +8,7 @@ describe('neon help', function() {
         .wait('Usage:')
         .wait('neon new')
         .wait('neon help')
+        .wait('neon version')
         .run(err => {
           if (err) throw err;
           done();
