@@ -6,7 +6,7 @@ Neon protects all handles to the JavaScript heap, even when they're allocated on
 
 # Getting started
 
-Install [neon-cli](https://github.com/dherman/neon-cli) as a global npm package:
+Install [neon-cli](https://github.com/rustbridge/neon-cli) as a global npm package:
 
 ```
 npm install -g neon-cli
