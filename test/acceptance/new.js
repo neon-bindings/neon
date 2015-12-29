@@ -26,7 +26,6 @@ describe('neon new', function() {
           assert.propertyVal(pkg, 'version', '0.1.0');
           assert.propertyVal(pkg, 'description', 'My new app!');
           assert.propertyVal(pkg, 'license', 'MIT');
-          assert.deepProperty(pkg, 'dependencies.neon-cli');
           assert.deepProperty(pkg, 'dependencies.neon-bridge');
 
           let cargo = TOML.parse(readFile(this.cwd, 'my-app/Cargo.toml'));
