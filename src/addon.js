@@ -17,6 +17,6 @@ class Addon {
   }
 }
 
-export default function(build) {
-  return new Addon(build);
+export default function(project) {
+  return new Addon(project);
 };

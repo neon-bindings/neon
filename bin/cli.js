@@ -22,7 +22,7 @@ case 'new':
     process.exit(1);
   }
   var create = require('../lib/create.js').default;
-  create(pwd, args._[0]);
+  create(pwd, args._[0], args.rust || args.r || 'default');
   break;
 }
 

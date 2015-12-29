@@ -43,21 +43,13 @@ For Mac OS X, you'll need:
 Creates a new Neon project skeleton.
 
 ```
-neon new name
+neon new <name> [--rust|-r <toolchain>]
 ```
 
 The `name` is the project name and the name of the subdirectory of the current working directory that will be created.
 
-## neon build
+The optional `--rust` parameter allows specifying a custom toolchain (`stable` or `nightly`) to use for building the project with multirust instead of the system default Rust installation.
 
-Builds a Neon project. This command should be part of the `postinstall` script in your `package.json`, which is automatically set up by `neon new`.
-
-```
-neon build [--rust toolchain] [--debug]
-```
-
-* `--rust`: Use this to specify that [multirust](https://github.com/brson/multirust) should be used instead of the system default Rust installation. The `toolchain` parameter is passed to multirust as the Rust toolchain to use for all build commands.
-* `--debug`: Use this to create a debug build.
 
 # Get Involved
 

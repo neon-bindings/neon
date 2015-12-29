@@ -50,7 +50,7 @@ function guessAuthor() {
   }
 }
 
-export default function wizard(pwd, name) {
+export default function wizard(pwd, name, toolchain) {
   console.log("This utility will walk you through creating a Neon project.");
   console.log("It only covers the most common items, and tries to guess sensible defaults.");
   console.log();
@@ -117,6 +117,13 @@ export default function wizard(pwd, name) {
         minor: semver.minor(NEON_BRIDGE_VERSION),
         patch: semver.patch(NEON_BRIDGE_VERSION)
       },
+      build: {
+        cargo: {
+          cmd: toolchain === 'default'
+             ? []
+             : ["multirust", "run", toolchain]
+        }
+      }
     };
 
     let lib = path.resolve(root, path.dirname(answers.node));
