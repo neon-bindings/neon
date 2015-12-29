@@ -25,6 +25,8 @@ const NPM_TEMPLATE = compile("package.json.hbs");
 const INDEXJS_TEMPLATE = compile("index.js.hbs");
 const LIBRS_TEMPLATE = compile("lib.rs.hbs");
 const README_TEMPLATE = compile("README.md.hbs");
+const CPP_TEMPLATE = compile("binding.cc.hbs");
+const GYP_TEMPLATE = compile("binding.gyp.hbs");
 
 function die(err) {
   console.log(err);
@@ -129,6 +131,8 @@ export default function wizard(pwd, name) {
         fs.writeFileSync(path.resolve(root, "Cargo.toml"), CARGO_TEMPLATE(ctx), { flag: 'wx' });
         fs.writeFileSync(path.resolve(root, "README.md"), README_TEMPLATE(ctx), { flag: 'wx' });
         fs.writeFileSync(path.resolve(root, answers.node), INDEXJS_TEMPLATE(ctx), { flag: 'wx' });
+        fs.writeFileSync(path.resolve(root, "binding.gyp"), GYP_TEMPLATE(ctx), { flag: 'wx' });
+        fs.writeFileSync(path.resolve(src, "binding.cc"), CPP_TEMPLATE(ctx), { flag: 'wx' });
         fs.writeFileSync(path.resolve(src, "lib.rs"), LIBRS_TEMPLATE(ctx), { flag: 'wx' });
 
         let relativeRoot = path.relative(pwd, root);

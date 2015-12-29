@@ -1,11 +1,11 @@
 {
   "name": "neon-cli",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Build and load native Rust/Neon modules.",
   "author": "Dave Herman <dherman@mozilla.com>",
   "repository": {
     "type": "git",
-    "url": "http://github.com/dherman/neon-cli.git"
+    "url": "http://github.com/rustbridge/neon-cli.git"
   },
   "main": "lib/index.js",
   "bin": {
@@ -20,7 +20,7 @@
     "minimist": "^1.2.0",
     "mkdirp": "^0.5.1",
     "nan": "2.0.8",
-    "neon-bridge": "^0.1.2",
+    "neon-bridge": "^0.1.3",
     "node-gyp": "3.0.3",
     "semver": "^5.1.0",
     "validate-npm-package-license": "^3.0.1",
@@ -42,7 +42,7 @@
     "prepublish": "in-install || npm run transpile"
   },
   "bugs": {
-    "url": "https://github.com/dherman/neon-cli/issues"
+    "url": "https://github.com/rustbridge/neon-cli/issues"
   },
-  "homepage": "https://github.com/dherman/neon-cli"
+  "homepage": "https://github.com/rustbridge/neon-cli"
 }

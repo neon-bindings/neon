@@ -8,10 +8,6 @@ Required context:
         └── inputs: [string]
 
     build
-    ├── cfg
-    │   ├── gyp: "Debug" or "Release"
-    │   └── cargo: "debug" or "release"
-    ├── release: boolean
     └── cargo
         └── cmd: ["multirust", "run", ("nightly" or "stable")] or []
 
@@ -21,7 +17,12 @@ Required context:
 
 {
     "target_defaults": {
-        "default_configuration": "{{build.cfg.gyp}}"
+        "default_configuration": "<!(python -c 'import os, json; print(\"Debug\" if u\"--debug\" in json.loads(os.getenv(\"npm_config_argv\"))[\"cooked\"] else \"Release\")')"
+    },
+
+    "variables": {
+        "cargo_config": "<!(python -c 'import os, json; print(\"debug\" if u\"--debug\" in json.loads(os.getenv(\"npm_config_argv\"))[\"cooked\"] else \"release\")')",
+        "cargo_flags": "<!(python -c 'import os, json; print(\"\" if u\"--debug\" in json.loads(os.getenv(\"npm_config_argv\"))[\"cooked\"] else \"--release\")')"
     },
 
     "targets": [{
@@ -29,14 +30,14 @@ Required context:
 
         "variables": {
             "rust_inputs": [{{#each project.rust.inputs}}{{#unless @first}}, {{/unless}}"{{this}}"{{/each}}],
-            "static_lib": "target/{{build.cfg.cargo}}/<(STATIC_LIB_PREFIX){{project.name}}<(STATIC_LIB_SUFFIX)"
+            "static_lib": "target/<(cargo_config)/<(STATIC_LIB_PREFIX){{project.name}}<(STATIC_LIB_SUFFIX)"
         },
 
-        "sources": ["<(INTERMEDIATE_DIR)/binding.cc"],      {{~! built client-side }}
+        "sources": ["src/binding.cc"],
 
-        "include_dirs": ["<!(neon include-path)"],          {{~! computed client-side }}
+        "include_dirs": ["<!(node -e \"require('neon-bridge').path()\")"], {{~! computed on the client app's machine }}
 
-        "libraries": ["../<(static_lib)"],                  {{~! gyp weirdly determines libraries from a subdirectory so ../ is needed }}
+        "libraries": ["../<(static_lib)"],                                 {{~! gyp weirdly determines libraries from a subdirectory so ../ is needed }}
 
         "conditions": [
             ["OS=='mac'", {
@@ -50,12 +51,7 @@ Required context:
             "action_name": "cargo",
             "inputs": ["<@(rust_inputs)"],
             "outputs": ["../<(static_lib)"],
-            "action": [{{#each build.cargo.cmd}}"{{this}}", {{/each}}"cargo", "rustc", {{#if build.release}}"--release", {{/if}}"--", "--crate-type", "staticlib"]
-        }, {
-            "action_name": "generate",
-            "inputs": [],
-            "outputs": ["<(INTERMEDIATE_DIR)/binding.cc"],
-            "action": ["neon", "generate", "<(INTERMEDIATE_DIR)/binding.cc"]
+            "action": [{{#each build.cargo.cmd}}"{{this}}", {{/each}}"cargo", "rustc", "<@(cargo_flags)" , "--", "--crate-type", "staticlib"]
         }]
     }]
 
