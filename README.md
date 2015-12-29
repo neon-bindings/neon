@@ -1,8 +1,10 @@
 # Neon
 
-<img align="right" src="neon.jpg" alt="neon"/>A safe Rust abstraction layer for native Node.js modules.
+<img align="right" src="neon.jpg" alt="neon"/>
 
 [![](http://meritbadge.herokuapp.com/neon)](https://crates.io/crates/neon)
+
+A safe Rust abstraction layer for native Node.js modules.
 
 Neon protects all handles to the JavaScript heap, even when they're allocated on the Rust stack, ensuring that objects are always safely tracked by the garbage collector.
 
