@@ -1,7 +1,7 @@
 # Neon-cli
 
 [![Build Status](https://travis-ci.org/rustbridge/neon-cli.svg?branch=master)](https://travis-ci.org/rustbridge/neon-cli)
-[![npm](https://img.shields.io/npm/v/neon-cli.svg)][https://www.npmjs.com/package/neon-cli]
+[![npm](https://img.shields.io/npm/v/neon-cli.svg)](https://www.npmjs.com/package/neon-cli)
 
 Automatically create and build [Neon](https://github.com/rustbridge/neon) modules.
 
