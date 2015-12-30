@@ -5,7 +5,7 @@
   "author": "Dave Herman <dherman@mozilla.com>",
   "repository": {
     "type": "git",
-    "url": "http://github.com/rustbridge/neon-cli.git"
+    "url": "https://github.com/rustbridge/neon-cli.git"
   },
   "main": "lib/index.js",
   "bin": {
