@@ -35,14 +35,14 @@ function printUsage() {
   console.log();
   console.log("Usage:");
   console.log();
-  console.log("  neon new <name> [--rust|-r nightly|stable|default]");
+  console.log("  neon new [@<scope>/]<name> [--rust|-r nightly|stable|default]");
   console.log("    create a new Neon project");
-  console.log();
-  console.log("  neon help");
-  console.log("    print this usage information");
   console.log();
   console.log("  neon version");
   console.log("    print neon-cli version");
+  console.log();
+  console.log("  neon help");
+  console.log("    print this usage information");
   console.log();
   console.log("neon-cli@" + pkg.version + " " + path.dirname(__dirname));
 }
