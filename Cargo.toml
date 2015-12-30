@@ -3,7 +3,7 @@ name = "neon"
 version = "0.1.1"
 authors = ["Dave Herman <dherman@mozilla.com>"]
 description = "A safe abstraction layer for Node.js."
-repository = "https://github.com/dherman/neon"
+repository = "https://github.com/rustbridge/neon"
 license = "MIT"
 exclude = ["neon.jpg"]
 
