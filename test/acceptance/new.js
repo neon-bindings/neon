@@ -33,6 +33,14 @@ describe('neon new', function() {
           assert.deepPropertyVal(cargo, 'package.license', 'MIT');
           assert.deepProperty(cargo, 'dependencies.neon');
 
+          let binding_cc = readFile(this.cwd, 'my-app/src/binding.cc');
+          assert.match(binding_cc, /my_app/);
+          assert.notMatch(binding_cc, /my-app/);
+
+          let binding_gyp = readFile(this.cwd, 'my-app/binding.gyp');
+          assert.match(binding_gyp, /my_app/);
+          assert.notMatch(binding_gyp, /my-app/);
+
           let indexjs = readFile(this.cwd, 'my-app/lib/index.js');
           assert.include(indexjs, `require("neon-bridge").load()`);
 
