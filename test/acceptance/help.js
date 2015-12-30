@@ -7,8 +7,8 @@ describe('neon help', function() {
     this.spawn(['help'])
         .wait('Usage:')
         .wait('neon new')
-        .wait('neon help')
         .wait('neon version')
+        .wait('neon help')
         .run(err => {
           if (err) throw err;
           done();
