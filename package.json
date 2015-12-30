@@ -13,6 +13,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "chalk": "^1.1.1",
     "git-config": "0.0.7",
     "handlebars": "^4.0.3",
     "in-publish": "^2.0.0",

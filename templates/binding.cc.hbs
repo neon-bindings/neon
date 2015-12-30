@@ -10,4 +10,4 @@ void __neon_main__(v8::Local<v8::Object> module) {
   neon_init(module, (void *)node_main);
 }
 
-NODE_MODULE({{project.name}}, __neon_main__)
+NODE_MODULE({{project.name.cargo.internal}}, __neon_main__)

@@ -7,9 +7,8 @@ describe('neon new', function() {
   setup();
 
   it('should create a new project', function(done) {
-    this.spawn(['new', 'my-app'])
-        .wait('This utility will walk you through creating a Neon project.')
-        .wait('name').sendline('')
+    this.spawn(['new', 'my-app'], { stripColors: true })
+        .wait('This utility will walk you through creating the')
         .wait('version').sendline('')
         .wait('desc').sendline('My new app!')
         .wait('node').sendline('')

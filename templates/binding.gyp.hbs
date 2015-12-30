@@ -3,7 +3,9 @@
 Required context:
 
     project
-    └── name: string (with "-" replaced by "_")
+    └── name
+        └── cargo
+            └── internal: string (with "-" replaced by "_")
 
     build
     └── cargo
@@ -24,11 +26,11 @@ Required context:
     },
 
     "targets": [{
-        "target_name": "{{project.name}}",
+        "target_name": "{{project.name.cargo.internal}}",
 
         "variables": {
             "rust_inputs": "<!(python -c 'import os, os.path, sys; [sys.stdout.write(os.path.join(sub, f) + \"\\n\") for sub, _, files in os.walk(\"src\") for f in files if f.endswith(\".rs\")]')",
-            "static_lib": "target/<(cargo_config)/<(STATIC_LIB_PREFIX){{project.name}}<(STATIC_LIB_SUFFIX)"
+            "static_lib": "target/<(cargo_config)/<(STATIC_LIB_PREFIX){{project.name.cargo.internal}}<(STATIC_LIB_SUFFIX)"
         },
 
         "sources": ["src/binding.cc"],
