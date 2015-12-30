@@ -42,4 +42,39 @@ describe('neon new', function() {
           done();
         });
   });
+
+  it('should create a new project as a scoped package', function(done) {
+    this.spawn(['new', '@me/my-package'], { stripColors: true })
+        .wait('This utility will walk you through creating the')
+        .wait('version').sendline('')
+        .wait('desc').sendline('My new scoped package')
+        .wait('node').sendline('')
+        .wait('git').sendline('')
+        .wait('author').sendline('')
+        .wait('email').sendline('')
+        .wait('license').sendline('')
+        .sendEof()
+        .run(err => {
+          if (err) throw err;
+
+          let pkg = JSON.parse(readFile(this.cwd, 'my-package/package.json'));
+          assert.propertyVal(pkg, 'name', '@me/my-package');
+
+          let readme = readFile(this.cwd, 'my-package/README.md');
+          assert.match(readme, /@me\/my-package/);
+
+          let cargo = TOML.parse(readFile(this.cwd, 'my-package/Cargo.toml'));
+          assert.deepPropertyVal(cargo, 'package.name', 'my-package');
+
+          let binding_cc = readFile(this.cwd, 'my-package/src/binding.cc');
+          assert.match(binding_cc, /my_package/);
+          assert.notMatch(binding_cc, /@me/);
+
+          let binding_gyp = readFile(this.cwd, 'my-package/binding.gyp');
+          assert.match(binding_gyp, /my_package/);
+          assert.notMatch(binding_gyp, /@me/);
+
+          done();
+        });
+  });
 });
