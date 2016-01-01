@@ -3,6 +3,9 @@ HTML_FILES = $(MARKDOWN_FILES:doc/%.md=target/doc/%.html)
 
 all: doc
 
+publish: doc
+	cd target/doc && surge
+
 doc: $(HTML_FILES) target/doc/rust.css target/doc/CNAME
 
 target/doc/%.html: doc/%.md
