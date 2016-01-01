@@ -1,3 +1,5 @@
+//! Neon is a safe Rust abstraction layer for writing native Node.js modules.
+
 extern crate neon_sys;
 
 mod internal;
