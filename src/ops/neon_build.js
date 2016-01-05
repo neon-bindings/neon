@@ -50,7 +50,7 @@ async function main(name, configuration) {
   let dylib = path.resolve('native', 'target', configuration, LIB_PREFIX[pp] + name + LIB_SUFFIX[pp]);
   let index = path.resolve('native', 'index.node');
 
-  console.log(style.info("generating native/index.node"));
+  console.log(style.info("generating native" + path.sep + "index.node"));
 
   await remove(index);
   await copy(dylib, index);

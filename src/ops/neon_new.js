@@ -75,11 +75,11 @@ export default async function wizard(pwd, name, toolchain) {
         return "Invalid version: " + input;
       }
     },
-    { type: 'input', name: 'description', message: "description"                               },
-    { type: 'input', name: 'node',        message: "node entry point", default: "lib/index.js" },
-    { type: 'input', name: 'git',         message: "git repository"                            },
-    { type: 'input', name: 'author',      message: "author",           default: guess.author   },
-    { type: 'input', name: 'email',       message: "email",            default: guess.email    },
+    { type: 'input', name: 'description', message: "description"                                              },
+    { type: 'input', name: 'node',        message: "node entry point", default: "lib" + path.sep + "index.js" },
+    { type: 'input', name: 'git',         message: "git repository"                                           },
+    { type: 'input', name: 'author',      message: "author",           default: guess.author                  },
+    { type: 'input', name: 'email',       message: "email",            default: guess.email                   },
     {
       type: 'input',
       name: 'license',
