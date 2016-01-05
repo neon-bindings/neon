@@ -16,6 +16,9 @@
   "license": "{{project.license}}",
 {{/if}}
   "dependencies": {
-    "neon-bridge": "^{{neon-bridge.major}}.{{neon-bridge.minor}}.{{neon-bridge.patch}}"
+    "neon-cli": "^{{neon-cli.major}}.{{neon-cli.minor}}.{{neon-cli.patch}}"
+  },
+  "scripts": {
+    "install": "neon build"
   }
 }

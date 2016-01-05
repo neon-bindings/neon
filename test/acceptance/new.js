@@ -25,26 +25,19 @@ describe('neon new', function() {
           assert.propertyVal(pkg, 'version', '0.1.0');
           assert.propertyVal(pkg, 'description', 'My new app!');
           assert.propertyVal(pkg, 'license', 'MIT');
-          assert.deepProperty(pkg, 'dependencies.neon-bridge');
+          assert.deepProperty(pkg, 'dependencies.neon-cli');
 
-          let cargo = TOML.parse(readFile(this.cwd, 'my-app/Cargo.toml'));
+          let cargo = TOML.parse(readFile(this.cwd, 'my-app/native/Cargo.toml'));
           assert.deepPropertyVal(cargo, 'package.name', 'my-app');
           assert.deepPropertyVal(cargo, 'package.version', '0.1.0');
           assert.deepPropertyVal(cargo, 'package.license', 'MIT');
+          assert.deepPropertyVal(cargo, 'lib.name', 'my_app');
           assert.deepProperty(cargo, 'dependencies.neon');
 
-          let binding_cc = readFile(this.cwd, 'my-app/src/binding.cc');
-          assert.match(binding_cc, /my_app/);
-          assert.notMatch(binding_cc, /my-app/);
-
-          let binding_gyp = readFile(this.cwd, 'my-app/binding.gyp');
-          assert.match(binding_gyp, /my_app/);
-          assert.notMatch(binding_gyp, /my-app/);
-
           let indexjs = readFile(this.cwd, 'my-app/lib/index.js');
-          assert.include(indexjs, `require("neon-bridge").load()`);
+          assert.include(indexjs, `require('../native')`);
 
-          let librs = readFile(this.cwd, 'my-app/src/lib.rs');
+          let librs = readFile(this.cwd, 'my-app/native/src/lib.rs');
           assert.include(librs, `extern crate neon;`);
 
           done();
@@ -71,16 +64,9 @@ describe('neon new', function() {
           let readme = readFile(this.cwd, 'my-package/README.md');
           assert.match(readme, /@me\/my-package/);
 
-          let cargo = TOML.parse(readFile(this.cwd, 'my-package/Cargo.toml'));
+          let cargo = TOML.parse(readFile(this.cwd, 'my-package/native/Cargo.toml'));
           assert.deepPropertyVal(cargo, 'package.name', 'my-package');
-
-          let binding_cc = readFile(this.cwd, 'my-package/src/binding.cc');
-          assert.match(binding_cc, /my_package/);
-          assert.notMatch(binding_cc, /@me/);
-
-          let binding_gyp = readFile(this.cwd, 'my-package/binding.gyp');
-          assert.match(binding_gyp, /my_package/);
-          assert.notMatch(binding_gyp, /@me/);
+          assert.deepPropertyVal(cargo, 'lib.name', 'my_package');
 
           done();
         });
