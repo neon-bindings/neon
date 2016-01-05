@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate neon;
 
 use neon::vm::{Call, Result, JS, Module};
@@ -8,7 +9,6 @@ fn hello(call: Call) -> JS<String> {
     Ok(String::new(scope, "hello node").unwrap())
 }
 
-#[no_mangle]
-pub fn node_main(mut module: Module) -> Result<()> {
-    module.export("hello", hello)
-}
+register_module!(m, {
+    m.export("hello", hello)
+});
