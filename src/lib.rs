@@ -10,20 +10,20 @@ pub mod value;
 pub mod error;
 pub mod buffer;
 
-/// The module version for Node.js 4.x is 46.
-// TODO detect this based on what we're compiling for.
+// The module version for Node.js 4.x is 46.
+// FIXME: detect this based on what we're compiling for.
 pub const NODE_MODULE_VERSION: i32 = 46;
 
 #[macro_export]
-macro_rules! neon_module {
-    ($name:ident($module:ident) $init:block) => {
+macro_rules! onload {
+    ($module:ident, $init:block) => {
         // Mark this function as a global constructor (like C++).
-        // TODO Support more OSes here.
+        // FIXME: Support more OSes here.
         #[cfg_attr(target_os = "linux", link_section = ".ctors")]
         #[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
         #[cfg_attr(target_os = "windows", link_section = ".CRT$XCU")]
         pub static __LOAD_NEON_MODULE: extern "C" fn() = {
-            fn $name(mut $module: $crate::vm::Module) -> $crate::vm::Result<()> $init
+            fn __init_neon_module(mut $module: $crate::vm::Module) -> $crate::vm::Result<()> $init
 
             extern "C" fn __load_neon_module() {
                 // Put everything else in the ctor fn so the user fn can't see it.
@@ -56,7 +56,7 @@ macro_rules! neon_module {
 
                 extern "C" fn __register_neon_module(
                         m: $crate::mem::Handle<$crate::value::SomeObject>, _: *mut u8, _: *mut u8) {
-                    $crate::vm::Module::initialize(m, $name);
+                    $crate::vm::Module::initialize(m, __init_neon_module);
                 }
 
                 extern "C" {
