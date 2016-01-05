@@ -10,15 +10,10 @@ pub mod value;
 pub mod error;
 pub mod buffer;
 
-// The module version for Node.js 4.x is 46.
-// FIXME: detect this based on what we're compiling for.
-pub const NODE_MODULE_VERSION: i32 = 46;
-
 #[macro_export]
-macro_rules! onload {
+macro_rules! register_module {
     ($module:ident, $init:block) => {
         // Mark this function as a global constructor (like C++).
-        // FIXME: Support more OSes here.
         #[cfg_attr(target_os = "linux", link_section = ".ctors")]
         #[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
         #[cfg_attr(target_os = "windows", link_section = ".CRT$XCU")]
@@ -43,7 +38,7 @@ macro_rules! onload {
                 }
 
                 static mut __NODE_MODULE: __NodeModule = __NodeModule {
-                    version: $crate::NODE_MODULE_VERSION,
+                    version: 0,
                     flags: 0,
                     dso_handle: 0 as *mut _,
                     filename: b"neon_source.rs\0" as *const u8,
@@ -64,6 +59,9 @@ macro_rules! onload {
                 }
 
                 unsafe {
+                    // Set the ABI version, which is passed in by `neon build` as an env var.
+                    __NODE_MODULE.version = env!("NEON_NODE_ABI").parse().unwrap();
+
                     node_module_register(&mut __NODE_MODULE);
                 }
             }
