@@ -2,6 +2,7 @@
 
 <img align="right" src="neon.jpg" alt="neon"/>
 
+[![Build Status](https://travis-ci.org/rustbridge/neon.svg?branch=master)](https://travis-ci.org/rustbridge/neon)
 [![](http://meritbadge.herokuapp.com/neon)](https://crates.io/crates/neon)
 
 A safe Rust abstraction layer for native Node.js modules.
