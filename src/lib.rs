@@ -6,9 +6,7 @@ mod internal;
 pub mod mem;
 pub mod vm;
 pub mod scope;
-pub mod value;
-pub mod error;
-pub mod buffer;
+pub mod js;
 
 #[macro_export]
 macro_rules! register_module {
