@@ -44,21 +44,88 @@ That's it—you're ready to create your first Neon project!
 
 # Creating a Project
 
-TODO.
+Let's start by creating a simple project. Installing `neon-cli`
+globally should have added a `neon` command to your path, so you
+should be able to type:
 
 ```
 neon new hello-node
 ```
+
+and see a new directory `hello-node`, which should look like this:
+
+```
+hello-node/
++-- README.md
++-- lib/
+|   +-- index.js
++-- native/
+|   +-- Cargo.toml
+|   +-- src/
+|       +-- lib.rs
++-- package.json
+```
+
+From the outside world, your project is a Node (npm) package, with a
+top-level `package.json` pointing to a main module at
+`lib/index.js`. Your Rust code lives inside the `native/`
+subdirectory.
+
+Take a look at `lib/index.js`:
+
+```javascript
+var addon = require('../native');
+
+console.log(addon.hello());
+```
+
+You can see that the native module is accessible internally to your
+JavaScript code by requiring directly from the `native/`
+directory. This works because building your Neon project generates a
+Node addon at `native/index.node`. Try it now by running:
+
+```
+$ npm install
+```
+
+from inside the top-level `hello-node` directory. You'll see it runs
+Cargo, Rust's package manager and build tool, and generates
+`native/index.node` for you. You can test the project by running:
+
+```
+$ node -e "require('./')"
+hello node
+```
+
+We'll look at the Rust code in the next section, but for now the only
+other thing to note is `native/Cargo.toml`, which is like Rust's
+version of `package.json`. When you want to use other Rust _crates_
+(the Rusty term for packages) from [crates.io](http://crates.io), you
+can add them to the `[dependencies]` section, much like the
+`"dependencies"` section of a `package.json` manifest.
 
 # Hello Node!
 
 TODO.
 
 ```rust
-fn hello_node(call: Call) -> JsResult<JsString> {
-    JsString::new_or_throw(call.scope, "hello node!")
+#[macro_use]
+extern crate neon;
+
+use neon::vm::{Call, JsResult, Module};
+use neon::js::JsString;
+
+fn hello(call: Call) -> JsResult<JsString> {
+    let scope = call.scope;
+    Ok(JsString::new(scope, "hello node").unwrap())
 }
+
+register_module!(m, {
+    m.export("hello", hello)
+});
 ```
+
+TODO.
 
 # Getting Acquainted With Rust
 
@@ -72,7 +139,7 @@ TODO.
 
 TODO.
 
-# Control Flow
+# Errors
 
 TODO.
 
