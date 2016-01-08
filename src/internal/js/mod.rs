@@ -58,6 +58,7 @@ impl<T: Object> SuperType<T> for JsObject {
     }
 }
 
+/// The trait shared by all JavaScript values.
 pub trait Value: ValueInternal {
     fn to_string<'a, T: Scope<'a>>(self, _: &mut T) -> JsResult<'a, JsString> {
         build(|out| { unsafe { neon_sys::convert::to_string(out, self.to_raw()) } })
@@ -68,6 +69,8 @@ pub trait Value: ValueInternal {
     }
 }
 
+/// A wrapper type for JavaScript values that makes it convenient to
+/// check a value's type dynamically using Rust's pattern-matching.
 pub enum Variant<'a> {
     Null(Handle<'a, JsNull>),
     Undefined(Handle<'a, JsUndefined>),
@@ -82,6 +85,7 @@ pub enum Variant<'a> {
 }
 
 
+/// A JavaScript value of any type.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct JsValue(raw::Local);
@@ -125,6 +129,7 @@ impl JsValueInternal for JsValue {
     }
 }
 
+/// The JavaScript `undefined` value.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct JsUndefined(raw::Local);
@@ -161,6 +166,7 @@ impl JsUndefinedInternal for JsUndefined {
     }
 }
 
+/// The JavaScript `null` value.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct JsNull(raw::Local);
@@ -197,6 +203,7 @@ impl JsNullInternal for JsNull {
     }
 }
 
+/// A JavaScript boolean primitive value.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct JsBoolean(raw::Local);
@@ -233,6 +240,7 @@ impl JsBooleanInternal for JsBoolean {
     }
 }
 
+/// A JavaScript string primitive value.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct JsString(raw::Local);
@@ -323,6 +331,8 @@ impl JsStringInternal for JsString {
 }
 
 
+/// A JavaScript number value whose value is known statically to be a
+/// 32-bit integer.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct JsInteger(raw::Local);
@@ -359,6 +369,7 @@ impl JsIntegerInternal for JsInteger {
     }
 }
 
+/// A JavaScript number value.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct JsNumber(raw::Local);
@@ -395,6 +406,7 @@ impl JsNumberInternal for JsNumber {
     }
 }
 
+/// A JavaScript object.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct JsObject(raw::Local);
@@ -448,6 +460,7 @@ impl<'a> PropertyName for &'a str {
     }
 }
 
+/// The trait of all object types.
 pub trait Object: Value {
     fn get<'a, T: Scope<'a>, K: PropertyName>(self, _: &mut T, key: K) -> VmResult<Handle<'a, JsValue>> {
         build(|out| { unsafe { key.get(out, self.to_raw()) } })
@@ -495,6 +508,8 @@ impl JsObject {
     }
 }
 
+/// A JavaScript array object, i.e. a value for which `Array.isArray`
+/// would return `true`.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct JsArray(raw::Local);
@@ -555,6 +570,7 @@ impl JsArray {
 
 impl Object for JsArray { }
 
+/// A JavaScript function object.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct JsFunction(raw::Local);

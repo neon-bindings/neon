@@ -1,3 +1,5 @@
+//! Types and traits representing JavaScript values.
+
 pub mod binary;
 pub mod error;
 

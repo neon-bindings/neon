@@ -1,4 +1,4 @@
-//! Neon is a safe Rust abstraction layer for writing native Node.js modules.
+//! The `neon` crate provides the entire [Neon](http://neon.rustbridge.io) API.
 
 extern crate neon_sys;
 
@@ -8,6 +8,19 @@ pub mod vm;
 pub mod scope;
 pub mod js;
 
+/// Register the current crate as a Node module, providing startup
+/// logic for initializing the module object at runtime.
+///
+/// Example:
+///
+/// ```rust
+/// register_module!(m, {
+///     try!(m.export("foo", foo));
+///     try!(m.export("bar", bar));
+///     try!(m.export("baz", baz));
+///     Ok(())
+/// });
+/// ```
 #[macro_export]
 macro_rules! register_module {
     ($module:ident, $init:block) => {
