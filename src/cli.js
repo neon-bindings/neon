@@ -73,7 +73,6 @@ export default class CLI {
     } catch (e) {
       if (e) {
         console.log(style.error(e.message));
-        console.log(e.stack);
       }
       throw e;
     }
