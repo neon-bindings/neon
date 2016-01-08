@@ -40,15 +40,15 @@ For Mac OS X, you'll need:
 
 # A Taste...
 
-A Neon function takes a `Call` object and produces either a handle to a value or the `Throw` constant (meaning a JS exception was thrown). The `Call` object provides access to a memory management scope, which safely manages the rooting of handles to heap objects:
+A Neon function takes a `Call` object and produces a Rust `Result` that's either a JS value or the `Throw` constant (meaning a JS exception was thrown). The `Call` object provides access to a memory management scope, which safely manages the rooting of handles to heap objects:
 
 ```rust
-fn make_an_array(call: Call) -> JS<Array> {
+fn make_an_array(call: Call) -> JsResult<JsArray> {
     let scope = call.scope; // the current scope for rooting handles
-    let array: Handle<Array> = Array::new(scope, 3);
-    try!(array.set(0, Integer::new(scope, 9000)));
-    try!(array.set(1, Object::new(scope)));
-    try!(array.set(2, Number::new(scope, 3.14159)));
+    let array: Handle<JsArray> = JsArray::new(scope, 3);
+    try!(array.set(0, JsInteger::new(scope, 9000)));
+    try!(array.set(1, JsObject::new(scope)));
+    try!(array.set(2, JsNumber::new(scope, 3.14159)));
     Ok(array)
 }
 ```
