@@ -16,7 +16,7 @@ macro_rules! register_module {
         #[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
         #[cfg_attr(target_os = "windows", link_section = ".CRT$XCU")]
         pub static __LOAD_NEON_MODULE: extern "C" fn() = {
-            fn __init_neon_module(mut $module: $crate::vm::Module) -> $crate::vm::Result<()> $init
+            fn __init_neon_module(mut $module: $crate::vm::Module) -> $crate::vm::VmResult<()> $init
 
             extern "C" fn __load_neon_module() {
                 // Put everything else in the ctor fn so the user fn can't see it.
@@ -27,9 +27,9 @@ macro_rules! register_module {
                     dso_handle: *mut u8,
                     filename: *const u8,
                     register_func: Option<extern "C" fn(
-                        $crate::mem::Handle<$crate::value::SomeObject>, *mut u8, *mut u8)>,
+                        $crate::mem::Handle<$crate::js::JsObject>, *mut u8, *mut u8)>,
                     context_register_func: Option<extern "C" fn(
-                        $crate::mem::Handle<$crate::value::SomeObject>, *mut u8, *mut u8, *mut u8)>,
+                        $crate::mem::Handle<$crate::js::JsObject>, *mut u8, *mut u8, *mut u8)>,
                     modname: *const u8,
                     priv_data: *mut u8,
                     link: *mut __NodeModule
@@ -48,7 +48,7 @@ macro_rules! register_module {
                 };
 
                 extern "C" fn __register_neon_module(
-                        m: $crate::mem::Handle<$crate::value::SomeObject>, _: *mut u8, _: *mut u8) {
+                        m: $crate::mem::Handle<$crate::js::JsObject>, _: *mut u8, _: *mut u8) {
                     $crate::vm::Module::initialize(m, __init_neon_module);
                 }
 
