@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use neon_sys;
 use neon_sys::raw;
 use internal::mem::{Handle, HandleInternal};
-use internal::value::Any;
+use internal::js::Value;
 use internal::vm::Isolate;
 
 pub trait ScopeInternal: Sized {
@@ -45,7 +45,7 @@ pub struct ChainedScope<'a, 'outer> {
 }
 
 impl<'a, 'outer> ChainedScope<'a, 'outer> {
-    pub fn escape<T: Any>(&self, local: Handle<'a, T>) -> Handle<'outer, T> {
+    pub fn escape<T: Value>(&self, local: Handle<'a, T>) -> Handle<'outer, T> {
         unsafe {
             let mut result_local: raw::Local = mem::zeroed();
             neon_sys::scope::escape(&mut result_local, self.v8, local.to_raw());

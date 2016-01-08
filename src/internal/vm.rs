@@ -1,4 +1,3 @@
-use std;
 use std::mem;
 use std::collections::HashSet;
 use std::os::raw::c_void;
@@ -6,12 +5,12 @@ use neon_sys;
 use neon_sys::raw;
 use neon_sys::buf::Buf;
 use internal::scope::{Scope, RootScope, RootScopeInternal};
-use internal::value::{Value, Any, AnyInternal, Object, SomeObject, Function};
+use internal::js::{JsValue, Value, ValueInternal, Object, JsObject, JsFunction};
 use internal::mem::{Handle, HandleInternal};
 
 pub struct Throw;
-pub type Result<T> = std::result::Result<T, Throw>;
-pub type JS<'b, T> = Result<Handle<'b, T>>;
+pub type VmResult<T> = Result<T, Throw>;
+pub type JsResult<'b, T> = VmResult<Handle<'b, T>>;
 
 #[repr(C)]
 pub struct Isolate(raw::Isolate);
@@ -22,15 +21,15 @@ pub struct CallbackInfo {
 }
 
 impl CallbackInfo {
-    pub fn data<'a>(&self) -> Handle<'a, Value> {
+    pub fn data<'a>(&self) -> Handle<'a, JsValue> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
             neon_sys::call::data(&self.info, &mut local);
-            Handle::new(Value::from_raw(local))
+            Handle::new(JsValue::from_raw(local))
         }
     }
 
-    pub fn set_return<'a, 'b, T: Any>(&'a self, value: Handle<'b, T>) {
+    pub fn set_return<'a, 'b, T: Value>(&'a self, value: Handle<'b, T>) {
         unsafe {
             neon_sys::call::set_return(&self.info, value.to_raw())
         }
@@ -38,12 +37,12 @@ impl CallbackInfo {
 }
 
 pub struct Module<'a> {
-    pub exports: Handle<'a, SomeObject>,
+    pub exports: Handle<'a, JsObject>,
     pub scope: &'a mut RootScope<'a>
 }
 
 impl<'a> Module<'a> {
-    pub fn initialize(exports: Handle<SomeObject>, init: fn(Module) -> Result<()>) {
+    pub fn initialize(exports: Handle<JsObject>, init: fn(Module) -> VmResult<()>) {
         let mut scope = RootScope::new(unsafe { mem::transmute(neon_sys::object::get_isolate(exports.to_raw())) });
         unsafe {
             let kernel: *mut c_void = mem::transmute(init);
@@ -56,14 +55,14 @@ impl<'a> Module<'a> {
 }
 
 impl<'a> Module<'a> {
-    pub fn export<T: Any>(&mut self, key: &str, f: fn(Call) -> JS<T>) -> Result<()> {
-        let value = try!(Function::new(self.scope, f)).upcast::<Value>();
+    pub fn export<T: Value>(&mut self, key: &str, f: fn(Call) -> JsResult<T>) -> VmResult<()> {
+        let value = try!(JsFunction::new(self.scope, f)).upcast::<JsValue>();
         try!(self.exports.set(key, value));
         Ok(())
     }
 }
 
-extern "C" fn module_body_callback<'a>(body: fn(Module) -> Result<()>, exports: Handle<'a, SomeObject>, scope: &'a mut RootScope<'a>) {
+extern "C" fn module_body_callback<'a>(body: fn(Module) -> VmResult<()>, exports: Handle<'a, JsObject>, scope: &'a mut RootScope<'a>) {
     let _ = body(Module {
         exports: exports,
         scope: scope
@@ -90,19 +89,19 @@ impl<'a> Call<'a> {
         }
     }
 
-    pub fn this<'b, T: Scope<'b>>(&self, _: &mut T) -> Handle<'b, SomeObject> {
+    pub fn this<'b, T: Scope<'b>>(&self, _: &mut T) -> Handle<'b, JsObject> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
             neon_sys::call::this(mem::transmute(self.info), &mut local);
-            Handle::new(SomeObject::from_raw(local))
+            Handle::new(JsObject::from_raw(local))
         }
     }
 
-    pub fn callee<'b, T: Scope<'b>>(&self, _: &mut T) -> Handle<'b, Function> {
+    pub fn callee<'b, T: Scope<'b>>(&self, _: &mut T) -> Handle<'b, JsFunction> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
             neon_sys::call::callee(mem::transmute(self.info), &mut local);
-            Handle::new(Function::from_raw(local))
+            Handle::new(JsFunction::from_raw(local))
         }
     }
 }
@@ -119,18 +118,18 @@ impl<'a> Arguments<'a> {
         }
     }
 
-    pub fn get<'b, T: Scope<'b>>(&self, _: &mut T, i: i32) -> Option<Handle<'b, Value>> {
+    pub fn get<'b, T: Scope<'b>>(&self, _: &mut T, i: i32) -> Option<Handle<'b, JsValue>> {
         if i < 0 || i >= self.len() {
             return None;
         }
         unsafe {
             let mut local: raw::Local = mem::zeroed();
             neon_sys::call::get(&self.info, i, &mut local);
-            Some(Handle::new(Value::from_raw(local)))
+            Some(Handle::new(JsValue::from_raw(local)))
         }
     }
 
-    pub fn require<'b, T: Scope<'b>>(&self, _: &mut T, i: i32) -> JS<'b, Value> {
+    pub fn require<'b, T: Scope<'b>>(&self, _: &mut T, i: i32) -> JsResult<'b, JsValue> {
         if i < 0 || i >= self.len() {
             // FIXME: throw a type error
             return Err(Throw);
@@ -138,7 +137,7 @@ impl<'a> Arguments<'a> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
             neon_sys::call::get(&self.info, i, &mut local);
-            Ok(Handle::new(Value::from_raw(local)))
+            Ok(Handle::new(JsValue::from_raw(local)))
         }
     }
 }
