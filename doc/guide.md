@@ -36,7 +36,7 @@ later), and for OS X developers, you'll also need
 
 Install the Neon command-line tool with:
 
-```
+```shell
 $ npm install -g neon-cli
 ```
 
@@ -48,22 +48,22 @@ Let's start by creating a simple project. Installing `neon-cli`
 globally should have added a `neon` command to your path, so you
 should be able to type:
 
-```
-neon new hello-node
+```shell
+$ neon new hello-node
 ```
 
 and see a new directory `hello-node`, which should look like this:
 
-```
+```text
 hello-node/
-+-- README.md
-+-- lib/
-|   +-- index.js
-+-- native/
-|   +-- Cargo.toml
-|   +-- src/
-|       +-- lib.rs
-+-- package.json
+├── README.md
+├── lib/
+│   └── index.js
+├── native/
+│   ├── Cargo.toml
+│   └── src/
+│       └── lib.rs
+└── package.json
 ```
 
 From the outside world, your project is a Node (npm) package, with a
@@ -84,7 +84,7 @@ JavaScript code by requiring directly from the `native/`
 directory. This works because building your Neon project generates a
 Node addon at `native/index.node`. Try it now by running:
 
-```
+```shell
 $ npm install
 ```
 
@@ -92,7 +92,7 @@ from inside the top-level `hello-node` directory. You'll see it runs
 Cargo, Rust's package manager and build tool, and generates
 `native/index.node` for you. You can test the project by running:
 
-```
+```shell
 $ node -e "require('.')"
 hello node
 ```
