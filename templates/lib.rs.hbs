@@ -1,12 +1,12 @@
 #[macro_use]
 extern crate neon;
 
-use neon::vm::{Call, Result, JS, Module};
-use neon::value::String;
+use neon::vm::{Call, JsResult, Module};
+use neon::js::JsString;
 
-fn hello(call: Call) -> JS<String> {
+fn hello(call: Call) -> JsResult<JsString> {
     let scope = call.scope;
-    Ok(String::new(scope, "hello node").unwrap())
+    Ok(JsString::new(scope, "hello node").unwrap())
 }
 
 register_module!(m, {
