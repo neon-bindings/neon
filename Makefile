@@ -6,7 +6,13 @@ all: doc
 publish: doc
 	cd target/doc && surge
 
-doc: $(HTML_FILES) target/doc/rust.css target/doc/CNAME
+doc: cargo_doc $(HTML_FILES) target/doc/rust.css target/doc/CNAME
+
+clean:
+	rm -rf target/doc
+
+cargo_doc:
+	cargo doc
 
 target/doc/%.html: doc/%.md
 	rustdoc --markdown-playground-url='https://play.rust-lang.org' --markdown-css rust.css $< --output=target/doc
