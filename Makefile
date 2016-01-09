@@ -6,13 +6,17 @@ all: doc
 publish: doc
 	cd target/doc && surge
 
-doc: cargo_doc $(HTML_FILES) target/doc/rust.css target/doc/CNAME
+doc: neon_api neon_sys_api $(HTML_FILES) target/doc/rust.css target/doc/CNAME
 
 clean:
 	rm -rf target/doc
 
-cargo_doc:
+neon_api:
 	cargo doc
+
+neon_sys_api:
+	cd crates/neon-sys && cargo doc
+	cp -R crates/neon-sys/target/doc/neon_sys ./target/doc/
 
 target/doc/%.html: doc/%.md
 	rustdoc --markdown-playground-url='https://play.rust-lang.org' --markdown-css rust.css $< --output=target/doc
