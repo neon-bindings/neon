@@ -12,7 +12,7 @@ use neon_sys::buf::Buf;
 pub struct JsBuffer(raw::Local);
 
 impl JsBuffer {
-    pub fn new<'a, T: Scope<'a>>(_: &mut T, size: u32) -> VmResult<Handle<'a, JsObject>> {
+    pub fn new<'a, T: Scope<'a>>(_: &mut T, size: u32) -> VmResult<Handle<'a, JsBuffer>> {
         build(|out| { unsafe { neon_sys::buffer::new(out, size) } })
     }
 }
