@@ -1,5 +1,5 @@
 use vm::VmResult;
-use internal::js::{JsObject, Value, ValueInternal, Object, build};
+use internal::js::{Value, ValueInternal, Object, build};
 use internal::mem::Handle;
 use internal::vm::{Lock, LockState};
 use scope::Scope;
