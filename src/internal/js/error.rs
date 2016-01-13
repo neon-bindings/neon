@@ -6,7 +6,7 @@ use neon_sys::raw;
 
 use internal::vm::{Throw, VmResult};
 use internal::js::{JsObject, Value, ValueInternal, Object, build};
-use internal::mem::Handle;
+use internal::mem::{Handle, Managed};
 use scope::Scope;
 
 pub fn throw<'a, T: Value, U>(v: Handle<'a, T>) -> VmResult<U> {
@@ -20,11 +20,13 @@ pub fn throw<'a, T: Value, U>(v: Handle<'a, T>) -> VmResult<U> {
 #[derive(Clone, Copy)]
 pub struct JsTypeError(raw::Local);
 
-impl ValueInternal for JsTypeError {
+impl Managed for JsTypeError {
     fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { JsTypeError(h) }
+}
 
+impl ValueInternal for JsTypeError {
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_sys::tag::is_type_error(other.to_raw()) }
     }

@@ -6,16 +6,12 @@ use std::os::raw::c_void;
 use neon_sys;
 use neon_sys::raw;
 use neon_sys::tag::Tag;
-use internal::mem::{Handle, HandleInternal};
+use internal::mem::{Handle, HandleInternal, Managed};
 use internal::scope::{Scope, RootScope, RootScopeInternal};
 use internal::vm::{VmResult, Throw, JsResult, Isolate, CallbackInfo, Call, exec_function_body};
 use internal::js::error::JsTypeError;
 
-pub trait ValueInternal: Copy {
-    fn to_raw(self) -> raw::Local;
-
-    fn from_raw(h: raw::Local) -> Self;
-
+pub trait ValueInternal: Managed {
     fn is_typeof<Other: Value>(other: Other) -> bool;
 
     fn downcast<Other: Value>(other: Other) -> Option<Self> {
@@ -92,11 +88,13 @@ pub struct JsValue(raw::Local);
 
 impl Value for JsValue { }
 
-impl ValueInternal for JsValue {
+impl Managed for JsValue {
     fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { JsValue(h) }
+}
 
+impl ValueInternal for JsValue {
     fn is_typeof<Other: Value>(_: Other) -> bool {
         true
     }
@@ -142,11 +140,13 @@ impl JsUndefined {
 
 impl Value for JsUndefined { }
 
-impl ValueInternal for JsUndefined {
+impl Managed for JsUndefined {
     fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { JsUndefined(h) }
+}
 
+impl ValueInternal for JsUndefined {
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_sys::tag::is_undefined(other.to_raw()) }
     }
@@ -179,11 +179,13 @@ impl JsNull {
 
 impl Value for JsNull { }
 
-impl ValueInternal for JsNull {
+impl Managed for JsNull {
     fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { JsNull(h) }
+}
 
+impl ValueInternal for JsNull {
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_sys::tag::is_null(other.to_raw()) }
     }
@@ -216,11 +218,13 @@ impl JsBoolean {
 
 impl Value for JsBoolean { }
 
-impl ValueInternal for JsBoolean {
+impl Managed for JsBoolean {
     fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { JsBoolean(h) }
+}
 
+impl ValueInternal for JsBoolean {
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_sys::tag::is_boolean(other.to_raw()) }
     }
@@ -255,11 +259,13 @@ pub struct JsString(raw::Local);
 
 impl Value for JsString { }
 
-impl ValueInternal for JsString {
+impl Managed for JsString {
     fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { JsString(h) }
+}
 
+impl ValueInternal for JsString {
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_sys::tag::is_string(other.to_raw()) }
     }
@@ -353,11 +359,13 @@ impl JsInteger {
 
 impl Value for JsInteger { }
 
-impl ValueInternal for JsInteger {
+impl Managed for JsInteger {
     fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { JsInteger(h) }
+}
 
+impl ValueInternal for JsInteger {
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_sys::tag::is_integer(other.to_raw()) }
     }
@@ -410,11 +418,13 @@ impl JsNumber {
 
 impl Value for JsNumber { }
 
-impl ValueInternal for JsNumber {
+impl Managed for JsNumber {
     fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { JsNumber(h) }
+}
 
+impl ValueInternal for JsNumber {
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_sys::tag::is_number(other.to_raw()) }
     }
@@ -449,11 +459,13 @@ pub struct JsObject(raw::Local);
 
 impl Value for JsObject { }
 
-impl ValueInternal for JsObject {
+impl Managed for JsObject {
     fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { JsObject(h) }
+}
 
+impl ValueInternal for JsObject {
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_sys::tag::is_object(other.to_raw()) }
     }
@@ -558,11 +570,13 @@ impl JsArray {
 
 impl Value for JsArray { }
 
-impl ValueInternal for JsArray {
+impl Managed for JsArray {
     fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { JsArray(h) }
+}
 
+impl ValueInternal for JsArray {
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_sys::tag::is_array(other.to_raw()) }
     }
@@ -638,11 +652,13 @@ extern "C" fn invoke_nanny_function<U: Value>(info: &CallbackInfo) {
 
 impl Value for JsFunction { }
 
-impl ValueInternal for JsFunction {
+impl Managed for JsFunction {
     fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { JsFunction(h) }
+}
 
+impl ValueInternal for JsFunction {
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_sys::tag::is_function(other.to_raw()) }
     }

@@ -5,8 +5,8 @@ use neon_sys;
 use neon_sys::raw;
 use neon_sys::buf::Buf;
 use internal::scope::{Scope, RootScope, RootScopeInternal};
-use internal::js::{JsValue, Value, ValueInternal, Object, JsObject, JsFunction};
-use internal::mem::{Handle, HandleInternal};
+use internal::js::{JsValue, Value, Object, JsObject, JsFunction};
+use internal::mem::{Handle, HandleInternal, Managed};
 
 pub struct Throw;
 pub type VmResult<T> = Result<T, Throw>;

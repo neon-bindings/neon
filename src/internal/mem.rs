@@ -1,10 +1,17 @@
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use neon_sys;
+use neon_sys::raw;
 use internal::js::{Value, ValueInternal, SuperType};
 use internal::js::error::JsTypeError;
 use internal::vm::{JsResult, Lock, LockState};
 use internal::scope::Scope;
+
+pub trait Managed: Copy {
+    fn to_raw(self) -> raw::Local;
+
+    fn from_raw(h: raw::Local) -> Self;
+}
 
 #[repr(C)]
 #[derive(Clone, Copy)]
