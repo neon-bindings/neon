@@ -15,7 +15,7 @@ pub trait Managed: Copy {
 
 #[repr(C)]
 #[derive(Clone, Copy)]
-pub struct Handle<'a, T: Value + 'a> {
+pub struct Handle<'a, T: Managed + 'a> {
     value: T,
     phantom: PhantomData<&'a T>
 }
@@ -26,19 +26,19 @@ impl<'a, T: Value + 'a> Handle<'a, T> {
     }
 }
 
-impl<'a, T: Value + 'a> PartialEq for Handle<'a, T> {
+impl<'a, T: Managed + 'a> PartialEq for Handle<'a, T> {
     fn eq(&self, other: &Self) -> bool {
         unsafe { neon_sys::mem::same_handle(self.to_raw(), other.to_raw()) }
     }
 }
 
-impl<'a, T: Value + 'a> Eq for Handle<'a, T> { }
+impl<'a, T: Managed + 'a> Eq for Handle<'a, T> { }
 
-pub trait HandleInternal<'a, T: Value + 'a> {
+pub trait HandleInternal<'a, T: Managed + 'a> {
     fn new(value: T) -> Handle<'a, T>;
 }
 
-impl<'a, T: Value + 'a> HandleInternal<'a, T> for Handle<'a, T> {
+impl<'a, T: Managed + 'a> HandleInternal<'a, T> for Handle<'a, T> {
     fn new(value: T) -> Handle<'a, T> {
         Handle {
             value: value,
@@ -67,14 +67,14 @@ impl<'a, T: Value> Handle<'a, T> {
     }
 }
 
-impl<'a, T: Value> Deref for Handle<'a, T> {
+impl<'a, T: Managed> Deref for Handle<'a, T> {
     type Target = T;
     fn deref<'b>(&'b self) -> &'b T {
         &self.value
     }
 }
 
-impl<'a, T: Value> DerefMut for Handle<'a, T> {
+impl<'a, T: Managed> DerefMut for Handle<'a, T> {
     fn deref_mut<'b>(&'b mut self) -> &'b mut T {
         &mut self.value
     }

@@ -77,6 +77,15 @@ extern "C" {
   void NeonSys_Fun_ExecBody(void *closure, NeonSys_RootScopeCallback callback, Nan::FunctionCallbackInfo<v8::Value> *info, void *scope);
   void *NeonSys_Fun_GetKernel(v8::Local<v8::Object> obj);
 
+  void NeonSys_Class_ForConstructor(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::FunctionTemplate> *out);
+  void NeonSys_Class_ForMethod(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::FunctionTemplate> *out);
+  bool NeonSys_Class_Create(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, v8::FunctionCallback callback, void *construct_kernel);
+  void *NeonSys_Class_GetConstructorKernel(v8::Local<v8::External> wrapper);
+  void NeonSys_Class_ExecConstructorKernel(void *closure, NeonSys_RootScopeCallback callback, Nan::FunctionCallbackInfo<v8::Value> *info, void *scope);
+  void NeonSys_Class_Constructor(v8::Local<v8::Function> *out, v8::Local<v8::FunctionTemplate> ft);
+  bool NeonSys_Class_Check(v8::Local<v8::FunctionTemplate> ft, v8::Local<v8::Value> v);
+  void *NeonSys_Class_GetInstanceInternals(v8::Local<v8::Object> obj);
+
   void NeonSys_Module_ExecBody(void *kernel, NeonSys_ModuleScopeCallback callback, v8::Local<v8::Object> exports, void *scope);
 
   tag_t NeonSys_Tag_Of(v8::Local<v8::Value> val);

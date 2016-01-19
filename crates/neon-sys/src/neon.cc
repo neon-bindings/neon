@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "neon.h"
+#include "neon_constructor_metadata.h"
+#include "neon_class_metadata.h"
 
 extern "C" void NeonSys_Call_SetReturn(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> value) {
   info->GetReturnValue().Set(value);
@@ -223,7 +225,58 @@ private:
   void *kernel;
 };
 
+// FIXME: pull out info->Data() on the Rust side?
+extern "C" void NeonSys_Class_ForConstructor(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::FunctionTemplate> *out) {
+  v8::Local<v8::External> wrapper = v8::Local<v8::External>::Cast(info->Data());
+  NeonConstructorMetadata *metadata = static_cast<NeonConstructorMetadata *>(wrapper->Value());
+  *out = metadata->GetConstructorTemplate();
+}
+
+extern "C" void NeonSys_Class_ForMethod(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::FunctionTemplate> *out) {
+  // FIXME: implement this
+}
+
+extern "C" bool NeonSys_Class_Create(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, v8::FunctionCallback construct_callback, void *construct_kernel) {
+  NeonConstructorMetadata *metadata = new NeonConstructorMetadata(construct_kernel);
+  v8::Local<v8::FunctionTemplate> ft = v8::FunctionTemplate::New(isolate, construct_callback, v8::External::New(isolate, metadata));
+  // FIXME: check for failure?
+  metadata->SetConstructorTemplate(ft);
+  v8::Local<v8::ObjectTemplate> it = ft->InstanceTemplate();
+  it->SetInternalFieldCount(1); // index 0: an aligned, owned pointer to the Rust internals
+  // Force instantiation. No more modifications allowed after this.
+  ft->GetFunction();
+  *out = ft;
+  return true;
+}
+
+extern "C" void *NeonSys_Class_GetConstructorKernel(v8::Local<v8::External> wrapper) {
+  NeonConstructorMetadata *metadata = static_cast<NeonConstructorMetadata *>(wrapper->Value());
+  return metadata->GetConstructorKernel();
+}
+
+// FIXME: this can be coalesced with ExecBody as `NeonSys_Call_ExecKernel`
+extern "C" void NeonSys_Class_ExecConstructorKernel(void *closure, NeonSys_RootScopeCallback callback, Nan::FunctionCallbackInfo<v8::Value> *info, void *scope) {
+  Nan::HandleScope v8_scope;
+  callback(info, closure, scope);
+}
+
+// FIXME: should return bool to be fallible
+extern "C" void NeonSys_Class_Constructor(v8::Local<v8::Function> *out, v8::Local<v8::FunctionTemplate> ft) {
+  // FIXME: use the MaybeLocal version
+  *out = ft->GetFunction();
+}
+
+extern "C" bool NeonSys_Class_Check(v8::Local<v8::FunctionTemplate> ft, v8::Local<v8::Value> v) {
+  return ft->HasInstance(v);
+}
+
+extern "C" void *NeonSys_Class_GetInstanceInternals(v8::Local<v8::Object> obj) {
+  return obj->GetAlignedPointerFromInternalField(0);
+}
+
 extern "C" bool NeonSys_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, Nan::FunctionCallback callback, void *kernel) {
+  // FIXME: use v8::External for the environment
+  // FIXME: create a NeonFunctionMetadata class
   v8::Local<v8::ObjectTemplate> env_tmpl = v8::ObjectTemplate::New(isolate);
   env_tmpl->SetInternalFieldCount(1);
   v8::MaybeLocal<v8::Object> maybe_env = env_tmpl->NewInstance(isolate->GetCurrentContext());

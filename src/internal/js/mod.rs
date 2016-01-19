@@ -1,5 +1,6 @@
 pub mod binary;
 pub mod error;
+pub mod class;
 
 use std::mem;
 use std::os::raw::c_void;
@@ -27,7 +28,7 @@ pub trait ValueInternal: Managed {
     }
 }
 
-pub fn build<'a, T: Value, F: FnOnce(&mut raw::Local) -> bool>(init: F) -> JsResult<'a, T> {
+pub fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(init: F) -> JsResult<'a, T> {
     unsafe {
         let mut local: raw::Local = mem::zeroed();
         if init(&mut local) {
@@ -630,7 +631,7 @@ impl JsFunction {
         build(|out| {
             unsafe {
                 let isolate: *mut c_void = mem::transmute(scope.isolate());
-                let callback: extern "C" fn(&CallbackInfo) = invoke_nanny_function::<U>;
+                let callback: extern "C" fn(&CallbackInfo) = call_neon_function::<U>;
                 let callback: *mut c_void = mem::transmute(callback);
                 let kernel: *mut c_void = mem::transmute(f);
                 neon_sys::fun::new(out, isolate, callback, kernel)
@@ -639,7 +640,7 @@ impl JsFunction {
     }
 }
 
-extern "C" fn invoke_nanny_function<U: Value>(info: &CallbackInfo) {
+extern "C" fn call_neon_function<U: Value>(info: &CallbackInfo) {
     let mut scope = RootScope::new(unsafe { mem::transmute(neon_sys::call::get_isolate(mem::transmute(info))) });
     exec_function_body(info, &mut scope, |call| {
         let data = info.data();

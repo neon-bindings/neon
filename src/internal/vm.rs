@@ -1,4 +1,5 @@
 use std::mem;
+use std::marker::PhantomData;
 use std::collections::HashSet;
 use std::os::raw::c_void;
 use neon_sys;
@@ -6,6 +7,7 @@ use neon_sys::raw;
 use neon_sys::buf::Buf;
 use internal::scope::{Scope, RootScope, RootScopeInternal};
 use internal::js::{JsValue, Value, Object, JsObject, JsFunction};
+use internal::js::class::{Class, JsClass};
 use internal::mem::{Handle, HandleInternal, Managed};
 
 pub struct Throw;
@@ -80,28 +82,98 @@ pub enum CallKind {
     Call
 }
 
+fn callback_kind(info: &CallbackInfo) -> CallKind {
+    if unsafe { neon_sys::call::is_construct(mem::transmute(info)) } {
+        CallKind::Construct
+    } else {
+        CallKind::Call
+    }
+}
+
+fn callback_this<'a, T: Scope<'a>>(info: &CallbackInfo, _: &mut T) -> Handle<'a, JsObject> {
+    unsafe {
+        let mut local: raw::Local = mem::zeroed();
+        neon_sys::call::this(mem::transmute(info), &mut local);
+        Handle::new(JsObject::from_raw(local))
+    }
+}
+
+fn callback_callee<'a, T: Scope<'a>>(info: &CallbackInfo, _: &mut T) -> Handle<'a, JsFunction> {
+    unsafe {
+        let mut local: raw::Local = mem::zeroed();
+        neon_sys::call::callee(mem::transmute(info), &mut local);
+        Handle::new(JsFunction::from_raw(local))
+    }
+}
+
 impl<'a> Call<'a> {
     pub fn kind(&self) -> CallKind {
-        if unsafe { neon_sys::call::is_construct(mem::transmute(self.info)) } {
-            CallKind::Construct
-        } else {
-            CallKind::Call
-        }
+        callback_kind(&self.info)
     }
 
-    pub fn this<'b, T: Scope<'b>>(&self, _: &mut T) -> Handle<'b, JsObject> {
-        unsafe {
-            let mut local: raw::Local = mem::zeroed();
-            neon_sys::call::this(mem::transmute(self.info), &mut local);
-            Handle::new(JsObject::from_raw(local))
-        }
+    pub fn this<'b, T: Scope<'b>>(&self, scope: &mut T) -> Handle<'b, JsObject> {
+        callback_this(&self.info, scope)
     }
 
-    pub fn callee<'b, T: Scope<'b>>(&self, _: &mut T) -> Handle<'b, JsFunction> {
+    pub fn callee<'b, T: Scope<'b>>(&self, scope: &mut T) -> Handle<'b, JsFunction> {
+        callback_callee(&self.info, scope)
+    }
+}
+
+pub struct ConstructorCall<'a, T: Class> {
+    info: &'a CallbackInfo,
+    pub scope: &'a mut RootScope<'a>,
+    pub arguments: Arguments<'a>,
+    phantom: PhantomData<T>
+}
+
+impl<'a, T: Class> ConstructorCall<'a, T> {
+    pub fn kind(&self) -> CallKind {
+        callback_kind(&self.info)
+    }
+
+    pub fn this<'b, U: Scope<'b>>(&self, scope: &mut U) -> Handle<'b, JsObject> {
+        callback_this(&self.info, scope)
+    }
+
+    pub fn callee<'b, U: Scope<'b>>(&self, scope: &mut U) -> Handle<'b, JsFunction> {
+        callback_callee(&self.info, scope)
+    }
+
+    pub fn class<'b, U: Scope<'b>>(&self, _: &mut U) -> Handle<'b, JsClass<T>> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            neon_sys::call::callee(mem::transmute(self.info), &mut local);
-            Handle::new(JsFunction::from_raw(local))
+            neon_sys::class::for_constructor(mem::transmute(&self.info), &mut local);
+            Handle::new(JsClass::from_raw(local))
+        }
+    }
+}
+
+pub struct MethodCall<'a, T: Class> {
+    info: &'a CallbackInfo,
+    pub scope: &'a mut RootScope<'a>,
+    pub arguments: Arguments<'a>,
+    phantom: PhantomData<T>
+}
+
+impl<'a, T: Class> MethodCall<'a, T> {
+    pub fn kind(&self) -> CallKind {
+        callback_kind(&self.info)
+    }
+
+    pub fn this<'b, U: Scope<'b>>(&self, scope: &mut U) -> Handle<'b, JsObject> {
+        callback_this(&self.info, scope)
+    }
+
+    pub fn callee<'b, U: Scope<'b>>(&self, scope: &mut U) -> Handle<'b, JsFunction> {
+        callback_callee(&self.info, scope)
+    }
+
+    pub fn class<'b, U: Scope<'b>>(&self, _: &mut U) -> Handle<'b, JsClass<T>> {
+        unsafe {
+            let mut local: raw::Local = mem::zeroed();
+            neon_sys::class::for_method(mem::transmute(&self.info), &mut local);
+            Handle::new(JsClass::from_raw(local))
         }
     }
 }
@@ -142,6 +214,8 @@ impl<'a> Arguments<'a> {
     }
 }
 
+// FIXME: change all the instances of "body" to "kernel"
+
 pub fn exec_function_body<'a, F>(info: &'a CallbackInfo, scope: &'a mut RootScope<'a>, f: F)
     where F: FnOnce(Call<'a>)
 {
@@ -165,6 +239,33 @@ extern "C" fn function_body_callback<'a, F>(info: &'a CallbackInfo, body: Box<F>
         arguments: unsafe { mem::transmute(info) }
     });
 }
+
+pub fn exec_constructor_kernel<'a, T: Class, F>(info: &'a CallbackInfo, scope: &'a mut RootScope<'a>, f: F)
+    where F: FnOnce(ConstructorCall<'a, T>)
+{
+    let closure: Box<F> = Box::new(f);
+    let callback: extern "C" fn(&'a CallbackInfo, Box<F>, &'a mut RootScope<'a>) = constructor_kernel_callback::<'a, T, F>;
+    unsafe {
+        let closure: *mut c_void = mem::transmute(closure);
+        let callback: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = mem::transmute(callback);
+        let info: &c_void = mem::transmute(info);
+        let scope: *mut c_void = mem::transmute(scope);
+        neon_sys::class::exec_constructor_kernel(closure, callback, info, scope);
+    }
+}
+
+extern "C" fn constructor_kernel_callback<'a, T: Class, F>(info: &'a CallbackInfo, body: Box<F>, scope: &'a mut RootScope<'a>)
+    where F: FnOnce(ConstructorCall<'a, T>)
+{
+    body(ConstructorCall {
+        info: info,
+        scope: scope,
+        arguments: unsafe { mem::transmute(info) },
+        phantom: PhantomData
+    });
+}
+
+
 
 pub struct LockState {
     buffers: HashSet<usize>

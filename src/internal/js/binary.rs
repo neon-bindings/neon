@@ -33,6 +33,9 @@ impl Value for JsBuffer { }
 
 impl Object for JsBuffer { }
 
+// FIXME: I believe this is unsafe. I think the Lock API needs to
+// tighten the lifetime of the exposed internals not to outlive the
+// lock.
 impl<'a> Lock for Handle<'a, JsBuffer> {
     type Internals = Buf<'a>;
 
