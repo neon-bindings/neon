@@ -64,7 +64,7 @@ pub trait Value: ValueInternal {
         build(|out| { unsafe { neon_sys::convert::to_string(out, self.to_raw()) } })
     }
 
-    fn value<'a, T: Scope<'a>>(self, _: &mut T) -> Handle<'a, JsValue> {
+    fn as_value<'a, T: Scope<'a>>(self, _: &mut T) -> Handle<'a, JsValue> {
         JsValue::new_internal(self.to_raw())
     }
 }
@@ -264,7 +264,7 @@ impl JsString {
         }
     }
 
-    pub fn data(self) -> String {
+    pub fn value(self) -> String {
         unsafe {
             // FIXME: use StringBytes::StorageSize instead?
             // FIXME: audit all these isize -> usize casts
@@ -365,6 +365,26 @@ impl JsIntegerInternal for JsInteger {
             let mut local: raw::Local = mem::zeroed();
             neon_sys::primitive::integer(&mut local, mem::transmute(isolate), i);
             Handle::new(JsInteger(local))
+        }
+    }
+}
+
+impl JsInteger {
+    pub fn is_u32(self) -> bool {
+        unsafe {
+            neon_sys::primitive::is_u32(self.to_raw())
+        }
+    }
+
+    pub fn is_i32(self) -> bool {
+        unsafe {
+            neon_sys::primitive::is_i32(self.to_raw())
+        }
+    }
+
+    pub fn value(self) -> i64 {
+        unsafe {
+            neon_sys::primitive::integer_value(self.to_raw())
         }
     }
 }

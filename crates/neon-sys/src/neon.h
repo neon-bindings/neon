@@ -37,6 +37,9 @@ extern "C" {
   void NeonSys_Primitive_Undefined(v8::Local<v8::Primitive> *out);
   void NeonSys_Primitive_Null(v8::Local<v8::Primitive> *out);
   void NeonSys_Primitive_Boolean(v8::Local<v8::Boolean> *out, bool b);
+  bool NeonSys_Primitive_IsUint32(v8::Local<v8::Primitive> p);
+  bool NeonSys_Primitive_IsInt32(v8::Local<v8::Primitive> p);
+  int64_t NeonSys_Primitive_IntegerValue(v8::Local<v8::Integer> i);
 
   void NeonSys_Object_New(v8::Local<v8::Object> *out);
   bool NeonSys_Object_GetOwnPropertyNames(v8::Local<v8::Array> *out, v8::Local<v8::Object> obj);

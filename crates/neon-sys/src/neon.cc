@@ -69,6 +69,18 @@ extern "C" void NeonSys_Primitive_Number(v8::Local<v8::Number> *out, v8::Isolate
   *out = v8::Number::New(isolate, value);
 }
 
+extern "C" bool NeonSys_Primitive_IsUint32(v8::Local<v8::Primitive> p) {
+  return p->IsUint32();
+}
+
+extern "C" bool NeonSys_Primitive_IsInt32(v8::Local<v8::Primitive> p) {
+  return p->IsInt32();
+}
+
+extern "C" int64_t NeonSys_Primitive_IntegerValue(v8::Local<v8::Integer> i) {
+  return i->Value();
+}
+
 extern "C" bool NeonSys_Object_Get_Index(v8::Local<v8::Value> *out, v8::Local<v8::Object> obj, uint32_t index) {
   Nan::MaybeLocal<v8::Value> maybe = Nan::Get(obj, index);
   return maybe.ToLocal(out);

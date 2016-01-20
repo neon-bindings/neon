@@ -14,6 +14,15 @@ extern "system" {
     #[link_name = "NeonSys_Primitive_Integer"]
     pub fn integer(out: &mut Local, isolate: *mut Isolate, x: i32);
 
+    #[link_name = "NeonSys_Primitive_IsUint32"]
+    pub fn is_u32(p: Local) -> bool;
+
+    #[link_name = "NeonSys_Primitive_IsInt32"]
+    pub fn is_i32(p: Local) -> bool;
+
+    #[link_name = "NeonSys_Primitive_IntegerValue"]
+    pub fn integer_value(p: Local) -> i64;
+
     #[link_name = "NeonSys_Primitive_Number"]
     pub fn number(out: &mut Local, isolate: *mut Isolate, v: f64);
 
