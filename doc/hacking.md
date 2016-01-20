@@ -6,3 +6,10 @@ little more about how Neon works under the hood.
 
 TODO.
 
+# Resources
+
+* [V8 API Docs by Node Version](https://v8docs.nodesource.com/)
+* [Node ABI Table](https://nodejs.org/en/download/releases/)
+* [**NAN** API Docs](https://github.com/nodejs/nan/)
+* [V8 Embedder's Guide](https://developers.google.com/v8/embed?hl=en)
+* [Rust API Docs](https://doc.rust-lang.org/std)
