@@ -240,6 +240,14 @@ impl JsBooleanInternal for JsBoolean {
     }
 }
 
+impl JsBoolean {
+    pub fn value(self) -> bool {
+        unsafe {
+            neon_sys::primitive::boolean_value(self.to_raw())
+        }
+    }
+}
+
 /// A JavaScript string primitive value.
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -422,6 +430,14 @@ impl JsNumberInternal for JsNumber {
             let mut local: raw::Local = mem::zeroed();
             neon_sys::primitive::number(&mut local, mem::transmute(isolate), v);
             Handle::new(JsNumber(local))
+        }
+    }
+}
+
+impl JsNumber {
+    pub fn value(self) -> f64 {
+        unsafe {
+            neon_sys::primitive::number_value(self.to_raw())
         }
     }
 }
