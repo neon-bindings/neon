@@ -13,7 +13,7 @@ pub mod js;
 ///
 /// Example:
 ///
-/// ```rust
+/// ```rust,ignore
 /// register_module!(m, {
 ///     try!(m.export("foo", foo));
 ///     try!(m.export("bar", bar));
