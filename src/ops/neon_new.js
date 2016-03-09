@@ -27,19 +27,21 @@ const LIBRS_TEMPLATE     = compile('lib.rs.hbs');
 const README_TEMPLATE    = compile('README.md.hbs');
 
 async function guessAuthor() {
+  let author = {
+    author: process.env.USER || process.env.USERNAME,
+    email: undefined
+  };
   try {
     let config = await gitconfig();
     if (config.user.name) {
-      return {
-        author: config.user.name,
-        email: config.user.email
-      };
+      author.name = config.user.name;
     }
+    if (config.user.email) {
+      author.email = config.user.email;
+    }
+    return author;
   } catch (e) {
-    return {
-      author: process.env.USER || process.env.USERNAME,
-      email: undefined
-    };
+    return author;
   }
 }
 
