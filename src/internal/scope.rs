@@ -9,7 +9,7 @@ use internal::js::Value;
 use internal::vm::Isolate;
 
 pub trait ScopeInternal: Sized {
-    fn isolate(&self) -> *mut Isolate;
+    fn isolate(&self) -> Isolate;
     fn active_cell(&self) -> &RefCell<bool>;
 }
 
@@ -25,19 +25,19 @@ fn ensure_active<T: ScopeInternal>(scope: &T) {
 }
 
 pub struct RootScope<'a> {
-    isolate: *mut Isolate,
+    isolate: Isolate,
     active: RefCell<bool>,
     phantom: PhantomData<&'a ()>
 }
 
 pub struct NestedScope<'a> {
-    isolate: *mut Isolate,
+    isolate: Isolate,
     active: RefCell<bool>,
     phantom: PhantomData<&'a ()>
 }
 
 pub struct ChainedScope<'a, 'outer> {
-    isolate: *mut Isolate,
+    isolate: Isolate,
     active: RefCell<bool>,
     v8: *mut raw::EscapableHandleScope,
     parent: PhantomData<&'outer ()>,
@@ -55,11 +55,11 @@ impl<'a, 'outer> ChainedScope<'a, 'outer> {
 }
 
 pub trait RootScopeInternal<'a> {
-    fn new(isolate: *mut Isolate) -> RootScope<'a>;
+    fn new(isolate: Isolate) -> RootScope<'a>;
 }
 
 impl<'a> RootScopeInternal<'a> for RootScope<'a> {
-    fn new(isolate: *mut Isolate) -> RootScope<'a> {
+    fn new(isolate: Isolate) -> RootScope<'a> {
         RootScope {
             isolate: isolate,
             active: RefCell::new(true),
@@ -97,7 +97,7 @@ extern "C" fn chained_callback<'a, T, P, F>(out: &mut Box<Option<T>>,
 }
 
 impl<'a> ScopeInternal for RootScope<'a> {
-    fn isolate(&self) -> *mut Isolate { self.isolate }
+    fn isolate(&self) -> Isolate { self.isolate }
 
     fn active_cell(&self) -> &RefCell<bool> {
         &self.active
@@ -133,7 +133,7 @@ fn nest<'me, T, S, F>(outer: &'me S, f: F) -> T
 {
     ensure_active(outer);
     let closure: Box<F> = Box::new(f);
-    let callback: extern "C" fn(&mut Box<Option<T>>, *mut Isolate, Box<F>) = nested_callback::<T, F>;
+    let callback: extern "C" fn(&mut Box<Option<T>>, Isolate, Box<F>) = nested_callback::<T, F>;
     let mut result: Box<Option<T>> = Box::new(None);
     {
         let out: &mut Box<Option<T>> = &mut result;
@@ -151,7 +151,7 @@ fn nest<'me, T, S, F>(outer: &'me S, f: F) -> T
 }
 
 extern "C" fn nested_callback<T, F>(out: &mut Box<Option<T>>,
-                                    isolate: *mut Isolate,
+                                    isolate: Isolate,
                                     f: Box<F>)
     where F: for<'nested> FnOnce(&mut NestedScope<'nested>) -> T
 {
@@ -175,7 +175,7 @@ impl<'a> Scope<'a> for NestedScope<'a> {
 }
 
 impl<'a> ScopeInternal for NestedScope<'a> {
-    fn isolate(&self) -> *mut Isolate { self.isolate }
+    fn isolate(&self) -> Isolate { self.isolate }
 
     fn active_cell(&self) -> &RefCell<bool> {
         &self.active
@@ -193,7 +193,7 @@ impl<'a, 'outer> Scope<'a> for ChainedScope<'a, 'outer> {
 }
 
 impl<'a, 'outer> ScopeInternal for ChainedScope<'a, 'outer> {
-    fn isolate(&self) -> *mut Isolate { self.isolate }
+    fn isolate(&self) -> Isolate { self.isolate }
 
     fn active_cell(&self) -> &RefCell<bool> {
         &self.active

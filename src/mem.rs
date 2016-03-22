@@ -2,4 +2,4 @@
 //!
 //! 
 
-pub use internal::mem::{Handle, LockedHandle};
+pub use internal::mem::{Handle, LockedHandle, Managed};

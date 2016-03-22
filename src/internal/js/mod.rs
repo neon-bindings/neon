@@ -8,8 +8,8 @@ use neon_sys;
 use neon_sys::raw;
 use neon_sys::tag::Tag;
 use internal::mem::{Handle, HandleInternal, Managed};
-use internal::scope::{Scope, RootScope, RootScopeInternal};
-use internal::vm::{VmResult, Throw, JsResult, Isolate, CallbackInfo, Call, exec_function_body};
+use internal::scope::Scope;
+use internal::vm::{VmResult, Throw, JsResult, Isolate, IsolateInternal, CallbackInfo, Call, This, Kernel, exec_function_kernel};
 use internal::js::error::JsTypeError;
 
 pub trait ValueInternal: Managed {
@@ -101,6 +101,12 @@ impl ValueInternal for JsValue {
     }
 }
 
+impl This for JsValue {
+    fn as_this(h: raw::Local) -> Self {
+        JsValue(h)
+    }
+}
+
 impl<'a> Handle<'a, JsValue> {
     pub fn variant(self) -> Variant<'a> {
         match unsafe { neon_sys::tag::of(self.to_raw()) } {
@@ -145,6 +151,16 @@ impl Managed for JsUndefined {
     fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { JsUndefined(h) }
+}
+
+impl This for JsUndefined {
+    fn as_this(_: raw::Local) -> Self {
+        unsafe {
+            let mut local: raw::Local = mem::zeroed();
+            neon_sys::primitive::undefined(&mut local);
+            JsUndefined(local)
+        }
+    }
 }
 
 impl ValueInternal for JsUndefined {
@@ -281,8 +297,8 @@ impl JsString {
 
     pub fn value(self) -> String {
         unsafe {
-            // FIXME: use StringBytes::StorageSize instead?
-            // FIXME: audit all these isize -> usize casts
+            // TODO: use StringBytes::StorageSize instead?
+            // TODO: audit all these isize -> usize casts
             let capacity = neon_sys::string::utf8_len(self.to_raw());
             let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
             let p = buffer.as_mut_ptr();
@@ -299,14 +315,14 @@ impl JsString {
     pub fn new_or_throw<'a, T: Scope<'a>>(scope: &mut T, val: &str) -> VmResult<Handle<'a, JsString>> {
         match JsString::new(scope, val) {
             Some(v) => Ok(v),
-            // FIXME: should this be a different error type?
+            // TODO: should this be a different error type?
             None => JsTypeError::throw("invalid string contents")
         }
     }
 }
 
 pub trait JsStringInternal {
-    fn new_internal<'a>(isolate: *mut Isolate, val: &str) -> Option<Handle<'a, JsString>>;
+    fn new_internal<'a>(isolate: Isolate, val: &str) -> Option<Handle<'a, JsString>>;
 }
 
 // Lower a &str to the types expected by Node: a const *uint8_t buffer and an int32_t length.
@@ -329,14 +345,14 @@ fn lower_str_unwrap(s: &str) -> (*const u8, i32) {
 }
 
 impl JsStringInternal for JsString {
-    fn new_internal<'a>(isolate: *mut Isolate, val: &str) -> Option<Handle<'a, JsString>> {
+    fn new_internal<'a>(isolate: Isolate, val: &str) -> Option<Handle<'a, JsString>> {
         let (ptr, len) = match lower_str(val) {
             Some(pair) => pair,
             None => { return None; }
         };
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            if neon_sys::string::new(&mut local, mem::transmute(isolate), ptr, len) {
+            if neon_sys::string::new(&mut local, isolate.to_raw(), ptr, len) {
                 Some(Handle::new(JsString(local)))
             } else {
                 None
@@ -373,14 +389,14 @@ impl ValueInternal for JsInteger {
 }
 
 pub trait JsIntegerInternal {
-    fn new_internal<'a>(isolate: *mut Isolate, i: i32) -> Handle<'a, JsInteger>;
+    fn new_internal<'a>(isolate: Isolate, i: i32) -> Handle<'a, JsInteger>;
 }
 
 impl JsIntegerInternal for JsInteger {
-    fn new_internal<'a>(isolate: *mut Isolate, i: i32) -> Handle<'a, JsInteger> {
+    fn new_internal<'a>(isolate: Isolate, i: i32) -> Handle<'a, JsInteger> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            neon_sys::primitive::integer(&mut local, mem::transmute(isolate), i);
+            neon_sys::primitive::integer(&mut local, isolate.to_raw(), i);
             Handle::new(JsInteger(local))
         }
     }
@@ -432,14 +448,14 @@ impl ValueInternal for JsNumber {
 }
 
 pub trait JsNumberInternal {
-    fn new_internal<'a>(isolate: *mut Isolate, v: f64) -> Handle<'a, JsNumber>;
+    fn new_internal<'a>(isolate: Isolate, v: f64) -> Handle<'a, JsNumber>;
 }
 
 impl JsNumberInternal for JsNumber {
-    fn new_internal<'a>(isolate: *mut Isolate, v: f64) -> Handle<'a, JsNumber> {
+    fn new_internal<'a>(isolate: Isolate, v: f64) -> Handle<'a, JsNumber> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            neon_sys::primitive::number(&mut local, mem::transmute(isolate), v);
+            neon_sys::primitive::number(&mut local, isolate.to_raw(), v);
             Handle::new(JsNumber(local))
         }
     }
@@ -464,6 +480,10 @@ impl Managed for JsObject {
     fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { JsObject(h) }
+}
+
+impl This for JsObject {
+    fn as_this(h: raw::Local) -> Self { JsObject(h) }
 }
 
 impl ValueInternal for JsObject {
@@ -584,14 +604,14 @@ impl ValueInternal for JsArray {
 }
 
 pub trait JsArrayInternal {
-    fn new_internal<'a>(isolate: *mut Isolate, len: u32) -> Handle<'a, JsArray>;
+    fn new_internal<'a>(isolate: Isolate, len: u32) -> Handle<'a, JsArray>;
 }
 
 impl JsArrayInternal for JsArray {
-    fn new_internal<'a>(isolate: *mut Isolate, len: u32) -> Handle<'a, JsArray> {
+    fn new_internal<'a>(isolate: Isolate, len: u32) -> Handle<'a, JsArray> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            neon_sys::array::new(&mut local, mem::transmute(isolate), len);
+            neon_sys::array::new(&mut local, isolate.to_raw(), len);
             Handle::new(JsArray(local))
         }
     }
@@ -626,23 +646,52 @@ impl Object for JsArray { }
 #[derive(Clone, Copy)]
 pub struct JsFunction(raw::Local);
 
+#[repr(C)]
+pub struct FunctionKernel<T: Value>(fn(Call) -> JsResult<T>);
+
+impl<T: Value> FunctionKernel<T> {
+    pub fn new(kernel: fn(Call) -> JsResult<T>) -> Self {
+        FunctionKernel(kernel)
+    }
+}
+
+impl<T: Value> Kernel<()> for FunctionKernel<T> {
+    extern "C" fn callback(info: &CallbackInfo) {
+        let mut scope = info.scope();
+        exec_function_kernel(info, &mut scope, |call| {
+            let data = info.data();
+            let FunctionKernel(kernel) = unsafe { Self::from_raw(data.to_raw()) };
+            if let Ok(value) = kernel(call) {
+                info.set_return(value);
+            }
+        });
+    }
+
+    unsafe fn from_raw(h: raw::Local) -> Self {
+        FunctionKernel(mem::transmute(neon_sys::fun::get_kernel(h)))
+    }
+
+    fn as_raw(self) -> *mut c_void {
+        unsafe { mem::transmute(self.0) }
+    }
+}
+
+
 impl JsFunction {
     pub fn new<'a, T: Scope<'a>, U: Value>(scope: &mut T, f: fn(Call) -> JsResult<U>) -> JsResult<'a, JsFunction> {
         build(|out| {
             unsafe {
-                let isolate: *mut c_void = mem::transmute(scope.isolate());
-                let callback: extern "C" fn(&CallbackInfo) = call_neon_function::<U>;
-                let callback: *mut c_void = mem::transmute(callback);
-                let kernel: *mut c_void = mem::transmute(f);
+                let isolate: *mut c_void = mem::transmute(scope.isolate().to_raw());
+                let (callback, kernel) = FunctionKernel(f).pair();
                 neon_sys::fun::new(out, isolate, callback, kernel)
             }
         })
     }
 }
 
-extern "C" fn call_neon_function<U: Value>(info: &CallbackInfo) {
-    let mut scope = RootScope::new(unsafe { mem::transmute(neon_sys::call::get_isolate(mem::transmute(info))) });
-    exec_function_body(info, &mut scope, |call| {
+pub extern "C" fn call_neon_function<U: Value>(info: &CallbackInfo) {
+    let mut scope = info.scope();
+    exec_function_kernel(info, &mut scope, |call| {
         let data = info.data();
         let kernel: fn(Call) -> JsResult<U> = unsafe { mem::transmute(neon_sys::fun::get_kernel(data.to_raw())) };
         if let Ok(value) = kernel(call) {

@@ -6,7 +6,10 @@ extern "system" {
     pub fn set_return(info: &FunctionCallbackInfo, value: Local);
 
     #[link_name = "NeonSys_Call_GetIsolate"]
-    pub fn get_isolate(info: &FunctionCallbackInfo) -> &Isolate;
+    pub fn get_isolate(info: &FunctionCallbackInfo) -> *mut Isolate;
+
+    #[link_name = "NeonSys_Call_CurrentIsolate"]
+    pub fn current_isolate() -> *mut Isolate;
 
     #[link_name = "NeonSys_Call_IsConstruct"]
     pub fn is_construct(info: &FunctionCallbackInfo) -> bool;

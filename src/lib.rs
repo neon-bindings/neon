@@ -8,6 +8,12 @@ pub mod vm;
 pub mod scope;
 pub mod js;
 
+// An alias for neon_sys for use by macro expansions.
+#[doc(hidden)]
+pub mod sys {
+    pub use neon_sys::*;
+}
+
 /// Register the current crate as a Node module, providing startup
 /// logic for initializing the module object at runtime.
 ///
@@ -80,4 +86,170 @@ macro_rules! register_module {
             __load_neon_module
         };
     }
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! class_definition {
+    ( $cls:ident ; $typ:path ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; init($call:pat) $body:block $($rest:tt)* ) => {
+        class_definition!($cls ;
+                          $typ ;
+                          {
+                              fn _______allocator_rust_y_u_no_hygienic_items_______($call: $crate::vm::FunctionCall<$crate::js::JsUndefined>) -> $crate::vm::VmResult<$typ> {
+                                  $body
+                              }
+
+                              $crate::js::class::AllocateKernel::new(_______allocator_rust_y_u_no_hygienic_items_______)
+                          } ;
+                          $call_ctor ;
+                          $new_ctor ;
+                          $mnames ;
+                          $mdefs ;
+                          $($rest)*);
+    };
+
+    ( $cls:ident ; $typ:path ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; ($($mname:tt)*) ; ($($mdef:tt)*) ; method $name:ident($call:pat) $body:block $($rest:tt)* ) => {
+        class_definition!($cls ;
+                          $typ ;
+                          $allocator ;
+                          $call_ctor ;
+                          $new_ctor ;
+                          ($($mname)* $name) ;
+                          ($($mdef)* {
+                              fn _______method_rust_y_u_no_hygienic_items_______($call: $crate::vm::FunctionCall<$cls>) -> $crate::vm::JsResult<$crate::js::JsValue> {
+                                  $body
+                              }
+
+                              $crate::js::class::MethodKernel::new(_______method_rust_y_u_no_hygienic_items_______)
+                          }) ;
+                          $($rest)*);
+    };
+
+    ( $cls:ident ; $typ:path ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; constructor($call:pat) $body:block $($rest:tt)* ) => {
+        class_definition!($cls ;
+                          $typ ;
+                          $allocator ;
+                          $call_ctor ;
+                          ({
+                              fn _______constructor_rust_y_u_no_hygienic_items_______($call: $crate::vm::FunctionCall<$cls>) -> $crate::vm::VmResult<Option<$crate::mem::Handle<$crate::js::JsObject>>> {
+                                  $body
+                              }
+
+                              $crate::js::class::ConstructKernel::new(_______constructor_rust_y_u_no_hygienic_items_______)
+                          }) ;
+                          $mnames ;
+                          $mdefs ;
+                          $($rest)*);
+    };
+
+    ( $cls:ident ; $typ:path ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; call($call:pat) $body:block $($rest:tt)* ) => {
+        class_definition!($cls ;
+                          $typ ;
+                          $allocator ;
+                          ({
+                              fn _______call_rust_y_u_no_hygienic_items_______($call: $crate::vm::FunctionCall<$crate::js::JsValue>) -> $crate::vm::JsResult<$crate::js::JsValue> {
+                                  $body
+                              }
+
+                              $crate::js::class::ConstructorCallKernel::new(_______call_rust_y_u_no_hygienic_items_______)
+                          }) ;
+                          $new_ctor ;
+                          $mnames ;
+                          $mdefs ;
+                          $($rest)*);
+    };
+
+    ( $cls:ident ; $typ:path ; $allocator:block ; ($($call_ctor:block)*) ; ($($new_ctor:block)*) ; ($($mname:ident)*) ; ($($mdef:block)*) ; $($rest:tt)* ) => {
+        impl $crate::js::class::Class for $cls {
+            type Internals = $typ;
+
+            fn setup<'a, T: $crate::scope::Scope<'a>>(_: &mut T) -> $crate::vm::VmResult<$crate::js::class::ClassDescriptor<'a, Self>> {
+                ::std::result::Result::Ok(Self::describe(stringify!($typ), $allocator)
+                                             $(.construct($new_ctor))*
+                                             $(.call($call_ctor))*
+                                             $(.method(stringify!($mname), $mdef))*)
+            }
+        }
+    };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! impl_managed {
+    ($cls:ident) => {
+        impl $crate::mem::Managed for $cls {
+            fn to_raw(self) -> $crate::sys::raw::Local {
+                let $cls(raw) = self;
+                raw
+            }
+
+            fn from_raw(raw: $crate::sys::raw::Local) -> Self {
+                $cls(raw)
+            }
+        }
+    }
+}
+
+/// Declare custom native JavaScript types with Rust implementations.
+///
+/// Example:
+///
+/// ```rust
+/// pub struct Greeter {
+///     greeting: String
+/// }
+///
+/// declare_types! {
+///
+///     /// A class for generating greeting strings.
+///     pub class JsGreeter for Greeter {
+///         init(call) {
+///             let scope = call.scope;
+///             let greeting = try!(try!(call.arguments.require(scope, 0)).to_string(scope)).value();
+///             Ok(Greeter {
+///                 greeting: greeting
+///             })
+///         }
+///
+///         method hello(call) {
+///             let scope = call.scope;
+///             let name = try!(try!(call.arguments.require(scope, 0)).to_string(scope)).value();
+///             let msg = vm::lock(call.arguments.this(scope), |greeter| {
+///                 format!("{}, {}!", greeter.greeting, name)
+///             });
+///             Ok(try!(JsString::new_or_throw(scope, &msg[..])).upcast())
+///         }
+///     }
+///
+/// }
+/// ```
+#[macro_export]
+macro_rules! declare_types {
+    { $(#[$attr:meta])* pub class $cls:ident for $typ:path { $($body:tt)* } $($rest:tt)* } => {
+        #[derive(Copy, Clone)]
+        #[repr(C)]
+        $(#[$attr])*
+        pub struct $cls($crate::sys::raw::Local);
+
+        impl_managed!($cls);
+
+        class_definition!($cls ; $typ ; () ; () ; () ; () ; () ; $($body)*);
+
+        declare_types! { $($rest)* }
+    };
+
+    { $(#[$attr:meta])* class $cls:ident for $typ:path { $($body:tt)* } $($rest:tt)* } => {
+        #[derive(Copy, Clone)]
+        #[repr(C)]
+        $(#[$attr])*
+        struct $cls($crate::sys::raw::Local);
+
+        impl_managed!($cls);
+
+        class_definition!($cls ; $typ ; () ; () ; () ; () ; () ; $($body)*);
+
+        declare_types! { $($rest)* }
+    };
+
+    { } => { };
 }

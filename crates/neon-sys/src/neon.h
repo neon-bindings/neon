@@ -1,3 +1,6 @@
+#ifndef NEON_H
+#define NEON_H
+
 #include <nan.h>
 #include <stdint.h>
 #include <v8.h>
@@ -23,14 +26,15 @@ typedef enum {
 
 extern "C" {
 
-  void NeonSys_Call_SetReturn(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> value);
-  void *NeonSys_Call_GetIsolate(Nan::FunctionCallbackInfo<v8::Value> *info);
-  bool NeonSys_Call_IsConstruct(Nan::FunctionCallbackInfo<v8::Value> *info);
-  void NeonSys_Call_This(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out);
-  void NeonSys_Call_Callee(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Function> *out);
-  void NeonSys_Call_Data(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> *out);
-  int32_t NeonSys_Call_Length(Nan::FunctionCallbackInfo<v8::Value> *info);
-  void NeonSys_Call_Get(Nan::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out);
+  void NeonSys_Call_SetReturn(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> value);
+  void *NeonSys_Call_GetIsolate(v8::FunctionCallbackInfo<v8::Value> *info);
+  void *NeonSys_Call_CurrentIsolate();
+  bool NeonSys_Call_IsConstruct(v8::FunctionCallbackInfo<v8::Value> *info);
+  void NeonSys_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out);
+  void NeonSys_Call_Callee(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Function> *out);
+  void NeonSys_Call_Data(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> *out);
+  int32_t NeonSys_Call_Length(v8::FunctionCallbackInfo<v8::Value> *info);
+  void NeonSys_Call_Get(v8::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out);
 
   void NeonSys_Primitive_Integer(v8::Local<v8::Integer> *out, v8::Isolate *isolate, int32_t x);
   void NeonSys_Primitive_Number(v8::Local<v8::Number> *out, v8::Isolate *isolate, double value);
@@ -73,20 +77,39 @@ extern "C" {
   void NeonSys_Scope_Nested(void *out, void *closure, NeonSys_NestedScopeCallback callback, void *realm);
   void NeonSys_Scope_Chained(void *out, void *closure, NeonSys_ChainedScopeCallback callback, void *parent_scope);
 
-  bool NeonSys_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, Nan::FunctionCallback callback, void *kernel);
-  void NeonSys_Fun_ExecBody(void *closure, NeonSys_RootScopeCallback callback, Nan::FunctionCallbackInfo<v8::Value> *info, void *scope);
-  void *NeonSys_Fun_GetKernel(v8::Local<v8::Object> obj);
+  bool NeonSys_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, v8::FunctionCallback callback, void *kernel);
+  void NeonSys_Fun_ExecKernel(void *kernel, NeonSys_RootScopeCallback callback, v8::FunctionCallbackInfo<v8::Value> *info, void *scope);
+  void *NeonSys_Fun_GetKernel(v8::Local<v8::External> obj);
 
-  void NeonSys_Class_ForConstructor(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::FunctionTemplate> *out);
-  void NeonSys_Class_ForMethod(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::FunctionTemplate> *out);
-  bool NeonSys_Class_Create(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, v8::FunctionCallback callback, void *construct_kernel);
-  void *NeonSys_Class_GetConstructorKernel(v8::Local<v8::External> wrapper);
-  void NeonSys_Class_ExecConstructorKernel(void *closure, NeonSys_RootScopeCallback callback, Nan::FunctionCallbackInfo<v8::Value> *info, void *scope);
+  typedef void *(*NeonSys_AllocateCallback)(const v8::FunctionCallbackInfo<v8::Value> *info);
+  typedef bool (*NeonSys_ConstructCallback)(const v8::FunctionCallbackInfo<v8::Value> *info);
+
+  void NeonSys_Class_ForConstructor(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::FunctionTemplate> *out);
+  void NeonSys_Class_ForMethod(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::FunctionTemplate> *out);
+
+  typedef void (*NeonSys_FreeCallback)(void *);
+
+  void *NeonSys_Class_GetClassMap(v8::Isolate *isolate);
+  void NeonSys_Class_SetClassMap(v8::Isolate *isolate, void *map, NeonSys_FreeCallback free_map);
+  void *NeonSys_Class_CreateBase(v8::Isolate *isolate,
+                                 NeonSys_AllocateCallback allocate_callback,
+                                 void *allocate_kernel,
+                                 NeonSys_ConstructCallback construct_callback,
+                                 void *construct_kernel,
+                                 v8::FunctionCallback call_callback,
+                                 void *call_kernel);
+  void *NeonSys_Class_GetCallKernel(v8::Local<v8::External> wrapper);
+  void *NeonSys_Class_GetConstructKernel(v8::Local<v8::External> wrapper);
+  void *NeonSys_Class_GetAllocateKernel(v8::Local<v8::External> wrapper);
   void NeonSys_Class_Constructor(v8::Local<v8::Function> *out, v8::Local<v8::FunctionTemplate> ft);
   bool NeonSys_Class_Check(v8::Local<v8::FunctionTemplate> ft, v8::Local<v8::Value> v);
+  bool NeonSys_Class_HasInstance(void *metadata, v8::Local<v8::Value> v);
+  bool NeonSys_Class_SetName(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length);
+  bool NeonSys_Class_AddMethod(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length, v8::Local<v8::Function> method);
+  void NeonSys_Class_MetadataToClass(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, void *metadata);
   void *NeonSys_Class_GetInstanceInternals(v8::Local<v8::Object> obj);
 
-  void NeonSys_Module_ExecBody(void *kernel, NeonSys_ModuleScopeCallback callback, v8::Local<v8::Object> exports, void *scope);
+  void NeonSys_Module_ExecKernel(void *kernel, NeonSys_ModuleScopeCallback callback, v8::Local<v8::Object> exports, void *scope);
 
   tag_t NeonSys_Tag_Of(v8::Local<v8::Value> val);
   bool NeonSys_Tag_IsUndefined(v8::Local<v8::Value> val);
@@ -107,3 +130,5 @@ extern "C" {
 
   bool NeonSys_Mem_SameHandle(v8::Local<v8::Value> v1, v8::Local<v8::Value> v2);
 }
+
+#endif

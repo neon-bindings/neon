@@ -41,7 +41,7 @@ fn message(msg: &str) -> CString {
 }
 
 impl JsTypeError {
-    // FIXME: use an overload trait to allow either &str or JsString
+    // TODO: use an overload trait to allow either &str or JsString
     pub fn new<'a, T: Scope<'a>>(_: &mut T, msg: &str) -> VmResult<Handle<'a, JsObject>> {
         let msg = &message(msg);
         build(|out| { unsafe { neon_sys::error::new_type_error(out, mem::transmute(msg.as_ptr())) } })
