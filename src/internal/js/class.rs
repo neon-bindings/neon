@@ -93,7 +93,6 @@ impl<T: Class> Kernel<*mut c_void> for AllocateKernel<T> {
         let call = info.as_call(&mut scope);
         if let Ok(value) = kernel(call) {
             let p = Box::into_raw(Box::new(value));
-            // FIXME(PR): attach a destructor to deallocate the internals
             unsafe { mem::transmute(p) }
         } else {
             null_mut()
@@ -180,6 +179,11 @@ impl<'a, T: Class> ClassDescriptor<'a, T> {
     }
 }
 
+extern "C" fn drop_internals<T>(internals: *mut c_void) {
+    let p: Box<T> = unsafe { Box::from_raw(mem::transmute(internals)) };
+    mem::drop(p);
+}
+
 pub trait Class: Managed + Any {
     type Internals;
 
@@ -231,7 +235,8 @@ pub trait ClassInternal: Class {
             let metadata_pointer = neon_sys::class::create_base(isolate,
                                                                 allocate_callback, allocate_kernel,
                                                                 construct_callback, construct_kernel,
-                                                                call_callback, call_kernel);
+                                                                call_callback, call_kernel,
+                                                                drop_internals::<Self::Internals>);
 
             if metadata_pointer.is_null() {
                 return Err(Throw);

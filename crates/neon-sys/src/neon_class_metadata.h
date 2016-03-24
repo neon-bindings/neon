@@ -30,13 +30,13 @@ namespace neon {
 
 class ClassMapHolder {
 public:
-  ClassMapHolder(void *map, NeonSys_FreeCallback free_map)
-    : map_(map), free_map_(free_map)
+  ClassMapHolder(void *map, NeonSys_DropCallback drop_map)
+    : map_(map), drop_map_(drop_map)
   {
   }
 
   ~ClassMapHolder() {
-    free_map_(map_);
+    drop_map_(map_);
     map_ = nullptr;
   }
 
@@ -46,7 +46,7 @@ public:
 
 private:
   void *map_;
-  NeonSys_FreeCallback free_map_;
+  NeonSys_DropCallback drop_map_;
 };
 
 
@@ -62,7 +62,7 @@ public:
 
   void SetTemplate(v8::Isolate *isolate, v8::Local<v8::FunctionTemplate> t) {
     template_.Reset(isolate, t);
-    template_.SetWeak(this, Finalize, v8::WeakCallbackType::kParameter);
+    template_.SetWeak(this, FinalizeTemplate, v8::WeakCallbackType::kParameter);
   }
 
   v8::Local<v8::FunctionTemplate> GetTemplate(v8::Isolate *isolate) {
@@ -97,13 +97,47 @@ protected:
 
 private:
 
-  static void Finalize(const v8::WeakCallbackInfo<ClassMetadata>& data) {
+  static void FinalizeTemplate(const v8::WeakCallbackInfo<ClassMetadata>& data) {
     ClassMetadata *metadata = data.GetParameter();
     delete metadata;
   }
 
   v8::Global<v8::FunctionTemplate> template_;
   
+};
+
+
+class BaseClassInstanceMetadata {
+public:
+
+  BaseClassInstanceMetadata(v8::Isolate *isolate, v8::Local<v8::Object> instance, void *internals, NeonSys_DropCallback drop) {
+    instance_.Reset(isolate, instance);
+    instance_.SetWeak(this, FinalizeInstance, v8::WeakCallbackType::kParameter);
+    internals_ = internals;
+    drop_ = drop;
+  }
+
+  void *GetInternals() {
+    return internals_;
+  }
+
+protected:
+  ~BaseClassInstanceMetadata() {
+    instance_.Reset();
+    drop_(internals_);
+    internals_ = nullptr;
+  }
+
+private:
+
+  static void FinalizeInstance(const v8::WeakCallbackInfo<BaseClassInstanceMetadata>& data) {
+    BaseClassInstanceMetadata *metadata = data.GetParameter();
+    delete metadata;
+  }
+
+  void *internals_;
+  v8::Global<v8::Object> instance_;
+  NeonSys_DropCallback drop_;
 };
 
 
@@ -115,11 +149,13 @@ public:
                     v8::FunctionCallback call_callback,
                     void *call_kernel,
                     NeonSys_AllocateCallback allocate_callback,
-                    void *allocate_kernel)
+                    void *allocate_kernel,
+                    NeonSys_DropCallback drop_instance)
     : ClassMetadata(construct_callback, construct_kernel, call_callback, call_kernel)
   {
     allocate_callback_ = allocate_callback;
     allocate_kernel_ = allocate_kernel;
+    drop_instance_ = drop_instance;
   }
 
   void *GetAllocateKernel() {
@@ -132,7 +168,9 @@ public:
     if (!internals) {
       return false;
     }
-    info.This()->SetAlignedPointerInInternalField(0, internals);
+    v8::Local<v8::Object> self = info.This();
+    BaseClassInstanceMetadata *instance = new BaseClassInstanceMetadata(info.GetIsolate(), self, internals, drop_instance_);
+    self->SetAlignedPointerInInternalField(0, instance);
     return !construct_kernel_ || construct_callback_(&info);
   }
 
@@ -140,6 +178,8 @@ private:
 
   NeonSys_AllocateCallback allocate_callback_;
   void *allocate_kernel_;
+  NeonSys_DropCallback drop_instance_;
+  v8::Global<v8::Object> instance_;
 };
 
 // TODO: subclasses: class DerivedClassMetadata: public ClassMetadata { ... };

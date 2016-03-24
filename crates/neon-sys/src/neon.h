@@ -87,17 +87,18 @@ extern "C" {
   void NeonSys_Class_ForConstructor(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::FunctionTemplate> *out);
   void NeonSys_Class_ForMethod(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::FunctionTemplate> *out);
 
-  typedef void (*NeonSys_FreeCallback)(void *);
+  typedef void (*NeonSys_DropCallback)(void *);
 
   void *NeonSys_Class_GetClassMap(v8::Isolate *isolate);
-  void NeonSys_Class_SetClassMap(v8::Isolate *isolate, void *map, NeonSys_FreeCallback free_map);
+  void NeonSys_Class_SetClassMap(v8::Isolate *isolate, void *map, NeonSys_DropCallback free_map);
   void *NeonSys_Class_CreateBase(v8::Isolate *isolate,
                                  NeonSys_AllocateCallback allocate_callback,
                                  void *allocate_kernel,
                                  NeonSys_ConstructCallback construct_callback,
                                  void *construct_kernel,
                                  v8::FunctionCallback call_callback,
-                                 void *call_kernel);
+                                 void *call_kernel,
+                                 NeonSys_DropCallback drop);
   void *NeonSys_Class_GetCallKernel(v8::Local<v8::External> wrapper);
   void *NeonSys_Class_GetConstructKernel(v8::Local<v8::External> wrapper);
   void *NeonSys_Class_GetAllocateKernel(v8::Local<v8::External> wrapper);

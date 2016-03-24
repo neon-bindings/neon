@@ -240,9 +240,10 @@ extern "C" void *NeonSys_Class_CreateBase(v8::Isolate *isolate,
                                           NeonSys_ConstructCallback construct_callback,
                                           void *construct_kernel,
                                           v8::FunctionCallback call_callback,
-                                          void *call_kernel)
+                                          void *call_kernel,
+                                          NeonSys_DropCallback drop)
 {
-  neon::BaseClassMetadata *metadata = new neon::BaseClassMetadata(construct_callback, construct_kernel, call_callback, call_kernel, allocate_callback, allocate_kernel);
+  neon::BaseClassMetadata *metadata = new neon::BaseClassMetadata(construct_callback, construct_kernel, call_callback, call_kernel, allocate_callback, allocate_kernel, drop);
   v8::Local<v8::External> data = v8::External::New(isolate, metadata);
   v8::Local<v8::FunctionTemplate> constructor_template = v8::FunctionTemplate::New(isolate, NeonSys_Class_ConstructBaseCallback, data);
   // FIXME(PR): check for failure -- cleanup (delete metadata?) and return nullptr
@@ -264,8 +265,8 @@ void cleanup_class_map(void *arg) {
   delete holder;
 }
 
-extern "C" void NeonSys_Class_SetClassMap(v8::Isolate *isolate, void *map, NeonSys_FreeCallback free_map) {
-  neon::ClassMapHolder *holder = new neon::ClassMapHolder(map, free_map);
+extern "C" void NeonSys_Class_SetClassMap(v8::Isolate *isolate, void *map, NeonSys_DropCallback drop_map) {
+  neon::ClassMapHolder *holder = new neon::ClassMapHolder(map, drop_map);
   isolate->SetData(NEON_ISOLATE_SLOT, holder);
   // TODO: When workers land in node, this will need to be generalized to a per-worker version.
   node::AtExit(cleanup_class_map, holder);
@@ -332,7 +333,7 @@ extern "C" void NeonSys_Class_MetadataToClass(v8::Local<v8::FunctionTemplate> *o
 }
 
 extern "C" void *NeonSys_Class_GetInstanceInternals(v8::Local<v8::Object> obj) {
-  return obj->GetAlignedPointerFromInternalField(0);
+  return static_cast<neon::BaseClassInstanceMetadata *>(obj->GetAlignedPointerFromInternalField(0))->GetInternals();
 }
 
 

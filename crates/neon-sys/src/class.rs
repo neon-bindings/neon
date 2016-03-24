@@ -13,7 +13,8 @@ extern "system" {
     pub fn create_base(isolate: *mut Isolate,
                        allocate_callback: *mut c_void, allocate_kernel: *mut c_void,
                        construct_callback: *mut c_void, construct_kernel: *mut c_void,
-                       call_callback: *mut c_void, call_kernel: *mut c_void) -> *mut c_void;
+                       call_callback: *mut c_void, call_kernel: *mut c_void,
+                       drop: extern "C" fn(*mut c_void)) -> *mut c_void;
 
     #[link_name = "NeonSys_Class_SetName"]
     pub fn set_name(isolate: *mut Isolate, metadata: *mut c_void, name: *const u8, byte_length: u32) -> bool;
