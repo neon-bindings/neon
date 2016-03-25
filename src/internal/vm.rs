@@ -9,6 +9,7 @@ use neon_sys::buf::Buf;
 use internal::scope::{Scope, RootScope, RootScopeInternal};
 use internal::js::{JsValue, Value, Object, JsObject, JsFunction};
 use internal::js::class::{Class, ClassMetadata};
+use internal::js::error::JsTypeError;
 use internal::mem::{Handle, HandleInternal, Managed};
 
 pub struct Throw;
@@ -139,8 +140,7 @@ impl CallbackInfo {
 
     pub fn require<'b, T: Scope<'b>>(&self, _: &mut T, i: i32) -> JsResult<'b, JsValue> {
         if i < 0 || i >= self.len() {
-            // TODO: throw a type error
-            return Err(Throw);
+            return JsTypeError::throw("not enough arguments");
         }
         unsafe {
             let mut local: raw::Local = mem::zeroed();

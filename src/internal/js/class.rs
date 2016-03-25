@@ -362,19 +362,12 @@ impl<T: Class> JsClass<T> {
         }
     }
 
-    /*
-    // FIXME(PR): implement this
-    pub fn new<'a, U: Scope<'a>>(&self, _: &mut U) -> JsResult<'a, T> {
-        unimplemented!()
-    }
-    */
-
     pub fn constructor<'a, U: Scope<'a>>(&self, _: &mut U) -> JsResult<'a, JsFunction> {
-        unsafe {
-            let mut local: raw::Local = mem::zeroed();
-            neon_sys::class::constructor(&mut local, self.to_raw());
-            Ok(Handle::new(JsFunction::from_raw(local)))
-        }
+        build(|out| {
+            unsafe {
+                neon_sys::class::constructor(out, self.to_raw())
+            }
+        })
     }
 }
 

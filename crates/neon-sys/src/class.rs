@@ -41,7 +41,7 @@ extern "system" {
     pub fn get_call_kernel(obj: Local) -> *mut c_void;
 
     #[link_name = "NeonSys_Class_Constructor"]
-    pub fn constructor(out: &mut Local, ft: Local);
+    pub fn constructor(out: &mut Local, ft: Local) -> bool;
 
     #[link_name = "NeonSys_Class_Check"]
     pub fn check(c: Local, v: Local) -> bool;

@@ -228,7 +228,6 @@ extern "C" void NeonSys_Class_ConstructBaseCallback(const v8::FunctionCallbackIn
   v8::Local<v8::External> wrapper = v8::Local<v8::External>::Cast(info.Data());
   neon::BaseClassMetadata *metadata = static_cast<neon::BaseClassMetadata *>(wrapper->Value());
   if (info.IsConstructCall()) {
-    // FIXME(PR): check for failure and throw
     metadata->construct(info);
   } else {
     metadata->call(info);
@@ -247,7 +246,6 @@ extern "C" void *NeonSys_Class_CreateBase(v8::Isolate *isolate,
   neon::BaseClassMetadata *metadata = new neon::BaseClassMetadata(construct_callback, construct_kernel, call_callback, call_kernel, allocate_callback, allocate_kernel, drop);
   v8::Local<v8::External> data = v8::External::New(isolate, metadata);
   v8::Local<v8::FunctionTemplate> constructor_template = v8::FunctionTemplate::New(isolate, NeonSys_Class_ConstructBaseCallback, data);
-  // FIXME(PR): check for failure -- cleanup (delete metadata?) and return nullptr
   metadata->SetTemplate(isolate, constructor_template);
   v8::Local<v8::ObjectTemplate> instance_template = constructor_template->InstanceTemplate();
   instance_template->SetInternalFieldCount(1); // index 0: an aligned, owned pointer to the internals (a user-defined Rust data structure)
@@ -288,10 +286,9 @@ extern "C" void *NeonSys_Class_GetAllocateKernel(v8::Local<v8::External> wrapper
   return metadata->GetAllocateKernel();
 }
 
-// FIXME(PR): should return bool to be fallible
-extern "C" void NeonSys_Class_Constructor(v8::Local<v8::Function> *out, v8::Local<v8::FunctionTemplate> ft) {
-  // FIXME(PR): use the MaybeLocal version
-  *out = ft->GetFunction();
+extern "C" bool NeonSys_Class_Constructor(v8::Local<v8::Function> *out, v8::Local<v8::FunctionTemplate> ft) {
+  v8::MaybeLocal<v8::Function> maybe = ft->GetFunction();
+  return maybe.ToLocal(out);
 }
 
 extern "C" bool NeonSys_Class_Check(v8::Local<v8::FunctionTemplate> ft, v8::Local<v8::Value> v) {

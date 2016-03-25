@@ -102,7 +102,7 @@ extern "C" {
   void *NeonSys_Class_GetCallKernel(v8::Local<v8::External> wrapper);
   void *NeonSys_Class_GetConstructKernel(v8::Local<v8::External> wrapper);
   void *NeonSys_Class_GetAllocateKernel(v8::Local<v8::External> wrapper);
-  void NeonSys_Class_Constructor(v8::Local<v8::Function> *out, v8::Local<v8::FunctionTemplate> ft);
+  bool NeonSys_Class_Constructor(v8::Local<v8::Function> *out, v8::Local<v8::FunctionTemplate> ft);
   bool NeonSys_Class_Check(v8::Local<v8::FunctionTemplate> ft, v8::Local<v8::Value> v);
   bool NeonSys_Class_HasInstance(void *metadata, v8::Local<v8::Value> v);
   bool NeonSys_Class_SetName(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length);

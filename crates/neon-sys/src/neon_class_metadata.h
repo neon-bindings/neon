@@ -73,9 +73,8 @@ public:
     return v8::Local<v8::FunctionTemplate>::New(isolate, template_);
   }
 
-  virtual bool construct(const v8::FunctionCallbackInfo<v8::Value>& info) = 0;
+  virtual void construct(const v8::FunctionCallbackInfo<v8::Value>& info) = 0;
 
-  // FIXME(PR): save a flag on `this` if it fails?
   void call(const v8::FunctionCallbackInfo<v8::Value>& info) {
     call_callback_(info);
   }
@@ -190,16 +189,17 @@ public:
     return allocate_kernel_;
   }
 
-  // FIXME(PR): instead of returning bool, save a flag on `this`
-  virtual bool construct(const v8::FunctionCallbackInfo<v8::Value>& info) {
+  virtual void construct(const v8::FunctionCallbackInfo<v8::Value>& info) {
     void *internals = allocate_callback_(&info);
     if (!internals) {
-      return false;
+      return;
     }
     v8::Local<v8::Object> self = info.This();
     BaseClassInstanceMetadata *instance = new BaseClassInstanceMetadata(info.GetIsolate(), self, internals, drop_instance_);
     self->SetAlignedPointerInInternalField(0, instance);
-    return !construct_kernel_ || construct_callback_(&info);
+    if (construct_kernel_) {
+      construct_callback_(&info);
+    }
   }
 
 private:
@@ -209,8 +209,6 @@ private:
   NeonSys_DropCallback drop_instance_;
   v8::Global<v8::Object> instance_;
 };
-
-// TODO: subclasses: class DerivedClassMetadata: public ClassMetadata { ... };
 
 }; // end namespace neon
 
