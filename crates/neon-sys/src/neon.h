@@ -106,6 +106,7 @@ extern "C" {
   bool NeonSys_Class_Check(v8::Local<v8::FunctionTemplate> ft, v8::Local<v8::Value> v);
   bool NeonSys_Class_HasInstance(void *metadata, v8::Local<v8::Value> v);
   bool NeonSys_Class_SetName(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length);
+  void NeonSys_Class_ThrowThisError(v8::Isolate *isolate, void *metadata_pointer);
   bool NeonSys_Class_AddMethod(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length, v8::Local<v8::Function> method);
   void NeonSys_Class_MetadataToClass(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, void *metadata);
   void *NeonSys_Class_GetInstanceInternals(v8::Local<v8::Object> obj);
@@ -125,9 +126,10 @@ extern "C" {
   bool NeonSys_Tag_IsBuffer(v8::Local<v8::Value> obj);
   bool NeonSys_Tag_IsTypeError(v8::Local<v8::Value> val);
 
-  bool NeonSys_Error_NewTypeError(v8::Local<v8::Value> *out, const char *msg);
+  bool NeonSys_Error_NewTypeError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);
+  bool NeonSys_Error_CStringToTypeError(v8::Local<v8::Value> *out, const char *msg);
   void NeonSys_Error_Throw(v8::Local<v8::Value> val);
-  void NeonSys_Error_ThrowTypeError(const char *msg);
+  void NeonSys_Error_ThrowTypeErrorFromCString(const char *msg);
 
   bool NeonSys_Mem_SameHandle(v8::Local<v8::Value> v1, v8::Local<v8::Value> v2);
 }

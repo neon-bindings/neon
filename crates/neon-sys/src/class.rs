@@ -19,6 +19,12 @@ extern "system" {
     #[link_name = "NeonSys_Class_SetName"]
     pub fn set_name(isolate: *mut Isolate, metadata: *mut c_void, name: *const u8, byte_length: u32) -> bool;
 
+    #[link_name = "NeonSys_Class_ThrowCallError"]
+    pub fn throw_call_error(isolate: *mut Isolate, metadata: *mut c_void);
+
+    #[link_name = "NeonSys_Class_ThrowThisError"]
+    pub fn throw_this_error(isolate: *mut Isolate, metadata: *mut c_void);
+
     #[link_name = "NeonSys_Class_AddMethod"]
     pub fn add_method(isolate: *mut Isolate, metadata: *mut c_void, name: *const u8, byte_length: u32, method: Local) -> bool;
 

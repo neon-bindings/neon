@@ -7,9 +7,9 @@ use std::ptr::null_mut;
 use neon_sys;
 use neon_sys::raw;
 use internal::mem::{Handle, HandleInternal, Managed};
-use internal::scope::Scope;
+use internal::scope::{Scope, ScopeInternal};
 use internal::vm::{Isolate, IsolateInternal, JsResult, VmResult, FunctionCall, Call, CallbackInfo, Lock, LockState, Throw, This, Kernel, exec_function_kernel};
-use internal::js::{Value, ValueInternal, JsFunction, JsObject, JsValue, JsUndefined, build, call_neon_function};
+use internal::js::{Value, ValueInternal, JsFunction, JsObject, JsValue, JsUndefined, JsString, build, call_neon_function};
 use internal::js::error::JsTypeError;
 
 #[repr(C)]
@@ -26,7 +26,17 @@ impl<T: Class> Kernel<()> for MethodKernel<T> {
         let mut scope = info.scope();
         exec_function_kernel(info, &mut scope, |call| {
             let data = info.data();
-            // FIXME(PR): check that `this` is of the right type or else throw
+            // Note: This is pretty sleazy, pretending to be a Handle<T> before doing the check.
+            //       But we're doing the check immediately, so it seems tolerable.
+            let this: Handle<T> = call.arguments.this(call.scope);
+            if !this.is_a::<T>() {
+                if let Ok(metadata) = T::metadata(call.scope) {
+                    unsafe {
+                        neon_sys::class::throw_this_error(mem::transmute(call.scope.isolate()), metadata.pointer);
+                    }
+                }
+                return;
+            }
             let MethodKernel(kernel) = unsafe { Self::from_raw(data.to_raw()) };
             if let Ok(value) = kernel(call) {
                 info.set_return(value);
@@ -51,8 +61,14 @@ impl ConstructorCallKernel {
         ConstructorCallKernel(kernel)
     }
 
-    extern "C" fn unimplemented(info: &CallbackInfo) {
-        let _ = JsTypeError::throw::<JsUndefined>("constructor requires new");
+    extern "C" fn unimplemented<T: Class>(info: &CallbackInfo) {
+        let mut scope = info.scope();
+        if let Ok(metadata) = T::metadata(&mut scope) {
+            unsafe {
+                neon_sys::class::throw_call_error(mem::transmute(scope.isolate()), metadata.pointer);
+            }
+        }
+        return;
     }
 }
 
@@ -190,10 +206,8 @@ pub trait Class: Managed + Any {
     fn setup<'a, T: Scope<'a>>(_: &mut T) -> VmResult<ClassDescriptor<'a, Self>>;
 
     fn class<'a, T: Scope<'a>>(scope: &mut T) -> JsResult<'a, JsClass<Self>> {
-        match Self::metadata(scope).map(|m| unsafe { m.class(scope) }) {
-            None => Self::create(scope),
-            Some(class) => Ok(class)
-        }
+        let metadata = try!(Self::metadata(scope));
+        Ok(unsafe { metadata.class(scope) })
     }
 
     fn describe<'a>(name: &'a str, allocate: AllocateKernel<Self>) -> ClassDescriptor<'a, Self> {
@@ -208,14 +222,21 @@ impl<T: Class> This for T {
 }
 
 pub trait ClassInternal: Class {
-    fn metadata<'a, T: Scope<'a>>(scope: &mut T) -> Option<ClassMetadata> {
+    fn metadata_opt<'a, T: Scope<'a>>(scope: &mut T) -> Option<ClassMetadata> {
         scope.isolate()
              .class_map()
              .get(&TypeId::of::<Self>())
              .map(|m| m.clone())
     }
 
-    fn create<'a, T: Scope<'a>>(scope: &mut T) -> JsResult<'a, JsClass<Self>> {
+    fn metadata<'a, T: Scope<'a>>(scope: &mut T) -> VmResult<ClassMetadata> {
+        match Self::metadata_opt(scope) {
+            Some(metadata) => Ok(metadata),
+            None => Self::create(scope)
+        }
+    }
+
+    fn create<'a, T: Scope<'a>>(scope: &mut T) -> VmResult<ClassMetadata> {
         let descriptor = try!(Self::setup(scope));
         unsafe {
             let isolate: *mut c_void = mem::transmute(scope.isolate());
@@ -229,7 +250,7 @@ pub trait ClassInternal: Class {
 
             let (call_callback, call_kernel) = match descriptor.call {
                 Some(k) => k.pair(),
-                None    => (mem::transmute(ConstructorCallKernel::unimplemented), null_mut())
+                None    => (mem::transmute(ConstructorCallKernel::unimplemented::<Self>), null_mut())
             };
 
             let metadata_pointer = neon_sys::class::create_base(isolate,
@@ -266,17 +287,23 @@ pub trait ClassInternal: Class {
 
             scope.isolate().class_map().set(TypeId::of::<Self>(), metadata);
 
-            Ok(metadata.class(scope))
+            Ok(metadata)
         }
     }
 }
 
 impl<T: Class> ClassInternal for T { }
 
+fn strip_null_bytes(s: &str) -> String {
+    s.chars()
+     .filter(|c| *c != '\0')
+     .collect()
+}
+
 fn method_name(s: &str) -> VmResult<CString> {
     match CString::new(s) {
         Ok(cs) => Ok(cs),
-        Err(_) => JsTypeError::throw("invalid method name")
+        Err(_) => JsTypeError::throw(&format!("illegal null byte in method name {}", strip_null_bytes(s))[..])
     }
 }
 
@@ -326,13 +353,12 @@ impl ClassMetadata {
 }
 
 impl<T: Class> JsClass<T> {
-    pub fn check<U: Value>(&self, v: Handle<U>) -> JsResult<T> {
+    pub fn check<U: Value>(&self, v: Handle<U>, msg: &str) -> JsResult<T> {
         let local = v.to_raw();
         if unsafe { neon_sys::class::check(self.to_raw(), local) } {
             Ok(Handle::new(T::from_raw(local)))
         } else {
-            // TODO: custom error message based on class name
-            JsTypeError::throw("failed class check")
+            JsTypeError::throw(msg)
         }
     }
 

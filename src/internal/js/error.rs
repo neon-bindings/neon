@@ -5,7 +5,7 @@ use neon_sys;
 use neon_sys::raw;
 
 use internal::vm::{Throw, VmResult};
-use internal::js::{JsObject, Value, ValueInternal, Object, build};
+use internal::js::{JsObject, Value, ValueInternal, Object, JsString, ToJsString, build};
 use internal::mem::{Handle, Managed};
 use scope::Scope;
 
@@ -41,16 +41,15 @@ fn message(msg: &str) -> CString {
 }
 
 impl JsTypeError {
-    // TODO: use an overload trait to allow either &str or JsString
-    pub fn new<'a, T: Scope<'a>>(_: &mut T, msg: &str) -> VmResult<Handle<'a, JsObject>> {
-        let msg = &message(msg);
-        build(|out| { unsafe { neon_sys::error::new_type_error(out, mem::transmute(msg.as_ptr())) } })
+    pub fn new<'a, T: Scope<'a>, U: ToJsString>(scope: &mut T, msg: U) -> VmResult<Handle<'a, JsObject>> {
+        let msg = msg.to_js_string(scope);
+        build(|out| { unsafe { neon_sys::error::new_type_error(out, msg.to_raw()) } })
     }
 
     pub fn throw<T>(msg: &str) -> VmResult<T> {
         let msg = &message(msg);
         unsafe {
-            neon_sys::error::throw_type_error(mem::transmute(msg.as_ptr()));
+            neon_sys::error::throw_type_error_from_cstring(mem::transmute(msg.as_ptr()));
         }
         Err(Throw)
     }

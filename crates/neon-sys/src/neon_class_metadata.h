@@ -1,10 +1,12 @@
 #ifndef NEON_CLASS_METADATA_H_
 #define NEON_CLASS_METADATA_H_
 
+#include <stdio.h>
 #include <stdint.h>
+#include <cstring>
 #include "v8.h"
 #include "neon.h"
-
+#include "neon_string.h"
 
 // Currently, Node only ever has one isolate so we could get away with storing
 // Neon metadata in a global variable. But when workers land in Node, they will
@@ -58,6 +60,8 @@ public:
     construct_kernel_ = construct_kernel;
     call_callback_ = call_callback;
     call_kernel_ = call_kernel;
+    this_error_ = nullptr;
+    call_error_ = nullptr;
   }
 
   void SetTemplate(v8::Isolate *isolate, v8::Local<v8::FunctionTemplate> t) {
@@ -84,10 +88,32 @@ public:
     return construct_kernel_;
   }
 
+  void SetName(Slice name) {
+    this_error_ = new String(sizeof("this is not an object of type .") - 1 + name.GetLength());
+    *this_error_ << "this is not an object of type " << name << ".";
+
+    call_error_ = new String(sizeof(" constructor called without new.") - 1 + name.GetLength());
+    *call_error_ << name << " constructor called without new.";
+  }
+
+  Slice GetThisError() {
+    return this_error_->Borrow();
+  }
+
+  Slice GetCallError() {
+    return call_error_->Borrow();
+  }
+
 protected:
 
   virtual ~ClassMetadata() {
     template_.Reset();
+    if (this_error_) {
+      delete this_error_;
+    }
+    if (call_error_) {
+      delete call_error_;
+    }
   }
 
   NeonSys_ConstructCallback construct_callback_;
@@ -103,7 +129,9 @@ private:
   }
 
   v8::Global<v8::FunctionTemplate> template_;
-  
+  String *this_error_;
+  String *call_error_;
+
 };
 
 

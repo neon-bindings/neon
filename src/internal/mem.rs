@@ -55,6 +55,10 @@ impl<'a, T: Value> Handle<'a, T> {
 }
 
 impl<'a, T: Value> Handle<'a, T> {
+    pub fn is_a<U: Value>(&self) -> bool {
+        U::downcast(self.value).is_some()
+    }
+
     pub fn downcast<U: Value>(&self) -> Option<Handle<'a, U>> {
         U::downcast(self.value).map(Handle::new)
     }

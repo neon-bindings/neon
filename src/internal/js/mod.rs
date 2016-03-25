@@ -321,6 +321,25 @@ impl JsString {
     }
 }
 
+pub trait ToJsString {
+    fn to_js_string<'a, T: Scope<'a>>(&self, scope: &mut T) -> Handle<'a, JsString>;
+}
+
+impl<'b> ToJsString for Handle<'b, JsString> {
+    fn to_js_string<'a, T: Scope<'a>>(&self, _: &mut T) -> Handle<'a, JsString> {
+        Handle::new(JsString::from_raw(self.to_raw()))
+    }
+}
+
+impl<'b> ToJsString for &'b str {
+    fn to_js_string<'a, T: Scope<'a>>(&self, scope: &mut T) -> Handle<'a, JsString> {
+        match JsString::new_internal(scope.isolate(), self) {
+            Some(s) => s,
+            None => JsString::new_internal(scope.isolate(), "").unwrap()
+        }
+    }
+}
+
 pub trait JsStringInternal {
     fn new_internal<'a>(isolate: Isolate, val: &str) -> Option<Handle<'a, JsString>>;
 }

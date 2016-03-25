@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "node.h"
 #include "neon.h"
+#include "neon_string.h"
 #include "neon_class_metadata.h"
 
 extern "C" void NeonSys_Call_SetReturn(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> value) {
@@ -311,7 +312,19 @@ extern "C" bool NeonSys_Class_SetName(v8::Isolate *isolate, void *metadata_point
     return false;
   }
   ft->SetClassName(class_name);
+  metadata->SetName(neon::Slice(name, byte_length));
   return true;
+}
+
+extern "C" void NeonSys_Class_ThrowCallError(v8::Isolate *isolate, void *metadata_pointer) {
+  neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(metadata_pointer);
+  Nan::ThrowTypeError(metadata->GetCallError().ToJsString(isolate, "constructor called without new."));
+}
+
+
+extern "C" void NeonSys_Class_ThrowThisError(v8::Isolate *isolate, void *metadata_pointer) {
+  neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(metadata_pointer);
+  Nan::ThrowTypeError(metadata->GetThisError().ToJsString(isolate, "this is not an object of the expected type."));
 }
 
 extern "C" bool NeonSys_Class_AddMethod(v8::Isolate *isolate, void *metadata_pointer, const char *name, uint32_t byte_length, v8::Local<v8::Function> method) {
@@ -409,12 +422,17 @@ extern "C" void NeonSys_Error_Throw(v8::Local<v8::Value> val) {
   Nan::ThrowError(val);
 }
 
-extern "C" bool NeonSys_Error_NewTypeError(v8::Local<v8::Value> *out, const char *msg) {
+extern "C" bool NeonSys_Error_NewTypeError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg) {
   *out = Nan::TypeError(msg);
   return true;
 }
 
-extern "C" void NeonSys_Error_ThrowTypeError(const char *msg) {
+extern "C" bool NeonSys_Error_CStringToTypeError(v8::Local<v8::Value> *out, const char *msg) {
+  *out = Nan::TypeError(msg);
+  return true;
+}
+
+extern "C" void NeonSys_Error_ThrowTypeErrorFromCString(const char *msg) {
   Nan::ThrowTypeError(msg);
 }
 
