@@ -29,7 +29,7 @@ This will ask you a few questions and then generate a project skeleton for you. 
 
 You'll need the following on all OSes:
 
-* [Node](http://nodejs.org) v4 or later;
+* [Node](http://nodejs.org) v4 (only tested with v4 so far -- support for v5 and up forthcoming);
 * [Rust](http://rust-lang.org) v1.7 or later;
 * [multirust](https://github.com/brson/multirust) (only required for Neon projects that override the system default Rust).
 
