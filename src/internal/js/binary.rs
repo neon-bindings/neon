@@ -1,6 +1,6 @@
 use vm::VmResult;
 use internal::js::{Value, ValueInternal, Object, build};
-use internal::mem::Handle;
+use internal::mem::{Handle, Managed};
 use internal::vm::{Lock, LockState};
 use scope::Scope;
 use neon_sys;
@@ -17,11 +17,13 @@ impl JsBuffer {
     }
 }
 
-impl ValueInternal for JsBuffer {
+impl Managed for JsBuffer {
     fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(h: raw::Local) -> Self { JsBuffer(h) }
+}
 
+impl ValueInternal for JsBuffer {
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_sys::tag::is_buffer(other.to_raw()) }
     }
@@ -31,6 +33,9 @@ impl Value for JsBuffer { }
 
 impl Object for JsBuffer { }
 
+// TODO: I believe this is unsafe. I think the Lock API needs to
+// tighten the lifetime of the exposed internals not to outlive the
+// lock.
 impl<'a> Lock for Handle<'a, JsBuffer> {
     type Internals = Buf<'a>;
 

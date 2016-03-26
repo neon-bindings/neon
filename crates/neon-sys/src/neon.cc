@@ -2,37 +2,50 @@
 #include <nan.h>
 #include <stdint.h>
 #include <stdio.h>
+#include "node.h"
 #include "neon.h"
+#include "neon_string.h"
+#include "neon_class_metadata.h"
 
-extern "C" void NeonSys_Call_SetReturn(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> value) {
+extern "C" void NeonSys_Call_SetReturn(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> value) {
   info->GetReturnValue().Set(value);
 }
 
-extern "C" void *NeonSys_Call_GetIsolate(Nan::FunctionCallbackInfo<v8::Value> *info) {
+extern "C" void *NeonSys_Call_GetIsolate(v8::FunctionCallbackInfo<v8::Value> *info) {
   return (void *)info->GetIsolate();
 }
 
-extern "C" bool NeonSys_Call_IsConstructCall(Nan::FunctionCallbackInfo<v8::Value> *info) {
+extern "C" void *NeonSys_Call_CurrentIsolate() {
+  return (void *)v8::Isolate::GetCurrent();
+}
+
+extern "C" bool NeonSys_Call_IsConstruct(v8::FunctionCallbackInfo<v8::Value> *info) {
   return info->IsConstructCall();
 }
 
-extern "C" void NeonSys_Call_This(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out) {
+extern "C" void NeonSys_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out) {
   *out = info->This();
 }
 
-extern "C" void NeonSys_Call_Callee(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Function> *out) {
+extern "C" void NeonSys_Call_Callee(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Function> *out) {
   *out = info->Callee();
 }
 
-extern "C" void NeonSys_Call_Data(Nan::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> *out) {
+extern "C" void NeonSys_Call_Data(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> *out) {
+  /*
+  printf("Call_Data: v8 info  = %p\n", *(void **)info);
+  dump((void *)info, 3);
+  printf("Call_Data: v8 info implicit:\n");
+  dump_implicit((void *)info);
+  */
   *out = info->Data();
 }
 
-extern "C" int32_t NeonSys_Call_Length(Nan::FunctionCallbackInfo<v8::Value> *info) {
+extern "C" int32_t NeonSys_Call_Length(v8::FunctionCallbackInfo<v8::Value> *info) {
   return info->Length();
 }
 
-extern "C" void NeonSys_Call_Get(Nan::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out) {
+extern "C" void NeonSys_Call_Get(v8::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out) {
   *out = (*info)[i];
 }
 
@@ -116,7 +129,7 @@ extern "C" bool NeonSys_Object_Get_String(v8::Local<v8::Value> *out, v8::Local<v
 }
 
 extern "C" bool NeonSys_Object_Set_String(bool *out, v8::Local<v8::Object> obj, const uint8_t *data, int32_t len, v8::Local<v8::Value> val) {
-  // FIXME: abstract the key construction logic to avoid duplication with ^^
+  // TODO: abstract the key construction logic to avoid duplication with ^^
   Nan::HandleScope scope;
   Nan::MaybeLocal<v8::String> maybe_key = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), (const char*)data, v8::NewStringType::kNormal, len);
   v8::Local<v8::String> key;
@@ -200,51 +213,159 @@ extern "C" void NeonSys_Scope_Nested(void *out, void *closure, NeonSys_NestedSco
   callback(out, realm, closure);
 }
 
-extern "C" void NeonSys_Fun_ExecBody(void *closure, NeonSys_RootScopeCallback callback, Nan::FunctionCallbackInfo<v8::Value> *info, void *scope) {
+extern "C" void NeonSys_Fun_ExecKernel(void *kernel, NeonSys_RootScopeCallback callback, v8::FunctionCallbackInfo<v8::Value> *info, void *scope) {
   Nan::HandleScope v8_scope;
-  callback(info, closure, scope);
+  callback(info, kernel, scope);
 }
 
-extern "C" void NeonSys_Module_ExecBody(void *kernel, NeonSys_ModuleScopeCallback callback, v8::Local<v8::Object> exports, void *scope) {
+extern "C" void NeonSys_Module_ExecKernel(void *kernel, NeonSys_ModuleScopeCallback callback, v8::Local<v8::Object> exports, void *scope) {
   Nan::HandleScope v8_scope;
   callback(kernel, exports, scope);
 }
 
-class KernelWrapper : public Nan::ObjectWrap {
-public:
-  inline void *GetKernel() { return this->kernel; }
-  static inline void SetKernel(v8::Local<v8::Object> obj, void *kernel) {
-    KernelWrapper *wrapper = new KernelWrapper(kernel);
-    wrapper->Wrap(obj);
+extern "C" void NeonSys_Class_ConstructBaseCallback(const v8::FunctionCallbackInfo<v8::Value>& info) {
+  Nan::HandleScope scope;
+  v8::Local<v8::External> wrapper = v8::Local<v8::External>::Cast(info.Data());
+  neon::BaseClassMetadata *metadata = static_cast<neon::BaseClassMetadata *>(wrapper->Value());
+  if (info.IsConstructCall()) {
+    metadata->construct(info);
+  } else {
+    metadata->call(info);
   }
-private:
-  explicit KernelWrapper(void *kernel) : kernel(kernel) { }
-  ~KernelWrapper() { }
-  void *kernel;
-};
+}
 
-extern "C" bool NeonSys_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, Nan::FunctionCallback callback, void *kernel) {
-  v8::Local<v8::ObjectTemplate> env_tmpl = v8::ObjectTemplate::New(isolate);
-  env_tmpl->SetInternalFieldCount(1);
-  v8::MaybeLocal<v8::Object> maybe_env = env_tmpl->NewInstance(isolate->GetCurrentContext());
-  v8::Local<v8::Object> env;
-  if (!maybe_env.ToLocal(&env)) {
+extern "C" void *NeonSys_Class_CreateBase(v8::Isolate *isolate,
+                                          NeonSys_AllocateCallback allocate_callback,
+                                          void *allocate_kernel,
+                                          NeonSys_ConstructCallback construct_callback,
+                                          void *construct_kernel,
+                                          v8::FunctionCallback call_callback,
+                                          void *call_kernel,
+                                          NeonSys_DropCallback drop)
+{
+  neon::BaseClassMetadata *metadata = new neon::BaseClassMetadata(construct_callback, construct_kernel, call_callback, call_kernel, allocate_callback, allocate_kernel, drop);
+  v8::Local<v8::External> data = v8::External::New(isolate, metadata);
+  v8::Local<v8::FunctionTemplate> constructor_template = v8::FunctionTemplate::New(isolate, NeonSys_Class_ConstructBaseCallback, data);
+  metadata->SetTemplate(isolate, constructor_template);
+  v8::Local<v8::ObjectTemplate> instance_template = constructor_template->InstanceTemplate();
+  instance_template->SetInternalFieldCount(1); // index 0: an aligned, owned pointer to the internals (a user-defined Rust data structure)
+  return metadata;
+}
+
+extern "C" void *NeonSys_Class_GetClassMap(v8::Isolate *isolate) {
+  neon::ClassMapHolder *holder = static_cast<neon::ClassMapHolder *>(isolate->GetData(NEON_ISOLATE_SLOT));
+  return (holder == nullptr)
+       ? nullptr
+       : holder->GetMap();
+}
+
+void cleanup_class_map(void *arg) {
+  neon::ClassMapHolder *holder = static_cast<neon::ClassMapHolder *>(arg);
+  delete holder;
+}
+
+extern "C" void NeonSys_Class_SetClassMap(v8::Isolate *isolate, void *map, NeonSys_DropCallback drop_map) {
+  neon::ClassMapHolder *holder = new neon::ClassMapHolder(map, drop_map);
+  isolate->SetData(NEON_ISOLATE_SLOT, holder);
+  // TODO: When workers land in node, this will need to be generalized to a per-worker version.
+  node::AtExit(cleanup_class_map, holder);
+}
+
+extern "C" void *NeonSys_Class_GetCallKernel(v8::Local<v8::External> wrapper) {
+  neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(wrapper->Value());
+  return metadata->GetCallKernel();
+}
+
+extern "C" void *NeonSys_Class_GetConstructKernel(v8::Local<v8::External> wrapper) {
+  neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(wrapper->Value());
+  return metadata->GetConstructKernel();
+}
+
+extern "C" void *NeonSys_Class_GetAllocateKernel(v8::Local<v8::External> wrapper) {
+  neon::BaseClassMetadata *metadata = static_cast<neon::BaseClassMetadata *>(wrapper->Value());
+  return metadata->GetAllocateKernel();
+}
+
+extern "C" bool NeonSys_Class_Constructor(v8::Local<v8::Function> *out, v8::Local<v8::FunctionTemplate> ft) {
+  v8::MaybeLocal<v8::Function> maybe = ft->GetFunction();
+  return maybe.ToLocal(out);
+}
+
+extern "C" bool NeonSys_Class_Check(v8::Local<v8::FunctionTemplate> ft, v8::Local<v8::Value> v) {
+  return ft->HasInstance(v);
+}
+
+extern "C" bool NeonSys_Class_HasInstance(void *metadata_pointer, v8::Local<v8::Value> v) {
+  neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(metadata_pointer);
+  return metadata->GetTemplate(v8::Isolate::GetCurrent())->HasInstance(v);
+}
+
+extern "C" bool NeonSys_Class_SetName(v8::Isolate *isolate, void *metadata_pointer, const char *name, uint32_t byte_length) {
+  neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(metadata_pointer);
+  v8::Local<v8::FunctionTemplate> ft = metadata->GetTemplate(isolate);
+  v8::MaybeLocal<v8::String> maybe_class_name = v8::String::NewFromUtf8(isolate, name, v8::NewStringType::kNormal, byte_length);
+  v8::Local<v8::String> class_name;
+  if (!maybe_class_name.ToLocal(&class_name)) {
     return false;
   }
-  KernelWrapper::SetKernel(env, kernel);
-  Nan::MaybeLocal<v8::Function> maybe_result = Nan::New<v8::Function>(callback, env);
+  ft->SetClassName(class_name);
+  metadata->SetName(neon::Slice(name, byte_length));
+  return true;
+}
+
+extern "C" void NeonSys_Class_ThrowCallError(v8::Isolate *isolate, void *metadata_pointer) {
+  neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(metadata_pointer);
+  Nan::ThrowTypeError(metadata->GetCallError().ToJsString(isolate, "constructor called without new."));
+}
+
+
+extern "C" void NeonSys_Class_ThrowThisError(v8::Isolate *isolate, void *metadata_pointer) {
+  neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(metadata_pointer);
+  Nan::ThrowTypeError(metadata->GetThisError().ToJsString(isolate, "this is not an object of the expected type."));
+}
+
+extern "C" bool NeonSys_Class_AddMethod(v8::Isolate *isolate, void *metadata_pointer, const char *name, uint32_t byte_length, v8::Local<v8::Function> method) {
+  neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(metadata_pointer);
+  v8::Local<v8::FunctionTemplate> ft = metadata->GetTemplate(isolate);
+  v8::Local<v8::ObjectTemplate> pt = ft->PrototypeTemplate();
+  Nan::HandleScope scope;
+  v8::MaybeLocal<v8::String> maybe_key = v8::String::NewFromUtf8(isolate, name, v8::NewStringType::kNormal, byte_length);
+  v8::Local<v8::String> key;
+  if (!maybe_key.ToLocal(&key)) {
+    return false;
+  }
+  pt->Set(key, method);
+  return true;
+}
+
+extern "C" void NeonSys_Class_MetadataToClass(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, void *metadata) {
+  *out = static_cast<neon::ClassMetadata *>(metadata)->GetTemplate(isolate);
+}
+
+extern "C" void *NeonSys_Class_GetInstanceInternals(v8::Local<v8::Object> obj) {
+  return static_cast<neon::BaseClassInstanceMetadata *>(obj->GetAlignedPointerFromInternalField(0))->GetInternals();
+}
+
+
+extern "C" bool NeonSys_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, v8::FunctionCallback callback, void *kernel) {
+  v8::Local<v8::External> wrapper = v8::External::New(isolate, kernel);
+  if (wrapper.IsEmpty()) {
+    return false;
+  }
+
+  v8::MaybeLocal<v8::Function> maybe_result = v8::Function::New(isolate->GetCurrentContext(), callback, wrapper);
   return maybe_result.ToLocal(out);
 }
 
-extern "C" void *NeonSys_Fun_GetKernel(v8::Local<v8::Object> obj) {
-  return Nan::ObjectWrap::Unwrap<KernelWrapper>(obj)->GetKernel();
+extern "C" void *NeonSys_Fun_GetKernel(v8::Local<v8::External> data) {
+  return data->Value();
 }
 
 extern "C" tag_t NeonSys_Tag_Of(v8::Local<v8::Value> val) {
   return val->IsNull()                    ? tag_null
     : val->IsUndefined()                  ? tag_undefined
     : (val->IsTrue() || val->IsFalse())   ? tag_boolean
-    : (val->IsInt32() || val->IsUint32()) ? tag_integer // FIXME: this isn't right for large int64s
+    : (val->IsInt32() || val->IsUint32()) ? tag_integer // TODO: this isn't right for large int64s
     : val->IsNumber()                     ? tag_number
     : val->IsString()                     ? tag_string
     : val->IsArray()                      ? tag_array
@@ -278,7 +399,7 @@ extern "C" bool NeonSys_Tag_IsString(v8::Local<v8::Value> val) {
 }
 
 extern "C" bool NeonSys_Tag_IsObject(v8::Local<v8::Value> val) {
-  // FIXME: is the null check superfluous?
+  // TODO: is the null check superfluous?
   return val->IsObject() && !val->IsNull();
 }
 
@@ -291,19 +412,24 @@ extern "C" bool NeonSys_Tag_IsFunction(v8::Local<v8::Value> val) {
 }
 
 extern "C" bool NeonSys_Tag_IsTypeError(v8::Local<v8::Value> val) {
-  return false; // FIXME: implement this
+  return false; // TODO: implement this
 }
 
 extern "C" void NeonSys_Error_Throw(v8::Local<v8::Value> val) {
   Nan::ThrowError(val);
 }
 
-extern "C" bool NeonSys_Error_NewTypeError(v8::Local<v8::Value> *out, const char *msg) {
+extern "C" bool NeonSys_Error_NewTypeError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg) {
   *out = Nan::TypeError(msg);
   return true;
 }
 
-extern "C" void NeonSys_Error_ThrowTypeError(const char *msg) {
+extern "C" bool NeonSys_Error_CStringToTypeError(v8::Local<v8::Value> *out, const char *msg) {
+  *out = Nan::TypeError(msg);
+  return true;
+}
+
+extern "C" void NeonSys_Error_ThrowTypeErrorFromCString(const char *msg) {
   Nan::ThrowTypeError(msg);
 }
 
