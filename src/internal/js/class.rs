@@ -1,15 +1,14 @@
-use std::ffi::CString;
 use std::any::{Any, TypeId};
 use std::mem;
-use std::marker::{Sized, PhantomData};
+use std::marker::PhantomData;
 use std::os::raw::c_void;
 use std::ptr::null_mut;
 use neon_sys;
 use neon_sys::raw;
 use internal::mem::{Handle, HandleInternal, Managed};
 use internal::scope::{Scope, ScopeInternal};
-use internal::vm::{Isolate, IsolateInternal, JsResult, VmResult, FunctionCall, Call, CallbackInfo, Lock, LockState, Throw, This, Kernel, exec_function_kernel};
-use internal::js::{Value, ValueInternal, JsFunction, JsObject, JsValue, JsUndefined, JsString, build, call_neon_function};
+use internal::vm::{Isolate, IsolateInternal, JsResult, VmResult, FunctionCall, CallbackInfo, Lock, LockState, Throw, This, Kernel, exec_function_kernel};
+use internal::js::{Value, ValueInternal, JsFunction, JsObject, JsValue, JsUndefined, build};
 use internal::js::error::JsTypeError;
 
 #[repr(C)]
@@ -293,19 +292,6 @@ pub trait ClassInternal: Class {
 }
 
 impl<T: Class> ClassInternal for T { }
-
-fn strip_null_bytes(s: &str) -> String {
-    s.chars()
-     .filter(|c| *c != '\0')
-     .collect()
-}
-
-fn method_name(s: &str) -> VmResult<CString> {
-    match CString::new(s) {
-        Ok(cs) => Ok(cs),
-        Err(_) => JsTypeError::throw(&format!("illegal null byte in method name {}", strip_null_bytes(s))[..])
-    }
-}
 
 impl<T: Class> ValueInternal for T {
     fn is_typeof<Other: Value>(value: Other) -> bool {

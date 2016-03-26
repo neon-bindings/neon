@@ -194,7 +194,7 @@ macro_rules! impl_managed {
 ///
 /// Example:
 ///
-/// ```rust
+/// ```rust,ignore
 /// pub struct Greeter {
 ///     greeting: String
 /// }

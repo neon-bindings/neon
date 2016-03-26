@@ -1,5 +1,5 @@
-use std::os::raw::{c_void, c_char};
-use raw::{FunctionCallbackInfo, Isolate, Local};
+use std::os::raw::c_void;
+use raw::{Isolate, Local};
 
 extern "system" {
 

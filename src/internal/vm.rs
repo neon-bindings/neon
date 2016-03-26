@@ -8,7 +8,7 @@ use neon_sys::raw;
 use neon_sys::buf::Buf;
 use internal::scope::{Scope, RootScope, RootScopeInternal};
 use internal::js::{JsValue, Value, Object, JsObject, JsFunction};
-use internal::js::class::{Class, ClassMetadata};
+use internal::js::class::ClassMetadata;
 use internal::js::error::JsTypeError;
 use internal::mem::{Handle, HandleInternal, Managed};
 

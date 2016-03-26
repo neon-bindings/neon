@@ -4,7 +4,6 @@ use std::mem;
 use std::str;
 
 #[repr(C)]
-#[allow(raw_pointer_derive)]
 #[derive(Copy, Clone)]
 pub struct Buf<'a> {
     ptr: *mut u8,

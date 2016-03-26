@@ -5,7 +5,7 @@ use neon_sys;
 use neon_sys::raw;
 
 use internal::vm::{Throw, VmResult};
-use internal::js::{JsObject, Value, ValueInternal, Object, JsString, ToJsString, build};
+use internal::js::{JsObject, Value, ValueInternal, Object, ToJsString, build};
 use internal::mem::{Handle, Managed};
 use scope::Scope;
 

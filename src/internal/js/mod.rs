@@ -668,12 +668,6 @@ pub struct JsFunction(raw::Local);
 #[repr(C)]
 pub struct FunctionKernel<T: Value>(fn(Call) -> JsResult<T>);
 
-impl<T: Value> FunctionKernel<T> {
-    pub fn new(kernel: fn(Call) -> JsResult<T>) -> Self {
-        FunctionKernel(kernel)
-    }
-}
-
 impl<T: Value> Kernel<()> for FunctionKernel<T> {
     extern "C" fn callback(info: &CallbackInfo) {
         let mut scope = info.scope();
@@ -706,17 +700,6 @@ impl JsFunction {
             }
         })
     }
-}
-
-pub extern "C" fn call_neon_function<U: Value>(info: &CallbackInfo) {
-    let mut scope = info.scope();
-    exec_function_kernel(info, &mut scope, |call| {
-        let data = info.data();
-        let kernel: fn(Call) -> JsResult<U> = unsafe { mem::transmute(neon_sys::fun::get_kernel(data.to_raw())) };
-        if let Ok(value) = kernel(call) {
-            info.set_return(value);
-        }
-    });
 }
 
 impl Value for JsFunction { }
