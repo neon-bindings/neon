@@ -61,12 +61,20 @@ extern "C" void NeonSys_Primitive_Boolean(v8::Local<v8::Boolean> *out, bool b) {
   *out = b ? Nan::True() : Nan::False();
 }
 
+extern "C" bool NeonSys_Primitive_BooleanValue(v8::Local<v8::Boolean> p) {
+  return p->Value();
+}
+
 extern "C" void NeonSys_Primitive_Integer(v8::Local<v8::Integer> *out, v8::Isolate *isolate, int32_t x) {
   *out = v8::Integer::New(isolate, x);
 }
 
 extern "C" void NeonSys_Primitive_Number(v8::Local<v8::Number> *out, v8::Isolate *isolate, double value) {
   *out = v8::Number::New(isolate, value);
+}
+
+extern "C" double NeonSys_Primitive_NumberValue(v8::Local<v8::Number> n) {
+  return n->Value();
 }
 
 extern "C" bool NeonSys_Primitive_IsUint32(v8::Local<v8::Primitive> p) {

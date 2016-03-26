@@ -11,6 +11,9 @@ extern "system" {
     #[link_name = "NeonSys_Primitive_Boolean"]
     pub fn boolean(out: &mut Local, b: bool);
 
+    #[link_name = "NeonSys_Primitive_BooleanValue"]
+    pub fn boolean_value(p: Local) -> bool;
+
     #[link_name = "NeonSys_Primitive_Integer"]
     pub fn integer(out: &mut Local, isolate: *mut Isolate, x: i32);
 
@@ -26,4 +29,6 @@ extern "system" {
     #[link_name = "NeonSys_Primitive_Number"]
     pub fn number(out: &mut Local, isolate: *mut Isolate, v: f64);
 
+    #[link_name = "NeonSys_Primitive_NumberValue"]
+    pub fn number_value(p: Local) -> f64;
 }
