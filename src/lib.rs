@@ -91,8 +91,9 @@ macro_rules! register_module {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! class_definition {
-    ( $cls:ident ; $typ:path ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; init($call:pat) $body:block $($rest:tt)* ) => {
+    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; init($call:pat) $body:block $($rest:tt)* ) => {
         class_definition!($cls ;
+                          $cname ;
                           $typ ;
                           {
                               fn _______allocator_rust_y_u_no_hygienic_items_______($call: $crate::vm::FunctionCall<$crate::js::JsUndefined>) -> $crate::vm::VmResult<$typ> {
@@ -108,8 +109,9 @@ macro_rules! class_definition {
                           $($rest)*);
     };
 
-    ( $cls:ident ; $typ:path ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; ($($mname:tt)*) ; ($($mdef:tt)*) ; method $name:ident($call:pat) $body:block $($rest:tt)* ) => {
+    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; ($($mname:tt)*) ; ($($mdef:tt)*) ; method $name:ident($call:pat) $body:block $($rest:tt)* ) => {
         class_definition!($cls ;
+                          $cname ;
                           $typ ;
                           $allocator ;
                           $call_ctor ;
@@ -125,8 +127,9 @@ macro_rules! class_definition {
                           $($rest)*);
     };
 
-    ( $cls:ident ; $typ:path ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; constructor($call:pat) $body:block $($rest:tt)* ) => {
+    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; constructor($call:pat) $body:block $($rest:tt)* ) => {
         class_definition!($cls ;
+                          $cname ;
                           $typ ;
                           $allocator ;
                           $call_ctor ;
@@ -142,8 +145,9 @@ macro_rules! class_definition {
                           $($rest)*);
     };
 
-    ( $cls:ident ; $typ:path ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; call($call:pat) $body:block $($rest:tt)* ) => {
+    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; call($call:pat) $body:block $($rest:tt)* ) => {
         class_definition!($cls ;
+                          $cname ;
                           $typ ;
                           $allocator ;
                           ({
@@ -159,12 +163,12 @@ macro_rules! class_definition {
                           $($rest)*);
     };
 
-    ( $cls:ident ; $typ:path ; $allocator:block ; ($($call_ctor:block)*) ; ($($new_ctor:block)*) ; ($($mname:ident)*) ; ($($mdef:block)*) ; $($rest:tt)* ) => {
+    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:block ; ($($call_ctor:block)*) ; ($($new_ctor:block)*) ; ($($mname:ident)*) ; ($($mdef:block)*) ; $($rest:tt)* ) => {
         impl $crate::js::class::Class for $cls {
             type Internals = $typ;
 
             fn setup<'a, T: $crate::scope::Scope<'a>>(_: &mut T) -> $crate::vm::VmResult<$crate::js::class::ClassDescriptor<'a, Self>> {
-                ::std::result::Result::Ok(Self::describe(stringify!($typ), $allocator)
+                ::std::result::Result::Ok(Self::describe(stringify!($cname), $allocator)
                                              $(.construct($new_ctor))*
                                              $(.call($call_ctor))*
                                              $(.method(stringify!($mname), $mdef))*)
@@ -225,7 +229,15 @@ macro_rules! impl_managed {
 /// ```
 #[macro_export]
 macro_rules! declare_types {
-    { $(#[$attr:meta])* pub class $cls:ident for $typ:path { $($body:tt)* } $($rest:tt)* } => {
+    { $(#[$attr:meta])* pub class $cls:ident for $typ:ident { $($body:tt)* } $($rest:tt)* } => {
+        declare_types! { $(#[$attr])* pub class $cls as $typ for $typ { $($body)* } $($rest)* }
+    };
+
+    { $(#[$attr:meta])* class $cls:ident for $typ:ident { $($body:tt)* } $($rest:tt)* } => {
+        declare_types! { $(#[$attr])* class $cls as $typ for $typ { $($body)* } $($rest)* }
+    };
+
+    { $(#[$attr:meta])* pub class $cls:ident as $cname:ident for $typ:ty { $($body:tt)* } $($rest:tt)* } => {
         #[derive(Copy, Clone)]
         #[repr(C)]
         $(#[$attr])*
@@ -233,12 +245,12 @@ macro_rules! declare_types {
 
         impl_managed!($cls);
 
-        class_definition!($cls ; $typ ; () ; () ; () ; () ; () ; $($body)*);
+        class_definition!($cls ; $cname ; $typ ; () ; () ; () ; () ; () ; $($body)*);
 
         declare_types! { $($rest)* }
     };
 
-    { $(#[$attr:meta])* class $cls:ident for $typ:path { $($body:tt)* } $($rest:tt)* } => {
+    { $(#[$attr:meta])* class $cls:ident as $cname:ident for $typ:ty { $($body:tt)* } $($rest:tt)* } => {
         #[derive(Copy, Clone)]
         #[repr(C)]
         $(#[$attr])*
@@ -246,7 +258,7 @@ macro_rules! declare_types {
 
         impl_managed!($cls);
 
-        class_definition!($cls ; $typ ; () ; () ; () ; () ; () ; $($body)*);
+        class_definition!($cls ; $cname ; $typ ; () ; () ; () ; () ; () ; $($body)*);
 
         declare_types! { $($rest)* }
     };
