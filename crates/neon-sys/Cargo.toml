@@ -1,6 +1,6 @@
 [package]
 name = "neon-sys"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["Dave Herman <dherman@mozilla.com>"]
 description = "Exposes Node and V8 C++ API's for use by Neon."
 repository = "https://github.com/dherman/neon"

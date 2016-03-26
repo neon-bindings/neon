@@ -1,6 +1,6 @@
 [package]
 name = "neon"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["Dave Herman <dherman@mozilla.com>"]
 description = "A safe abstraction layer for Node.js."
 documentation = "http://neon.rustbridge.io/neon"
@@ -10,4 +10,4 @@ license = "MIT"
 exclude = ["neon.jpg"]
 
 [dependencies]
-neon-sys = { version = "=0.1.7", path = "crates/neon-sys" }
+neon-sys = { version = "=0.1.8", path = "crates/neon-sys" }
