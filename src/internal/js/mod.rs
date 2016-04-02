@@ -511,12 +511,13 @@ impl ValueInternal for JsObject {
     }
 }
 
-trait PropertyName {
+/// A property key in a JavaScript object.
+pub trait Key {
     unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool;
     unsafe fn set(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool;
 }
 
-impl PropertyName for u32 {
+impl Key for u32 {
     unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool {
         neon_sys::object::get_index(out, obj, self)
     }
@@ -526,7 +527,7 @@ impl PropertyName for u32 {
     }
 }
 
-impl<'a, K: Value> PropertyName for Handle<'a, K> {
+impl<'a, K: Value> Key for Handle<'a, K> {
     unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool {
         neon_sys::object::get(out, obj, self.to_raw())
     }
@@ -536,7 +537,7 @@ impl<'a, K: Value> PropertyName for Handle<'a, K> {
     }
 }
 
-impl<'a> PropertyName for &'a str {
+impl<'a> Key for &'a str {
     unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool {
         let (ptr, len) = lower_str_unwrap(self);
         neon_sys::object::get_string(out, obj, ptr, len)
@@ -550,7 +551,7 @@ impl<'a> PropertyName for &'a str {
 
 /// The trait of all object types.
 pub trait Object: Value {
-    fn get<'a, T: Scope<'a>, K: PropertyName>(self, _: &mut T, key: K) -> VmResult<Handle<'a, JsValue>> {
+    fn get<'a, T: Scope<'a>, K: Key>(self, _: &mut T, key: K) -> VmResult<Handle<'a, JsValue>> {
         build(|out| { unsafe { key.get(out, self.to_raw()) } })
     }
 
@@ -558,7 +559,7 @@ pub trait Object: Value {
         build(|out| { unsafe { neon_sys::object::get_own_property_names(out, self.to_raw()) } })
     }
 
-    fn set<K: PropertyName, V: Value>(self, key: K, val: Handle<V>) -> VmResult<bool> {
+    fn set<K: Key, V: Value>(self, key: K, val: Handle<V>) -> VmResult<bool> {
         let mut result = false;
         if unsafe { key.set(&mut result, self.to_raw(), val.to_raw()) } {
             Ok(result)
