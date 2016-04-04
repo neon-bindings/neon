@@ -1,3 +1,4 @@
+use std::mem;
 use vm::VmResult;
 use internal::js::{Value, ValueInternal, Object, build};
 use internal::mem::{Handle, Managed};
@@ -40,7 +41,7 @@ impl<'a> Lock for Handle<'a, JsBuffer> {
     type Internals = Buf<'a>;
 
     unsafe fn expose(self, state: &mut LockState) -> Self::Internals {
-        let mut result = Buf::uninitialized();
+        let mut result = mem::uninitialized();
         neon_sys::buffer::data(&mut result, self.to_raw());
         state.use_buffer(&result);
         result

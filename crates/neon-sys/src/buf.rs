@@ -12,14 +12,6 @@ pub struct Buf<'a> {
 }
 
 impl<'a> Buf<'a> {
-    pub unsafe fn uninitialized<'b>() -> Buf<'b> {
-        Buf {
-            ptr: mem::uninitialized(),
-            len: mem::uninitialized(),
-            marker: PhantomData
-        }
-    }
-
     pub fn wrap(s: &'a str) -> Buf<'a> {
         Buf {
             ptr: s.as_ptr() as *mut u8,
