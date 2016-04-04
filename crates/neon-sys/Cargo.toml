@@ -3,8 +3,8 @@ name = "neon-sys"
 version = "0.1.8"
 authors = ["Dave Herman <dherman@mozilla.com>"]
 description = "Exposes Node and V8 C++ API's for use by Neon."
-repository = "https://github.com/dherman/neon"
-license = "MIT"
+repository = "https://github.com/rustbridge/neon"
+license = "MIT/Apache2"
 
 # libneon.a gets linked in with this package
 links = "neon"

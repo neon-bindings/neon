@@ -6,7 +6,7 @@ description = "A safe abstraction layer for Node.js."
 documentation = "http://neon.rustbridge.io/neon"
 homepage = "http://neon.rustbridge.io"
 repository = "https://github.com/rustbridge/neon"
-license = "MIT"
+license = "MIT/Apache2"
 exclude = ["neon.jpg"]
 
 [dependencies]
