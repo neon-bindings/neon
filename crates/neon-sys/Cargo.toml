@@ -12,5 +12,8 @@ links = "neon"
 # this script builds libneon.a
 build = "build.rs"
 
+[dependencies]
+cslice = { version = "=0.1.0", path = "../cslice" }
+
 [build-dependencies]
 gcc = "0.3"

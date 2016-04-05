@@ -1,6 +1,7 @@
 //! The `neon` crate provides the entire [Neon](http://neon.rustbridge.io) API.
 
 extern crate neon_sys;
+extern crate cslice;
 
 mod internal;
 pub mod mem;

@@ -10,4 +10,5 @@ license = "MIT/Apache2"
 exclude = ["neon.jpg"]
 
 [dependencies]
+cslice = { version = "=0.1.0", path = "crates/cslice" }
 neon-sys = { version = "=0.1.8", path = "crates/neon-sys" }

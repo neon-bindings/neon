@@ -3,9 +3,9 @@ use std::any::TypeId;
 use std::marker::PhantomData;
 use std::collections::{HashSet, HashMap};
 use std::os::raw::c_void;
+use cslice::CMutSlice;
 use neon_sys;
 use neon_sys::raw;
-use neon_sys::buf::Buf;
 use internal::scope::{Scope, RootScope, RootScopeInternal};
 use internal::js::{JsValue, Value, Object, JsObject, JsFunction};
 use internal::js::class::ClassMetadata;
@@ -286,7 +286,7 @@ pub struct LockState {
 }
 
 impl LockState {
-    pub fn use_buffer(&mut self, buf: &Buf) {
+    pub fn use_buffer(&mut self, buf: CMutSlice<u8>) {
         let p = buf.as_ptr() as usize;
         if !self.buffers.insert(p) {
             panic!("attempt to lock heap with duplicate buffers (0x{:x})", p);

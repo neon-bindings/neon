@@ -4,9 +4,9 @@ use internal::js::{Value, ValueInternal, Object, build};
 use internal::mem::{Handle, Managed};
 use internal::vm::{Lock, LockState};
 use scope::Scope;
+use cslice::CMutSlice;
 use neon_sys;
 use neon_sys::raw;
-use neon_sys::buf::Buf;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -38,12 +38,12 @@ impl Object for JsBuffer { }
 // tighten the lifetime of the exposed internals not to outlive the
 // lock.
 impl<'a> Lock for Handle<'a, JsBuffer> {
-    type Internals = Buf<'a>;
+    type Internals = CMutSlice<'a, u8>;
 
     unsafe fn expose(self, state: &mut LockState) -> Self::Internals {
         let mut result = mem::uninitialized();
         neon_sys::buffer::data(&mut result, self.to_raw());
-        state.use_buffer(&result);
+        state.use_buffer(result);
         result
     }
 }

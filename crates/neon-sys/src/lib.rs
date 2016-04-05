@@ -1,5 +1,6 @@
+extern crate cslice;
+
 pub mod raw;
-pub mod buf;
 pub mod call;
 pub mod scope;
 pub mod object;
