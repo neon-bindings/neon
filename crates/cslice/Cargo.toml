@@ -1,0 +1,7 @@
+[package]
+name = "cslice"
+version = "0.1.0"
+authors = ["Dave Herman <dherman@mozilla.com>"]
+description = "A library of slices with a stable ABI for interfacing with C."
+repository = "https://github.com/rustbridge/neon"
+license = "MIT/Apache2"
