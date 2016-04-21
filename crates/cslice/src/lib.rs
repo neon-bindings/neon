@@ -108,6 +108,20 @@ impl<'a, T> CMutSlice<'a, T> {
         self.base
     }
 
+    /// A cheap conversion to a Rust slice. This is slightly more general than `as_ref`.
+    pub fn as_slice(&self) -> &'a [T] {
+        unsafe {
+            slice::from_raw_parts(self.base, self.len)
+        }
+    }
+
+    /// A cheap conversion to a mutable Rust slice. This is slightly more general than `as_mut`.
+    pub fn as_mut_slice(&mut self) -> &'a mut [T] {
+        unsafe {
+            slice::from_raw_parts_mut(self.base, self.len)
+        }
+    }
+
     /// Returns the number of elements in the slice.
     pub fn len(&self) -> usize {
         self.len

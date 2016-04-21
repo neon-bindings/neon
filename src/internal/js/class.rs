@@ -357,10 +357,7 @@ impl<T: Class> JsClass<T> {
     }
 }
 
-// TODO: I believe this is unsafe. I think the Lock API needs to
-// tighten the lifetime of the exposed internals not to outlive the
-// lock.
-impl<'a, T: Class> Lock for Handle<'a, T> {
+impl<'a, T: Class> Lock for &'a mut T {
     type Internals = &'a mut T::Internals;
 
     unsafe fn expose(self, _: &mut LockState) -> Self::Internals {

@@ -294,8 +294,16 @@ impl LockState {
     }
 }
 
-pub trait Lock {
+pub trait Lock: Sized {
     type Internals;
+
+    fn grab<F, T>(self, f: F) -> T
+        where F: FnOnce(Self::Internals) -> T + Send
+    {
+        let mut state = LockState { buffers: HashSet::new() };
+        let internals = unsafe { self.expose(&mut state) };
+        f(internals)
+    }
 
     unsafe fn expose(self, state: &mut LockState) -> Self::Internals;
 }
@@ -312,7 +320,6 @@ impl<T, U> Lock for (T, U)
     }
 }
 
-// TODO: generalize for all Iterator types?
 impl<T> Lock for Vec<T>
     where T: Lock
 {
@@ -323,13 +330,4 @@ impl<T> Lock for Vec<T>
             .map(|x| x.expose(state))
             .collect()
     }
-}
-
-pub fn lock<T, F, U>(v: T, f: F) -> U
-    where T: Lock,
-          F: FnOnce(T::Internals) -> U + Send
-{
-    let mut state = LockState { buffers: HashSet::new() };
-    let internals = unsafe { v.expose(&mut state) };
-    f(internals)
 }

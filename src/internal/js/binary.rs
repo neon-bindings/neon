@@ -34,10 +34,7 @@ impl Value for JsBuffer { }
 
 impl Object for JsBuffer { }
 
-// TODO: I believe this is unsafe. I think the Lock API needs to
-// tighten the lifetime of the exposed internals not to outlive the
-// lock.
-impl<'a> Lock for Handle<'a, JsBuffer> {
+impl<'a> Lock for &'a mut JsBuffer {
     type Internals = CMutSlice<'a, u8>;
 
     unsafe fn expose(self, state: &mut LockState) -> Self::Internals {
