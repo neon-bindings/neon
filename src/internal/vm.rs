@@ -308,8 +308,6 @@ pub trait Lock: Sized {
     unsafe fn expose(self, state: &mut LockState) -> Self::Internals;
 }
 
-// TODO: make a macro to do this for tuples of many size
-
 impl<T, U> Lock for (T, U)
     where T: Lock, U: Lock
 {

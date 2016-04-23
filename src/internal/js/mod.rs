@@ -297,8 +297,6 @@ impl JsString {
 
     pub fn value(self) -> String {
         unsafe {
-            // TODO: use StringBytes::StorageSize instead?
-            // TODO: audit all these isize -> usize casts
             let capacity = neon_sys::string::utf8_len(self.to_raw());
             let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
             let p = buffer.as_mut_ptr();
@@ -315,7 +313,6 @@ impl JsString {
     pub fn new_or_throw<'a, T: Scope<'a>>(scope: &mut T, val: &str) -> VmResult<Handle<'a, JsString>> {
         match JsString::new(scope, val) {
             Some(v) => Ok(v),
-            // TODO: should this be a different error type?
             None => JsTypeError::throw("invalid string contents")
         }
     }

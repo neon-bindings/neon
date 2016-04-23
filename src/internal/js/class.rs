@@ -176,8 +176,6 @@ impl<'a, T: Class> ClassDescriptor<'a, T> {
         }
     }
 
-    // TODO: fn extend<'b, U: Class<Internals=T::Internals>>(super: Handle<JsClass<U>>, name: &'b str) -> VmResult<ClassDescriptor<'b, U>> { ... }
-
     pub fn call(mut self, kernel: ConstructorCallKernel) -> Self {
         self.call = Some(kernel);
         self
