@@ -1,0 +1,12 @@
+[package]
+name = "tests"
+version = "0.1.0"
+authors = ["n <n>"]
+license = "MIT"
+
+[lib]
+name = "tests"
+crate-type = ["dylib"]
+
+[dependencies]
+neon = {path = "../../"}
