@@ -1,3 +1,4 @@
 #!/bin/bash
 set -e
 (cd tests/ && npm test)
+(cd compile_tests/ && cargo test)

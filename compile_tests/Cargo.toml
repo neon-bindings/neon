@@ -1,0 +1,8 @@
+[package]
+name = "compile_tests"
+version = "0.1.0"
+authors = ["Mike Piccolo <mfpiccolo@gmail.com>"]
+
+[dependencies]
+neon = { path = "../" }
+compiletest_rs = "0.1.0"
