@@ -112,11 +112,15 @@ extern "C" bool NeonSys_Object_Set_Index(bool *out, v8::Local<v8::Object> object
   return maybe.IsJust() && (*out = maybe.FromJust(), true);
 }
 
+bool NeonSys_ASCII_Key(v8::Local<v8::String> *key, const uint8_t *data, int32_t len) {
+  Nan::MaybeLocal<v8::String> maybe_key = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), (const char*)data, v8::NewStringType::kNormal, len);
+  return maybe_key.ToLocal(key);
+}
+
 extern "C" bool NeonSys_Object_Get_String(v8::Local<v8::Value> *out, v8::Local<v8::Object> obj, const uint8_t *data, int32_t len) {
   Nan::EscapableHandleScope scope;
-  Nan::MaybeLocal<v8::String> maybe_key = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), (const char*)data, v8::NewStringType::kNormal, len);
   v8::Local<v8::String> key;
-  if (!maybe_key.ToLocal(&key)) {
+  if (!NeonSys_ASCII_Key(&key, data, len)) {
     return false;
   }
   Nan::MaybeLocal<v8::Value> maybe = Nan::Get(obj, key);
@@ -129,11 +133,9 @@ extern "C" bool NeonSys_Object_Get_String(v8::Local<v8::Value> *out, v8::Local<v
 }
 
 extern "C" bool NeonSys_Object_Set_String(bool *out, v8::Local<v8::Object> obj, const uint8_t *data, int32_t len, v8::Local<v8::Value> val) {
-  // TODO: abstract the key construction logic to avoid duplication with ^^
   Nan::HandleScope scope;
-  Nan::MaybeLocal<v8::String> maybe_key = v8::String::NewFromUtf8(v8::Isolate::GetCurrent(), (const char*)data, v8::NewStringType::kNormal, len);
   v8::Local<v8::String> key;
-  if (!maybe_key.ToLocal(&key)) {
+  if (!NeonSys_ASCII_Key(&key, data, len)) {
     return false;
   }
   Nan::Maybe<bool> maybe = Nan::Set(obj, key, val);
@@ -399,8 +401,7 @@ extern "C" bool NeonSys_Tag_IsString(v8::Local<v8::Value> val) {
 }
 
 extern "C" bool NeonSys_Tag_IsObject(v8::Local<v8::Value> val) {
-  // TODO: is the null check superfluous?
-  return val->IsObject() && !val->IsNull();
+  return val->IsObject();
 }
 
 extern "C" bool NeonSys_Tag_IsArray(v8::Local<v8::Value> val) {
