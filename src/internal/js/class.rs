@@ -9,7 +9,7 @@ use internal::mem::{Handle, HandleInternal, Managed};
 use internal::scope::{Scope, ScopeInternal};
 use internal::vm::{Isolate, IsolateInternal, JsResult, VmResult, FunctionCall, CallbackInfo, Lock, LockState, Throw, This, Kernel, exec_function_kernel};
 use internal::js::{Value, ValueInternal, JsFunction, JsObject, JsValue, JsUndefined, build};
-use internal::js::error::JsTypeError;
+use internal::js::error::{JsError, Kind};
 
 #[repr(C)]
 pub struct MethodKernel<T: Class>(fn(FunctionCall<T>) -> JsResult<JsValue>);
@@ -342,7 +342,7 @@ impl<T: Class> JsClass<T> {
         if unsafe { neon_sys::class::check(self.to_raw(), local) } {
             Ok(Handle::new(T::from_raw(local)))
         } else {
-            JsTypeError::throw(msg)
+            JsError::throw(Kind::TypeError, msg)
         }
     }
 

@@ -1,1 +1,1 @@
-pub use internal::js::error::{throw, JsTypeError};
+pub use internal::js::error::{throw, JsError, Kind};

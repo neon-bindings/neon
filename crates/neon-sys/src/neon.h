@@ -124,12 +124,19 @@ extern "C" {
   bool NeonSys_Tag_IsArray(v8::Local<v8::Value> val);
   bool NeonSys_Tag_IsFunction(v8::Local<v8::Value> val);
   bool NeonSys_Tag_IsBuffer(v8::Local<v8::Value> obj);
-  bool NeonSys_Tag_IsTypeError(v8::Local<v8::Value> val);
+  bool NeonSys_Tag_IsError(v8::Local<v8::Value> val);
 
-  bool NeonSys_Error_NewTypeError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);
-  bool NeonSys_Error_CStringToTypeError(v8::Local<v8::Value> *out, const char *msg);
+  void NeonSys_Error_NewError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);
+  void NeonSys_Error_NewTypeError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);
+  void NeonSys_Error_NewReferenceError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);
+  void NeonSys_Error_NewRangeError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);
+  void NeonSys_Error_NewSyntaxError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);
   void NeonSys_Error_Throw(v8::Local<v8::Value> val);
+  void NeonSys_Error_ThrowErrorFromCString(const char *msg);
   void NeonSys_Error_ThrowTypeErrorFromCString(const char *msg);
+  void NeonSys_Error_ThrowReferenceErrorFromCString(const char *msg);
+  void NeonSys_Error_ThrowRangeErrorFromCString(const char *msg);
+  void NeonSys_Error_ThrowSyntaxErrorFromCString(const char *msg);
 
   bool NeonSys_Mem_SameHandle(v8::Local<v8::Value> v1, v8::Local<v8::Value> v2);
 }

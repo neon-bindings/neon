@@ -48,8 +48,8 @@ extern "system" {
     #[link_name = "NeonSys_Tag_IsFunction"]
     pub fn is_function(val: Local) -> bool;
 
-    #[link_name = "NeonSys_Tag_IsTypeError"]
-    pub fn is_type_error(val: Local) -> bool;
+    #[link_name = "NeonSys_Tag_IsError"]
+    pub fn is_error(val: Local) -> bool;
 
     #[link_name = "NeonSys_Tag_IsBuffer"]
     pub fn is_buffer(obj: Local) -> bool;

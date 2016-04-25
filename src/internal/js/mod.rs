@@ -10,7 +10,7 @@ use neon_sys::tag::Tag;
 use internal::mem::{Handle, HandleInternal, Managed};
 use internal::scope::Scope;
 use internal::vm::{VmResult, Throw, JsResult, Isolate, IsolateInternal, CallbackInfo, Call, This, Kernel, exec_function_kernel};
-use internal::js::error::JsTypeError;
+use internal::js::error::{JsError, Kind};
 
 pub trait ValueInternal: Managed {
     fn is_typeof<Other: Value>(other: Other) -> bool;
@@ -313,7 +313,7 @@ impl JsString {
     pub fn new_or_throw<'a, T: Scope<'a>>(scope: &mut T, val: &str) -> VmResult<Handle<'a, JsString>> {
         match JsString::new(scope, val) {
             Some(v) => Ok(v),
-            None => JsTypeError::throw("invalid string contents")
+            None => JsError::throw(Kind::TypeError, "invalid string contents")
         }
     }
 }

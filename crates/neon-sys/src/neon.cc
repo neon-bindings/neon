@@ -411,26 +411,52 @@ extern "C" bool NeonSys_Tag_IsFunction(v8::Local<v8::Value> val) {
   return val->IsFunction();
 }
 
-extern "C" bool NeonSys_Tag_IsTypeError(v8::Local<v8::Value> val) {
-  return false; // TODO: implement this
+extern "C" bool NeonSys_Tag_IsError(v8::Local<v8::Value> val) {
+  return val->IsNativeError();
 }
 
 extern "C" void NeonSys_Error_Throw(v8::Local<v8::Value> val) {
   Nan::ThrowError(val);
 }
 
-extern "C" bool NeonSys_Error_NewTypeError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg) {
-  *out = Nan::TypeError(msg);
-  return true;
+extern "C" void NeonSys_Error_NewError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg) {
+  *out = v8::Exception::Error(msg);
 }
 
-extern "C" bool NeonSys_Error_CStringToTypeError(v8::Local<v8::Value> *out, const char *msg) {
-  *out = Nan::TypeError(msg);
-  return true;
+extern "C" void NeonSys_Error_NewTypeError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg) {
+  *out = v8::Exception::TypeError(msg);
+}
+
+extern "C" void NeonSys_Error_NewReferenceError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg) {
+  *out = v8::Exception::ReferenceError(msg);
+}
+
+extern "C" void NeonSys_Error_NewRangeError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg) {
+  *out = v8::Exception::RangeError(msg);
+}
+
+extern "C" void NeonSys_Error_NewSyntaxError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg) {
+  *out = v8::Exception::SyntaxError(msg);
+}
+
+extern "C" void NeonSys_Error_ThrowErrorFromCString(const char *msg) {
+  Nan::ThrowError(msg);
 }
 
 extern "C" void NeonSys_Error_ThrowTypeErrorFromCString(const char *msg) {
   Nan::ThrowTypeError(msg);
+}
+
+extern "C" void NeonSys_Error_ThrowReferenceErrorFromCString(const char *msg) {
+  Nan::ThrowReferenceError(msg);
+}
+
+extern "C" void NeonSys_Error_ThrowRangeErrorFromCString(const char *msg) {
+  Nan::ThrowRangeError(msg);
+}
+
+extern "C" void NeonSys_Error_ThrowSyntaxErrorFromCString(const char *msg) {
+  Nan::ThrowSyntaxError(msg);
 }
 
 extern "C" bool NeonSys_Mem_SameHandle(v8::Local<v8::Value> v1, v8::Local<v8::Value> v2) {

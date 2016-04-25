@@ -3,7 +3,7 @@ use std::ops::{Deref, DerefMut};
 use neon_sys;
 use neon_sys::raw;
 use internal::js::{Value, ValueInternal, SuperType};
-use internal::js::error::JsTypeError;
+use internal::js::error::{JsError, Kind};
 use internal::vm::{JsResult, Lock, LockState};
 use internal::scope::Scope;
 
@@ -66,7 +66,7 @@ impl<'a, T: Value> Handle<'a, T> {
     pub fn check<U: Value>(&self) -> JsResult<'a, U> {
         match U::downcast(self.value) {
             Some(v) => Ok(Handle::new(v)),
-            None => JsTypeError::throw("type error")
+            None => JsError::throw(Kind::TypeError, "type error")
         }
     }
 }
