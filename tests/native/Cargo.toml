@@ -1,8 +1,8 @@
 [package]
 name = "tests"
 version = "0.1.0"
-authors = ["n <n>"]
-license = "MIT"
+authors = ["The Neon Community"]
+license = "MIT/Apache-2.0"
 
 [lib]
 name = "tests"

@@ -1,7 +1,8 @@
 [package]
 name = "compile_tests"
 version = "0.1.0"
-authors = ["Mike Piccolo <mfpiccolo@gmail.com>"]
+authors = ["The Neon Community"]
+license = "MIT/Apache-2.0"
 
 [dependencies]
 neon = { path = "../" }
