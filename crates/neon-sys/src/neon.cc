@@ -269,7 +269,7 @@ void cleanup_class_map(void *arg) {
 extern "C" void NeonSys_Class_SetClassMap(v8::Isolate *isolate, void *map, NeonSys_DropCallback drop_map) {
   neon::ClassMapHolder *holder = new neon::ClassMapHolder(map, drop_map);
   isolate->SetData(NEON_ISOLATE_SLOT, holder);
-  // TODO: When workers land in node, this will need to be generalized to a per-worker version.
+  // ISSUE(#77): When workers land in node, this will need to be generalized to a per-worker version.
   node::AtExit(cleanup_class_map, holder);
 }
 
@@ -367,7 +367,8 @@ extern "C" tag_t NeonSys_Tag_Of(v8::Local<v8::Value> val) {
   return val->IsNull()                    ? tag_null
     : val->IsUndefined()                  ? tag_undefined
     : (val->IsTrue() || val->IsFalse())   ? tag_boolean
-    : (val->IsInt32() || val->IsUint32()) ? tag_integer // TODO: this isn't right for large int64s
+    // ISSUE(#78): kill this
+    : (val->IsInt32() || val->IsUint32()) ? tag_integer
     : val->IsNumber()                     ? tag_number
     : val->IsString()                     ? tag_string
     : val->IsArray()                      ? tag_array
