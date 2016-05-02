@@ -1,0 +1,19 @@
+{
+  "name": "tests",
+  "version": "0.1.0",
+  "description": "Acceptance test suite for Neon",
+  "main": "lib/index.js",
+  "author": "The Neon Community",
+  "license": "MIT",
+  "dependencies": {
+    "neon-cli": "^0.1.7"
+  },
+  "scripts": {
+    "install": "neon build",
+    "test": "npm i && mocha --recursive lib"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^2.4.5"
+  }
+}

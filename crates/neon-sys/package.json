@@ -7,8 +7,8 @@
     "build-debug": "node-gyp build -d"
   },
   "devDependencies": {
-    "nan": "2.0.8",
-    "node-gyp": "3.0.3"
+    "nan": "^2.3.2",
+    "node-gyp": "^3.3.1"
   },
   "dependencies": {
     "bindings": "1.2.1"

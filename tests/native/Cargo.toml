@@ -1,0 +1,12 @@
+[package]
+name = "tests"
+version = "0.1.0"
+authors = ["The Neon Community"]
+license = "MIT/Apache-2.0"
+
+[lib]
+name = "tests"
+crate-type = ["dylib"]
+
+[dependencies]
+neon = {path = "../../"}
