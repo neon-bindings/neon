@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Acceptance test suite for Neon",
   "main": "lib/index.js",
-  "author": "n <n>",
+  "author": "The Neon Community",
   "license": "MIT",
   "dependencies": {
     "neon-cli": "^0.1.7"

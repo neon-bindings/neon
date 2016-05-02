@@ -4,4 +4,5 @@ Cargo.lock
 **/node_modules
 **/.DS_Store
 **/build
+**/index.node
 npm-debug.log
