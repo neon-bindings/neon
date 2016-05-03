@@ -2,7 +2,7 @@ language: rust
 rust:
   - stable
   - beta
-  - nightly-2016-05-02
+  - nightly-2016-04-29
   - nightly
 
 env:
@@ -27,4 +27,7 @@ before_install:
 script:
 - |
   (cd tests/ && npm test)
-  (cd compile_tests/ && cargo test)
+  if [[ "$TRAVIS_RUST_VERSION" == nightly* ]]; then
+    (cd compile_tests/ && cargo test)
+  fi
+
