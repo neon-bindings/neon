@@ -2,6 +2,7 @@ language: rust
 rust:
   - stable
   - beta
+  - nightly-2016-05-02
   - nightly
 
 env:
@@ -22,3 +23,8 @@ before_install:
   - source $HOME/.nvm/nvm.sh
   - nvm install stable
   - nvm use stable
+
+script:
+- |
+  (cd tests/ && npm test)
+  (cd compile_tests/ && cargo test)
