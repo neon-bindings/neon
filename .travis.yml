@@ -8,12 +8,10 @@ rust:
 
 env:
   - CXX=g++-4.8
-
-node_js:
-  - 6.0
-  - 5.0
-  - 5.11
-  - 4.2
+  - TRAVIS_NODE_VERSION="6"
+  - TRAVIS_NODE_VERSION="5"
+  - TRAVIS_NODE_VERSION="5.11"
+  - TRAVIS_NODE_VERSION="4.2"
 
 addons:
   apt:
