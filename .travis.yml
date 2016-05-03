@@ -8,10 +8,18 @@ rust:
 
 env:
   - CXX=g++-4.8
-  - TRAVIS_NODE_VERSION="6"
-  - TRAVIS_NODE_VERSION="5"
-  - TRAVIS_NODE_VERSION="5.11"
-  - TRAVIS_NODE_VERSION="4.2"
+
+env:
+  matrix:
+    - TRAVIS_NODE_VERSION="6"
+    - TRAVIS_NODE_VERSION="5"
+    - TRAVIS_NODE_VERSION="5.11"
+    - TRAVIS_NODE_VERSION="4.2"
+
+install:
+  - . $HOME/.nvm/nvm.sh
+  - nvm install ${TRAVIS_NODE_VERSION}
+  - nvm use ${TRAVIS_NODE_VERSION}
 
 addons:
   apt:
