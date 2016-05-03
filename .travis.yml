@@ -1,4 +1,5 @@
 language: rust
+dist: trusty
 rust:
   - stable
   - beta
@@ -7,10 +8,6 @@ rust:
 
 env:
   - CXX=g++-4.8
-  - TRAVIS_NODE_VERSION="6"
-  - TRAVIS_NODE_VERSION="5"
-  - TRAVIS_NODE_VERSION="5.11"
-  - TRAVIS_NODE_VERSION="4.2"
 
 addons:
   apt:
@@ -18,6 +15,10 @@ addons:
     - ubuntu-toolchain-r-test
     packages:
     - g++-4.8
+
+before_script:
+  - pip install 'travis-cargo<0.2' --user
+  - export PATH=$HOME/.local/bin:$PATH
 
 matrix:
   allow_failures:
@@ -32,6 +33,6 @@ script:
 - |
   (cd tests/ && npm test)
   if [[ "$TRAVIS_RUST_VERSION" == nightly* ]]; then
-    (cd compile_tests/ && cargo test)
+    (cd compile_tests/ && travis-cargo test)
   fi
 
