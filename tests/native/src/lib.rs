@@ -21,6 +21,8 @@ register_module!(m, {
     try!(m.export("return_js_number", return_js_number));
     try!(m.export("return_large_js_number", return_large_js_number));
     try!(m.export("return_negative_js_number", return_negative_js_number));
+    try!(m.export("return_float_js_number", return_float_js_number));
+    try!(m.export("return_negative_float_js_number", return_negative_float_js_number));
 
     try!(m.export("return_js_array", return_js_array));
     try!(m.export("return_js_array_with_integer", return_js_array_with_integer));
