@@ -2,10 +2,22 @@ language: rust
 rust:
   - stable
   - beta
+  - nightly-2016-04-29
   - nightly
 
 env:
-  - CXX=g++-4.8
+  global:
+    - CXX="g++-4.8"
+  matrix:
+    - TRAVIS_NODE_VERSION="6"
+    - TRAVIS_NODE_VERSION="5"
+    - TRAVIS_NODE_VERSION="5.11"
+    - TRAVIS_NODE_VERSION="4.2"
+
+install:
+  - . $HOME/.nvm/nvm.sh
+  - nvm install ${TRAVIS_NODE_VERSION}
+  - nvm use ${TRAVIS_NODE_VERSION}
 
 addons:
   apt:
@@ -22,3 +34,11 @@ before_install:
   - source $HOME/.nvm/nvm.sh
   - nvm install stable
   - nvm use stable
+
+script:
+- |
+  (cd tests/ && npm test)
+  if [[ "$TRAVIS_RUST_VERSION" == nightly* ]]; then
+    (cd compile_tests/ && cargo test)
+  fi
+
