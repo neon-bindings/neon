@@ -1,4 +1,6 @@
 language: rust
+sudo: required
+dist: trusty
 rust:
   - stable
   - beta
@@ -6,8 +8,6 @@ rust:
   - nightly
 
 env:
-  global:
-    - CXX="g++-4.8"
   matrix:
     - TRAVIS_NODE_VERSION="6"
     - TRAVIS_NODE_VERSION="5"
