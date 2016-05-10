@@ -363,6 +363,11 @@ extern "C" void *NeonSys_Fun_GetKernel(v8::Local<v8::External> data) {
   return data->Value();
 }
 
+extern "C" bool NeonSys_Fun_Call(v8::Local<v8::Value> *out, v8::Isolate *isolate, v8::Local<v8::Function> fun, v8::Local<v8::Value> self, int32_t argc, v8::Local<v8::Value> argv[]) {
+  v8::MaybeLocal<v8::Value> maybe_result = fun->Call(isolate->GetCurrentContext(), self, argc, argv);
+  return maybe_result.ToLocal(out);
+}
+
 extern "C" tag_t NeonSys_Tag_Of(v8::Local<v8::Value> val) {
   return val->IsNull()                    ? tag_null
     : val->IsUndefined()                  ? tag_undefined
