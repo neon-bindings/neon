@@ -690,6 +690,21 @@ impl<T: Value> Kernel<()> for FunctionKernel<T> {
 // Maximum number of function arguments in V8.
 const V8_ARGC_LIMIT: usize = 65535;
 
+unsafe fn prepare_call<'a, 'b, S: Scope<'a>, A, AS>(scope: &mut S, args: AS) -> VmResult<(*mut c_void, i32, *mut c_void)>
+    where A: Value + 'b,
+          AS: IntoIterator<Item=Handle<'b, A>>
+{
+    let mut v: Vec<_> = args.into_iter().collect();
+    let mut slice = &mut v[..];
+    let argv = slice.as_mut_ptr();
+    let argc = slice.len();
+    if argc > V8_ARGC_LIMIT {
+        return JsError::throw(Kind::RangeError, "too many arguments");
+    }
+    let isolate: *mut c_void = mem::transmute(scope.isolate().to_raw());
+    Ok((isolate, argc as i32, argv as *mut c_void))
+}
+
 impl JsFunction {
     pub fn new<'a, T: Scope<'a>, U: Value>(scope: &mut T, f: fn(Call) -> JsResult<U>) -> JsResult<'a, JsFunction> {
         build(|out| {
@@ -701,23 +716,27 @@ impl JsFunction {
         })
     }
 
-    pub fn call<'a, 'b, S: Scope<'a>, T, A, AS, R>(self, scope: &mut S, this: Handle<'b, T>, args: AS) -> JsResult<'a, R>
+    pub fn call<'a, 'b, S: Scope<'a>, T, A, AS>(self, scope: &mut S, this: Handle<'b, T>, args: AS) -> JsResult<'a, JsValue>
         where T: Value,
               A: Value + 'b,
-              AS: IntoIterator<Item=Handle<'b, A>>,
-              R: Value
+              AS: IntoIterator<Item=Handle<'b, A>>
     {
-        let mut v: Vec<_> = args.into_iter().collect();
-        let mut slice = &mut v[..];
-        let argv = slice.as_mut_ptr();
-        let argc = slice.len();
-        if argc > V8_ARGC_LIMIT {
-            return JsError::throw(Kind::RangeError, "too many arguments");
-        }
+        let (isolate, argc, argv) = try!(unsafe { prepare_call(scope, args) });
         build(|out| {
             unsafe {
-                let isolate: *mut c_void = mem::transmute(scope.isolate().to_raw());
-                neon_sys::fun::call(out, isolate, self.to_raw(), this.to_raw(), argc as i32, argv as *mut c_void)
+                neon_sys::fun::call(out, isolate, self.to_raw(), this.to_raw(), argc, argv)
+            }
+        })
+    }
+
+    pub fn construct<'a, 'b, S: Scope<'a>, A, AS>(self, scope: &mut S, args: AS) -> JsResult<'a, JsObject>
+        where A: Value + 'b,
+              AS: IntoIterator<Item=Handle<'b, A>>
+    {
+        let (isolate, argc, argv) = try!(unsafe { prepare_call(scope, args) });
+        build(|out| {
+            unsafe {
+                neon_sys::fun::construct(out, isolate, self.to_raw(), argc, argv)
             }
         })
     }

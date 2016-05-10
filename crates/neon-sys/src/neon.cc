@@ -368,6 +368,11 @@ extern "C" bool NeonSys_Fun_Call(v8::Local<v8::Value> *out, v8::Isolate *isolate
   return maybe_result.ToLocal(out);
 }
 
+extern "C" bool NeonSys_Fun_Construct(v8::Local<v8::Object> *out, v8::Isolate *isolate, v8::Local<v8::Function> fun, int32_t argc, v8::Local<v8::Value> argv[]) {
+  v8::MaybeLocal<v8::Object> maybe_result = fun->NewInstance(isolate->GetCurrentContext(), argc, argv);
+  return maybe_result.ToLocal(out);
+}
+
 extern "C" tag_t NeonSys_Tag_Of(v8::Local<v8::Value> val) {
   return val->IsNull()                    ? tag_null
     : val->IsUndefined()                  ? tag_undefined

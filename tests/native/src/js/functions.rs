@@ -1,6 +1,6 @@
 use neon::vm::{Call, JsResult};
 use neon::mem::Handle;
-use neon::js::{JsNumber, JsNull, JsFunction};
+use neon::js::{JsNumber, JsNull, JsFunction, Object, JsValue};
 
 fn add1(call: Call) -> JsResult<JsNumber> {
     let scope = call.scope;
@@ -16,5 +16,15 @@ pub fn call_js_function(call: Call) -> JsResult<JsNumber> {
     let scope = call.scope;
     let f = try!(try!(call.arguments.require(scope, 0)).check::<JsFunction>());
     let args: Vec<Handle<JsNumber>> = vec![JsNumber::new(scope, 16.0)];
-    f.call(scope, JsNull::new(), args)
+    try!(f.call(scope, JsNull::new(), args)).check::<JsNumber>()
+}
+
+pub fn construct_js_function(call: Call) -> JsResult<JsNumber> {
+    let scope = call.scope;
+    let f = try!(try!(call.arguments.require(scope, 0)).check::<JsFunction>());
+    let zero = JsNumber::new(scope, 0.0);
+    let o = try!(f.construct(scope, vec![zero]));
+    let get_utc_full_year_method = try!(try!(o.get(scope, "getUTCFullYear")).check::<JsFunction>());
+    let args: Vec<Handle<JsValue>> = vec![];
+    try!(get_utc_full_year_method.call(scope, o.upcast::<JsValue>(), args)).check::<JsNumber>()
 }
