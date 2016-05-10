@@ -80,6 +80,7 @@ extern "C" {
   bool NeonSys_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, v8::FunctionCallback callback, void *kernel);
   void NeonSys_Fun_ExecKernel(void *kernel, NeonSys_RootScopeCallback callback, v8::FunctionCallbackInfo<v8::Value> *info, void *scope);
   void *NeonSys_Fun_GetKernel(v8::Local<v8::External> obj);
+  bool NeonSys_Fun_Call(v8::Local<v8::Value> *out, v8::Isolate *isolate, v8::Local<v8::Function> fun, v8::Local<v8::Value> self, int32_t argc, v8::Local<v8::Value> argv[]);
 
   typedef void *(*NeonSys_AllocateCallback)(const v8::FunctionCallbackInfo<v8::Value> *info);
   typedef bool (*NeonSys_ConstructCallback)(const v8::FunctionCallbackInfo<v8::Value> *info);

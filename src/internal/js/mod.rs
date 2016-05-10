@@ -687,6 +687,8 @@ impl<T: Value> Kernel<()> for FunctionKernel<T> {
     }
 }
 
+// Maximum number of function arguments in V8.
+const V8_ARGC_LIMIT: usize = 65535;
 
 impl JsFunction {
     pub fn new<'a, T: Scope<'a>, U: Value>(scope: &mut T, f: fn(Call) -> JsResult<U>) -> JsResult<'a, JsFunction> {
@@ -695,6 +697,27 @@ impl JsFunction {
                 let isolate: *mut c_void = mem::transmute(scope.isolate().to_raw());
                 let (callback, kernel) = FunctionKernel(f).pair();
                 neon_sys::fun::new(out, isolate, callback, kernel)
+            }
+        })
+    }
+
+    pub fn call<'a, 'b, S: Scope<'a>, T, A, AS, R>(self, scope: &mut S, this: Handle<'b, T>, args: AS) -> JsResult<'a, R>
+        where T: Value,
+              A: Value + 'b,
+              AS: IntoIterator<Item=Handle<'b, A>>,
+              R: Value
+    {
+        let mut v: Vec<_> = args.into_iter().collect();
+        let mut slice = &mut v[..];
+        let argv = slice.as_mut_ptr();
+        let argc = slice.len();
+        if argc > V8_ARGC_LIMIT {
+            return JsError::throw(Kind::RangeError, "too many arguments");
+        }
+        build(|out| {
+            unsafe {
+                let isolate: *mut c_void = mem::transmute(scope.isolate().to_raw());
+                neon_sys::fun::call(out, isolate, self.to_raw(), this.to_raw(), argc as i32, argv as *mut c_void)
             }
         })
     }

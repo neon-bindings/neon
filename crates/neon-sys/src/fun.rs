@@ -12,4 +12,7 @@ extern "system" {
     #[link_name = "NeonSys_Fun_GetKernel"]
     pub fn get_kernel(obj: Local) -> *mut c_void;
 
+    #[link_name = "NeonSys_Fun_Call"]
+    pub fn call(out: &mut Local, isolate: *mut c_void, fun: Local, this: Local, argc: i32, argv: *mut c_void) -> bool;
+
 }
