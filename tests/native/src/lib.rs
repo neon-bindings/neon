@@ -3,14 +3,14 @@ extern crate neon;
 
 mod js {
     pub mod strings;
-    pub mod integers;
+    pub mod numbers;
     pub mod arrays;
     pub mod objects;
     pub mod functions;
 }
 
 use js::strings::return_js_string;
-use js::integers::return_js_integer;
+use js::numbers::*;
 use js::arrays::*;
 use js::objects::*;
 use js::functions::*;
@@ -18,7 +18,15 @@ use js::functions::*;
 register_module!(m, {
     try!(m.export("return_js_string", return_js_string));
 
-    try!(m.export("return_js_integer", return_js_integer));
+    try!(m.export("return_js_number", return_js_number));
+    try!(m.export("return_large_js_number", return_large_js_number));
+    try!(m.export("return_negative_js_number", return_negative_js_number));
+    try!(m.export("return_float_js_number", return_float_js_number));
+    try!(m.export("return_negative_float_js_number", return_negative_float_js_number));
+    try!(m.export("accept_and_return_js_number", accept_and_return_js_number));
+    try!(m.export("accept_and_return_large_js_number", accept_and_return_large_js_number));
+    try!(m.export("accept_and_return_float_js_number", accept_and_return_float_js_number));
+    try!(m.export("accept_and_return_negative_js_number", accept_and_return_negative_js_number));
 
     try!(m.export("return_js_array", return_js_array));
     try!(m.export("return_js_array_with_integer", return_js_array_with_integer));
