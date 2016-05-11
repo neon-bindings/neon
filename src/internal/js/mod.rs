@@ -4,6 +4,7 @@ pub mod class;
 
 use std::mem;
 use std::os::raw::c_void;
+use std::marker::PhantomData;
 use neon_sys;
 use neon_sys::raw;
 use neon_sys::tag::Tag;
@@ -118,7 +119,7 @@ impl<'a> Handle<'a, JsValue> {
             Tag::String => Variant::String(Handle::new(JsString(self.to_raw()))),
             Tag::Object => Variant::Object(Handle::new(JsObject(self.to_raw()))),
             Tag::Array => Variant::Array(Handle::new(JsArray(self.to_raw()))),
-            Tag::Function => Variant::Function(Handle::new(JsFunction(self.to_raw()))),
+            Tag::Function => Variant::Function(Handle::new(JsFunction { raw: self.to_raw(), marker: PhantomData })),
             Tag::Other => Variant::Other(self.clone())
         }
     }
@@ -661,7 +662,10 @@ impl Object for JsArray { }
 /// A JavaScript function object.
 #[repr(C)]
 #[derive(Clone, Copy)]
-pub struct JsFunction(raw::Local);
+pub struct JsFunction<T: Object=JsObject> {
+    raw: raw::Local,
+    marker: PhantomData<T>
+}
 
 #[repr(C)]
 pub struct FunctionKernel<T: Value>(fn(Call) -> JsResult<T>);
@@ -715,7 +719,9 @@ impl JsFunction {
             }
         })
     }
+}
 
+impl<C: Object> JsFunction<C> {
     pub fn call<'a, 'b, S: Scope<'a>, T, A, AS>(self, scope: &mut S, this: Handle<'b, T>, args: AS) -> JsResult<'a, JsValue>
         where T: Value,
               A: Value + 'b,
@@ -729,7 +735,7 @@ impl JsFunction {
         })
     }
 
-    pub fn construct<'a, 'b, S: Scope<'a>, A, AS>(self, scope: &mut S, args: AS) -> JsResult<'a, JsObject>
+    pub fn construct<'a, 'b, S: Scope<'a>, A, AS>(self, scope: &mut S, args: AS) -> JsResult<'a, C>
         where A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
     {
@@ -742,15 +748,20 @@ impl JsFunction {
     }
 }
 
-impl Value for JsFunction { }
+impl<T: Object> Value for JsFunction<T> { }
 
-impl Managed for JsFunction {
-    fn to_raw(self) -> raw::Local { self.0 }
+impl<T: Object> Managed for JsFunction<T> {
+    fn to_raw(self) -> raw::Local { self.raw }
 
-    fn from_raw(h: raw::Local) -> Self { JsFunction(h) }
+    fn from_raw(h: raw::Local) -> Self {
+        JsFunction {
+            raw: h,
+            marker: PhantomData
+        }
+    }
 }
 
-impl ValueInternal for JsFunction {
+impl<T: Object> ValueInternal for JsFunction<T> {
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_sys::tag::is_function(other.to_raw()) }
     }
