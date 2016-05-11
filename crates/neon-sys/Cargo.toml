@@ -1,6 +1,6 @@
 [package]
 name = "neon-sys"
-version = "0.1.9"
+version = "0.1.10"
 authors = ["Dave Herman <dherman@mozilla.com>"]
 description = "Exposes Node and V8 C++ API's for use by Neon."
 repository = "https://github.com/rustbridge/neon"
@@ -13,7 +13,7 @@ links = "neon"
 build = "build.rs"
 
 [dependencies]
-cslice = { version = "=0.1.0", path = "../cslice" }
+cslice = { version = "=0.1.1", path = "../cslice" }
 
 [build-dependencies]
 gcc = "0.3"
