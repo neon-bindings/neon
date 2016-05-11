@@ -4,6 +4,7 @@ pub mod class;
 
 use std::mem;
 use std::os::raw::c_void;
+use std::marker::PhantomData;
 use neon_sys;
 use neon_sys::raw;
 use neon_sys::tag::Tag;
@@ -118,7 +119,7 @@ impl<'a> Handle<'a, JsValue> {
             Tag::String => Variant::String(Handle::new(JsString(self.to_raw()))),
             Tag::Object => Variant::Object(Handle::new(JsObject(self.to_raw()))),
             Tag::Array => Variant::Array(Handle::new(JsArray(self.to_raw()))),
-            Tag::Function => Variant::Function(Handle::new(JsFunction(self.to_raw()))),
+            Tag::Function => Variant::Function(Handle::new(JsFunction { raw: self.to_raw(), marker: PhantomData })),
             Tag::Other => Variant::Other(self.clone())
         }
     }
@@ -661,7 +662,10 @@ impl Object for JsArray { }
 /// A JavaScript function object.
 #[repr(C)]
 #[derive(Clone, Copy)]
-pub struct JsFunction(raw::Local);
+pub struct JsFunction<T: Object=JsObject> {
+    raw: raw::Local,
+    marker: PhantomData<T>
+}
 
 #[repr(C)]
 pub struct FunctionKernel<T: Value>(fn(Call) -> JsResult<T>);
@@ -690,6 +694,21 @@ impl<T: Value> Kernel<()> for FunctionKernel<T> {
 // Maximum number of function arguments in V8.
 const V8_ARGC_LIMIT: usize = 65535;
 
+unsafe fn prepare_call<'a, 'b, S: Scope<'a>, A, AS>(scope: &mut S, args: AS) -> VmResult<(*mut c_void, i32, *mut c_void)>
+    where A: Value + 'b,
+          AS: IntoIterator<Item=Handle<'b, A>>
+{
+    let mut v: Vec<_> = args.into_iter().collect();
+    let mut slice = &mut v[..];
+    let argv = slice.as_mut_ptr();
+    let argc = slice.len();
+    if argc > V8_ARGC_LIMIT {
+        return JsError::throw(Kind::RangeError, "too many arguments");
+    }
+    let isolate: *mut c_void = mem::transmute(scope.isolate().to_raw());
+    Ok((isolate, argc as i32, argv as *mut c_void))
+}
+
 impl JsFunction {
     pub fn new<'a, T: Scope<'a>, U: Value>(scope: &mut T, f: fn(Call) -> JsResult<U>) -> JsResult<'a, JsFunction> {
         build(|out| {
@@ -700,38 +719,49 @@ impl JsFunction {
             }
         })
     }
+}
 
-    pub fn call<'a, 'b, S: Scope<'a>, T, A, AS, R>(self, scope: &mut S, this: Handle<'b, T>, args: AS) -> JsResult<'a, R>
+impl<C: Object> JsFunction<C> {
+    pub fn call<'a, 'b, S: Scope<'a>, T, A, AS>(self, scope: &mut S, this: Handle<'b, T>, args: AS) -> JsResult<'a, JsValue>
         where T: Value,
               A: Value + 'b,
-              AS: IntoIterator<Item=Handle<'b, A>>,
-              R: Value
+              AS: IntoIterator<Item=Handle<'b, A>>
     {
-        let mut v: Vec<_> = args.into_iter().collect();
-        let mut slice = &mut v[..];
-        let argv = slice.as_mut_ptr();
-        let argc = slice.len();
-        if argc > V8_ARGC_LIMIT {
-            return JsError::throw(Kind::RangeError, "too many arguments");
-        }
+        let (isolate, argc, argv) = try!(unsafe { prepare_call(scope, args) });
         build(|out| {
             unsafe {
-                let isolate: *mut c_void = mem::transmute(scope.isolate().to_raw());
-                neon_sys::fun::call(out, isolate, self.to_raw(), this.to_raw(), argc as i32, argv as *mut c_void)
+                neon_sys::fun::call(out, isolate, self.to_raw(), this.to_raw(), argc, argv)
+            }
+        })
+    }
+
+    pub fn construct<'a, 'b, S: Scope<'a>, A, AS>(self, scope: &mut S, args: AS) -> JsResult<'a, C>
+        where A: Value + 'b,
+              AS: IntoIterator<Item=Handle<'b, A>>
+    {
+        let (isolate, argc, argv) = try!(unsafe { prepare_call(scope, args) });
+        build(|out| {
+            unsafe {
+                neon_sys::fun::construct(out, isolate, self.to_raw(), argc, argv)
             }
         })
     }
 }
 
-impl Value for JsFunction { }
+impl<T: Object> Value for JsFunction<T> { }
 
-impl Managed for JsFunction {
-    fn to_raw(self) -> raw::Local { self.0 }
+impl<T: Object> Managed for JsFunction<T> {
+    fn to_raw(self) -> raw::Local { self.raw }
 
-    fn from_raw(h: raw::Local) -> Self { JsFunction(h) }
+    fn from_raw(h: raw::Local) -> Self {
+        JsFunction {
+            raw: h,
+            marker: PhantomData
+        }
+    }
 }
 
-impl ValueInternal for JsFunction {
+impl<T: Object> ValueInternal for JsFunction<T> {
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_sys::tag::is_function(other.to_raw()) }
     }

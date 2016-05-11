@@ -15,4 +15,7 @@ extern "system" {
     #[link_name = "NeonSys_Fun_Call"]
     pub fn call(out: &mut Local, isolate: *mut c_void, fun: Local, this: Local, argc: i32, argv: *mut c_void) -> bool;
 
+    #[link_name = "NeonSys_Fun_Construct"]
+    pub fn construct(out: &mut Local, isolate: *mut c_void, fun: Local, argc: i32, argv: *mut c_void) -> bool;
+
 }

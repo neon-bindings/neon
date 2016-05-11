@@ -8,7 +8,7 @@ use neon_sys::raw;
 use internal::mem::{Handle, HandleInternal, Managed};
 use internal::scope::{Scope, ScopeInternal};
 use internal::vm::{Isolate, IsolateInternal, JsResult, VmResult, FunctionCall, CallbackInfo, Lock, LockState, Throw, This, Kernel, exec_function_kernel};
-use internal::js::{Value, ValueInternal, JsFunction, JsObject, JsValue, JsUndefined, build};
+use internal::js::{Value, ValueInternal, JsFunction, JsObject, Object, JsValue, JsUndefined, build};
 use internal::js::error::{JsError, Kind};
 
 #[repr(C)]
@@ -218,6 +218,8 @@ impl<T: Class> This for T {
     }
 }
 
+impl<T: Class> Object for T { }
+
 pub trait ClassInternal: Class {
     fn metadata_opt<'a, T: Scope<'a>>(scope: &mut T) -> Option<ClassMetadata> {
         scope.isolate()
@@ -346,7 +348,7 @@ impl<T: Class> JsClass<T> {
         }
     }
 
-    pub fn constructor<'a, U: Scope<'a>>(&self, _: &mut U) -> JsResult<'a, JsFunction> {
+    pub fn constructor<'a, U: Scope<'a>>(&self, _: &mut U) -> JsResult<'a, JsFunction<T>> {
         build(|out| {
             unsafe {
                 neon_sys::class::constructor(out, self.to_raw())
