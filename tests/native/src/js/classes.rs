@@ -1,4 +1,4 @@
-use neon::js::{JsString, JsNumber, JsValue};
+use neon::js::{JsString, JsNumber, JsValue, JsObject, Object};
 use neon::vm::{Call, JsResult};
 use neon::js::class::{Class, JsClass};
 use neon::mem::Handle;
@@ -34,10 +34,10 @@ register_module!(m, {
   let class = try!(JsUser::class(scope));       // get the class
   let constructor = try!(class.constructor(scope)); // get the constructor
   try!(m.exports.set("User", constructor));     // export the constructor
-  Ok()
+  Ok(())
 });
 
-pub fn return_js_class(call: Call) -> JsResult<JsClass> {
+pub fn return_js_class<T: Class>(call: Call) -> JsResult<JsClass<T>> {
     let scope = call.scope;
     let ctor = JsUser::constructor(scope);
     let args: Vec<Handle<JsValue>> = vec![];
