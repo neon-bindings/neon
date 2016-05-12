@@ -7,6 +7,7 @@ mod js {
     pub mod arrays;
     pub mod objects;
     pub mod functions;
+    pub mod classes;
 }
 
 use js::strings::return_js_string;
@@ -14,6 +15,7 @@ use js::numbers::*;
 use js::arrays::*;
 use js::objects::*;
 use js::functions::*;
+use js::classes::return_js_class;
 
 register_module!(m, {
     try!(m.export("return_js_string", return_js_string));
@@ -39,5 +41,7 @@ register_module!(m, {
     try!(m.export("return_js_function", return_js_function));
     try!(m.export("call_js_function", call_js_function));
     try!(m.export("construct_js_function", construct_js_function));
+
+    try!(m.export("return_js_class", return_js_class));
     Ok(())
 });
