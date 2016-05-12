@@ -15,7 +15,7 @@ use js::numbers::*;
 use js::arrays::*;
 use js::objects::*;
 use js::functions::*;
-use js::classes::return_js_class;
+use js::classes::*;
 
 register_module!(m, {
     try!(m.export("return_js_string", return_js_string));
@@ -43,5 +43,8 @@ register_module!(m, {
     try!(m.export("construct_js_function", construct_js_function));
 
     try!(m.export("return_js_class", return_js_class));
+
+    // try!(m.export("User", JsUser::new));
+
     Ok(())
 });

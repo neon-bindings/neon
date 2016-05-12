@@ -29,20 +29,10 @@ declare_types! {
   }
 }
 
-register_module!(m, {
-  let scope = m.scope;
-  let class: Handle<JsClass<JsUser>> = try!(JsUser::class(scope));
-  let ctor: Handle<JsFunction<JsUser>> = try!(class.constructor(scope));
-  let args: Vec<Handle<JsValue>> = vec![];
-  let user = try!(ctor.construct(scope, args));
-
-  try!(m.exports.set("User", user));     // export the constructor
-  Ok(())
-});
-
-pub fn return_js_class<T: Class>(call: Call) -> JsResult<JsClass<T>> {
+pub fn return_js_class(call: Call) -> JsResult<JsUser> {
     let scope = call.scope;
-    let ctor = JsUser::constructor(scope);
+    let class: Handle<JsClass<JsUser>> = try!(JsUser::class(scope));
+    let ctor: Handle<JsFunction<JsUser>> = try!(class.constructor(scope));
     let args: Vec<Handle<JsValue>> = vec![];
-    let user = try!(ctor.construct(scope, args));
+    ctor.construct(scope, args)
 }
