@@ -42,9 +42,9 @@ register_module!(m, {
     try!(m.export("call_js_function", call_js_function));
     try!(m.export("construct_js_function", construct_js_function));
 
-    try!(m.export("return_js_class", return_js_class));
+    // try!(m.export("return_js_class", return_js_class));
 
-    // try!(m.export("User", JsUser::new));
+    try!(m.export("User", JsUser::new));
 
     Ok(())
 });
