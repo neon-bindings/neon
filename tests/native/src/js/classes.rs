@@ -28,21 +28,3 @@ declare_types! {
     }
   }
 }
-
-impl JsUser {
-  pub fn new(call: Call) -> JsResult<JsUser> {
-    let scope = call.scope;
-    let class: Handle<JsClass<JsUser>> = try!(JsUser::class(scope));
-    let ctor: Handle<JsFunction<JsUser>> = try!(class.constructor(scope));
-    let args: Vec<Handle<JsValue>> = vec![];
-    ctor.construct(scope, args)
-  }
-}
-
-// pub fn return_js_class(call: Call) -> JsResult<JsUser> {
-//     let scope = call.scope;
-//     let class: Handle<JsClass<JsUser>> = try!(JsUser::class(scope));
-//     let ctor: Handle<JsFunction<JsUser>> = try!(class.constructor(scope));
-//     let args: Vec<Handle<JsValue>> = vec![];
-//     ctor.construct(scope, args)
-// }

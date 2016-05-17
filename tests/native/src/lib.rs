@@ -17,6 +17,11 @@ use js::objects::*;
 use js::functions::*;
 use js::classes::*;
 
+use neon::mem::Handle;
+use neon::js::class::{Class, JsClass};
+use neon::js::{JsValue, JsObject, JsFunction, Object, Key};
+use neon::vm::{Call, JsResult};
+
 register_module!(m, {
     try!(m.export("return_js_string", return_js_string));
 
@@ -42,9 +47,9 @@ register_module!(m, {
     try!(m.export("call_js_function", call_js_function));
     try!(m.export("construct_js_function", construct_js_function));
 
-    // try!(m.export("return_js_class", return_js_class));
-
-    try!(m.export("User", JsUser::new));
+    let class: Handle<JsClass<JsUser>> = try!(JsUser::class(m.scope));
+    let constructor: Handle<JsFunction<JsUser>> = try!(class.constructor(m.scope));
+    try!(m.exports.set("User", constructor));
 
     Ok(())
 });
