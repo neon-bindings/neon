@@ -18,9 +18,8 @@ use js::functions::*;
 use js::classes::*;
 
 use neon::mem::Handle;
+use neon::js::{JsFunction, Object};
 use neon::js::class::{Class, JsClass};
-use neon::js::{JsValue, JsObject, JsFunction, Object, Key};
-use neon::vm::{Call, JsResult};
 
 register_module!(m, {
     try!(m.export("return_js_string", return_js_string));

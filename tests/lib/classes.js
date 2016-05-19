@@ -8,9 +8,13 @@ describe('JsClass', function() {
   });
 
   it('return a JsClass built in Rust', function () {
-    console.log(User.toString());
-    u = User(1, "some", "thing", "else")
-    assert.equal(user, 9);
+    u = new User(1, "some", "thing", "else");
+
+    assert.equal(u.get('id'), 1);
+    assert.equal(u.get('first_name'), "some");
+    assert.equal(u.get('last_name'), "thing");
+    assert.equal(u.get('email'), "else");
+    assert.throw(function() { u.get('not_a_field') }, TypeError)
   });
 
 });
