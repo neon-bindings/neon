@@ -7,6 +7,7 @@ mod js {
     pub mod arrays;
     pub mod objects;
     pub mod functions;
+    pub mod classes;
 }
 
 use js::strings::return_js_string;
@@ -14,6 +15,11 @@ use js::numbers::*;
 use js::arrays::*;
 use js::objects::*;
 use js::functions::*;
+use js::classes::*;
+
+use neon::mem::Handle;
+use neon::js::{JsFunction, Object};
+use neon::js::class::{Class, JsClass};
 
 register_module!(m, {
     try!(m.export("return_js_string", return_js_string));
@@ -39,5 +45,10 @@ register_module!(m, {
     try!(m.export("return_js_function", return_js_function));
     try!(m.export("call_js_function", call_js_function));
     try!(m.export("construct_js_function", construct_js_function));
+
+    let class: Handle<JsClass<JsUser>> = try!(JsUser::class(m.scope));
+    let constructor: Handle<JsFunction<JsUser>> = try!(class.constructor(m.scope));
+    try!(m.exports.set("User", constructor));
+
     Ok(())
 });
