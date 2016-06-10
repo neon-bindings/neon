@@ -667,7 +667,7 @@ pub struct JsFunction<T: Object=JsObject> {
     marker: PhantomData<T>
 }
 
-impl Object for JsFunction { }
+impl<T: Object> Object for JsFunction<T> { }
 
 #[repr(C)]
 pub struct FunctionKernel<T: Value>(fn(Call) -> JsResult<T>);
