@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use neon_sys;
 use neon_sys::raw;
-use internal::js::{Value, ValueInternal, SuperType};
+use internal::js::{Value, SuperType};
 use internal::js::error::{JsError, Kind};
 use internal::vm::{JsResult, Lock, LockState};
 use internal::scope::Scope;
