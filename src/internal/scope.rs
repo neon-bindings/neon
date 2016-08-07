@@ -13,6 +13,15 @@ pub trait ScopeInternal: Sized {
     fn active_cell(&self) -> &RefCell<bool>;
 }
 
+/// Represent a Handle Scope.
+///
+/// After a handle scope has been created, all local handles will be allocated within that
+/// handle scope until either the handle scope is deleted or another handle scope is created.
+/// If there is already a handle scope and a new one is created, all allocations will take
+/// place in the new handle scope until it is deleted. After that, new handles will again be
+/// allocated in the original handle scope.
+///
+/// See http://v8.paulfryzel.com/docs/master/classv8_1_1_handle_scope.html
 pub trait Scope<'a>: ScopeInternal {
     fn nested<T, F: for<'inner> FnOnce(&mut NestedScope<'inner>) -> T>(&self, f: F) -> T;
     fn chained<T, F: for<'inner> FnOnce(&mut ChainedScope<'inner, 'a>) -> T>(&self, f: F) -> T;
