@@ -46,6 +46,8 @@ register_module!(m, {
     try!(m.export("call_js_function", call_js_function));
     try!(m.export("construct_js_function", construct_js_function));
 
+    try!(m.export("check_string_and_number", check_string_and_number));
+
     let class: Handle<JsClass<JsUser>> = try!(JsUser::class(m.scope));
     let constructor: Handle<JsFunction<JsUser>> = try!(class.constructor(m.scope));
     try!(m.exports.set("User", constructor));

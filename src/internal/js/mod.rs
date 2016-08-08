@@ -102,7 +102,7 @@ impl ValueInternal for JsValue {
     }
 }
 
-impl This for JsValue {
+unsafe impl This for JsValue {
     fn as_this(h: raw::Local) -> Self {
         JsValue(h)
     }
@@ -154,7 +154,7 @@ impl Managed for JsUndefined {
     fn from_raw(h: raw::Local) -> Self { JsUndefined(h) }
 }
 
-impl This for JsUndefined {
+unsafe impl This for JsUndefined {
     fn as_this(_: raw::Local) -> Self {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
@@ -499,7 +499,7 @@ impl Managed for JsObject {
     fn from_raw(h: raw::Local) -> Self { JsObject(h) }
 }
 
-impl This for JsObject {
+unsafe impl This for JsObject {
     fn as_this(h: raw::Local) -> Self { JsObject(h) }
 }
 
