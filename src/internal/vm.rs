@@ -199,7 +199,8 @@ extern "C" fn module_callback<'a>(kernel: fn(Module) -> VmResult<()>, exports: H
     });
 }
 
-pub trait This: Managed {
+/// A type that may be the type of a function's `this` binding.
+pub unsafe trait This: Managed {
     fn as_this(h: raw::Local) -> Self;
 }
 

@@ -17,4 +17,8 @@ describe('JsFunction', function() {
   it('new a JsFunction', function () {
     assert.equal(addon.construct_js_function(Date), 1970);
   });
+
+  it('got two parameters, a string and a number', function() {
+    addon.check_string_and_number("string", 42);
+  });
 });

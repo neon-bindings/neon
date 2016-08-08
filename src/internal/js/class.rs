@@ -212,7 +212,7 @@ pub trait Class: Managed + Any {
     }
 }
 
-impl<T: Class> This for T {
+unsafe impl<T: Class> This for T {
     fn as_this(h: raw::Local) -> Self {
         Self::from_raw(h)
     }
