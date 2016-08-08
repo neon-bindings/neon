@@ -1,3 +1,7 @@
+# Version 0.1.11 (2016-08-08)
+
+* [Exposed `This` trait](https://github.com/rustbridge/neon/issues/101) to allow user-level abstractions involving `FunctionCall`
+
 # Version 0.1.10 (2016-05-11)
 
 * Added `JsError` API with support for throwing [all](https://github.com/rustbridge/neon/issues/65) [standard](https://github.com/rustbridge/neon/issues/66) [error](https://github.com/rustbridge/neon/issues/67) [types](https://github.com/rustbridge/neon/issues/74)
