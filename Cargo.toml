@@ -1,6 +1,6 @@
 [package]
 name = "neon"
-version = "0.1.10"
+version = "0.1.11"
 authors = ["Dave Herman <dherman@mozilla.com>"]
 description = "A safe abstraction layer for Node.js."
 documentation = "http://neon.rustbridge.io/neon"
@@ -11,4 +11,4 @@ exclude = ["neon.jpg"]
 
 [dependencies]
 cslice = { version = "=0.1.1", path = "crates/cslice" }
-neon-sys = { version = "=0.1.10", path = "crates/neon-sys" }
+neon-sys = { version = "=0.1.11", path = "crates/neon-sys" }
