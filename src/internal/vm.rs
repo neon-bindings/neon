@@ -6,7 +6,7 @@ use std::os::raw::c_void;
 use cslice::CMutSlice;
 use neon_sys;
 use neon_sys::raw;
-use internal::scope::{Scope, RootScope, RootScopeInternal};
+use internal::scope::{Scope, ScopeInternal, RootScope, RootScopeInternal};
 use internal::js::{JsValue, Value, Object, JsObject, JsFunction};
 use internal::js::class::ClassMetadata;
 use internal::js::error::{JsError, Kind};
@@ -248,38 +248,31 @@ impl<'a, T: This> Arguments<'a, T> {
     }
 }
 
+/// A kernel of callable code exported to JS. A kernel function can be exported
+/// to the Neon runtime as a raw pointer coupled with an `extern "C"` callback
+/// function pointer.
 pub trait Kernel<T: Clone + Copy + Sized>: Sized {
+
+    /// The static callback function that can be passed to the Neon runtime to
+    /// be called by V8 when the callable code is invoked. The Neon runtime
+    /// ensures that the kernel will be provided as the extra data field,
+    /// wrapped as a V8 External, in the `CallbackInfo` argument.
     extern "C" fn callback(info: &CallbackInfo) -> T;
 
-    unsafe fn from_raw(raw::Local) -> Self;
+    /// Extracts the kernel from the V8 External value pointed to by the given
+    /// handle.
+    unsafe fn from_wrapper(raw::Local) -> Self;
 
-    fn as_raw(self) -> *mut c_void;
+    /// Converts the kernel function to a raw void pointer.
+    fn as_ptr(self) -> *mut c_void;
 
-    fn pair(self) -> (*mut c_void, *mut c_void) {
+    /// Exports the kernel as a pair consisting of the static callback function
+    /// and the kernel function, both converted to raw void pointers.
+    fn export(self) -> (*mut c_void, *mut c_void) {
         unsafe {
-            (mem::transmute(Self::callback), self.as_raw())
+            (mem::transmute(Self::callback), self.as_ptr())
         }
     }
-}
-
-pub fn exec_function_kernel<'a, F, T: This>(info: &'a CallbackInfo, scope: &'a mut RootScope<'a>, f: F)
-    where F: FnOnce(FunctionCall<'a, T>)
-{
-    let closure: Box<F> = Box::new(f);
-    let callback: extern "C" fn(&'a CallbackInfo, Box<F>, &'a mut RootScope<'a>) = function_callback::<'a, F, T>;
-    unsafe {
-        let closure: *mut c_void = mem::transmute(closure);
-        let callback: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = mem::transmute(callback);
-        let info: &c_void = mem::transmute(info);
-        let scope: *mut c_void = mem::transmute(scope);
-        neon_sys::fun::exec_kernel(closure, callback, info, scope);
-    }
-}
-
-extern "C" fn function_callback<'a, F, T: This>(info: &'a CallbackInfo, kernel: Box<F>, scope: &'a mut RootScope<'a>)
-    where F: FnOnce(FunctionCall<'a, T>)
-{
-    kernel(info.as_call(scope));
 }
 
 pub struct LockState {

@@ -215,6 +215,23 @@ extern "C" void NeonSys_Scope_Nested(void *out, void *closure, NeonSys_NestedSco
   callback(out, realm, closure);
 }
 
+extern "C" void NeonSys_Scope_Enter(v8::HandleScope *scope, v8::Isolate *isolate) {
+  void *p = scope;
+  ::new (p) v8::HandleScope(isolate);
+}
+
+extern "C" void NeonSys_Scope_Exit(v8::HandleScope *scope) {
+  scope->~HandleScope();
+}
+
+extern "C" size_t NeonSys_Scope_Sizeof() {
+  return sizeof(v8::HandleScope);
+}
+
+extern "C" size_t NeonSys_Scope_SizeofEscapable() {
+  return sizeof(v8::EscapableHandleScope);
+}
+
 extern "C" void NeonSys_Fun_ExecKernel(void *kernel, NeonSys_RootScopeCallback callback, v8::FunctionCallbackInfo<v8::Value> *info, void *scope) {
   Nan::HandleScope v8_scope;
   callback(info, kernel, scope);

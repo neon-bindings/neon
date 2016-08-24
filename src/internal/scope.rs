@@ -6,7 +6,7 @@ use neon_sys;
 use neon_sys::raw;
 use internal::mem::{Handle, HandleInternal};
 use internal::js::Value;
-use internal::vm::Isolate;
+use internal::vm::{Isolate, IsolateInternal, CallbackInfo, This, Call, FunctionCall};
 
 pub trait ScopeInternal: Sized {
     fn isolate(&self) -> Isolate;
@@ -56,6 +56,7 @@ impl<'a, 'outer> ChainedScope<'a, 'outer> {
 
 pub trait RootScopeInternal<'a> {
     fn new(isolate: Isolate) -> RootScope<'a>;
+    fn inside<T, F: FnOnce(&'a mut RootScope<'a>) -> T>(&'a mut self, f: F) -> T;
 }
 
 impl<'a> RootScopeInternal<'a> for RootScope<'a> {
@@ -65,6 +66,25 @@ impl<'a> RootScopeInternal<'a> for RootScope<'a> {
             active: RefCell::new(true),
             phantom: PhantomData
         }
+    }
+
+    fn inside<T, F: FnOnce(&'a mut RootScope<'a>) -> T>(&'a mut self, f: F) -> T {
+        debug_assert!(unsafe { neon_sys::scope::size() } <= raw::HANDLE_SCOPE_SIZE);
+
+        let mut v8_scope = raw::HandleScope::new();
+
+        unsafe {
+            neon_sys::scope::enter(&mut v8_scope, self.isolate().to_raw());
+        }
+
+        let result = f(self);
+
+        unsafe {
+            neon_sys::scope::exit(&mut v8_scope);
+        }
+
+        result
+        
     }
 }
 

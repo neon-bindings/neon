@@ -6,8 +6,8 @@ use std::ptr::null_mut;
 use neon_sys;
 use neon_sys::raw;
 use internal::mem::{Handle, HandleInternal, Managed};
-use internal::scope::{Scope, ScopeInternal};
-use internal::vm::{Isolate, IsolateInternal, JsResult, VmResult, FunctionCall, CallbackInfo, Lock, LockState, Throw, This, Kernel, exec_function_kernel};
+use internal::scope::{Scope, ScopeInternal, RootScopeInternal};
+use internal::vm::{Isolate, IsolateInternal, JsResult, VmResult, FunctionCall, CallbackInfo, Lock, LockState, Throw, This, Kernel};
 use internal::js::{Value, ValueInternal, JsFunction, JsObject, Object, JsValue, JsUndefined, build};
 use internal::js::error::{JsError, Kind};
 
@@ -22,9 +22,9 @@ impl<T: Class> MethodKernel<T> {
 
 impl<T: Class> Kernel<()> for MethodKernel<T> {
     extern "C" fn callback(info: &CallbackInfo) {
-        let mut scope = info.scope();
-        exec_function_kernel(info, &mut scope, |call| {
+        info.scope().inside(|scope| {
             let data = info.data();
+            let call = info.as_call(scope);
             // Note: This is pretty sleazy, pretending to be a Handle<T> before doing the check.
             //       But we're doing the check immediately, so it seems tolerable.
             let this: Handle<T> = call.arguments.this(call.scope);
@@ -36,18 +36,18 @@ impl<T: Class> Kernel<()> for MethodKernel<T> {
                 }
                 return;
             }
-            let MethodKernel(kernel) = unsafe { Self::from_raw(data.to_raw()) };
+            let MethodKernel(kernel) = unsafe { Self::from_wrapper(data.to_raw()) };
             if let Ok(value) = kernel(call) {
                 info.set_return(value);
             }
-        });
+        })
     }
 
-    unsafe fn from_raw(h: raw::Local) -> Self {
+    unsafe fn from_wrapper(h: raw::Local) -> Self {
         MethodKernel(mem::transmute(neon_sys::fun::get_kernel(h)))
     }
 
-    fn as_raw(self) -> *mut c_void {
+    fn as_ptr(self) -> *mut c_void {
         unsafe { mem::transmute(self.0) }
     }
 }
@@ -73,20 +73,21 @@ impl ConstructorCallKernel {
 
 impl Kernel<()> for ConstructorCallKernel {
     extern "C" fn callback(info: &CallbackInfo) {
-        let data = info.data();
-        let mut scope = info.scope();
-        let ConstructorCallKernel(kernel) = unsafe { Self::from_raw(data.to_raw()) };
-        let call = info.as_call(&mut scope);
-        if let Ok(value) = kernel(call) {
-            info.set_return(value);
-        }
+        info.scope().inside(|scope| {
+            let data = info.data();
+            let ConstructorCallKernel(kernel) = unsafe { Self::from_wrapper(data.to_raw()) };
+            let call = info.as_call(scope);
+            if let Ok(value) = kernel(call) {
+                info.set_return(value);
+            }
+        })
     }
 
-    unsafe fn from_raw(h: raw::Local) -> Self {
+    unsafe fn from_wrapper(h: raw::Local) -> Self {
         ConstructorCallKernel(mem::transmute(neon_sys::class::get_call_kernel(h)))
     }
 
-    fn as_raw(self) -> *mut c_void {
+    fn as_ptr(self) -> *mut c_void {
         unsafe { mem::transmute(self.0) }
     }
 }
@@ -102,23 +103,24 @@ impl<T: Class> AllocateKernel<T> {
 
 impl<T: Class> Kernel<*mut c_void> for AllocateKernel<T> {
     extern "C" fn callback(info: &CallbackInfo) -> *mut c_void {
-        let data = info.data();
-        let mut scope = info.scope();
-        let AllocateKernel(kernel) = unsafe { Self::from_raw(data.to_raw()) };
-        let call = info.as_call(&mut scope);
-        if let Ok(value) = kernel(call) {
-            let p = Box::into_raw(Box::new(value));
-            unsafe { mem::transmute(p) }
-        } else {
-            null_mut()
-        }
+        info.scope().inside(|scope| {
+            let data = info.data();
+            let AllocateKernel(kernel) = unsafe { Self::from_wrapper(data.to_raw()) };
+            let call = info.as_call(scope);
+            if let Ok(value) = kernel(call) {
+                let p = Box::into_raw(Box::new(value));
+                unsafe { mem::transmute(p) }
+            } else {
+                null_mut()
+            }
+        })
     }
 
-    unsafe fn from_raw(h: raw::Local) -> Self {
+    unsafe fn from_wrapper(h: raw::Local) -> Self {
         AllocateKernel(mem::transmute(neon_sys::class::get_allocate_kernel(h)))
     }
 
-    fn as_raw(self) -> *mut c_void {
+    fn as_ptr(self) -> *mut c_void {
         unsafe { mem::transmute(self.0) }
     }
 }
@@ -134,25 +136,26 @@ impl<T: Class> ConstructKernel<T> {
 
 impl<T: Class> Kernel<bool> for ConstructKernel<T> {
     extern "C" fn callback(info: &CallbackInfo) -> bool {
-        let data = info.data();
-        let mut scope = info.scope();
-        let ConstructKernel(kernel) = unsafe { Self::from_raw(data.to_raw()) };
-        let call = info.as_call(&mut scope);
-        match kernel(call) {
-            Ok(None) => true,
-            Ok(Some(obj)) => {
-                info.set_return(obj);
-                true
+        info.scope().inside(|scope| {
+            let data = info.data();
+            let ConstructKernel(kernel) = unsafe { Self::from_wrapper(data.to_raw()) };
+            let call = info.as_call(scope);
+            match kernel(call) {
+                Ok(None) => true,
+                Ok(Some(obj)) => {
+                    info.set_return(obj);
+                    true
+                }
+                _ => false
             }
-            _ => false
-        }
+        })
     }
 
-    unsafe fn from_raw(h: raw::Local) -> Self {
+    unsafe fn from_wrapper(h: raw::Local) -> Self {
         ConstructKernel(mem::transmute(neon_sys::class::get_construct_kernel(h)))
     }
 
-    fn as_raw(self) -> *mut c_void {
+    fn as_ptr(self) -> *mut c_void {
         unsafe { mem::transmute(self.0) }
     }
 }
@@ -240,15 +243,15 @@ pub trait ClassInternal: Class {
         unsafe {
             let isolate: *mut c_void = mem::transmute(scope.isolate());
 
-            let (allocate_callback, allocate_kernel) = descriptor.allocate.pair();
+            let (allocate_callback, allocate_kernel) = descriptor.allocate.export();
 
             let (construct_callback, construct_kernel) = match descriptor.construct {
-                Some(k) => k.pair(),
+                Some(k) => k.export(),
                 None    => (null_mut(), null_mut())
             };
 
             let (call_callback, call_kernel) = match descriptor.call {
-                Some(k) => k.pair(),
+                Some(k) => k.export(),
                 None    => (mem::transmute(ConstructorCallKernel::unimplemented::<Self>), null_mut())
             };
 
@@ -272,7 +275,7 @@ pub trait ClassInternal: Class {
 
             for (name, method) in descriptor.methods {
                 let method: Handle<JsFunction> = try!(build(|out| {
-                    let (method_callback, method_kernel) = method.pair();
+                    let (method_callback, method_kernel) = method.export();
                     neon_sys::fun::new(out, isolate, method_callback, method_kernel)
                 }));
                 if !neon_sys::class::add_method(isolate, metadata_pointer, name.as_ptr(), name.len() as u32, method.to_raw()) {

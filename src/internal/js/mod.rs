@@ -9,8 +9,8 @@ use neon_sys;
 use neon_sys::raw;
 use neon_sys::tag::Tag;
 use internal::mem::{Handle, HandleInternal, Managed};
-use internal::scope::Scope;
-use internal::vm::{VmResult, Throw, JsResult, Isolate, IsolateInternal, CallbackInfo, Call, This, Kernel, exec_function_kernel};
+use internal::scope::{Scope, ScopeInternal, RootScopeInternal};
+use internal::vm::{VmResult, Throw, JsResult, Isolate, IsolateInternal, CallbackInfo, Call, This, Kernel};
 use internal::js::error::{JsError, Kind};
 
 pub trait ValueInternal: Managed {
@@ -674,21 +674,20 @@ pub struct FunctionKernel<T: Value>(fn(Call) -> JsResult<T>);
 
 impl<T: Value> Kernel<()> for FunctionKernel<T> {
     extern "C" fn callback(info: &CallbackInfo) {
-        let mut scope = info.scope();
-        exec_function_kernel(info, &mut scope, |call| {
+        info.scope().inside(|scope| {
             let data = info.data();
-            let FunctionKernel(kernel) = unsafe { Self::from_raw(data.to_raw()) };
-            if let Ok(value) = kernel(call) {
+            let FunctionKernel(kernel) = unsafe { Self::from_wrapper(data.to_raw()) };
+            if let Ok(value) = kernel(info.as_call(scope)) {
                 info.set_return(value);
             }
-        });
+        })
     }
 
-    unsafe fn from_raw(h: raw::Local) -> Self {
+    unsafe fn from_wrapper(h: raw::Local) -> Self {
         FunctionKernel(mem::transmute(neon_sys::fun::get_kernel(h)))
     }
 
-    fn as_raw(self) -> *mut c_void {
+    fn as_ptr(self) -> *mut c_void {
         unsafe { mem::transmute(self.0) }
     }
 }
@@ -716,7 +715,7 @@ impl JsFunction {
         build(|out| {
             unsafe {
                 let isolate: *mut c_void = mem::transmute(scope.isolate().to_raw());
-                let (callback, kernel) = FunctionKernel(f).pair();
+                let (callback, kernel) = FunctionKernel(f).export();
                 neon_sys::fun::new(out, isolate, callback, kernel)
             }
         })
