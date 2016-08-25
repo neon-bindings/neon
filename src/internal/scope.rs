@@ -56,7 +56,7 @@ impl<'a, 'outer> ChainedScope<'a, 'outer> {
 
 pub trait RootScopeInternal<'a> {
     fn new(isolate: Isolate) -> RootScope<'a>;
-    fn inside<T, F: FnOnce(&'a mut RootScope<'a>) -> T>(&'a mut self, f: F) -> T;
+    fn with<T, F: FnOnce(&'a mut RootScope<'a>) -> T>(&'a mut self, f: F) -> T;
 }
 
 impl<'a> RootScopeInternal<'a> for RootScope<'a> {
@@ -68,8 +68,9 @@ impl<'a> RootScopeInternal<'a> for RootScope<'a> {
         }
     }
 
-    fn inside<T, F: FnOnce(&'a mut RootScope<'a>) -> T>(&'a mut self, f: F) -> T {
-        debug_assert!(unsafe { neon_sys::scope::size() } <= raw::HANDLE_SCOPE_SIZE);
+    fn with<T, F: FnOnce(&'a mut RootScope<'a>) -> T>(&'a mut self, f: F) -> T {
+        debug_assert!(unsafe { neon_sys::scope::size() } <= mem::size_of::<raw::HandleScope>());
+        debug_assert!(unsafe { neon_sys::scope::alignment() } <= mem::align_of::<raw::HandleScope>());
 
         let mut v8_scope = raw::HandleScope::new();
 

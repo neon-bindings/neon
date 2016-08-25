@@ -21,7 +21,13 @@ extern "system" {
     #[link_name = "NeonSys_Scope_Sizeof"]
     pub fn size() -> usize;
 
+    #[link_name = "NeonSys_Scope_Alignof"]
+    pub fn alignment() -> usize;
+
     #[link_name = "NeonSys_Scope_SizeofEscapable"]
     pub fn escapable_size() -> usize;
+
+    #[link_name = "NeonSys_Scope_AlignofEscapable"]
+    pub fn escapable_alignment() -> usize;
 
 }

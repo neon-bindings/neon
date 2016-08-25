@@ -674,7 +674,7 @@ pub struct FunctionKernel<T: Value>(fn(Call) -> JsResult<T>);
 
 impl<T: Value> Kernel<()> for FunctionKernel<T> {
     extern "C" fn callback(info: &CallbackInfo) {
-        info.scope().inside(|scope| {
+        info.scope().with(|scope| {
             let data = info.data();
             let FunctionKernel(kernel) = unsafe { Self::from_wrapper(data.to_raw()) };
             if let Ok(value) = kernel(info.as_call(scope)) {

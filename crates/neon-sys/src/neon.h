@@ -79,7 +79,9 @@ extern "C" {
   void NeonSys_Scope_Enter(v8::HandleScope *scope, v8::Isolate *isolate);
   void NeonSys_Scope_Exit(v8::HandleScope *scope);
   size_t NeonSys_Scope_Sizeof();
+  size_t NeonSys_Scope_Alignof();
   size_t NeonSys_Scope_SizeofEscapable();
+  size_t NeonSys_Scope_AlignofEscapable();
 
   bool NeonSys_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, v8::FunctionCallback callback, void *kernel);
   void NeonSys_Fun_ExecKernel(void *kernel, NeonSys_RootScopeCallback callback, v8::FunctionCallbackInfo<v8::Value> *info, void *scope);

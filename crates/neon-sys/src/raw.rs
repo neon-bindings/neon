@@ -17,6 +17,7 @@ pub const ESCAPABLE_HANDLE_SCOPE_SIZE: usize = 32;
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct HandleScope {
+    pub align_to_pointer: [*mut c_void; 0],
     pub fields: [u8; HANDLE_SCOPE_SIZE]
 }
 
@@ -27,6 +28,7 @@ impl HandleScope {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct EscapableHandleScope {
+    pub align_to_pointer: [*mut c_void; 0],
     pub fields: [u8; ESCAPABLE_HANDLE_SCOPE_SIZE]
 }
 

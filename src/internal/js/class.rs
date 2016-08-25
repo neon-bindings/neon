@@ -22,7 +22,7 @@ impl<T: Class> MethodKernel<T> {
 
 impl<T: Class> Kernel<()> for MethodKernel<T> {
     extern "C" fn callback(info: &CallbackInfo) {
-        info.scope().inside(|scope| {
+        info.scope().with(|scope| {
             let data = info.data();
             let call = info.as_call(scope);
             // Note: This is pretty sleazy, pretending to be a Handle<T> before doing the check.
@@ -73,7 +73,7 @@ impl ConstructorCallKernel {
 
 impl Kernel<()> for ConstructorCallKernel {
     extern "C" fn callback(info: &CallbackInfo) {
-        info.scope().inside(|scope| {
+        info.scope().with(|scope| {
             let data = info.data();
             let ConstructorCallKernel(kernel) = unsafe { Self::from_wrapper(data.to_raw()) };
             let call = info.as_call(scope);
@@ -103,7 +103,7 @@ impl<T: Class> AllocateKernel<T> {
 
 impl<T: Class> Kernel<*mut c_void> for AllocateKernel<T> {
     extern "C" fn callback(info: &CallbackInfo) -> *mut c_void {
-        info.scope().inside(|scope| {
+        info.scope().with(|scope| {
             let data = info.data();
             let AllocateKernel(kernel) = unsafe { Self::from_wrapper(data.to_raw()) };
             let call = info.as_call(scope);
@@ -136,7 +136,7 @@ impl<T: Class> ConstructKernel<T> {
 
 impl<T: Class> Kernel<bool> for ConstructKernel<T> {
     extern "C" fn callback(info: &CallbackInfo) -> bool {
-        info.scope().inside(|scope| {
+        info.scope().with(|scope| {
             let data = info.data();
             let ConstructKernel(kernel) = unsafe { Self::from_wrapper(data.to_raw()) };
             let call = info.as_call(scope);

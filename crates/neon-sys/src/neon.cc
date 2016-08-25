@@ -228,8 +228,16 @@ extern "C" size_t NeonSys_Scope_Sizeof() {
   return sizeof(v8::HandleScope);
 }
 
+extern "C" size_t NeonSys_Scope_Alignof() {
+  return alignof(v8::HandleScope);
+}
+
 extern "C" size_t NeonSys_Scope_SizeofEscapable() {
   return sizeof(v8::EscapableHandleScope);
+}
+
+extern "C" size_t NeonSys_Scope_AlignofEscapable() {
+  return alignof(v8::EscapableHandleScope);
 }
 
 extern "C" void NeonSys_Fun_ExecKernel(void *kernel, NeonSys_RootScopeCallback callback, v8::FunctionCallbackInfo<v8::Value> *info, void *scope) {
