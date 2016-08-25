@@ -11,8 +11,7 @@ pub type FunctionCallbackInfo = c_void;
 
 pub type Isolate = c_void;
 
-pub const HANDLE_SCOPE_SIZE: usize = 24;
-pub const ESCAPABLE_HANDLE_SCOPE_SIZE: usize = 32;
+const HANDLE_SCOPE_SIZE: usize = 24;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -24,6 +23,8 @@ pub struct HandleScope {
 impl HandleScope {
     pub fn new() -> HandleScope { unsafe { mem::zeroed() } }
 }
+
+const ESCAPABLE_HANDLE_SCOPE_SIZE: usize = 32;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
