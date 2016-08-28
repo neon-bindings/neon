@@ -6,7 +6,7 @@ use neon_sys;
 use neon_sys::raw;
 use internal::mem::{Handle, HandleInternal};
 use internal::js::Value;
-use internal::vm::{Isolate, IsolateInternal, CallbackInfo, This, Call, FunctionCall};
+use internal::vm::{Isolate, IsolateInternal};
 
 pub trait ScopeInternal: Sized {
     fn isolate(&self) -> Isolate;
