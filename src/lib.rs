@@ -9,11 +9,8 @@ pub mod vm;
 pub mod scope;
 pub mod js;
 
-// An alias for neon_sys for use by macro expansions.
 #[doc(hidden)]
-pub mod sys {
-    pub use neon_sys::*;
-}
+pub mod macro_internal;
 
 /// Register the current crate as a Node module, providing startup
 /// logic for initializing the module object at runtime.
@@ -101,7 +98,7 @@ macro_rules! class_definition {
                                   $body
                               }
 
-                              $crate::js::class::AllocateKernel::new(_______allocator_rust_y_u_no_hygienic_items_______)
+                              $crate::macro_internal::AllocateKernel::new(_______allocator_rust_y_u_no_hygienic_items_______)
                           } ;
                           $call_ctor ;
                           $new_ctor ;
@@ -123,7 +120,7 @@ macro_rules! class_definition {
                                   $body
                               }
 
-                              $crate::js::class::MethodKernel::new(_______method_rust_y_u_no_hygienic_items_______)
+                              $crate::macro_internal::MethodKernel::new(_______method_rust_y_u_no_hygienic_items_______)
                           }) ;
                           $($rest)*);
     };
@@ -139,7 +136,7 @@ macro_rules! class_definition {
                                   $body
                               }
 
-                              $crate::js::class::ConstructKernel::new(_______constructor_rust_y_u_no_hygienic_items_______)
+                              $crate::macro_internal::ConstructKernel::new(_______constructor_rust_y_u_no_hygienic_items_______)
                           }) ;
                           $mnames ;
                           $mdefs ;
@@ -156,7 +153,7 @@ macro_rules! class_definition {
                                   $body
                               }
 
-                              $crate::js::class::ConstructorCallKernel::new(_______call_rust_y_u_no_hygienic_items_______)
+                              $crate::macro_internal::ConstructorCallKernel::new(_______call_rust_y_u_no_hygienic_items_______)
                           }) ;
                           $new_ctor ;
                           $mnames ;
@@ -183,12 +180,12 @@ macro_rules! class_definition {
 macro_rules! impl_managed {
     ($cls:ident) => {
         impl $crate::mem::Managed for $cls {
-            fn to_raw(self) -> $crate::sys::raw::Local {
+            fn to_raw(self) -> $crate::macro_internal::sys::raw::Local {
                 let $cls(raw) = self;
                 raw
             }
 
-            fn from_raw(raw: $crate::sys::raw::Local) -> Self {
+            fn from_raw(raw: $crate::macro_internal::sys::raw::Local) -> Self {
                 $cls(raw)
             }
         }
@@ -242,7 +239,7 @@ macro_rules! declare_types {
         #[derive(Copy, Clone)]
         #[repr(C)]
         $(#[$attr])*
-        pub struct $cls($crate::sys::raw::Local);
+        pub struct $cls($crate::macro_internal::sys::raw::Local);
 
         impl_managed!($cls);
 
@@ -255,7 +252,7 @@ macro_rules! declare_types {
         #[derive(Copy, Clone)]
         #[repr(C)]
         $(#[$attr])*
-        struct $cls($crate::sys::raw::Local);
+        struct $cls($crate::macro_internal::sys::raw::Local);
 
         impl_managed!($cls);
 
