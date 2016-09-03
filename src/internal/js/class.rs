@@ -252,7 +252,7 @@ pub trait ClassInternal: Class {
 
             let (call_callback, call_kernel) = match descriptor.call {
                 Some(k) => k.export(),
-                None    => (mem::transmute(ConstructorCallKernel::unimplemented::<Self>), null_mut())
+                None    => (mem::transmute(ConstructorCallKernel::unimplemented::<Self> as *mut c_void), null_mut())
             };
 
             let metadata_pointer = neon_sys::class::create_base(isolate,

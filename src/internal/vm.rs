@@ -6,7 +6,7 @@ use std::os::raw::c_void;
 use cslice::CMutSlice;
 use neon_sys;
 use neon_sys::raw;
-use internal::scope::{Scope, ScopeInternal, RootScope, RootScopeInternal};
+use internal::scope::{Scope, RootScope, RootScopeInternal};
 use internal::js::{JsValue, Value, Object, JsObject, JsFunction};
 use internal::js::class::ClassMetadata;
 use internal::js::error::{JsError, Kind};
@@ -61,8 +61,8 @@ impl IsolateInternal for Isolate {
         if ptr.is_null() {
             let b: Box<ClassMap> = Box::new(ClassMap::new());
             let raw = Box::into_raw(b);
-            ptr = unsafe { mem::transmute(raw) };
-            let free_map: *mut c_void = unsafe { mem::transmute(drop_class_map) };
+            ptr = unsafe { mem::transmute(raw as usize) };
+            let free_map: *mut c_void = unsafe { mem::transmute(drop_class_map as usize) };
             unsafe {
                 neon_sys::class::set_class_map(self.to_raw(), ptr, free_map);
             }
@@ -175,8 +175,8 @@ impl<'a> Module<'a> {
     pub fn initialize(exports: Handle<JsObject>, init: fn(Module) -> VmResult<()>) {
         let mut scope = RootScope::new(unsafe { mem::transmute(neon_sys::object::get_isolate(exports.to_raw())) });
         unsafe {
-            let kernel: *mut c_void = mem::transmute(init);
-            let callback: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = mem::transmute(module_callback);
+            let kernel: *mut c_void = mem::transmute(init as usize);
+            let callback: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = mem::transmute(module_callback as usize);
             let exports: raw::Local = exports.to_raw();
             let scope: *mut c_void = mem::transmute(&mut scope);
             neon_sys::module::exec_kernel(kernel, callback, exports, scope);
@@ -270,7 +270,7 @@ pub trait Kernel<T: Clone + Copy + Sized>: Sized {
     /// and the kernel function, both converted to raw void pointers.
     fn export(self) -> (*mut c_void, *mut c_void) {
         unsafe {
-            (mem::transmute(Self::callback), self.as_ptr())
+            (mem::transmute(Self::callback as usize), self.as_ptr())
         }
     }
 }

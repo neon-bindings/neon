@@ -9,7 +9,7 @@ use neon_sys;
 use neon_sys::raw;
 use neon_sys::tag::Tag;
 use internal::mem::{Handle, HandleInternal, Managed};
-use internal::scope::{Scope, ScopeInternal, RootScopeInternal};
+use internal::scope::{Scope, RootScopeInternal};
 use internal::vm::{VmResult, Throw, JsResult, Isolate, IsolateInternal, CallbackInfo, Call, This, Kernel};
 use internal::js::error::{JsError, Kind};
 
