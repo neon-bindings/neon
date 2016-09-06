@@ -6,7 +6,7 @@ use std::os::raw::c_void;
 use cslice::CMutSlice;
 use neon_sys;
 use neon_sys::raw;
-use internal::scope::{Scope, ScopeInternal, RootScope, RootScopeInternal};
+use internal::scope::{Scope, RootScope, RootScopeInternal};
 use internal::js::{JsValue, Value, Object, JsObject, JsFunction};
 use internal::js::class::ClassMetadata;
 use internal::js::error::{JsError, Kind};
