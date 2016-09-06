@@ -47,7 +47,8 @@ const SUBCOMMANDS = {
     }
     return neon_build(this.cwd,
                       this.args.rust || this.args.r || 'default',
-                      this.args.debug || this.args.d ? 'debug' : 'release');
+                      this.args.debug || this.args.d ? 'debug' : 'release',
+                      this.args.node_module_version);
   }
 };
 
