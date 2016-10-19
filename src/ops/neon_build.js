@@ -36,13 +36,9 @@ function cargo(toolchain, configuration) {
                            configuration === 'release' ? ["--release"] : [],
                            macos ? ["--", "-C", "link-args=-Wl,-undefined,dynamic_lookup"] : []);
 
-  // Save the current Node ABI version as an environment variable.
-  let env = clone(process.env);
-  env.NEON_NODE_ABI = process.versions.modules;
-
   console.log(style.info([command].concat(args).join(" ")));
 
-  return spawn(command, args, { cwd: 'native', stdio: 'inherit', env: env });
+  return spawn(command, args, { cwd: 'native', stdio: 'inherit' });
 }
 
 async function main(name, configuration) {
