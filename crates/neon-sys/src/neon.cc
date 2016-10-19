@@ -177,6 +177,19 @@ extern "C" size_t NeonSys_String_Data(char *out, size_t len, v8::Local<v8::Value
   return Nan::DecodeWrite(out, len, str, Nan::UTF8);
 }
 
+extern "C" bool NeonSys_String_NewFromUCS2(v8::Local<v8::String> *out, v8::Isolate *isolate, const uint16_t *data, int32_t len) {
+  Nan::MaybeLocal<v8::String> maybe = v8::String::NewFromTwoByte(isolate, data, v8::NewStringType::kNormal, len);
+  return maybe.ToLocal(out);
+}
+
+extern "C" int32_t NeonSys_String_UCS2Length(v8::Local<v8::String> str) {
+  return str->Length();
+}
+
+extern "C" size_t NeonSys_String_UCS2Data(uint16_t *out, size_t len, v8::Local<v8::String> str) {
+  return str->Write(out, 0, -1);
+}
+
 extern "C" bool NeonSys_Convert_ToString(v8::Local<v8::String> *out, v8::Local<v8::Value> value) {
   Nan::MaybeLocal<v8::String> maybe = Nan::To<v8::String>(value);
   return maybe.ToLocal(out);
