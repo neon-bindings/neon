@@ -10,6 +10,11 @@ extern "system" {
     #[link_name = "NeonSys_Fun_New"]
     pub fn new(out: &mut Local, isolate: *mut c_void, callback: *mut c_void, kernel: *mut c_void) -> bool;
 
+    /// Mutates the `out` argument provided to refer to a newly created `v8::FunctionTemplate`.
+    /// Returns `false` if the value couldn't be created.
+    #[link_name = "NeonSys_Fun_Template_New"]
+    pub fn new_template(out: &mut Local, isolate: *mut c_void, callback: *mut c_void, kernel: *mut c_void) -> bool;
+
     /// Creates a new `v8::HandleScope` and calls the `callback` provided with the the argument
     /// signature `(info, kernel, scope)`.
     #[link_name = "NeonSys_Fun_ExecKernel"]

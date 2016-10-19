@@ -351,7 +351,7 @@ extern "C" void NeonSys_Class_ThrowThisError(v8::Isolate *isolate, void *metadat
   Nan::ThrowTypeError(metadata->GetThisError().ToJsString(isolate, "this is not an object of the expected type."));
 }
 
-extern "C" bool NeonSys_Class_AddMethod(v8::Isolate *isolate, void *metadata_pointer, const char *name, uint32_t byte_length, v8::Local<v8::Function> method) {
+extern "C" bool NeonSys_Class_AddMethod(v8::Isolate *isolate, void *metadata_pointer, const char *name, uint32_t byte_length, v8::Local<v8::FunctionTemplate> method) {
   neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(metadata_pointer);
   v8::Local<v8::FunctionTemplate> ft = metadata->GetTemplate(isolate);
   v8::Local<v8::ObjectTemplate> pt = ft->PrototypeTemplate();
@@ -373,6 +373,15 @@ extern "C" void *NeonSys_Class_GetInstanceInternals(v8::Local<v8::Object> obj) {
   return static_cast<neon::BaseClassInstanceMetadata *>(obj->GetAlignedPointerFromInternalField(0))->GetInternals();
 }
 
+extern "C" bool NeonSys_Fun_Template_New(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, v8::FunctionCallback callback, void *kernel) {
+  v8::Local<v8::External> wrapper = v8::External::New(isolate, kernel);
+  if (wrapper.IsEmpty()) {
+    return false;
+  }
+
+  v8::MaybeLocal<v8::FunctionTemplate> maybe_result = v8::FunctionTemplate::New(isolate, callback, wrapper);
+  return maybe_result.ToLocal(out);
+}
 
 extern "C" bool NeonSys_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, v8::FunctionCallback callback, void *kernel) {
   v8::Local<v8::External> wrapper = v8::External::New(isolate, kernel);
