@@ -250,6 +250,10 @@ extern "C" void NeonSys_Module_ExecKernel(void *kernel, NeonSys_ModuleScopeCallb
   callback(kernel, exports, scope);
 }
 
+extern "C" uint32_t NeonSys_Module_GetVersion() {
+  return NODE_MODULE_VERSION;
+}
+
 extern "C" void NeonSys_Class_ConstructBaseCallback(const v8::FunctionCallbackInfo<v8::Value>& info) {
   Nan::HandleScope scope;
   v8::Local<v8::External> wrapper = v8::Local<v8::External>::Cast(info.Data());

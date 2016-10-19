@@ -76,7 +76,9 @@ macro_rules! register_module {
 
                 unsafe {
                     // Set the ABI version, which is passed in by `neon build` as an env var.
-                    __NODE_MODULE.version = env!("NEON_NODE_ABI").parse().unwrap();
+                    __NODE_MODULE.version = option_env!("NEON_NODE_ABI")
+                        .map(|s| s.parse().unwrap())
+                        .unwrap_or_else(|| $crate::macro_internal::sys::module::get_version());
 
                     node_module_register(&mut __NODE_MODULE);
                 }
