@@ -10,7 +10,7 @@ mod js {
     pub mod classes;
 }
 
-use js::strings::return_js_string;
+use js::strings::*;
 use js::numbers::*;
 use js::arrays::*;
 use js::objects::*;
@@ -23,6 +23,7 @@ use neon::js::class::{Class, JsClass};
 
 register_module!(m, {
     try!(m.export("return_js_string", return_js_string));
+    try!(m.export("index_into_js_string", index_into_js_string));
 
     try!(m.export("return_js_number", return_js_number));
     try!(m.export("return_large_js_number", return_large_js_number));
