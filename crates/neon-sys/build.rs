@@ -14,8 +14,14 @@ fn mode() -> &'static str {
     if debug() { "Debug" } else { "Release" }
 }
 
+#[cfg(not(windows))]
 fn object_path(libname: &str) -> String {
     format!("build/{}/obj.target/{}/src/{}.o", mode(), libname, libname)
+}
+
+#[cfg(windows)]
+fn object_path(libname: &str) -> String {
+    format!("build\\{}\\obj\\{}\\{}.obj", mode(), libname, libname)
 }
 
 fn build_object_file() {
