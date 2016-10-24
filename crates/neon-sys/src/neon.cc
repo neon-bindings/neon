@@ -221,7 +221,7 @@ extern "C" void NeonSys_Scope_Enter(v8::HandleScope *scope, v8::Isolate *isolate
 }
 
 extern "C" void NeonSys_Scope_Exit(v8::HandleScope *scope) {
-  scope->~HandleScope();
+  scope->HandleScope::~HandleScope();
 }
 
 extern "C" size_t NeonSys_Scope_Sizeof() {
