@@ -32,14 +32,14 @@ const NPM_COMMAND : &'static str = "npm.cmd";
 
 fn build_object_file() {
     // Ensure that all package.json dependencies and dev dependencies are installed.
-    Command::new(NPM_COMMAND).arg("install").status().ok()
+    Command::new(NPM_COMMAND).args(&["install", "--silent"]).status().ok()
         .expect(r#"failed to run "npm install" for neon-sys"#);
 
     // Run the package.json `configure` script, which invokes `node-gyp configure` from the local node_modules.
-    Command::new(NPM_COMMAND).arg("run").arg(if debug() { "configure-debug" } else { "configure-release" }).status().ok().unwrap();
+    Command::new(NPM_COMMAND).args(&["run", "--silent"]).arg(if debug() { "configure-debug" } else { "configure-release" }).status().ok().unwrap();
 
     // Run the package.json `build` script, which invokes `node-gyp build` from the local node_modules.
-    Command::new(NPM_COMMAND).arg("run").arg(if debug() { "build-debug" } else { "build-release" }).status().ok().unwrap();
+    Command::new(NPM_COMMAND).args(&["run", "--silent"]).arg(if debug() { "build-debug" } else { "build-release" }).status().ok().unwrap();
 }
 
 fn link_library() {
