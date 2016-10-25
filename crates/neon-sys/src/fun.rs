@@ -6,7 +6,7 @@ extern "system" {
     #[link_name = "NeonSys_Fun_New"]
     pub fn new(out: &mut Local, isolate: *mut c_void, callback: *mut c_void, kernel: *mut c_void) -> bool;
 
-    #[link_name = "NeonSys_Fun_Template_New"]
+    #[link_name = "NeonSys_Fun_New_Template"]
     pub fn new_template(out: &mut Local, isolate: *mut c_void, callback: *mut c_void, kernel: *mut c_void) -> bool;
 
     #[link_name = "NeonSys_Fun_ExecKernel"]

@@ -377,7 +377,7 @@ extern "C" void *NeonSys_Class_GetInstanceInternals(v8::Local<v8::Object> obj) {
   return static_cast<neon::BaseClassInstanceMetadata *>(obj->GetAlignedPointerFromInternalField(0))->GetInternals();
 }
 
-extern "C" bool NeonSys_Fun_Template_New(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, v8::FunctionCallback callback, void *kernel) {
+extern "C" bool NeonSys_Fun_New_Template(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, v8::FunctionCallback callback, void *kernel) {
   v8::Local<v8::External> wrapper = v8::External::New(isolate, kernel);
   if (wrapper.IsEmpty()) {
     return false;
