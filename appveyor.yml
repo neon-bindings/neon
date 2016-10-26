@@ -1,14 +1,16 @@
 os: Visual Studio 2015
 
 environment:
-  nodejs_version: "6"
+  NODEJS_VERSION: "6"
 
 platform:
   - x86
   - x64
 
 install:
-  - ps: Install-Product node $env:nodejs_version
+  - ps: Install-Product node $env:NODEJS_VERSION $env:PLATFORM
+  - node -e "console.log(process.arch, process.versions)"
+
   - curl -sSf -o rustup-init.exe https://win.rustup.rs
   - rustup-init.exe -y
   - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
