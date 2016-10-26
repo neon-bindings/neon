@@ -20,8 +20,18 @@ fn build_object_file() {
     // Ensure that all package.json dependencies and dev dependencies are installed.
     Command::new(npm_command).args(&["install", "--silent"]).status().ok().expect("Failed to run \"npm install\" for neon-sys!");
 
-    // Run `node-gyp configure` (appending -d in debug mode).
-    let configure_args = if debug() { vec!["configure", "-d", "--arch=ia32"] } else { vec!["configure", "--arch=ia32"] };
+    // Run `node-gyp configure` with correct debug and architecture flags
+    let mut configure_args = vec!["configure"];
+    if debug() {
+        configure_args.push("--debug")
+    }
+    let target = env::var("TARGET").unwrap();
+    if target.contains("i686") || target.contains("i586") {
+        configure_args.push("--arch=ia32");
+    } else if target.contains("x86_64") {
+        configure_args.push("--arch=x64");
+    }
+
     let output = Command::new(node_gyp_command)
         .args(&configure_args)
         .output()
