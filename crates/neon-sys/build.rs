@@ -1,6 +1,6 @@
 extern crate gcc;
 
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::env;
 
 fn main() {
@@ -39,6 +39,7 @@ fn build_object_file() {
     // Run `node-gyp build` (appending -d in debug mode).
     let build_args = if debug() { vec!["build", "-d"] } else { vec!["build"] };
     Command::new(node_gyp_command)
+        .stderr(Stdio::null()) // Prevent cargo build from hanging on Windows.
         .args(&build_args)
         .status()
         .ok()
