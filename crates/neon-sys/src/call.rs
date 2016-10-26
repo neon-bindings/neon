@@ -2,7 +2,7 @@
 
 use raw::{FunctionCallbackInfo, Isolate, Local};
 
-extern "system" {
+extern "C" {
 
     /// Sets the return value of the function call.
     #[link_name = "NeonSys_Call_SetReturn"]

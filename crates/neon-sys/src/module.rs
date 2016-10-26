@@ -3,7 +3,7 @@
 use std::os::raw::c_void;
 use raw::Local;
 
-extern "system" {
+extern "C" {
 
     /// Creates a new `v8::HandleScope` and calls `callback` provided with the argument signature
     /// `(kernal, exports, scope)`.

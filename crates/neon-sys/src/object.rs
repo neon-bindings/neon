@@ -2,7 +2,7 @@
 
 use raw::{Isolate, Local};
 
-extern "system" {
+extern "C" {
 
     /// Mutates the `out` argument provided to refer to a newly created `v8::Object`.
     #[link_name = "NeonSys_Object_New"]

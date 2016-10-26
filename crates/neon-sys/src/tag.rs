@@ -18,7 +18,7 @@ pub enum Tag {
     Other
 }
 
-extern "system" {
+extern "C" {
 
     /// Returns the `Tag` of the value provided.
     #[link_name = "NeonSys_Tag_Of"]

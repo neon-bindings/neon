@@ -3,7 +3,7 @@
 use std::os::raw::c_void;
 use raw::{HandleScope, EscapableHandleScope, Local};
 
-extern "system" {
+extern "C" {
 
     /// Mutates the `out` argument provided to refer to the newly escaped `v8::Local` value.
     #[link_name = "NeonSys_Scope_Escape"]

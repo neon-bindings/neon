@@ -2,7 +2,7 @@
 
 use raw::Local;
 
-extern "system" {
+extern "C" {
 
     /// Casts the value provided to a `v8::Object` and mutates the `out` argument provided to refer
     /// to `v8::Local` handle of the converted value. Returns `false` if the conversion didn't

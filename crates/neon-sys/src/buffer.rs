@@ -5,7 +5,7 @@ use cslice::CMutSlice;
 
 // Suppress a spurious rustc warning about the use of CMutSlice.
 #[allow(improper_ctypes)]
-extern "system" {
+extern "C" {
 
     /// Mutates the `out` argument provided to refer to a newly created `node::Buffer` object.
     /// Returns `false` if the value couldn't be created.
