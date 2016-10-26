@@ -25,11 +25,12 @@ const LIB_SUFFIX = {
   'win32':   ".dll"
 };
 
-function rust_target_for_npm_arch_flag(arch) {
+function explicit_cargo_target() {
   if (process.platform === 'win32') {
+    let arch = process.env.npm_config_arch || process.arch;
     if (arch === 'ia32') {
       return 'i686-pc-windows-msvc';
-    } else if (arch === 'x64') {
+    } else {
       return 'x86_64-pc-windows-msvc';
     }
   }
@@ -77,9 +78,7 @@ export default async function neon_build(pwd, toolchain, configuration) {
     throw new Error("Cargo.toml does not contain a [lib] section with a 'name' field");
   }
 
-  let target = process.env.npm_config_arch ?
-    rust_target_for_npm_arch_flag(process.env.npm_config_arch) :
-    null;
+  let target = explicit_cargo_target();
 
   console.log(style.info("running cargo"));
 
