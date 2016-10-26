@@ -19,7 +19,7 @@ fn build_object_file() {
     Command::new(npm_command).args(&["install", "--silent"]).status().ok().expect("Failed to run \"npm install\" for neon-sys!");
 
     // Run `node-gyp configure` (appending -d in debug mode).
-    let configure_args = if debug() { vec!["configure", "-d"] } else { vec!["configure"] };
+    let configure_args = if debug() { vec!["configure", "-d", "--arch=ia32"] } else { vec!["configure", "--arch=ia32"] };
     let output = Command::new(node_gyp_command)
         .args(&configure_args)
         .output()
