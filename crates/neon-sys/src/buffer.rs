@@ -3,7 +3,7 @@ use cslice::CMutSlice;
 
 // Suppress a spurious rustc warning about the use of CMutSlice.
 #[allow(improper_ctypes)]
-extern "system" {
+extern "C" {
 
     #[link_name = "NeonSys_Buffer_New"]
     pub fn new(out: &mut Local, size: u32) -> bool;

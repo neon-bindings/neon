@@ -1,7 +1,7 @@
 use std::os::raw::c_void;
 use raw::{HandleScope, EscapableHandleScope, Local};
 
-extern "system" {
+extern "C" {
 
     #[link_name = "NeonSys_Scope_Escape"]
     pub fn escape(out: &mut Local, scope: *mut EscapableHandleScope, value: Local);

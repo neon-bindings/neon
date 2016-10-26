@@ -1,7 +1,7 @@
 use std::os::raw::c_void;
 use raw::{FunctionCallbackInfo, Local};
 
-extern "system" {
+extern "C" {
 
     #[link_name = "NeonSys_Fun_New"]
     pub fn new(out: &mut Local, isolate: *mut c_void, callback: *mut c_void, kernel: *mut c_void) -> bool;

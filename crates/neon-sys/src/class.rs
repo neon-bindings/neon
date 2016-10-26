@@ -1,7 +1,7 @@
 use std::os::raw::c_void;
 use raw::{Isolate, Local};
 
-extern "system" {
+extern "C" {
 
     #[link_name = "NeonSys_Class_GetClassMap"]
     pub fn get_class_map(isolate: *mut Isolate) -> *mut c_void;
