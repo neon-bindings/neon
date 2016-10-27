@@ -1,6 +1,6 @@
 use raw::Local;
 
-extern "system" {
+extern "C" {
 
     #[link_name = "NeonSys_Convert_ToObject"]
     pub fn to_object(out: &mut Local, value: &Local) -> bool;

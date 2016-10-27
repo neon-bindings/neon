@@ -1,6 +1,6 @@
 use raw::Local;
 
-extern "system" {
+extern "C" {
 
     #[link_name = "NeonSys_Error_Throw"]
     pub fn throw(val: Local);

@@ -16,7 +16,7 @@ pub enum Tag {
     Other
 }
 
-extern "system" {
+extern "C" {
 
     #[link_name = "NeonSys_Tag_Of"]
     pub fn of(val: Local) -> Tag;

@@ -1,6 +1,6 @@
 use raw::{Local, Isolate};
 
-extern "system" {
+extern "C" {
 
     #[link_name = "NeonSys_Array_New"]
     pub fn new(out: &mut Local, isolate: *mut Isolate, length: u32);

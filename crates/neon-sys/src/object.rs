@@ -1,6 +1,6 @@
 use raw::{Isolate, Local};
 
-extern "system" {
+extern "C" {
 
     #[link_name = "NeonSys_Object_New"]
     pub fn new(out: &mut Local);

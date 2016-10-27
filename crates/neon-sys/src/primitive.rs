@@ -1,6 +1,6 @@
 use raw::{Local, Isolate};
 
-extern "system" {
+extern "C" {
 
     #[link_name = "NeonSys_Primitive_Undefined"]
     pub fn undefined(out: &mut Local);

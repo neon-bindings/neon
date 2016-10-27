@@ -8,6 +8,11 @@ homepage = "http://neon.rustbridge.io"
 repository = "https://github.com/rustbridge/neon"
 license = "MIT/Apache-2.0"
 exclude = ["neon.jpg"]
+build = "build.rs"
+
+# This name is arbitrary, but allows us to re-export the location of node.lib
+# to dependent packages so they can link on Windows.
+links = "neon-sys"
 
 [dependencies]
 cslice = { version = "=0.1.1", path = "crates/cslice" }

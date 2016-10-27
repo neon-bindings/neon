@@ -1,6 +1,6 @@
 use raw::{FunctionCallbackInfo, Isolate, Local};
 
-extern "system" {
+extern "C" {
 
     #[link_name = "NeonSys_Call_SetReturn"]
     pub fn set_return(info: &FunctionCallbackInfo, value: Local);
