@@ -1,9 +1,7 @@
 extern crate gcc;
-extern crate regex;
 
 use std::process::{Command, Stdio};
 use std::env;
-use regex::Regex;
 
 fn main() {
     // 1. Build the object file from source using node-gyp.
@@ -42,12 +40,14 @@ fn build_object_file() {
         .expect("Failed to run \"node-gyp configure\" for neon-sys!");
 
     if cfg!(windows) {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        let node_root_dir = Regex::new(r"'-Dnode_root_dir=(.+)'").unwrap()
-            .captures(&stderr)
-            .and_then(|captures| captures.at(1))
+        let node_gyp_output = String::from_utf8_lossy(&output.stderr);
+        let node_root_dir_flag_pattern = "'-Dnode_root_dir=";
+        let node_root_dir_start_index = node_gyp_output
+            .find(node_root_dir_flag_pattern)
+            .map(|i| i + node_root_dir_flag_pattern.len())
             .expect("Couldn't find node_root_dir in node-gyp output.");
-        println!("cargo:node_root_dir={}", node_root_dir);
+        let node_root_dir_end_index = node_gyp_output[node_root_dir_start_index..].find("'").unwrap() + node_root_dir_start_index;
+        println!("cargo:node_root_dir={}", &node_gyp_output[node_root_dir_start_index..node_root_dir_end_index]);
     }
 
     // Run `node-gyp build` (appending -d in debug mode).
