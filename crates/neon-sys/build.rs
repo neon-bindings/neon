@@ -17,19 +17,23 @@ fn build_object_file() {
     let npm_command = if cfg!(unix) { "npm" } else { "npm.cmd" };
     let node_gyp_command = if cfg!(unix) { "node-gyp" } else { "node-gyp.cmd" };
 
+    if cfg!(windows) {
+        // Downcase all the npm environment variables to ensure they are read by node-gyp.
+        for (key, value) in env::vars() {
+            if key.starts_with("NPM_CONFIG") {
+                env::remove_var(&key);
+                env::set_var(key.to_lowercase(), value);
+            }
+        }
+    }
+
     // Ensure that all package.json dependencies and dev dependencies are installed.
     Command::new(npm_command).args(&["install", "--silent"]).status().ok().expect("Failed to run \"npm install\" for neon-sys!");
 
-    // Run `node-gyp configure` with correct debug and architecture flags
-    let mut configure_args = vec!["configure"];
+    // Run `node-gyp configure` in verbose mode to read node_root_dir on Windows.
+    let mut configure_args = vec!["configure", "--verbose"];
     if debug() {
-        configure_args.push("--debug")
-    }
-    let target = env::var("TARGET").unwrap();
-    if target.contains("i686") || target.contains("i586") {
-        configure_args.push("--arch=ia32");
-    } else if target.contains("x86_64") {
-        configure_args.push("--arch=x64");
+        configure_args.push("--debug");
     }
 
     let output = Command::new(node_gyp_command)
@@ -47,7 +51,11 @@ fn build_object_file() {
     }
 
     // Run `node-gyp build` (appending -d in debug mode).
-    let build_args = if debug() { vec!["build", "-d"] } else { vec!["build"] };
+    let mut build_args = vec!["build"];
+    if debug() {
+        build_args.push("--debug");
+    }
+
     Command::new(node_gyp_command)
         .stderr(Stdio::null()) // Prevent cargo build from hanging on Windows.
         .args(&build_args)
