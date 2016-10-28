@@ -52,5 +52,7 @@ register_module!(m, {
     let constructor: Handle<JsFunction<JsUser>> = try!(class.constructor(m.scope));
     try!(m.exports.set("User", constructor));
 
+    try!(m.export("construct_js_class_instance", construct_js_class_instance));
+
     Ok(())
 });

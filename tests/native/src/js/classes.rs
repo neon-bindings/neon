@@ -56,3 +56,12 @@ declare_types! {
     }
   }
 }
+
+pub fn construct_js_class_instance(call: Call) -> JsResult<JsObject> {
+    JsUser::new(call.scope, User {
+        id: 1,
+        first_name: String::from("Jane"),
+        last_name: String::from("Doe"),
+        email: String::from("jane@doe.gov")
+    })
+}

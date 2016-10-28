@@ -20,4 +20,12 @@ describe('JsClass', function() {
     assert.equal(u.get('email'), "else");
     assert.throw(function() { u.get('not_a_field') }, TypeError);
   });
+
+  it('can build class instances directly in Rust', function () {
+    u = addon.construct_js_class_instance();
+    assert.equal(u.get('id'), 1);
+    assert.equal(u.get('first_name'), "Jane");
+    assert.equal(u.get('last_name'), "Doe");
+    assert.equal(u.get('email'), "jane@doe.gov");
+  })
 });

@@ -202,6 +202,13 @@ public:
     }
   }
 
+  virtual v8::Local<v8::Object> BuildInstance(v8::Isolate *isolate, void *internals) {
+    v8::Local<v8::Object> object = GetTemplate(isolate)->InstanceTemplate()->NewInstance(isolate->GetCurrentContext()).ToLocalChecked();
+    BaseClassInstanceMetadata *instance = new BaseClassInstanceMetadata(isolate, object, internals, drop_instance_);
+    object->SetAlignedPointerInInternalField(0, instance);
+    return object;
+  }
+
 private:
 
   NeonSys_AllocateCallback allocate_callback_;
