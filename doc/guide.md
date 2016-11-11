@@ -93,7 +93,7 @@ Cargo, Rust's package manager and build tool, and generates
 `native/index.node` for you. You can test the project by running:
 
 ```shell
-$ node -e "require('.')"
+$ npm start
 hello node
 ```
 
