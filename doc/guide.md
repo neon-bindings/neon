@@ -129,7 +129,21 @@ TODO.
 
 # Getting Acquainted With Rust
 
-TODO.
+If you're new to Rust there are some great resource available:
+
+ - [The Rust Book](https://doc.rust-lang.org/stable/book/): will teach you about the Rust Programming Language.
+ - [Rustlings](https://github.com/carols10cents/rustlings): small exercises for learning Rust
+ - [into_rust()](http://intorust.com/): a series of short video tutorials
+ - [Rust by Example](http://rustbyexample.com/): a collection of runnable examples that illustrate various Rust concepts
+
+The video series of what Rust is about:
+
+ - [Rust and the Future of Systems Programming](https://medium.com/mozilla-tech/rust-and-the-future-of-systems-programming-b75fba746910)
+ - [Unlocking the Power of Parallelism with Rust](https://medium.com/mozilla-tech/unlocking-the-power-of-parallelism-with-rust-19f7d565d6d)
+ - [Rust for Web Developers](https://medium.com/mozilla-tech/rust-for-web-developers-1b0f4326e8b8)
+ - [Safe Systems Programming with Rust](https://medium.com/mozilla-tech/safe-systems-programming-with-rust-d9e955447245)
+ - [Growing the Rust Community](https://medium.com/mozilla-tech/growing-the-rust-community-6b6d23725085)
+ - [Putting Rust into Production at Mozilla](https://medium.com/mozilla-tech/putting-rust-into-production-at-mozilla-61a1d4d3f0d6)
 
 # JavaScript Data
 
