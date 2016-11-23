@@ -129,7 +129,7 @@ TODO.
 
 # Getting Acquainted With Rust
 
-If you're new to Rust there are some great resource available:
+If you're new to Rust there are some great resources available:
 
  - [The Rust Book](https://doc.rust-lang.org/stable/book/): will teach you about the Rust Programming Language.
  - [Rustlings](https://github.com/carols10cents/rustlings): small exercises for learning Rust
