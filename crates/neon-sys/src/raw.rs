@@ -1,6 +1,13 @@
 use std::os::raw::c_void;
 use std::mem;
 
+/// Wrapper around a v8 Local.
+///
+/// An object reference managed by the v8 garbage collector. All objects are stored in handles 
+/// which are known by the garbage collector and updated whenever an object moves.
+/// Local handles are light-weight and transient and typically used in local operations.
+///
+/// Edited from http://v8.paulfryzel.com/docs/master/classv8_1_1_local.html
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct Local {

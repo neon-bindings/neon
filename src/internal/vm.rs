@@ -14,8 +14,18 @@ use internal::mem::{Handle, HandleInternal, Managed};
 
 pub struct Throw;
 pub type VmResult<T> = Result<T, Throw>;
+
 pub type JsResult<'b, T> = VmResult<Handle<'b, T>>;
 
+/// Wrapper around a V8 isolate.
+///
+/// Isolate represents an isolated instance of the V8 engine. V8 isolates
+/// have completely separate states. Objects from one isolate must not be
+/// used in other isolates. The embedder can create multiple isolates and use
+/// them in parallel in multiple threads. An isolate can be entered by at
+/// most one thread at any given time.
+///
+/// Above edited from http://v8.paulfryzel.com/docs/master/classv8_1_1_isolate.html
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct Isolate(*mut raw::Isolate);
