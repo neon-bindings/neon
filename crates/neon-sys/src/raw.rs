@@ -46,7 +46,7 @@ const ESCAPABLE_HANDLE_SCOPE_SIZE: usize = 32;
 ///
 /// A `EscapableHandleScope` is like `HandleScope` but also allows us to push `Local` handles out
 /// to the previous `HandleScope`, permitting the `Local` value to remain rooted longer than the
-/// the `EscapableHandleScope` where it was intially rooted.
+/// `EscapableHandleScope` where it was intially rooted.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct EscapableHandleScope {
