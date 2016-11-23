@@ -27,7 +27,7 @@ const HANDLE_SCOPE_SIZE: usize = 24;
 /// A V8 `HandleScope`.
 ///
 /// A `HandleScope` contains `Local` handles. `HandleScope`s are used by V8 to help the garbage
-/// collector do it's bookkeeping. Once a new `HandleScope` is created all subsequently created
+/// collector do its bookkeeping. Once a new `HandleScope` is created all subsequently created
 /// `Local` handles will be contained in it.
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -45,8 +45,8 @@ const ESCAPABLE_HANDLE_SCOPE_SIZE: usize = 32;
 /// A V8 `EscapableHandleScope`.
 ///
 /// A `EscapableHandleScope` is like `HandleScope` but also allows us to push `Local` handles out
-/// to the previous `HandleScope`, preventing the `Local` value from being garbage collected when
-/// the `EscapableHandleScope`'s resources are freed.
+/// to the previous `HandleScope`, permitting the `Local` value to remain rooted longer than the
+/// the `EscapableHandleScope` where it was intially rooted.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct EscapableHandleScope {
