@@ -12,6 +12,9 @@ function printUsage() {
   console.log("  neon new [@<scope>/]<name> [--rust|-r nightly|stable|default]");
   console.log("    create a new Neon project");
   console.log();
+  console.log("  neon build [--rust|-r nightly|stable|default] [--debug|-d]");
+  console.log("    rebuild the project");
+  console.log();
   console.log("  neon version");
   console.log("    print neon-cli version");
   console.log();
