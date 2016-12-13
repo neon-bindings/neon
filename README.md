@@ -2,7 +2,7 @@
 
 <img align="right" src="neon.jpg" alt="neon"/>
 
-[![Build Status](https://travis-ci.org/rustbridge/neon.svg?branch=master)](https://travis-ci.org/rustbridge/neon)
+[![Build Status](https://travis-ci.org/neon-bindings/neon.svg?branch=master)](https://travis-ci.org/neon-bindings/neon)
 [![](http://meritbadge.herokuapp.com/neon)](https://crates.io/crates/neon)
 
 A safe Rust abstraction layer for native Node.js modules.
@@ -11,7 +11,7 @@ Neon protects all handles to the JavaScript heap, even when they're allocated on
 
 # Getting started
 
-Install [neon-cli](https://github.com/rustbridge/neon-cli) as a global npm package:
+Install [neon-cli](https://github.com/neon-bindings/neon-cli) as a global npm package:
 
 ```
 npm install -g neon-cli
