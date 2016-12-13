@@ -1,5 +1,13 @@
 language: rust
 sudo: required
+after_success: |
+  [ $TRAVIS_BRANCH = master ] &&
+  [ $TRAVIS_PULL_REQUEST = false ] &&
+  cargo doc &&
+  echo "<meta http-equiv=refresh content=0;url=neon/index.html>" > target/doc/index.html &&
+  sudo pip install ghp-import &&
+  ghp-import -n target/doc &&
+  git push -fq https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
 dist: trusty
 rust:
   - stable
@@ -13,6 +21,8 @@ env:
     - TRAVIS_NODE_VERSION="5"
     - TRAVIS_NODE_VERSION="5.11"
     - TRAVIS_NODE_VERSION="4.2"
+  global:
+    secure: AfBML/eCzgjt0isvdGKWICrOl9jTD7Dwu7SH91hqsRngcIgvvClyNDd5oANnx5S6b4uUSH0O93hTO4k8RKynY5jFOPcq36LVpEiB/LdJTq6V0tnbjyllVX0Z45GUEB3Cs6LqPzE+UzPscftAJ3F1NuHRy+KMxLYubJQGqZVKGHOrtTe+OsWVudkZmXweFtQXO4YU1o1tWvjQFpGOLmIXGaWCtNDZRdAHbZmwOOefhRGoR8vzafwNROV8W+6Xn14Bsea/WT3/AXjrYUQH5GpIjjw58kjccAL/+PaJ+5aGpHCu3wx9YyG+bxvYfW99cU9vU/g6ZHGtdFPaqNX4jiGKo1Y4fcMqXCL3UutCVRyTMAAfZH4CdEWUyYVFygKrdZW2NXBEKatxqZYFwNtmjDrhbvdTvsVdFyc9rR+IzOGmz81ejpm+bMBOZRG/1L09/LljX8x2hxUHvNZHGnDSvhkrK5lT+CtzmXINmgjR9KszaaEInCQ/i0xinBpMw8rxwfiZFVIkAGOUBMDBagmkXjhBmQz4MS6QAzv3Mwwu6fasYnnlqC+m+jkWstQ/Rgl08CwfuXttrQLKI5lwSOSnTK257MQ9jHQJ4umXDLHhCteKPuauMEWIkWOmftH+HUnPyNhUmoU8CUF/EUCDT7p7ZQZQhZVsC622pzcgr0mm9kbJIIM=
 
 install:
   - . $HOME/.nvm/nvm.sh
