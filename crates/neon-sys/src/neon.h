@@ -115,7 +115,7 @@ extern "C" {
   bool NeonSys_Class_HasInstance(void *metadata, v8::Local<v8::Value> v);
   bool NeonSys_Class_SetName(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length);
   void NeonSys_Class_ThrowThisError(v8::Isolate *isolate, void *metadata_pointer);
-  bool NeonSys_Class_AddMethod(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length, v8::Local<v8::Function> method);
+  bool NeonSys_Class_AddMethod(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length, v8::Local<v8::FunctionTemplate> method);
   void NeonSys_Class_MetadataToClass(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, void *metadata);
   void *NeonSys_Class_GetInstanceInternals(v8::Local<v8::Object> obj);
 
