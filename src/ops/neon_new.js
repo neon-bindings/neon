@@ -28,7 +28,7 @@ const README_TEMPLATE    = compile('README.md.hbs');
 
 async function guessAuthor() {
   let author = {
-    author: process.env.USER || process.env.USERNAME,
+    name: process.env.USER || process.env.USERNAME,
     email: undefined
   };
   try {
@@ -80,7 +80,7 @@ export default async function wizard(pwd, name, toolchain) {
     { type: 'input', name: 'description', message: "description"                                              },
     { type: 'input', name: 'node',        message: "node entry point", default: "lib" + path.sep + "index.js" },
     { type: 'input', name: 'git',         message: "git repository"                                           },
-    { type: 'input', name: 'author',      message: "author",           default: guess.author                  },
+    { type: 'input', name: 'author',      message: "author",           default: guess.name                    },
     { type: 'input', name: 'email',       message: "email",            default: guess.email                   },
     {
       type: 'input',
