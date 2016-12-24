@@ -31,7 +31,6 @@ You'll need the following on all OSes:
 
 * [Node](http://nodejs.org) v4 or later;
 * [Rust](http://rust-lang.org) v1.7 or later;
-* [multirust](https://github.com/brson/multirust) (only required for Neon projects that override the system default Rust).
 
 For Mac OS X, you'll need:
 
