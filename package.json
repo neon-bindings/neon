@@ -5,7 +5,7 @@
   "author": "Dave Herman <dherman@mozilla.com>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rustbridge/neon-cli.git"
+    "url": "https://github.com/neon-bindings/neon-cli.git"
   },
   "main": "lib/index.js",
   "bin": {
@@ -43,7 +43,7 @@
     "prepublish": "in-install || npm run transpile"
   },
   "bugs": {
-    "url": "https://github.com/rustbridge/neon-cli/issues"
+    "url": "https://github.com/neon-bindings/neon-cli/issues"
   },
-  "homepage": "https://github.com/rustbridge/neon-cli"
+  "homepage": "https://github.com/neon-bindings/neon-cli"
 }
