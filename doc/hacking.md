@@ -42,7 +42,7 @@ Node core so native addons compile against different versions of Node.js.
 
 ### Resources
 
-* [`neon-sys` Crate Docs](http://neon.rustbridge.io/neon_sys/index.html)
+* [`neon-sys` Crate Docs](https://docs.neon-bindings.com/neon_sys/index.html)
 * [Cargo Build Script Support](http://doc.crates.io/build-script.html)
   * [`-sys` Packages](http://doc.crates.io/build-script.html#-sys-packages)
 
@@ -53,4 +53,4 @@ Node core so native addons compile against different versions of Node.js.
 
 ### Resources
 
-* [`cslice` Crate Docs](http://neon.rustbridge.io/cslice/index.html)
+* [`cslice` Crate Docs](https://docs.neon-bindings.com/cslice/index.html)
