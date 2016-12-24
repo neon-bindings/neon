@@ -2,7 +2,7 @@
 
 use raw::{Local, Isolate};
 
-extern "system" {
+extern "C" {
 
     /// Mutates the `out` argument provided to refer to a newly created `v8::String`. Returns
     /// `false` if the value couldn't be created.

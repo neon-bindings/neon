@@ -2,7 +2,7 @@
 
 use raw::Local;
 
-extern "system" {
+extern "C" {
 
     /// Throws an `Error` object in the current context.
     #[link_name = "NeonSys_Error_Throw"]

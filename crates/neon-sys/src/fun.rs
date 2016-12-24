@@ -3,7 +3,7 @@
 use std::os::raw::c_void;
 use raw::{FunctionCallbackInfo, Local};
 
-extern "system" {
+extern "C" {
 
     /// Mutates the `out` argument provided to refer to a newly created `v8::Function`. Returns
     /// `false` if the value couldn't be created.

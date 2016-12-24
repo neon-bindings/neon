@@ -2,7 +2,7 @@
 
 use raw::{Local, Isolate};
 
-extern "system" {
+extern "C" {
 
     /// Mutates the `out` argument provided to refer to the `v8::Undefined` object.
     #[link_name = "NeonSys_Primitive_Undefined"]
