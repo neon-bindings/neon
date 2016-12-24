@@ -1,4 +1,4 @@
-//! The `neon` crate provides the entire [Neon](http://neon.rustbridge.io) API.
+//! The `neon` crate provides the entire [Neon](https://www.neon-bindings.com/) API.
 
 extern crate neon_sys;
 extern crate cslice;

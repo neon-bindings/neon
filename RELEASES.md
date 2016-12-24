@@ -1,15 +1,15 @@
 # Version 0.1.11 (2016-08-08)
 
-* [Exposed `This` trait](https://github.com/rustbridge/neon/issues/101) to allow user-level abstractions involving `FunctionCall`
+* [Exposed `This` trait](https://github.com/neon-bindings/neon/issues/101) to allow user-level abstractions involving `FunctionCall`
 
 # Version 0.1.10 (2016-05-11)
 
-* Added `JsError` API with support for throwing [all](https://github.com/rustbridge/neon/issues/65) [standard](https://github.com/rustbridge/neon/issues/66) [error](https://github.com/rustbridge/neon/issues/67) [types](https://github.com/rustbridge/neon/issues/74)
-* [Test harness and CI integration](https://github.com/rustbridge/neon/issues/80)!! :tada: :tada: :tada:
-* API to [call JS functions from Rust](https://github.com/rustbridge/neon/issues/60)
-* API to [new JS functions from Rust](https://github.com/rustbridge/neon/issues/61)
-* Added [generalized `as_slice` and `as_mut_slice` methods](https://github.com/rustbridge/neon/issues/64) to `CSlice` API.
-* Fixed a [soundness issue](https://github.com/rustbridge/neon/issues/64) with Locks.
+* Added `JsError` API with support for throwing [all](https://github.com/neon-bindings/neon/issues/65) [standard](https://github.com/neon-bindings/neon/issues/66) [error](https://github.com/neon-bindings/neon/issues/67) [types](https://github.com/neon-bindings/neon/issues/74)
+* [Test harness and CI integration](https://github.com/neon-bindings/neon/issues/80)!! :tada: :tada: :tada:
+* API to [call JS functions from Rust](https://github.com/neon-bindings/neon/issues/60)
+* API to [new JS functions from Rust](https://github.com/neon-bindings/neon/issues/61)
+* Added [generalized `as_slice` and `as_mut_slice` methods](https://github.com/neon-bindings/neon/issues/64) to `CSlice` API.
+* Fixed a [soundness issue](https://github.com/neon-bindings/neon/issues/64) with Locks.
 
 ## Incompatible Changes
 

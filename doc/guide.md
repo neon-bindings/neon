@@ -165,6 +165,6 @@ good place to poke around and see what kinds of things you can do with
 JavaScript data in Neon.
 
 If you get stuck, **don't suffer in silence!** Come ask your questions
-on our [community Slack](http://rustbridge.slack.com)—just grab an
-[automatic invite](http://rustbridge-community-slackin.herokuapp.com/)
+on our [community Slack](https://rust-bindings.slack.com)—just grab an
+[automatic invite](https://rust-bindings-slackin.herokuapp.com/)
 and then join us in `#neon`!
