@@ -48,7 +48,7 @@ Windows support is on the way. Follow [#122](https://github.com/neon-bindings/ne
 | Rust beta    | x      | x      | x      |
 | Rust nightly |        |        |        |
 
-Support for Rust stable and beta are expected. We do run builds against nightly, but allow them to fail.
+Although Neon is only tested on the latest stable Rust, it will likely work on a range of stable versions of Rust. It is known to require at least Rust 1.13.
 
 Support for [LTS versions of Node](https://github.com/nodejs/LTS#lts-schedule) and current are expected. If you're using a differnt version of Node and believe it should be supported, let us know.
 
