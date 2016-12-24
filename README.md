@@ -1,9 +1,9 @@
 # Neon-cli
 
-[![Build Status](https://travis-ci.org/rustbridge/neon-cli.svg?branch=master)](https://travis-ci.org/rustbridge/neon-cli)
+[![Build Status](https://travis-ci.org/neon-bindings/neon-cli.svg?branch=master)](https://travis-ci.org/neon-bindings/neon-cli)
 [![npm](https://img.shields.io/npm/v/neon-cli.svg)](https://www.npmjs.com/package/neon-cli)
 
-Automatically create and build [Neon](https://github.com/rustbridge/neon) modules.
+Automatically create and build [Neon](https://github.com/neon-bindings/neon) modules.
 
 ![Screencast](screencast.gif)
 
@@ -55,7 +55,7 @@ The optional `--rust` parameter allows specifying a custom toolchain (`stable` o
 
 The Neon community is just getting started and there's tons of fun to be had. Come play! :)
 
-The [Rust Bridge community Slack](http://rustbridge.slack.com) is open to all; use [the Slackin app](http://rustbridge-community-slackin.herokuapp.com) to receive an invitation.
+The [Rust Bridge community Slack](https://rust-bindings.slack.com/) is open to all; use [the Slackin app](https://rust-bindings-slackin.herokuapp.com/) to receive an invitation.
 
 There's also an IRC channel at `#neon` on [Mozilla IRC](https://wiki.mozilla.org/IRC) (`irc.mozilla.org`).
 
