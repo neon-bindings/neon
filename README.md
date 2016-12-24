@@ -52,8 +52,8 @@ Although Neon is only tested on the latest stable Rust, it will likely work on a
 
 Support for [LTS versions of Node](https://github.com/nodejs/LTS#lts-schedule) and current are expected. If you're using a differnt version of Node and believe it should be supported, let us know.
 
-* [Download Node](http://nodejs.org)
-* [Download Rust](http://rust-lang.org)
+* [Download Node](https://nodejs.org)
+* [Download Rust](https://www.rust-lang.org)
 
 # A Taste...
 
