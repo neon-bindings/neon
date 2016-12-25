@@ -27,16 +27,33 @@ This will ask you a few questions and then generate a project skeleton for you. 
 
 # Requirements
 
-You'll need the following on all OSes:
+### Operating Systems
 
-* [Node](http://nodejs.org) v4 or later;
-* [Rust](http://rust-lang.org) v1.7 or later;
-* [multirust](https://github.com/brson/multirust) (only required for Neon projects that override the system default Rust).
+| Linux  | macOS | Windows |
+| ------ | ----- | ------- |
+| x      | x     | soon    |
 
-For Mac OS X, you'll need:
+For macOS, you'll need:
 
 * OS X 10.7 or later;
 * [XCode](https://developer.apple.com/xcode/download/).
+
+Windows support is on the way. Follow [#122](https://github.com/neon-bindings/neon/pull/122#issuecomment-268957333) to track the progress.
+
+### Rust and Node
+
+|              | Node 4 | Node 6 | Node 7 |
+| ------------ | ------ | ------ | ------ |
+| Rust stable  | x      | x      | x      |
+| Rust beta    | x      | x      | x      |
+| Rust nightly |        |        |        |
+
+Although Neon is only tested on the latest stable Rust, it will likely work on a range of stable versions of Rust. It is known to require at least Rust 1.13.
+
+Support for [LTS versions of Node](https://github.com/nodejs/LTS#lts-schedule) and current are expected. If you're using a differnt version of Node and believe it should be supported, let us know.
+
+* [Download Node](https://nodejs.org)
+* [Download Rust](https://www.rust-lang.org)
 
 # A Taste...
 
