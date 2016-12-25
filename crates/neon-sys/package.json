@@ -1,14 +1,10 @@
 {
   "main": "index.js",
   "scripts": {
-    "configure-release": "node-gyp configure",
-    "build-release": "node-gyp build",
-    "configure-debug": "node-gyp configure -d",
-    "build-debug": "node-gyp build -d"
+    "preinstall": "echo 'Skipping node-gyp installation as part of npm install.'"
   },
   "devDependencies": {
-    "nan": "^2.3.2",
-    "node-gyp": "^3.3.1"
+    "nan": "^2.3.2"
   },
   "dependencies": {
     "bindings": "1.2.1"
