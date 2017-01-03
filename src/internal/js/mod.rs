@@ -695,14 +695,11 @@ impl<T: Value> Kernel<()> for FunctionKernel<T> {
 // Maximum number of function arguments in V8.
 const V8_ARGC_LIMIT: usize = 65535;
 
-unsafe fn prepare_call<'a, 'b, S: Scope<'a>, A, AS>(scope: &mut S, args: AS) -> VmResult<(*mut c_void, i32, *mut c_void)>
-    where A: Value + 'b,
-          AS: IntoIterator<Item=Handle<'b, A>>
+unsafe fn prepare_call<'a, 'b, S: Scope<'a>, A>(scope: &mut S, args: &mut [Handle<'b, A>]) -> VmResult<(*mut c_void, i32, *mut c_void)>
+    where A: Value + 'b
 {
-    let mut v: Vec<_> = args.into_iter().collect();
-    let mut slice = &mut v[..];
-    let argv = slice.as_mut_ptr();
-    let argc = slice.len();
+    let argv = args.as_mut_ptr();
+    let argc = args.len();
     if argc > V8_ARGC_LIMIT {
         return JsError::throw(Kind::RangeError, "too many arguments");
     }
@@ -728,7 +725,8 @@ impl<C: Object> JsFunction<C> {
               A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
     {
-        let (isolate, argc, argv) = try!(unsafe { prepare_call(scope, args) });
+        let mut args = args.into_iter().collect::<Vec<_>>();
+        let (isolate, argc, argv) = try!(unsafe { prepare_call(scope, &mut args) });
         build(|out| {
             unsafe {
                 neon_sys::fun::call(out, isolate, self.to_raw(), this.to_raw(), argc, argv)
@@ -740,7 +738,8 @@ impl<C: Object> JsFunction<C> {
         where A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
     {
-        let (isolate, argc, argv) = try!(unsafe { prepare_call(scope, args) });
+        let mut args = args.into_iter().collect::<Vec<_>>();
+        let (isolate, argc, argv) = try!(unsafe { prepare_call(scope, &mut args) });
         build(|out| {
             unsafe {
                 neon_sys::fun::construct(out, isolate, self.to_raw(), argc, argv)
