@@ -274,9 +274,9 @@ pub trait ClassInternal: Class {
             }
 
             for (name, method) in descriptor.methods {
-                let method: Handle<JsFunction> = try!(build(|out| {
+                let method: Handle<JsValue> = try!(build(|out| {
                     let (method_callback, method_kernel) = method.export();
-                    neon_sys::fun::new(out, isolate, method_callback, method_kernel)
+                    neon_sys::fun::new_template(out, isolate, method_callback, method_kernel)
                 }));
                 if !neon_sys::class::add_method(isolate, metadata_pointer, name.as_ptr(), name.len() as u32, method.to_raw()) {
                     return Err(Throw);
