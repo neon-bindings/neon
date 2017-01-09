@@ -25,6 +25,7 @@ const NPM_TEMPLATE       = compile('package.json.hbs');
 const INDEXJS_TEMPLATE   = compile('index.js.hbs');
 const LIBRS_TEMPLATE     = compile('lib.rs.hbs');
 const README_TEMPLATE    = compile('README.md.hbs');
+const BUILDRS_TEMPLATE   = compile('build.rs.hbs');
 
 async function guessAuthor() {
   let author = {
@@ -139,6 +140,7 @@ export default async function wizard(pwd, name, toolchain) {
   await writeFile(path.resolve(root,    'README.md'),    (await README_TEMPLATE)(ctx),    { flag: 'wx' });
   await writeFile(path.resolve(root,    answers.node),   (await INDEXJS_TEMPLATE)(ctx),   { flag: 'wx' });
   await writeFile(path.resolve(src,     'lib.rs'),       (await LIBRS_TEMPLATE)(ctx),     { flag: 'wx' });
+  await writeFile(path.resolve(native_, 'build.rs'),     (await BUILDRS_TEMPLATE)(ctx),   { flag: 'wx' });
 
   let relativeRoot = path.relative(pwd, root);
   let relativeNode = path.relative(pwd, path.resolve(root, answers.node));

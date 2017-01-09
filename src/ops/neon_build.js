@@ -25,7 +25,18 @@ const LIB_SUFFIX = {
   'win32':   ".dll"
 };
 
-function cargo(toolchain, configuration, nodeModuleVersion) {
+function explicit_cargo_target() {
+  if (process.platform === 'win32') {
+    let arch = process.env.npm_config_arch || process.arch;
+    if (arch === 'ia32') {
+      return 'i686-pc-windows-msvc';
+    } else {
+      return 'x86_64-pc-windows-msvc';
+    }
+  }
+}
+
+function cargo(toolchain, configuration, nodeModuleVersion, target) {
   let macos = process.platform === 'darwin';
 
   let [command, prefix] = toolchain === 'default'
@@ -36,10 +47,12 @@ function cargo(toolchain, configuration, nodeModuleVersion) {
                            configuration === 'release' ? ["--release"] : [],
                            macos ? ["--", "-C", "link-args=-Wl,-undefined,dynamic_lookup"] : []);
 
-  // Save the current Node ABI version as an environment variable.
+  // Pass the Node modules ABI version to the build as an environment variable.
   let env = clone(process.env);
-  if (nodeModuleVersion) {
-    env.NEON_NODE_ABI = nodeModuleVersion;
+  env.NEON_NODE_ABI = nodeModuleVersion || process.versions.modules;
+
+  if (target) {
+    args.push("--target=" + target);
   }
 
   console.log(style.info([command].concat(args).join(" ")));
@@ -47,9 +60,12 @@ function cargo(toolchain, configuration, nodeModuleVersion) {
   return spawn(command, args, { cwd: 'native', stdio: 'inherit', env: env });
 }
 
-async function main(name, configuration) {
+async function main(name, configuration, target) {
   let pp = process.platform;
-  let dylib = path.resolve('native', 'target', configuration, LIB_PREFIX[pp] + name + LIB_SUFFIX[pp]);
+  let output_directory = target ?
+    path.resolve('native', 'target', target, configuration) :
+    path.resolve('native', 'target', configuration);
+  let dylib = path.resolve(output_directory, LIB_PREFIX[pp] + name + LIB_SUFFIX[pp]);
   let index = path.resolve('native', 'index.node');
 
   console.log(style.info("generating native" + path.sep + "index.node"));
@@ -66,13 +82,15 @@ export default async function neon_build(pwd, toolchain, configuration, nodeModu
     throw new Error("Cargo.toml does not contain a [lib] section with a 'name' field");
   }
 
+  let target = explicit_cargo_target();
+
   console.log(style.info("running cargo"));
 
   // 2. Build the binary.
-  if ((await cargo(toolchain, configuration, nodeModuleVersion)) !== 0) {
+  if ((await cargo(toolchain, configuration, nodeModuleVersion, target)) !== 0) {
     throw new Error("cargo build failed");
   }
 
   // 3. Copy the dylib into the main index.node file.
-  await main(metadata.lib.name, configuration);
+  await main(metadata.lib.name, configuration, target);
 }
