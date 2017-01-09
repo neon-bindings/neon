@@ -25,7 +25,7 @@ const NPM_TEMPLATE       = compile('package.json.hbs');
 const INDEXJS_TEMPLATE   = compile('index.js.hbs');
 const LIBRS_TEMPLATE     = compile('lib.rs.hbs');
 const README_TEMPLATE    = compile('README.md.hbs');
-const BUILDRS_TEMPLATE    = compile('build.rs.hbs');
+const BUILDRS_TEMPLATE   = compile('build.rs.hbs');
 
 async function guessAuthor() {
   let author = {
