@@ -47,7 +47,7 @@ function cargo(toolchain, configuration, nodeModuleVersion, target) {
                            configuration === 'release' ? ["--release"] : [],
                            macos ? ["--", "-C", "link-args=-Wl,-undefined,dynamic_lookup"] : []);
 
-  // Save the current Node ABI version as an environment variable.
+  // Pass the Node modules ABI version to the build as an environment variable.
   let env = clone(process.env);
   env.NEON_NODE_ABI = nodeModuleVersion || process.versions.modules;
 
