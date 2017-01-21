@@ -1,0 +1,9 @@
+[package]
+name = "neon-build"
+version = "0.1.11"
+authors = ["Dave Herman <dherman@mozilla.com>"]
+description = "Build logic required for Neon projects."
+repository = "https://github.com/neon-bindings/neon"
+license = "MIT/Apache-2.0"
+
+[dependencies]
