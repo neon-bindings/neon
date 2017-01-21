@@ -1,4 +1,4 @@
-# Neon-cli
+# The Neon Command-Line Tool
 
 [![Build Status](https://travis-ci.org/neon-bindings/neon-cli.svg?branch=master)](https://travis-ci.org/neon-bindings/neon-cli)
 [![npm](https://img.shields.io/npm/v/neon-cli.svg)](https://www.npmjs.com/package/neon-cli)
@@ -25,16 +25,7 @@ This will ask you a few questions and then generate a project skeleton for you. 
 
 # Requirements
 
-You'll need the following on all OSes:
-
-* [Node](http://nodejs.org) v4 or later;
-* [Rust](http://rust-lang.org) v1.5 or later;
-* [multirust](https://github.com/brson/multirust) (only required for Neon projects that override the system default Rust).
-
-For Mac OS X, you'll need:
-
-* OS X 10.7 or later;
-* [XCode](https://developer.apple.com/xcode/download/).
+See the [Neon README](https://github.com/neon-bindings/neon/#requirements).
 
 # Commands
 
@@ -55,9 +46,7 @@ The optional `--rust` parameter allows specifying a custom toolchain (`stable` o
 
 The Neon community is just getting started and there's tons of fun to be had. Come play! :)
 
-The [Rust Bridge community Slack](https://rust-bindings.slack.com/) is open to all; use [the Slackin app](https://rust-bindings-slackin.herokuapp.com/) to receive an invitation.
-
-There's also an IRC channel at `#neon` on [Mozilla IRC](https://wiki.mozilla.org/IRC) (`irc.mozilla.org`).
+The [Rust Bindings community Slack](https://rust-bindings.slack.com/) is open to all; use [the Slackin app](https://rust-bindings-slackin.herokuapp.com/) to receive an invitation.
 
 # License
 
