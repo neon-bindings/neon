@@ -9,5 +9,8 @@ build = "build.rs"
 name = "tests"
 crate-type = ["dylib"]
 
+[dev-dependencies]
+neon-build = "0.1.11"
+
 [dependencies]
 neon = {path = "../../"}
