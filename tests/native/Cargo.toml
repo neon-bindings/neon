@@ -3,10 +3,14 @@ name = "tests"
 version = "0.1.0"
 authors = ["The Neon Community"]
 license = "MIT/Apache-2.0"
+build = "build.rs"
 
 [lib]
 name = "tests"
 crate-type = ["dylib"]
+
+[build-dependencies]
+neon-build = "0.1.11"
 
 [dependencies]
 neon = {path = "../../"}
