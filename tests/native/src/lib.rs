@@ -41,6 +41,7 @@ register_module!(m, {
     try!(m.export("return_js_object", return_js_object));
     try!(m.export("return_js_object_with_integer", return_js_object_with_integer));
     try!(m.export("return_js_object_with_string", return_js_object_with_string));
+    try!(m.export("return_js_object_with_mixed_content", return_js_object_with_mixed_content));
 
     try!(m.export("return_js_function", return_js_function));
     try!(m.export("call_js_function", call_js_function));
