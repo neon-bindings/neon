@@ -2,7 +2,9 @@
 
 <img align="right" src="neon.jpg" alt="neon"/>
 
-[![Build Status](https://travis-ci.org/neon-bindings/neon.svg?branch=master)](https://travis-ci.org/neon-bindings/neon)
+[![Travis Build Status](https://travis-ci.org/neon-bindings/neon.svg?branch=master)](https://travis-ci.org/neon-bindings/neon)
+![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/github/neon-bindings/neon?branch=master&svg=true)]
+
 [![](http://meritbadge.herokuapp.com/neon)](https://crates.io/crates/neon)
 
 A safe Rust abstraction layer for native Node.js modules.
