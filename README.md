@@ -32,21 +32,21 @@ This will ask you a few questions and then generate a project skeleton for you. 
 
 | Linux  | macOS | Windows |
 | ------ | ----- | ------- |
-| x      | x     | soon    |
+| ✓      | ✓     | ✓       |
 
 For macOS, you'll need:
 
 * OS X 10.7 or later;
 * [XCode](https://developer.apple.com/xcode/download/).
 
-Windows support is on the way. Follow [#122](https://github.com/neon-bindings/neon/pull/122#issuecomment-268957333) to track the progress.
+For Windows, you'll need to follow the [node-gyp instructions](https://github.com/nodejs/node-gyp#installation) for installing Windows build tools.
 
 ### Rust and Node
 
 |              | Node 4 | Node 6 | Node 7 |
 | ------------ | ------ | ------ | ------ |
-| Rust stable  | x      | x      | x      |
-| Rust beta    | x      | x      | x      |
+| Rust stable  | ✓      | ✓      | ✓      |
+| Rust beta    | ✓      | ✓      | ✓      |
 | Rust nightly |        |        |        |
 
 Although Neon is only tested on the latest stable Rust, it will likely work on a range of stable versions of Rust. It is known to require at least Rust 1.13.
