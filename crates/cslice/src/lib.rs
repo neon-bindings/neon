@@ -16,10 +16,11 @@
 //!
 //! This makes it possible to construct slices from foreign code, as well as to
 //! communicate Rust slices to foreign code conveniently.
+#![no_std]
 
-use std::{ptr, slice};
-use std::marker::PhantomData;
-use std::ops::{Index, IndexMut};
+use core::{ptr, slice};
+use core::marker::PhantomData;
+use core::ops::{Index, IndexMut};
 
 /// An immutable slice, equivalent to `&'a T`.
 ///
