@@ -18,5 +18,5 @@ build = "build.rs"
 links = "neon-runtime"
 
 [dependencies]
-cslice = { version = "=0.1.1", path = "crates/cslice" }
+cslice = "0.2"
 neon-sys = { version = "=0.1.11", path = "crates/neon-sys" }
