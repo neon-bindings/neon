@@ -296,6 +296,12 @@ impl JsString {
         }
     }
 
+    pub fn ucs2_size(self) -> isize {
+        unsafe {
+            neon_sys::string::ucs2_len(self.to_raw())
+        }
+    }
+
     pub fn value(self) -> String {
         unsafe {
             let capacity = neon_sys::string::utf8_len(self.to_raw());
@@ -307,8 +313,24 @@ impl JsString {
         }
     }
 
+    pub fn ucs2_value(self) -> Vec<u16> {
+        unsafe {
+            let capacity = neon_sys::string::ucs2_len(self.to_raw());
+            let mut buffer: Vec<u16> = Vec::with_capacity(capacity as usize);
+            let p = buffer.as_mut_ptr();
+            let len = neon_sys::string::ucs2_data(p, capacity, self.to_raw());
+            buffer.set_len(len as usize);
+            buffer
+        }
+
+    }
+
     pub fn new<'a, T: Scope<'a>>(scope: &mut T, val: &str) -> Option<Handle<'a, JsString>> {
         JsString::new_internal(scope.isolate(), val)
+    }
+
+    pub fn new_from_ucs2<'a, T: Scope<'a>>(scope: &mut T, val: &[u16]) -> Option<Handle<'a, JsString>> {
+        JsString::new_from_ucs2_internal(scope.isolate(), val)
     }
 
     pub fn new_or_throw<'a, T: Scope<'a>>(scope: &mut T, val: &str) -> VmResult<Handle<'a, JsString>> {
@@ -340,6 +362,7 @@ impl<'b> ToJsString for &'b str {
 
 pub trait JsStringInternal {
     fn new_internal<'a>(isolate: Isolate, val: &str) -> Option<Handle<'a, JsString>>;
+    fn new_from_ucs2_internal<'a>(isolate: Isolate, val: &[u16]) -> Option<Handle<'a, JsString>>;
 }
 
 // Lower a &str to the types expected by Node: a const *uint8_t buffer and an int32_t length.
@@ -348,6 +371,14 @@ fn lower_str(s: &str) -> Option<(*const u8, i32)> {
     // but in case this changes over time, just ensure the buffer isn't longer than
     // the largest positive signed integer, and delegate the tighter bounds checks
     // to V8.
+    let len = s.len();
+    if len > (::std::i32::MAX as usize) {
+        return None;
+    }
+    Some((s.as_ptr(), len as i32))
+}
+
+fn lower_u16_slice(s: &[u16]) -> Option<(*const u16, i32)> {
     let len = s.len();
     if len > (::std::i32::MAX as usize) {
         return None;
@@ -370,6 +401,21 @@ impl JsStringInternal for JsString {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
             if neon_sys::string::new(&mut local, isolate.to_raw(), ptr, len) {
+                Some(Handle::new(JsString(local)))
+            } else {
+                None
+            }
+        }
+    }
+
+    fn new_from_ucs2_internal<'a>(isolate: Isolate, val: &[u16]) -> Option<Handle<'a, JsString>> {
+        let (ptr, len) = match lower_u16_slice(val) {
+            Some(pair) => pair,
+            None => { return None; }
+        };
+        unsafe {
+            let mut local: raw::Local = mem::zeroed();
+            if neon_sys::string::new_from_ucs2(&mut local, isolate.to_raw(), ptr, len) {
                 Some(Handle::new(JsString(local)))
             } else {
                 None
