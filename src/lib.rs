@@ -1,6 +1,6 @@
 //! The `neon` crate provides the entire [Neon](https://www.neon-bindings.com/) API.
 
-extern crate neon_sys;
+extern crate neon_runtime;
 extern crate cslice;
 
 mod internal;

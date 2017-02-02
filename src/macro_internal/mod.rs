@@ -4,7 +4,7 @@
 // Used by the class macro.
 pub use internal::js::class::{AllocateKernel, ConstructKernel, ConstructorCallKernel, MethodKernel};
 
-// An alias for neon_sys so macros can refer to it.
+// An alias for neon_runtime so macros can refer to it.
 pub mod sys {
-    pub use neon_sys::*;
+    pub use neon_runtime::*;
 }

@@ -4,8 +4,8 @@ use std::marker::PhantomData;
 use std::collections::{HashSet, HashMap};
 use std::os::raw::c_void;
 use cslice::CMutSlice;
-use neon_sys;
-use neon_sys::raw;
+use neon_runtime;
+use neon_runtime::raw;
 use internal::scope::{Scope, RootScope, RootScopeInternal};
 use internal::js::{JsValue, Value, Object, JsObject, JsFunction};
 use internal::js::class::ClassMetadata;
@@ -57,14 +57,14 @@ impl IsolateInternal for Isolate {
     }
 
     fn class_map(&mut self) -> &mut ClassMap {
-        let mut ptr: *mut c_void = unsafe { neon_sys::class::get_class_map(self.to_raw()) };
+        let mut ptr: *mut c_void = unsafe { neon_runtime::class::get_class_map(self.to_raw()) };
         if ptr.is_null() {
             let b: Box<ClassMap> = Box::new(ClassMap::new());
             let raw = Box::into_raw(b);
             ptr = unsafe { mem::transmute(raw) };
             let free_map: *mut c_void = unsafe { mem::transmute(drop_class_map as usize) };
             unsafe {
-                neon_sys::class::set_class_map(self.to_raw(), ptr, free_map);
+                neon_runtime::class::set_class_map(self.to_raw(), ptr, free_map);
             }
         }
         unsafe { mem::transmute(ptr) }
@@ -85,20 +85,20 @@ impl CallbackInfo {
     pub fn data<'a>(&self) -> Handle<'a, JsValue> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            neon_sys::call::data(&self.info, &mut local);
+            neon_runtime::call::data(&self.info, &mut local);
             Handle::new(JsValue::from_raw(local))
         }
     }
 
     pub fn scope(&self) -> RootScope {
         RootScope::new(unsafe {
-            mem::transmute(neon_sys::call::get_isolate(mem::transmute(self)))
+            mem::transmute(neon_runtime::call::get_isolate(mem::transmute(self)))
         })
     }
 
     pub fn set_return<'a, 'b, T: Value>(&'a self, value: Handle<'b, T>) {
         unsafe {
-            neon_sys::call::set_return(&self.info, value.to_raw())
+            neon_runtime::call::set_return(&self.info, value.to_raw())
         }
     }
 
@@ -114,7 +114,7 @@ impl CallbackInfo {
     }
 
     fn kind(&self) -> CallKind {
-        if unsafe { neon_sys::call::is_construct(mem::transmute(self)) } {
+        if unsafe { neon_runtime::call::is_construct(mem::transmute(self)) } {
             CallKind::Construct
         } else {
             CallKind::Call
@@ -123,7 +123,7 @@ impl CallbackInfo {
 
     pub fn len(&self) -> i32 {
         unsafe {
-            neon_sys::call::len(&self.info)
+            neon_runtime::call::len(&self.info)
         }
     }
 
@@ -133,7 +133,7 @@ impl CallbackInfo {
         }
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            neon_sys::call::get(&self.info, i, &mut local);
+            neon_runtime::call::get(&self.info, i, &mut local);
             Some(Handle::new(JsValue::from_raw(local)))
         }
     }
@@ -144,7 +144,7 @@ impl CallbackInfo {
         }
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            neon_sys::call::get(&self.info, i, &mut local);
+            neon_runtime::call::get(&self.info, i, &mut local);
             Ok(Handle::new(JsValue::from_raw(local)))
         }
     }
@@ -152,7 +152,7 @@ impl CallbackInfo {
     pub fn this<'b, T: Scope<'b>>(&self, _: &mut T) -> raw::Local {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            neon_sys::call::this(mem::transmute(&self.info), &mut local);
+            neon_runtime::call::this(mem::transmute(&self.info), &mut local);
             local
         }
     }
@@ -160,7 +160,7 @@ impl CallbackInfo {
     pub fn callee<'a, T: Scope<'a>>(&self, _: &mut T) -> Handle<'a, JsFunction> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            neon_sys::call::callee(mem::transmute(&self.info), &mut local);
+            neon_runtime::call::callee(mem::transmute(&self.info), &mut local);
             Handle::new(JsFunction::from_raw(local))
         }
     }
@@ -173,13 +173,13 @@ pub struct Module<'a> {
 
 impl<'a> Module<'a> {
     pub fn initialize(exports: Handle<JsObject>, init: fn(Module) -> VmResult<()>) {
-        let mut scope = RootScope::new(unsafe { mem::transmute(neon_sys::object::get_isolate(exports.to_raw())) });
+        let mut scope = RootScope::new(unsafe { mem::transmute(neon_runtime::object::get_isolate(exports.to_raw())) });
         unsafe {
             let kernel: *mut c_void = mem::transmute(init);
             let callback: extern "C" fn(*mut c_void, *mut c_void, *mut c_void) = mem::transmute(module_callback as usize);
             let exports: raw::Local = exports.to_raw();
             let scope: *mut c_void = mem::transmute(&mut scope);
-            neon_sys::module::exec_kernel(kernel, callback, exports, scope);
+            neon_runtime::module::exec_kernel(kernel, callback, exports, scope);
         }
     }
 }

@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
-use neon_sys;
-use neon_sys::raw;
+use neon_runtime;
+use neon_runtime::raw;
 use internal::js::{Value, SuperType};
 use internal::js::error::{JsError, Kind};
 use internal::vm::{JsResult, Lock, LockState};
@@ -28,7 +28,7 @@ impl<'a, T: Value + 'a> Handle<'a, T> {
 
 impl<'a, T: Managed + 'a> PartialEq for Handle<'a, T> {
     fn eq(&self, other: &Self) -> bool {
-        unsafe { neon_sys::mem::same_handle(self.to_raw(), other.to_raw()) }
+        unsafe { neon_runtime::mem::same_handle(self.to_raw(), other.to_raw()) }
     }
 }
 
