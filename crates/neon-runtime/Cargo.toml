@@ -1,5 +1,5 @@
 [package]
-name = "neon-sys"
+name = "neon-runtime"
 version = "0.1.11"
 authors = ["Dave Herman <dherman@mozilla.com>"]
 description = "Exposes Node and V8 C++ API's for use by Neon."
