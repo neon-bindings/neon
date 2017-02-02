@@ -31,6 +31,9 @@ extern "C" {
     #[link_name = "NeonSys_Class_MetadataToClass"]
     pub fn metadata_to_class(out: &mut Local, isolate: *mut Isolate, metadata: *mut c_void);
 
+    #[link_name = "NeonSys_Class_MetadataToInstance"]
+    pub fn metadata_to_instance(out: &mut Local, isolate: *mut Isolate, metadata: *mut c_void, internals: *mut c_void);
+
     #[link_name = "NeonSys_Class_GetAllocateKernel"]
     pub fn get_allocate_kernel(obj: Local) -> *mut c_void;
 

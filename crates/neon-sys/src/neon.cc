@@ -373,6 +373,12 @@ extern "C" void NeonSys_Class_MetadataToClass(v8::Local<v8::FunctionTemplate> *o
   *out = static_cast<neon::ClassMetadata *>(metadata)->GetTemplate(isolate);
 }
 
+extern "C" void NeonSys_Class_MetadataToInstance(v8::Local<v8::Object> *out, v8::Isolate *isolate, void *metadata_pointer, void *internals) {
+  neon::BaseClassMetadata *metadata = static_cast<neon::BaseClassMetadata *>(metadata_pointer);
+  v8::Local<v8::Object> object = metadata->BuildInstance(isolate, internals);
+  *out = object;
+}
+
 extern "C" void *NeonSys_Class_GetInstanceInternals(v8::Local<v8::Object> obj) {
   return static_cast<neon::BaseClassInstanceMetadata *>(obj->GetAlignedPointerFromInternalField(0))->GetInternals();
 }

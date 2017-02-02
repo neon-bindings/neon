@@ -210,6 +210,11 @@ pub trait Class: Managed + Any {
         Ok(unsafe { metadata.class(scope) })
     }
 
+    fn new<'a, T: Scope<'a>>(scope: &mut T, internals: Self::Internals) -> JsResult<'a, JsObject> {
+        let metadata = try!(Self::metadata(scope));
+        Ok(unsafe { metadata.new_instance::<Self, T>(scope, internals) })
+    }
+
     fn describe<'a>(name: &'a str, allocate: AllocateKernel<Self>) -> ClassDescriptor<'a, Self> {
         ClassDescriptor::<Self>::new(name, allocate)
     }
@@ -334,6 +339,13 @@ impl ClassMetadata {
             handle: local,
             phantom: PhantomData
         })
+    }
+
+    pub unsafe fn new_instance<'a, T: Class, U: Scope<'a>>(&self, scope: &mut U, internals: T::Internals) -> Handle<'a, JsObject> {
+        let mut local: raw::Local = mem::zeroed();
+        let internals_ptr = mem::transmute(Box::into_raw(Box::new(internals)));
+        neon_sys::class::metadata_to_instance(&mut local, mem::transmute(scope.isolate()), self.pointer, internals_ptr);
+        Handle::new(JsObject::from_raw(local))
     }
 
     pub unsafe fn has_instance(&self, value: raw::Local) -> bool {
