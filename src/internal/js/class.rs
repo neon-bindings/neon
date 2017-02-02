@@ -3,8 +3,8 @@ use std::mem;
 use std::marker::PhantomData;
 use std::os::raw::c_void;
 use std::ptr::null_mut;
-use neon_sys;
-use neon_sys::raw;
+use neon_runtime;
+use neon_runtime::raw;
 use internal::mem::{Handle, HandleInternal, Managed};
 use internal::scope::{Scope, ScopeInternal, RootScopeInternal};
 use internal::vm::{Isolate, IsolateInternal, JsResult, VmResult, FunctionCall, CallbackInfo, Lock, LockState, Throw, This, Kernel};
@@ -31,7 +31,7 @@ impl<T: Class> Kernel<()> for MethodKernel<T> {
             if !this.is_a::<T>() {
                 if let Ok(metadata) = T::metadata(call.scope) {
                     unsafe {
-                        neon_sys::class::throw_this_error(mem::transmute(call.scope.isolate()), metadata.pointer);
+                        neon_runtime::class::throw_this_error(mem::transmute(call.scope.isolate()), metadata.pointer);
                     }
                 }
                 return;
@@ -44,7 +44,7 @@ impl<T: Class> Kernel<()> for MethodKernel<T> {
     }
 
     unsafe fn from_wrapper(h: raw::Local) -> Self {
-        MethodKernel(mem::transmute(neon_sys::fun::get_kernel(h)))
+        MethodKernel(mem::transmute(neon_runtime::fun::get_kernel(h)))
     }
 
     fn as_ptr(self) -> *mut c_void {
@@ -64,7 +64,7 @@ impl ConstructorCallKernel {
         let mut scope = info.scope();
         if let Ok(metadata) = T::metadata(&mut scope) {
             unsafe {
-                neon_sys::class::throw_call_error(mem::transmute(scope.isolate()), metadata.pointer);
+                neon_runtime::class::throw_call_error(mem::transmute(scope.isolate()), metadata.pointer);
             }
         }
         return;
@@ -84,7 +84,7 @@ impl Kernel<()> for ConstructorCallKernel {
     }
 
     unsafe fn from_wrapper(h: raw::Local) -> Self {
-        ConstructorCallKernel(mem::transmute(neon_sys::class::get_call_kernel(h)))
+        ConstructorCallKernel(mem::transmute(neon_runtime::class::get_call_kernel(h)))
     }
 
     fn as_ptr(self) -> *mut c_void {
@@ -117,7 +117,7 @@ impl<T: Class> Kernel<*mut c_void> for AllocateKernel<T> {
     }
 
     unsafe fn from_wrapper(h: raw::Local) -> Self {
-        AllocateKernel(mem::transmute(neon_sys::class::get_allocate_kernel(h)))
+        AllocateKernel(mem::transmute(neon_runtime::class::get_allocate_kernel(h)))
     }
 
     fn as_ptr(self) -> *mut c_void {
@@ -152,7 +152,7 @@ impl<T: Class> Kernel<bool> for ConstructKernel<T> {
     }
 
     unsafe fn from_wrapper(h: raw::Local) -> Self {
-        ConstructKernel(mem::transmute(neon_sys::class::get_construct_kernel(h)))
+        ConstructKernel(mem::transmute(neon_runtime::class::get_construct_kernel(h)))
     }
 
     fn as_ptr(self) -> *mut c_void {
@@ -255,11 +255,11 @@ pub trait ClassInternal: Class {
                 None    => (mem::transmute(ConstructorCallKernel::unimplemented::<Self> as usize), null_mut())
             };
 
-            let metadata_pointer = neon_sys::class::create_base(isolate,
-                                                                allocate_callback, allocate_kernel,
-                                                                construct_callback, construct_kernel,
-                                                                call_callback, call_kernel,
-                                                                drop_internals::<Self::Internals>);
+            let metadata_pointer = neon_runtime::class::create_base(isolate,
+                                                                    allocate_callback, allocate_kernel,
+                                                                    construct_callback, construct_kernel,
+                                                                    call_callback, call_kernel,
+                                                                    drop_internals::<Self::Internals>);
 
             if metadata_pointer.is_null() {
                 return Err(Throw);
@@ -269,16 +269,16 @@ pub trait ClassInternal: Class {
             //       v8::FunctionTemplate has a finalizer that will delete it.
 
             let class_name = descriptor.name;
-            if !neon_sys::class::set_name(isolate, metadata_pointer, class_name.as_ptr(), class_name.len() as u32) {
+            if !neon_runtime::class::set_name(isolate, metadata_pointer, class_name.as_ptr(), class_name.len() as u32) {
                 return Err(Throw);
             }
 
             for (name, method) in descriptor.methods {
                 let method: Handle<JsValue> = try!(build(|out| {
                     let (method_callback, method_kernel) = method.export();
-                    neon_sys::fun::new_template(out, isolate, method_callback, method_kernel)
+                    neon_runtime::fun::new_template(out, isolate, method_callback, method_kernel)
                 }));
-                if !neon_sys::class::add_method(isolate, metadata_pointer, name.as_ptr(), name.len() as u32, method.to_raw()) {
+                if !neon_runtime::class::add_method(isolate, metadata_pointer, name.as_ptr(), name.len() as u32, method.to_raw()) {
                     return Err(Throw);
                 }
             }
@@ -299,7 +299,7 @@ impl<T: Class> ClassInternal for T { }
 impl<T: Class> ValueInternal for T {
     fn is_typeof<Other: Value>(value: Other) -> bool {
         let mut isolate: Isolate = unsafe {
-            mem::transmute(neon_sys::call::current_isolate())
+            mem::transmute(neon_runtime::call::current_isolate())
         };
         let map = isolate.class_map();
         match map.get(&TypeId::of::<T>()) {
@@ -329,7 +329,7 @@ pub struct ClassMetadata {
 impl ClassMetadata {
     pub unsafe fn class<'a, T: Class, U: Scope<'a>>(&self, scope: &mut U) -> Handle<'a, JsClass<T>> {
         let mut local: raw::Local = mem::zeroed();
-        neon_sys::class::metadata_to_class(&mut local, mem::transmute(scope.isolate()), self.pointer);
+        neon_runtime::class::metadata_to_class(&mut local, mem::transmute(scope.isolate()), self.pointer);
         Handle::new(JsClass {
             handle: local,
             phantom: PhantomData
@@ -337,14 +337,14 @@ impl ClassMetadata {
     }
 
     pub unsafe fn has_instance(&self, value: raw::Local) -> bool {
-        neon_sys::class::has_instance(self.pointer, value)
+        neon_runtime::class::has_instance(self.pointer, value)
     }
 }
 
 impl<T: Class> JsClass<T> {
     pub fn check<U: Value>(&self, v: Handle<U>, msg: &str) -> JsResult<T> {
         let local = v.to_raw();
-        if unsafe { neon_sys::class::check(self.to_raw(), local) } {
+        if unsafe { neon_runtime::class::check(self.to_raw(), local) } {
             Ok(Handle::new(T::from_raw(local)))
         } else {
             JsError::throw(Kind::TypeError, msg)
@@ -354,7 +354,7 @@ impl<T: Class> JsClass<T> {
     pub fn constructor<'a, U: Scope<'a>>(&self, _: &mut U) -> JsResult<'a, JsFunction<T>> {
         build(|out| {
             unsafe {
-                neon_sys::class::constructor(out, self.to_raw())
+                neon_runtime::class::constructor(out, self.to_raw())
             }
         })
     }
@@ -364,7 +364,7 @@ impl<'a, T: Class> Lock for &'a mut T {
     type Internals = &'a mut T::Internals;
 
     unsafe fn expose(self, _: &mut LockState) -> Self::Internals {
-        let ptr: *mut c_void = neon_sys::class::get_instance_internals(self.to_raw());
+        let ptr: *mut c_void = neon_runtime::class::get_instance_internals(self.to_raw());
         mem::transmute(ptr)
     }
 }

@@ -1,8 +1,8 @@
 use std::mem;
 use std::ffi::CString;
 
-use neon_sys;
-use neon_sys::raw;
+use neon_runtime;
+use neon_runtime::raw;
 
 use internal::vm::{Throw, VmResult};
 use internal::js::{Value, ValueInternal, Object, ToJsString, build};
@@ -11,7 +11,7 @@ use scope::Scope;
 
 pub fn throw<'a, T: Value, U>(v: Handle<'a, T>) -> VmResult<U> {
     unsafe {
-        neon_sys::error::throw(v.to_raw());
+        neon_runtime::error::throw(v.to_raw());
     }
     Err(Throw)
 }
@@ -28,7 +28,7 @@ impl Managed for JsError {
 
 impl ValueInternal for JsError {
     fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_sys::tag::is_error(other.to_raw()) }
+        unsafe { neon_runtime::tag::is_error(other.to_raw()) }
     }
 }
 
@@ -55,11 +55,11 @@ impl JsError {
             unsafe {
                 let raw = msg.to_raw();
                 match kind {
-                    Kind::Error          => neon_sys::error::new_error(out, raw),
-                    Kind::TypeError      => neon_sys::error::new_type_error(out, raw),
-                    Kind::ReferenceError => neon_sys::error::new_reference_error(out, raw),
-                    Kind::RangeError     => neon_sys::error::new_range_error(out, raw),
-                    Kind::SyntaxError    => neon_sys::error::new_syntax_error(out, raw)
+                    Kind::Error          => neon_runtime::error::new_error(out, raw),
+                    Kind::TypeError      => neon_runtime::error::new_type_error(out, raw),
+                    Kind::ReferenceError => neon_runtime::error::new_reference_error(out, raw),
+                    Kind::RangeError     => neon_runtime::error::new_range_error(out, raw),
+                    Kind::SyntaxError    => neon_runtime::error::new_syntax_error(out, raw)
                 }
             }
             true
@@ -71,11 +71,11 @@ impl JsError {
         unsafe {
             let ptr = mem::transmute(msg.as_ptr());
             match kind {
-                Kind::Error          => neon_sys::error::throw_error_from_cstring(ptr),
-                Kind::TypeError      => neon_sys::error::throw_type_error_from_cstring(ptr),
-                Kind::ReferenceError => neon_sys::error::throw_reference_error_from_cstring(ptr),
-                Kind::RangeError     => neon_sys::error::throw_range_error_from_cstring(ptr),
-                Kind::SyntaxError    => neon_sys::error::throw_syntax_error_from_cstring(ptr)
+                Kind::Error          => neon_runtime::error::throw_error_from_cstring(ptr),
+                Kind::TypeError      => neon_runtime::error::throw_type_error_from_cstring(ptr),
+                Kind::ReferenceError => neon_runtime::error::throw_reference_error_from_cstring(ptr),
+                Kind::RangeError     => neon_runtime::error::throw_range_error_from_cstring(ptr),
+                Kind::SyntaxError    => neon_runtime::error::throw_syntax_error_from_cstring(ptr)
             }
         }
         Err(Throw)

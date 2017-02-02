@@ -2,8 +2,8 @@ use std::mem;
 use std::os::raw::c_void;
 use std::marker::PhantomData;
 use std::cell::RefCell;
-use neon_sys;
-use neon_sys::raw;
+use neon_runtime;
+use neon_runtime::raw;
 use internal::mem::{Handle, HandleInternal};
 use internal::js::Value;
 use internal::vm::{Isolate, IsolateInternal};
@@ -48,7 +48,7 @@ impl<'a, 'outer> ChainedScope<'a, 'outer> {
     pub fn escape<T: Value>(&self, local: Handle<'a, T>) -> Handle<'outer, T> {
         unsafe {
             let mut result_local: raw::Local = mem::zeroed();
-            neon_sys::scope::escape(&mut result_local, self.v8, local.to_raw());
+            neon_runtime::scope::escape(&mut result_local, self.v8, local.to_raw());
             Handle::new(T::from_raw(result_local))
         }
     }
@@ -69,19 +69,19 @@ impl<'a> RootScopeInternal<'a> for RootScope<'a> {
     }
 
     fn with<T, F: FnOnce(&'a mut RootScope<'a>) -> T>(&'a mut self, f: F) -> T {
-        debug_assert!(unsafe { neon_sys::scope::size() } <= mem::size_of::<raw::HandleScope>());
-        debug_assert!(unsafe { neon_sys::scope::alignment() } <= mem::align_of::<raw::HandleScope>());
+        debug_assert!(unsafe { neon_runtime::scope::size() } <= mem::size_of::<raw::HandleScope>());
+        debug_assert!(unsafe { neon_runtime::scope::alignment() } <= mem::align_of::<raw::HandleScope>());
 
         let mut v8_scope = raw::HandleScope::new();
 
         unsafe {
-            neon_sys::scope::enter(&mut v8_scope, self.isolate().to_raw());
+            neon_runtime::scope::enter(&mut v8_scope, self.isolate().to_raw());
         }
 
         let result = f(self);
 
         unsafe {
-            neon_sys::scope::exit(&mut v8_scope);
+            neon_runtime::scope::exit(&mut v8_scope);
         }
 
         result
@@ -141,7 +141,7 @@ fn chain<'a, T, S, F>(outer: &S, f: F) -> T
             let closure: *mut c_void = mem::transmute(closure);
             let callback: extern "C" fn(&mut c_void, *mut c_void, *mut c_void, *mut c_void) = mem::transmute(callback);
             let this: *mut c_void = mem::transmute(outer);
-            neon_sys::scope::chained(out, closure, callback, this);
+            neon_runtime::scope::chained(out, closure, callback, this);
         }
         { *outer.active_cell().borrow_mut() = true; }
     }
@@ -164,7 +164,7 @@ fn nest<'me, T, S, F>(outer: &'me S, f: F) -> T
             let closure: *mut c_void = mem::transmute(closure);
             let callback: extern "C" fn(&mut c_void, *mut c_void, *mut c_void) = mem::transmute(callback);
             let isolate: *mut c_void = mem::transmute(outer.isolate());
-            neon_sys::scope::nested(out, closure, callback, isolate);
+            neon_runtime::scope::nested(out, closure, callback, isolate);
         }
         { *outer.active_cell().borrow_mut() = true; }
     }

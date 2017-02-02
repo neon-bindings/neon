@@ -10,13 +10,13 @@ license = "MIT/Apache-2.0"
 exclude = ["neon.jpg"]
 build = "build.rs"
 
-# Sharing the name of the library produced by neon-sys (which will be
-# renamed to `neon-runtime` -- see issue #169) allows the `build.rs`
-# script for Neon projects to find the path to `node.lib` in Windows.
+# Sharing the name of the library produced by neon-runtime allows the
+# `build.rs` script for Neon projects to find the path to `node.lib`
+# in Windows.
 #
 # See also: http://doc.crates.io/build-script.html#the-links-manifest-key
 links = "neon-runtime"
 
 [dependencies]
 cslice = "0.2"
-neon-sys = { version = "=0.1.11", path = "crates/neon-sys" }
+neon-runtime = { version = "=0.1.11", path = "crates/neon-runtime" }
