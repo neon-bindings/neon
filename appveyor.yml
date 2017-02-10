@@ -6,6 +6,7 @@ platform:
 
 environment:
   NODEJS_VERSION: "6"
+  RUST_BACKTRACE: 1
   matrix:
     - NODE_ARCHITECTURE: x64
       RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
