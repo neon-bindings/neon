@@ -11,10 +11,38 @@ fn main() {
     link_library();
 }
 
-fn build_object_file() {
-    let npm_command = if cfg!(unix) { "npm" } else { "npm.cmd" };
-    let node_gyp_command = if cfg!(unix) { "node-gyp" } else { "node-gyp.cmd" };
+#[cfg(unix)]
+const NODE_COMMAND: &'static str = "node";
 
+#[cfg(windows)]
+const NODE_COMMAND: &'static str = "node.exe";
+
+#[cfg(unix)]
+const NPM_COMMAND: &'static str = "npm";
+
+#[cfg(windows)]
+const NPM_COMMAND: &'static str = "npm.cmd";
+
+fn node_gyp() -> Command {
+    let output = Command::new(NPM_COMMAND)
+        .args(&["config", "get", "msvs_version"])
+	.output()
+	.expect("Failed to run \"npm config get msvs_version\" for neon-runtime!");
+
+    let msvs_version = String::from_utf8_lossy(&output.stdout);
+
+    let output = Command::new(NODE_COMMAND)
+        .args(&["-e", "console.log(require('path').join(require('path').dirname(process.argv[0]), 'node_modules/npm/node_modules/node-gyp/bin/node-gyp.js'))"])
+	.output()
+	.expect("Failed to run \"node -e 'console.log(...)'\" for neon-runtime!");
+
+    let path = String::from_utf8_lossy(&output.stdout);
+    let mut cmd = Command::new(NODE_COMMAND);
+    cmd.args(&[path.trim(), &format!("--msvs_version={}", msvs_version.trim())[..]]);
+    cmd
+}
+
+fn build_object_file() {
     if cfg!(windows) {
         // Downcase all the npm environment variables to ensure they are read by node-gyp.
         for (key, value) in env::vars() {
@@ -26,7 +54,7 @@ fn build_object_file() {
     }
 
     // Ensure that all package.json dependencies and dev dependencies are installed.
-    Command::new(npm_command).args(&["install", "--silent"]).status().ok().expect("Failed to run \"npm install\" for neon-sys!");
+    Command::new(NPM_COMMAND).args(&["install", "--silent"]).status().ok().expect("Failed to run \"npm install\" for neon-runtime!");
 
     // Run `node-gyp configure` in verbose mode to read node_root_dir on Windows.
     let mut configure_args = vec!["configure", "--verbose"];
@@ -34,10 +62,10 @@ fn build_object_file() {
         configure_args.push("--debug");
     }
 
-    let output = Command::new(node_gyp_command)
+    let output = node_gyp()
         .args(&configure_args)
         .output()
-        .expect("Failed to run \"node-gyp configure\" for neon-sys!");
+        .expect("Failed to run \"node-gyp configure\" for neon-runtime!");
 
     if cfg!(windows) {
         let node_gyp_output = String::from_utf8_lossy(&output.stderr);
@@ -63,12 +91,12 @@ fn build_object_file() {
         build_args.push("--debug");
     }
 
-    Command::new(node_gyp_command)
+    node_gyp()
         .stderr(Stdio::null()) // Prevent cargo build from hanging on Windows.
         .args(&build_args)
         .status()
         .ok()
-        .expect("Failed to run \"node-gyp build\" for neon-sys!");
+        .expect("Failed to run \"node-gyp build\" for neon-runtime!");
 }
 
 // Link the built object file into a static library.
