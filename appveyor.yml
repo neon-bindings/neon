@@ -6,6 +6,7 @@ platform:
 
 environment:
   NODEJS_VERSION: "6"
+  RUST_BACKTRACE: 1
   matrix:
     - NODE_ARCHITECTURE: x64
       RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
@@ -15,7 +16,8 @@ environment:
 
 install:
   - ps: Install-Product node $env:NODEJS_VERSION $env:NODE_ARCHITECTURE
-  - node -e "console.log(process.arch, process.versions)"
+  - npm config set msvs_version 2015
+  - node -e "console.log(process.argv[0], process.arch, process.versions)"
 
   - curl -sSf -o rustup-init.exe https://win.rustup.rs
   - rustup-init.exe -y --default-toolchain %RUST_TOOLCHAIN%
