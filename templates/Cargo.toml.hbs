@@ -7,6 +7,7 @@ authors = ["{{project.author}}{{#if project.email}} <{{project.email}}>{{/if}}"]
 {{#if project.license}}
 license = "{{project.license}}"
 {{/if}}
+build = "build.rs"
 
 [lib]
 name = "{{project.name.cargo.internal}}"
