@@ -21,51 +21,51 @@ pub enum Tag {
 extern "C" {
 
     /// Returns the `Tag` of the value provided.
-    #[link_name = "NeonSys_Tag_Of"]
+    #[link_name = "Neon_Tag_Of"]
     pub fn of(val: Local) -> Tag;
 
     /// Indicates if the value type is `Undefined`.
-    #[link_name = "NeonSys_Tag_IsUndefined"]
+    #[link_name = "Neon_Tag_IsUndefined"]
     pub fn is_undefined(val: Local) -> bool;
 
     /// Indicates if the value type is `Null`.
-    #[link_name = "NeonSys_Tag_IsNull"]
+    #[link_name = "Neon_Tag_IsNull"]
     pub fn is_null(val: Local) -> bool;
 
     /// Indicates if the value type is `Integer`.
-    #[link_name = "NeonSys_Tag_IsInteger"]
+    #[link_name = "Neon_Tag_IsInteger"]
     pub fn is_integer(val: Local) -> bool;
 
     /// Indicates if the value type is `Number`.
-    #[link_name = "NeonSys_Tag_IsNumber"]
+    #[link_name = "Neon_Tag_IsNumber"]
     pub fn is_number(val: Local) -> bool;
 
     /// Indicates if the value type is `Boolean`.
-    #[link_name = "NeonSys_Tag_IsBoolean"]
+    #[link_name = "Neon_Tag_IsBoolean"]
     pub fn is_boolean(val: Local) -> bool;
 
     /// Indicates if the value type is `String`.
-    #[link_name = "NeonSys_Tag_IsString"]
+    #[link_name = "Neon_Tag_IsString"]
     pub fn is_string(val: Local) -> bool;
 
     /// Indicates if the value type is `Object`.
-    #[link_name = "NeonSys_Tag_IsObject"]
+    #[link_name = "Neon_Tag_IsObject"]
     pub fn is_object(val: Local) -> bool;
 
     /// Indicates if the value type is `Array`.
-    #[link_name = "NeonSys_Tag_IsArray"]
+    #[link_name = "Neon_Tag_IsArray"]
     pub fn is_array(val: Local) -> bool;
 
     /// Indicates if the value type is `Function`.
-    #[link_name = "NeonSys_Tag_IsFunction"]
+    #[link_name = "Neon_Tag_IsFunction"]
     pub fn is_function(val: Local) -> bool;
 
     /// Indicates if the value type is `Error`.
-    #[link_name = "NeonSys_Tag_IsError"]
+    #[link_name = "Neon_Tag_IsError"]
     pub fn is_error(val: Local) -> bool;
 
     /// Indicates if the value type is `Buffer`.
-    #[link_name = "NeonSys_Tag_IsBuffer"]
+    #[link_name = "Neon_Tag_IsBuffer"]
     pub fn is_buffer(obj: Local) -> bool;
 
 }
