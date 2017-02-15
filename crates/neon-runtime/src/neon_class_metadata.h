@@ -32,7 +32,7 @@ namespace neon {
 
 class ClassMapHolder {
 public:
-  ClassMapHolder(void *map, NeonSys_DropCallback drop_map)
+  ClassMapHolder(void *map, Neon_DropCallback drop_map)
     : map_(map), drop_map_(drop_map)
   {
   }
@@ -48,14 +48,14 @@ public:
 
 private:
   void *map_;
-  NeonSys_DropCallback drop_map_;
+  Neon_DropCallback drop_map_;
 };
 
 
 class ClassMetadata {
 public:
 
-  ClassMetadata(NeonSys_ConstructCallback construct_callback, void *construct_kernel, v8::FunctionCallback call_callback, void *call_kernel) {
+  ClassMetadata(Neon_ConstructCallback construct_callback, void *construct_kernel, v8::FunctionCallback call_callback, void *call_kernel) {
     construct_callback_ = construct_callback;
     construct_kernel_ = construct_kernel;
     call_callback_ = call_callback;
@@ -115,7 +115,7 @@ protected:
     }
   }
 
-  NeonSys_ConstructCallback construct_callback_;
+  Neon_ConstructCallback construct_callback_;
   void *construct_kernel_;
   v8::FunctionCallback call_callback_;
   void *call_kernel_;
@@ -137,7 +137,7 @@ private:
 class BaseClassInstanceMetadata {
 public:
 
-  BaseClassInstanceMetadata(v8::Isolate *isolate, v8::Local<v8::Object> instance, void *internals, NeonSys_DropCallback drop) {
+  BaseClassInstanceMetadata(v8::Isolate *isolate, v8::Local<v8::Object> instance, void *internals, Neon_DropCallback drop) {
     instance_.Reset(isolate, instance);
     instance_.SetWeak(this, FinalizeInstance, v8::WeakCallbackType::kParameter);
     internals_ = internals;
@@ -164,20 +164,20 @@ private:
 
   void *internals_;
   v8::Global<v8::Object> instance_;
-  NeonSys_DropCallback drop_;
+  Neon_DropCallback drop_;
 };
 
 
 class BaseClassMetadata: public ClassMetadata {
 public:
 
-  BaseClassMetadata(NeonSys_ConstructCallback construct_callback,
+  BaseClassMetadata(Neon_ConstructCallback construct_callback,
                     void *construct_kernel,
                     v8::FunctionCallback call_callback,
                     void *call_kernel,
-                    NeonSys_AllocateCallback allocate_callback,
+                    Neon_AllocateCallback allocate_callback,
                     void *allocate_kernel,
-                    NeonSys_DropCallback drop_instance)
+                    Neon_DropCallback drop_instance)
     : ClassMetadata(construct_callback, construct_kernel, call_callback, call_kernel)
   {
     allocate_callback_ = allocate_callback;
@@ -204,9 +204,9 @@ public:
 
 private:
 
-  NeonSys_AllocateCallback allocate_callback_;
+  Neon_AllocateCallback allocate_callback_;
   void *allocate_kernel_;
-  NeonSys_DropCallback drop_instance_;
+  Neon_DropCallback drop_instance_;
   v8::Global<v8::Object> instance_;
 };
 
