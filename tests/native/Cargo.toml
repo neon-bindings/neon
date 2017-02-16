@@ -10,7 +10,7 @@ name = "tests"
 crate-type = ["dylib"]
 
 [build-dependencies]
-neon-build = {version = "0.1.11", path = "../../crates/neon-build"}
+neon-build = {path = "../../crates/neon-build"}
 
 [dependencies]
 neon = {path = "../../"}
