@@ -1,3 +1,11 @@
+# Version 0.1.12 (2017-02-15)
+
+* [Optimized rooting protocol](https://github.com/neon-bindings/neon/commit/cef41584d9978eda2d59866a077cfe7c7d3fa46e)
+* [Eliminate rustc warnings](https://github.com/neon-bindings/neon/pull/107)
+* Lots of internal API docs
+* Windows support! :tada:
+* [Renamed `neon-sys` to `neon-runtime`](https://github.com/neon-bindings/neon/issues/169)
+
 # Version 0.1.11 (2016-08-08)
 
 * [Exposed `This` trait](https://github.com/neon-bindings/neon/issues/101) to allow user-level abstractions involving `FunctionCall`
