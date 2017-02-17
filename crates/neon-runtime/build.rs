@@ -23,6 +23,18 @@ const NPM_COMMAND: &'static str = "npm";
 #[cfg(windows)]
 const NPM_COMMAND: &'static str = "npm.cmd";
 
+// Reference: https://docs.npmjs.com/files/folders
+
+// On Unix, the node executable is in {prefix}/bin and the node_modules are in {prefix}/lib.
+#[cfg(unix)]
+const JS_FIND_NODE_GYP: &'static str =
+    "console.log(require('path').join(require('path').dirname(process.argv[0]), '..', 'lib', 'node_modules/npm/node_modules/node-gyp/bin/node-gyp.js'))";
+
+// On Windows, the node executable is in {prefix} and the node_modules are in {prefix}.
+#[cfg(windows)]
+const JS_FIND_NODE_GYP: &'static str =
+    "console.log(require('path').join(require('path').dirname(process.argv[0]), 'node_modules/npm/node_modules/node-gyp/bin/node-gyp.js'))";
+
 fn node_gyp() -> Command {
     let output = Command::new(NPM_COMMAND)
         .args(&["config", "get", "msvs_version"])
@@ -32,7 +44,7 @@ fn node_gyp() -> Command {
     let msvs_version = String::from_utf8_lossy(&output.stdout);
 
     let output = Command::new(NODE_COMMAND)
-        .args(&["-e", "console.log(require('path').join(require('path').dirname(process.argv[0]), 'node_modules/npm/node_modules/node-gyp/bin/node-gyp.js'))"])
+        .args(&["-e", JS_FIND_NODE_GYP])
 	.output()
 	.expect("Failed to run \"node -e 'console.log(...)'\" for neon-runtime!");
 
