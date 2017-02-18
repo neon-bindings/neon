@@ -1,6 +1,6 @@
 extern crate gcc;
 
-use std::process::{Command, Stdio};
+use std::process::Command;
 use std::env;
 
 fn main() {
@@ -61,9 +61,8 @@ fn build_object_file() {
         println!("cargo:node_lib_file={}", &node_gyp_output[node_lib_file_start_index..node_lib_file_end_index]);
     }
 
-    // Run `node-gyp build` (appending -d in debug mode).
+    // Run `node-gyp build`.
     npm()
-        .stderr(Stdio::null()) // Prevents cargo build from hanging on Windows.
         .args(&["run", if debug() { "build-debug" } else { "build-release" }])
         .status()
         .ok()
