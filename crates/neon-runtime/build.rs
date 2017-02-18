@@ -12,10 +12,16 @@ fn main() {
 }
 
 #[cfg(unix)]
-const NPM_COMMAND: &'static str = "npm";
+fn npm() -> Command {
+    Command::new("npm")
+}
 
 #[cfg(windows)]
-const NPM_COMMAND: &'static str = "npm.cmd";
+fn npm() -> Command {
+    let mut cmd = Command::new("cmd.exe");
+    cmd.args(&["/C", "npm"]);
+    cmd
+}
 
 fn build_object_file() {
     if cfg!(windows) {
@@ -29,10 +35,10 @@ fn build_object_file() {
     }
 
     // Ensure that all package.json dependencies and dev dependencies are installed.
-    Command::new(NPM_COMMAND).args(&["install", "--silent"]).status().ok().expect("Failed to run \"npm install\" for neon-runtime!");
+    npm().args(&["install", "--silent"]).status().ok().expect("Failed to run \"npm install\" for neon-runtime!");
 
     // Run `node-gyp configure` in verbose mode to read node_root_dir on Windows.
-    let output = Command::new(NPM_COMMAND)
+    let output = npm()
         .args(&["run", if debug() { "configure-debug" } else { "configure-release" }])
         .output()
         .expect("Failed to run \"node-gyp configure\" for neon-runtime!");
@@ -56,7 +62,7 @@ fn build_object_file() {
     }
 
     // Run `node-gyp build` (appending -d in debug mode).
-    Command::new(NPM_COMMAND)
+    npm()
         .stderr(Stdio::null()) // Prevents cargo build from hanging on Windows.
         .args(&["run", if debug() { "build-debug" } else { "build-release" }])
         .status()
