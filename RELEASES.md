@@ -1,3 +1,7 @@
+# Version 0.1.13
+
+* Bump to match neon 0.1.13.
+
 # Version 0.1.12
 
 * Depend on `neon-build` as a build dependency (see #46).
