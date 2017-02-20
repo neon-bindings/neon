@@ -49,7 +49,7 @@ For Windows, you'll need to follow the [node-gyp instructions](https://github.co
 | Rust beta    | ✓      | ✓      | ✓      |
 | Rust nightly |        |        |        |
 
-Although Neon is only tested on the latest stable Rust, it will likely work on a range of stable versions of Rust. It is known to require at least Rust 1.13.
+Neon supports Rust stable version 1.15 and higher.
 
 Support for [LTS versions of Node](https://github.com/nodejs/LTS#lts-schedule) and current are expected. If you're using a different version of Node and believe it should be supported, let us know.
 
