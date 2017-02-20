@@ -1,3 +1,7 @@
+# Version 0.1.13 (2017-02-17)
+
+* More robust build scripts for neon-runtime, fixing Homebrew node installations (see #189)
+
 # Version 0.1.12 (2017-02-16)
 
 * [Optimized rooting protocol](https://github.com/neon-bindings/neon/commit/cef41584d9978eda2d59866a077cfe7c7d3fa46e)
