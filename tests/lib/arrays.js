@@ -11,6 +11,6 @@ describe('JsArray', function() {
   });
 
   it('return a JsArray with an string at index 0', function () {
-    assert.deepEqual(["hello neon"], addon.return_js_array_with_string());
+    assert.deepEqual(["hello node"], addon.return_js_array_with_string());
   });
 });
