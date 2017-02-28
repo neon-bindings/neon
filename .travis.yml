@@ -42,6 +42,6 @@ script: |
   cd tests/ &&
   npm test &&
   if [[ "$TRAVIS_RUST_VERSION" == nightly* ]]; then
-    cd compile_tests/ &&
+    cd ../compile_tests/ &&
     cargo test
   fi
