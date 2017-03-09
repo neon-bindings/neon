@@ -11,7 +11,7 @@ use neon_runtime::tag::Tag;
 use internal::mem::{Handle, HandleInternal, Managed};
 use internal::scope::{Scope, RootScopeInternal};
 use internal::vm::{VmResult, Throw, JsResult, Isolate, IsolateInternal, CallbackInfo, Call, This, Kernel};
-use internal::js::error::{JsError, Kind};
+use internal::js::error::{JsError, Kind, convert_panics};
 
 pub trait ValueInternal: Managed {
     fn is_typeof<Other: Value>(other: Other) -> bool;
@@ -677,7 +677,8 @@ impl<T: Value> Kernel<()> for FunctionKernel<T> {
         info.scope().with(|scope| {
             let data = info.data();
             let FunctionKernel(kernel) = unsafe { Self::from_wrapper(data.to_raw()) };
-            if let Ok(value) = kernel(info.as_call(scope)) {
+            let call = info.as_call(scope);
+            if let Ok(value) = convert_panics(|| { kernel(call) }) {
                 info.set_return(value);
             }
         })

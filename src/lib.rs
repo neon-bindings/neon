@@ -74,9 +74,12 @@ macro_rules! register_module {
                     fn node_module_register(module: *mut __NodeModule);
                 }
 
+                // Suppress the default Rust panic hook, which prints diagnostics to stderr.
+                ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
+
                 unsafe {
                     // Set the ABI version based on the NODE_MODULE_VERSION constant provided by the current node headers.
-                    __NODE_MODULE.version = $crate::macro_internal::sys::module::get_version();
+                    __NODE_MODULE.version = $crate::macro_internal::runtime::module::get_version();
                     node_module_register(&mut __NODE_MODULE);
                 }
             }
@@ -180,12 +183,12 @@ macro_rules! class_definition {
 macro_rules! impl_managed {
     ($cls:ident) => {
         impl $crate::mem::Managed for $cls {
-            fn to_raw(self) -> $crate::macro_internal::sys::raw::Local {
+            fn to_raw(self) -> $crate::macro_internal::runtime::raw::Local {
                 let $cls(raw) = self;
                 raw
             }
 
-            fn from_raw(raw: $crate::macro_internal::sys::raw::Local) -> Self {
+            fn from_raw(raw: $crate::macro_internal::runtime::raw::Local) -> Self {
                 $cls(raw)
             }
         }
@@ -239,7 +242,7 @@ macro_rules! declare_types {
         #[derive(Copy, Clone)]
         #[repr(C)]
         $(#[$attr])*
-        pub struct $cls($crate::macro_internal::sys::raw::Local);
+        pub struct $cls($crate::macro_internal::runtime::raw::Local);
 
         impl_managed!($cls);
 
@@ -252,7 +255,7 @@ macro_rules! declare_types {
         #[derive(Copy, Clone)]
         #[repr(C)]
         $(#[$attr])*
-        struct $cls($crate::macro_internal::sys::raw::Local);
+        struct $cls($crate::macro_internal::runtime::raw::Local);
 
         impl_managed!($cls);
 

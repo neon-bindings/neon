@@ -9,7 +9,7 @@ use internal::mem::{Handle, HandleInternal, Managed};
 use internal::scope::{Scope, ScopeInternal, RootScopeInternal};
 use internal::vm::{Isolate, IsolateInternal, JsResult, VmResult, FunctionCall, CallbackInfo, Lock, LockState, Throw, This, Kernel};
 use internal::js::{Value, ValueInternal, JsFunction, JsObject, Object, JsValue, JsUndefined, build};
-use internal::js::error::{JsError, Kind};
+use internal::js::error::{JsError, Kind, convert_panics};
 
 #[repr(C)]
 pub struct MethodKernel<T: Class>(fn(FunctionCall<T>) -> JsResult<JsValue>);
@@ -37,7 +37,7 @@ impl<T: Class> Kernel<()> for MethodKernel<T> {
                 return;
             }
             let MethodKernel(kernel) = unsafe { Self::from_wrapper(data.to_raw()) };
-            if let Ok(value) = kernel(call) {
+            if let Ok(value) = convert_panics(|| { kernel(call) }) {
                 info.set_return(value);
             }
         })
@@ -77,7 +77,7 @@ impl Kernel<()> for ConstructorCallKernel {
             let data = info.data();
             let ConstructorCallKernel(kernel) = unsafe { Self::from_wrapper(data.to_raw()) };
             let call = info.as_call(scope);
-            if let Ok(value) = kernel(call) {
+            if let Ok(value) = convert_panics(|| { kernel(call) }) {
                 info.set_return(value);
             }
         })
@@ -107,7 +107,7 @@ impl<T: Class> Kernel<*mut c_void> for AllocateKernel<T> {
             let data = info.data();
             let AllocateKernel(kernel) = unsafe { Self::from_wrapper(data.to_raw()) };
             let call = info.as_call(scope);
-            if let Ok(value) = kernel(call) {
+            if let Ok(value) = convert_panics(|| { kernel(call) }) {
                 let p = Box::into_raw(Box::new(value));
                 unsafe { mem::transmute(p) }
             } else {
@@ -140,7 +140,7 @@ impl<T: Class> Kernel<bool> for ConstructKernel<T> {
             let data = info.data();
             let ConstructKernel(kernel) = unsafe { Self::from_wrapper(data.to_raw()) };
             let call = info.as_call(scope);
-            match kernel(call) {
+            match convert_panics(|| { kernel(call) }) {
                 Ok(None) => true,
                 Ok(Some(obj)) => {
                     info.set_return(obj);

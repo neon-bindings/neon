@@ -1,5 +1,6 @@
 use std::mem;
 use std::ffi::CString;
+use std::panic::{UnwindSafe, catch_unwind};
 
 use neon_runtime;
 use neon_runtime::raw;
@@ -79,5 +80,21 @@ impl JsError {
             }
         }
         Err(Throw)
+    }
+}
+
+pub fn convert_panics<T, F: UnwindSafe + FnOnce() -> VmResult<T>>(f: F) -> VmResult<T> {
+    match catch_unwind(|| { f() }) {
+        Ok(result) => result,
+        Err(panic) => {
+            let msg = if let Some(string) = panic.downcast_ref::<String>() {
+                format!("internal error in native module: {}", string)
+            } else if let Some(str) = panic.downcast_ref::<&str>() {
+                format!("internal error in native module: {}", str)
+            } else {
+                format!("internal error in native module")
+            };
+            JsError::throw::<T>(Kind::Error, &msg[..])
+        }
     }
 }

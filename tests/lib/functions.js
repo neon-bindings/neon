@@ -21,4 +21,12 @@ describe('JsFunction', function() {
   it('got two parameters, a string and a number', function() {
     addon.check_string_and_number("string", 42);
   });
+
+  it('converts a Rust panic to a throw in a function', function() {
+    assert.throws(function() { addon.panic() }, Error, /^internal error in native module: zomg$/);
+  });
+
+  it('lets panic override a throw', function() {
+    assert.throws(function() { addon.panic_after_throw() }, Error, /^internal error in native module: this should override the RangeError$/);
+  });
 });

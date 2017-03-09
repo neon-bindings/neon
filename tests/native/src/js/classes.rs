@@ -1,6 +1,4 @@
-use neon::js::{JsString, JsNumber, JsValue, JsObject, JsFunction, Object};
-use neon::vm::{Call, JsResult};
-use neon::js::class::{Class, JsClass};
+use neon::js::{JsString, JsNumber};
 use neon::mem::Handle;
 use neon::vm::Lock;
 use neon::js::error::{JsError, Kind};
@@ -12,7 +10,29 @@ pub struct User {
   email: String,
 }
 
+type Unit = ();
+
 declare_types! {
+  pub class JsPanickyAllocator for Unit {
+    init(_) {
+      panic!("allocator panicking")
+    }
+  }
+
+  pub class JsPanickyConstructor for Unit {
+    init(_) {
+      Ok(())
+    }
+
+    call(_) {
+      panic!("constructor call panicking")
+    }
+
+    constructor(_) {
+      panic!("constructor panicking")
+    }
+  }
+
   pub class JsUser for User {
     init(call) {
       let scope = call.scope;
@@ -53,6 +73,10 @@ declare_types! {
         },
         _ => JsError::throw(Kind::TypeError, "property does not exist")
       }
+    }
+
+    method panic(_) {
+      panic!("User.prototype.panic")
     }
   }
 }

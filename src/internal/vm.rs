@@ -3,6 +3,7 @@ use std::any::TypeId;
 use std::marker::PhantomData;
 use std::collections::{HashSet, HashMap};
 use std::os::raw::c_void;
+use std::panic::UnwindSafe;
 use cslice::CMutSlice;
 use neon_runtime;
 use neon_runtime::raw;
@@ -209,6 +210,8 @@ pub struct FunctionCall<'a, T: This> {
     pub scope: &'a mut RootScope<'a>,
     pub arguments: Arguments<'a, T>
 }
+
+impl<'a, T: This> UnwindSafe for FunctionCall<'a, T> { }
 
 pub type Call<'a> = FunctionCall<'a, JsObject>;
 
