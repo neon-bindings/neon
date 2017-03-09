@@ -38,10 +38,10 @@ matrix:
   allow_failures:
     - rust: nightly
 
-script:
-- |
-  (cd tests/ && npm test)
+script: |
+  cd tests/ &&
+  npm test &&
   if [[ "$TRAVIS_RUST_VERSION" == nightly* ]]; then
-    (cd compile_tests/ && cargo test)
+    cd ../compile_tests/ &&
+    cargo test
   fi
-
