@@ -1,6 +1,7 @@
 use neon::vm::{Call, JsResult, This, FunctionCall};
 use neon::mem::Handle;
 use neon::js::{JsNumber, JsNull, JsFunction, Object, JsValue, JsUndefined, JsString, Value};
+use neon::js::error::{JsError, Kind};
 
 fn add1(call: Call) -> JsResult<JsNumber> {
     let scope = call.scope;
@@ -40,7 +41,16 @@ impl<'a, T: This> CheckArgument<'a> for FunctionCall<'a, T> {
 }
 
 pub fn check_string_and_number(mut call: Call) -> JsResult<JsUndefined> {
-    let x = try!(call.check_argument::<JsString>(0));
-    let y = try!(call.check_argument::<JsNumber>(1));
+    try!(call.check_argument::<JsString>(0));
+    try!(call.check_argument::<JsNumber>(1));
     Ok(JsUndefined::new())
+}
+
+pub fn panic(_: Call) -> JsResult<JsUndefined> {
+    panic!("zomg")
+}
+
+pub fn panic_after_throw(_: Call) -> JsResult<JsUndefined> {
+    JsError::throw::<()>(Kind::RangeError, "entering throw state with a RangeError").unwrap_err();
+    panic!("this should override the RangeError")
 }

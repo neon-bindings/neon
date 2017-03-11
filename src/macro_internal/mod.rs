@@ -5,6 +5,6 @@
 pub use internal::js::class::{AllocateKernel, ConstructKernel, ConstructorCallKernel, MethodKernel};
 
 // An alias for neon_runtime so macros can refer to it.
-pub mod sys {
+pub mod runtime {
     pub use neon_runtime::*;
 }

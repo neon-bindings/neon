@@ -49,9 +49,20 @@ register_module!(m, {
 
     try!(m.export("check_string_and_number", check_string_and_number));
 
+    try!(m.export("panic", panic));
+    try!(m.export("panic_after_throw", panic_after_throw));
+
     let class: Handle<JsClass<JsUser>> = try!(JsUser::class(m.scope));
     let constructor: Handle<JsFunction<JsUser>> = try!(class.constructor(m.scope));
     try!(m.exports.set("User", constructor));
+
+    let class: Handle<JsClass<JsPanickyAllocator>> = try!(JsPanickyAllocator::class(m.scope));
+    let constructor: Handle<JsFunction<JsPanickyAllocator>> = try!(class.constructor(m.scope));
+    try!(m.exports.set("PanickyAllocator", constructor));
+
+    let class: Handle<JsClass<JsPanickyConstructor>> = try!(JsPanickyConstructor::class(m.scope));
+    let constructor: Handle<JsFunction<JsPanickyConstructor>> = try!(class.constructor(m.scope));
+    try!(m.exports.set("PanickyConstructor", constructor));
 
     Ok(())
 });
