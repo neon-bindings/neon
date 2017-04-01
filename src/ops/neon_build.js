@@ -36,7 +36,7 @@ function explicit_cargo_target() {
   }
 }
 
-function cargo(toolchain, configuration, nodeModuleVersion, target) {
+function cargo(root, toolchain, configuration, nodeModuleVersion, target) {
   let macos = process.platform === 'darwin';
 
   let [command, prefix] = toolchain === 'default'
@@ -57,16 +57,16 @@ function cargo(toolchain, configuration, nodeModuleVersion, target) {
 
   console.log(style.info([command].concat(args).join(" ")));
 
-  return spawn(command, args, { cwd: 'native', stdio: 'inherit', env: env });
+  return spawn(command, args, { cwd: path.resolve(root, 'native'), stdio: 'inherit', env: env });
 }
 
-async function main(name, configuration, target) {
+async function main(root, name, configuration, target) {
   let pp = process.platform;
   let output_directory = target ?
-    path.resolve('native', 'target', target, configuration) :
-    path.resolve('native', 'target', configuration);
+    path.resolve(root, 'native', 'target', target, configuration) :
+    path.resolve(root, 'native', 'target', configuration);
   let dylib = path.resolve(output_directory, LIB_PREFIX[pp] + name + LIB_SUFFIX[pp]);
-  let index = path.resolve('native', 'index.node');
+  let index = path.resolve(root, 'native', 'index.node');
 
   console.log(style.info("generating native" + path.sep + "index.node"));
 
@@ -74,9 +74,9 @@ async function main(name, configuration, target) {
   await copy(dylib, index);
 }
 
-export default async function neon_build(pwd, toolchain, configuration, nodeModuleVersion) {
+export default async function neon_build(root, toolchain, configuration, nodeModuleVersion) {
   // 1. Read the Cargo metadata.
-  let metadata = TOML.parse(await readFile(path.resolve('native', 'Cargo.toml'), 'utf8'));
+  let metadata = TOML.parse(await readFile(path.resolve(root, 'native', 'Cargo.toml'), 'utf8'));
 
   if (!metadata.lib.name) {
     throw new Error("Cargo.toml does not contain a [lib] section with a 'name' field");
@@ -87,10 +87,10 @@ export default async function neon_build(pwd, toolchain, configuration, nodeModu
   console.log(style.info("running cargo"));
 
   // 2. Build the binary.
-  if ((await cargo(toolchain, configuration, nodeModuleVersion, target)) !== 0) {
+  if ((await cargo(root, toolchain, configuration, nodeModuleVersion, target)) !== 0) {
     throw new Error("cargo build failed");
   }
 
   // 3. Copy the dylib into the main index.node file.
-  await main(metadata.lib.name, configuration, target);
+  await main(root, metadata.lib.name, configuration, target);
 }
