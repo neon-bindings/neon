@@ -1,84 +1,210 @@
 import path from 'path';
 import metadata from '../package.json';
-import minimist from 'minimist';
 import neon_new from './ops/neon_new';
 import neon_build from './ops/neon_build';
 import * as style from './ops/style';
+import parseCommands from 'command-line-commands';
+import parseArgs from 'command-line-args';
+import parseUsage from 'command-line-usage';
 
-function printUsage() {
-  console.log();
-  console.log("Usage:");
-  console.log();
-  console.log("  neon new [@<scope>/]<name> [--rust|-r nightly|stable|default]");
-  console.log("    create a new Neon project");
-  console.log();
-  console.log("  neon build [--rust|-r nightly|stable|default] [--debug|-d]");
-  console.log("    rebuild the project");
-  console.log();
-  console.log("  neon version");
-  console.log("    print neon-cli version");
-  console.log();
-  console.log("  neon help");
-  console.log("    print this usage information");
-  console.log();
-  console.log("neon-cli@" + metadata.version + " " + path.dirname(__dirname));
+function channel(value) {
+  if (!['default', 'nightly', 'beta', 'stable'].indexOf(value) > -1) {
+    throw new Error("Expected one of 'default', 'nightly', 'beta', or 'stable', got '" + value + "'");
+  }
+  return value;
 }
 
-const SUBCOMMANDS = {
-  'version': function() {
-    console.log(metadata.version);
-  },
-
-  'help': function() {
-    printUsage();
-  },
-
-  'new': function() {
-    if (this.args._.length !== 1) {
-      printUsage();
-      console.log();
-      throw new Error(this.args._.length === 0 ? "You must specify a project name." : "Too many arguments.");
-    }
-    return neon_new(this.cwd, this.args._[0], this.args.rust || this.args.r || 'default');
-  },
-
-  'build': function() {
-    if (this.args._.length > 0) {
-      printUsage();
-      console.log();
-      throw new Error("Too many arguments.");
-    }
-    return neon_build(this.cwd,
-                      this.args.rust || this.args.r || 'default',
-                      this.args.debug || this.args.d ? 'debug' : 'release',
-                      this.args.node_module_version);
+function commandUsage(command) {
+  if (!spec[command]) {
+    let e = new Error();
+    e.command = command;
+    e.name = 'INVALID_COMMAND';
+    throw e;
   }
+  console.error(parseUsage(spec[command].usage));
+}
+
+const spec = {
+
+  null: {
+    args: [{ name: "version", alias: "v", type: Boolean },
+           { name: "help", alias: "h", type: String, defaultValue: null }],
+    usage: [{
+      header: "Neon",
+      content: "Neon is a tool for building native Node.js modules with Rust."
+    }, {
+      header: "Synopsis",
+      content: "$ neon [options] <command>"
+    }, {
+      header: "Command List",
+      content: [{ name: "new", summary: "Create a new Neon project." },
+                { name: "build", summary: "(Re)build a Neon project." },
+                { name: "version", summary: "Display the Neon version." },
+                { name: "help", summary: "Display help information about Neon." }]
+    }],
+    action: function(options, usage) {
+      if (options.version && options.help === undefined) {
+        spec.version.action.call(this, options);
+      } else if (options.help !== undefined) {
+        commandUsage(options.help);
+      } else {
+        console.error(usage);
+      }
+    }
+  },
+
+  help: {
+    args: [{ name: "command", type: String, defaultOption: true },
+           { name: "help", alias: "h", type: Boolean }],
+    usage: [{
+      header: "neon help",
+      content: "Get help about a Neon command"
+    }, {
+      header: "Synopsis",
+      content: "$ neon help [command]"
+    }],
+    action: function(options) {
+      if (options && options.command) {
+        commandUsage(options.command);
+      } else if (options && options.help) {
+        commandUsage('help');
+      } else {
+        console.error(parseUsage(spec.null.usage));
+      }
+    }
+  },
+
+  new: {
+    args: [{ name: "rust", alias: "r", type: channel, defaultValue: "default" },
+           { name: "name", type: String, defaultOption: true },
+           { name: "help", alias: "h", type: Boolean }],
+    usage: [{
+      header: "neon new",
+      content: "Create a new Neon project."
+    }, {
+      header: "Synopsis",
+      content: "$ neon new [options] [@<scope>/]<name>"
+    }, {
+      header: "Options",
+      optionList: [{
+        name: "rust",
+        alias: "r",
+        type: channel,
+        description: "Rust channel (default, nightly, beta, or stable). [default: default]"
+      }]
+    }],
+    action: function(options) {
+      if (options.help) {
+        commandUsage('new');
+        return;
+      }
+
+      return neon_new(this.cwd, options.name, options.rust);
+    }
+  },
+
+  build: {
+    args: [{ name: "debug", alias: "d", type: Boolean },
+           { name: "path", alias: "p", type: Boolean },
+           { name: "rust", alias: "r", type: channel, defaultValue: "default" },
+           { name: "modules", type: String, multiple: true, defaultOption: true },
+           { name: "node_module_version", type: Number },
+           { name: "help", alias: "h", type: Boolean }],
+    usage: [{
+      header: "neon build",
+      content: "(Re)build a Neon project."
+    }, {
+      header: "Synopsis",
+      content: ["$ neon build [options]",
+                "$ neon build [options] [underline]{module} ..."]
+    }, {
+      header: "Options",
+      optionList: [{
+        name: "rust",
+        alias: "r",
+        type: channel,
+        description: "Rust channel (default, nightly, beta, or stable). [default: default]"
+      }, {
+        name: "debug",
+        alias: "d",
+        type: Boolean,
+        description: "Debug build."
+      }, {
+        name: "path",
+        alias: "p",
+        type: Boolean,
+        description: "Specify modules by path instead of name."
+      }]
+    }],
+    action: async function(options) {
+      if (options.help) {
+        commandUsage('build');
+        return;
+      }
+
+      let modules = options.modules
+          ? options.modules.map(m => options.path ? path.resolve(this.cwd, m)
+                                                  : path.resolve(this.cwd, 'node_modules', m))
+          : [this.cwd];
+
+      let info = modules.length > 1;
+
+      for (let mod of modules) {
+        if (info) {
+          console.log(style.info("building Neon package at " + (path.relative(this.cwd, mod) || ".")));
+        }
+
+        await neon_build(mod, options.rust, options.debug ? 'debug' : 'release', options.node_module_version);
+      }
+    }
+  },
+
+  version: {
+    args: [{ name: "help", alias: "h", type: Boolean }],
+    usage: [{
+      header: "neon version",
+      content: "Display the Neon version."
+    }, {
+      header: "Synopsis",
+      content: "$ neon version"
+    }],
+    action: function(options) {
+      if (options.help) {
+        commandUsage('version');
+        return;
+      }
+
+      console.log(metadata.version);
+    }
+  }
+
 };
 
 export default class CLI {
   constructor(argv, cwd) {
-    this.command = argv[2];
-    this.args = minimist(argv.slice(3));
+    this.argv = argv.slice(2);
     this.cwd = cwd;
   }
 
   async exec() {
     try {
-      if (!this.command) {
-        printUsage();
-        throw null;
-      }
-      if (!SUBCOMMANDS.hasOwnProperty(this.command)) {
-        printUsage();
-        console.log();
-        throw new Error("'" + this.command + "' is not a neon command.");
-      }
-      await SUBCOMMANDS[this.command].call(this);
+      let { command, argv } = parseCommands([ null, 'help', 'new', 'build', 'version' ], this.argv);
+
+      await spec[command].action.call(this,
+                                      parseArgs(spec[command].args, { argv }),
+                                      parseUsage(spec[command].usage));
     } catch (e) {
-      if (e) {
-        console.log(style.error(e.message));
+      spec.help.action.call(this);
+
+      switch (e.name) {
+        case 'INVALID_COMMAND':
+          console.error(style.error("No manual entry for `neon " + e.command + "`"));
+          break;
+
+        default:
+          console.error(style.error(e.message));
+          break;
       }
-      throw e;
     }
   }
 }
