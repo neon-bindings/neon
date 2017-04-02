@@ -1,5 +1,7 @@
 use std::mem;
 use std::any::TypeId;
+use std::error::Error;
+use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::marker::PhantomData;
 use std::collections::{HashSet, HashMap};
 use std::os::raw::c_void;
@@ -13,7 +15,21 @@ use internal::js::class::ClassMetadata;
 use internal::js::error::{JsError, Kind};
 use internal::mem::{Handle, HandleInternal, Managed};
 
+#[derive(Debug)]
 pub struct Throw;
+
+impl Display for Throw {
+    fn fmt(&self, fmt: &mut Formatter) -> FmtResult {
+        fmt.write_str("JavaScript Error")
+    }
+}
+
+impl Error for Throw {
+    fn description(&self) -> &str {
+        "javascript error"
+    }
+}
+
 pub type VmResult<T> = Result<T, Throw>;
 pub type JsResult<'b, T> = VmResult<Handle<'b, T>>;
 
