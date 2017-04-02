@@ -28,7 +28,7 @@ const spec = {
 
   null: {
     args: [{ name: "version", alias: "v", type: Boolean },
-           { name: "help", alias: "h", type: Boolean }],
+           { name: "help", alias: "h", type: String, defaultValue: null }],
     usage: [{
       header: "Neon",
       content: "Neon is a tool for building native Node.js modules with Rust."
@@ -43,8 +43,10 @@ const spec = {
                 { name: "help", summary: "Display help information about Neon." }]
     }],
     action: function(options, usage) {
-      if (options.version && !options.help) {
+      if (options.version && options.help === undefined) {
         spec.version.action.call(this, options);
+      } else if (options.help !== undefined) {
+        commandUsage(options.help);
       } else {
         console.error(usage);
       }
@@ -64,6 +66,8 @@ const spec = {
     action: function(options) {
       if (options && options.command) {
         commandUsage(options.command);
+      } else if (options && options.help) {
+        commandUsage('help');
       } else {
         console.error(parseUsage(spec.null.usage));
       }
