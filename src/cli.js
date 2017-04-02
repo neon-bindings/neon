@@ -182,15 +182,13 @@ const spec = {
 
 export default class CLI {
   constructor(argv, cwd) {
-    this.command = argv[2];
-    this.argv = argv;
+    this.argv = argv.slice(2);
     this.cwd = cwd;
   }
 
   async exec() {
     try {
-      // FIXME: use this.argv
-      let { command, argv } = parseCommands([ null, 'help', 'new', 'build', 'version' ]);
+      let { command, argv } = parseCommands([ null, 'help', 'new', 'build', 'version' ], this.argv);
 
       await spec[command].action.call(this,
                                       parseArgs(spec[command].args, { argv }),
