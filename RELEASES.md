@@ -1,3 +1,9 @@
+# Version 0.1.14 (2017-04-02)
+
+* Ensure failing tests break the build (#191)
+* Catch Rust panics and convert them to JS exceptions (#192)
+* Implement `Error` for `Throw` (#201)
+
 # Version 0.1.13 (2017-02-17)
 
 * More robust build scripts for neon-runtime, fixing Homebrew node installations (see #189)
