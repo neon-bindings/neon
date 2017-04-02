@@ -1,3 +1,7 @@
+# Version 0.1.14
+
+* Clean up the CLI and allow `neon build` to optionally take module names (#48).
+
 # Version 0.1.13
 
 * Bump to match neon 0.1.13.
