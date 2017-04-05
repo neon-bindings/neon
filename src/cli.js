@@ -2,6 +2,7 @@ import path from 'path';
 import metadata from '../package.json';
 import neon_new from './ops/neon_new';
 import neon_build from './ops/neon_build';
+import neon_clean from './ops/neon_clean';
 import * as style from './ops/style';
 import parseCommands from 'command-line-commands';
 import parseArgs from 'command-line-args';
@@ -14,6 +15,13 @@ function channel(value) {
   return value;
 }
 
+function profile(value) {
+  if (!['debug', 'release', 'all'].indexOf(value) > -1) {
+    throw new Error("Expected one of 'debug', 'release', or 'all', got '" + value + "'");
+  }
+  return value;
+}
+
 function commandUsage(command) {
   if (!spec[command]) {
     let e = new Error();
@@ -22,6 +30,24 @@ function commandUsage(command) {
     throw e;
   }
   console.error(parseUsage(spec[command].usage));
+}
+
+function logIf(multiple, action, cwd, module) {
+  if (multiple) {
+    console.log(style.info(action + " Neon package at " + (path.relative(cwd, module) || ".")));
+  }
+}
+
+function modules(cwd, names, paths) {
+  let modules = names
+      ? names.map(m => paths ? path.resolve(cwd, m)
+                             : path.resolve(cwd, 'node_modules', m))
+      : [cwd];
+
+  return {
+    modules,
+    multiple: modules.length > 1
+  };
 }
 
 const spec = {
@@ -39,6 +65,7 @@ const spec = {
       header: "Command List",
       content: [{ name: "new", summary: "Create a new Neon project." },
                 { name: "build", summary: "(Re)build a Neon project." },
+                { name: "clean", summary: "Remove build artifacts from a Neon project." },
                 { name: "version", summary: "Display the Neon version." },
                 { name: "help", summary: "Display help information about Neon." }]
     }],
@@ -75,23 +102,14 @@ const spec = {
   },
 
   new: {
-    args: [{ name: "rust", alias: "r", type: channel, defaultValue: "default" },
-           { name: "name", type: String, defaultOption: true },
+    args: [{ name: "name", type: String, defaultOption: true },
            { name: "help", alias: "h", type: Boolean }],
     usage: [{
       header: "neon new",
       content: "Create a new Neon project."
     }, {
       header: "Synopsis",
-      content: "$ neon new [options] [@<scope>/]<name>"
-    }, {
-      header: "Options",
-      optionList: [{
-        name: "rust",
-        alias: "r",
-        type: channel,
-        description: "Rust channel (default, nightly, beta, or stable). [default: default]"
-      }]
+      content: "$ neon new [@<scope>/]<name>"
     }],
     action: function(options) {
       if (options.help) {
@@ -99,7 +117,7 @@ const spec = {
         return;
       }
 
-      return neon_new(this.cwd, options.name, options.rust);
+      return neon_new(this.cwd, options.name);
     }
   },
 
@@ -142,19 +160,54 @@ const spec = {
         return;
       }
 
-      let modules = options.modules
-          ? options.modules.map(m => options.path ? path.resolve(this.cwd, m)
-                                                  : path.resolve(this.cwd, 'node_modules', m))
-          : [this.cwd];
+      let { modules, multiple } = modules(this.cwd, options.modules, options.path);
 
-      let info = modules.length > 1;
+      for (let module of modules) {
+        logIf(multiple, "building", this.cwd, module);
 
-      for (let mod of modules) {
-        if (info) {
-          console.log(style.info("building Neon package at " + (path.relative(this.cwd, mod) || ".")));
-        }
+        await neon_build(module, options.rust, options.debug ? 'debug' : 'release', options.node_module_version);
+      }
+    }
+  },
 
-        await neon_build(mod, options.rust, options.debug ? 'debug' : 'release', options.node_module_version);
+  clean: {
+    args: [{ name: "profile", alias: "P", type: profile, defaultValue: 'all' },
+           { name: "path", alias: "p", type: Boolean },
+           { name: "modules", type: String, multiple: true, defaultOption: true },
+           { name: "help", alias: "h", type: Boolean }],
+    usage: [{
+      header: "neon clean",
+      content: "Remove build artifacts from a Neon project."
+    }, {
+      header: "Synopsis",
+      content: ["$ neon clean [options]",
+                "$ neon clean [options] [underline]{module} ..."]
+    }, {
+      header: "Options",
+      optionList: [{
+        name: "profile",
+        alias: "P",
+        type: profile,
+        description: "Which build profile(s) to clean (debug, release, or all). [default: all]"
+      }, {
+        name: "path",
+        alias: "p",
+        type: Boolean,
+        description: "Specify modules by path instead of name."
+      }]
+    }],
+    action: async function(options) {
+      if (options.help) {
+        commandUsage('clean');
+        return;
+      }
+
+      let { modules, multiple } = modules(this.cwd, options.modules, options.path);
+
+      for (let module of modules) {
+        logIf(multiple, "cleaning", this.cwd, module);
+
+        await neon_clean(module, options.profile);
       }
     }
   },
@@ -188,7 +241,7 @@ export default class CLI {
 
   async exec() {
     try {
-      let { command, argv } = parseCommands([ null, 'help', 'new', 'build', 'version' ], this.argv);
+      let { command, argv } = parseCommands([ null, 'help', 'new', 'build', 'clean', 'version' ], this.argv);
 
       await spec[command].action.call(this,
                                       parseArgs(spec[command].args, { argv }),

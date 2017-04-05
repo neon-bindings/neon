@@ -39,9 +39,7 @@ function explicit_cargo_target() {
 function cargo(root, toolchain, configuration, nodeModuleVersion, target) {
   let macos = process.platform === 'darwin';
 
-  let [command, prefix] = toolchain === 'default'
-                        ? ["cargo", []]
-                        : ["multirust", ["run", toolchain]];
+  let prefix = toolchain === 'default' ? [] : ["+" + toolchain];
 
   let args = prefix.concat(macos ? 'rustc' : 'build',
                            configuration === 'release' ? ["--release"] : [],
@@ -55,9 +53,9 @@ function cargo(root, toolchain, configuration, nodeModuleVersion, target) {
     args.push("--target=" + target);
   }
 
-  console.log(style.info([command].concat(args).join(" ")));
+  console.log(style.info(["cargo"].concat(args).join(" ")));
 
-  return spawn(command, args, { cwd: path.resolve(root, 'native'), stdio: 'inherit', env: env });
+  return spawn("cargo", args, { cwd: path.resolve(root, 'native'), stdio: 'inherit', env: env });
 }
 
 async function main(root, name, configuration, target) {

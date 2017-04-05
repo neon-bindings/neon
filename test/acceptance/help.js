@@ -19,6 +19,7 @@ function testHelp(proc, done) {
     .wait("Command List")
     .wait("new")
     .wait("build")
+    .wait("clean")
     .wait("version")
     .wait("help")
     .run(err => {
@@ -30,6 +31,28 @@ function testHelp(proc, done) {
 describeHelp("neon help",   "should print neon usage", testHelp, ['help']);
 describeHelp("neon --help", "should print neon usage", testHelp, ['--help']);
 describeHelp("neon -h",     "should print neon usage", testHelp, ['-h']);
+
+function testHelpClean(proc, done) {
+  return proc
+    .wait("neon clean")
+    .wait("Remove build artifacts from a Neon project.")
+    .wait("Synopsis")
+    .wait("$ neon clean [options]")
+    .wait("$ neon clean [options] module ...")
+    .wait("Options")
+    .wait("-P, --profile")
+    .wait("-p, --path")
+    .run(err => {
+      if (err) throw err;
+      done();
+    });
+}
+
+describeHelp("neon help clean",   "should print `neon clean` usage", testHelpClean, ['help', 'clean']);
+describeHelp("neon clean --help", "should print `neon clean` usage", testHelpClean, ['clean', '--help']);
+describeHelp("neon clean -h",     "should print `neon clean` usage", testHelpClean, ['clean', '-h']);
+describeHelp("neon --help clean", "should print `neon clean` usage", testHelpClean, ['--help', 'clean']);
+describeHelp("neon -h clean",     "should print `neon clean` usage", testHelpClean, ['-h', 'clean']);
 
 function testHelpVersion(proc, done) {
   return proc
@@ -54,9 +77,7 @@ function testHelpNew(proc, done) {
     .wait("neon new")
     .wait("Create a new Neon project")
     .wait("Synopsis")
-    .wait("$ neon new [options] [@<scope>/]<name>")
-    .wait("Options")
-    .wait("-r, --rust")
+    .wait("$ neon new [@<scope>/]<name>")
     .run(err => {
       if (err) throw err;
       done();
