@@ -46,7 +46,7 @@ async function guessAuthor() {
   }
 }
 
-export default async function wizard(pwd, name, toolchain) {
+export default async function wizard(pwd, name) {
   let its = validateName(name);
   if (!its.validForNewPackages) {
     let errors = (its.errors || []).concat(its.warnings || []);
@@ -117,13 +117,6 @@ export default async function wizard(pwd, name, toolchain) {
       major: semver.major(version),
       minor: semver.minor(version),
       patch: semver.patch(version)
-    },
-    build: {
-      cargo: {
-        cmd: toolchain === 'default'
-           ? []
-           : ["multirust", "run", toolchain]
-      }
     }
   };
 
