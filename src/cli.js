@@ -7,6 +7,8 @@ import * as style from './ops/style';
 import parseCommands from 'command-line-commands';
 import parseArgs from 'command-line-args';
 import parseUsage from 'command-line-usage';
+import log from './log';
+import { setup as setupLogging } from './log';
 
 function channel(value) {
   if (!['default', 'nightly', 'beta', 'stable'].indexOf(value) > -1) {
@@ -34,11 +36,11 @@ function commandUsage(command) {
 
 function logIf(multiple, action, cwd, module) {
   if (multiple) {
-    console.log(style.info(action + " Neon package at " + (path.relative(cwd, module) || ".")));
+    log(action + " Neon package at " + (path.relative(cwd, module) || "."));
   }
 }
 
-function modules(cwd, names, paths) {
+function parseModules(cwd, names, paths) {
   let modules = names
       ? names.map(m => paths ? path.resolve(cwd, m)
                              : path.resolve(cwd, 'node_modules', m))
@@ -160,19 +162,18 @@ const spec = {
         return;
       }
 
-      let { modules, multiple } = modules(this.cwd, options.modules, options.path);
+      let { modules, multiple } = parseModules(this.cwd, options.modules, options.path);
 
       for (let module of modules) {
         logIf(multiple, "building", this.cwd, module);
 
-        await neon_build(module, options.rust, options.debug ? 'debug' : 'release', options.node_module_version);
+        await neon_build(module, options.rust, !options.debug, options.node_module_version);
       }
     }
   },
 
   clean: {
-    args: [{ name: "profile", alias: "P", type: profile, defaultValue: 'all' },
-           { name: "path", alias: "p", type: Boolean },
+    args: [{ name: "path", alias: "p", type: Boolean },
            { name: "modules", type: String, multiple: true, defaultOption: true },
            { name: "help", alias: "h", type: Boolean }],
     usage: [{
@@ -185,11 +186,6 @@ const spec = {
     }, {
       header: "Options",
       optionList: [{
-        name: "profile",
-        alias: "P",
-        type: profile,
-        description: "Which build profile(s) to clean (debug, release, or all). [default: all]"
-      }, {
         name: "path",
         alias: "p",
         type: Boolean,
@@ -202,12 +198,12 @@ const spec = {
         return;
       }
 
-      let { modules, multiple } = modules(this.cwd, options.modules, options.path);
+      let { modules, multiple } = parseModules(this.cwd, options.modules, options.path);
 
       for (let module of modules) {
         logIf(multiple, "cleaning", this.cwd, module);
 
-        await neon_clean(module, options.profile);
+        await neon_clean(module);
       }
     }
   },
@@ -240,6 +236,8 @@ export default class CLI {
   }
 
   async exec() {
+    setupLogging(msg => { console.log(style.info(msg)); });
+
     try {
       let { command, argv } = parseCommands([ null, 'help', 'new', 'build', 'clean', 'version' ], this.argv);
 
