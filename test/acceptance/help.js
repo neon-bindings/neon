@@ -40,7 +40,6 @@ function testHelpClean(proc, done) {
     .wait("$ neon clean [options]")
     .wait("$ neon clean [options] module ...")
     .wait("Options")
-    .wait("-P, --profile")
     .wait("-p, --path")
     .run(err => {
       if (err) throw err;
