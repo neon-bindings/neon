@@ -1,3 +1,7 @@
+# Version 0.1.15
+
+* Better support for Electron via the artifacts file (#52).
+
 # Version 0.1.14
 
 * Clean up the CLI and allow `neon build` to optionally take module names (#48).
