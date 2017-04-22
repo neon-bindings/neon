@@ -1,3 +1,7 @@
+# Version 0.1.15 (2017-05-21)
+
+* Better Electron support in CLI's build process.
+
 # Version 0.1.14 (2017-04-02)
 
 * Ensure failing tests break the build (#191)
