@@ -1,8 +1,11 @@
 import { remove } from './async/fs';
 import * as rust from './rust';
-import path from 'path';
+import * as path from 'path';
+import { Dict } from './interfaces/core';
+import Crate from './crate';
+import BuildSettings from './build-settings';
 
-const LIB_PREFIX = {
+const LIB_PREFIX: Dict<string> = {
   'darwin':  "lib",
   'freebsd': "lib",
   'linux':   "lib",
@@ -10,7 +13,7 @@ const LIB_PREFIX = {
   'win32':   ""
 };
 
-const LIB_SUFFIX = {
+const LIB_SUFFIX: Dict<string> = {
   'darwin':  ".dylib",
   'freebsd': ".so",
   'linux':   ".so",
@@ -18,10 +21,22 @@ const LIB_SUFFIX = {
   'win32':   ".dll"
 };
 
-// Represents the Rust build artifacts for a single build target of a Neon crate.
-export default class Target {
+export type TargetOptions = {
+  release?: boolean,
+  arch?: string
+};
 
-  constructor(crate, options = {}) {
+/** The Rust build artifacts for a single build target of a Neon crate. */
+export default class Target {
+  readonly crate: Crate;
+  readonly release: boolean;
+  readonly arch: string;
+  readonly triple: string;
+  readonly subdirectory: string;
+  readonly root: string;
+  readonly dylib: string;
+
+  constructor(crate: Crate, options: TargetOptions = {}) {
     let { release = true, arch = process.env.npm_config_arch || process.arch } = options;
     this.crate = crate;
     this.release = release;
@@ -46,7 +61,7 @@ export default class Target {
     await remove(path.resolve(this.crate.root, 'target', this.subdirectory));
 
     // If this target was the active target, remove the addon.
-    if (this.crate.artifacts.active === this.subdirectory) {
+    if (this.crate.artifacts.haveActivated(this.subdirectory)) {
       await this.crate.removeAddon();
     }
 
@@ -55,7 +70,10 @@ export default class Target {
     this.crate.saveArtifacts();
   }
 
-  async build(toolchain, settings, abi = process.versions.modules) {
+  async build(toolchain: rust.Toolchain,
+              settings: BuildSettings,
+              abi: string = process.versions.modules)
+  {
     let macos = process.platform === 'darwin';
 
     let command = macos ? 'rustc' : 'build';
@@ -89,7 +107,7 @@ export default class Target {
     }
   }
 
-  inState(settings) {
+  inState(settings: BuildSettings) {
     let savedSettings = this.crate.artifacts.lookup(this.subdirectory);
     return savedSettings && savedSettings.match(settings);
   }

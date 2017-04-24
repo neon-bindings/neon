@@ -1,46 +1,41 @@
-import path from 'path';
-import metadata from '../package.json';
+import * as path from 'path';
 import neon_new from './ops/neon_new';
 import neon_build from './ops/neon_build';
 import neon_clean from './ops/neon_clean';
-import * as style from './ops/style';
-import parseCommands from 'command-line-commands';
-import parseArgs from 'command-line-args';
-import parseUsage from 'command-line-usage';
+import * as style from './style';
+import cliCommands = require('command-line-commands');
+import cliArgs = require('command-line-args');
+import cliUsage = require('command-line-usage');
 import log from './log';
 import { setup as setupLogging } from './log';
+import { Dict } from './interfaces/core';
 
-function channel(value) {
-  if (!['default', 'nightly', 'beta', 'stable'].indexOf(value) > -1) {
+let metadata = require('../package.json');
+
+function channel(value: string) {
+  if (['default', 'nightly', 'beta', 'stable'].indexOf(value) < 0) {
     throw new Error("Expected one of 'default', 'nightly', 'beta', or 'stable', got '" + value + "'");
   }
   return value;
 }
 
-function profile(value) {
-  if (!['debug', 'release', 'all'].indexOf(value) > -1) {
-    throw new Error("Expected one of 'debug', 'release', or 'all', got '" + value + "'");
-  }
-  return value;
-}
-
-function commandUsage(command) {
+function commandUsage(command: string) {
   if (!spec[command]) {
     let e = new Error();
-    e.command = command;
+    (e as any).command = command;
     e.name = 'INVALID_COMMAND';
     throw e;
   }
-  console.error(parseUsage(spec[command].usage));
+  console.error(cliUsage(spec[command].usage));
 }
 
-function logIf(multiple, action, cwd, module) {
+function logIf(multiple: boolean, action: string, cwd: string, module: string) {
   if (multiple) {
     log(action + " Neon package at " + (path.relative(cwd, module) || "."));
   }
 }
 
-function parseModules(cwd, names, paths) {
+function parseModules(cwd: string, names: string[], paths: string[]) {
   let modules = names
       ? names.map(m => paths ? path.resolve(cwd, m)
                              : path.resolve(cwd, 'node_modules', m))
@@ -52,7 +47,17 @@ function parseModules(cwd, names, paths) {
   };
 }
 
-const spec = {
+type Action = (this: CLI, options: Dict<any>, usage: string) => void;
+
+type Command = {
+  args: cliArgs.Option[],
+  usage: cliUsage.Sections,
+  action: Action
+};
+
+type Spec = Dict<Command>;
+
+const spec: Spec = {
 
   null: {
     args: [{ name: "version", alias: "v", type: Boolean },
@@ -98,7 +103,7 @@ const spec = {
       } else if (options && options.help) {
         commandUsage('help');
       } else {
-        console.error(parseUsage(spec.null.usage));
+        console.error(cliUsage(spec.null.usage));
       }
     }
   },
@@ -230,7 +235,10 @@ const spec = {
 };
 
 export default class CLI {
-  constructor(argv, cwd) {
+  readonly argv: string[];
+  readonly cwd: string;
+
+  constructor(argv: string[], cwd: string) {
     this.argv = argv.slice(2);
     this.cwd = cwd;
   }
@@ -239,11 +247,11 @@ export default class CLI {
     setupLogging(msg => { console.log(style.info(msg)); });
 
     try {
-      let { command, argv } = parseCommands([ null, 'help', 'new', 'build', 'clean', 'version' ], this.argv);
+      let { command, argv } = cliCommands([ null, 'help', 'new', 'build', 'clean', 'version' ], this.argv);
 
       await spec[command].action.call(this,
-                                      parseArgs(spec[command].args, { argv }),
-                                      parseUsage(spec[command].usage));
+                                      cliArgs(spec[command].args, { argv }),
+                                      cliUsage(spec[command].usage));
     } catch (e) {
       spec.help.action.call(this);
 

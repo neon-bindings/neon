@@ -1,21 +1,19 @@
 import { readFile, writeFile, mkdirs } from '../async/fs';
-import { prompt } from '../async/inquirer';
+import { prompt } from 'inquirer';
 import gitconfig from '../async/git-config';
-import path from 'path';
-import handlebars from 'handlebars';
-import semver from 'semver';
-import validateLicense from 'validate-npm-package-license';
-import validateName from 'validate-npm-package-name';
-import * as style from './style';
+import * as path from 'path';
+import * as handlebars from 'handlebars';
+import * as semver from 'semver';
+import * as style from '../style';
+import validateLicense = require('validate-npm-package-license');
+import validateName = require('validate-npm-package-name');
 
 const ROOT_DIR = path.resolve(__dirname, '..', '..');
 const TEMPLATES_DIR = path.resolve(ROOT_DIR, 'templates');
 
-const NEON_CLI_VERSION = (async function() {
-  return JSON.parse(await readFile(path.resolve(ROOT_DIR, 'package.json'), 'utf8')).version;
-})();
+const NEON_CLI_VERSION = require(path.resolve(ROOT_DIR, 'package.json')).version;
 
-async function compile(filename) {
+async function compile(filename: string) {
   return handlebars.compile(await readFile(path.resolve(TEMPLATES_DIR, filename), 'utf8'), { noEscape: true });
 }
 
@@ -46,7 +44,7 @@ async function guessAuthor() {
   }
 }
 
-export default async function wizard(pwd, name) {
+export default async function wizard(pwd: string, name: string) {
   let its = validateName(name);
   if (!its.validForNewPackages) {
     let errors = (its.errors || []).concat(its.warnings || []);
@@ -55,7 +53,7 @@ export default async function wizard(pwd, name) {
 
   // check for a scoped name
   let scoped = name.match(/@([^\/]+)\/(.*)/);
-  let [, scope, local] = scoped || [, null, name];
+  let [, scope, local] = scoped ? (scoped as [string, string, string]) : [, null, name];
 
   console.log("This utility will walk you through creating the " + style.project(name) + " Neon project.");
   console.log("It only covers the most common items, and tries to guess sensible defaults.");
@@ -93,7 +91,7 @@ export default async function wizard(pwd, name) {
         if (its.validForNewPackages) {
           return true;
         }
-        let errors = (its.errors || []).concat(its.warnings || []);
+        let errors = its.warnings || [];
         return "Sorry, " + errors.join(" and ") + ".";
       }
     }
@@ -110,13 +108,12 @@ export default async function wizard(pwd, name) {
       internal: local.replace(/-/g, "_")
     }
   };
-  let version = await NEON_CLI_VERSION;
   let ctx = {
     project: answers,
     "neon-cli": {
-      major: semver.major(version),
-      minor: semver.minor(version),
-      patch: semver.patch(version)
+      major: semver.major(NEON_CLI_VERSION),
+      minor: semver.minor(NEON_CLI_VERSION),
+      patch: semver.patch(NEON_CLI_VERSION)
     }
   };
 

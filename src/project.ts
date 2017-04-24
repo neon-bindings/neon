@@ -1,21 +1,30 @@
-import path from 'path';
+import * as path from 'path';
 import Crate from './crate';
 import Target from './target';
 import BuildSettings from './build-settings';
 import log from './log';
 import { spawn } from './async/child_process';
+import * as rust from './rust';
 
-// Represents a Neon project and its directory tree.
+export type ProjectOptions = {
+  crate?: string
+};
+
+/** A Neon project and its directory tree. */
 export default class Project {
+  readonly root: string;
+  readonly crate: Crate;
 
-  constructor(root, options = {}) {
+  constructor(root: string, options: ProjectOptions = {}) {
     let { crate = 'native' } = options;
     this.root = root;
-    this.manifest = require(path.resolve(root, 'package.json'));
     this.crate = new Crate(this, crate);
   }
 
-  async build(toolchain, release, abi) {
+  async build(toolchain: rust.Toolchain,
+              release: boolean,
+              abi: string)
+  {
     let target = new Target(this.crate, { release: release });
     let settings = BuildSettings.current(toolchain);
 
