@@ -1,8 +1,8 @@
 import * as rust from './rust';
-import { Dict } from './interfaces/core';
-import { JSONValue, JSONObject, isJSONObject } from './json';
+import Dict from 'ts-dict';
+import * as JSON from 'ts-typed-json';
 
-function isStringDict(x: JSONObject): x is Dict<string | null> {
+function isStringDict(x: JSON.Object): x is Dict<string | null> {
   for (let key of Object.keys(x)) {
     if (x[key] !== null && typeof x[key] !== 'string') {
       return false;
@@ -44,8 +44,8 @@ export default class BuildSettings {
     });
   }
 
-  static fromJSON(value: JSONValue): BuildSettings {
-    if (!isJSONObject(value)) {
+  static fromJSON(value: JSON.Value): BuildSettings {
+    if (!JSON.isObject(value)) {
       throw new TypeError("value is not an object");
     }
     let rustc = value.rustc;
@@ -53,7 +53,7 @@ export default class BuildSettings {
     if (typeof rustc !== 'string') {
       throw new TypeError("value.rustc is not a string");
     }
-    if (!isJSONObject(env)) {
+    if (!JSON.isObject(env)) {
       throw new TypeError("value.env is not an object");
     }
     if (!isStringDict(env)) {
@@ -62,7 +62,7 @@ export default class BuildSettings {
     return new BuildSettings(rustc, env);
   }
 
-  toJSON(): JSONObject {
+  toJSON(): JSON.Object {
     return {
       "rustc": this.rustc,
       "env": this.env

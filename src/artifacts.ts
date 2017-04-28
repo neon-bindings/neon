@@ -1,7 +1,7 @@
 import BuildSettings from './build-settings';
 import { writeFileSync } from 'fs';
-import { Dict } from './interfaces/core';
-import { JSONObject, JSONValue, isJSONObject } from './json';
+import Dict from 'ts-dict';
+import * as JSON from 'ts-typed-json';
 
 /**
  * The current state of build artifacts, for all targets.
@@ -48,14 +48,14 @@ export default class Artifacts {
 
   static load(file: string) {
     try {
-      return Artifacts.fromJSON(require(file));
+      return Artifacts.fromJSON(JSON.loadSync(file));
     } catch (e) {
       return new Artifacts();
     }
   }
 
-  static fromJSON(json: JSONValue): Artifacts {
-    if (!isJSONObject(json)) {
+  static fromJSON(json: JSON.Value): Artifacts {
+    if (!JSON.isObject(json)) {
       throw new TypeError("expected object, found " + (json === null ? "null" : typeof json));
     }
     let active = json.active;
@@ -63,7 +63,7 @@ export default class Artifacts {
       throw new TypeError("json.active is not a string or null");
     }
     let jsonTargets = json.targets;
-    if (!isJSONObject(jsonTargets)) {
+    if (!JSON.isObject(jsonTargets)) {
       throw new TypeError("json.targets is not an object");
     }
     let targets: Dict<BuildSettings> = {};
@@ -73,8 +73,8 @@ export default class Artifacts {
     return new Artifacts(active, targets);
   }
 
-  toJSON(): JSONObject {
-    let targets: JSONObject = {};
+  toJSON(): JSON.Object {
+    let targets: JSON.Object = {};
     for (let target of Object.keys(this.targets)) {
       targets[target] = this.targets[target].toJSON();
     }

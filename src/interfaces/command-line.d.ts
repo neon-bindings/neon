@@ -1,20 +1,6 @@
-type OptionDefinition = {
-    name: string,
-    type: (value: any) => any,
-    alias?: string,
-    multiple?: boolean,
-    defaultOption?: boolean,
-    defaultValue?: any,
-    group?: string | string[],
-    description?: string,
-    typeLabel?: string
-};
-
-type Dictionary = {
-    [key: string]: any
-};
-
 declare module 'command-line-usage' {
+    import Dict from 'ts-dict';
+
     namespace internal {
         export type Sections = Section | Section[];
 
@@ -22,19 +8,28 @@ declare module 'command-line-usage' {
 
         export type ContentSection = {
             header: string,
-            content: string | string[] | Dict[],
+            content: string | string[] | Dict<any>[],
             raw?: boolean
         };
 
         export type OptionListSection = {
             header: string,
-            optionList: Option[],
+            optionList: OptionDefinition[],
             group?: string | string[],
             hide?: string | string[]
         };
 
-        export type Dict = Dictionary;
-        export type Option = OptionDefinition;
+        export type OptionDefinition = {
+            name: string,
+            type: (value: any) => any,
+            alias?: string,
+            multiple?: boolean,
+            defaultOption?: boolean,
+            defaultValue?: any,
+            group?: string | string[],
+            description?: string,
+            typeLabel?: string
+        };
     }
 
     function internal(sections: internal.Sections): string;
@@ -48,18 +43,30 @@ declare module 'command-line-commands' {
 }
 
 declare module 'command-line-args' {
+    import Dict from 'ts-dict';
+
     namespace internal {
         export type CommandLineArgsOptions = {
             argv?: string[],
             partial?: boolean
         };
-        export type Dict = Dictionary;
-        export type Option = OptionDefinition;
+
+        export type OptionDefinition = {
+            name: string,
+            type: (value: any) => any,
+            alias?: string,
+            multiple?: boolean,
+            defaultOption?: boolean,
+            defaultValue?: any,
+            group?: string | string[],
+            description?: string,
+            typeLabel?: string
+        };
     }
 
-    function internal(optionDefinitions: internal.Option[],
+    function internal(optionDefinitions: internal.OptionDefinition[],
                       options?: internal.CommandLineArgsOptions)
-        : internal.Dict;
+        : Dict<any>;
 
     export = internal;
 }

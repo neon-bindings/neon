@@ -7,14 +7,19 @@ import * as semver from 'semver';
 import * as style from '../style';
 import validateLicense = require('validate-npm-package-license');
 import validateName = require('validate-npm-package-name');
+import * as JSON from 'ts-typed-json';
 
 const ROOT_DIR = path.resolve(__dirname, '..', '..');
 const TEMPLATES_DIR = path.resolve(ROOT_DIR, 'templates');
 
-const NEON_CLI_VERSION = require(path.resolve(ROOT_DIR, 'package.json')).version;
+const NEON_CLI_VERSION =
+  JSON.asString(JSON.asObject(JSON.loadSync(path.resolve(ROOT_DIR, 'package.json'))).version);
 
 async function compile(filename: string) {
-  return handlebars.compile(await readFile(path.resolve(TEMPLATES_DIR, filename), 'utf8'), { noEscape: true });
+  let source = await readFile(path.resolve(TEMPLATES_DIR, filename), {
+    encoding: 'utf8'
+  });
+  return handlebars.compile(source, { noEscape: true });
 }
 
 const GITIGNORE_TEMPLATE = compile('.gitignore.hbs');

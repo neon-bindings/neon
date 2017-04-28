@@ -7,8 +7,9 @@ import mkdirp = require('mkdirp');
 export let stat: (path: string) => Promise<fs.Stats>
   = RSVP.denodeify(fs.stat);
 
-export let readFile: (path: string, encoding: string) => Promise<string>
-  = RSVP.denodeify(fs.readFile);
+export let readFile: ((path: string, options: { encoding: string; flag?: string; }) => Promise<string>)
+                   & ((path: string) => Promise<Buffer>)
+  = RSVP.denodeify<string | Buffer>(fs.readFile);
 
 export type WriteOptions = {
   encoding?: string,

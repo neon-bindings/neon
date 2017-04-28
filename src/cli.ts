@@ -8,9 +8,10 @@ import cliArgs = require('command-line-args');
 import cliUsage = require('command-line-usage');
 import log from './log';
 import { setup as setupLogging } from './log';
-import { Dict } from './interfaces/core';
+import Dict from 'ts-dict';
+import * as JSON from 'ts-typed-json';
 
-let metadata = require('../package.json');
+let metadata = JSON.loadSync(path.resolve(__dirname, '..', 'package.json'));
 
 function channel(value: string) {
   if (['default', 'nightly', 'beta', 'stable'].indexOf(value) < 0) {
@@ -50,7 +51,7 @@ function parseModules(cwd: string, names: string[], paths: string[]) {
 type Action = (this: CLI, options: Dict<any>, usage: string) => void;
 
 type Command = {
-  args: cliArgs.Option[],
+  args: cliArgs.OptionDefinition[],
   usage: cliUsage.Sections,
   action: Action
 };
@@ -228,7 +229,7 @@ const spec: Spec = {
         return;
       }
 
-      console.log(metadata.version);
+      console.log(JSON.asObject(metadata).version);
     }
   }
 

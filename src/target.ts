@@ -1,7 +1,7 @@
 import { remove } from './async/fs';
 import * as rust from './rust';
 import * as path from 'path';
-import { Dict } from './interfaces/core';
+import Dict from 'ts-dict';
 import Crate from './crate';
 import BuildSettings from './build-settings';
 
