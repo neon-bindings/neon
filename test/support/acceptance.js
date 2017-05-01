@@ -1,5 +1,6 @@
-import tmp from 'tmp';
-import path from 'path';
+// FIXME(PR): switch to `import tmp = ...`
+var tmp = require('tmp');
+import * as path from 'path';
 import { spawn } from 'nexpect';
 
 const NODE = process.execPath;

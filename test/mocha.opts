@@ -1,2 +1,2 @@
---compilers js:babel-register
+--compilers js:ts-node/register,ts:ts-node/register
 test/acceptance

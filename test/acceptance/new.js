@@ -1,4 +1,4 @@
-import TOML from 'toml';
+import * as TOML from 'toml';
 import { assert } from 'chai';
 import { setup } from '../support/acceptance';
 import { readFile } from '../support/fs';
