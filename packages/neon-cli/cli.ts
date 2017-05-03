@@ -37,7 +37,7 @@ function logIf(multiple: boolean, action: string, cwd: string, module: string) {
 }
 
 function parseModules(cwd: string, names: string[], paths: string[]) {
-  let modules = names
+  let modules = names.length
       ? names.map(m => paths ? path.resolve(cwd, m)
                              : path.resolve(cwd, 'node_modules', m))
       : [cwd];
