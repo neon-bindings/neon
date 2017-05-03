@@ -247,12 +247,10 @@ export default class CLI {
   async exec() {
     setupLogging(msg => { console.log(style.info(msg)); });
 
-    try {
-      let { command, argv } = cliCommands([ null, 'help', 'new', 'build', 'clean', 'version' ], this.argv);
+    let parsed;
 
-      await spec[command].action.call(this,
-                                      cliArgs(spec[command].args, { argv }),
-                                      cliUsage(spec[command].usage));
+    try {
+      parsed = cliCommands([ null, 'help', 'new', 'build', 'clean', 'version' ], this.argv);
     } catch (e) {
       spec.help.action.call(this);
 
@@ -265,6 +263,17 @@ export default class CLI {
           console.error(style.error(e.message));
           break;
       }
+
+      return process.exit(1);
+    }
+
+    try {
+      let { command, argv } = parsed;
+      await spec[command].action.call(this,
+                                      cliArgs(spec[command].args, { argv }),
+                                      cliUsage(spec[command].usage));
+    } catch (e) {
+      console.error(style.error(e.message));
     }
   }
 }
