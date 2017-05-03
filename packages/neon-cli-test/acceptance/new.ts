@@ -1,13 +1,14 @@
-import TOML from 'toml';
+import * as TOML from 'toml';
 import { assert } from 'chai';
-import { setup } from '../support/acceptance';
+import { setup, spawnable } from '../support/acceptance';
 import { readFile } from '../support/fs';
 
 describe('neon new', function() {
   setup();
 
   it('should create a new project', function(done) {
-    this.spawn(['new', 'my-app'], { stripColors: true })
+    let self = spawnable(this);
+    self.spawn(['new', 'my-app'], { stripColors: true })
         .wait('This utility will walk you through creating the')
         .wait('version').sendline('')
         .wait('desc').sendline('My new app!')
@@ -45,7 +46,8 @@ describe('neon new', function() {
   });
 
   it('should create a new project as a scoped package', function(done) {
-    this.spawn(['new', '@me/my-package'], { stripColors: true })
+    let self = spawnable(this);
+    self.spawn(['new', '@me/my-package'], { stripColors: true })
         .wait('This utility will walk you through creating the')
         .wait('version').sendline('')
         .wait('desc').sendline('My new scoped package')

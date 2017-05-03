@@ -7,7 +7,8 @@
     "type": "git",
     "url": "https://github.com/neon-bindings/neon-cli.git"
   },
-  "main": "lib/index.js",
+  "main": "dist/neon-cli/index.js",
+  "types": "dist/neon-cli/index.d.ts",
   "bin": {
     "neon": "./bin/cli.js"
   },
@@ -20,7 +21,7 @@
     "git-config": "0.0.7",
     "handlebars": "^4.0.3",
     "in-publish": "^2.0.0",
-    "inquirer": "^0.11.0",
+    "inquirer": "^3.0.6",
     "mkdirp": "^0.5.1",
     "quickly-copy-file": "^1.0.0",
     "rimraf": "^2.6.1",
@@ -31,18 +32,31 @@
     "validate-npm-package-name": "^2.2.2"
   },
   "devDependencies": {
-    "babel-cli": "^6.3.17",
-    "babel-preset-es2015-node4": "^2.0.2",
-    "babel-preset-stage-3": "^6.3.13",
-    "babel-register": "^6.3.13",
+    "@types/chai": "^3.5.2",
+    "@types/chalk": "^0.4.31",
+    "@types/es6-promise": "0.0.32",
+    "@types/handlebars": "^4.0.32",
+    "@types/inquirer": "0.0.33",
+    "@types/mkdirp": "^0.3.29",
+    "@types/mocha": "^2.2.41",
+    "@types/nexpect": "^0.4.29",
+    "@types/node": "^7.0.13",
+    "@types/rimraf": "0.0.28",
+    "@types/rsvp": "^3.3.0",
+    "@types/semver": "^5.3.31",
+    "@types/tmp": "0.0.32",
     "chai": "^3.4.1",
     "mocha": "^2.3.4",
     "nexpect": "^0.5.0",
-    "tmp": "0.0.28"
+    "tmp": "0.0.28",
+    "ts-dict": "^0.1.1",
+    "ts-node": "^3.0.2",
+    "ts-typed-json": "^0.2.2",
+    "typescript": "^2.2.2"
   },
   "scripts": {
-    "test": "npm run transpile && mocha",
-    "transpile": "rm -rf lib && babel src -qd lib",
+    "test": "npm run transpile && mocha dist/neon-cli-test/acceptance",
+    "transpile": "tsc",
     "prepublish": "in-install || npm run transpile"
   },
   "bugs": {
