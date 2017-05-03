@@ -11,7 +11,7 @@ import { setup as setupLogging } from './log';
 import Dict from 'ts-dict';
 import * as JSON from 'ts-typed-json';
 
-let metadata = JSON.loadSync(path.resolve(__dirname, '..', 'package.json'));
+let metadata = JSON.loadSync(path.resolve(__dirname, '..', '..', 'package.json'));
 
 function channel(value: string) {
   if (['default', 'nightly', 'beta', 'stable'].indexOf(value) < 0) {

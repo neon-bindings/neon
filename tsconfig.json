@@ -5,13 +5,16 @@
         "lib": [
             "es5", "es2015.core"
         ],
-        // FIXME(PR): re-disable this once we migrate all .js files to .ts
-        "allowJs": true,
+        "allowJs": false,
 
         "sourceMap": false,
-        "outDir": "lib",
-        // FIXME(PR): re-enable this once we migrate all .js files to .ts
-        //"declaration": true,
+        "outDir": "dist",
+        "rootDir": "packages",
+        "baseUrl": "./packages",
+        "paths": {
+            "*": ["*"]
+        },
+        "declaration": true,
 
         "noImplicitAny": true,
         "suppressImplicitAnyIndexErrors": true,
@@ -23,7 +26,7 @@
         "noUnusedParameters": true
     },
     "include": [
-        "src/**/*"
+        "packages/**/*"
     ],
     "exclude": [
         "node_modules"
