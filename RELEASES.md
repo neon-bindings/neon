@@ -1,3 +1,7 @@
+# Version 0.1.16
+
+* CLI bugfix (#56).
+
 # Version 0.1.15
 
 * Better support for Electron via the artifacts file (#52).
