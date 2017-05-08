@@ -1,6 +1,6 @@
 [package]
 name = "neon"
-version = "0.1.16"
+version = "0.1.17"
 authors = ["Dave Herman <dherman@mozilla.com>"]
 description = "A safe abstraction layer for Node.js."
 documentation = "https://docs.neon-bindings.com/neon/index.html"
@@ -19,4 +19,4 @@ links = "neon-runtime"
 
 [dependencies]
 cslice = "0.2"
-neon-runtime = { version = "=0.1.16", path = "crates/neon-runtime" }
+neon-runtime = { version = "=0.1.17", path = "crates/neon-runtime" }

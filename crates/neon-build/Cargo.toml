@@ -1,6 +1,6 @@
 [package]
 name = "neon-build"
-version = "0.1.16"
+version = "0.1.17"
 authors = ["Dave Herman <dherman@mozilla.com>"]
 description = "Build logic required for Neon projects."
 repository = "https://github.com/neon-bindings/neon"

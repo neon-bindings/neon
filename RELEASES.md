@@ -1,3 +1,11 @@
+# Version 0.1.17
+
+* CLI bugfix (#57).
+
+# Version 0.1.16
+
+* CLI bugfix (#56).
+
 # Version 0.1.15 (2017-05-21)
 
 * Better Electron support in CLI's build process.
