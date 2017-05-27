@@ -10,6 +10,8 @@ import log from './log';
 import { setup as setupLogging } from './log';
 import Dict from 'ts-dict';
 import * as JSON from 'ts-typed-json';
+import unknown from 'ts-unknown';
+import { Toolchain } from './rust';
 
 let metadata = JSON.loadSync(path.resolve(__dirname, '..', '..', 'package.json'));
 
@@ -36,7 +38,7 @@ function logIf(multiple: boolean, action: string, cwd: string, module: string) {
   }
 }
 
-function parseModules(cwd: string, names: string[], paths: string[]) {
+function parseModules(cwd: string, names: string[], paths: boolean) {
   let modules = names.length
       ? names.map(m => paths ? path.resolve(cwd, m)
                              : path.resolve(cwd, 'node_modules', m))
@@ -48,7 +50,7 @@ function parseModules(cwd: string, names: string[], paths: string[]) {
   };
 }
 
-type Action = (this: CLI, options: Dict<any>, usage: string) => void;
+type Action = (this: CLI, options: Dict<unknown>, usage: string) => void;
 
 type Command = {
   args: cliArgs.OptionDefinition[],
@@ -81,7 +83,7 @@ const spec: Spec = {
       if (options.version && options.help === undefined) {
         spec.version.action.call(this, options);
       } else if (options.help !== undefined) {
-        commandUsage(options.help);
+        commandUsage(options.help as string);
       } else {
         console.error(usage);
       }
@@ -100,7 +102,7 @@ const spec: Spec = {
     }],
     action: function(options) {
       if (options && options.command) {
-        commandUsage(options.command);
+        commandUsage(options.command as string);
       } else if (options && options.help) {
         commandUsage('help');
       } else {
@@ -122,10 +124,12 @@ const spec: Spec = {
     action: function(options) {
       if (options.help) {
         commandUsage('new');
-        return;
+      } else if (!options.name) {
+        console.error(cliUsage(spec.new.usage));
+      } else {
+        return neon_new(this.cwd, options.name as string);
       }
-
-      return neon_new(this.cwd, options.name);
+      return;
     }
   },
 
@@ -168,12 +172,17 @@ const spec: Spec = {
         return;
       }
 
-      let { modules, multiple } = parseModules(this.cwd, options.modules, options.path);
+      let { modules, multiple } = parseModules(this.cwd,
+                                               (options.modules || []) as string[],
+                                               !!options.path);
 
       for (let module of modules) {
         logIf(multiple, "building", this.cwd, module);
 
-        await neon_build(module, options.rust, !options.debug, options.node_module_version);
+        await neon_build(module,
+                         options.rust as Toolchain,
+                         !options.debug,
+                         String(options.node_module_version));
       }
     }
   },
@@ -204,7 +213,9 @@ const spec: Spec = {
         return;
       }
 
-      let { modules, multiple } = parseModules(this.cwd, options.modules, options.path);
+      let { modules, multiple } = parseModules(this.cwd,
+                                               (options.modules || []) as string[],
+                                               !!options.path);
 
       for (let module of modules) {
         logIf(multiple, "cleaning", this.cwd, module);
@@ -274,6 +285,8 @@ export default class CLI {
                                       cliUsage(spec[command].usage));
     } catch (e) {
       console.error(style.error(e.message));
+      console.error();
+      console.error(e.stack);
     }
   }
 }
