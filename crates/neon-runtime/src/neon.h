@@ -68,6 +68,9 @@ extern "C" {
   bool Neon_Buffer_New(v8::Local<v8::Object> *out, uint32_t size);
   void Neon_Buffer_Data(buf_t *out, v8::Local<v8::Object> obj);
 
+  bool Neon_ArrayBuffer_New(v8::Local<v8::ArrayBuffer> *out, v8::Isolate *isolate, uint32_t size);
+  void Neon_ArrayBuffer_Data(buf_t *out, v8::Local<v8::ArrayBuffer> buffer);
+
   typedef void(*Neon_ChainedScopeCallback)(void *, void *, void *, void *);
   typedef void(*Neon_NestedScopeCallback)(void *, void *, void *);
   typedef void(*Neon_RootScopeCallback)(void *, void *, void *);
@@ -132,6 +135,7 @@ extern "C" {
   bool Neon_Tag_IsArray(v8::Local<v8::Value> val);
   bool Neon_Tag_IsFunction(v8::Local<v8::Value> val);
   bool Neon_Tag_IsBuffer(v8::Local<v8::Value> obj);
+  bool Neon_Tag_IsArrayBuffer(v8::Local<v8::Value> obj);
   bool Neon_Tag_IsError(v8::Local<v8::Value> val);
 
   void Neon_Error_NewError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);

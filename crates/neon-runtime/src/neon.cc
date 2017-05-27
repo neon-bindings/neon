@@ -201,6 +201,21 @@ extern "C" bool Neon_Tag_IsBuffer(v8::Local<v8::Value> obj) {
   return node::Buffer::HasInstance(obj);
 }
 
+extern "C" bool Neon_ArrayBuffer_New(v8::Local<v8::ArrayBuffer> *out, v8::Isolate *isolate, uint32_t size) {
+  *out = v8::ArrayBuffer::New(isolate, size);
+  return true;
+}
+
+extern "C" void Neon_ArrayBuffer_Data(buf_t *out, v8::Local<v8::ArrayBuffer> buffer) {
+  v8::ArrayBuffer::Contents contents = buffer->GetContents();
+  out->data = contents.Data();
+  out->len = contents.ByteLength();
+}
+
+extern "C" bool Neon_Tag_IsArrayBuffer(v8::Local<v8::Value> value) {
+  return value->IsArrayBuffer();
+}
+
 extern "C" void Neon_Scope_Escape(v8::Local<v8::Value> *out, Nan::EscapableHandleScope *scope, v8::Local<v8::Value> value) {
   *out = scope->Escape(value);
 }

@@ -1,1 +1,1 @@
-pub use internal::js::binary::JsBuffer;
+pub use internal::js::binary::{JsBuffer, JsArrayBuffer};
