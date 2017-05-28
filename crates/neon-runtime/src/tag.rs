@@ -68,4 +68,8 @@ extern "C" {
     #[link_name = "Neon_Tag_IsBuffer"]
     pub fn is_buffer(obj: Local) -> bool;
 
+    /// Indicates if the value type is `ArrayBuffer`.
+    #[link_name = "Neon_Tag_IsArrayBuffer"]
+    pub fn is_arraybuffer(obj: Local) -> bool;
+
 }

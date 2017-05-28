@@ -8,6 +8,7 @@ pub mod array;
 pub mod string;
 pub mod primitive;
 pub mod error;
+pub mod arraybuffer;
 pub mod buffer;
 pub mod tag;
 pub mod module;

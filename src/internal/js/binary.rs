@@ -44,3 +44,40 @@ impl<'a> Lock for &'a mut JsBuffer {
         result
     }
 }
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct JsArrayBuffer(raw::Local);
+
+impl JsArrayBuffer {
+    pub fn new<'a, T: Scope<'a>>(scope: &mut T, size: u32) -> VmResult<Handle<'a, JsArrayBuffer>> {
+        build(|out| { unsafe { neon_runtime::arraybuffer::new(out, mem::transmute(scope.isolate()), size) } })
+    }
+}
+
+impl Managed for JsArrayBuffer {
+    fn to_raw(self) -> raw::Local { self.0 }
+
+    fn from_raw(h: raw::Local) -> Self { JsArrayBuffer(h) }
+}
+
+impl ValueInternal for JsArrayBuffer {
+    fn is_typeof<Other: Value>(other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_arraybuffer(other.to_raw()) }
+    }
+}
+
+impl Value for JsArrayBuffer { }
+
+impl Object for JsArrayBuffer { }
+
+impl<'a> Lock for &'a mut JsArrayBuffer {
+    type Internals = CMutSlice<'a, u8>;
+
+    unsafe fn expose(self, state: &mut LockState) -> Self::Internals {
+        let mut result = mem::uninitialized();
+        neon_runtime::arraybuffer::data(&mut result, self.to_raw());
+        state.use_buffer(result);
+        result
+    }
+}

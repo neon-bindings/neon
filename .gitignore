@@ -5,4 +5,5 @@ Cargo.lock
 **/.DS_Store
 **/build
 **/index.node
+**/artifacts.json
 npm-debug.log
