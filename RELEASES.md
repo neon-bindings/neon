@@ -1,3 +1,8 @@
+# Version 0.1.18
+
+* CLI bugfix (neon-bindings/neon-cli#59).
+* JsArrayBuffer (#210).
+
 # Version 0.1.17
 
 * CLI bugfix (#57).
