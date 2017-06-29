@@ -41,6 +41,7 @@ pub trait IsolateInternal {
     fn to_raw(self) -> *mut raw::Isolate;
     fn from_raw(ptr: *mut raw::Isolate) -> Self;
     fn class_map(&mut self) -> &mut ClassMap;
+    fn current() -> Isolate;
 }
 
 pub struct ClassMap {
@@ -85,6 +86,12 @@ impl IsolateInternal for Isolate {
             }
         }
         unsafe { mem::transmute(ptr) }
+    }
+
+    fn current() -> Isolate {
+        unsafe {
+            mem::transmute(neon_runtime::call::current_isolate())
+        }
     }
 }
 

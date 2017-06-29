@@ -6,6 +6,7 @@
 #include "neon.h"
 #include "neon_string.h"
 #include "neon_class_metadata.h"
+#include "neon_task.h"
 
 extern "C" void Neon_Call_SetReturn(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> value) {
   info->GetReturnValue().Set(value);
@@ -526,4 +527,10 @@ extern "C" void Neon_Error_ThrowSyntaxErrorFromCString(const char *msg) {
 
 extern "C" bool Neon_Mem_SameHandle(v8::Local<v8::Value> v1, v8::Local<v8::Value> v2) {
   return v1 == v2;
+}
+
+extern "C" void Neon_Task_Schedule(void *task, Neon_TaskPerformCallback perform, Neon_TaskCompleteCallback complete, v8::Local<v8::Function> callback) {
+  v8::Isolate *isolate = v8::Isolate::GetCurrent();
+  neon::Task *internal_task = new neon::Task(isolate, task, perform, complete, callback);
+  neon::queue_task(internal_task);
 }
