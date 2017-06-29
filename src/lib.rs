@@ -8,6 +8,7 @@ pub mod mem;
 pub mod vm;
 pub mod scope;
 pub mod js;
+pub mod task;
 
 #[doc(hidden)]
 pub mod macro_internal;
