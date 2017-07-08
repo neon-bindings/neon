@@ -1,7 +1,6 @@
 #ifndef NEON_TASK_H_
 #define NEON_TASK_H_
 
-#include <nan.h>
 #include <uv.h>
 #include "neon.h"
 #include "v8.h"
@@ -22,11 +21,10 @@ public:
   {
     request_.data = this;
     result_ = nullptr;
+    // Save the callback to be invoked when the task completes.
     callback_.Reset(isolate, callback);
-  }
-
-  ~Task() {
-    callback_.Reset();
+    // Save the context (aka realm) to be used when invoking the callback.
+    context_.Reset(isolate, isolate->GetCurrentContext());
   }
 
   void execute() {
@@ -34,25 +32,34 @@ public:
   }
 
   void complete() {
-    Nan::HandleScope scope;
-
-    v8::TryCatch trycatch(isolate_);
+    // Ensure that we have all the proper scopes installed on the C++ stack before
+    // invoking the callback, and use the context (i.e. realm) we saved with the task.
+    v8::Isolate::Scope isolate_scope(isolate_);
+    v8::HandleScope handle_scope(isolate_);
+    v8::Local<v8::Context> context = v8::Local<v8::Context>::New(isolate_, context_);
+    v8::Context::Scope context_scope(context);
 
     v8::Local<v8::Value> argv[2];
-    v8::Local<v8::Value> completion;
 
-    complete_(rust_task_, result_, &completion);
+    argv[0] = v8::Null(isolate_);
+    argv[1] = v8::Undefined(isolate_);
 
-    if (trycatch.HasCaught()) {
-      argv[0] = trycatch.Exception();
-      argv[1] = v8::Undefined(isolate_);
-    } else {
-      argv[0] = v8::Null(isolate_);
-      argv[1] = completion;
+    {
+      v8::TryCatch trycatch(isolate_);
+
+      v8::Local<v8::Value> completion;
+
+      complete_(rust_task_, result_, &completion);
+
+      if (trycatch.HasCaught()) {
+        argv[0] = trycatch.Exception();
+      } else {
+        argv[1] = completion;
+      }
     }
 
     v8::Local<v8::Function> callback = v8::Local<v8::Function>::New(isolate_, callback_);
-    callback->Call(isolate_->GetCurrentContext(), v8::Null(isolate_), 2, argv);
+    callback->Call(context, v8::Null(isolate_), 2, argv);
   }
 
   void *get_result() {
@@ -68,6 +75,7 @@ private:
   Neon_TaskCompleteCallback complete_;
   void *result_;
   v8::Persistent<v8::Function> callback_;
+  v8::Persistent<v8::Context> context_;
 };
 
 void execute_task(uv_work_t *request) {
