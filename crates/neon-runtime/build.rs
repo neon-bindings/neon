@@ -57,8 +57,9 @@ fn build_object_file() {
             .find(node_lib_file_flag_pattern)
             .map(|i| i + node_lib_file_flag_pattern.len())
             .expect("Couldn't find node_lib_file in node-gyp output.");
-        let node_lib_file_end_index = node_gyp_output[node_lib_file_start_index..].find(".lib").unwrap() + node_lib_file_start_index;
-        println!("cargo:node_lib_file={}", &node_gyp_output[node_lib_file_start_index..node_lib_file_end_index]);
+        let node_lib_file_end_index = node_gyp_output[node_lib_file_start_index..].find("'").unwrap() + node_lib_file_start_index;
+        let node_lib_file = &node_gyp_output[node_lib_file_start_index..node_lib_file_end_index];
+        println!("cargo:node_lib_file={}", node_lib_file);
     }
 
     // Run `node-gyp build`.
