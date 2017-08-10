@@ -230,11 +230,11 @@ macro_rules! impl_managed {
 /// ```
 #[macro_export]
 macro_rules! declare_types {
-    { $(#[$attr:meta])* pub class $cls:ident for $typ:ident { $($body:tt)* } $($rest:tt)* } => {
+    { $(#[$attr:meta])* pub class $cls:ident for $typ:ty { $($body:tt)* } $($rest:tt)* } => {
         declare_types! { $(#[$attr])* pub class $cls as $typ for $typ { $($body)* } $($rest)* }
     };
 
-    { $(#[$attr:meta])* class $cls:ident for $typ:ident { $($body:tt)* } $($rest:tt)* } => {
+    { $(#[$attr:meta])* class $cls:ident for $typ:ty { $($body:tt)* } $($rest:tt)* } => {
         declare_types! { $(#[$attr])* class $cls as $typ for $typ { $($body)* } $($rest)* }
     };
 
