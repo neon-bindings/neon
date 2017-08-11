@@ -1,3 +1,7 @@
+# Version 0.1.19
+
+* CLI bugfix (neon-bindings/neon-cli#62, neon-bindings/neon-cli#65)
+
 # Version 0.1.18
 
 * CLI bugfix (neon-bindings/neon-cli#59).
