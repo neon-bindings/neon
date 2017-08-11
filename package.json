@@ -43,7 +43,7 @@
     "@types/nexpect": "^0.4.29",
     "@types/node": "^7.0.13",
     "@types/rimraf": "0.0.28",
-    "@types/rsvp": "^3.3.0",
+    "@types/rsvp": "^3.3.1",
     "@types/semver": "^5.3.31",
     "@types/tmp": "0.0.32",
     "chai": "^3.4.1",
