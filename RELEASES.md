@@ -1,3 +1,7 @@
+# Version 0.1.19
+
+* TypeScript upgrade fixes (#62, #65).
+
 # Version 0.1.18
 
 * CLI bugfix (#59).
