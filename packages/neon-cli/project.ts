@@ -18,7 +18,7 @@ export default class Project {
   constructor(root: string, options: ProjectOptions = {}) {
     let { crate = 'native' } = options;
     this.root = root;
-    this.crate = new Crate(this, crate);
+    this.crate = new Crate(this, { subdirectory: crate });
   }
 
   async build(toolchain: rust.Toolchain,
