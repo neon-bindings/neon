@@ -1,14 +1,14 @@
 import * as fs from 'fs';
 import quicklyCopyFile = require('quickly-copy-file');
-import RSVP = require('rsvp');
+import RSVP from 'rsvp';
 import rimraf = require('rimraf');
 import mkdirp = require('mkdirp');
 
 export let stat: (path: string) => Promise<fs.Stats>
-  = RSVP.denodeify(fs.stat);
+  = RSVP.denodeify(fs.stat, false);
 
 let rf: (path: string, options?: { encoding: string; flag?: string; }) => Promise<string | Buffer>
-  = RSVP.denodeify<string | Buffer>(fs.readFile);
+  = RSVP.denodeify(fs.readFile, false);
 
 export function readFile(path: string, options: { encoding: string; flag?: string; }): Promise<string>;
 export function readFile(path: string): Promise<Buffer>;
@@ -23,12 +23,12 @@ export type WriteOptions = {
 };
 
 export let writeFile: (path: string, contents: string, options: WriteOptions) => Promise<void>
-  = RSVP.denodeify<void>(fs.writeFile);
+  = RSVP.denodeify(fs.writeFile, false);
 
 export let copy = quicklyCopyFile;
 
 export let remove: (path: string) => Promise<void>
-  = RSVP.denodeify<void>(rimraf);
+  = RSVP.denodeify(rimraf, false);
 
 export let mkdirs: (path: string) => Promise<void>
-  = RSVP.denodeify<void>(mkdirp);
+  = RSVP.denodeify(mkdirp, false);
