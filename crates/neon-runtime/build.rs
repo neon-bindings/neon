@@ -1,7 +1,9 @@
 extern crate gcc;
+extern crate regex;
 
 use std::process::Command;
 use std::env;
+use regex::Regex;
 
 fn main() {
     // 1. Build the object file from source using node-gyp.
@@ -45,6 +47,8 @@ fn build_object_file() {
 
     if cfg!(windows) {
         let node_gyp_output = String::from_utf8_lossy(&output.stderr);
+        let version_regex = Regex::new(r"node@(?P<version>\d+\.\d+\.\d+)\s+\|\s+(?P<platform>\w+)\s+\|\s(?P<arch>ia32|x64)").unwrap();
+        let captures = version_regex.captures(&node_gyp_output).unwrap();
         let node_root_dir_flag_pattern = "'-Dnode_root_dir=";
         let node_root_dir_start_index = node_gyp_output
             .find(node_root_dir_flag_pattern)
@@ -58,7 +62,7 @@ fn build_object_file() {
             .map(|i| i + node_lib_file_flag_pattern.len())
             .expect("Couldn't find node_lib_file in node-gyp output.");
         let node_lib_file_end_index = node_gyp_output[node_lib_file_start_index..].find("'").unwrap() + node_lib_file_start_index;
-        let node_lib_file = &node_gyp_output[node_lib_file_start_index..node_lib_file_end_index];
+        let node_lib_file = &node_gyp_output[node_lib_file_start_index..node_lib_file_end_index].replace("<(target_arch)", &captures["arch"]);
         println!("cargo:node_lib_file={}", node_lib_file);
     }
 
