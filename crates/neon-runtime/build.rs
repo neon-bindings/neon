@@ -55,7 +55,7 @@ fn build_object_file() {
             .map(|i| i + node_root_dir_flag_pattern.len())
             .expect("Couldn't find node_root_dir in node-gyp output.");
         let node_root_dir_end_index = node_gyp_output[node_root_dir_start_index..].find("'").unwrap() + node_root_dir_start_index;
-        println!("cargo:node_root_dir={}\\{}", &node_gyp_output[node_root_dir_start_index..node_root_dir_end_index], &captures["arch"]);
+        println!("cargo:node_root_dir={}\\\\{}", &node_gyp_output[node_root_dir_start_index..node_root_dir_end_index], &captures["arch"]);
     }
 
     // Run `node-gyp build`.
