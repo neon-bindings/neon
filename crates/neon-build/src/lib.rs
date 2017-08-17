@@ -1,13 +1,11 @@
 use std::env;
+use std::path::Path;
 
 /// Set up the build environment by setting Cargo configuration variables.
 pub fn setup() {
     if cfg!(windows) {
-        let debug = env::var("DEBUG").ok().map_or(false, |s| s == "true");
-        let configuration = if debug { "Debug" } else { "Release" };
-        let node_root_dir = env::var("DEP_NEON_RUNTIME_NODE_ROOT_DIR").unwrap();
-        let node_lib_file = env::var("DEP_NEON_RUNTIME_NODE_LIB_FILE").unwrap();
-        println!("cargo:rustc-link-search={}\\{}", node_root_dir, configuration);
-        println!("cargo:rustc-link-lib={}", node_lib_file);
+        let node_root_dir = env::var("DEP_NEON_RUNTIME_NODE_ROOT_DIR").expect("env var DEP_NEON_RUNTIME_NODE_ROOT_DIR");
+        println!("cargo:rustc-link-search=native={}", node_root_dir);
+        println!("cargo:rustc-link-lib=native=node");
     }
 }
