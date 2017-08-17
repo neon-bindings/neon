@@ -13,6 +13,7 @@ pub fn setup() {
         println!("cargo:rustc-link-search=native={}", &node_lib_path.parent().unwrap().display());
         println!("cargo:rustc-link-lib={}", &node_lib_path.file_stem().unwrap().to_str().unwrap());
         eprintln!("cargo:rustc-link-search={}\\{}", node_root_dir, configuration);
+        eprintln!("node_lib_path: {}", &node_lib_path.display());
         eprintln!("cargo:rustc-link-search=native={}", &node_lib_path.parent().unwrap().display());
         eprintln!("cargo:rustc-link-lib={}", &node_lib_path.file_stem().unwrap().to_str().unwrap());
         panic!("we're done here.");
