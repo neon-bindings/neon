@@ -84,7 +84,7 @@ fn link_library() {
         format!("build\\{}\\obj\\neon\\neon.obj", configuration)
     };
 
-    gcc::Config::new().object(object_path).compile("libneon.a");
+    gcc::Build::new().object(object_path).compile("libneon.a");
 }
 
 fn debug() -> bool {
