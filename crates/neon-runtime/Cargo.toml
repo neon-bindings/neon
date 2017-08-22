@@ -16,5 +16,5 @@ build = "build.rs"
 cslice = "0.2"
 
 [build-dependencies]
-gcc = "0.3"
+gcc = "0.3.52"
 regex = "0.2"
