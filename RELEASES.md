@@ -1,3 +1,7 @@
+# Version 0.1.20
+
+* Task API (neon-bindings/neon#214).
+
 # Version 0.1.19
 
 * TypeScript upgrade fixes (#62, #65).
