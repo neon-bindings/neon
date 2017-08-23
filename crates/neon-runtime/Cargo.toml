@@ -1,6 +1,6 @@
 [package]
 name = "neon-runtime"
-version = "0.1.19"
+version = "0.1.20"
 authors = ["Dave Herman <dherman@mozilla.com>"]
 description = "Exposes Node and V8 C++ API's for use by Neon."
 repository = "https://github.com/neon-bindings/neon"

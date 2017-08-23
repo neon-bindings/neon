@@ -1,6 +1,11 @@
+# Version 0.1.20
+
+* Background task API (#214).
+* Fixes to Windows builds (#221, #227), thanks to @hone's tenacious troubleshooting.
+
 # Version 0.1.19
 
-* CLI bugfix (neon-bindings/neon-cli#62, neon-bindings/neon-cli#65)
+* CLI bugfix (neon-bindings/neon-cli#62, neon-bindings/neon-cli#65).
 
 # Version 0.1.18
 
