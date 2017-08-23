@@ -6,4 +6,5 @@ Cargo.lock
 **/build
 **/index.node
 **/artifacts.json
+**/package-lock.json
 npm-debug.log
