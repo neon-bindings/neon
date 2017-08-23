@@ -25,6 +25,55 @@ fn npm() -> Command {
     cmd
 }
 
+// The node-gyp output includes platform information in a string
+// that looks like:
+//
+//     gyp info using node@8.3.0 | win32 | x64
+#[cfg(windows)]
+fn parse_node_arch(node_gyp_output: &str) -> String {
+    let version_regex = Regex::new(r"node@(?P<version>\d+\.\d+\.\d+)\s+\|\s+(?P<platform>\w+)\s+\|\s(?P<arch>ia32|x64)").unwrap();
+    let captures = version_regex.captures(&node_gyp_output).unwrap();
+    String::from(&captures["arch"])
+}
+
+// The node-gyp output includes the root directory of shared resources
+// for the Node installation in a string that looks like:
+//
+//     '-Dnode_root_dir=C:\\Users\\dherman\\.node-gyp\\8.3.0'
+#[cfg(windows)]
+fn parse_node_root_dir(node_gyp_output: &str) -> &str {
+    let node_root_dir_flag_pattern = "'-Dnode_root_dir=";
+    let node_root_dir_start_index = node_gyp_output
+        .find(node_root_dir_flag_pattern)
+        .map(|i| i + node_root_dir_flag_pattern.len())
+        .expect("Couldn't find node_root_dir in node-gyp output.");
+    let node_root_dir_end_index = node_gyp_output[node_root_dir_start_index..].find("'").unwrap() + node_root_dir_start_index;
+    &node_gyp_output[node_root_dir_start_index..node_root_dir_end_index]
+}
+
+// The node-gyp output includes the name of the shared Node library file.
+// In NPM versions <= v5.0.3, this was just the filename by itself, e.g.:
+//
+//     '-Dnode_lib_file=node.lib'
+//
+// In NPM versions >= v5.3.0, this was a templated absolute path with a
+// reference to a gyp variable, e.g.:
+//
+//     '-Dnode_lib_file=C:\\Users\\dherman\\.node-gyp\\8.3.0\\<(target_arch)\\node.lib'
+//
+// Either way, we simply extract the value here. The `neon-build` crate
+// processes it further.
+#[cfg(windows)]
+fn parse_node_lib_file(node_gyp_output: &str) -> &str {
+    let node_lib_file_flag_pattern = "'-Dnode_lib_file=";
+    let node_lib_file_start_index = node_gyp_output
+        .find(node_lib_file_flag_pattern)
+        .map(|i| i + node_lib_file_flag_pattern.len())
+        .expect("Couldn't find node_lib_file in node-gyp output.");
+    let node_lib_file_end_index = node_gyp_output[node_lib_file_start_index..].find("'").unwrap() + node_lib_file_start_index;
+    &node_gyp_output[node_lib_file_start_index..node_lib_file_end_index]
+}
+
 fn build_object_file() {
     if cfg!(windows) {
         // Downcase all the npm environment variables to ensure they are read by node-gyp.
@@ -47,24 +96,9 @@ fn build_object_file() {
 
     if cfg!(windows) {
         let node_gyp_output = String::from_utf8_lossy(&output.stderr);
-        let version_regex = Regex::new(r"node@(?P<version>\d+\.\d+\.\d+)\s+\|\s+(?P<platform>\w+)\s+\|\s(?P<arch>ia32|x64)").unwrap();
-        let captures = version_regex.captures(&node_gyp_output).unwrap();
-        println!("cargo:node_arch={}", &captures["arch"]);
-        let node_root_dir_flag_pattern = "'-Dnode_root_dir=";
-        let node_root_dir_start_index = node_gyp_output
-            .find(node_root_dir_flag_pattern)
-            .map(|i| i + node_root_dir_flag_pattern.len())
-            .expect("Couldn't find node_root_dir in node-gyp output.");
-        let node_root_dir_end_index = node_gyp_output[node_root_dir_start_index..].find("'").unwrap() + node_root_dir_start_index;
-        println!("cargo:node_root_dir={}", &node_gyp_output[node_root_dir_start_index..node_root_dir_end_index]);
-        let node_lib_file_flag_pattern = "'-Dnode_lib_file=";
-        let node_lib_file_start_index = node_gyp_output
-            .find(node_lib_file_flag_pattern)
-            .map(|i| i + node_lib_file_flag_pattern.len())
-            .expect("Couldn't find node_lib_file in node-gyp output.");
-        let node_lib_file_end_index = node_gyp_output[node_lib_file_start_index..].find("'").unwrap() + node_lib_file_start_index;
-        let node_lib_file = &node_gyp_output[node_lib_file_start_index..node_lib_file_end_index];
-        println!("cargo:node_lib_file={}", node_lib_file);
+        println!("cargo:node_arch={}", parse_node_arch(&node_gyp_output));
+        println!("cargo:node_root_dir={}", parse_node_root_dir(&node_gyp_output));
+        println!("cargo:node_lib_file={}", parse_node_lib_file(&node_gyp_output));
     }
 
     // Run `node-gyp build`.
