@@ -10,19 +10,14 @@ Rust bindings for writing safe and fast native Node.js modules.
 
 # Getting started
 
-Install [neon-cli](https://github.com/neon-bindings/neon-cli) as a global npm package:
+Once you have the [platform dependencies](https://guides.neon-bindings.com/getting-started/) installed, getting started is as simple as:
 
 ```
-npm install -g neon-cli
+$ npm install -g neon-cli
+$ neon new my-project
 ```
 
-To create a new Neon project, use `neon new`:
-
-```
-neon new my-project
-```
-
-This will ask you a few questions and then generate a project skeleton for you. Follow the instructions from there to build and run your project!
+See the [Getting Started guide](https://guides.neon-bindings.com/getting-started/) for details.
 
 # Platform Support
 
@@ -36,7 +31,6 @@ This will ask you a few questions and then generate a project skeleton for you. 
 
 | Node 4 | Node 6 | Node 7 | Node 8 |
 | ------ | ------ | ------ | ------ |
-| ✓      | ✓      | ✓      | ✓      |
 | ✓      | ✓      | ✓      | ✓      |
 
 Support for [LTS versions of Node](https://github.com/nodejs/LTS#lts-schedule) and current are expected. If you're using a different version of Node and believe it should be supported, let us know.
