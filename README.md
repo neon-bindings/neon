@@ -6,9 +6,7 @@
 [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/github/neon-bindings/neon?branch=master&svg=true)](https://ci.appveyor.com/project/dherman/neon)
 [![](http://meritbadge.herokuapp.com/neon)](https://crates.io/crates/neon)
 
-A safe Rust abstraction layer for native Node.js modules.
-
-Neon protects all handles to the JavaScript heap, even when they're allocated on the Rust stack, ensuring that objects are always safely tracked by the garbage collector.
+Rust bindings for writing safe and fast native Node.js modules.
 
 # Getting started
 
@@ -26,7 +24,7 @@ neon new my-project
 
 This will ask you a few questions and then generate a project skeleton for you. Follow the instructions from there to build and run your project!
 
-# Requirements
+# Platform Support
 
 ### Operating Systems
 
@@ -34,27 +32,18 @@ This will ask you a few questions and then generate a project skeleton for you. 
 | ------ | ----- | ------- |
 | ✓      | ✓     | ✓       |
 
-For macOS, you'll need:
+### Node.js
 
-* OS X 10.7 or later;
-* [XCode](https://developer.apple.com/xcode/download/).
-
-For Windows, you'll need to follow the [node-gyp instructions](https://github.com/nodejs/node-gyp#installation) for installing Windows build tools.
-
-### Rust and Node
-
-|              | Node 4 | Node 6 | Node 7 |
-| ------------ | ------ | ------ | ------ |
-| Rust stable  | ✓      | ✓      | ✓      |
-| Rust beta    | ✓      | ✓      | ✓      |
-| Rust nightly |        |        |        |
-
-Neon supports Rust stable version 1.15 and higher.
+| Node 4 | Node 6 | Node 7 | Node 8 |
+| ------ | ------ | ------ | ------ |
+| ✓      | ✓      | ✓      | ✓      |
+| ✓      | ✓      | ✓      | ✓      |
 
 Support for [LTS versions of Node](https://github.com/nodejs/LTS#lts-schedule) and current are expected. If you're using a different version of Node and believe it should be supported, let us know.
 
-* [Download Node](https://nodejs.org)
-* [Download Rust](https://www.rust-lang.org)
+### Rust
+
+Neon supports Rust stable version 1.15 and higher. We test on the latest stable, beta, and nightly versions of Rust.
 
 # A Taste...
 
@@ -64,14 +53,14 @@ A Neon function takes a `Call` object and produces a Rust `Result` that's either
 fn make_an_array(call: Call) -> JsResult<JsArray> {
     let scope = call.scope; // the current scope for rooting handles
     let array: Handle<JsArray> = JsArray::new(scope, 3);
-    try!(array.set(0, JsInteger::new(scope, 9000)));
-    try!(array.set(1, JsObject::new(scope)));
-    try!(array.set(2, JsNumber::new(scope, 3.14159)));
+    array.set(0, JsInteger::new(scope, 9000))?;
+    array.set(1, JsInteger::new(scope))?;
+    array.set(2, JsNumber::new(scope, 3.14159))?;
     Ok(array)
 }
 ```
 
-For a more complete demonstration, try building a hello world with `neon new`, or check out the slightly bigger [word count demo](https://github.com/dherman/wc-demo).
+To learn more, check out the [Neon guides](https://guides.neon-bindings.com).
 
 # Get Involved
 
