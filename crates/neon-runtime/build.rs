@@ -29,7 +29,6 @@ fn npm() -> Command {
 // that looks like:
 //
 //     gyp info using node@8.3.0 | win32 | x64
-#[cfg(windows)]
 fn parse_node_arch(node_gyp_output: &str) -> String {
     let version_regex = Regex::new(r"node@(?P<version>\d+\.\d+\.\d+)\s+\|\s+(?P<platform>\w+)\s+\|\s(?P<arch>ia32|x64)").unwrap();
     let captures = version_regex.captures(&node_gyp_output).unwrap();
@@ -40,7 +39,6 @@ fn parse_node_arch(node_gyp_output: &str) -> String {
 // for the Node installation in a string that looks like:
 //
 //     '-Dnode_root_dir=C:\\Users\\dherman\\.node-gyp\\8.3.0'
-#[cfg(windows)]
 fn parse_node_root_dir(node_gyp_output: &str) -> &str {
     let node_root_dir_flag_pattern = "'-Dnode_root_dir=";
     let node_root_dir_start_index = node_gyp_output
@@ -63,7 +61,6 @@ fn parse_node_root_dir(node_gyp_output: &str) -> &str {
 //
 // Either way, we simply extract the value here. The `neon-build` crate
 // processes it further.
-#[cfg(windows)]
 fn parse_node_lib_file(node_gyp_output: &str) -> &str {
     let node_lib_file_flag_pattern = "'-Dnode_lib_file=";
     let node_lib_file_start_index = node_gyp_output
