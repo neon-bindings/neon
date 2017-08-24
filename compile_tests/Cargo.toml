@@ -6,4 +6,4 @@ license = "MIT/Apache-2.0"
 
 [dependencies]
 neon = { path = "../" }
-compiletest_rs = "0.1.0"
+compiletest_rs = "0.2.9"
