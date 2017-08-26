@@ -37,6 +37,7 @@ script: |
 jobs:
   include:
     - stage: docs
+      before_install: skip
       before_script:
         - export PATH=$HOME/.local/bin:$PATH
         - pip install ghp-import --user $(whoami)
