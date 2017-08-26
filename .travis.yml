@@ -3,14 +3,14 @@ dist: trusty
 
 rust:
   - stable
-#  - beta
-#  - nightly
+  - beta
+  - nightly
 
 env:
   matrix:
-#    - TRAVIS_NODE_VERSION="4"
-#    - TRAVIS_NODE_VERSION="6"
     - TRAVIS_NODE_VERSION="8"
+    - TRAVIS_NODE_VERSION="6"
+    - TRAVIS_NODE_VERSION="4"
   global:
   - secure: mO6uooJGRkDISBZbTq0zvjOfjQ6BeclkxVZN3XWaXrZ/4KjPi7/fRzkm9c8brPe7LWnD4bQ9Bhp7/I6+SVRlvw+uGXNhBiiIyl95jp9s9mOEN+8V7TyShIHEYjbVJf/EGiv5Rz7ni9cNG6iBHcxy5ehycodPtVdAn/VKw31Og/JNWFTu6OzaDZL6gsFIk7VEnHUHgGtl4/iPPdPgAN18oxWbf0CjaknFxXaQiwJXuevd+fuZU16HygBn2Kmj7gqbAKyG8T6wJ1LAQpTkIduXAcgW/PJnj+Stzu48GRVoWoqMQ9Ksk2oSX70fxksC3U3SH4tIQW1+68fXZz4Y0I6b7LkwxovRxkcE4rgoU15xxJuMjxXlQ/csupwhpnBdHhh+Fmjsr0n5KFFLCI7m04ZqAn7+xx9g2NhyuPmO7/ETW24XV9fRy7IywcqR8UgLmftI36r0nV5iO500t4o13DJ0hBTIUgX6KVenbr7v68WO+M/XSRU81RPGjQKsAFM60EpCtn36uCLAZbKyxQi1kYk6UFJLfb/bfrvSS6dzUQ7fEcNRekLMn8Fo4CKAmYCJ70tvhyx/EN0HrIpCfIYedMTLYf11ZQ/bKWcHE4GzU77cRgNwBYLsY6tFjchFukyK14F6jWgpqF81g0yzG0pRJRxZqrtwEI63Db/eLidGctmcEyQ=
 
@@ -30,13 +30,12 @@ jobs:
   include:
     - stage: test
       script: |
-        echo "skipping tests temporarily..."
-        # cd tests/ &&
-        # npm test &&
-        # if [[ "$TRAVIS_RUST_VERSION" == nightly* ]]; then
-        #   cd ../compile_tests/ &&
-        #   cargo test
-        # fi
+        cd tests/ &&
+        npm test &&
+        if [[ "$TRAVIS_RUST_VERSION" == nightly* ]]; then
+          cd ../compile_tests/ &&
+          cargo test
+        fi
     - stage: docs
       before_script:
         - export PATH=$HOME/.local/bin:$PATH
