@@ -26,16 +26,16 @@ addons:
     packages:
     - g++-4.8
 
+script: |
+  cd tests/ &&
+  npm test &&
+  if [[ "$TRAVIS_RUST_VERSION" == nightly* ]]; then
+    cd ../compile_tests/ &&
+    cargo test
+  fi
+
 jobs:
   include:
-    - stage: test
-      script: |
-        cd tests/ &&
-        npm test &&
-        if [[ "$TRAVIS_RUST_VERSION" == nightly* ]]; then
-          cd ../compile_tests/ &&
-          cargo test
-        fi
     - stage: docs
       before_script:
         - export PATH=$HOME/.local/bin:$PATH
