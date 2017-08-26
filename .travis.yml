@@ -20,8 +20,23 @@ before_install:
   - nvm install ${TRAVIS_NODE_VERSION}
   - nvm use ${TRAVIS_NODE_VERSION}
 
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - g++-4.8
+
 jobs:
   include:
+    - stage: test
+      script: |
+        cd tests/ &&
+        npm test &&
+        if [[ "$TRAVIS_RUST_VERSION" == nightly* ]]; then
+          cd ../compile_tests/ &&
+          cargo test
+        fi
     - stage: docs
       rust: stable
       script: |
@@ -32,22 +47,3 @@ jobs:
         sudo pip install ghp-import &&
         ghp-import -n target/doc &&
         git push -fq https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
-
-addons:
-  apt:
-    sources:
-    - ubuntu-toolchain-r-test
-    packages:
-    - g++-4.8
-
-matrix:
-  allow_failures:
-    - rust: nightly
-
-script: |
-  cd tests/ &&
-  npm test &&
-  if [[ "$TRAVIS_RUST_VERSION" == nightly* ]]; then
-    cd ../compile_tests/ &&
-    cargo test
-  fi
