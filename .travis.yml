@@ -1,14 +1,7 @@
 language: rust
 sudo: required
-after_success: |
-  [ $TRAVIS_BRANCH = master ] &&
-  [ $TRAVIS_PULL_REQUEST = false ] &&
-  cargo doc &&
-  echo "<meta http-equiv=refresh content=0;url=neon/index.html>" > target/doc/index.html &&
-  sudo pip install ghp-import &&
-  ghp-import -n target/doc &&
-  git push -fq https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
 dist: trusty
+
 rust:
   - stable
   - beta
@@ -26,6 +19,19 @@ before_install:
   - source $HOME/.nvm/nvm.sh
   - nvm install ${TRAVIS_NODE_VERSION}
   - nvm use ${TRAVIS_NODE_VERSION}
+
+jobs:
+  include:
+    - stage: docs
+      rust: stable
+      script: |
+        [ $TRAVIS_BRANCH = master ] &&
+        [ $TRAVIS_PULL_REQUEST = false ] &&
+        cargo doc &&
+        echo "<meta http-equiv=refresh content=0;url=neon/index.html>" > target/doc/index.html &&
+        sudo pip install ghp-import &&
+        ghp-import -n target/doc &&
+        git push -fq https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
 
 addons:
   apt:
