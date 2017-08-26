@@ -4,13 +4,13 @@ dist: trusty
 
 rust:
   - stable
-  - beta
-  - nightly
+#  - beta
+#  - nightly
 
 env:
   matrix:
-    - TRAVIS_NODE_VERSION="4"
-    - TRAVIS_NODE_VERSION="6"
+#    - TRAVIS_NODE_VERSION="4"
+#    - TRAVIS_NODE_VERSION="6"
     - TRAVIS_NODE_VERSION="8"
   global:
   - secure: WmqMxkn6Wdtips/1a4nQlknDRvjudIsw1EWzYWiYdsKFwy6HSfiSU4R/SYI6jHkWsFkDUFyVEbN2EqGQGAQXfh/GC7h1xlAR13yGMeXku/avSgYBZtDuNoHqxulWF2nmD4JAnR5Tps6g+PPO8tr192PALQ1VPI5BnQuO7XNvDQH7mf6Sd51w6coJttvxQog6RrnmUWYLhqqYOB9CEfdRaXkka5V+Sgm7AY5vF44Ico9sSHDHhqvrzbh+RFboJID2oIoS/7uwxWEWMTJWf9mPMY7BDUREI/wlQFwnU4kvTC0im+c1XlnY5Dib7SsRx+EJFJJoZobMlzZMJLtzGcIfLQIw7c+DtTUhWGakGlCN6cfz7huk9SzBAHl24pOxW0MJjgZ2TEcb2udcocQOpy/KNlneR3OZgH/N2X08QhzXorU3llZnnO85lsU4pd4Aeux5sSCFTSDX5mkopBYhaViIJkJ48+alSjkbAXTV//z/HqTfSzaUVd/8E/7MsF+7cTf2HB7iK+Vjs/ZDzjnqcoK6xxXO037o0FOZCYKcxT+7MuAMBMq/SzZSF1DptoHn6/wTtuyHdhHVfAmbpEazK5fimhN78WtzY5f10crWAZ5jj9cVFqRFkQhfxZY9yIhrcfYni2AC882FyZEfFnkcpzE50OrKsgbHtGyQ8cusSS4TloI=
@@ -43,6 +43,6 @@ jobs:
         [ $TRAVIS_PULL_REQUEST = false ] &&
         cargo doc &&
         echo "<meta http-equiv=refresh content=0;url=neon/index.html>" > target/doc/index.html &&
-        sudo -H pip install ghp-import &&
+        pip install ghp-import &&
         ghp-import -n target/doc &&
         git push -fq https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
