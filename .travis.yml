@@ -43,13 +43,11 @@ jobs:
         - export PATH=$HOME/.local/bin:$PATH
         - pip install ghp-import --user $(whoami)
       script: |
-        [ $TRAVIS_BRANCH = master ] &&
-        [ $TRAVIS_PULL_REQUEST = false ] &&
-        cargo doc &&
-        echo "done cargo doc" &&
-        echo "<meta http-equiv=refresh content=0;url=neon/index.html>" > target/doc/index.html &&
-        echo "done generating index.html" &&
-        ghp-import -n target/doc &&
-        echo "done ghp-import" &&
-        git push -fq https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages &&
-        echo "done pushing to gh"
+        if [[ $TRAVIS_BRANCH=master && $TRAVIS_PULL_REQUEST=false && $TRAVIS_COMMIT_MESSAGE =~ %\!travis:docs ]]; then
+          cargo doc &&
+          echo "<"'!'"DOCTYPE html>
+<meta charset=utf8>
+<meta http-equiv=refresh content=0;url=neon/index.html>" > target/doc/index.html &&
+          ghp-import -n target/doc &&
+          git push -fq https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
+        fi
