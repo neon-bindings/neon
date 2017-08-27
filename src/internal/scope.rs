@@ -131,7 +131,7 @@ fn chain<'a, T, S, F>(outer: &S, f: F) -> T
 {
     ensure_active(outer);
     let closure: Box<F> = Box::new(f);
-    let callback: extern "C" fn(&mut Box<Option<T>>, &S, *mut raw::EscapableHandleScope, Box<F>) = chained_callback::<'a, T, S, F>;
+    let callback: extern "C" fn(&mut Box<Option<T>>, &S, *mut raw::EscapableHandleScope, Box<F>) = chained_callback::<T, S, F>;
     let mut result: Box<Option<T>> = Box::new(None);
     {
         let out: &mut Box<Option<T>> = &mut result;
