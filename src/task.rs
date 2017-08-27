@@ -30,6 +30,12 @@ pub trait Task: Send + Sized {
     fn complete<'a, T: Scope<'a>>(self, scope: &'a mut T, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent>;
 
     /// Schedule a task to be executed on a background thread.
+    ///
+    /// `callback` should have the following signature:
+    ///
+    /// ```js
+    /// function callback(err, value) {}
+    /// ```
     fn schedule(self, callback: Handle<JsFunction>) {
         let boxed_self = Box::new(self);
         let self_raw = Box::into_raw(boxed_self);
