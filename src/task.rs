@@ -1,3 +1,5 @@
+//! A trait for defining Rust _tasks_ to be executed in a background thread.
+
 use std::marker::{Send, Sized};
 use std::mem;
 use std::os::raw::c_void;
@@ -10,15 +12,24 @@ use internal::vm::{JsResult, Isolate, IsolateInternal};
 use neon_runtime;
 use neon_runtime::raw;
 
+/// A Rust task that can be executed in a background thread.
 pub trait Task: Send + Sized {
+    /// The task's result type, which is sent back to the main thread to communicate a successful result back to JavaScript.
     type Output: Send;
+
+    /// The task's error type, which is sent back to the main thread to communicate a task failure back to JavaScript.
     type Error: Send;
+
+    /// The type of JavaScript value that gets produced to the asynchronous callback on the main thread after the task is completed.
     type JsEvent: Value;
 
+    /// Perform the task, producing either a successful `Output` or an unsuccessful `Error`. This method is executed in a background thread as part of libuv's built-in thread pool.
     fn perform(&self) -> Result<Self::Output, Self::Error>;
 
+    /// Convert the result of the task to a JavaScript value to be passed to the asynchronous callback. This method is executed on the main thread at some point after the background task is completed.
     fn complete<'a, T: Scope<'a>>(self, scope: &'a mut T, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent>;
 
+    /// Schedule a task to be executed on a background thread.
     fn schedule(self, callback: Handle<JsFunction>) {
         let boxed_self = Box::new(self);
         let self_raw = Box::into_raw(boxed_self);
