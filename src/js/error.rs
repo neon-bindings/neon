@@ -1,5 +1,3 @@
-// pub use internal::js::error::{throw, JsError, Kind};
-
 use std::mem;
 use std::ffi::CString;
 use std::panic::{UnwindSafe, catch_unwind};
