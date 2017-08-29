@@ -3,7 +3,6 @@
 extern crate neon_runtime;
 extern crate cslice;
 
-mod internal;
 pub mod mem;
 pub mod vm;
 pub mod scope;

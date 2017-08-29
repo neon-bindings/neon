@@ -6,9 +6,10 @@ use std::os::raw::c_void;
 
 use js::{Value, JsFunction};
 use mem::Handle;
-use internal::mem::Managed;
-use internal::scope::{Scope, RootScope, RootScopeInternal};
-use internal::vm::{JsResult, Isolate, IsolateInternal};
+use mem::Managed;
+use scope::{Scope, RootScope};
+use vm::JsResult;
+use vm::internal::Isolate;
 use neon_runtime;
 use neon_runtime::raw;
 
