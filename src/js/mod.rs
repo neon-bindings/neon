@@ -4,8 +4,6 @@ pub mod binary;
 pub mod error;
 pub mod class;
 
-// pub use internal::js::{Value, Variant, Object, Key, JsValue, JsUndefined, JsNull, JsBoolean, JsInteger, JsNumber, JsString, JsObject, JsArray, JsFunction};
-
 use std::mem;
 use std::os::raw::c_void;
 use std::marker::PhantomData;

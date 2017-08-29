@@ -1,5 +1,3 @@
-// pub use internal::js::class::{ClassDescriptor, Class, JsClass};
-
 use std::any::{Any, TypeId};
 use std::mem;
 use std::marker::PhantomData;

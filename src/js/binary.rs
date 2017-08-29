@@ -1,5 +1,3 @@
-// pub use internal::js::binary::{JsBuffer, JsArrayBuffer};
-
 use std::mem;
 use vm::VmResult;
 use js::{Value, Object, build};

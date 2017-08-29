@@ -2,8 +2,6 @@
 //!
 //! 
 
-// pub use internal::mem::{Handle, LockedHandle, Managed};
-
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use neon_runtime;
