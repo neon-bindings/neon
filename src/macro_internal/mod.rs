@@ -2,7 +2,7 @@
 /// but are subject to change and should never be explicitly used.
 
 // Used by the class macro.
-pub use internal::js::class::{AllocateKernel, ConstructKernel, ConstructorCallKernel, MethodKernel};
+pub use js::class::internal::{AllocateKernel, ConstructKernel, ConstructorCallKernel, MethodKernel};
 
 // An alias for neon_runtime so macros can refer to it.
 pub mod runtime {
