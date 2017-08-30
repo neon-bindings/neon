@@ -37,7 +37,7 @@ Support for [LTS versions of Node](https://github.com/nodejs/LTS#lts-schedule) a
 
 ### Rust
 
-Neon supports Rust stable version 1.15 and higher. We test on the latest stable, beta, and nightly versions of Rust.
+Neon supports Rust stable version 1.18 and higher. We test on the latest stable, beta, and nightly versions of Rust.
 
 # A Taste...
 
