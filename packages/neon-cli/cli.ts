@@ -287,6 +287,7 @@ export default class CLI {
       console.error(style.error(e.message));
       console.error();
       console.error(e.stack);
+      throw e;
     }
   }
 }
