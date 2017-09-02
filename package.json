@@ -12,7 +12,7 @@
   "bin": {
     "neon": "./bin/cli.js"
   },
-  "license": "MIT",
+  "license": "MIT/Apache-2.0",
   "dependencies": {
     "chalk": "^1.1.1",
     "command-line-args": "^4.0.2",
