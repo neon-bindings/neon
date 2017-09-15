@@ -227,8 +227,8 @@ impl<'a> Module<'a> {
 
 impl<'a> Module<'a> {
     pub fn export<T: Value>(&mut self, key: &str, f: fn(Call) -> JsResult<T>) -> VmResult<()> {
-        let value = try!(JsFunction::new(self.scope, f)).upcast::<JsValue>();
-        try!(self.exports.set(key, value));
+        let value = JsFunction::new(self.scope, f)?.upcast::<JsValue>();
+        self.exports.set(key, value)?;
         Ok(())
     }
 }

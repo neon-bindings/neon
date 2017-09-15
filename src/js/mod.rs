@@ -608,7 +608,7 @@ impl JsArray {
             if i >= self.len() {
                 return Ok(result);
             }
-            result.push(try!(self.get(scope, i)));
+            result.push(self.get(scope, i)?);
             i += 1;
         }
     }
@@ -680,7 +680,7 @@ impl<C: Object> JsFunction<C> {
               AS: IntoIterator<Item=Handle<'b, A>>
     {
         let mut args = args.into_iter().collect::<Vec<_>>();
-        let (isolate, argc, argv) = try!(unsafe { prepare_call(scope, &mut args) });
+        let (isolate, argc, argv) = unsafe { prepare_call(scope, &mut args) }?;
         build(|out| {
             unsafe {
                 neon_runtime::fun::call(out, isolate, self.to_raw(), this.to_raw(), argc, argv)
@@ -693,7 +693,7 @@ impl<C: Object> JsFunction<C> {
               AS: IntoIterator<Item=Handle<'b, A>>
     {
         let mut args = args.into_iter().collect::<Vec<_>>();
-        let (isolate, argc, argv) = try!(unsafe { prepare_call(scope, &mut args) });
+        let (isolate, argc, argv) = unsafe { prepare_call(scope, &mut args) }?;
         build(|out| {
             unsafe {
                 neon_runtime::fun::construct(out, isolate, self.to_raw(), argc, argv)
