@@ -219,7 +219,7 @@ macro_rules! impl_managed {
 ///         method hello(call) {
 ///             let scope = call.scope;
 ///             let name = try!(try!(call.arguments.require(scope, 0)).to_string(scope)).value();
-///             let msg = vm::lock(call.arguments.this(scope), |greeter| {
+///             let msg = call.arguments.this(call.scope).grab(|x| {
 ///                 format!("{}, {}!", greeter.greeting, name)
 ///             });
 ///             Ok(try!(JsString::new_or_throw(scope, &msg[..])).upcast())
