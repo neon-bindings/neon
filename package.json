@@ -58,7 +58,7 @@
   "scripts": {
     "test": "npm run transpile && mocha dist/neon-cli-test/acceptance",
     "transpile": "tsc",
-    "prepublish": "in-install || npm run transpile"
+    "prepare": "in-install || npm run transpile"
   },
   "bugs": {
     "url": "https://github.com/neon-bindings/neon-cli/issues"
