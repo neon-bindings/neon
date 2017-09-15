@@ -246,7 +246,7 @@ pub trait Class: Managed + Any {
     fn setup<'a, T: Scope<'a>>(_: &mut T) -> VmResult<ClassDescriptor<'a, Self>>;
 
     fn class<'a, T: Scope<'a>>(scope: &mut T) -> JsResult<'a, JsClass<Self>> {
-        let metadata = try!(Self::metadata(scope));
+        let metadata = Self::metadata(scope)?;
         Ok(unsafe { metadata.class(scope) })
     }
 
@@ -279,7 +279,7 @@ pub(crate) trait ClassInternal: Class {
     }
 
     fn create<'a, T: Scope<'a>>(scope: &mut T) -> VmResult<ClassMetadata> {
-        let descriptor = try!(Self::setup(scope));
+        let descriptor = Self::setup(scope)?;
         unsafe {
             let isolate: *mut c_void = mem::transmute(scope.isolate());
 
@@ -314,10 +314,10 @@ pub(crate) trait ClassInternal: Class {
             }
 
             for (name, method) in descriptor.methods {
-                let method: Handle<JsValue> = try!(build(|out| {
+                let method: Handle<JsValue> = build(|out| {
                     let (method_callback, method_kernel) = method.export();
                     neon_runtime::fun::new_template(out, isolate, method_callback, method_kernel)
-                }));
+                })?;
                 if !neon_runtime::class::add_method(isolate, metadata_pointer, name.as_ptr(), name.len() as u32, method.to_raw()) {
                     return Err(Throw);
                 }

@@ -19,9 +19,9 @@ pub mod macro_internal;
 ///
 /// ```rust,ignore
 /// register_module!(m, {
-///     try!(m.export("foo", foo));
-///     try!(m.export("bar", bar));
-///     try!(m.export("baz", baz));
+///     m.export("foo", foo)?;
+///     m.export("bar", bar)?;
+///     m.export("baz", baz)?;
 ///     Ok(())
 /// });
 /// ```
@@ -210,7 +210,7 @@ macro_rules! impl_managed {
 ///     pub class JsGreeter for Greeter {
 ///         init(call) {
 ///             let scope = call.scope;
-///             let greeting = try!(try!(call.arguments.require(scope, 0)).to_string(scope)).value();
+///             let greeting = call.arguments.require(scope, 0)?.to_string(scope)?.value();
 ///             Ok(Greeter {
 ///                 greeting: greeting
 ///             })
@@ -218,11 +218,11 @@ macro_rules! impl_managed {
 ///
 ///         method hello(call) {
 ///             let scope = call.scope;
-///             let name = try!(try!(call.arguments.require(scope, 0)).to_string(scope)).value();
+///             let name = call.arguments.require(scope, 0)?.to_string(scope)?.value();
 ///             let msg = vm::lock(call.arguments.this(scope), |greeter| {
 ///                 format!("{}, {}!", greeter.greeting, name)
 ///             });
-///             Ok(try!(JsString::new_or_throw(scope, &msg[..])).upcast())
+///             Ok(JsString::new_or_throw(scope, &msg[..])?.upcast())
 ///         }
 ///     }
 ///

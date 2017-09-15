@@ -23,21 +23,21 @@ pub fn return_negative_float_js_number(call: Call) -> JsResult<JsNumber> {
 }
 
 pub fn accept_and_return_js_number(call: Call) -> JsResult<JsNumber> {
-    let number: Handle<JsNumber> = try!(try!(call.arguments.require(call.scope, 0)).check::<JsNumber>());
+    let number: Handle<JsNumber> = call.arguments.require(call.scope, 0)?.check::<JsNumber>()?;
     Ok(number)
 }
 
 pub fn accept_and_return_large_js_number(call: Call) -> JsResult<JsNumber> {
-    let number: Handle<JsNumber> = try!(try!(call.arguments.require(call.scope, 0)).check::<JsNumber>());
+    let number: Handle<JsNumber> = call.arguments.require(call.scope, 0)?.check::<JsNumber>()?;
     Ok(number)
 }
 
 pub fn accept_and_return_float_js_number(call: Call) -> JsResult<JsNumber> {
-    let number: Handle<JsNumber> = try!(try!(call.arguments.require(call.scope, 0)).check::<JsNumber>());
+    let number: Handle<JsNumber> = call.arguments.require(call.scope, 0)?.check::<JsNumber>()?;
     Ok(number)
 }
 
 pub fn accept_and_return_negative_js_number(call: Call) -> JsResult<JsNumber> {
-    let number: Handle<JsNumber> = try!(try!(call.arguments.require(call.scope, 0)).check::<JsNumber>());
+    let number: Handle<JsNumber> = call.arguments.require(call.scope, 0)?.check::<JsNumber>()?;
     Ok(number)
 }
