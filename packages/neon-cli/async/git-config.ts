@@ -1,4 +1,4 @@
-import RSVP from 'rsvp';
+import RSVP = require('rsvp');
 import gitconfig = require('git-config');
 
 let gc: () => Promise<gitconfig.Dict>
