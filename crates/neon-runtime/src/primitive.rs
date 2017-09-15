@@ -20,10 +20,6 @@ extern "C" {
     #[link_name = "Neon_Primitive_BooleanValue"]
     pub fn boolean_value(p: Local) -> bool;
 
-    /// Mutates the `out` argument provided to refer to a newly created `v8::Integer` object.
-    #[link_name = "Neon_Primitive_Integer"]
-    pub fn integer(out: &mut Local, isolate: *mut Isolate, x: i32);
-
     /// Indicates if the value is a 32-bit unsigned integer.
     #[link_name = "Neon_Primitive_IsUint32"]
     pub fn is_u32(p: Local) -> bool;
@@ -31,10 +27,6 @@ extern "C" {
     /// Indicates if the value is a 32-bit signed integer.
     #[link_name = "Neon_Primitive_IsInt32"]
     pub fn is_i32(p: Local) -> bool;
-
-    /// Gets the underlying value of a `v8::Integer` object.
-    #[link_name = "Neon_Primitive_IntegerValue"]
-    pub fn integer_value(p: Local) -> i64;
 
     /// Mutates the `out` argument provided to refer to a newly created `v8::Number` object.
     #[link_name = "Neon_Primitive_Number"]

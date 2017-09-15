@@ -47,8 +47,8 @@ A Neon function takes a `Call` object and produces a Rust `Result` that's either
 fn make_an_array(call: Call) -> JsResult<JsArray> {
     let scope = call.scope; // the current scope for rooting handles
     let array: Handle<JsArray> = JsArray::new(scope, 3);
-    array.set(0, JsInteger::new(scope, 9000))?;
-    array.set(1, JsInteger::new(scope))?;
+    array.set(0, JsNumber::new(scope, 9000))?;
+    array.set(1, JsNumber::new(scope))?;
     array.set(2, JsNumber::new(scope, 3.14159))?;
     Ok(array)
 }
