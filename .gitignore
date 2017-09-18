@@ -1,4 +1,10 @@
+target
+Cargo.lock
 **/*~
+**/node_modules
 **/.DS_Store
-/node_modules/
-/dist/
+**/build
+**/index.node
+**/artifacts.json
+**/package-lock.json
+npm-debug.log
