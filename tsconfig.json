@@ -1,0 +1,34 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es5",
+        "lib": [
+            "es5", "es2015.core"
+        ],
+        "allowJs": false,
+
+        "sourceMap": false,
+        "outDir": "dist",
+        "rootDir": "packages",
+        "baseUrl": "./packages",
+        "paths": {
+            "*": ["*"]
+        },
+        "declaration": true,
+
+        "noImplicitAny": true,
+        "suppressImplicitAnyIndexErrors": true,
+        "strictNullChecks": true,
+        "noImplicitReturns": true,
+        "noImplicitThis": true,
+        "allowUnreachableCode": false,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true
+    },
+    "include": [
+        "packages/**/*"
+    ],
+    "exclude": [
+        "node_modules"
+    ]
+}

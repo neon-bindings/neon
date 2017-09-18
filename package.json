@@ -1,0 +1,67 @@
+{
+  "name": "neon-cli",
+  "version": "0.1.20",
+  "description": "Build and load native Rust/Neon modules.",
+  "author": "Dave Herman <dherman@mozilla.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/neon-bindings/neon-cli.git"
+  },
+  "main": "dist/neon-cli/index.js",
+  "types": "dist/neon-cli/index.d.ts",
+  "bin": {
+    "neon": "./bin/cli.js"
+  },
+  "license": "SEE LICENSE IN LICENSE-*",
+  "dependencies": {
+    "chalk": "^2.1.0",
+    "command-line-args": "^4.0.2",
+    "command-line-commands": "^2.0.0",
+    "command-line-usage": "^4.0.0",
+    "git-config": "0.0.7",
+    "handlebars": "^4.0.3",
+    "in-publish": "^2.0.0",
+    "inquirer": "^3.0.6",
+    "mkdirp": "^0.5.1",
+    "quickly-copy-file": "^1.0.0",
+    "rimraf": "^2.6.1",
+    "rsvp": "^4.6.1",
+    "semver": "^5.1.0",
+    "toml": "^2.3.0",
+    "ts-typed-json": "^0.2.2",
+    "validate-npm-package-license": "^3.0.1",
+    "validate-npm-package-name": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.0.4",
+    "@types/chalk": "^0.4.31",
+    "@types/es6-promise": "0.0.33",
+    "@types/handlebars": "^4.0.32",
+    "@types/inquirer": "0.0.35",
+    "@types/mkdirp": "^0.5.1",
+    "@types/mocha": "^2.2.41",
+    "@types/nexpect": "^0.4.29",
+    "@types/node": "^8.0.28",
+    "@types/rimraf": "^2.0.2",
+    "@types/rsvp": "^3.3.1",
+    "@types/semver": "^5.3.31",
+    "@types/tmp": "0.0.33",
+    "chai": "^3.4.1",
+    "mocha": "^3.5.3",
+    "nexpect": "^0.5.0",
+    "tmp": "0.0.33",
+    "ts-dict": "^0.1.1",
+    "ts-node": "^3.0.2",
+    "ts-unknown": "^0.2.0",
+    "typescript": "^2.2.2"
+  },
+  "scripts": {
+    "test": "npm run transpile && mocha dist/neon-cli-test/acceptance",
+    "transpile": "tsc",
+    "prepare": "in-install || npm run transpile"
+  },
+  "bugs": {
+    "url": "https://github.com/neon-bindings/neon-cli/issues"
+  },
+  "homepage": "https://github.com/neon-bindings/neon-cli"
+}
