@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import quicklyCopyFile = require('quickly-copy-file');
-import RSVP from 'rsvp';
+import RSVP = require('rsvp');
 import rimraf = require('rimraf');
 import mkdirp = require('mkdirp');
 
