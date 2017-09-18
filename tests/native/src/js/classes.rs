@@ -36,10 +36,10 @@ declare_types! {
   pub class JsUser for User {
     init(call) {
       let scope = call.scope;
-      let id = try!(try!(call.arguments.require(scope, 0)).check::<JsNumber>());
-      let first_name: Handle<JsString> = try!(try!(call.arguments.require(scope, 1)).check::<JsString>());
-      let last_name: Handle<JsString> = try!(try!(call.arguments.require(scope, 2)).check::<JsString>());
-      let email: Handle<JsString> = try!(try!(call.arguments.require(scope, 3)).check::<JsString>());
+      let id = call.arguments.require(scope, 0)?.check::<JsNumber>()?;
+      let first_name: Handle<JsString> = call.arguments.require(scope, 1)?.check::<JsString>()?;
+      let last_name: Handle<JsString> = call.arguments.require(scope, 2)?.check::<JsString>()?;
+      let email: Handle<JsString> = call.arguments.require(scope, 3)?.check::<JsString>()?;
 
       Ok(User {
         id: id.value() as i32,
@@ -52,7 +52,7 @@ declare_types! {
     method get(call) {
       let scope = call.scope;
 
-      let attr: String = try!(try!(call.arguments.require(scope, 0)).check::<JsString>()).value();
+      let attr: String = call.arguments.require(scope, 0)?.check::<JsString>()?.value();
 
       match &attr[..] {
         "id" => {
@@ -61,15 +61,15 @@ declare_types! {
         },
         "first_name" => {
           let first_name = call.arguments.this(scope).grab(|user| { user.first_name.clone() });
-          Ok(try!(JsString::new_or_throw(scope, &first_name[..])).upcast())
+          Ok(JsString::new_or_throw(scope, &first_name[..])?.upcast())
         },
         "last_name" => {
           let last_name = call.arguments.this(scope).grab(|user| { user.last_name.clone() });
-          Ok(try!(JsString::new_or_throw(scope, &last_name[..])).upcast())
+          Ok(JsString::new_or_throw(scope, &last_name[..])?.upcast())
         },
         "email" => {
           let email = call.arguments.this(scope).grab(|user| { user.email.clone() });
-          Ok(try!(JsString::new_or_throw(scope, &email[..])).upcast())
+          Ok(JsString::new_or_throw(scope, &email[..])?.upcast())
         },
         _ => JsError::throw(Kind::TypeError, "property does not exist")
       }
