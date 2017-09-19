@@ -20,7 +20,6 @@
     "command-line-usage": "^4.0.0",
     "git-config": "0.0.7",
     "handlebars": "^4.0.3",
-    "in-publish": "^2.0.0",
     "inquirer": "^3.0.6",
     "mkdirp": "^0.5.1",
     "quickly-copy-file": "^1.0.0",
@@ -58,7 +57,7 @@
   "scripts": {
     "test": "npm run transpile && mocha dist/neon-cli-test/acceptance",
     "transpile": "tsc",
-    "prepare": "in-install || npm run transpile"
+    "prepublishOnly": "npm run transpile"
   },
   "bugs": {
     "url": "https://github.com/neon-bindings/neon-cli/issues"
