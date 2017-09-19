@@ -6,8 +6,8 @@ describe('JsObject', function() {
     assert.deepEqual({}, addon.return_js_object());
   });
 
-  it('return a JsObject with an integer key value pair', function () {
-    assert.deepEqual({number: 9000}, addon.return_js_object_with_integer());
+  it('return a JsObject with a number key value pair', function () {
+    assert.deepEqual({number: 9000}, addon.return_js_object_with_number());
   });
 
   it('return a JsObject with an string key value pair', function () {

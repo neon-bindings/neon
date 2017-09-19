@@ -9,7 +9,7 @@ pub fn return_js_array(call: Call) -> JsResult<JsArray> {
 pub fn return_js_array_with_number(call: Call) -> JsResult<JsArray> {
     let scope = call.scope;
     let array: Handle<JsArray> = JsArray::new(scope, 1);
-    array.set(0, JsNumber::new(scope, 9000))?;
+    array.set(0, JsNumber::new(scope, 9000.0))?;
     Ok(array)
 }
 

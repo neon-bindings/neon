@@ -37,11 +37,11 @@ register_module!(m, {
     m.export("accept_and_return_negative_js_number", accept_and_return_negative_js_number)?;
 
     m.export("return_js_array", return_js_array)?;
-    m.export("return_js_array_with_integer", return_js_array_with_integer)?;
+    m.export("return_js_array_with_number", return_js_array_with_number)?;
     m.export("return_js_array_with_string", return_js_array_with_string)?;
 
     m.export("return_js_object", return_js_object)?;
-    m.export("return_js_object_with_integer", return_js_object_with_integer)?;
+    m.export("return_js_object_with_number", return_js_object_with_number)?;
     m.export("return_js_object_with_string", return_js_object_with_string)?;
     m.export("return_js_object_with_mixed_content", return_js_object_with_mixed_content)?;
 

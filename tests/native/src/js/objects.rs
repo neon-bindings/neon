@@ -14,10 +14,10 @@ pub fn return_js_object_with_mixed_content(call: Call) -> JsResult<JsObject> {
     Ok(js_object)
 }
 
-pub fn return_js_object_with_integer(call: Call) -> JsResult<JsObject> {
+pub fn return_js_object_with_number(call: Call) -> JsResult<JsObject> {
     let scope = call.scope;
     let js_object: Handle<JsObject> = JsObject::new(scope);
-    js_object.set("number", JsNumber::new(scope, 9000))?;
+    js_object.set("number", JsNumber::new(scope, 9000.0))?;
     Ok(js_object)
 }
 
