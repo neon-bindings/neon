@@ -9,7 +9,7 @@ pub fn return_js_object(call: Call) -> JsResult<JsObject> {
 pub fn return_js_object_with_mixed_content(call: Call) -> JsResult<JsObject> {
     let scope = call.scope;
     let js_object: Handle<JsObject> = JsObject::new(scope);
-    js_object.set("number", JsNumber::new(scope, 9000))?;
+    js_object.set("number", JsNumber::new(scope, 9000.0))?;
     js_object.set("string", JsString::new(scope, "hello node").unwrap())?;
     Ok(js_object)
 }
