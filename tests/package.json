@@ -6,11 +6,11 @@
   "author": "The Neon Community",
   "license": "MIT",
   "dependencies": {
-    "neon-cli": "git://github.com/neon-bindings/neon-cli"
+    "neon-cli": "../cli"
   },
   "scripts": {
-    "install": "cd node_modules/neon-cli && npm i && npm run transpile",
-    "test": "npm i && neon build && mocha --recursive lib"
+    "install": "neon build",
+    "test": "mocha --recursive lib"
   },
   "devDependencies": {
     "chai": "^3.5.0",
