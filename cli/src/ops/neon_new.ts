@@ -9,7 +9,7 @@ import validateLicense = require('validate-npm-package-license');
 import validateName = require('validate-npm-package-name');
 import * as JSON from 'ts-typed-json';
 
-const ROOT_DIR = path.resolve(__dirname, '..', '..', '..');
+const ROOT_DIR = path.resolve(__dirname, '..', '..');
 const TEMPLATES_DIR = path.resolve(ROOT_DIR, 'templates');
 
 const NEON_CLI_VERSION =

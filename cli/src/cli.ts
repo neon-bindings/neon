@@ -13,7 +13,7 @@ import * as JSON from 'ts-typed-json';
 import unknown from 'ts-unknown';
 import { Toolchain } from './rust';
 
-let metadata = JSON.loadSync(path.resolve(__dirname, '..', '..', 'package.json'));
+let metadata = JSON.loadSync(path.resolve(__dirname, '..', 'package.json'));
 
 function channel(value: string) {
   if (['default', 'nightly', 'beta', 'stable'].indexOf(value) < 0) {

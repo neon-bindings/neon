@@ -5,5 +5,5 @@ authors = ["The Neon Community"]
 license = "MIT/Apache-2.0"
 
 [dependencies]
-neon = { path = "../" }
+neon = { path = "../../" }
 compiletest_rs = "0.2.9"

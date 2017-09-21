@@ -1,16 +1,11 @@
 {
-  "name": "neon-cli",
-  "version": "0.1.20",
-  "description": "Build and load native Rust/Neon modules.",
+  "name": "neon-cli-test",
+  "version": "0.1.0",
+  "description": "Integration tests for neon-cli.",
   "author": "Dave Herman <david.herman@gmail.com>",
   "repository": {
     "type": "git",
     "url": "https://github.com/neon-bindings/neon.git"
-  },
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
-  "bin": {
-    "neon": "./bin/cli.js"
   },
   "license": "SEE LICENSE IN LICENSE-*",
   "dependencies": {
@@ -55,11 +50,7 @@
     "typescript": "^2.2.2"
   },
   "scripts": {
-    "transpile": "tsc",
-    "prepublishOnly": "npm run transpile"
-  },
-  "bugs": {
-    "url": "https://github.com/neon-bindings/neon/issues"
-  },
-  "homepage": "https://www.neon-bindings.com"
+    "test": "mocha lib/acceptance",
+    "transpile": "tsc"
+  }
 }

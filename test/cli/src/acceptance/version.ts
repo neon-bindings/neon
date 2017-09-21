@@ -1,7 +1,7 @@
 import { setup, spawnable } from '../support/acceptance';
 import { readFile } from '../support/fs';
 
-const pkg = JSON.parse(readFile(__dirname, '../../../package.json'));
+const pkg = JSON.parse(readFile(__dirname, '../../../../cli/package.json'));
 
 describe('neon version', function() {
   setup();
