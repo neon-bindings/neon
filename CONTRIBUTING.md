@@ -14,7 +14,7 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 
 ## Conduct
 
-We follow the [Rust Code of Conduct](http://www.rust-lang.org/conduct.html).
+We follow the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/1/4/code-of-conduct.html).
 
 ## Communication
 
