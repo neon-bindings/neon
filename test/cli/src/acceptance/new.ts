@@ -73,4 +73,31 @@ describe('neon new', function() {
           done();
         });
   });
+
+  it('should escape quotes in the generated package.json and Cargo.toml', function(done) {
+    let self = spawnable(this);
+    self.spawn(['new', 'my-app'], { stripColors: true })
+        .wait('This utility will walk you through creating the')
+        .wait('version').sendline('')
+        .wait('desc').sendline('Foo "bar"')
+        .wait('node').sendline('')
+        .wait('git').sendline('http://www.example.com/foo.git?bar="baz"')
+        .wait('author').sendline('Foo "Bar" Baz')
+        .wait('email').sendline('hughjass@example.com')
+        .wait('license').sendline('')
+        .sendEof()
+        .run(err => {
+          if (err) throw err;
+
+          let pkg = JSON.parse(readFile(this.cwd, 'my-app/package.json'));
+          assert.propertyVal(pkg, 'description', 'Foo "bar"');
+          assert.deepPropertyVal(pkg, 'repository.url', 'http://www.example.com/foo.git?bar=%22baz%22');
+          assert.propertyVal(pkg, 'author', 'Foo "Bar" Baz <hughjass@example.com>');
+
+          let cargo = TOML.parse(readFile(this.cwd, 'my-app/native/Cargo.toml'));
+          assert.includeDeepMembers(cargo.package.authors, ['Foo "Bar" Baz <hughjass@example.com>'])
+
+          done();
+        });
+  });
 });
