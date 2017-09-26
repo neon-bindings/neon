@@ -113,6 +113,10 @@ export default async function wizard(pwd: string, name: string) {
       internal: local.replace(/-/g, "_")
     }
   };
+  answers.description = escapeQuotes(answers.description);
+  answers.git = encodeURI(answers.git);
+  answers.author = escapeQuotes(answers.author);
+
   let ctx = {
     project: answers,
     "neon-cli": {
@@ -152,3 +156,7 @@ export default async function wizard(pwd: string, name: string) {
   console.log();
   console.log("Happy hacking!");
 };
+
+function escapeQuotes(str: string): string {
+  return str.replace(/"/g, '\\"');
+}
