@@ -25,7 +25,7 @@ pub trait Scope<'a>: ScopeInternal {
     fn nested<T, F: for<'inner> FnOnce(&mut NestedScope<'inner>) -> T>(&self, f: F) -> T;
     fn chained<T, F: for<'inner> FnOnce(&mut ChainedScope<'inner, 'a>) -> T>(&self, f: F) -> T;
 
-    fn global(&self) -> Handle<JsObject> {
+    fn global(&self) -> Handle<'a, JsObject> {
         JsObject::build(|out| {
             unsafe {
                 neon_runtime::scope::get_global(self.isolate().to_raw(), out);
