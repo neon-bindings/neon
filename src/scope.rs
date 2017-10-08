@@ -7,7 +7,7 @@ use std::cell::RefCell;
 use neon_runtime;
 use neon_runtime::raw;
 use mem::Handle;
-use js::Value;
+use js::{Value, JsObject};
 use vm::internal::Isolate;
 use self::internal::ScopeInternal;
 
@@ -24,6 +24,14 @@ pub(crate) mod internal {
 pub trait Scope<'a>: ScopeInternal {
     fn nested<T, F: for<'inner> FnOnce(&mut NestedScope<'inner>) -> T>(&self, f: F) -> T;
     fn chained<T, F: for<'inner> FnOnce(&mut ChainedScope<'inner, 'a>) -> T>(&self, f: F) -> T;
+
+    fn global(&self) -> Handle<JsObject> {
+        JsObject::build(|out| {
+            unsafe {
+                neon_runtime::scope::get_global(self.isolate().to_raw(), out);
+            }
+        })
+    }
 }
 
 fn ensure_active<T: ScopeInternal>(scope: &T) {

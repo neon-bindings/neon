@@ -40,6 +40,7 @@ register_module!(m, {
     m.export("return_js_array_with_number", return_js_array_with_number)?;
     m.export("return_js_array_with_string", return_js_array_with_string)?;
 
+    m.export("return_js_global_object", return_js_global_object)?;
     m.export("return_js_object", return_js_object)?;
     m.export("return_js_object_with_number", return_js_object_with_number)?;
     m.export("return_js_object_with_string", return_js_object_with_string)?;
