@@ -43,4 +43,9 @@ extern "C" {
     #[link_name = "Neon_Scope_AlignofEscapable"]
     pub fn escapable_alignment() -> usize;
 
+    /// Mutates the `out` argument provided to refer to the `v8::Local` value of the `global`
+    /// object
+    #[link_name = "Neon_Scope_GetGlobal"]
+    pub fn get_global(isolate: *mut c_void, out: &mut Local);
+
 }

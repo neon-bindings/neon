@@ -2,6 +2,10 @@ var addon = require('../native');
 var assert = require('chai').assert;
 
 describe('JsObject', function() {
+  it('return the v8::Global object', function () {
+      assert(global === addon.return_js_global_object());
+  });
+
   it('return a JsObject built in Rust', function () {
     assert.deepEqual({}, addon.return_js_object());
   });

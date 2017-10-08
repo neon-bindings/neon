@@ -83,6 +83,7 @@ extern "C" {
   size_t Neon_Scope_Alignof();
   size_t Neon_Scope_SizeofEscapable();
   size_t Neon_Scope_AlignofEscapable();
+  void Neon_Scope_GetGlobal(v8::Isolate *isolate, v8::Local<v8::Value> *out);
 
   bool Neon_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, v8::FunctionCallback callback, void *kernel);
   void Neon_Fun_ExecKernel(void *kernel, Neon_RootScopeCallback callback, v8::FunctionCallbackInfo<v8::Value> *info, void *scope);

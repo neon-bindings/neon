@@ -248,6 +248,11 @@ extern "C" size_t Neon_Scope_AlignofEscapable() {
   return alignof(v8::EscapableHandleScope);
 }
 
+extern "C" void Neon_Scope_GetGlobal(v8::Isolate *isolate, v8::Local<v8::Value> *out) {
+  auto ctx = isolate->GetCurrentContext();
+  *out = ctx->Global();
+}
+
 extern "C" void Neon_Fun_ExecKernel(void *kernel, Neon_RootScopeCallback callback, v8::FunctionCallbackInfo<v8::Value> *info, void *scope) {
   Nan::HandleScope v8_scope;
   callback(info, kernel, scope);

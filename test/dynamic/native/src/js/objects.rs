@@ -1,6 +1,12 @@
 use neon::vm::{Call, JsResult};
 use neon::mem::Handle;
 use neon::js::{JsNumber, JsString, JsObject, Object};
+use neon::scope::Scope;
+
+pub fn return_js_global_object(call: Call) -> JsResult<JsObject> {
+    let scope = call.scope;
+    Ok(scope.global())
+}
 
 pub fn return_js_object(call: Call) -> JsResult<JsObject> {
     Ok(JsObject::new(call.scope))
