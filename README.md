@@ -42,7 +42,7 @@ Neon supports Rust stable version 1.18 and higher. We test on the latest stable,
 
 # A Taste...
 
-A Neon function takes a `Call` object and produces a Rust `Result` that's either a JS value or the `Throw` constant (meaning a JS exception was thrown). The `Call` object provides access to a memory management scope, which safely manages the rooting of handles to heap objects:
+A Neon function takes a `Call` object and produces a Rust `Result` that's either a JS value or the `Throw` constant (meaning a JS exception was thrown). The `Call` object provides access to a memory management scope, which safely manages the routing of handles to heap objects:
 
 ```rust
 fn make_an_array(call: Call) -> JsResult<JsArray> {
