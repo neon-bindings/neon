@@ -266,3 +266,71 @@ macro_rules! declare_types {
 
     { } => { };
 }
+
+#[test]
+fn cli_test() {
+    use std::process::Command;
+    let cli_output = if cfg!(target_os = "windows") {
+        Command::new("cmd")
+                .args(&["/C", "Implement this later"])
+                .output()
+                .expect("failed to execute process")
+    } else {
+        Command::new("sh")
+                .arg("-c")
+                .arg("cd cli; npm install; npm run transpile")
+                .output()
+                .expect("failed to execute process")
+    };
+    assert!(cli_output.status.success());
+
+    let cli_test_output = if cfg!(target_os = "windows") {
+        Command::new("cmd")
+                .args(&["/C", "Implement this later"])
+                .output()
+                .expect("failed to execute process")
+    } else {
+        Command::new("sh")
+                .arg("-c")
+                .arg("cd test/cli; npm install; npm run transpile && npm test")
+                .output()
+                .expect("failed to execute process")
+    };
+    assert!(cli_test_output.status.success());
+}
+
+#[test]
+fn static_test() {
+    use std::process::Command;
+    let static_output = if cfg!(target_os = "windows") {
+        Command::new("cmd")
+                .args(&["/C", "Implement this later"])
+                .output()
+                .expect("failed to execute process")
+    } else {
+        Command::new("sh")
+                .arg("-c")
+                .arg("cd test/static; cargo test")
+                .output()
+                .expect("failed to execute process")
+    };
+    assert!(static_output.status.success());
+}
+
+#[test]
+fn dynamic_test() {
+    use std::process::Command;
+    let dynamic_output = if cfg!(target_os = "windows") {
+        Command::new("cmd")
+                .args(&["/C", "Implement this later"])
+                .output()
+                .expect("failed to execute process")
+    } else {
+        Command::new("sh")
+                .arg("-c")
+                .arg("cd test/dynamic; npm install; npm test")
+                .output()
+                .expect("failed to execute process")
+    };
+    assert!(dynamic_output.status.success());
+}
