@@ -1,38 +1,40 @@
 # Version 0.1.20
 
-* Background task API (#214).
-* Fixes to Windows builds (#221, #227), thanks to @hone's tenacious troubleshooting.
+* Background task API ([#214](https://github.com/neon-bindings/neon/pull/214)).
+* Fixes to Windows builds ([#221](https://github.com/neon-bindings/neon/pull/221), [#227](https://github.com/neon-bindings/neon/pull/227)), thanks to [@hone](https://github.com/hone)'s tenacious troubleshooting.
 
 # Version 0.1.19
 
-* CLI bugfix (neon-bindings/neon-cli#62, neon-bindings/neon-cli#65).
+* TypeScript upgrade fixes ([neon-bindings/neon-cli#62](https://github.com/neon-bindings/neon-cli/pull/62), [neon-bindings/neon-cli#65](https://github.com/neon-bindings/neon-cli/pull/65)).
 
 # Version 0.1.18
 
-* CLI bugfix (neon-bindings/neon-cli#59).
-* JsArrayBuffer (#210).
+* CLI bugfix ([neon-bindings/neon-cli#59](https://github.com/neon-bindings/neon-cli/pull/59)).
+* JsArrayBuffer ([#210](https://github.com/neon-bindings/neon/pull/210)).
 
 # Version 0.1.17
 
-* CLI bugfix (#57).
+* CLI bugfix ([neon-bindings/neon-cli#57](https://github.com/neon-bindings/neon-cli/pull/57)).
 
 # Version 0.1.16
 
-* CLI bugfix (#56).
+* CLI bugfix ([neon-bindings/neon-cli#56](https://github.com/neon-bindings/neon-cli/pull/56)).
 
 # Version 0.1.15 (2017-05-21)
 
 * Better Electron support in CLI's build process.
+* Better support for Electron via the artifacts file ([neon-bindings/neon-cli#52](https://github.com/neon-bindings/neon-cli/pull/52)).
 
 # Version 0.1.14 (2017-04-02)
 
-* Ensure failing tests break the build (#191)
-* Catch Rust panics and convert them to JS exceptions (#192)
-* Implement `Error` for `Throw` (#201)
+* Ensure failing tests break the build ([#191](https://github.com/neon-bindings/neon/pull/191))
+* Catch Rust panics and convert them to JS exceptions ([#192](https://github.com/neon-bindings/neon/pull/192))
+* Implement `Error` for `Throw` ([#201](https://github.com/neon-bindings/neon/pull/191))
+* Clean up the CLI and allow `neon build` to optionally take module names ([neon-bindings/neon-cli#48](https://github.com/neon-bindings/neon-cli/pull/48)).
 
 # Version 0.1.13 (2017-02-17)
 
-* More robust build scripts for neon-runtime, fixing Homebrew node installations (see #189)
+* More robust build scripts for neon-runtime, fixing Homebrew node installations (see [#189](https://github.com/neon-bindings/neon/pull/189))
 
 # Version 0.1.12 (2017-02-16)
 
@@ -41,10 +43,13 @@
 * Lots of internal API docs
 * Windows support! :tada:
 * [Renamed `neon-sys` to `neon-runtime`](https://github.com/neon-bindings/neon/issues/169)
+* Depend on `neon-build` as a build dependency (see [neon-bindings/neon-cli#46](https://github.com/neon-bindings/neon-cli/issues/46)).
 
 # Version 0.1.11 (2016-08-08)
 
 * [Exposed `This` trait](https://github.com/neon-bindings/neon/issues/101) to allow user-level abstractions involving `FunctionCall`
+* Bump version to match Neon so they can be kept in sync from now on.
+* Generate a `build.rs` to make Windows work (see [neon-bindings/neon-cli#42](https://github.com/neon-bindings/neon-cli/pull/42) and [neon-bindings/neon-cli#44](https://github.com/neon-bindings/neon-cli/issues/44)).
 
 # Version 0.1.10 (2016-05-11)
 
