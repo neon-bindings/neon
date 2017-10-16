@@ -272,89 +272,70 @@ macro_rules! declare_types {
 
 #[test]
 fn cli_test() {
-    use std::io::Write;
     use std::process::Command;
     let cli_output = if cfg!(target_os = "windows") {
         Command::new("cmd")
                 .args(&["/C", "Implement this later"])
-                .output()
+                .status()
                 .expect("failed to execute process")
     } else {
         Command::new("sh")
                 .arg("-c")
                 .arg("cd cli && npm install && npm run transpile")
-                .output()
+                .status()
                 .expect("failed to execute process")
     };
-    if !cli_output.status.success() {
-        std::io::stdout().write_all(&cli_output.stdout).expect("error redirecting stdout");
-        std::io::stdout().write_all(&cli_output.stderr).expect("error redirecting stderr");
-    };
-    assert!(cli_output.status.success());
+    assert!(cli_output.success());
 
     let cli_test_output = if cfg!(target_os = "windows") {
         Command::new("cmd")
                 .args(&["/C", "Implement this later"])
-                .output()
+                .status()
                 .expect("failed to execute process")
     } else {
         Command::new("sh")
                 .arg("-c")
                 .arg("cd test/cli && npm install && npm run transpile && npm test")
-                .output()
+                .status()
                 .expect("failed to execute process")
     };
-    if !cli_test_output.status.success() {
-        std::io::stdout().write_all(&cli_test_output.stdout).expect("error redirecting stdout");
-        std::io::stdout().write_all(&cli_test_output.stderr).expect("error redirecting stderr");
-    };
-    assert!(cli_test_output.status.success());
+    assert!(cli_test_output.success());
 }
 
 #[test]
 fn static_test() {
     use rustc_version::{version_meta, Channel};
     if version_meta().unwrap().channel != Channel::Nightly { return };
-    use std::io::Write;
     use std::process::Command;
     let static_output = if cfg!(target_os = "windows") {
         Command::new("cmd")
                 .args(&["/C", "Implement this later"])
-                .output()
+                .status()
                 .expect("failed to execute process")
     } else {
         Command::new("sh")
                 .arg("-c")
                 .arg("cd test/static && cargo test")
-                .output()
+                .status()
                 .expect("failed to execute process")
     };
-    if !static_output.status.success() {
-        std::io::stdout().write_all(&static_output.stdout).expect("error redirecting stdout");
-        std::io::stdout().write_all(&static_output.stderr).expect("error redirecting stderr");
-    };
-    assert!(static_output.status.success());
+    assert!(static_output.success());
 }
 
 #[test]
 fn dynamic_test() {
-    use std::io::Write;
     use std::process::Command;
     let dynamic_output = if cfg!(target_os = "windows") {
         Command::new("cmd")
                 .args(&["/C", "Implement this later"])
-                .output()
+                .status()
                 .expect("failed to execute process")
     } else {
         Command::new("sh")
                 .arg("-c")
                 .arg("cd cli && npm install && cd ../test/dynamic && npm install && npm test")
-                .output()
+                .status()
                 .expect("failed to execute process")
     };
-    if !dynamic_output.status.success() {
-        std::io::stdout().write_all(&dynamic_output.stdout).expect("error redirecting stdout");
-        std::io::stdout().write_all(&dynamic_output.stderr).expect("error redirecting stderr");
-    };
-    assert!(dynamic_output.status.success());
+    assert!(dynamic_output.success());
 }
