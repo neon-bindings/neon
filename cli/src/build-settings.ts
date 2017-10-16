@@ -28,13 +28,16 @@ export default class BuildSettings {
   }
 
   static current(toolchain: rust.Toolchain) {
-    const stdout = rust.spawnSync("rustc", ["--version"], toolchain).stdout;
+    const spawnResult = rust.spawnSync("rustc", ["--version"], toolchain);
 
-    if (!stdout) {
-      throw new Error('Rust is not installed or rustc is not in your path.');
+    if (spawnResult.error) {
+      if (spawnResult.error.message.includes("ENOENT")) {
+        throw new Error('Rust is not installed or rustc is not in your path.');
+      }
+      throw spawnResult.error;
     }
 
-    let rustc = stdout
+    let rustc = spawnResult.stdout
       .toString('utf8')
       .trim();
 
