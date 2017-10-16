@@ -278,7 +278,7 @@ fn cli_test() {
     } else {
         Command::new("sh")
                 .arg("-c")
-                .arg("cd cli; npm install; npm run transpile")
+                .arg("cd cli && npm install && npm run transpile")
                 .output()
                 .expect("failed to execute process")
     };
@@ -292,7 +292,7 @@ fn cli_test() {
     } else {
         Command::new("sh")
                 .arg("-c")
-                .arg("cd test/cli; npm install; npm run transpile && npm test")
+                .arg("cd test/cli && npm install && npm run transpile && npm test")
                 .output()
                 .expect("failed to execute process")
     };
@@ -310,7 +310,7 @@ fn static_test() {
     } else {
         Command::new("sh")
                 .arg("-c")
-                .arg("cd test/static; cargo test")
+                .arg("cd test/static && cargo test")
                 .output()
                 .expect("failed to execute process")
     };
@@ -328,7 +328,7 @@ fn dynamic_test() {
     } else {
         Command::new("sh")
                 .arg("-c")
-                .arg("cd test/dynamic; npm install; npm test")
+                .arg("cd test/dynamic && npm install && npm test")
                 .output()
                 .expect("failed to execute process")
     };
