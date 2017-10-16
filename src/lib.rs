@@ -3,6 +3,9 @@
 extern crate neon_runtime;
 extern crate cslice;
 
+#[cfg(test)]
+extern crate rustc_version;
+
 pub mod mem;
 pub mod vm;
 pub mod scope;
@@ -301,6 +304,8 @@ fn cli_test() {
 
 #[test]
 fn static_test() {
+    use rustc_version::{version_meta, Channel};
+    if version_meta().unwrap().channel != Channel::Nightly { return }
     use std::process::Command;
     let static_output = if cfg!(target_os = "windows") {
         Command::new("cmd")

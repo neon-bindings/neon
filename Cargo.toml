@@ -21,6 +21,9 @@ links = "neon-runtime"
 [build-dependencies]
 neon-build = { version = "=0.1.20", path = "crates/neon-build" }
 
+[dev-dependencies]
+rustc_version = "0.2"
+
 [dependencies]
 cslice = "0.2"
 neon-runtime = { version = "=0.1.20", path = "crates/neon-runtime" }
