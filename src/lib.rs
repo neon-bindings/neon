@@ -273,69 +273,80 @@ macro_rules! declare_types {
 #[test]
 fn cli_test() {
     use std::process::Command;
-    let cli_output = if cfg!(target_os = "windows") {
-        Command::new("cmd")
-                .args(&["/C", "Implement this later"])
-                .status()
-                .expect("failed to execute process")
+    if cfg!(target_os = "windows") {
+        assert!(Command::new("cmd")
+                        .args(&["/C", "echo Implement this later"])
+                        .status()
+                        .expect("failed to execute process")
+                        .success());
+        assert!(Command::new("cmd")
+                        .args(&["/C", "echo Implement this later"])
+                        .status()
+                        .expect("failed to execute process")
+                        .success());
     } else {
-        Command::new("sh")
-                .arg("-c")
-                .arg("cd cli && npm install && npm run transpile")
-                .status()
-                .expect("failed to execute process")
+        assert!(Command::new("sh")
+                        .arg("-c")
+                        .arg("cd cli && npm install && npm run transpile")
+                        .status()
+                        .expect("failed to execute process")
+                        .success());
+        assert!(Command::new("sh")
+                        .arg("-c")
+                        .arg("cd test/cli && npm install && npm run transpile && npm test")
+                        .status()
+                        .expect("failed to execute process")
+                        .success());
     };
-    assert!(cli_output.success());
-
-    let cli_test_output = if cfg!(target_os = "windows") {
-        Command::new("cmd")
-                .args(&["/C", "Implement this later"])
-                .status()
-                .expect("failed to execute process")
-    } else {
-        Command::new("sh")
-                .arg("-c")
-                .arg("cd test/cli && npm install && npm run transpile && npm test")
-                .status()
-                .expect("failed to execute process")
-    };
-    assert!(cli_test_output.success());
 }
 
 #[test]
 fn static_test() {
     use rustc_version::{version_meta, Channel};
+    #[cfg(windows)]
+    use std::env;
+
     if version_meta().unwrap().channel != Channel::Nightly { return };
     use std::process::Command;
-    let static_output = if cfg!(target_os = "windows") {
-        Command::new("cmd")
-                .args(&["/C", "Implement this later"])
-                .status()
-                .expect("failed to execute process")
+    if cfg!(target_os = "windows") {
+        assert!(Command::new("cmd")
+                        .args(&["/C", "echo Implement this later"])
+                        .status()
+                        .expect("failed to execute process")
+                        .success());
     } else {
-        Command::new("sh")
-                .arg("-c")
-                .arg("cd test/static && cargo test")
-                .status()
-                .expect("failed to execute process")
+        assert!(Command::new("sh")
+                        .arg("-c")
+                        .arg("cd test/static && cargo test")
+                        .status()
+                        .expect("failed to execute process")
+                        .success());
     };
-    assert!(static_output.success());
 }
 
 #[test]
 fn dynamic_test() {
     use std::process::Command;
-    let dynamic_output = if cfg!(target_os = "windows") {
-        Command::new("cmd")
-                .args(&["/C", "Implement this later"])
+    #[cfg(windows)]
+    use std::env;
+
+    if cfg!(target_os = "windows") {
+        assert!(Command::new("cmd")
+                .args(&["/C", "echo Implement this later"])
                 .status()
                 .expect("failed to execute process")
+                .success());
+        assert!(Command::new("cmd")
+                .args(&["/C", "echo Implement this later"])
+                .status()
+                .expect("failed to execute process")
+                .success());
     } else {
-        Command::new("sh")
+        assert!(Command::new("sh")
                 .arg("-c")
                 .arg("cd cli && npm install && cd ../test/dynamic && npm install && npm test")
                 .status()
                 .expect("failed to execute process")
-    };
-    assert!(dynamic_output.success());
+                .success());
+    }
 }
