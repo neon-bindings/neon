@@ -4,30 +4,6 @@ environment:
   RUST_BACKTRACE: 1
   matrix:
     - PLATFORM: x64
-      NODEJS_VERSION: "4"
-      RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
-    - PLATFORM: x64
-      NODEJS_VERSION: "6"
-      RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
-    - PLATFORM: x64
-      NODEJS_VERSION: "8"
-      RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
-    - PLATFORM: x64
-      NODEJS_VERSION: "4"
-      RUST_TOOLCHAIN: beta-x86_64-pc-windows-msvc
-    - PLATFORM: x64
-      NODEJS_VERSION: "6"
-      RUST_TOOLCHAIN: beta-x86_64-pc-windows-msvc
-    - PLATFORM: x64
-      NODEJS_VERSION: "8"
-      RUST_TOOLCHAIN: beta-x86_64-pc-windows-msvc
-    - PLATFORM: x64
-      NODEJS_VERSION: "4"
-      RUST_TOOLCHAIN: nightly-x86_64-pc-windows-msvc
-    - PLATFORM: x64
-      NODEJS_VERSION: "6"
-      RUST_TOOLCHAIN: nightly-x86_64-pc-windows-msvc
-    - PLATFORM: x64
       NODEJS_VERSION: "8"
       RUST_TOOLCHAIN: nightly-x86_64-pc-windows-msvc
 
@@ -47,7 +23,7 @@ build: false
 test_script:
   - cd cli && npm install && npm run transpile && cd ..
   - cd test/dynamic && npm install && npm test && cd ../..
-  - if "%RUST_TOOLCHAIN%" == nightly-x86_64-pc-windows-msvc (cd test/static && cargo test && cd ../..)
+  - if %RUST_TOOLCHAIN% == nightly-x86_64-pc-windows-msvc (cd test/static && cargo test && cd ../..)
 
 cache:
   - target
