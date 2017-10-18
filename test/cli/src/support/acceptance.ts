@@ -3,7 +3,7 @@ import * as path from 'path';
 import { spawn } from 'nexpect';
 
 const NODE = process.execPath;
-const NEON = path.join(__dirname, '..', '..', '..', '..', 'cli/bin/cli.js');
+const NEON = path.join(__dirname, '..', '..', '..', '..', 'cli', 'bin', 'cli.js');
 
 export interface Spawnable {
   cwd: string;

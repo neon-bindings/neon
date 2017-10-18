@@ -4,23 +4,37 @@ environment:
   RUST_BACKTRACE: 1
   matrix:
     - PLATFORM: x64
+      NODEJS_VERSION: "4"
+      RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
+    - PLATFORM: x64
       NODEJS_VERSION: "6"
       RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
-    - PLATFORM: x86
-      NODEJS_VERSION: "6"
-      RUST_TOOLCHAIN: stable-i686-pc-windows-msvc
     - PLATFORM: x64
       NODEJS_VERSION: "8"
       RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
-    - PLATFORM: x86
+    - PLATFORM: x64
+      NODEJS_VERSION: "4"
+      RUST_TOOLCHAIN: beta-x86_64-pc-windows-msvc
+    - PLATFORM: x64
+      NODEJS_VERSION: "6"
+      RUST_TOOLCHAIN: beta-x86_64-pc-windows-msvc
+    - PLATFORM: x64
       NODEJS_VERSION: "8"
-      RUST_TOOLCHAIN: stable-i686-pc-windows-msvc
+      RUST_TOOLCHAIN: beta-x86_64-pc-windows-msvc
+    - PLATFORM: x64
+      NODEJS_VERSION: "4"
+      RUST_TOOLCHAIN: nightly-x86_64-pc-windows-msvc
+    - PLATFORM: x64
+      NODEJS_VERSION: "6"
+      RUST_TOOLCHAIN: nightly-x86_64-pc-windows-msvc
+    - PLATFORM: x64
+      NODEJS_VERSION: "8"
+      RUST_TOOLCHAIN: nightly-x86_64-pc-windows-msvc
 
 install:
   - ps: Install-Product node $env:NODEJS_VERSION $env:PLATFORM
   - npm config set msvs_version 2015
   - node -e "console.log(process.argv[0], process.arch, process.versions)"
-
   - curl -sSf -o rustup-init.exe https://win.rustup.rs
   - rustup-init.exe -y --default-toolchain %RUST_TOOLCHAIN%
   - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
@@ -31,8 +45,9 @@ install:
 build: false
 
 test_script:
-  - cd tests
-  - npm test
+  - cd cli && npm install && npm run transpile && cd ..
+  - cd test/dynamic && npm install && npm test && cd ../..
+  - if "%RUST_TOOLCHAIN%" == nightly-x86_64-pc-windows-msvc (cd test/static && cargo test && cd ../..)
 
 cache:
   - target
