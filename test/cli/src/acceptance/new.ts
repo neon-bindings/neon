@@ -8,7 +8,7 @@ describe('neon new', function() {
 
   it('should create a new project', function(done) {
     let self = spawnable(this);
-    self.spawn(['new', 'my-app'], { stripColors: true })
+    self.spawn(['new', 'my-app'])
         .wait('This utility will walk you through creating the')
         .wait('version').sendline('')
         .wait('desc').sendline('My new app!')
@@ -47,7 +47,7 @@ describe('neon new', function() {
 
   it('should create a new project as a scoped package', function(done) {
     let self = spawnable(this);
-    self.spawn(['new', '@me/my-package'], { stripColors: true })
+    self.spawn(['new', '@me/my-package'])
         .wait('This utility will walk you through creating the')
         .wait('version').sendline('')
         .wait('desc').sendline('My new scoped package')
@@ -76,7 +76,7 @@ describe('neon new', function() {
 
   it('should escape quotes in the generated package.json and Cargo.toml', function(done) {
     let self = spawnable(this);
-    self.spawn(['new', 'my-app'], { stripColors: true })
+    self.spawn(['new', 'my-app'])
         .wait('This utility will walk you through creating the')
         .wait('version').sendline('')
         .wait('desc').sendline('Foo "bar"')
