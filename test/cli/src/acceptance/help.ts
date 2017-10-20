@@ -1,4 +1,5 @@
-import { setup, spawnable, NexpectChain } from '../support/acceptance';
+import { setup, spawnable } from '../support/acceptance';
+import { SpawnChain } from 'node-suspect';
 
 function describeHelp(cmd: string,
                       should: string,
@@ -14,7 +15,7 @@ function describeHelp(cmd: string,
   });
 }
 
-function testHelp(proc: NexpectChain, done: () => void) {
+function testHelp(proc: SpawnChain, done: () => void) {
   return proc
     .wait("Neon")
     .wait("native Node.js modules with Rust")
@@ -36,7 +37,7 @@ describeHelp("neon help",   "should print neon usage", testHelp, ['help']);
 describeHelp("neon --help", "should print neon usage", testHelp, ['--help']);
 describeHelp("neon -h",     "should print neon usage", testHelp, ['-h']);
 
-function testHelpClean(proc: NexpectChain, done: () => void) {
+function testHelpClean(proc: SpawnChain, done: () => void) {
   return proc
     .wait("neon clean")
     .wait("Remove build artifacts from a Neon project.")
@@ -57,7 +58,7 @@ describeHelp("neon clean -h",     "should print `neon clean` usage", testHelpCle
 describeHelp("neon --help clean", "should print `neon clean` usage", testHelpClean, ['--help', 'clean']);
 describeHelp("neon -h clean",     "should print `neon clean` usage", testHelpClean, ['-h', 'clean']);
 
-function testHelpVersion(proc: NexpectChain, done: () => void) {
+function testHelpVersion(proc: SpawnChain, done: () => void) {
   return proc
     .wait("neon version")
     .wait("Display the Neon version.")
@@ -75,7 +76,7 @@ describeHelp("neon version -h",     "should print `neon version` usage", testHel
 describeHelp("neon --help version", "should print `neon version` usage", testHelpVersion, ['--help', 'version']);
 describeHelp("neon -h version",     "should print `neon version` usage", testHelpVersion, ['-h', 'version']);
 
-function testHelpNew(proc: NexpectChain, done: () => void) {
+function testHelpNew(proc: SpawnChain, done: () => void) {
   return proc
     .wait("neon new")
     .wait("Create a new Neon project")
@@ -93,7 +94,7 @@ describeHelp("neon new -h",     "should print `neon new` usage", testHelpNew, ['
 describeHelp("neon --help new", "should print `neon new` usage", testHelpNew, ['--help', 'new']);
 describeHelp("neon -h new",     "should print `neon new` usage", testHelpNew, ['-h', 'new']);
 
-function testHelpBuild(proc: NexpectChain, done: () => void) {
+function testHelpBuild(proc: SpawnChain, done: () => void) {
   return proc
     .wait("neon build")
     .wait("(Re)build a Neon project")
@@ -116,7 +117,7 @@ describeHelp("neon build -h",     "should print `neon build` usage", testHelpBui
 describeHelp("neon --help build", "should print `neon build` usage", testHelpBuild, ['--help', 'build']);
 describeHelp("neon -h build",     "should print `neon build` usage", testHelpBuild, ['-h', 'build']);
 
-function testHelpHelp(proc: NexpectChain, done: () => void) {
+function testHelpHelp(proc: SpawnChain, done: () => void) {
   return proc
     .wait("neon help")
     .wait("Get help about a Neon command")
