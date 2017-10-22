@@ -3,7 +3,7 @@ import * as path from 'path';
 import { spawn } from 'nexpect';
 
 const NODE = process.execPath;
-const NEON = path.join(__dirname, '..', '..', '..', '..', 'cli/bin/cli.js');
+const NEON = path.join(__dirname, '..', '..', '..', '..', 'cli', 'bin', 'cli.js');
 
 export interface Spawnable {
   cwd: string;
@@ -50,7 +50,11 @@ export function setup(stream: string = 'all') {
     tmpobj = tmp.dirSync({ unsafeCleanup: true });
 
     this.cwd = tmpobj.name;
-    this.spawn = (args: string[]) => spawn(NODE, [NEON].concat(args), { cwd: this.cwd, stream, stripColors: true });
+    if (/^win/.test(process.platform)) {
+      this.spawn = (args: string[]) => spawn(`"${NODE}"`, [`"${NEON}"`, ...args], { cwd: this.cwd, stream, stripColors: true });
+    } else {
+      this.spawn = (args: string[]) => spawn(NODE, [NEON, ...args], { cwd: this.cwd, stream, stripColors: true });
+    }
   });
 
   afterEach(function() {
