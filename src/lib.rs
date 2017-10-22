@@ -270,6 +270,9 @@ macro_rules! declare_types {
     { } => { };
 }
 
+#[cfg(not(neon_profile = "release"))]
+compile_error!("Neon only builds with --release. For tests, try `cargo test --release`.");
+
 #[test]
 fn cli_test() {
     use std::process::Command;
