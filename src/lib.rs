@@ -322,7 +322,6 @@ fn cli_test() {
 #[test]
 fn static_test() {
     use rustc_version::{version_meta, Channel};
-    use std::process::Command;
 
     if version_meta().unwrap().channel != Channel::Nightly {
         return;

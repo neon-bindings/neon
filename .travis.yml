@@ -27,7 +27,7 @@ addons:
     - g++-4.8
 
 script: |
-  cargo test --release
+  cargo test --release -- --test-threads 1
 
 jobs:
   include:
