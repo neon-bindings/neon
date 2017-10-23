@@ -1,16 +1,16 @@
 extern crate compiletest_rs as compiletest;
-extern crate static_tests;
+extern crate neon;
 
 use std::path::PathBuf;
 use std::env::var;
-use static_tests::PROFILE;
+use neon::meta::BUILD_PROFILE;
 
 fn run_mode(mode: &'static str) {
     let mut config = compiletest::Config::default();
 
     let cfg_mode = mode.parse().expect("Invalid mode");
 
-    config.target_rustcflags = Some(format!("-L target/{}/ -L target/{}/deps/", PROFILE, PROFILE));
+    config.target_rustcflags = Some(format!("-L target/{}/ -L target/{}/deps/", BUILD_PROFILE, BUILD_PROFILE));
     if let Ok(name) = var("TESTNAME") {
         let s : String = name.to_owned();
         config.filter = Some(s)

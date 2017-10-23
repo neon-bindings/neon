@@ -2,6 +2,7 @@
 
 extern crate neon_runtime;
 extern crate cslice;
+extern crate semver;
 
 #[cfg(test)]
 extern crate rustc_version;
@@ -11,6 +12,7 @@ pub mod vm;
 pub mod scope;
 pub mod js;
 pub mod task;
+pub mod meta;
 
 #[doc(hidden)]
 pub mod macro_internal;
