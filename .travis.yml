@@ -27,12 +27,7 @@ addons:
     - g++-4.8
 
 script: |
-  cd cli && npm install && npm run transpile && cd .. &&
-  cd test/cli && npm install && npm run transpile && npm test && cd ../.. &&
-  cd test/dynamic && npm install && npm test && cd ../.. &&
-  if [[ "$TRAVIS_RUST_VERSION" == nightly* ]]; then
-    cd test/static && cargo test && cd ../..
-  fi
+  cargo test --release
 
 jobs:
   include:

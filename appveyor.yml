@@ -45,10 +45,7 @@ install:
 build: false
 
 test_script:
-  - cd cli && npm install && npm run transpile && cd ..
-  - cd test/cli && npm install && npm run transpile && npm test && cd ../..
-  - cd test/dynamic && npm install && npm test && cd ../..
-  - if %RUST_TOOLCHAIN% == nightly-x86_64-pc-windows-msvc (cd test/static && cargo test --release && cd ../..)
+  - cargo test --release
 
 cache:
   - target

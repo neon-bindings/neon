@@ -275,83 +275,68 @@ macro_rules! declare_types {
 #[cfg(all(windows, not(neon_profile = "release")))]
 compile_error!("Neon only builds with --release. For tests, try `cargo test --release`.");
 
+#[cfg(test)]
+use std::path::{Path, PathBuf};
+
+#[cfg(test)]
+fn project_root() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf()
+}
+
+#[cfg(all(windows, test))]
+fn run(cmd: &str, dir: &Path) {
+    use std::process::Command;
+
+    assert!(Command::new("cmd")
+                     .current_dir(dir)
+                     .args(&["/C", cmd])
+                     .status()
+                     .expect("failed to execute test command")
+                     .success());
+}
+
+#[cfg(all(not(windows), test))]
+fn run(cmd: &str, dir: &Path) {
+    use std::process::Command;
+
+    assert!(Command::new("sh")
+                    .current_dir(dir)
+                    .args(&["-c", cmd])
+                    .status()
+                    .expect("failed to execute test command")
+                    .success());
+}
+
 #[test]
 fn cli_test() {
-    use std::process::Command;
-    if cfg!(target_os = "windows") {
-        assert!(Command::new("cmd")
-                        .args(&["/C", "echo Implement this later"])
-                        .status()
-                        .expect("failed to execute process")
-                        .success());
-        assert!(Command::new("cmd")
-                        .args(&["/C", "echo Implement this later"])
-                        .status()
-                        .expect("failed to execute process")
-                        .success());
-    } else {
-        assert!(Command::new("sh")
-                        .arg("-c")
-                        .arg("cd cli && npm install && npm run transpile")
-                        .status()
-                        .expect("failed to execute process")
-                        .success());
-        assert!(Command::new("sh")
-                        .arg("-c")
-                        .arg("cd test/cli && npm install && npm run transpile && npm test")
-                        .status()
-                        .expect("failed to execute process")
-                        .success());
-    };
+    let cli = project_root().join("cli");
+    run("npm install", &cli);
+    run("npm run transpile", &cli);
+
+    let test_cli = project_root().join("test").join("cli");
+    run("npm install", &test_cli);
+    run("npm run transpile", &test_cli);
+    run("npm test", &test_cli);
 }
 
 #[test]
 fn static_test() {
     use rustc_version::{version_meta, Channel};
-    #[cfg(windows)]
-    use std::env;
-
-    if version_meta().unwrap().channel != Channel::Nightly { return };
     use std::process::Command;
-    if cfg!(target_os = "windows") {
-        assert!(Command::new("cmd")
-                        .args(&["/C", "echo Implement this later"])
-                        .status()
-                        .expect("failed to execute process")
-                        .success());
-    } else {
-        assert!(Command::new("sh")
-                        .arg("-c")
-                        .arg("cd test/static && cargo test")
-                        .status()
-                        .expect("failed to execute process")
-                        .success());
-    };
+
+    if version_meta().unwrap().channel != Channel::Nightly {
+        return;
+    }
+
+    run("cargo test --release", &project_root().join("test").join("static"));
 }
 
 #[test]
 fn dynamic_test() {
-    use std::process::Command;
-    #[cfg(windows)]
-    use std::env;
+    run("npm install", &project_root().join("cli"));
 
-    if cfg!(target_os = "windows") {
-        assert!(Command::new("cmd")
-                .args(&["/C", "echo Implement this later"])
-                .status()
-                .expect("failed to execute process")
-                .success());
-        assert!(Command::new("cmd")
-                .args(&["/C", "echo Implement this later"])
-                .status()
-                .expect("failed to execute process")
-                .success());
-    } else {
-        assert!(Command::new("sh")
-                .arg("-c")
-                .arg("cd cli && npm install && cd ../test/dynamic && npm install && npm test")
-                .status()
-                .expect("failed to execute process")
-                .success());
-    }
+    let test_dynamic = project_root().join("test").join("dynamic");
+
+    run("npm install", &test_dynamic);
+    run("npm test", &test_dynamic);
 }
