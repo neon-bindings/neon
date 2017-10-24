@@ -332,10 +332,11 @@ fn static_test() {
 
 #[test]
 fn dynamic_test() {
-    run("npm install", &project_root().join("cli"));
+    let cli = project_root().join("cli");
+    run("npm install", &cli);
+    run("npm run transpile", &cli);
 
     let test_dynamic = project_root().join("test").join("dynamic");
-
     run("npm install", &test_dynamic);
     run("npm test", &test_dynamic);
 }
