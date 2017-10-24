@@ -7,6 +7,10 @@ extern crate semver;
 #[cfg(test)]
 extern crate rustc_version;
 
+#[cfg(test)]
+#[macro_use]
+extern crate lazy_static;
+
 pub mod mem;
 pub mod vm;
 pub mod scope;
@@ -276,61 +280,72 @@ macro_rules! declare_types {
 compile_error!("Neon only builds with --release. For tests, try `cargo test --release`.");
 
 #[cfg(test)]
-use std::path::{Path, PathBuf};
-
-#[cfg(test)]
-fn project_root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf()
-}
-
-#[cfg(test)]
-fn run(cmd: &str, dir: &Path) {
+mod tests {
+    use std::path::{Path, PathBuf};
     use std::process::Command;
+    use std::sync::Mutex;
 
-    let (shell, command_flag) = if cfg!(windows) {
-        ("cmd", "/C")
-    } else {
-        ("sh", "-c")
-    };
-
-    assert!(Command::new(&shell)
-                    .current_dir(dir)
-                    .args(&[&command_flag, cmd])
-                    .status()
-                    .expect("failed to execute test command")
-                    .success());
-}
-
-#[test]
-fn cli_test() {
-    let cli = project_root().join("cli");
-    run("npm install", &cli);
-    run("npm run transpile", &cli);
-
-    let test_cli = project_root().join("test").join("cli");
-    run("npm install", &test_cli);
-    run("npm run transpile", &test_cli);
-    run("npm test", &test_cli);
-}
-
-#[test]
-fn static_test() {
     use rustc_version::{version_meta, Channel};
 
-    if version_meta().unwrap().channel != Channel::Nightly {
-        return;
+    // Create a mutex to enforce sequential running of the tests.
+    lazy_static! {
+        static ref TEST_MUTEX: Mutex<()> = Mutex::new(());
     }
 
-    run("cargo test --release", &project_root().join("test").join("static"));
-}
+    fn project_root() -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf()
+    }
 
-#[test]
-fn dynamic_test() {
-    let cli = project_root().join("cli");
-    run("npm install", &cli);
-    run("npm run transpile", &cli);
+    fn run(cmd: &str, dir: &Path) {
+        let (shell, command_flag) = if cfg!(windows) {
+            ("cmd", "/C")
+        } else {
+            ("sh", "-c")
+        };
 
-    let test_dynamic = project_root().join("test").join("dynamic");
-    run("npm install", &test_dynamic);
-    run("npm test", &test_dynamic);
+        assert!(Command::new(&shell)
+                        .current_dir(dir)
+                        .args(&[&command_flag, cmd])
+                        .status()
+                        .expect("failed to execute test command")
+                        .success());
+    }
+
+    #[test]
+    fn cli_test() {
+        let _guard = TEST_MUTEX.lock();
+
+        let cli = project_root().join("cli");
+        run("npm install", &cli);
+        run("npm run transpile", &cli);
+
+        let test_cli = project_root().join("test").join("cli");
+        run("npm install", &test_cli);
+        run("npm run transpile", &test_cli);
+        run("npm test", &test_cli);
+    }
+
+    #[test]
+    fn static_test() {
+        let _guard = TEST_MUTEX.lock();
+
+        if version_meta().unwrap().channel != Channel::Nightly {
+            return;
+        }
+
+        run("cargo test --release", &project_root().join("test").join("static"));
+    }
+
+    #[test]
+    fn dynamic_test() {
+        let _guard = TEST_MUTEX.lock();
+
+        let cli = project_root().join("cli");
+        run("npm install", &cli);
+        run("npm run transpile", &cli);
+
+        let test_dynamic = project_root().join("test").join("dynamic");
+        run("npm install", &test_dynamic);
+        run("npm test", &test_dynamic);
+    }
 }

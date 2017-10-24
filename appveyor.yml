@@ -45,7 +45,7 @@ install:
 build: false
 
 test_script:
-  - cargo test --release -- --test-threads 1
+  - cargo test --release
 
 cache:
   - target
