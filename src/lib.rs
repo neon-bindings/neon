@@ -283,25 +283,19 @@ fn project_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf()
 }
 
-#[cfg(all(windows, test))]
+#[cfg(test)]
 fn run(cmd: &str, dir: &Path) {
     use std::process::Command;
 
-    assert!(Command::new("cmd")
-                     .current_dir(dir)
-                     .args(&["/C", cmd])
-                     .status()
-                     .expect("failed to execute test command")
-                     .success());
-}
+    let (shell, command_flag) = if cfg!(windows) {
+        ("cmd", "/C")
+    } else {
+        ("sh", "-c")
+    };
 
-#[cfg(all(not(windows), test))]
-fn run(cmd: &str, dir: &Path) {
-    use std::process::Command;
-
-    assert!(Command::new("sh")
+    assert!(Command::new(&shell)
                     .current_dir(dir)
-                    .args(&["-c", cmd])
+                    .args(&[&command_flag, cmd])
                     .status()
                     .expect("failed to execute test command")
                     .success());
