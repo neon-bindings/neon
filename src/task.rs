@@ -25,7 +25,7 @@ pub trait Task: Send + Sized {
     type JsEvent: Value;
 
     /// Perform the task, producing either a successful `Output` or an unsuccessful `Error`. This method is executed in a background thread as part of libuv's built-in thread pool.
-    fn perform(&self) -> Result<Self::Output, Self::Error>;
+    fn perform(&mut self) -> Result<Self::Output, Self::Error>;
 
     /// Convert the result of the task to a JavaScript value to be passed to the asynchronous callback. This method is executed on the main thread at some point after the background task is completed.
     fn complete<'a, T: Scope<'a>>(self, scope: &'a mut T, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent>;
@@ -51,7 +51,7 @@ pub trait Task: Send + Sized {
 }
 
 unsafe extern "C" fn perform_task<T: Task>(task: *mut c_void) -> *mut c_void {
-    let task: Box<T> = Box::from_raw(mem::transmute(task));
+    let mut task: Box<T> = Box::from_raw(mem::transmute(task));
     let result = task.perform();
     Box::into_raw(task);
     mem::transmute(Box::into_raw(Box::new(result)))
