@@ -275,7 +275,8 @@ export default class CLI {
           break;
       }
 
-      return process.exit(1);
+      process.exit(1);
+      return;
     }
 
     try {
