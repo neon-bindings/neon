@@ -98,10 +98,6 @@ export default class Target {
       this.crate.artifacts.activate(this.subdirectory, settings);
 
       return result;
-    } catch (e) {
-      this.crate.artifacts.delete(this.subdirectory);
-
-      throw e;
     } finally {
       this.crate.saveArtifacts();
     }
