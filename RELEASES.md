@@ -1,3 +1,8 @@
+# Version 0.1.21
+
+* Fix a bug that was causing annoying unnecessary rebuilds ([#242](https://github.com/neon-bindings/neon/issues/242)).
+* New [API for getting the global object](https://api.neon-bindings.com/neon/scope/trait.scope#method.global) ([#249](https://github.com/neon-bindings/neon/issues/249)).
+
 # Version 0.1.20
 
 * Background task API ([#214](https://github.com/neon-bindings/neon/pull/214)).
