@@ -156,6 +156,8 @@ extern "C" {
   void Neon_Error_ThrowSyntaxErrorFromCString(const char *msg);
 
   bool Neon_Mem_SameHandle(v8::Local<v8::Value> v1, v8::Local<v8::Value> v2);
+  void *Neon_Mem_NewPersistent(v8::Local<v8::Value> val);
+  void Neon_Mem_New(v8::Local<v8::Value> *out, void *persistent);
 
   typedef void* (*Neon_TaskPerformCallback)(void *);
   typedef void (*Neon_TaskCompleteCallback)(void *, void *, v8::Local<v8::Value> *out);

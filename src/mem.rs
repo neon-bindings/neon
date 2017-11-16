@@ -4,9 +4,11 @@
 
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
+use std::os::raw::c_void;
+use std::mem;
 use neon_runtime;
 use neon_runtime::raw;
-use js::Value;
+use js::{Value, JsValue};
 use js::internal::SuperType;
 use js::error::{JsError, Kind};
 use vm::{JsResult, Lock};
@@ -103,5 +105,27 @@ impl<'a, T: Value> Lock for LockedHandle<'a, T> {
 
     unsafe fn expose(self, _: &mut LockState) -> Self::Internals {
         self
+    }
+}
+
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct PersistentHandle {
+    ptr: *mut c_void,
+}
+
+impl PersistentHandle {
+    pub fn new<T: Value>(h: Handle<T>) -> PersistentHandle {
+        let raw = h.value.to_raw();
+        let ptr = unsafe { neon_runtime::mem::new_persistent(raw) };
+        PersistentHandle { ptr: ptr }
+    }
+
+    pub fn into_handle<'a, S: Scope<'a>>(self, _: &mut S) -> Handle<'a, JsValue> {
+        unsafe {
+            let mut local: raw::Local = mem::zeroed();
+            neon_runtime::mem::new(&mut local, self.ptr);
+            JsValue::new_internal(local)
+        }
     }
 }

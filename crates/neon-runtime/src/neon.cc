@@ -537,6 +537,15 @@ extern "C" bool Neon_Mem_SameHandle(v8::Local<v8::Value> v1, v8::Local<v8::Value
   return v1 == v2;
 }
 
+extern "C" void *Neon_Mem_NewPersistent(v8::Local<v8::Value> val) {
+  return (void*)(new Nan::Persistent<v8::Value>(val));
+}
+
+extern "C" void Neon_Mem_New(v8::Local<v8::Value> *out, void *persistent) {
+  Nan::Persistent<v8::Value> *p = (Nan::Persistent<v8::Value> *)persistent;
+  *out = Nan::New(*p);
+}
+
 extern "C" void Neon_Task_Schedule(void *task, Neon_TaskPerformCallback perform, Neon_TaskCompleteCallback complete, v8::Local<v8::Function> callback) {
   v8::Isolate *isolate = v8::Isolate::GetCurrent();
   neon::Task *internal_task = new neon::Task(isolate, task, perform, complete, callback);
