@@ -15,7 +15,6 @@ typedef enum {
   tag_null,
   tag_undefined,
   tag_boolean,
-  tag_integer,
   tag_number,
   tag_string,
   tag_object,
