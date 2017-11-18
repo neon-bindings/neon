@@ -428,8 +428,6 @@ extern "C" tag_t Neon_Tag_Of(v8::Local<v8::Value> val) {
   return val->IsNull()                    ? tag_null
     : val->IsUndefined()                  ? tag_undefined
     : (val->IsTrue() || val->IsFalse())   ? tag_boolean
-    // ISSUE(#78): kill this
-    : (val->IsInt32() || val->IsUint32()) ? tag_integer
     : val->IsNumber()                     ? tag_number
     : val->IsString()                     ? tag_string
     : val->IsArray()                      ? tag_array
