@@ -31,10 +31,14 @@ register_module!(m, {
     m.export("return_negative_js_number", return_negative_js_number)?;
     m.export("return_float_js_number", return_float_js_number)?;
     m.export("return_negative_float_js_number", return_negative_float_js_number)?;
+    // DEPRECATE(0.2)
+    m.export("return_js_integer", return_js_integer)?;
     m.export("accept_and_return_js_number", accept_and_return_js_number)?;
     m.export("accept_and_return_large_js_number", accept_and_return_large_js_number)?;
     m.export("accept_and_return_float_js_number", accept_and_return_float_js_number)?;
     m.export("accept_and_return_negative_js_number", accept_and_return_negative_js_number)?;
+    // DEPRECATE(0.2)
+    m.export("accept_and_return_js_integer", accept_and_return_js_integer)?;
 
     m.export("return_js_array", return_js_array)?;
     m.export("return_js_array_with_number", return_js_array_with_number)?;

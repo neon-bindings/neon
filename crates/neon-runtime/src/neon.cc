@@ -79,6 +79,11 @@ extern "C" bool Neon_Primitive_BooleanValue(v8::Local<v8::Boolean> p) {
   return p->Value();
 }
 
+// DEPRECATE(0.2)
+extern "C" void Neon_Primitive_Integer(v8::Local<v8::Integer> *out, v8::Isolate *isolate, int32_t x) {
+  *out = v8::Integer::New(isolate, x);
+}
+
 extern "C" void Neon_Primitive_Number(v8::Local<v8::Number> *out, v8::Isolate *isolate, double value) {
   *out = v8::Number::New(isolate, value);
 }
@@ -93,6 +98,11 @@ extern "C" bool Neon_Primitive_IsUint32(v8::Local<v8::Primitive> p) {
 
 extern "C" bool Neon_Primitive_IsInt32(v8::Local<v8::Primitive> p) {
   return p->IsInt32();
+}
+
+// DEPRECATE(0.2)
+extern "C" int64_t Neon_Primitive_IntegerValue(v8::Local<v8::Integer> i) {
+  return i->Value();
 }
 
 extern "C" bool Neon_Object_Get_Index(v8::Local<v8::Value> *out, v8::Local<v8::Object> obj, uint32_t index) {
@@ -428,6 +438,8 @@ extern "C" tag_t Neon_Tag_Of(v8::Local<v8::Value> val) {
   return val->IsNull()                    ? tag_null
     : val->IsUndefined()                  ? tag_undefined
     : (val->IsTrue() || val->IsFalse())   ? tag_boolean
+    // DEPRECATE(0.2)
+    : (val->IsInt32() || val->IsUint32()) ? tag_integer
     : val->IsNumber()                     ? tag_number
     : val->IsString()                     ? tag_string
     : val->IsArray()                      ? tag_array
@@ -442,6 +454,11 @@ extern "C" bool Neon_Tag_IsUndefined(v8::Local<v8::Value> val) {
 
 extern "C" bool Neon_Tag_IsNull(v8::Local<v8::Value> val) {
   return val->IsNull();
+}
+
+// DEPRECATE(0.2)
+extern "C" bool Neon_Tag_IsInteger(v8::Local<v8::Value> val) {
+  return val->IsInt32() || val->IsUint32();
 }
 
 extern "C" bool Neon_Tag_IsNumber(v8::Local<v8::Value> val) {
