@@ -22,6 +22,11 @@ describe('JsNumber', function() {
     assert.equal(addon.return_negative_float_js_number(), -1.4747);
   });
 
+  // DEPRECATE(0.2)
+  it('return a JsInteger built in Rust', function () {
+    assert.equal(addon.return_js_integer(), 17);
+  });
+
   describe('round trips', function () {
     it('accept and return a number', function () {
       assert.equal(addon.accept_and_return_js_number(1), 1);
@@ -45,6 +50,11 @@ describe('JsNumber', function() {
 
     it('accept and return a negative number as a JsNumber', function () {
       assert.equal(addon.accept_and_return_negative_js_number(-55), -55);
+    });
+
+    // DEPRECATE(0.2)
+    it('accept and return an integer as a JsInteger', function () {
+      assert.equal(addon.accept_and_return_js_integer(42), 42);
     });
   });
 

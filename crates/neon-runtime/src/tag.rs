@@ -9,6 +9,8 @@ pub enum Tag {
     Null,
     Undefined,
     Boolean,
+    // DEPRECATE(0.2)
+    Integer,
     Number,
     String,
     Object,
@@ -30,6 +32,11 @@ extern "C" {
     /// Indicates if the value type is `Null`.
     #[link_name = "Neon_Tag_IsNull"]
     pub fn is_null(val: Local) -> bool;
+
+    // DEPRECATE(0.2)
+    /// Indicates if the value type is `Integer`.
+    #[link_name = "Neon_Tag_IsInteger"]
+    pub fn is_integer(val: Local) -> bool;
 
     /// Indicates if the value type is `Number`.
     #[link_name = "Neon_Tag_IsNumber"]
