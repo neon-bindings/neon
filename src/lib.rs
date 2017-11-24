@@ -325,6 +325,7 @@ mod tests {
         run("npm test", &test_cli);
     }
 
+    #[cfg(not(windows))]
     #[test]
     fn static_test() {
         let _guard = TEST_MUTEX.lock();
