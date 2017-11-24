@@ -1,7 +1,7 @@
 [package]
 name = "neon"
-version = "0.1.21"
-authors = ["Dave Herman <dherman@mozilla.com>"]
+version = "0.1.22"
+authors = ["Dave Herman <david.herman@gmail.com>"]
 description = "A safe abstraction layer for Node.js."
 readme = "README.md"
 documentation = "https://api.neon-bindings.com/neon/index.html"
@@ -19,7 +19,7 @@ build = "build.rs"
 links = "neon-runtime"
 
 [build-dependencies]
-neon-build = { version = "=0.1.21", path = "crates/neon-build" }
+neon-build = { version = "=0.1.22", path = "crates/neon-build" }
 
 [dev-dependencies]
 rustc_version = "0.2"
@@ -28,4 +28,4 @@ lazy_static = "0.2.8"
 [dependencies]
 cslice = "0.2"
 semver = "0.9.0"
-neon-runtime = { version = "=0.1.21", path = "crates/neon-runtime" }
+neon-runtime = { version = "=0.1.22", path = "crates/neon-runtime" }

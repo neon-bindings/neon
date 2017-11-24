@@ -1,3 +1,7 @@
+# Version 0.1.22
+
+* Reinstate `JsInteger` (although it's deprecated) for now, to be removed in 0.2. (#279)
+
 # Version 0.1.21
 
 * Fix a bug that was causing annoying unnecessary rebuilds ([#242](https://github.com/neon-bindings/neon/issues/242)).
