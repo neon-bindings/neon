@@ -131,6 +131,14 @@ impl PersistentHandle {
     }
 }
 
+impl Clone for PersistentHandle {
+    fn clone(&self) -> Self {
+        PersistentHandle {
+            ptr: unsafe { neon_runtime::mem::clone_persistent(self.ptr) },
+        }
+    }
+}
+
 impl Drop for PersistentHandle {
     fn drop(&mut self) {
         unsafe { neon_runtime::mem::delete_persistent(self.ptr) }

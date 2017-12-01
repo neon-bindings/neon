@@ -546,8 +546,16 @@ extern "C" void Neon_Mem_New(v8::Local<v8::Value> *out, void *persistent) {
   *out = Nan::New(*p);
 }
 
+extern "C" void *Neon_Mem_ClonePersistent(void *persistent) {
+  Nan::Persistent<v8::Value>* original = static_cast<Nan::Persistent<v8::Value>*>(persistent);
+  Nan::Persistent<v8::Value>* copy = new Nan::Persistent<v8::Value>();
+  copy->Reset(*original);
+  return static_cast<void*>(copy);
+}
+
 extern "C" void Neon_Mem_DeletePersistent(void *persistent) {
   Nan::Persistent<v8::Value>* p = static_cast<Nan::Persistent<v8::Value>*>(persistent);
+  p->Reset();
   delete p;
 }
 

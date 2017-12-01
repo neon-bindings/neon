@@ -12,6 +12,9 @@ extern "C" {
     #[link_name = "Neon_Mem_NewPersistent"]
     pub fn new_persistent(h: Local) -> *mut c_void;
 
+    #[link_name = "Neon_Mem_ClonePersistent"]
+    pub fn clone_persistent(p: *mut c_void) -> *mut c_void;
+
     #[link_name = "Neon_Mem_New"]
     pub fn new(out: &mut Local, p: *mut c_void);
 
