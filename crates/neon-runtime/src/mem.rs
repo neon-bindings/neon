@@ -15,4 +15,7 @@ extern "C" {
     #[link_name = "Neon_Mem_New"]
     pub fn new(out: &mut Local, p: *mut c_void);
 
+    #[link_name = "Neon_Mem_DeletePersistent"]
+    pub fn delete_persistent(p: *mut c_void);
+
 }

@@ -109,10 +109,11 @@ impl<'a, T: Value> Lock for LockedHandle<'a, T> {
 }
 
 #[repr(C)]
-#[derive(Clone, Copy)]
 pub struct PersistentHandle {
     ptr: *mut c_void,
 }
+
+unsafe impl Send for PersistentHandle { }
 
 impl PersistentHandle {
     pub fn new<T: Value>(h: Handle<T>) -> PersistentHandle {
@@ -127,5 +128,11 @@ impl PersistentHandle {
             neon_runtime::mem::new(&mut local, self.ptr);
             JsValue::new_internal(local)
         }
+    }
+}
+
+impl Drop for PersistentHandle {
+    fn drop(&mut self) {
+        unsafe { neon_runtime::mem::delete_persistent(self.ptr) }
     }
 }
