@@ -59,7 +59,9 @@ public:
     }
 
     v8::Local<v8::Function> callback = v8::Local<v8::Function>::New(isolate_, callback_);
-    callback->Call(context, v8::Null(isolate_), 2, argv);
+    node::MakeCallback(isolate_, context->Global(), callback, 2, argv);
+    callback_.Reset();
+    context_.Reset();
   }
 
   void *get_result() {

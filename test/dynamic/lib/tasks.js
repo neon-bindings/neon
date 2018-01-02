@@ -27,4 +27,16 @@ describe('Task', function() {
       }
     });
   });
+
+  it('executes microtasks after callback', function () {
+    return new Promise((resolve, reject) => {
+      addon.perform_async_task((err, res) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(res);
+        }
+      });
+    });
+  });
 });
