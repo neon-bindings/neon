@@ -53,6 +53,8 @@ register_module!(m, {
     m.export("return_js_function", return_js_function)?;
     m.export("call_js_function", call_js_function)?;
     m.export("construct_js_function", construct_js_function)?;
+    m.export("return_js_closure", return_js_closure)?;
+    m.export("return_js_mutable_closure", return_js_mutable_closure)?;
 
     m.export("check_string_and_number", check_string_and_number)?;
 

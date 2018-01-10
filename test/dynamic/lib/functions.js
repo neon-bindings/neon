@@ -18,6 +18,20 @@ describe('JsFunction', function() {
     assert.equal(addon.construct_js_function(Date), 1970);
   });
 
+  it('return a JsFunction built in Rust that closes over data', function () {
+    assert.equal(addon.return_js_closure(41)(1), 42);
+  });
+
+  it('return a JsFunction built in Rust that closes over mutable data', function () {
+    var fibonacci = addon.return_js_mutable_closure();
+    assert.equal(fibonacci(), 1);
+    assert.equal(fibonacci(), 2);
+    assert.equal(fibonacci(), 3);
+    assert.equal(fibonacci(), 5);
+    assert.equal(fibonacci(), 8);
+    assert.equal(fibonacci(), 13);
+  });
+
   it('got two parameters, a string and a number', function() {
     addon.check_string_and_number("string", 42);
   });

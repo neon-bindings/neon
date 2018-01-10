@@ -49,7 +49,7 @@ pub(crate) mod internal {
     }
 
     #[repr(C)]
-    pub struct FunctionKernel<T: Value>(pub Box<FnMut(Call) -> JsResult<T>>);
+    pub struct FunctionKernel<T: Value>(pub Box<Box<FnMut(Call) -> JsResult<T>>>);
 
     impl<T: Value> Kernel<()> for FunctionKernel<T> {
         extern "C" fn callback(info: &CallbackInfo) {
@@ -72,14 +72,11 @@ pub(crate) mod internal {
         }
 
         unsafe fn from_wrapper(h: raw::Local) -> Self {
-            let raw: *mut *mut FnMut(Call) -> JsResult<T> = mem::transmute(neon_runtime::fun::get_kernel(h));
-            let boxed = Box::from_raw(raw);
-            FunctionKernel(Box::from_raw(*boxed))
+            FunctionKernel(mem::transmute(neon_runtime::fun::get_kernel(h)))
         }
 
         fn as_ptr(self) -> *mut c_void {
-            let ptr = Box::into_raw(Box::new(self.0));
-            unsafe { mem::transmute(ptr) }
+            unsafe { mem::transmute(self.0) }
         }
     }
 }
@@ -675,11 +672,15 @@ unsafe fn prepare_call<'a, 'b, S: Scope<'a>, A>(scope: &mut S, args: &mut [Handl
 }
 
 impl JsFunction {
+    pub fn from_fn<'a, T: Scope<'a>, U: 'static + Value>(scope: &mut T, f: fn(Call) -> JsResult<U>) -> JsResult<'a, JsFunction> {
+        JsFunction::new(scope, Box::new(f))
+    }
+
     pub fn new<'a, T: Scope<'a>, U: Value>(scope: &mut T, f: Box<FnMut(Call) -> JsResult<U>>) -> JsResult<'a, JsFunction> {
         build(|out| {
             unsafe {
                 let isolate: *mut c_void = mem::transmute(scope.isolate().to_raw());
-                let (callback, kernel) = FunctionKernel(f).export();
+                let (callback, kernel) = FunctionKernel(Box::new(f)).export();
                 neon_runtime::fun::new(out, isolate, callback, kernel)
             }
         })
