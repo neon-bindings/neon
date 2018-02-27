@@ -3,7 +3,7 @@
 use std::mem;
 use std::os::raw::c_void;
 use std::marker::PhantomData;
-use std::cell::RefCell;
+use std::cell::Cell;
 use neon_runtime;
 use neon_runtime::raw;
 use mem::Handle;
@@ -13,11 +13,11 @@ use self::internal::ScopeInternal;
 
 pub(crate) mod internal {
     use vm::internal::Isolate;
-    use std::cell::RefCell;
 
     pub trait ScopeInternal: Sized {
         fn isolate(&self) -> Isolate;
-        fn active_cell(&self) -> &RefCell<bool>;
+        fn active(&self) -> bool;
+        fn set_active(&self, bool);
     }
 }
 
@@ -35,26 +35,26 @@ pub trait Scope<'a>: ScopeInternal {
 }
 
 fn ensure_active<T: ScopeInternal>(scope: &T) {
-    if !*scope.active_cell().borrow() {
+    if !scope.active() {
         panic!("illegal attempt to nest in inactive scope");
     }
 }
 
 pub struct RootScope<'a> {
     isolate: Isolate,
-    active: RefCell<bool>,
+    active: Cell<bool>,
     phantom: PhantomData<&'a ()>
 }
 
 pub struct NestedScope<'a> {
     isolate: Isolate,
-    active: RefCell<bool>,
+    active: Cell<bool>,
     phantom: PhantomData<&'a ()>
 }
 
 pub struct ChainedScope<'a, 'outer> {
     isolate: Isolate,
-    active: RefCell<bool>,
+    active: Cell<bool>,
     v8: *mut raw::EscapableHandleScope,
     parent: PhantomData<&'outer ()>,
     phantom: PhantomData<&'a ()>
@@ -74,7 +74,7 @@ impl<'a> RootScope<'a> {
     pub(crate) fn new(isolate: Isolate) -> RootScope<'a> {
         RootScope {
             isolate: isolate,
-            active: RefCell::new(true),
+            active: Cell::new(true),
             phantom: PhantomData
         }
     }
@@ -96,7 +96,7 @@ impl<'a> RootScope<'a> {
         }
 
         result
-        
+
     }
 }
 
@@ -119,7 +119,7 @@ extern "C" fn chained_callback<'a, T, P, F>(out: &mut Box<Option<T>>,
 {
     let mut chained = ChainedScope {
         isolate: parent.isolate(),
-        active: RefCell::new(true),
+        active: Cell::new(true),
         v8: v8,
         parent: PhantomData,
         phantom: PhantomData
@@ -131,8 +131,12 @@ extern "C" fn chained_callback<'a, T, P, F>(out: &mut Box<Option<T>>,
 impl<'a> ScopeInternal for RootScope<'a> {
     fn isolate(&self) -> Isolate { self.isolate }
 
-    fn active_cell(&self) -> &RefCell<bool> {
-        &self.active
+    fn active(&self) -> bool {
+        self.active.get()
+    }
+
+    fn set_active(&self, active: bool) {
+        self.active.set(active);
     }
 }
 
@@ -146,7 +150,7 @@ fn chain<'a, T, S, F>(outer: &S, f: F) -> T
     let mut result: Box<Option<T>> = Box::new(None);
     {
         let out: &mut Box<Option<T>> = &mut result;
-        { *outer.active_cell().borrow_mut() = false; }
+        outer.set_active(false);
         unsafe {
             let out: *mut c_void = mem::transmute(out);
             let closure: *mut c_void = mem::transmute(closure);
@@ -154,7 +158,7 @@ fn chain<'a, T, S, F>(outer: &S, f: F) -> T
             let this: *mut c_void = mem::transmute(outer);
             neon_runtime::scope::chained(out, closure, callback, this);
         }
-        { *outer.active_cell().borrow_mut() = true; }
+        outer.set_active(true);
     }
     result.unwrap()
 }
@@ -169,7 +173,7 @@ fn nest<'me, T, S, F>(outer: &'me S, f: F) -> T
     let mut result: Box<Option<T>> = Box::new(None);
     {
         let out: &mut Box<Option<T>> = &mut result;
-        { *outer.active_cell().borrow_mut() = false; }
+        outer.set_active(false);
         unsafe {
             let out: *mut c_void = mem::transmute(out);
             let closure: *mut c_void = mem::transmute(closure);
@@ -177,7 +181,7 @@ fn nest<'me, T, S, F>(outer: &'me S, f: F) -> T
             let isolate: *mut c_void = mem::transmute(outer.isolate());
             neon_runtime::scope::nested(out, closure, callback, isolate);
         }
-        { *outer.active_cell().borrow_mut() = true; }
+        outer.set_active(true);
     }
     result.unwrap()
 }
@@ -189,7 +193,7 @@ extern "C" fn nested_callback<T, F>(out: &mut Box<Option<T>>,
 {
     let mut nested = NestedScope {
         isolate: isolate,
-        active: RefCell::new(true),
+        active: Cell::new(true),
         phantom: PhantomData
     };
     let result = f(&mut nested);
@@ -209,8 +213,12 @@ impl<'a> Scope<'a> for NestedScope<'a> {
 impl<'a> ScopeInternal for NestedScope<'a> {
     fn isolate(&self) -> Isolate { self.isolate }
 
-    fn active_cell(&self) -> &RefCell<bool> {
-        &self.active
+    fn active(&self) -> bool {
+        self.active.get()
+    }
+
+    fn set_active(&self, active: bool) {
+        self.active.set(active);
     }
 }
 
@@ -227,7 +235,11 @@ impl<'a, 'outer> Scope<'a> for ChainedScope<'a, 'outer> {
 impl<'a, 'outer> ScopeInternal for ChainedScope<'a, 'outer> {
     fn isolate(&self) -> Isolate { self.isolate }
 
-    fn active_cell(&self) -> &RefCell<bool> {
-        &self.active
+    fn active(&self) -> bool {
+        self.active.get()
+    }
+
+    fn set_active(&self, active: bool) {
+        self.active.set(active);
     }
 }
