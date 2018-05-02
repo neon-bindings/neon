@@ -5,11 +5,10 @@ use std::panic::{UnwindSafe, catch_unwind};
 use neon_runtime;
 use neon_runtime::raw;
 
-use vm::{Throw, VmResult};
+use vm::{Throw, Vm, VmResult};
 use js::{Value, Object, ToJsString, build};
 use js::internal::ValueInternal;
 use mem::{Handle, Managed};
-use scope::Scope;
 
 pub fn throw<'a, T: Value, U>(v: Handle<'a, T>) -> VmResult<U> {
     unsafe {
@@ -51,8 +50,8 @@ fn message(msg: &str) -> CString {
 }
 
 impl JsError {
-    pub fn new<'a, T: Scope<'a>, U: ToJsString>(scope: &mut T, kind: Kind, msg: U) -> VmResult<Handle<'a, JsError>> {
-        let msg = msg.to_js_string(scope);
+    pub fn new<'a, V: Vm<'a>, U: ToJsString>(vm: &mut V, kind: Kind, msg: U) -> VmResult<Handle<'a, JsError>> {
+        let msg = msg.to_js_string(vm);
         build(|out| {
             unsafe {
                 let raw = msg.to_raw();

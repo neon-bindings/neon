@@ -1,9 +1,15 @@
 //! Facilities for working with `v8::Function`s.
 
 use std::os::raw::c_void;
-use raw::{FunctionCallbackInfo, Local};
+use call::CCallback;
+use raw::Local;
 
 extern "C" {
+
+    /// Mutates the `out` argument provided to refer to a newly created `v8::Function`. Returns
+    /// `false` if the value couldn't be created.
+    #[link_name = "Neon_Fun_New2"]
+    pub fn new_vm2(out: &mut Local, isolate: *mut c_void, callback: CCallback) -> bool;
 
     /// Mutates the `out` argument provided to refer to a newly created `v8::Function`. Returns
     /// `false` if the value couldn't be created.
@@ -15,14 +21,14 @@ extern "C" {
     #[link_name = "Neon_Fun_Template_New"]
     pub fn new_template(out: &mut Local, isolate: *mut c_void, callback: *mut c_void, kernel: *mut c_void) -> bool;
 
-    /// Creates a new `v8::HandleScope` and calls the `callback` provided with the the argument
-    /// signature `(info, kernel, scope)`.
-    #[link_name = "Neon_Fun_ExecKernel"]
-    pub fn exec_kernel(kernel: *mut c_void, callback: extern fn(*mut c_void, *mut c_void, *mut c_void), info: &FunctionCallbackInfo, scope: *mut c_void);
+    /// Mutates the `out` argument provided to refer to a newly created `v8::FunctionTemplate`.
+    /// Returns `false` if the value couldn't be created.
+    #[link_name = "Neon_Fun_Template_New2"]
+    pub fn new_template_vm2(out: &mut Local, isolate: *mut c_void, callback: CCallback) -> bool;
 
     /// Gets the reference to the `v8::Local<v8::External>` handle provided.
-    #[link_name = "Neon_Fun_GetKernel"]
-    pub fn get_kernel(obj: Local) -> *mut c_void;
+    #[link_name = "Neon_Fun_GetDynamicCallback"]
+    pub fn get_dynamic_callback(obj: Local) -> *mut c_void;
 
     /// Calls the function provided (`fun`) and mutates the `out` argument provided to refer to the
     /// result of the function call. Returns `false` if the result of the call was empty.

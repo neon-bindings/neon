@@ -11,11 +11,10 @@ use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::tag::Tag;
 use mem::{Handle, Managed};
-use scope::Scope;
-use vm::{VmResult, Throw, JsResult, Call, This, Kernel};
-use vm::internal::Isolate;
+use vm::{Vm, VmGuard, Ref, RefMut, LoanError, CallContext, Callback, VmResult, Throw, JsResult, This};
+use vm::internal::{Isolate, Pointer};
 use js::error::{JsError, Kind};
-use self::internal::{ValueInternal, SuperType, FunctionKernel};
+use self::internal::{ValueInternal, SuperType, FunctionCallback};
 
 pub(crate) mod internal {
     use std::mem;
@@ -23,8 +22,9 @@ pub(crate) mod internal {
     use neon_runtime;
     use neon_runtime::raw;
     use mem::{Handle, Managed};
-    use vm::{JsResult, CallbackInfo, Call, Kernel};
+    use vm::{JsResult, CallbackInfo, CallContext, Callback};
     use js::error::convert_panics;
+    use js::JsObject;
     use super::Value;
 
     pub trait ValueInternal: Managed {
@@ -48,22 +48,20 @@ pub(crate) mod internal {
     }
 
     #[repr(C)]
-    pub struct FunctionKernel<T: Value>(pub fn(Call) -> JsResult<T>);
+    pub struct FunctionCallback<T: Value>(pub fn(CallContext<JsObject>) -> JsResult<T>);
 
-    impl<T: Value> Kernel<()> for FunctionKernel<T> {
-        extern "C" fn callback(info: &CallbackInfo) {
-            info.scope().with(|scope| {
-                let data = info.data();
-                let FunctionKernel(kernel) = unsafe { Self::from_wrapper(data.to_raw()) };
-                let call = info.as_call(scope);
-                if let Ok(value) = convert_panics(|| { kernel(call) }) {
-                    info.set_return(value);
-                }
-            })
-        }
-
-        unsafe fn from_wrapper(h: raw::Local) -> Self {
-            FunctionKernel(mem::transmute(neon_runtime::fun::get_kernel(h)))
+    impl<T: Value> Callback<()> for FunctionCallback<T> {
+        extern "C" fn invoke(info: &CallbackInfo) {
+            unsafe {
+                info.with_vm::<JsObject, _, _>(|vm| {
+                    let data = info.data();
+                    let dynamic_callback: fn(CallContext<JsObject>) -> JsResult<T> =
+                        mem::transmute(neon_runtime::fun::get_dynamic_callback(data.to_raw()));
+                    if let Ok(value) = convert_panics(|| { dynamic_callback(vm) }) {
+                        info.set_return(value);
+                    }
+                })
+            }
         }
 
         fn as_ptr(self) -> *mut c_void {
@@ -97,11 +95,11 @@ impl<T: Object> SuperType<T> for JsObject {
 
 /// The trait shared by all JavaScript values.
 pub trait Value: ValueInternal {
-    fn to_string<'a, T: Scope<'a>>(self, _: &mut T) -> JsResult<'a, JsString> {
+    fn to_string<'a, V: Vm<'a>>(self, _: &mut V) -> JsResult<'a, JsString> {
         build(|out| { unsafe { neon_runtime::convert::to_string(out, self.to_raw()) } })
     }
 
-    fn as_value<'a, T: Scope<'a>>(self, _: &mut T) -> Handle<'a, JsValue> {
+    fn as_value<'a, V: Vm<'a>>(self, _: &mut V) -> Handle<'a, JsValue> {
         JsValue::new_internal(self.to_raw())
     }
 }
@@ -254,7 +252,7 @@ impl ValueInternal for JsNull {
 pub struct JsBoolean(raw::Local);
 
 impl JsBoolean {
-    pub fn new<'a, T: Scope<'a>>(_: &mut T, b: bool) -> Handle<'a, JsBoolean> {
+    pub fn new<'a, V: Vm<'a>>(_: &mut V, b: bool) -> Handle<'a, JsBoolean> {
         JsBoolean::new_internal(b)
     }
 
@@ -324,12 +322,12 @@ impl JsString {
         }
     }
 
-    pub fn new<'a, T: Scope<'a>>(scope: &mut T, val: &str) -> Option<Handle<'a, JsString>> {
-        JsString::new_internal(scope.isolate(), val)
+    pub fn new<'a, V: Vm<'a>>(vm: &mut V, val: &str) -> Option<Handle<'a, JsString>> {
+        JsString::new_internal(vm.isolate(), val)
     }
 
-    pub fn new_or_throw<'a, T: Scope<'a>>(scope: &mut T, val: &str) -> VmResult<Handle<'a, JsString>> {
-        match JsString::new(scope, val) {
+    pub fn new_or_throw<'a, V: Vm<'a>>(vm: &mut V, val: &str) -> VmResult<Handle<'a, JsString>> {
+        match JsString::new(vm, val) {
             Some(v) => Ok(v),
             None => JsError::throw(Kind::TypeError, "invalid string contents")
         }
@@ -352,20 +350,20 @@ impl JsString {
 }
 
 pub trait ToJsString {
-    fn to_js_string<'a, T: Scope<'a>>(&self, scope: &mut T) -> Handle<'a, JsString>;
+    fn to_js_string<'a, V: Vm<'a>>(&self, vm: &mut V) -> Handle<'a, JsString>;
 }
 
 impl<'b> ToJsString for Handle<'b, JsString> {
-    fn to_js_string<'a, T: Scope<'a>>(&self, _: &mut T) -> Handle<'a, JsString> {
+    fn to_js_string<'a, V: Vm<'a>>(&self, _: &mut V) -> Handle<'a, JsString> {
         Handle::new_internal(JsString::from_raw(self.to_raw()))
     }
 }
 
 impl<'b> ToJsString for &'b str {
-    fn to_js_string<'a, T: Scope<'a>>(&self, scope: &mut T) -> Handle<'a, JsString> {
-        match JsString::new_internal(scope.isolate(), self) {
+    fn to_js_string<'a, V: Vm<'a>>(&self, vm: &mut V) -> Handle<'a, JsString> {
+        match JsString::new_internal(vm.isolate(), self) {
             Some(s) => s,
-            None => JsString::new_internal(scope.isolate(), "").unwrap()
+            None => JsString::new_internal(vm.isolate(), "").unwrap()
         }
     }
 }
@@ -397,8 +395,8 @@ fn lower_str_unwrap(s: &str) -> (*const u8, i32) {
 pub struct JsInteger(raw::Local);
 
 impl JsInteger {
-    pub fn new<'a, T: Scope<'a>>(scope: &mut T, i: i32) -> Handle<'a, JsInteger> {
-        JsInteger::new_internal(scope.isolate(), i)
+    pub fn new<'a, V: Vm<'a>>(vm: &mut V, i: i32) -> Handle<'a, JsInteger> {
+        JsInteger::new_internal(vm.isolate(), i)
     }
 
     pub(crate) fn new_internal<'a>(isolate: Isolate, i: i32) -> Handle<'a, JsInteger> {
@@ -447,8 +445,8 @@ impl ValueInternal for JsInteger {
 pub struct JsNumber(raw::Local);
 
 impl JsNumber {
-    pub fn new<'a, T: Scope<'a>>(scope: &mut T, v: f64) -> Handle<'a, JsNumber> {
-        JsNumber::new_internal(scope.isolate(), v)
+    pub fn new<'a, V: Vm<'a>>(vm: &mut V, v: f64) -> Handle<'a, JsNumber> {
+        JsNumber::new_internal(vm.isolate(), v)
     }
 
     pub(crate) fn new_internal<'a>(isolate: Isolate, v: f64) -> Handle<'a, JsNumber> {
@@ -543,12 +541,21 @@ impl<'a> Key for &'a str {
 
 /// The trait of all object types.
 pub trait Object: Value {
-    fn get<'a, T: Scope<'a>, K: Key>(self, _: &mut T, key: K) -> VmResult<Handle<'a, JsValue>> {
+    fn get_vm2<'a, V: Vm<'a>, K: Key>(self, _: &mut V, key: K) -> VmResult<Handle<'a, JsValue>> {
         build(|out| { unsafe { key.get(out, self.to_raw()) } })
     }
 
-    fn get_own_property_names<'a, T: Scope<'a>>(self, _: &mut T) -> JsResult<'a, JsArray> {
+    fn get_own_property_names_vm2<'a, V: Vm<'a>>(self, _: &mut V) -> JsResult<'a, JsArray> {
         build(|out| { unsafe { neon_runtime::object::get_own_property_names(out, self.to_raw()) } })
+    }
+
+    fn set_vm2<'a, V: Vm<'a>, K: Key, W: Value>(self, _: &mut V, key: K, val: Handle<W>) -> VmResult<bool> {
+        let mut result = false;
+        if unsafe { key.set(&mut result, self.to_raw(), val.to_raw()) } {
+            Ok(result)
+        } else {
+            Err(Throw)
+        }
     }
 
     fn set<K: Key, V: Value>(self, key: K, val: Handle<V>) -> VmResult<bool> {
@@ -564,7 +571,7 @@ pub trait Object: Value {
 impl Object for JsObject { }
 
 impl JsObject {
-    pub fn new<'a, T: Scope<'a>>(_: &mut T) -> Handle<'a, JsObject> {
+    pub fn new<'a, V: Vm<'a>>(_: &mut V) -> Handle<'a, JsObject> {
         JsObject::new_internal()
     }
 
@@ -588,8 +595,8 @@ impl JsObject {
 pub struct JsArray(raw::Local);
 
 impl JsArray {
-    pub fn new<'a, T: Scope<'a>>(scope: &mut T, len: u32) -> Handle<'a, JsArray> {
-        JsArray::new_internal(scope.isolate(), len)
+    pub fn new<'a, V: Vm<'a>>(vm: &mut V, len: u32) -> Handle<'a, JsArray> {
+        JsArray::new_internal(vm.isolate(), len)
     }
 
     pub(crate) fn new_internal<'a>(isolate: Isolate, len: u32) -> Handle<'a, JsArray> {
@@ -600,7 +607,7 @@ impl JsArray {
         }
     }
 
-    pub fn to_vec<'a, T: Scope<'a>>(self, scope: &mut T) -> VmResult<Vec<Handle<'a, JsValue>>> {
+    pub fn to_vec<'a, V: Vm<'a>>(self, vm: &mut V) -> VmResult<Vec<Handle<'a, JsValue>>> {
         let mut result = Vec::with_capacity(self.len() as usize);
         let mut i = 0;
         loop {
@@ -609,7 +616,7 @@ impl JsArray {
             if i >= self.len() {
                 return Ok(result);
             }
-            result.push(self.get(scope, i)?);
+            result.push(self.get_vm2(vm, i)?);
             i += 1;
         }
     }
@@ -650,7 +657,7 @@ impl<T: Object> Object for JsFunction<T> { }
 // Maximum number of function arguments in V8.
 const V8_ARGC_LIMIT: usize = 65535;
 
-unsafe fn prepare_call<'a, 'b, S: Scope<'a>, A>(scope: &mut S, args: &mut [Handle<'b, A>]) -> VmResult<(*mut c_void, i32, *mut c_void)>
+unsafe fn prepare_call_vm2<'a, 'b, V: Vm<'a>, A>(vm: &mut V, args: &mut [Handle<'b, A>]) -> VmResult<(*mut c_void, i32, *mut c_void)>
     where A: Value + 'b
 {
     let argv = args.as_mut_ptr();
@@ -658,30 +665,33 @@ unsafe fn prepare_call<'a, 'b, S: Scope<'a>, A>(scope: &mut S, args: &mut [Handl
     if argc > V8_ARGC_LIMIT {
         return JsError::throw(Kind::RangeError, "too many arguments");
     }
-    let isolate: *mut c_void = mem::transmute(scope.isolate().to_raw());
+    let isolate: *mut c_void = mem::transmute(vm.isolate().to_raw());
     Ok((isolate, argc as i32, argv as *mut c_void))
 }
 
 impl JsFunction {
-    pub fn new<'a, T: Scope<'a>, U: Value>(scope: &mut T, f: fn(Call) -> JsResult<U>) -> JsResult<'a, JsFunction> {
+    pub fn new_vm2<'a, V, U>(vm: &mut V, f: fn(CallContext<JsObject>) -> JsResult<U>) -> JsResult<'a, JsFunction>
+        where V: Vm<'a>,
+              U: Value
+    {
         build(|out| {
             unsafe {
-                let isolate: *mut c_void = mem::transmute(scope.isolate().to_raw());
-                let (callback, kernel) = FunctionKernel(f).export();
-                neon_runtime::fun::new(out, isolate, callback, kernel)
+                let isolate: *mut c_void = mem::transmute(vm.isolate().to_raw());
+                let callback = FunctionCallback(f).into_c_callback();
+                neon_runtime::fun::new_vm2(out, isolate, callback)
             }
         })
     }
 }
 
 impl<C: Object> JsFunction<C> {
-    pub fn call<'a, 'b, S: Scope<'a>, T, A, AS>(self, scope: &mut S, this: Handle<'b, T>, args: AS) -> JsResult<'a, JsValue>
+    pub fn call_vm2<'a, 'b, V: Vm<'a>, T, A, AS>(self, vm: &mut V, this: Handle<'b, T>, args: AS) -> JsResult<'a, JsValue>
         where T: Value,
               A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
     {
         let mut args = args.into_iter().collect::<Vec<_>>();
-        let (isolate, argc, argv) = unsafe { prepare_call(scope, &mut args) }?;
+        let (isolate, argc, argv) = unsafe { prepare_call_vm2(vm, &mut args) }?;
         build(|out| {
             unsafe {
                 neon_runtime::fun::call(out, isolate, self.to_raw(), this.to_raw(), argc, argv)
@@ -689,12 +699,12 @@ impl<C: Object> JsFunction<C> {
         })
     }
 
-    pub fn construct<'a, 'b, S: Scope<'a>, A, AS>(self, scope: &mut S, args: AS) -> JsResult<'a, C>
+    pub fn construct_vm2<'a, 'b, V: Vm<'a>, A, AS>(self, vm: &mut V, args: AS) -> JsResult<'a, C>
         where A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
     {
         let mut args = args.into_iter().collect::<Vec<_>>();
-        let (isolate, argc, argv) = unsafe { prepare_call(scope, &mut args) }?;
+        let (isolate, argc, argv) = unsafe { prepare_call_vm2(vm, &mut args) }?;
         build(|out| {
             unsafe {
                 neon_runtime::fun::construct(out, isolate, self.to_raw(), argc, argv)
@@ -720,4 +730,28 @@ impl<T: Object> ValueInternal for JsFunction<T> {
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_function(other.to_raw()) }
     }
+}
+
+pub trait Borrow: Sized {
+    type Target: Pointer;
+
+    fn borrow<'a>(self, guard: &'a VmGuard<'a>) -> Ref<'a, Self::Target> {
+        match self.try_borrow(guard) {
+            Ok(r) => r,
+            Err(e) => panic!("{}", e)
+        }
+    }
+
+    fn try_borrow<'a>(self, guard: &'a VmGuard<'a>) -> Result<Ref<'a, Self::Target>, LoanError>;
+}
+
+pub trait BorrowMut: Borrow {
+    fn borrow_mut<'a>(self, guard: &'a VmGuard<'a>) -> RefMut<'a, Self::Target> {
+        match self.try_borrow_mut(guard) {
+            Ok(r) => r,
+            Err(e) => panic!("{}", e)
+        }
+    }
+
+    fn try_borrow_mut<'a>(self, guard: &'a VmGuard<'a>) -> Result<RefMut<'a, Self::Target>, LoanError>;
 }

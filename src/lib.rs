@@ -13,7 +13,6 @@ extern crate lazy_static;
 
 pub mod mem;
 pub mod vm;
-pub mod scope;
 pub mod js;
 pub mod task;
 pub mod meta;
@@ -21,16 +20,18 @@ pub mod meta;
 #[doc(hidden)]
 pub mod macro_internal;
 
+// FIXME: document that the first argument is an identifier that binds a ModuleContext
+
 /// Register the current crate as a Node module, providing startup
 /// logic for initializing the module object at runtime.
 ///
 /// Example:
 ///
 /// ```rust,ignore
-/// register_module!(m, {
-///     m.export("foo", foo)?;
-///     m.export("bar", bar)?;
-///     m.export("baz", baz)?;
+/// register_module!(vm, {
+///     vm.export_function("foo", foo)?;
+///     vm.export_function("bar", bar)?;
+///     vm.export_function("baz", baz)?;
 ///     Ok(())
 /// });
 /// ```
@@ -43,7 +44,7 @@ macro_rules! register_module {
         #[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
         #[cfg_attr(target_os = "windows", link_section = ".CRT$XCU")]
         pub static __LOAD_NEON_MODULE: extern "C" fn() = {
-            fn __init_neon_module(mut $module: $crate::vm::Module) -> $crate::vm::VmResult<()> $init
+            fn __init_neon_module(mut $module: $crate::vm::ModuleContext) -> $crate::vm::VmResult<()> $init
 
             extern "C" fn __load_neon_module() {
                 // Put everything else in the ctor fn so the user fn can't see it.
@@ -76,7 +77,8 @@ macro_rules! register_module {
 
                 extern "C" fn __register_neon_module(
                         m: $crate::mem::Handle<$crate::js::JsObject>, _: *mut u8, _: *mut u8) {
-                    $crate::vm::Module::initialize(m, __init_neon_module);
+                    // FIXME: this will move into $crate::macro_internal::initialize_module
+                    $crate::vm::initialize_module(m, __init_neon_module);
                 }
 
                 extern "C" {
@@ -101,16 +103,16 @@ macro_rules! register_module {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! class_definition {
-    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; init($call:pat) $body:block $($rest:tt)* ) => {
+    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; init($call:ident) $body:block $($rest:tt)* ) => {
         class_definition!($cls ;
                           $cname ;
                           $typ ;
                           {
-                              fn _______allocator_rust_y_u_no_hygienic_items_______($call: $crate::vm::FunctionCall<$crate::js::JsUndefined>) -> $crate::vm::VmResult<$typ> {
+                              fn _______allocator_rust_y_u_no_hygienic_items_______(mut $call: $crate::vm::CallContext<$crate::js::JsUndefined>) -> $crate::vm::VmResult<$typ> {
                                   $body
                               }
 
-                              $crate::macro_internal::AllocateKernel::new(_______allocator_rust_y_u_no_hygienic_items_______)
+                              $crate::macro_internal::AllocateCallback(_______allocator_rust_y_u_no_hygienic_items_______)
                           } ;
                           $call_ctor ;
                           $new_ctor ;
@@ -119,7 +121,7 @@ macro_rules! class_definition {
                           $($rest)*);
     };
 
-    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; ($($mname:tt)*) ; ($($mdef:tt)*) ; method $name:ident($call:pat) $body:block $($rest:tt)* ) => {
+    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; ($($mname:tt)*) ; ($($mdef:tt)*) ; method $name:ident($call:ident) $body:block $($rest:tt)* ) => {
         class_definition!($cls ;
                           $cname ;
                           $typ ;
@@ -128,44 +130,44 @@ macro_rules! class_definition {
                           $new_ctor ;
                           ($($mname)* $name) ;
                           ($($mdef)* {
-                              fn _______method_rust_y_u_no_hygienic_items_______($call: $crate::vm::FunctionCall<$cls>) -> $crate::vm::JsResult<$crate::js::JsValue> {
+                              fn _______method_rust_y_u_no_hygienic_items_______(mut $call: $crate::vm::CallContext<$cls>) -> $crate::vm::JsResult<$crate::js::JsValue> {
                                   $body
                               }
 
-                              $crate::macro_internal::MethodKernel::new(_______method_rust_y_u_no_hygienic_items_______)
+                              $crate::macro_internal::MethodCallback(_______method_rust_y_u_no_hygienic_items_______)
                           }) ;
                           $($rest)*);
     };
 
-    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; constructor($call:pat) $body:block $($rest:tt)* ) => {
+    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; constructor($call:ident) $body:block $($rest:tt)* ) => {
         class_definition!($cls ;
                           $cname ;
                           $typ ;
                           $allocator ;
                           $call_ctor ;
                           ({
-                              fn _______constructor_rust_y_u_no_hygienic_items_______($call: $crate::vm::FunctionCall<$cls>) -> $crate::vm::VmResult<Option<$crate::mem::Handle<$crate::js::JsObject>>> {
+                              fn _______constructor_rust_y_u_no_hygienic_items_______(mut $call: $crate::vm::CallContext<$cls>) -> $crate::vm::VmResult<Option<$crate::mem::Handle<$crate::js::JsObject>>> {
                                   $body
                               }
 
-                              $crate::macro_internal::ConstructKernel::new(_______constructor_rust_y_u_no_hygienic_items_______)
+                              $crate::macro_internal::ConstructCallback::new(_______constructor_rust_y_u_no_hygienic_items_______)
                           }) ;
                           $mnames ;
                           $mdefs ;
                           $($rest)*);
     };
 
-    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; call($call:pat) $body:block $($rest:tt)* ) => {
+    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; call($call:ident) $body:block $($rest:tt)* ) => {
         class_definition!($cls ;
                           $cname ;
                           $typ ;
                           $allocator ;
                           ({
-                              fn _______call_rust_y_u_no_hygienic_items_______($call: $crate::vm::FunctionCall<$crate::js::JsValue>) -> $crate::vm::JsResult<$crate::js::JsValue> {
+                              fn _______call_rust_y_u_no_hygienic_items_______(mut $call: $crate::vm::CallContext<$crate::js::JsValue>) -> $crate::vm::JsResult<$crate::js::JsValue> {
                                   $body
                               }
 
-                              $crate::macro_internal::ConstructorCallKernel::new(_______call_rust_y_u_no_hygienic_items_______)
+                              $crate::macro_internal::ConstructorCallCallback::new(_______call_rust_y_u_no_hygienic_items_______)
                           }) ;
                           $new_ctor ;
                           $mnames ;
@@ -177,7 +179,7 @@ macro_rules! class_definition {
         impl $crate::js::class::Class for $cls {
             type Internals = $typ;
 
-            fn setup<'a, T: $crate::scope::Scope<'a>>(_: &mut T) -> $crate::vm::VmResult<$crate::js::class::ClassDescriptor<'a, Self>> {
+            fn setup<'a, V: $crate::vm::Vm<'a>>(_: &mut V) -> $crate::vm::VmResult<$crate::js::class::ClassDescriptor<'a, Self>> {
                 ::std::result::Result::Ok(Self::describe(stringify!($cname), $allocator)
                                              $(.construct($new_ctor))*
                                              $(.call($call_ctor))*
@@ -217,21 +219,22 @@ macro_rules! impl_managed {
 ///
 ///     /// A class for generating greeting strings.
 ///     pub class JsGreeter for Greeter {
-///         init(call) {
-///             let scope = call.scope;
-///             let greeting = call.arguments.require(scope, 0)?.to_string(scope)?.value();
+///         init(vm) {
+///             let greeting = vm.argument(0)?.to_string(&mut vm)?.value();
 ///             Ok(Greeter {
 ///                 greeting: greeting
 ///             })
 ///         }
 ///
-///         method hello(call) {
-///             let scope = call.scope;
-///             let name = call.arguments.require(scope, 0)?.to_string(scope)?.value();
-///             let msg = vm::lock(call.arguments.this(scope), |greeter| {
+///         method hello(vm) {
+///             let name = vm.argument(0)?.to_string(&mut vm)?.value();
+///             let this = vm.this();
+///             let msg = {
+///                 let guard = vm.lock();
+///                 let greeter = this.borrow(&guard);
 ///                 format!("{}, {}!", greeter.greeting, name)
-///             });
-///             Ok(JsString::new_or_throw(scope, &msg[..])?.upcast())
+///             };
+///             Ok(vm.string(&msg[..])?.upcast())
 ///         }
 ///     }
 ///

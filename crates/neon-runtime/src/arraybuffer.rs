@@ -17,4 +17,6 @@ extern "C" {
     #[link_name = "Neon_ArrayBuffer_Data"]
     pub fn data<'a, 'b>(out: &'a mut CMutSlice<'b, u8>, obj: Local);
 
+    #[link_name = "Neon_ArrayBuffer_GetArrayBufferData"]
+    pub fn get_data<'a, 'b>(base_out: &'a mut *mut c_void, size_out: &'a mut usize, obj: Local);
 }

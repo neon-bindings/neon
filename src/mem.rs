@@ -9,9 +9,7 @@ use neon_runtime::raw;
 use js::Value;
 use js::internal::SuperType;
 use js::error::{JsError, Kind};
-use vm::{JsResult, Lock};
-use vm::internal::LockState;
-use scope::Scope;
+use vm::JsResult;
 
 pub trait Managed: Copy {
     fn to_raw(self) -> raw::Local;
@@ -26,11 +24,13 @@ pub struct Handle<'a, T: Managed + 'a> {
     phantom: PhantomData<&'a T>
 }
 
+/*
 impl<'a, T: Value + 'a> Handle<'a, T> {
     pub fn lock(self) -> LockedHandle<'a, T> {
         LockedHandle::new(self)
     }
 }
+*/
 
 impl<'a, T: Managed + 'a> PartialEq for Handle<'a, T> {
     fn eq(&self, other: &Self) -> bool {
@@ -84,6 +84,7 @@ impl<'a, T: Managed> DerefMut for Handle<'a, T> {
     }
 }
 
+/*
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct LockedHandle<'a, T: Value + 'a>(Handle<'a, T>);
@@ -105,3 +106,4 @@ impl<'a, T: Value> Lock for LockedHandle<'a, T> {
         self
     }
 }
+*/

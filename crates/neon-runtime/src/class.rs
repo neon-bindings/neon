@@ -1,4 +1,5 @@
 use std::os::raw::c_void;
+use call::CCallback;
 use raw::{Isolate, Local};
 
 extern "C" {
@@ -8,6 +9,13 @@ extern "C" {
 
     #[link_name = "Neon_Class_SetClassMap"]
     pub fn set_class_map(isolate: *mut Isolate, map: *mut c_void, free_map: *mut c_void);
+
+    #[link_name = "Neon_Class_CreateBase2"]
+    pub fn create_base_vm2(isolate: *mut Isolate,
+                           allocate: CCallback,
+                           construct: CCallback,
+                           call: CCallback,
+                           drop: extern "C" fn(*mut c_void)) -> *mut c_void;
 
     #[link_name = "Neon_Class_CreateBase"]
     pub fn create_base(isolate: *mut Isolate,

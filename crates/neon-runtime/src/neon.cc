@@ -221,6 +221,13 @@ extern "C" void Neon_ArrayBuffer_Data(buf_t *out, v8::Local<v8::ArrayBuffer> buf
   out->len = contents.ByteLength();
 }
 
+extern "C" void Neon_ArrayBuffer_GetArrayBufferData(void **base_out, size_t *len_out, v8::Local<v8::ArrayBuffer> buffer) {
+  v8::ArrayBuffer::Contents contents = buffer->GetContents();
+  *base_out = contents.Data();
+  *len_out = contents.ByteLength();
+}
+
+
 extern "C" bool Neon_Tag_IsArrayBuffer(v8::Local<v8::Value> value) {
   return value->IsArrayBuffer();
 }
@@ -269,14 +276,9 @@ extern "C" void Neon_Scope_GetGlobal(v8::Isolate *isolate, v8::Local<v8::Value> 
   *out = ctx->Global();
 }
 
-extern "C" void Neon_Fun_ExecKernel(void *kernel, Neon_RootScopeCallback callback, v8::FunctionCallbackInfo<v8::Value> *info, void *scope) {
-  Nan::HandleScope v8_scope;
-  callback(info, kernel, scope);
-}
-
-extern "C" void Neon_Module_ExecKernel(void *kernel, Neon_ModuleScopeCallback callback, v8::Local<v8::Object> exports, void *scope) {
-  Nan::HandleScope v8_scope;
-  callback(kernel, exports, scope);
+extern "C" void Neon_Module_ExecKernel(void *kernel, Neon_ModuleScopeCallback callback, v8::Local<v8::Object> exports, void *scope, void *vm) {
+  //Nan::HandleScope v8_scope;
+  callback(kernel, exports, scope, vm);
 }
 
 extern "C" uint32_t Neon_Module_GetVersion() {
@@ -292,6 +294,24 @@ extern "C" void Neon_Class_ConstructBaseCallback(const v8::FunctionCallbackInfo<
   } else {
     metadata->call(info);
   }
+}
+
+extern "C" void *Neon_Class_CreateBase2(v8::Isolate *isolate,
+                                        callback_t allocate,
+                                        callback_t construct,
+                                        callback_t call,
+                                        Neon_DropCallback drop)
+{
+  Neon_AllocateCallback allocate_callback = reinterpret_cast<Neon_AllocateCallback>(allocate.static_callback);
+  Neon_ConstructCallback construct_callback = reinterpret_cast<Neon_ConstructCallback>(construct.static_callback);
+  v8::FunctionCallback call_callback = reinterpret_cast<v8::FunctionCallback>(call.static_callback);
+  neon::BaseClassMetadata *metadata = new neon::BaseClassMetadata(construct_callback, construct.dynamic_callback, call_callback, call.dynamic_callback, allocate_callback, allocate.dynamic_callback, drop);
+  v8::Local<v8::External> data = v8::External::New(isolate, metadata);
+  v8::Local<v8::FunctionTemplate> constructor_template = v8::FunctionTemplate::New(isolate, Neon_Class_ConstructBaseCallback, data);
+  metadata->SetTemplate(isolate, constructor_template);
+  v8::Local<v8::ObjectTemplate> instance_template = constructor_template->InstanceTemplate();
+  instance_template->SetInternalFieldCount(1); // index 0: an aligned, owned pointer to the internals (a user-defined Rust data structure)
+  return metadata;
 }
 
 extern "C" void *Neon_Class_CreateBase(v8::Isolate *isolate,
@@ -406,6 +426,17 @@ extern "C" void *Neon_Class_GetInstanceInternals(v8::Local<v8::Object> obj) {
   return static_cast<neon::BaseClassInstanceMetadata *>(obj->GetAlignedPointerFromInternalField(0))->GetInternals();
 }
 
+extern "C" bool Neon_Fun_Template_New2(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, callback_t callback) {
+  v8::Local<v8::External> wrapper = v8::External::New(isolate, callback.dynamic_callback);
+  if (wrapper.IsEmpty()) {
+    return false;
+  }
+
+  v8::FunctionCallback static_callback = reinterpret_cast<v8::FunctionCallback>(callback.static_callback);
+  v8::MaybeLocal<v8::FunctionTemplate> maybe_result = v8::FunctionTemplate::New(isolate, static_callback, wrapper);
+  return maybe_result.ToLocal(out);
+}
+
 extern "C" bool Neon_Fun_Template_New(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, v8::FunctionCallback callback, void *kernel) {
   v8::Local<v8::External> wrapper = v8::External::New(isolate, kernel);
   if (wrapper.IsEmpty()) {
@@ -413,6 +444,17 @@ extern "C" bool Neon_Fun_Template_New(v8::Local<v8::FunctionTemplate> *out, v8::
   }
 
   v8::MaybeLocal<v8::FunctionTemplate> maybe_result = v8::FunctionTemplate::New(isolate, callback, wrapper);
+  return maybe_result.ToLocal(out);
+}
+
+extern "C" bool Neon_Fun_New2(v8::Local<v8::Function> *out, v8::Isolate *isolate, callback_t callback) {
+  v8::Local<v8::External> wrapper = v8::External::New(isolate, callback.dynamic_callback);
+  if (wrapper.IsEmpty()) {
+    return false;
+  }
+
+  v8::FunctionCallback static_callback = reinterpret_cast<v8::FunctionCallback>(callback.static_callback);
+  v8::MaybeLocal<v8::Function> maybe_result = v8::Function::New(isolate->GetCurrentContext(), static_callback, wrapper);
   return maybe_result.ToLocal(out);
 }
 
@@ -426,7 +468,7 @@ extern "C" bool Neon_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate,
   return maybe_result.ToLocal(out);
 }
 
-extern "C" void *Neon_Fun_GetKernel(v8::Local<v8::External> data) {
+extern "C" void *Neon_Fun_GetDynamicCallback(v8::Local<v8::External> data) {
   return data->Value();
 }
 
