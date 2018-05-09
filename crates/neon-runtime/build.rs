@@ -1,9 +1,9 @@
 extern crate gcc;
 extern crate regex;
 
-use std::process::Command;
-use std::env;
 use regex::Regex;
+use std::env;
+use std::process::Command;
 
 fn main() {
     // 1. Build the object file from source using node-gyp.
@@ -30,7 +30,9 @@ fn npm() -> Command {
 //
 //     gyp info using node@8.3.0 | win32 | x64
 fn parse_node_arch(node_gyp_output: &str) -> String {
-    let version_regex = Regex::new(r"node@(?P<version>\d+\.\d+\.\d+)\s+\|\s+(?P<platform>\w+)\s+\|\s(?P<arch>ia32|x64)").unwrap();
+    let version_regex = Regex::new(
+        r"node@(?P<version>\d+\.\d+\.\d+)\s+\|\s+(?P<platform>\w+)\s+\|\s(?P<arch>ia32|x64)",
+    ).unwrap();
     let captures = version_regex.captures(&node_gyp_output).unwrap();
     String::from(&captures["arch"])
 }
@@ -45,7 +47,9 @@ fn parse_node_root_dir(node_gyp_output: &str) -> &str {
         .find(node_root_dir_flag_pattern)
         .map(|i| i + node_root_dir_flag_pattern.len())
         .expect("Couldn't find node_root_dir in node-gyp output.");
-    let node_root_dir_end_index = node_gyp_output[node_root_dir_start_index..].find("'").unwrap() + node_root_dir_start_index;
+    let node_root_dir_end_index = node_gyp_output[node_root_dir_start_index..]
+        .find("'")
+        .unwrap() + node_root_dir_start_index;
     &node_gyp_output[node_root_dir_start_index..node_root_dir_end_index]
 }
 
@@ -67,7 +71,9 @@ fn parse_node_lib_file(node_gyp_output: &str) -> &str {
         .find(node_lib_file_flag_pattern)
         .map(|i| i + node_lib_file_flag_pattern.len())
         .expect("Couldn't find node_lib_file in node-gyp output.");
-    let node_lib_file_end_index = node_gyp_output[node_lib_file_start_index..].find("'").unwrap() + node_lib_file_start_index;
+    let node_lib_file_end_index = node_gyp_output[node_lib_file_start_index..]
+        .find("'")
+        .unwrap() + node_lib_file_start_index;
     &node_gyp_output[node_lib_file_start_index..node_lib_file_end_index]
 }
 
@@ -83,24 +89,48 @@ fn build_object_file() {
     }
 
     // Ensure that all package.json dependencies and dev dependencies are installed.
-    npm().args(&["install", "--silent"]).status().ok().expect("Failed to run \"npm install\" for neon-runtime!");
+    npm()
+        .args(&["install", "--silent"])
+        .status()
+        .ok()
+        .expect("Failed to run \"npm install\" for neon-runtime!");
 
     // Run `node-gyp configure` in verbose mode to read node_root_dir on Windows.
     let output = npm()
-        .args(&["run", if debug() { "configure-debug" } else { "configure-release" }])
+        .args(&[
+            "run",
+            if debug() {
+                "configure-debug"
+            } else {
+                "configure-release"
+            },
+        ])
         .output()
         .expect("Failed to run \"node-gyp configure\" for neon-runtime!");
 
     if cfg!(windows) {
         let node_gyp_output = String::from_utf8_lossy(&output.stderr);
         println!("cargo:node_arch={}", parse_node_arch(&node_gyp_output));
-        println!("cargo:node_root_dir={}", parse_node_root_dir(&node_gyp_output));
-        println!("cargo:node_lib_file={}", parse_node_lib_file(&node_gyp_output));
+        println!(
+            "cargo:node_root_dir={}",
+            parse_node_root_dir(&node_gyp_output)
+        );
+        println!(
+            "cargo:node_lib_file={}",
+            parse_node_lib_file(&node_gyp_output)
+        );
     }
 
     // Run `node-gyp build`.
     npm()
-        .args(&["run", if debug() { "build-debug" } else { "build-release" }])
+        .args(&[
+            "run",
+            if debug() {
+                "build-debug"
+            } else {
+                "build-release"
+            },
+        ])
         .status()
         .ok()
         .expect("Failed to run \"node-gyp build\" for neon-runtime!");
@@ -121,6 +151,6 @@ fn link_library() {
 fn debug() -> bool {
     match env::var("DEBUG") {
         Ok(s) => s == "true",
-        Err(_) => false
+        Err(_) => false,
     }
 }

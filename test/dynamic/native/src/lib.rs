@@ -8,7 +8,7 @@ mod js {
     pub mod objects;
     pub mod functions;
     pub mod classes;
-    pub mod tasks;
+    pub mod concurrent;
 }
 
 use js::strings::return_js_string;
@@ -17,7 +17,7 @@ use js::arrays::*;
 use js::objects::*;
 use js::functions::*;
 use js::classes::*;
-use js::tasks::*;
+use js::concurrent::*;
 
 use neon::mem::Handle;
 use neon::js::{JsFunction, Object};
@@ -53,11 +53,14 @@ register_module!(m, {
     m.export("return_js_function", return_js_function)?;
     m.export("call_js_function", call_js_function)?;
     m.export("construct_js_function", construct_js_function)?;
+    m.export("return_js_closure", return_js_closure)?;
+    m.export("return_js_mutable_closure", return_js_mutable_closure)?;
 
     m.export("check_string_and_number", check_string_and_number)?;
 
     m.export("perform_async_task", perform_async_task)?;
-    m.export("perform_failing_task", perform_failing_task)?;
+    m.export("perform_async_task_uv", perform_async_task_uv)?;
+    m.export("create_success_worker", create_success_worker)?;
 
     m.export("panic", panic)?;
     m.export("panic_after_throw", panic_after_throw)?;

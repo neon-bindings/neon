@@ -9,3 +9,5 @@ Cargo.lock
 cli/lib
 test/cli/lib
 npm-debug.log
+
+/.vscode/

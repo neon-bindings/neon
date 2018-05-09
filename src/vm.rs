@@ -226,8 +226,8 @@ impl<'a> Module<'a> {
 }
 
 impl<'a> Module<'a> {
-    pub fn export<T: Value>(&mut self, key: &str, f: fn(Call) -> JsResult<T>) -> VmResult<()> {
-        let value = JsFunction::new(self.scope, f)?.upcast::<JsValue>();
+    pub fn export<T: Value + 'static>(&mut self, key: &str, f: fn(Call) -> JsResult<T>) -> VmResult<()> {
+        let value = JsFunction::new(self.scope, Box::new(f))?.upcast::<JsValue>();
         self.exports.set(key, value)?;
         Ok(())
     }

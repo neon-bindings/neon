@@ -10,7 +10,7 @@ fn add1(call: Call) -> JsResult<JsNumber> {
 }
 
 pub fn return_js_function(call: Call) -> JsResult<JsFunction> {
-    JsFunction::new(call.scope, add1)
+    JsFunction::from_fn(call.scope, add1)
 }
 
 pub fn call_js_function(call: Call) -> JsResult<JsNumber> {
@@ -28,6 +28,27 @@ pub fn construct_js_function(call: Call) -> JsResult<JsNumber> {
     let get_utc_full_year_method = o.get(scope, "getUTCFullYear")?.check::<JsFunction>()?;
     let args: Vec<Handle<JsValue>> = vec![];
     get_utc_full_year_method.call(scope, o.upcast::<JsValue>(), args)?.check::<JsNumber>()
+}
+
+pub fn return_js_closure(call: Call) -> JsResult<JsFunction> {
+    let scope = call.scope;
+    let x = call.arguments.require(scope, 0)?.check::<JsNumber>()?.value();
+    JsFunction::new(scope, Box::new(move |inner| {
+        let y = inner.arguments.require(inner.scope, 0)?.check::<JsNumber>()?.value();
+        Ok(JsNumber::new(inner.scope, x + y))
+    }))
+}
+
+pub fn return_js_mutable_closure(call: Call) -> JsResult<JsFunction> {
+    let scope = call.scope;
+    let mut x = 0;
+    let mut y = 1;
+    JsFunction::new(scope, Box::new(move |inner| {
+        let sum = x + y;
+        x = y;
+        y = sum;
+        Ok(JsNumber::new(inner.scope, sum as f64))
+    }))
 }
 
 trait CheckArgument<'a> {

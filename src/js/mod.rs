@@ -20,6 +20,7 @@ use self::internal::{ValueInternal, SuperType, FunctionKernel};
 pub(crate) mod internal {
     use std::mem;
     use std::os::raw::c_void;
+    use std::panic::AssertUnwindSafe;
     use neon_runtime;
     use neon_runtime::raw;
     use mem::{Handle, Managed};
@@ -48,15 +49,23 @@ pub(crate) mod internal {
     }
 
     #[repr(C)]
-    pub struct FunctionKernel<T: Value>(pub fn(Call) -> JsResult<T>);
+    pub struct FunctionKernel<T: Value>(pub Box<Box<FnMut(Call) -> JsResult<T>>>);
 
     impl<T: Value> Kernel<()> for FunctionKernel<T> {
         extern "C" fn callback(info: &CallbackInfo) {
             info.scope().with(|scope| {
                 let data = info.data();
                 let FunctionKernel(kernel) = unsafe { Self::from_wrapper(data.to_raw()) };
+                let safe = AssertUnwindSafe(kernel);
                 let call = info.as_call(scope);
-                if let Ok(value) = convert_panics(|| { kernel(call) }) {
+                let result = convert_panics(move || {
+                    let AssertUnwindSafe(mut function) = safe;
+                    let output = function(call);
+                    mem::forget(function);
+                    output
+                });
+
+                if let Ok(value) = result {
                     info.set_return(value);
                 }
             })
@@ -663,11 +672,15 @@ unsafe fn prepare_call<'a, 'b, S: Scope<'a>, A>(scope: &mut S, args: &mut [Handl
 }
 
 impl JsFunction {
-    pub fn new<'a, T: Scope<'a>, U: Value>(scope: &mut T, f: fn(Call) -> JsResult<U>) -> JsResult<'a, JsFunction> {
+    pub fn from_fn<'a, T: Scope<'a>, U: 'static + Value>(scope: &mut T, f: fn(Call) -> JsResult<U>) -> JsResult<'a, JsFunction> {
+        JsFunction::new(scope, Box::new(f))
+    }
+
+    pub fn new<'a, T: Scope<'a>, U: Value>(scope: &mut T, f: Box<FnMut(Call) -> JsResult<U>>) -> JsResult<'a, JsFunction> {
         build(|out| {
             unsafe {
                 let isolate: *mut c_void = mem::transmute(scope.isolate().to_raw());
-                let (callback, kernel) = FunctionKernel(f).export();
+                let (callback, kernel) = FunctionKernel(Box::new(f)).export();
                 neon_runtime::fun::new(out, isolate, callback, kernel)
             }
         })

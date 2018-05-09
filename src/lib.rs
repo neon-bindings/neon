@@ -15,8 +15,10 @@ pub mod mem;
 pub mod vm;
 pub mod scope;
 pub mod js;
-pub mod task;
+pub mod concurrent;
+pub mod async;
 pub mod meta;
+pub mod uv;
 
 #[doc(hidden)]
 pub mod macro_internal;
@@ -282,7 +284,7 @@ compile_error!("Neon only builds with --release. For tests, try `cargo test --re
 #[cfg(test)]
 mod tests {
     use std::path::{Path, PathBuf};
-    use std::process::Command;
+    use std::process::{Command, ExitStatus};
     use std::sync::Mutex;
 
     use rustc_version::{version_meta, Channel};
@@ -303,18 +305,38 @@ mod tests {
             ("sh", "-c")
         };
 
-        assert!(Command::new(&shell)
+        let status = Command::new(&shell)
                         .current_dir(dir)
                         .args(&[&command_flag, cmd])
                         .status()
-                        .expect("failed to execute test command")
-                        .success());
+                        .expect("failed to execute test command");
+
+        if !status.success() {
+            match status.code() {
+                Some(code) => assert!(false, "test command exited with status code: {}", code),
+                None => match signal(&status) {
+                    Some(signal) => assert!(false, "test command terminated by signal: {}", signal),
+                    None => assert!(false, "test command terminated for unknown reason"),
+                },
+            }
+        }
+    }
+
+    #[cfg(unix)]
+    fn signal(status: &ExitStatus) -> Option<i32> {
+        use std::os::unix::process::ExitStatusExt;
+
+        status.signal()
+    }
+
+    #[cfg(not(unix))]
+    fn signal(_: &ExitStatus) -> Option<i32> {
+        None
     }
 
     #[test]
     fn cli_test() {
         let _guard = TEST_MUTEX.lock();
-
         let cli = project_root().join("cli");
         run("npm install", &cli);
         run("npm run transpile", &cli);

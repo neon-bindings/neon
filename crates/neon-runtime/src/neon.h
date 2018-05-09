@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <v8.h>
 
+
 typedef struct {
   void* data;
   size_t len;
@@ -156,6 +157,9 @@ extern "C" {
   void Neon_Error_ThrowSyntaxErrorFromCString(const char *msg);
 
   bool Neon_Mem_SameHandle(v8::Local<v8::Value> v1, v8::Local<v8::Value> v2);
+
+  void* Neon_Callback_New(v8::Local<v8::Function> func);
+  void Neon_Callback_Call(void* raw_callback, int argc, v8::Local<v8::Value> argv[]);
 
   typedef void* (*Neon_TaskPerformCallback)(void *);
   typedef void (*Neon_TaskCompleteCallback)(void *, void *, v8::Local<v8::Value> *out);

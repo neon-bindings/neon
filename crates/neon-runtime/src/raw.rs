@@ -2,6 +2,7 @@
 
 use std::os::raw::c_void;
 use std::mem;
+use callback;
 
 /// A V8 `Local` handle.
 ///
@@ -10,7 +11,33 @@ use std::mem;
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct Local {
-    pub handle: *mut c_void
+    pub handle: *mut c_void,
+}
+
+/// A V8 `Persistent` handle.
+///
+/// TODO: update description
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct Persistent {
+    pub handle: *mut c_void,
+}
+
+unsafe impl Send for Persistent {}
+unsafe impl Sync for Persistent {}
+
+impl Persistent {
+    pub fn new(callback: Local) -> Persistent {
+        unsafe { Persistent { handle: callback::new(callback) } }
+    }
+
+    pub fn call(&self, mut args: Vec<Local>) {
+        unsafe {
+            callback::call(mem::transmute(self.handle),
+                           args.len() as i32,
+                           args.as_mut_slice())
+        }
+    }
 }
 
 /// Represents the details of how the function was called from JavaScript.
@@ -33,11 +60,13 @@ const HANDLE_SCOPE_SIZE: usize = 24;
 #[derive(Clone, Copy)]
 pub struct HandleScope {
     pub align_to_pointer: [*mut c_void; 0],
-    pub fields: [u8; HANDLE_SCOPE_SIZE]
+    pub fields: [u8; HANDLE_SCOPE_SIZE],
 }
 
 impl HandleScope {
-    pub fn new() -> HandleScope { unsafe { mem::zeroed() } }
+    pub fn new() -> HandleScope {
+        unsafe { mem::zeroed() }
+    }
 }
 
 const ESCAPABLE_HANDLE_SCOPE_SIZE: usize = 32;
@@ -51,9 +80,11 @@ const ESCAPABLE_HANDLE_SCOPE_SIZE: usize = 32;
 #[derive(Clone, Copy)]
 pub struct EscapableHandleScope {
     pub align_to_pointer: [*mut c_void; 0],
-    pub fields: [u8; ESCAPABLE_HANDLE_SCOPE_SIZE]
+    pub fields: [u8; ESCAPABLE_HANDLE_SCOPE_SIZE],
 }
 
 impl EscapableHandleScope {
-    pub fn new() -> EscapableHandleScope { unsafe { mem::zeroed() } }
+    pub fn new() -> EscapableHandleScope {
+        unsafe { mem::zeroed() }
+    }
 }

@@ -16,4 +16,5 @@ pub mod mem;
 pub mod fun;
 pub mod convert;
 pub mod class;
+pub mod callback;
 pub mod task;
