@@ -59,9 +59,8 @@ public:
     }
 
     v8::Local<v8::Function> callback = v8::Local<v8::Function>::New(isolate_, callback_);
-    node::MakeCallback(isolate_, context->Global(), callback, 2, argv);
-    callback_.Reset();
-    context_.Reset();
+    Nan::AsyncResource resource("neon:async");
+    resource.runInAsyncScope(Nan::New<v8::Object>(), callback, 2, argv);
   }
 
   void *get_result() {
@@ -76,8 +75,8 @@ private:
   Neon_TaskPerformCallback perform_;
   Neon_TaskCompleteCallback complete_;
   void *result_;
-  v8::Persistent<v8::Function> callback_;
-  v8::Persistent<v8::Context> context_;
+  v8::Global<v8::Function> callback_;
+  v8::Global<v8::Context> context_;
 };
 
 void execute_task(uv_work_t *request) {

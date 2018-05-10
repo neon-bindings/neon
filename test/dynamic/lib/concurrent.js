@@ -2,6 +2,22 @@ var addon = require('../native');
 var assert = require('chai').assert;
 
 describe('Concurrency', function() {
+  it('completes a successful task', function (done) {
+    const complete = value => {
+        assert(value === 17, "task sent back incorrect value");
+        done();
+    }
+    addon.perform_async_task(done, complete);
+  });
+
+  it('executes microtasks after callback', function () {
+    return new Promise((resolve, reject) =>
+      addon.perform_async_task(reject, resolve)
+    ).then(value =>
+      assert(value === 17, "task sent back incorrect value")
+    );
+  });
+
   it('completes a successful task on the Node thread pool', function (done) {
     addon.perform_async_task_uv((err, value) => {
         if (err) { return done(err); }
@@ -10,12 +26,15 @@ describe('Concurrency', function() {
     });
   });
 
-  it('completes a successful task', function (done) {
-    const complete = value => {
-        assert(value === 17, "task sent back incorrect value");
-        done();
-    }
-    addon.perform_async_task(done, complete);
+  it('executes microtasks after callback on the Node thread pool', function () {
+    return new Promise((resolve, reject) => {
+      addon.perform_async_task_uv((err, value) => {
+        if (err) { return reject(err); }
+        resolve(value);
+      })
+    }).then(value =>
+      assert(value === 17, "task send back incorrect value")
+    );
   });
 
   it('runs a worker to completion', function (done) {

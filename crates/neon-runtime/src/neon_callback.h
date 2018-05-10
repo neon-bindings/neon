@@ -1,6 +1,7 @@
 #ifndef NEON_CALLBACK_H
 #define NEON_CALLBACK_H
 
+#include <nan.h>
 #include <uv.h>
 #include "neon.h"
 #include "v8.h"
@@ -27,15 +28,16 @@ public:
     v8::HandleScope handle_scope(isolate_);
     v8::Local<v8::Context> context = v8::Local<v8::Context>::New(isolate_, context_);
     v8::Context::Scope context_scope(context);
-    v8::Local<v8::Function> callback = v8::Local<v8::Function>::New(isolate_, callback_);
 
-    callback->Call(isolate_->GetCurrentContext(), v8::Null(isolate_), argc, argv);
+    v8::Local<v8::Function> callback = v8::Local<v8::Function>::New(isolate_, callback_);
+    Nan::AsyncResource resource("neon:async");
+    resource.runInAsyncScope(Nan::New<v8::Object>(), callback, argc, argv);
   }
 
 private:
   v8::Isolate *isolate_;
-  v8::Persistent<v8::Function> callback_;
-  v8::Persistent<v8::Context> context_;
+  v8::Global<v8::Function> callback_;
+  v8::Global<v8::Context> context_;
 };
 
 }
