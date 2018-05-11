@@ -8,9 +8,9 @@
 
 namespace neon {
 
-class Callback {
+class AsyncCallback {
 public:
-  Callback(
+  AsyncCallback(
        v8::Local<v8::Function> callback,
        v8::Isolate *isolate)
     : isolate_(isolate)

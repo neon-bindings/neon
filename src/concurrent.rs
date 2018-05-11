@@ -17,8 +17,8 @@ use scope::{RootScope, Scope};
 use vm::internal::Isolate;
 use vm::{Call, JsResult};
 
+use neon_runtime::async_callback::AsyncCallback;
 use neon_runtime::raw;
-use neon_runtime::raw::Persistent;
 
 use async::AsyncHandle;
 
@@ -33,9 +33,9 @@ pub enum Message<T, E, C> {
 
 #[derive(Debug)]
 pub struct AsyncContext<T> {
-    complete: Persistent,
-    error: Persistent,
-    next: Option<Persistent>,
+    complete: AsyncCallback,
+    error: AsyncCallback,
+    next: Option<AsyncCallback>,
     async_handle: AsyncHandle,
     queue: SegQueue<T>,
     completion_sender: Sender<()>,
@@ -52,11 +52,11 @@ impl<T> AsyncContext<T> {
         let queue: SegQueue<T> = SegQueue::new();
         let (completion_sender, completion_receiver): (Sender<()>, Receiver<()>) = channel();
 
-        let next = next.and_then(|callback| Some(Persistent::new(callback.to_raw())));
+        let next = next.and_then(|callback| Some(AsyncCallback::new(callback.to_raw())));
 
         AsyncContext {
-            complete: Persistent::new(complete.to_raw()),
-            error: Persistent::new(error.to_raw()),
+            complete: AsyncCallback::new(complete.to_raw()),
+            error: AsyncCallback::new(error.to_raw()),
             next,
             async_handle,
             queue,
@@ -90,7 +90,7 @@ pub trait Worker: Send + Sized + 'static {
 
     fn on_next<'a>(call: Call<'a>) -> Result<Self::Incoming, Self::IncomingError>;
 
-    fn perform<N: Fn(Message<Self::Next, Self::Error, Self::Complete>)>(
+    fn perform<N: FnMut(Message<Self::Next, Self::Error, Self::Complete>)>(
         &self,
         emit: N,
         receiver: Receiver<Self::Incoming>,
@@ -104,8 +104,8 @@ pub trait Worker: Send + Sized + 'static {
         next: Option<Handle<JsFunction>>,
     ) -> JsResult<'a, JsFunction> {
         let AsyncContext {
-            complete,
-            error,
+            mut complete,
+            mut error,
             next,
             async_handle,
             queue,
@@ -148,6 +148,11 @@ pub trait Worker: Send + Sized + 'static {
                                 is_complete = true;
                                 let result = self.complete(scope, Ok(&complete_value));
                                 complete.call(vec![result.unwrap().to_raw()]);
+                                error.destroy();
+                                complete.destroy();
+                                if let Some(mut next) = next {
+                                    next.destroy();
+                                }
                                 let _ = completion_sender.send(());
                             }
                         })
@@ -236,9 +241,9 @@ impl<T: Task> Worker for T {
         <T as Task>::complete(self, scope, result)
     }
 
-    fn perform<N: Fn(Message<Self::Next, Self::Error, Self::Complete>)>(
+    fn perform<N: FnMut(Message<Self::Next, Self::Error, Self::Complete>)>(
         &self,
-        emit: N,
+        mut emit: N,
         _: Receiver<Self::Incoming>,
     ) {
         match <T as Task>::perform(self) {

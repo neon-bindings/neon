@@ -2,18 +2,6 @@ use std::mem;
 use std::ops::Drop;
 use uv::{uv_async_init, uv_async_send, uv_async_t, uv_close, uv_default_loop, uv_handle_t};
 
-extern "C" fn on_wake(handle: *mut uv_async_t) {
-    unsafe {
-        let handle = &mut *handle;
-        let closure: &mut Box<FnMut()> = mem::transmute(handle.data);
-        *&closure()
-    }
-}
-unsafe extern "C" fn on_handle_close(handle: *mut uv_handle_t) {
-    // Prevent the handle from leaking since we used Box::into_raw earlier
-    let _ = Box::from_raw(handle);
-}
-
 // A safe Rust wrapper around libuv's uv_async_t.
 #[derive(Debug)]
 pub struct AsyncHandle {
@@ -67,4 +55,15 @@ impl Drop for AsyncHandle {
 }
 
 unsafe impl Send for AsyncHandle {}
-unsafe impl Sync for AsyncHandle {}
+
+extern "C" fn on_wake(handle: *mut uv_async_t) {
+    unsafe {
+        let handle = &mut *handle;
+        let closure: &mut Box<FnMut()> = mem::transmute(handle.data);
+        *&closure()
+    }
+}
+unsafe extern "C" fn on_handle_close(handle: *mut uv_handle_t) {
+    // Prevent the handle from leaking since we used Box::into_raw earlier
+    let _ = Box::from_raw(handle);
+}

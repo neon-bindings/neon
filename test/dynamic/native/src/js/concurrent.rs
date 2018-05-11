@@ -57,9 +57,9 @@ impl Worker for SuccessWorker {
     type JsComplete = JsString;
     type JsNext = JsString;
 
-    fn perform<N: Fn(Message<Self::Next, Self::Error, Self::Complete>)>(
+    fn perform<N: FnMut(Message<Self::Next, Self::Error, Self::Complete>)>(
         &self,
-        emit: N,
+        mut emit: N,
         receiver: Receiver<Self::Incoming>,
     ) {
         let incoming = receiver.recv().unwrap();
