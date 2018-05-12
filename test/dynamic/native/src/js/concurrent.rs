@@ -98,34 +98,26 @@ impl Worker for SuccessWorker {
         }
     }
 }
+
 pub fn perform_async_task(call: Call) -> JsResult<JsUndefined> {
-    let error = call.arguments
+    let callback = call.arguments
         .require(call.scope, 0)?
         .check::<JsFunction>()?;
-    let complete = call.arguments
-        .require(call.scope, 1)?
-        .check::<JsFunction>()?;
-    let _ = SuccessTask.run(call.scope, error, complete);
+    let _ = SuccessTask.run(call.scope, callback);
     Ok(JsUndefined::new())
 }
 
 pub fn perform_async_task_uv(call: Call) -> JsResult<JsUndefined> {
-    let f = call.arguments
+    let callback = call.arguments
         .require(call.scope, 0)?
         .check::<JsFunction>()?;
-    SuccessTask.run_uv(f);
+    SuccessTask.run_uv(callback);
     Ok(JsUndefined::new())
 }
 
 pub fn create_success_worker(call: Call) -> JsResult<JsFunction> {
-    let error = call.arguments
+    let callback = call.arguments
         .require(call.scope, 0)?
         .check::<JsFunction>()?;
-    let complete = call.arguments
-        .require(call.scope, 1)?
-        .check::<JsFunction>()?;
-    let next = call.arguments
-        .require(call.scope, 2)?
-        .check::<JsFunction>()?;
-    SuccessWorker.spawn(call.scope, error, complete, Some(next))
+    SuccessWorker.spawn(call.scope, callback)
 }

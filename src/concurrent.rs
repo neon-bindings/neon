@@ -33,9 +33,7 @@ pub enum Message<T, E, C> {
 
 #[derive(Debug)]
 pub struct AsyncContext<T> {
-    complete: AsyncCallback,
-    error: AsyncCallback,
-    next: Option<AsyncCallback>,
+    callback: AsyncCallback,
     async_handle: AsyncHandle,
     queue: SegQueue<T>,
     completion_sender: Sender<()>,
@@ -43,21 +41,13 @@ pub struct AsyncContext<T> {
 }
 
 impl<T> AsyncContext<T> {
-    fn new(
-        complete: Handle<JsFunction>,
-        error: Handle<JsFunction>,
-        next: Option<Handle<JsFunction>>,
-    ) -> Self {
+    fn new(callback: Handle<JsFunction>) -> Self {
         let async_handle = AsyncHandle::new();
         let queue: SegQueue<T> = SegQueue::new();
         let (completion_sender, completion_receiver): (Sender<()>, Receiver<()>) = channel();
 
-        let next = next.and_then(|callback| Some(AsyncCallback::new(callback.to_raw())));
-
         AsyncContext {
-            complete: AsyncCallback::new(complete.to_raw()),
-            error: AsyncCallback::new(error.to_raw()),
-            next,
+            callback: AsyncCallback::new(callback.to_raw()),
             async_handle,
             queue,
             completion_sender,
@@ -67,10 +57,10 @@ impl<T> AsyncContext<T> {
 }
 
 pub trait Worker: Send + Sized + 'static {
-    type Complete: Send + Sync;
-    type Error: Send + Sync + Error;
-    type Next: Send + Sync;
-    type Incoming: Send + Sync;
+    type Complete: Send;
+    type Error: Send + Error;
+    type Next: Send;
+    type Incoming: Send;
     type IncomingError: Error + Sized;
 
     type JsComplete: Value;
@@ -99,19 +89,15 @@ pub trait Worker: Send + Sized + 'static {
     fn spawn<'a, T: Scope<'a>>(
         self,
         scope: &'a mut T,
-        error: Handle<JsFunction>,
-        complete: Handle<JsFunction>,
-        next: Option<Handle<JsFunction>>,
+        callback: Handle<JsFunction>,
     ) -> JsResult<'a, JsFunction> {
         let AsyncContext {
-            mut complete,
-            mut error,
-            next,
+            mut callback,
             async_handle,
             queue,
             completion_sender,
             completion_receiver,
-        } = AsyncContext::new(complete, error, next);
+        } = AsyncContext::new(callback);
 
         let (event_sender, event_receiver): (
             Sender<Self::Incoming>,
@@ -136,23 +122,29 @@ pub trait Worker: Send + Sized + 'static {
                         scope.with(|scope| match output.unwrap() {
                             Message::Next(next_value) => {
                                 let result = self.next(scope, &next_value);
-                                if let Some(next) = next {
-                                    next.call(vec![result.unwrap().to_raw()]);
-                                }
+                                callback.call(vec![
+                                    JsUndefined::new().to_raw(),
+                                    JsUndefined::new().to_raw(),
+                                    result.unwrap().to_raw(),
+                                ]);
                             }
                             Message::Error(error_value) => {
                                 let result = self.complete(scope, Err(&error_value));
-                                error.call(vec![result.unwrap().to_raw()]);
+                                callback.call(vec![
+                                    result.unwrap().to_raw(),
+                                    JsUndefined::new().to_raw(),
+                                    JsUndefined::new().to_raw(),
+                                ]);
                             }
                             Message::Complete(complete_value) => {
                                 is_complete = true;
                                 let result = self.complete(scope, Ok(&complete_value));
-                                complete.call(vec![result.unwrap().to_raw()]);
-                                error.destroy();
-                                complete.destroy();
-                                if let Some(mut next) = next {
-                                    next.destroy();
-                                }
+                                callback.call(vec![
+                                    JsUndefined::new().to_raw(),
+                                    result.unwrap().to_raw(),
+                                    JsUndefined::new().to_raw(),
+                                ]);
+                                callback.destroy();
                                 let _ = completion_sender.send(());
                             }
                         })
@@ -185,9 +177,9 @@ pub trait Worker: Send + Sized + 'static {
     }
 }
 
-pub trait Task: Send + Sync + Sized + 'static {
-    type Complete: Send + Sync;
-    type Error: Send + Sync + Error;
+pub trait Task: Send + Sized + 'static {
+    type Complete: Send;
+    type Error: Send + Error;
 
     type JsComplete: Value;
 
@@ -202,10 +194,9 @@ pub trait Task: Send + Sync + Sized + 'static {
     fn run<'a, T: Scope<'a>>(
         self,
         scope: &'a mut T,
-        error: Handle<JsFunction>,
-        complete: Handle<JsFunction>,
+        callback: Handle<JsFunction>,
     ) -> JsResult<'a, JsFunction> {
-        <Self as Worker>::spawn(self, scope, error, complete, None)
+        <Self as Worker>::spawn(self, scope, callback)
     }
 
     fn run_uv(self, callback: Handle<JsFunction>) {
