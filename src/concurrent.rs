@@ -26,7 +26,7 @@ use concurrent::crossbeam::sync::SegQueue;
 
 #[derive(Debug)]
 pub enum Message<T, E, C> {
-    Next(T),
+    Event(T),
     Error(E),
     Complete(C),
 }
@@ -59,9 +59,9 @@ impl<T> AsyncContext<T> {
 pub trait Worker: Send + Sized + 'static {
     type Complete: Send;
     type Error: Send + Error;
-    type Next: Send;
-    type Incoming: Send;
-    type IncomingError: Error + Sized;
+    type Event: Send;
+    type IncomingEvent: Send;
+    type IncomingEventError: Error + Sized;
 
     type JsComplete: Value;
     type JsNext: Value;
@@ -75,15 +75,15 @@ pub trait Worker: Send + Sized + 'static {
     fn next<'a, T: Scope<'a>>(
         &'a self,
         scope: &'a mut T,
-        value: &Self::Next,
+        value: &Self::Event,
     ) -> JsResult<Self::JsNext>;
 
-    fn on_next<'a>(call: Call<'a>) -> Result<Self::Incoming, Self::IncomingError>;
+    fn on_next<'a>(call: Call<'a>) -> Result<Self::IncomingEvent, Self::IncomingEventError>;
 
-    fn perform<N: FnMut(Message<Self::Next, Self::Error, Self::Complete>)>(
+    fn perform<N: FnMut(Message<Self::Event, Self::Error, Self::Complete>)>(
         &self,
         emit: N,
-        receiver: Receiver<Self::Incoming>,
+        receiver: Receiver<Self::IncomingEvent>,
     );
 
     fn spawn<'a, T: Scope<'a>>(
@@ -100,13 +100,21 @@ pub trait Worker: Send + Sized + 'static {
         } = AsyncContext::new(callback);
 
         let (event_sender, event_receiver): (
-            Sender<Self::Incoming>,
-            Receiver<Self::Incoming>,
+            Sender<Self::IncomingEvent>,
+            Receiver<Self::IncomingEvent>,
         ) = channel();
 
         let _ = thread::spawn(move || {
-            let callback = |value: Message<Self::Next, Self::Error, Self::Complete>| {
-                // TODO: document why this is necessary (libuv coalescing uv_async_send)
+            let callback = |value: Message<Self::Event, Self::Error, Self::Complete>| {
+                // From http://docs.libuv.org/en/v1.x/async.html
+                // "Warning: libuv will coalesce calls to uv_async_send(), that is, not every call
+                // to it will yield an execution of the callback. For example: if uv_async_send()
+                // is called 5 times in a row before the callback is called, the callback will only
+                // be called once. If uv_async_send() is called again after the callback was called,
+                // it will be called again."
+                //
+                // To prevent the coalescing behavior from dropping events, we store all events
+                // in a queue and then drain it once the event loop wakes up again.
                 queue.push(value);
 
                 // Runs on the main thread!
@@ -120,7 +128,7 @@ pub trait Worker: Send + Sized + 'static {
                         }
                         let mut scope = RootScope::new(Isolate::current());
                         scope.with(|scope| match output.unwrap() {
-                            Message::Next(next_value) => {
+                            Message::Event(next_value) => {
                                 let result = self.next(scope, &next_value);
                                 callback.call(vec![
                                     JsUndefined::new().to_raw(),
@@ -217,9 +225,9 @@ pub trait Task: Send + Sized + 'static {
 impl<T: Task> Worker for T {
     type Complete = <T as Task>::Complete;
     type Error = <T as Task>::Error;
-    type Next = ();
-    type Incoming = ();
-    type IncomingError = <T as Task>::Error;
+    type Event = ();
+    type IncomingEvent = ();
+    type IncomingEventError = <T as Task>::Error;
 
     type JsComplete = <T as Task>::JsComplete;
     type JsNext = JsUndefined;
@@ -232,10 +240,10 @@ impl<T: Task> Worker for T {
         <T as Task>::complete(self, scope, result)
     }
 
-    fn perform<N: FnMut(Message<Self::Next, Self::Error, Self::Complete>)>(
+    fn perform<N: FnMut(Message<Self::Event, Self::Error, Self::Complete>)>(
         &self,
         mut emit: N,
-        _: Receiver<Self::Incoming>,
+        _: Receiver<Self::IncomingEvent>,
     ) {
         match <T as Task>::perform(self) {
             Ok(value) => emit(Message::Complete(value)),
@@ -243,11 +251,11 @@ impl<T: Task> Worker for T {
         }
     }
 
-    fn next<'a, S: Scope<'a>>(&'a self, _: &'a mut S, _: &Self::Next) -> JsResult<Self::JsNext> {
+    fn next<'a, S: Scope<'a>>(&'a self, _: &'a mut S, _: &Self::Event) -> JsResult<Self::JsNext> {
         Ok(JsUndefined::new())
     }
 
-    fn on_next<'a>(_: Call<'a>) -> Result<Self::Incoming, Self::IncomingError> {
+    fn on_next<'a>(_: Call<'a>) -> Result<Self::IncomingEvent, Self::IncomingEventError> {
         Ok(())
     }
 }
