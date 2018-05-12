@@ -50,28 +50,30 @@ struct SuccessWorker;
 impl Worker for SuccessWorker {
     type Complete = String;
     type Error = TaskError;
-    type Next = String;
-    type Incoming = String;
-    type IncomingError = TaskError;
+    type Event = String;
+    type IncomingEvent = String;
+    type IncomingEventError = TaskError;
 
     type JsComplete = JsString;
-    type JsNext = JsString;
+    type JsEvent = JsString;
 
-    fn perform<N: FnMut(Message<Self::Next, Self::Error, Self::Complete>)>(
+    fn perform<N: FnMut(Message<Self::Event, Self::Error, Self::Complete>)>(
         &self,
         mut emit: N,
-        receiver: Receiver<Self::Incoming>,
+        receiver: Receiver<Self::IncomingEvent>,
     ) {
         let incoming = receiver.recv().unwrap();
         let hello = String::from("Hello");
         let world = String::from("World");
 
-        emit(Message::Next(hello));
-        emit(Message::Next(world));
+        emit(Message::Event(hello));
+        emit(Message::Event(world));
         emit(Message::Complete(incoming))
     }
 
-    fn on_next<'a>(call: Call<'a>) -> Result<Self::Incoming, Self::IncomingError> {
+    fn on_incoming_event<'a>(
+        call: Call<'a>,
+    ) -> Result<Self::IncomingEvent, Self::IncomingEventError> {
         call.arguments
             .require(call.scope, 0)
             .and_then(|arg| arg.check::<JsString>())
@@ -79,11 +81,11 @@ impl Worker for SuccessWorker {
             .or_else(|_| Err(TaskError {}))
     }
 
-    fn next<'a, T: Scope<'a>>(
+    fn event<'a, T: Scope<'a>>(
         &'a self,
         scope: &'a mut T,
-        value: &Self::Next,
-    ) -> JsResult<Self::JsNext> {
+        value: &Self::Event,
+    ) -> JsResult<Self::JsEvent> {
         JsString::new_or_throw(scope, value)
     }
 

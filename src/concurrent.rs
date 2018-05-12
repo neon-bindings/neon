@@ -64,7 +64,7 @@ pub trait Worker: Send + Sized + 'static {
     type IncomingEventError: Error + Sized;
 
     type JsComplete: Value;
-    type JsNext: Value;
+    type JsEvent: Value;
 
     fn complete<'a, T: Scope<'a>>(
         &'a self,
@@ -72,13 +72,13 @@ pub trait Worker: Send + Sized + 'static {
         result: Result<&Self::Complete, &Self::Error>,
     ) -> JsResult<Self::JsComplete>;
 
-    fn next<'a, T: Scope<'a>>(
+    fn event<'a, T: Scope<'a>>(
         &'a self,
         scope: &'a mut T,
         value: &Self::Event,
-    ) -> JsResult<Self::JsNext>;
+    ) -> JsResult<Self::JsEvent>;
 
-    fn on_next<'a>(call: Call<'a>) -> Result<Self::IncomingEvent, Self::IncomingEventError>;
+    fn on_incoming_event<'a>(call: Call<'a>) -> Result<Self::IncomingEvent, Self::IncomingEventError>;
 
     fn perform<N: FnMut(Message<Self::Event, Self::Error, Self::Complete>)>(
         &self,
@@ -129,7 +129,7 @@ pub trait Worker: Send + Sized + 'static {
                         let mut scope = RootScope::new(Isolate::current());
                         scope.with(|scope| match output.unwrap() {
                             Message::Event(next_value) => {
-                                let result = self.next(scope, &next_value);
+                                let result = self.event(scope, &next_value);
                                 callback.call(vec![
                                     JsUndefined::new().to_raw(),
                                     JsUndefined::new().to_raw(),
@@ -170,7 +170,7 @@ pub trait Worker: Send + Sized + 'static {
         JsFunction::new(
             scope,
             Box::new(move |inner| {
-                Self::on_next(inner)
+                Self::on_incoming_event(inner)
                     .or_else(|error| JsError::throw(Kind::Error, error.description()))
                     .and_then(|incoming| Ok(event_sender.send(incoming)))
                     .and_then(|_| Ok(JsUndefined::new()))
@@ -230,7 +230,7 @@ impl<T: Task> Worker for T {
     type IncomingEventError = <T as Task>::Error;
 
     type JsComplete = <T as Task>::JsComplete;
-    type JsNext = JsUndefined;
+    type JsEvent = JsUndefined;
 
     fn complete<'a, S: Scope<'a>>(
         &'a self,
@@ -251,11 +251,11 @@ impl<T: Task> Worker for T {
         }
     }
 
-    fn next<'a, S: Scope<'a>>(&'a self, _: &'a mut S, _: &Self::Event) -> JsResult<Self::JsNext> {
+    fn event<'a, S: Scope<'a>>(&'a self, _: &'a mut S, _: &Self::Event) -> JsResult<Self::JsEvent> {
         Ok(JsUndefined::new())
     }
 
-    fn on_next<'a>(_: Call<'a>) -> Result<Self::IncomingEvent, Self::IncomingEventError> {
+    fn on_incoming_event<'a>(_: Call<'a>) -> Result<Self::IncomingEvent, Self::IncomingEventError> {
         Ok(())
     }
 }
