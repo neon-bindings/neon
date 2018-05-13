@@ -114,7 +114,7 @@ pub trait Worker: Send + Sized + 'static {
                 // it will be called again."
                 //
                 // To prevent the coalescing behavior from dropping events, we store all events
-                // in a queue and then drain it once the event loop wakes up again.
+                // in a queue and then drain it once the event loop wakes up.
                 queue.push(value);
 
                 // Runs on the main thread!
