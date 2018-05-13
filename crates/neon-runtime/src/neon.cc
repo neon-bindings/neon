@@ -29,7 +29,7 @@ extern "C" void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Lo
 }
 
 extern "C" void Neon_Call_Callee(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Function> *out) {
-  *out = info->Callee();
+  *out = v8::Local<v8::Function>::Cast(info->Data());
 }
 
 extern "C" void Neon_Call_Data(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> *out) {
