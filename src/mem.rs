@@ -24,14 +24,6 @@ pub struct Handle<'a, T: Managed + 'a> {
     phantom: PhantomData<&'a T>
 }
 
-/*
-impl<'a, T: Value + 'a> Handle<'a, T> {
-    pub fn lock(self) -> LockedHandle<'a, T> {
-        LockedHandle::new(self)
-    }
-}
-*/
-
 impl<'a, T: Managed + 'a> PartialEq for Handle<'a, T> {
     fn eq(&self, other: &Self) -> bool {
         unsafe { neon_runtime::mem::same_handle(self.to_raw(), other.to_raw()) }
@@ -83,27 +75,3 @@ impl<'a, T: Managed> DerefMut for Handle<'a, T> {
         &mut self.value
     }
 }
-
-/*
-#[repr(C)]
-#[derive(Clone, Copy)]
-pub struct LockedHandle<'a, T: Value + 'a>(Handle<'a, T>);
-
-unsafe impl<'a, T: Value + 'a> Sync for LockedHandle<'a, T> { }
-
-impl<'a, T: Value + 'a> LockedHandle<'a, T> {
-    pub fn new(h: Handle<'a, T>) -> LockedHandle<'a, T> {
-        LockedHandle(h)
-    }
-
-    pub fn unlock<'b, U: Scope<'b>>(self, _: &mut U) -> Handle<'a, T> { self.0 }
-}
-
-impl<'a, T: Value> Lock for LockedHandle<'a, T> {
-    type Internals = LockedHandle<'a, T>;
-
-    unsafe fn expose(self, _: &mut LockState) -> Self::Internals {
-        self
-    }
-}
-*/

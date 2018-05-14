@@ -1,7 +1,6 @@
 //! A trait for defining Rust _tasks_ to be executed in a background thread.
 
-use std::cell::Cell;
-use std::marker::{Send, Sized, PhantomData};
+use std::marker::{Send, Sized};
 use std::mem;
 use std::os::raw::c_void;
 
@@ -9,35 +8,26 @@ use js::{Value, JsFunction};
 use mem::Handle;
 use mem::Managed;
 use vm::{Vm, JsResult};
-use vm::internal::{Isolate, VmInternal};
+use vm::internal::{VmInternal, Scope};
 use neon_runtime;
 use neon_runtime::raw;
 
 pub struct TaskContext<'a> {
-    isolate: Isolate,
-    active: Cell<bool>,
-    phantom: PhantomData<&'a ()>
+    scope: Scope<'a>
 }
 
 impl<'a> TaskContext<'a> {
-    fn new(isolate: Isolate) -> Self {
-        TaskContext {
-            isolate,
-            active: Cell::new(true),
-            phantom: PhantomData
-        }
+    fn with<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(f: F) -> T {
+        Scope::with(|scope| {
+            f(TaskContext { scope })
+        })
     }
 }
 
-impl<'a> VmInternal for TaskContext<'a> {
-    fn isolate(&self) -> Isolate { self.isolate }
-
-    fn is_active(&self) -> bool {
-        self.active.get()
+impl<'a> VmInternal<'a> for TaskContext<'a> {
+    fn scope(&self) -> &Scope<'a> {
+        &self.scope
     }
-
-    fn activate(&self) { self.active.set(true); }
-    fn deactivate(&self) { self.active.set(false); }
 }
 
 impl<'a> Vm<'a> for TaskContext<'a> {
@@ -59,7 +49,7 @@ pub trait Task: Send + Sized {
     fn perform(&self) -> Result<Self::Output, Self::Error>;
 
     /// Convert the result of the task to a JavaScript value to be passed to the asynchronous callback. This method is executed on the main thread at some point after the background task is completed.
-    fn complete<'a, V: Vm<'a>>(self, vm: &'a mut V, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent>;
+    fn complete<'a>(self, vm: TaskContext<'a>, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent>;
 
     /// Schedule a task to be executed on a background thread.
     ///
@@ -91,13 +81,9 @@ unsafe extern "C" fn perform_task<T: Task>(task: *mut c_void) -> *mut c_void {
 unsafe extern "C" fn complete_task<T: Task>(task: *mut c_void, result: *mut c_void, out: &mut raw::Local) {
     let result: Result<T::Output, T::Error> = *Box::from_raw(mem::transmute(result));
     let task: Box<T> = Box::from_raw(mem::transmute(task));
-
-    // The neon::Task::complete() method installs an outer v8::HandleScope
-    // that is responsible for managing the out pointer, so it's safe to
-    // create the RootScope here without creating a local v8::HandleScope.
-    //let mut scope = RootScope::new(Isolate::current());
-    let mut vm = TaskContext::new(Isolate::current());
-    if let Ok(result) = task.complete(&mut vm, result) {
-        *out = result.to_raw();
-    }
+    TaskContext::with(|vm| {
+        if let Ok(result) = task.complete(vm, result) {
+            *out = result.to_raw();
+        }
+    })
 }

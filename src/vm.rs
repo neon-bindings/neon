@@ -10,7 +10,6 @@ use std::marker::PhantomData;
 use std::collections::HashMap;
 use std::os::raw::c_void;
 use std::panic::UnwindSafe;
-use std::cell::Cell;
 use std::ops::{Deref, DerefMut, Drop};
 use neon_runtime;
 use neon_runtime::raw;
@@ -21,15 +20,19 @@ use js::class::internal::ClassMetadata;
 use js::class::Class;
 use js::error::{JsError, Kind};
 use mem::{Handle, Managed};
-use self::internal::{Pointer, Ledger, VmInternal, Isolate};
+use self::internal::{Pointer, Ledger, VmInternal, Scope};
 
 pub(crate) mod internal {
+    use std::cell::Cell;
     use std::mem;
     use std::collections::HashSet;
     use std::os::raw::c_void;
     use neon_runtime;
     use neon_runtime::raw;
-    use super::{ClassMap, LoanError};
+    use mem::Handle;
+    use vm::VmResult;
+    use js::JsObject;
+    use super::{ClassMap, LoanError, ModuleContext};
 
     pub unsafe trait Pointer {
         unsafe fn as_ptr(&self) -> *const c_void;
@@ -101,25 +104,6 @@ pub(crate) mod internal {
         }
     }
 
-/*
-    pub struct LockState {
-        buffers: HashSet<usize>
-    }
-
-    impl LockState {
-        pub fn new() -> LockState {
-            LockState { buffers: HashSet::new() }
-        }
-
-        pub fn use_buffer(&mut self, buf: CMutSlice<u8>) {
-            let p = buf.as_ptr() as usize;
-            if !self.buffers.insert(p) {
-                panic!("attempt to lock heap with duplicate buffers (0x{:x})", p);
-            }
-        }
-    }
-*/
-
     #[repr(C)]
     #[derive(Clone, Copy)]
     pub struct Isolate(*mut raw::Isolate);
@@ -155,12 +139,55 @@ pub(crate) mod internal {
         }
     }
 
-    pub trait VmInternal: Sized {
-        fn isolate(&self) -> Isolate;
-        fn is_active(&self) -> bool;
-        fn activate(&self);
-        fn deactivate(&self);
-    }    
+    pub struct Scope<'a> {
+        isolate: Isolate,
+        active: Cell<bool>,
+        handle_scope: &'a mut raw::HandleScope
+    }
+
+    impl<'a> Scope<'a> {
+        pub fn with<T, F: for<'b> FnOnce(Scope<'b>) -> T>(f: F) -> T {
+            let mut handle_scope: raw::HandleScope = raw::HandleScope::new();
+            let isolate = Isolate::current();
+            unsafe {
+                neon_runtime::scope::enter(&mut handle_scope, isolate.to_raw());
+            }
+            let scope = Scope {
+                isolate,
+                active: Cell::new(true),
+                handle_scope: &mut handle_scope
+            };
+            f(scope)
+        }
+
+        pub fn isolate(&self) -> Isolate {
+            self.isolate
+        }
+
+        pub fn is_active(&self) -> bool {
+            self.active.get()
+        }
+
+        pub fn activate(&self) { self.active.set(true); }
+        pub fn deactivate(&self) { self.active.set(false); }
+    }
+
+    impl<'a> Drop for Scope<'a> {
+        fn drop(&mut self) {
+            unsafe {
+                neon_runtime::scope::exit(&mut self.handle_scope);
+            }
+        }
+    }
+    pub trait VmInternal<'a>: Sized {
+        fn scope(&self) -> &Scope<'a>;
+    }
+
+    pub fn initialize_module(exports: Handle<JsObject>, init: fn(ModuleContext) -> VmResult<()>) {
+        ModuleContext::with(exports, |vm| {
+            let _ = init(vm);
+        });
+    }
 }
 
 #[derive(Debug)]
@@ -220,10 +247,7 @@ impl CallbackInfo {
         debug_assert!(unsafe { neon_runtime::scope::size() } <= mem::size_of::<raw::HandleScope>());
         debug_assert!(unsafe { neon_runtime::scope::alignment() } <= mem::align_of::<raw::HandleScope>());
 */
-        let isolate = mem::transmute(neon_runtime::call::get_isolate(mem::transmute(self)));
-        let mut v8_scope = raw::HandleScope::new();
-        let vm = CallContext::<T>::new(isolate, self, &mut v8_scope);
-        f(vm)
+        CallContext::<T>::with(self, f)
     }
 
     pub fn set_return<'a, 'b, T: Value>(&'a self, value: Handle<'b, T>) {
@@ -328,107 +352,16 @@ impl CallbackInfo {
 */
 }
 
-// FIXME: move this into self::internal and export it from macro_internal
-pub fn initialize_module(exports: Handle<JsObject>, init: fn(ModuleContext) -> VmResult<()>) {
-    let isolate = unsafe { mem::transmute(neon_runtime::object::get_isolate(exports.to_raw())) };
-    // FIXME: destroy this when done
-    let mut v8_scope = raw::HandleScope::new();
-    let vm = ModuleContext::new(isolate, &mut v8_scope, exports);
-    let _ = init(vm);
-}
-
 /// A type that may be the type of a function's `this` binding.
 pub unsafe trait This: Managed {
     fn as_this(h: raw::Local) -> Self;
 }
-
-/*
-pub struct FunctionCall<'a, T: This> {
-    info: &'a CallbackInfo,
-    pub scope: &'a mut RootScope<'a>,
-    pub arguments: Arguments<'a, T>
-}
-
-impl<'a, T: This> UnwindSafe for FunctionCall<'a, T> { }
-
-pub type Call<'a> = FunctionCall<'a, JsObject>;
-*/
 
 #[derive(Clone, Copy, Debug)]
 pub enum CallKind {
     Construct,
     Call
 }
-
-/*
-impl<'a, T: This> FunctionCall<'a, T> {
-    pub fn kind(&self) -> CallKind { self.info.kind() }
-}
-
-#[repr(C)]
-pub struct Arguments<'a, T> {
-    info: &'a CallbackInfo,
-    phantom: PhantomData<T>
-}
-
-impl<'a, T: This> Arguments<'a, T> {
-    pub fn len(&self) -> i32 { self.info.len() }
-
-    pub fn get<'b, U: Scope<'b>>(&self, scope: &mut U, i: i32) -> Option<Handle<'b, JsValue>> {
-        self.info.get(scope, i)
-    }
-
-    pub fn require<'b, U: Scope<'b>>(&self, scope: &mut U, i: i32) -> JsResult<'b, JsValue> {
-        self.info.require(scope, i)
-    }
-
-    pub fn this<'b, U: Scope<'b>>(&self, scope: &mut U) -> Handle<'b, T> {
-        Handle::new_internal(T::as_this(self.info.this(scope)))
-    }
-
-    pub fn callee<'b, U: Scope<'b>>(&self, scope: &mut U) -> Handle<'b, JsFunction> {
-        self.info.callee(scope)
-    }
-}
-*/
-
-/*
-pub trait Lock: Sized {
-    type Internals;
-
-    fn grab<F, T>(self, f: F) -> T
-        where F: FnOnce(Self::Internals) -> T + Send
-    {
-        let mut state = LockState::new();
-        let internals = unsafe { self.expose(&mut state) };
-        f(internals)
-    }
-
-    unsafe fn expose(self, state: &mut LockState) -> Self::Internals;
-}
-
-impl<T, U> Lock for (T, U)
-    where T: Lock, U: Lock
-{
-    type Internals = (T::Internals, U::Internals);
-
-    unsafe fn expose(self, state: &mut LockState) -> Self::Internals {
-        (self.0.expose(state), self.1.expose(state))
-    }
-}
-
-impl<T> Lock for Vec<T>
-    where T: Lock
-{
-    type Internals = Vec<T::Internals>;
-
-    unsafe fn expose(self, state: &mut LockState) -> Self::Internals {
-        self.into_iter()
-            .map(|x| x.expose(state))
-            .collect()
-    }
-}
-*/
 
 pub struct VmGuard<'a> {
     ledger: RefCell<Ledger>,
@@ -528,7 +461,7 @@ impl<'a, T: Pointer> DerefMut for RefMut<'a, T> {
     }
 }
 
-pub trait Vm<'a>: VmInternal {
+pub trait Vm<'a>: VmInternal<'a> {
     fn lock(&self) -> VmGuard {
         VmGuard::new()
     }
@@ -567,38 +500,20 @@ pub trait Vm<'a>: VmInternal {
 }
 
 pub struct ModuleContext<'a> {
-    // FIXME: extract these three fields (and is_active/activate/deactivate) into a Scope struct
-    // and share it between CallContext and ModuleContext; then VmInternal should simply return
-    // a &Scope instead of having those three methods
-    isolate: Isolate,
-    active: Cell<bool>,
-    v8_scope: &'a mut raw::HandleScope,
+    scope: Scope<'a>,
     exports: Handle<'a, JsObject>
 }
 
 impl<'a> UnwindSafe for ModuleContext<'a> { }
 
-// FIXME: this destructor should be localized to a Scope object that can be shared across different Vm types
-impl<'a> Drop for ModuleContext<'a> {
-    fn drop(&mut self) {
-        unsafe {
-            neon_runtime::scope::exit(&mut self.v8_scope);
-        }
-    }
-}
-
 impl<'a> ModuleContext<'a> {
-    pub(crate) fn new(isolate: Isolate, v8_scope: &'a mut raw::HandleScope, exports: Handle<'a, JsObject>) -> Self {
-        unsafe {
-            neon_runtime::scope::enter(v8_scope, isolate.to_raw());
-        }
-
-        ModuleContext {
-            isolate,
-            active: Cell::new(true),
-            v8_scope,
-            exports
-        }
+    pub(crate) fn with<T, F: for<'b> FnOnce(ModuleContext<'b>) -> T>(exports: Handle<'a, JsObject>, f: F) -> T {
+        Scope::with(|scope| {
+            f(ModuleContext {
+                scope,
+                exports
+            })
+        })
     }
 
     pub fn export_function<T: Value>(&mut self, key: &str, f: fn(CallContext<JsObject>) -> JsResult<T>) -> VmResult<()> {
@@ -624,15 +539,10 @@ impl<'a> ModuleContext<'a> {
     }
 }
 
-impl<'a> VmInternal for ModuleContext<'a> {
-    fn isolate(&self) -> Isolate { self.isolate }
-
-    fn is_active(&self) -> bool {
-        self.active.get()
+impl<'a> VmInternal<'a> for ModuleContext<'a> {
+    fn scope(&self) -> &Scope<'a> {
+        &self.scope
     }
-
-    fn activate(&self) { self.active.set(true); }
-    fn deactivate(&self) { self.active.set(false); }
 }
 
 impl<'a> Vm<'a> for ModuleContext<'a> {
@@ -640,9 +550,7 @@ impl<'a> Vm<'a> for ModuleContext<'a> {
 }
 
 pub struct CallContext<'a, T: This> {
-    isolate: Isolate,
-    active: Cell<bool>,
-    v8_scope: &'a mut raw::HandleScope,
+    scope: Scope<'a>,
     info: &'a CallbackInfo,
     phantom_type: PhantomData<T>
 }
@@ -653,27 +561,15 @@ impl<'a, T: This> CallContext<'a, T> {
 
 impl<'a, T: This> UnwindSafe for CallContext<'a, T> { }
 
-impl<'a, T: This> Drop for CallContext<'a, T> {
-    fn drop(&mut self) {
-        unsafe {
-            neon_runtime::scope::exit(&mut self.v8_scope);
-        }
-    }
-}
-
 impl<'a, T: This> CallContext<'a, T> {
-    pub(crate) fn new(isolate: Isolate, info: &'a CallbackInfo, v8_scope: &'a mut raw::HandleScope) -> Self {
-        unsafe {
-            neon_runtime::scope::enter(v8_scope, isolate.to_raw());
-        }
-
-        CallContext {
-            isolate,
-            active: Cell::new(true),
-            v8_scope,
-            info,
-            phantom_type: PhantomData
-        }
+    pub(crate) fn with<U, F: for<'b> FnOnce(CallContext<'b, T>) -> U>(info: &'a CallbackInfo, f: F) -> U {
+        Scope::with(|scope| {
+            f(CallContext {
+                scope,
+                info,
+                phantom_type: PhantomData
+            })
+        })
     }
 
     pub fn len(&self) -> i32 { self.info.len() }
@@ -699,15 +595,10 @@ impl<'a, T: This> CallContext<'a, T> {
     }
 }
 
-impl<'a, T: This> VmInternal for CallContext<'a, T> {
-    fn isolate(&self) -> Isolate { self.isolate }
-
-    fn is_active(&self) -> bool {
-        self.active.get()
+impl<'a, T: This> VmInternal<'a> for CallContext<'a, T> {
+    fn scope(&self) -> &Scope<'a> {
+        &self.scope
     }
-
-    fn activate(&self) { self.active.set(true); }
-    fn deactivate(&self) { self.active.set(false); }
 }
 
 impl<'a, T: This> Vm<'a> for CallContext<'a, T> {

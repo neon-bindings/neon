@@ -77,8 +77,7 @@ macro_rules! register_module {
 
                 extern "C" fn __register_neon_module(
                         m: $crate::mem::Handle<$crate::js::JsObject>, _: *mut u8, _: *mut u8) {
-                    // FIXME: this will move into $crate::macro_internal::initialize_module
-                    $crate::vm::initialize_module(m, __init_neon_module);
+                    $crate::macro_internal::initialize_module(m, __init_neon_module);
                 }
 
                 extern "C" {

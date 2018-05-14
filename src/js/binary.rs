@@ -37,26 +37,13 @@ impl Value for JsBuffer { }
 
 impl Object for JsBuffer { }
 
-/*
-impl<'a> Lock for &'a mut JsBuffer {
-    type Internals = CMutSlice<'a, u8>;
-
-    unsafe fn expose(self, state: &mut LockState) -> Self::Internals {
-        let mut result = mem::uninitialized();
-        neon_runtime::buffer::data(&mut result, self.to_raw());
-        state.use_buffer(result);
-        result
-    }
-}
-*/
-
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct JsArrayBuffer(raw::Local);
 
 impl JsArrayBuffer {
     pub fn new<'a, V: Vm<'a>>(vm: &mut V, size: u32) -> VmResult<Handle<'a, JsArrayBuffer>> {
-        build(|out| { unsafe { neon_runtime::arraybuffer::new(out, mem::transmute(vm.isolate()), size) } })
+        build(|out| { unsafe { neon_runtime::arraybuffer::new(out, mem::transmute(vm.scope().isolate()), size) } })
     }
 }
 
@@ -75,19 +62,6 @@ impl ValueInternal for JsArrayBuffer {
 impl Value for JsArrayBuffer { }
 
 impl Object for JsArrayBuffer { }
-
-/*
-impl<'a> Lock for &'a mut JsArrayBuffer {
-    type Internals = CMutSlice<'a, u8>;
-
-    unsafe fn expose(self, state: &mut LockState) -> Self::Internals {
-        let mut result = mem::uninitialized();
-        neon_runtime::arraybuffer::data(&mut result, self.to_raw());
-        state.use_buffer(result);
-        result
-    }
-}
-*/
 
 #[derive(Clone, Copy)]
 #[repr(C)]
