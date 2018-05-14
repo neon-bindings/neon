@@ -1,43 +1,34 @@
-extern crate regex;
-
-use regex::Regex;
 use std::env;
 use std::process::Command;
 
 #[cfg(unix)]
-fn node_gyp() -> Command {
-    Command::new("node-gyp")
+fn node() -> Command {
+    Command::new("node")
 }
 
 #[cfg(windows)]
-fn node_gyp() -> Command {
+fn node() -> Command {
     let mut cmd = Command::new("cmd.exe");
-    cmd.args(&["/C", "node-gyp"]);
+    cmd.args(&["/C", "node"]);
     cmd
 }
 
-// The node-gyp output includes platform information in a string
-// that looks like:
-//
-//     gyp info using node@8.3.0 | win32 | x64
-fn parse_node_major_version(node_gyp_output: &str) -> u8 {
-    let version_regex = Regex::new(
-        r"node@(?P<version>\d+\.\d+\.\d+)\s+\|\s+(?P<platform>\w+)\s+\|\s(?P<arch>ia32|x64)",
-    ).unwrap();
-
-    version_regex
-        .captures(&node_gyp_output)
-        .and_then(|captures| captures.name("version"))
-        .and_then(|version| version.as_str().split('.').next())
-        .and_then(|major| major.parse().ok())
-        .unwrap_or(0)
+// `node --version` outputs semver versions
+fn parse_node_major_version(node_output: &str) -> u8 {
+    // Discard the `v` prefix
+    node_output
+        .chars()
+        .nth(2)
+        .and_then(|major_version_string| major_version_string.to_digit(10))
+        .map(|v| v as u8)
+        .unwrap_or(0u8)
 }
 
 fn main() {
-    let output = node_gyp()
-        .args(&["list"])
+    let output = node()
+        .args(&["--version"])
         .output()
-        .expect("Failed to run \"node-gyp list\" for neon!");
+        .expect("Failed to run \"node --version\" for neon!");
 
     let node_major_version = parse_node_major_version(&String::from_utf8_lossy(&output.stderr));
     if node_major_version >= 10 {
