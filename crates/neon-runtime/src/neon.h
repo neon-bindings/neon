@@ -97,10 +97,8 @@ extern "C" {
   size_t Neon_Scope_AlignofEscapable();
   void Neon_Scope_GetGlobal(v8::Isolate *isolate, v8::Local<v8::Value> *out);
 
-  bool Neon_Fun_New2(v8::Local<v8::Function> *out, v8::Isolate *isolate, callback_t callback);
-  bool Neon_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, v8::FunctionCallback callback, void *kernel);
-  bool Neon_Fun_Template_New2(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, callback_t callback);
-  bool Neon_Fun_Template_New(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, v8::FunctionCallback callback, void *kernel);
+  bool Neon_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, callback_t callback);
+  bool Neon_Fun_Template_New(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, callback_t callback);
   void *Neon_Fun_GetDynamicCallback(v8::Local<v8::External> obj);
   bool Neon_Fun_Call(v8::Local<v8::Value> *out, v8::Isolate *isolate, v8::Local<v8::Function> fun, v8::Local<v8::Value> self, int32_t argc, v8::Local<v8::Value> argv[]);
   bool Neon_Fun_Construct(v8::Local<v8::Object> *out, v8::Isolate *isolate, v8::Local<v8::Function> fun, int32_t argc, v8::Local<v8::Value> argv[]);
@@ -115,18 +113,10 @@ extern "C" {
 
   void *Neon_Class_GetClassMap(v8::Isolate *isolate);
   void Neon_Class_SetClassMap(v8::Isolate *isolate, void *map, Neon_DropCallback free_map);
-  void *Neon_Class_CreateBase2(v8::Isolate *isolate,
-                               callback_t allocate,
-                               callback_t construct,
-                               callback_t call,
-                               Neon_DropCallback drop);
   void *Neon_Class_CreateBase(v8::Isolate *isolate,
-                              Neon_AllocateCallback allocate_callback,
-                              void *allocate_kernel,
-                              Neon_ConstructCallback construct_callback,
-                              void *construct_kernel,
-                              v8::FunctionCallback call_callback,
-                              void *call_kernel,
+                              callback_t allocate,
+                              callback_t construct,
+                              callback_t call,
                               Neon_DropCallback drop);
   void *Neon_Class_GetCallKernel(v8::Local<v8::External> wrapper);
   void *Neon_Class_GetConstructKernel(v8::Local<v8::External> wrapper);

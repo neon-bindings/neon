@@ -270,7 +270,7 @@ impl CallbackInfo {
         }
     }
 
-    pub fn get_vm2<'b, V: Vm<'b>>(&self, _: &mut V, i: i32) -> Option<Handle<'b, JsValue>> {
+    pub fn get<'b, V: Vm<'b>>(&self, _: &mut V, i: i32) -> Option<Handle<'b, JsValue>> {
         if i < 0 || i >= self.len() {
             return None;
         }
@@ -281,7 +281,7 @@ impl CallbackInfo {
         }
     }
 
-    pub fn require_vm2<'b, V: Vm<'b>>(&self, _: &mut V, i: i32) -> JsResult<'b, JsValue> {
+    pub fn require<'b, V: Vm<'b>>(&self, _: &mut V, i: i32) -> JsResult<'b, JsValue> {
         if i < 0 || i >= self.len() {
             return JsError::throw(Kind::TypeError, "not enough arguments");
         }
@@ -292,7 +292,7 @@ impl CallbackInfo {
         }
     }
 
-    pub fn this_vm2<'b, V: Vm<'b>>(&self, _: &mut V) -> raw::Local {
+    pub fn this<'b, V: Vm<'b>>(&self, _: &mut V) -> raw::Local {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
             neon_runtime::call::this(mem::transmute(&self.info), &mut local);
@@ -300,7 +300,7 @@ impl CallbackInfo {
         }
     }
 
-    pub fn callee_vm2<'a, V: Vm<'a>>(&self, _: &mut V) -> Handle<'a, JsFunction> {
+    pub fn callee<'a, V: Vm<'a>>(&self, _: &mut V) -> Handle<'a, JsFunction> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
             if neon_runtime::call::callee(mem::transmute(&self.info), &mut local) {
@@ -310,46 +310,6 @@ impl CallbackInfo {
             }
         }
     }
-
-/*
-    pub fn get<'b, T: Scope<'b>>(&self, _: &mut T, i: i32) -> Option<Handle<'b, JsValue>> {
-        if i < 0 || i >= self.len() {
-            return None;
-        }
-        unsafe {
-            let mut local: raw::Local = mem::zeroed();
-            neon_runtime::call::get(&self.info, i, &mut local);
-            Some(Handle::new_internal(JsValue::from_raw(local)))
-        }
-    }
-
-    pub fn require<'b, T: Scope<'b>>(&self, _: &mut T, i: i32) -> JsResult<'b, JsValue> {
-        if i < 0 || i >= self.len() {
-            return JsError::throw(Kind::TypeError, "not enough arguments");
-        }
-        unsafe {
-            let mut local: raw::Local = mem::zeroed();
-            neon_runtime::call::get(&self.info, i, &mut local);
-            Ok(Handle::new_internal(JsValue::from_raw(local)))
-        }
-    }
-
-    pub fn this<'b, T: Scope<'b>>(&self, _: &mut T) -> raw::Local {
-        unsafe {
-            let mut local: raw::Local = mem::zeroed();
-            neon_runtime::call::this(mem::transmute(&self.info), &mut local);
-            local
-        }
-    }
-
-    pub fn callee<'a, T: Scope<'a>>(&self, _: &mut T) -> Handle<'a, JsFunction> {
-        unsafe {
-            let mut local: raw::Local = mem::zeroed();
-            neon_runtime::call::callee(mem::transmute(&self.info), &mut local);
-            Handle::new_internal(JsFunction::from_raw(local))
-        }
-    }
-*/
 }
 
 /// A type that may be the type of a function's `this` binding.
@@ -517,20 +477,20 @@ impl<'a> ModuleContext<'a> {
     }
 
     pub fn export_function<T: Value>(&mut self, key: &str, f: fn(CallContext<JsObject>) -> JsResult<T>) -> VmResult<()> {
-        let value = JsFunction::new_vm2(self, f)?.upcast::<JsValue>();
-        self.exports.set_vm2(self, key, value)?;
+        let value = JsFunction::new(self, f)?.upcast::<JsValue>();
+        self.exports.set(self, key, value)?;
         Ok(())
     }
 
     pub fn export_class<T: Class>(&mut self, key: &str) -> VmResult<()> {
         let class = T::class(self)?;
         let constructor = class.constructor(self)?;
-        self.exports.set_vm2(self, key, constructor)?;
+        self.exports.set(self, key, constructor)?;
         Ok(())
     }
 
     pub fn export_value<T: Value>(&mut self, key: &str, val: Handle<T>) -> VmResult<()> {
-        self.exports.set_vm2(self, key, val)?;
+        self.exports.set(self, key, val)?;
         Ok(())
     }
 
@@ -575,23 +535,23 @@ impl<'a, T: This> CallContext<'a, T> {
     pub fn len(&self) -> i32 { self.info.len() }
 
     pub fn argument_opt<V: Value>(&mut self, i: i32) -> VmResult<Option<Handle<'a, V>>> {
-        Ok(match self.info.get_vm2(self, i) {
+        Ok(match self.info.get(self, i) {
             Some(h) => Some(h.check()?),
             None => None
         })
     }
 
     pub fn argument<V: Value>(&mut self, i: i32) -> JsResult<'a, V> {
-        let a = self.info.require_vm2(self, i)?;
+        let a = self.info.require(self, i)?;
         a.check()
     }
 
     pub fn this(&mut self) -> Handle<'a, T> {
-        Handle::new_internal(T::as_this(self.info.this_vm2(self)))
+        Handle::new_internal(T::as_this(self.info.this(self)))
     }
 
     pub fn callee(&mut self) -> Handle<'a, JsFunction> {
-        self.info.callee_vm2(self)
+        self.info.callee(self)
     }
 }
 

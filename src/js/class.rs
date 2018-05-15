@@ -34,7 +34,7 @@ pub(crate) mod internal {
             unsafe {
                 info.with_vm::<T, _, _>(|mut vm| {
                     let data = info.data();
-                    let this: Handle<JsValue> = Handle::new_internal(JsValue::from_raw(info.this_vm2(&mut vm)));
+                    let this: Handle<JsValue> = Handle::new_internal(JsValue::from_raw(info.this(&mut vm)));
                     if !this.is_a::<T>() {
                         if let Ok(metadata) = T::metadata(&mut vm) {
                             neon_runtime::class::throw_this_error(mem::transmute(vm.scope().isolate()), metadata.pointer);
@@ -254,11 +254,11 @@ pub(crate) trait ClassInternal: Class {
             let construct = descriptor.construct.map(|callback| callback.into_c_callback()).unwrap_or_default();
             let call = descriptor.call.unwrap_or_else(ConstructorCallCallback::default::<Self>).into_c_callback();
 
-            let metadata_pointer = neon_runtime::class::create_base_vm2(isolate,
-                                                                        allocate,
-                                                                        construct,
-                                                                        call,
-                                                                        drop_internals::<Self::Internals>);
+            let metadata_pointer = neon_runtime::class::create_base(isolate,
+                                                                    allocate,
+                                                                    construct,
+                                                                    call,
+                                                                    drop_internals::<Self::Internals>);
 
             if metadata_pointer.is_null() {
                 return Err(Throw);
@@ -275,7 +275,7 @@ pub(crate) trait ClassInternal: Class {
             for (name, method) in descriptor.methods {
                 let method: Handle<JsValue> = build(|out| {
                     let callback = method.into_c_callback();
-                    neon_runtime::fun::new_template_vm2(out, isolate, callback)
+                    neon_runtime::fun::new_template(out, isolate, callback)
                 })?;
                 if !neon_runtime::class::add_method(isolate, metadata_pointer, name.as_ptr(), name.len() as u32, method.to_raw()) {
                     return Err(Throw);

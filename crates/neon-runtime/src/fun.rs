@@ -8,23 +8,13 @@ extern "C" {
 
     /// Mutates the `out` argument provided to refer to a newly created `v8::Function`. Returns
     /// `false` if the value couldn't be created.
-    #[link_name = "Neon_Fun_New2"]
-    pub fn new_vm2(out: &mut Local, isolate: *mut c_void, callback: CCallback) -> bool;
-
-    /// Mutates the `out` argument provided to refer to a newly created `v8::Function`. Returns
-    /// `false` if the value couldn't be created.
     #[link_name = "Neon_Fun_New"]
-    pub fn new(out: &mut Local, isolate: *mut c_void, callback: *mut c_void, kernel: *mut c_void) -> bool;
+    pub fn new(out: &mut Local, isolate: *mut c_void, callback: CCallback) -> bool;
 
     /// Mutates the `out` argument provided to refer to a newly created `v8::FunctionTemplate`.
     /// Returns `false` if the value couldn't be created.
     #[link_name = "Neon_Fun_Template_New"]
-    pub fn new_template(out: &mut Local, isolate: *mut c_void, callback: *mut c_void, kernel: *mut c_void) -> bool;
-
-    /// Mutates the `out` argument provided to refer to a newly created `v8::FunctionTemplate`.
-    /// Returns `false` if the value couldn't be created.
-    #[link_name = "Neon_Fun_Template_New2"]
-    pub fn new_template_vm2(out: &mut Local, isolate: *mut c_void, callback: CCallback) -> bool;
+    pub fn new_template(out: &mut Local, isolate: *mut c_void, callback: CCallback) -> bool;
 
     /// Gets the reference to the `v8::Local<v8::External>` handle provided.
     #[link_name = "Neon_Fun_GetDynamicCallback"]

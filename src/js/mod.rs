@@ -541,24 +541,15 @@ impl<'a> Key for &'a str {
 
 /// The trait of all object types.
 pub trait Object: Value {
-    fn get_vm2<'a, V: Vm<'a>, K: Key>(self, _: &mut V, key: K) -> VmResult<Handle<'a, JsValue>> {
+    fn get<'a, V: Vm<'a>, K: Key>(self, _: &mut V, key: K) -> VmResult<Handle<'a, JsValue>> {
         build(|out| { unsafe { key.get(out, self.to_raw()) } })
     }
 
-    fn get_own_property_names_vm2<'a, V: Vm<'a>>(self, _: &mut V) -> JsResult<'a, JsArray> {
+    fn get_own_property_names<'a, V: Vm<'a>>(self, _: &mut V) -> JsResult<'a, JsArray> {
         build(|out| { unsafe { neon_runtime::object::get_own_property_names(out, self.to_raw()) } })
     }
 
-    fn set_vm2<'a, V: Vm<'a>, K: Key, W: Value>(self, _: &mut V, key: K, val: Handle<W>) -> VmResult<bool> {
-        let mut result = false;
-        if unsafe { key.set(&mut result, self.to_raw(), val.to_raw()) } {
-            Ok(result)
-        } else {
-            Err(Throw)
-        }
-    }
-
-    fn set<K: Key, V: Value>(self, key: K, val: Handle<V>) -> VmResult<bool> {
+    fn set<'a, V: Vm<'a>, K: Key, W: Value>(self, _: &mut V, key: K, val: Handle<W>) -> VmResult<bool> {
         let mut result = false;
         if unsafe { key.set(&mut result, self.to_raw(), val.to_raw()) } {
             Ok(result)
@@ -616,7 +607,7 @@ impl JsArray {
             if i >= self.len() {
                 return Ok(result);
             }
-            result.push(self.get_vm2(vm, i)?);
+            result.push(self.get(vm, i)?);
             i += 1;
         }
     }
@@ -657,7 +648,7 @@ impl<T: Object> Object for JsFunction<T> { }
 // Maximum number of function arguments in V8.
 const V8_ARGC_LIMIT: usize = 65535;
 
-unsafe fn prepare_call_vm2<'a, 'b, V: Vm<'a>, A>(vm: &mut V, args: &mut [Handle<'b, A>]) -> VmResult<(*mut c_void, i32, *mut c_void)>
+unsafe fn prepare_call<'a, 'b, V: Vm<'a>, A>(vm: &mut V, args: &mut [Handle<'b, A>]) -> VmResult<(*mut c_void, i32, *mut c_void)>
     where A: Value + 'b
 {
     let argv = args.as_mut_ptr();
@@ -670,7 +661,7 @@ unsafe fn prepare_call_vm2<'a, 'b, V: Vm<'a>, A>(vm: &mut V, args: &mut [Handle<
 }
 
 impl JsFunction {
-    pub fn new_vm2<'a, V, U>(vm: &mut V, f: fn(CallContext<JsObject>) -> JsResult<U>) -> JsResult<'a, JsFunction>
+    pub fn new<'a, V, U>(vm: &mut V, f: fn(CallContext<JsObject>) -> JsResult<U>) -> JsResult<'a, JsFunction>
         where V: Vm<'a>,
               U: Value
     {
@@ -678,20 +669,20 @@ impl JsFunction {
             unsafe {
                 let isolate: *mut c_void = mem::transmute(vm.scope().isolate().to_raw());
                 let callback = FunctionCallback(f).into_c_callback();
-                neon_runtime::fun::new_vm2(out, isolate, callback)
+                neon_runtime::fun::new(out, isolate, callback)
             }
         })
     }
 }
 
 impl<C: Object> JsFunction<C> {
-    pub fn call_vm2<'a, 'b, V: Vm<'a>, T, A, AS>(self, vm: &mut V, this: Handle<'b, T>, args: AS) -> JsResult<'a, JsValue>
+    pub fn call<'a, 'b, V: Vm<'a>, T, A, AS>(self, vm: &mut V, this: Handle<'b, T>, args: AS) -> JsResult<'a, JsValue>
         where T: Value,
               A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
     {
         let mut args = args.into_iter().collect::<Vec<_>>();
-        let (isolate, argc, argv) = unsafe { prepare_call_vm2(vm, &mut args) }?;
+        let (isolate, argc, argv) = unsafe { prepare_call(vm, &mut args) }?;
         build(|out| {
             unsafe {
                 neon_runtime::fun::call(out, isolate, self.to_raw(), this.to_raw(), argc, argv)
@@ -699,12 +690,12 @@ impl<C: Object> JsFunction<C> {
         })
     }
 
-    pub fn construct_vm2<'a, 'b, V: Vm<'a>, A, AS>(self, vm: &mut V, args: AS) -> JsResult<'a, C>
+    pub fn construct<'a, 'b, V: Vm<'a>, A, AS>(self, vm: &mut V, args: AS) -> JsResult<'a, C>
         where A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
     {
         let mut args = args.into_iter().collect::<Vec<_>>();
-        let (isolate, argc, argv) = unsafe { prepare_call_vm2(vm, &mut args) }?;
+        let (isolate, argc, argv) = unsafe { prepare_call(vm, &mut args) }?;
         build(|out| {
             unsafe {
                 neon_runtime::fun::construct(out, isolate, self.to_raw(), argc, argv)

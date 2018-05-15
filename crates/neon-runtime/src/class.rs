@@ -10,18 +10,11 @@ extern "C" {
     #[link_name = "Neon_Class_SetClassMap"]
     pub fn set_class_map(isolate: *mut Isolate, map: *mut c_void, free_map: *mut c_void);
 
-    #[link_name = "Neon_Class_CreateBase2"]
-    pub fn create_base_vm2(isolate: *mut Isolate,
-                           allocate: CCallback,
-                           construct: CCallback,
-                           call: CCallback,
-                           drop: extern "C" fn(*mut c_void)) -> *mut c_void;
-
     #[link_name = "Neon_Class_CreateBase"]
     pub fn create_base(isolate: *mut Isolate,
-                       allocate_callback: *mut c_void, allocate_kernel: *mut c_void,
-                       construct_callback: *mut c_void, construct_kernel: *mut c_void,
-                       call_callback: *mut c_void, call_kernel: *mut c_void,
+                       allocate: CCallback,
+                       construct: CCallback,
+                       call: CCallback,
                        drop: extern "C" fn(*mut c_void)) -> *mut c_void;
 
     #[link_name = "Neon_Class_SetName"]
