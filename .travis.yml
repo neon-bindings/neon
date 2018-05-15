@@ -8,6 +8,7 @@ rust:
 
 env:
   matrix:
+    - TRAVIS_NODE_VERSION="10"
     - TRAVIS_NODE_VERSION="8"
     - TRAVIS_NODE_VERSION="6"
     - TRAVIS_NODE_VERSION="4"
