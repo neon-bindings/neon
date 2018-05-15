@@ -32,6 +32,8 @@ extern "C" {
     #[link_name = "Neon_Class_MetadataToClass"]
     pub fn metadata_to_class(out: &mut Local, isolate: *mut Isolate, metadata: *mut c_void);
 
+    // FIXME: get rid of all the "kernel" nomenclature
+
     #[link_name = "Neon_Class_GetAllocateKernel"]
     pub fn get_allocate_kernel(obj: Local) -> *mut c_void;
 

@@ -276,12 +276,6 @@ extern "C" void Neon_Scope_GetGlobal(v8::Isolate *isolate, v8::Local<v8::Value> 
   *out = ctx->Global();
 }
 
-// FIXME: kill this
-extern "C" void Neon_Module_ExecKernel(void *kernel, Neon_ModuleScopeCallback callback, v8::Local<v8::Object> exports, void *scope, void *vm) {
-  //Nan::HandleScope v8_scope;
-  callback(kernel, exports, scope, vm);
-}
-
 extern "C" uint32_t Neon_Module_GetVersion() {
   return NODE_MODULE_VERSION;
 }

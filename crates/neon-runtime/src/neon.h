@@ -84,7 +84,6 @@ extern "C" {
   typedef void(*Neon_ChainedScopeCallback)(void *, void *, void *, void *);
   typedef void(*Neon_NestedScopeCallback)(void *, void *, void *);
   typedef void(*Neon_RootScopeCallback)(void *, void *, void *);
-  typedef void(*Neon_ModuleScopeCallback)(void *, v8::Local<v8::Object>, void *, void *);
 
   void Neon_Scope_Escape(v8::Local<v8::Value> *out, Nan::EscapableHandleScope *scope, v8::Local<v8::Value> value);
   void Neon_Scope_Nested(void *out, void *closure, Neon_NestedScopeCallback callback, void *realm);
@@ -118,6 +117,7 @@ extern "C" {
                               callback_t construct,
                               callback_t call,
                               Neon_DropCallback drop);
+  // FIXME: get rid of all the "kernel" nomenclature
   void *Neon_Class_GetCallKernel(v8::Local<v8::External> wrapper);
   void *Neon_Class_GetConstructKernel(v8::Local<v8::External> wrapper);
   void *Neon_Class_GetAllocateKernel(v8::Local<v8::External> wrapper);
@@ -131,7 +131,6 @@ extern "C" {
   void *Neon_Class_GetInstanceInternals(v8::Local<v8::Object> obj);
 
   uint32_t Neon_Module_GetVersion();
-  void Neon_Module_ExecKernel(void *kernel, Neon_ModuleScopeCallback callback, v8::Local<v8::Object> exports, void *scope, void *vm);
 
   tag_t Neon_Tag_Of(v8::Local<v8::Value> val);
   bool Neon_Tag_IsUndefined(v8::Local<v8::Value> val);
