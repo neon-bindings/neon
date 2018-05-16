@@ -185,6 +185,12 @@ pub(crate) mod internal {
             self.context().active.get()
         }
 
+        fn check_active(&self) {
+            if !self.is_active() {
+                panic!("VM context is inactive");
+            }
+        }
+
         fn activate(&self) { self.context().active.set(true); }
         fn deactivate(&self) { self.context().active.set(false); }
     }
@@ -425,15 +431,14 @@ impl<'a, T: Pointer> DerefMut for RefMut<'a, T> {
 
 pub trait Vm<'a>: VmInternal<'a> {
     fn lock(&self) -> VmGuard {
+        self.check_active();
         VmGuard::new()
     }
 
     fn execute_scoped<T, F>(&self, f: F) -> T
         where F: for<'b> FnOnce(ExecuteContext<'b>) -> T
     {
-        if !self.is_active() {
-            panic!("VM context is inactive");
-        }
+        self.check_active();
         self.deactivate();
         let result = ExecuteContext::with(f);
         self.activate();
@@ -444,9 +449,7 @@ pub trait Vm<'a>: VmInternal<'a> {
         where V: Value,
               F: for<'b, 'c> FnOnce(ComputeContext<'b, 'c>) -> JsResult<'b, V>
     {
-        if !self.is_active() {
-            panic!("VM context is inactive");
-        }
+        self.check_active();
         self.deactivate();
         let result = ComputeContext::with(|vm| {
             unsafe {
