@@ -43,7 +43,7 @@ pub struct JsArrayBuffer(raw::Local);
 
 impl JsArrayBuffer {
     pub fn new<'a, V: Vm<'a>>(vm: &mut V, size: u32) -> VmResult<Handle<'a, JsArrayBuffer>> {
-        build(|out| { unsafe { neon_runtime::arraybuffer::new(out, mem::transmute(vm.scope().isolate()), size) } })
+        build(|out| { unsafe { neon_runtime::arraybuffer::new(out, mem::transmute(vm.isolate()), size) } })
     }
 }
 

@@ -1,7 +1,33 @@
 //! Facilities for working with `v8::HandleScope`s and `v8::EscapableHandleScope`s.
 
 use std::os::raw::c_void;
-use raw::{HandleScope, EscapableHandleScope, Local};
+use raw::{HandleScope, EscapableHandleScope, Local, Isolate};
+
+pub trait Root {
+    unsafe fn allocate() -> Self;
+    unsafe fn enter(&mut self, *mut Isolate);
+    unsafe fn exit(&mut self);
+}
+
+impl Root for HandleScope {
+    unsafe fn allocate() -> Self { HandleScope::new() }
+    unsafe fn enter(&mut self, isolate: *mut Isolate) {
+        enter(self, isolate)
+    }
+    unsafe fn exit(&mut self) {
+        exit(self)
+    }
+}
+
+impl Root for EscapableHandleScope {
+    unsafe fn allocate() -> Self { EscapableHandleScope::new() }
+    unsafe fn enter(&mut self, isolate: *mut Isolate) {
+        enter_escapable(self, isolate)
+    }
+    unsafe fn exit(&mut self) {
+        exit_escapable(self)
+    }
+}
 
 extern "C" {
 
@@ -26,6 +52,14 @@ extern "C" {
     /// Destructs a `v8::HandleScope`.
     #[link_name = "Neon_Scope_Exit"]
     pub fn exit(scope: &mut HandleScope);
+
+    /// Instantiates a new `v8::HandleScope`.
+    #[link_name = "Neon_Scope_Enter_Escapable"]
+    pub fn enter_escapable(scope: &mut EscapableHandleScope, isolate: *mut c_void);
+
+    /// Destructs a `v8::HandleScope`.
+    #[link_name = "Neon_Scope_Exit_Escapable"]
+    pub fn exit_escapable(scope: &mut EscapableHandleScope);
 
     /// Gets the size of a `v8::HandleScope`.
     #[link_name = "Neon_Scope_Sizeof"]

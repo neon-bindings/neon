@@ -90,6 +90,8 @@ extern "C" {
   void Neon_Scope_Chained(void *out, void *closure, Neon_ChainedScopeCallback callback, void *parent_scope);
   void Neon_Scope_Enter(v8::HandleScope *scope, v8::Isolate *isolate);
   void Neon_Scope_Exit(v8::HandleScope *scope);
+  void Neon_Scope_Enter_Escapable(v8::EscapableHandleScope *scope, v8::Isolate *isolate);
+  void Neon_Scope_Exit_Escapable(v8::EscapableHandleScope *scope);
   size_t Neon_Scope_Sizeof();
   size_t Neon_Scope_Alignof();
   size_t Neon_Scope_SizeofEscapable();

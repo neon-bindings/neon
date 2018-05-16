@@ -37,7 +37,7 @@ pub(crate) mod internal {
                     let this: Handle<JsValue> = Handle::new_internal(JsValue::from_raw(info.this(&mut vm)));
                     if !this.is_a::<T>() {
                         if let Ok(metadata) = T::metadata(&mut vm) {
-                            neon_runtime::class::throw_this_error(mem::transmute(vm.scope().isolate()), metadata.pointer);
+                            neon_runtime::class::throw_this_error(mem::transmute(vm.isolate()), metadata.pointer);
                         }
                         return;
                     };
@@ -63,7 +63,7 @@ pub(crate) mod internal {
             fn callback<T: Class>(mut vm: CallContext<JsValue>) -> JsResult<JsValue> {
                 unsafe {
                     if let Ok(metadata) = T::metadata(&mut vm) {
-                        neon_runtime::class::throw_call_error(mem::transmute(vm.scope().isolate()), metadata.pointer);
+                        neon_runtime::class::throw_call_error(mem::transmute(vm.isolate()), metadata.pointer);
                     }
                 }
                 Err(Throw)
@@ -153,7 +153,7 @@ pub(crate) mod internal {
     impl ClassMetadata {
         pub unsafe fn class<'a, T: Class, V: Vm<'a>>(&self, vm: &mut V) -> Handle<'a, JsClass<T>> {
             let mut local: raw::Local = mem::zeroed();
-            neon_runtime::class::metadata_to_class(&mut local, mem::transmute(vm.scope().isolate()), self.pointer);
+            neon_runtime::class::metadata_to_class(&mut local, mem::transmute(vm.isolate()), self.pointer);
             Handle::new_internal(JsClass {
                 handle: local,
                 phantom: PhantomData
@@ -231,8 +231,7 @@ impl<T: Class> Object for T { }
 
 pub(crate) trait ClassInternal: Class {
     fn metadata_opt<'a, V: Vm<'a>>(vm: &mut V) -> Option<ClassMetadata> {
-        vm.scope()
-          .isolate()
+        vm.isolate()
           .class_map()
           .get(&TypeId::of::<Self>())
           .map(|m| m.clone())
@@ -248,7 +247,7 @@ pub(crate) trait ClassInternal: Class {
     fn create<'a, V: Vm<'a>>(vm: &mut V) -> VmResult<ClassMetadata> {
         let descriptor = Self::setup(vm)?;
         unsafe {
-            let isolate: *mut c_void = mem::transmute(vm.scope().isolate());
+            let isolate: *mut c_void = mem::transmute(vm.isolate());
 
             let allocate = descriptor.allocate.into_c_callback();
             let construct = descriptor.construct.map(|callback| callback.into_c_callback()).unwrap_or_default();
@@ -286,7 +285,7 @@ pub(crate) trait ClassInternal: Class {
                 pointer: metadata_pointer
             };
 
-            vm.scope().isolate().class_map().set(TypeId::of::<Self>(), metadata);
+            vm.isolate().class_map().set(TypeId::of::<Self>(), metadata);
 
             Ok(metadata)
         }

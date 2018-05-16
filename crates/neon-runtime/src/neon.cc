@@ -254,6 +254,14 @@ extern "C" void Neon_Scope_Enter(v8::HandleScope *scope, v8::Isolate *isolate) {
 extern "C" void Neon_Scope_Exit(v8::HandleScope *scope) {
   scope->HandleScope::~HandleScope();
 }
+extern "C" void Neon_Scope_Enter_Escapable(v8::EscapableHandleScope *scope, v8::Isolate *isolate) {
+  void *p = scope;
+  ::new (p) v8::EscapableHandleScope(isolate);
+}
+
+extern "C" void Neon_Scope_Exit_Escapable(v8::EscapableHandleScope *scope) {
+  scope->EscapableHandleScope::~EscapableHandleScope();
+}
 
 extern "C" size_t Neon_Scope_Sizeof() {
   return sizeof(v8::HandleScope);

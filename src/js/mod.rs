@@ -323,7 +323,7 @@ impl JsString {
     }
 
     pub fn new<'a, V: Vm<'a>>(vm: &mut V, val: &str) -> Option<Handle<'a, JsString>> {
-        JsString::new_internal(vm.scope().isolate(), val)
+        JsString::new_internal(vm.isolate(), val)
     }
 
     pub fn new_or_throw<'a, V: Vm<'a>>(vm: &mut V, val: &str) -> VmResult<Handle<'a, JsString>> {
@@ -361,9 +361,9 @@ impl<'b> ToJsString for Handle<'b, JsString> {
 
 impl<'b> ToJsString for &'b str {
     fn to_js_string<'a, V: Vm<'a>>(&self, vm: &mut V) -> Handle<'a, JsString> {
-        match JsString::new_internal(vm.scope().isolate(), self) {
+        match JsString::new_internal(vm.isolate(), self) {
             Some(s) => s,
-            None => JsString::new_internal(vm.scope().isolate(), "").unwrap()
+            None => JsString::new_internal(vm.isolate(), "").unwrap()
         }
     }
 }
@@ -396,7 +396,7 @@ pub struct JsInteger(raw::Local);
 
 impl JsInteger {
     pub fn new<'a, V: Vm<'a>>(vm: &mut V, i: i32) -> Handle<'a, JsInteger> {
-        JsInteger::new_internal(vm.scope().isolate(), i)
+        JsInteger::new_internal(vm.isolate(), i)
     }
 
     pub(crate) fn new_internal<'a>(isolate: Isolate, i: i32) -> Handle<'a, JsInteger> {
@@ -446,7 +446,7 @@ pub struct JsNumber(raw::Local);
 
 impl JsNumber {
     pub fn new<'a, V: Vm<'a>>(vm: &mut V, v: f64) -> Handle<'a, JsNumber> {
-        JsNumber::new_internal(vm.scope().isolate(), v)
+        JsNumber::new_internal(vm.isolate(), v)
     }
 
     pub(crate) fn new_internal<'a>(isolate: Isolate, v: f64) -> Handle<'a, JsNumber> {
@@ -587,7 +587,7 @@ pub struct JsArray(raw::Local);
 
 impl JsArray {
     pub fn new<'a, V: Vm<'a>>(vm: &mut V, len: u32) -> Handle<'a, JsArray> {
-        JsArray::new_internal(vm.scope().isolate(), len)
+        JsArray::new_internal(vm.isolate(), len)
     }
 
     pub(crate) fn new_internal<'a>(isolate: Isolate, len: u32) -> Handle<'a, JsArray> {
@@ -656,7 +656,7 @@ unsafe fn prepare_call<'a, 'b, V: Vm<'a>, A>(vm: &mut V, args: &mut [Handle<'b, 
     if argc > V8_ARGC_LIMIT {
         return JsError::throw(Kind::RangeError, "too many arguments");
     }
-    let isolate: *mut c_void = mem::transmute(vm.scope().isolate().to_raw());
+    let isolate: *mut c_void = mem::transmute(vm.isolate().to_raw());
     Ok((isolate, argc as i32, argv as *mut c_void))
 }
 
@@ -667,7 +667,7 @@ impl JsFunction {
     {
         build(|out| {
             unsafe {
-                let isolate: *mut c_void = mem::transmute(vm.scope().isolate().to_raw());
+                let isolate: *mut c_void = mem::transmute(vm.isolate().to_raw());
                 let callback = FunctionCallback(f).into_c_callback();
                 neon_runtime::fun::new(out, isolate, callback)
             }

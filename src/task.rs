@@ -8,12 +8,12 @@ use js::{Value, JsFunction};
 use mem::Handle;
 use mem::Managed;
 use vm::{Vm, JsResult};
-use vm::internal::{VmInternal, Scope};
+use vm::internal::{VmInternal, Scope, Context};
 use neon_runtime;
 use neon_runtime::raw;
 
 pub struct TaskContext<'a> {
-    scope: Scope<'a>
+    scope: Scope<'a, raw::HandleScope>
 }
 
 impl<'a> TaskContext<'a> {
@@ -25,8 +25,8 @@ impl<'a> TaskContext<'a> {
 }
 
 impl<'a> VmInternal<'a> for TaskContext<'a> {
-    fn scope(&self) -> &Scope<'a> {
-        &self.scope
+    fn context(&self) -> &Context {
+        &self.scope.context
     }
 }
 
