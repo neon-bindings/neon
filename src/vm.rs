@@ -4,6 +4,7 @@ use std::cell::RefCell;
 use std::mem;
 use std::fmt;
 use std::any::TypeId;
+use std::convert::Into;
 use std::error::Error;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::marker::PhantomData;
@@ -468,8 +469,8 @@ pub trait Vm<'a>: VmInternal<'a> {
         JsBoolean::new(self, b)
     }
 
-    fn number(&mut self, f: f64) -> Handle<'a, JsNumber> {
-        JsNumber::new(self, f)
+    fn number<T: Into<f64>>(&mut self, x: T) -> Handle<'a, JsNumber> {
+        JsNumber::new(self, x.into())
     }
 
     fn string(&mut self, s: &str) -> Handle<'a, JsString> {

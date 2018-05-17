@@ -445,8 +445,8 @@ impl ValueInternal for JsInteger {
 pub struct JsNumber(raw::Local);
 
 impl JsNumber {
-    pub fn new<'a, V: Vm<'a>>(vm: &mut V, v: f64) -> Handle<'a, JsNumber> {
-        JsNumber::new_internal(vm.isolate(), v)
+    pub fn new<'a, V: Vm<'a>, T: Into<f64>>(vm: &mut V, x: T) -> Handle<'a, JsNumber> {
+        JsNumber::new_internal(vm.isolate(), x.into())
     }
 
     pub(crate) fn new_internal<'a>(isolate: Isolate, v: f64) -> Handle<'a, JsNumber> {
