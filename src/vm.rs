@@ -2,7 +2,6 @@
 
 use std::cell::RefCell;
 use std::mem;
-use std::fmt;
 use std::any::TypeId;
 use std::convert::Into;
 use std::error::Error;
@@ -11,7 +10,6 @@ use std::marker::PhantomData;
 use std::collections::HashMap;
 use std::os::raw::c_void;
 use std::panic::UnwindSafe;
-use std::ops::{Deref, DerefMut, Drop};
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::call::CCallback;
@@ -21,7 +19,7 @@ use js::class::internal::ClassMetadata;
 use js::class::Class;
 use js::error::{JsError, Kind};
 use mem::{Handle, Managed};
-use self::internal::{Pointer, Ledger, ContextInternal, Scope, ScopeMetadata};
+use self::internal::{Ledger, ContextInternal, Scope, ScopeMetadata};
 
 pub(crate) mod internal {
     use std::cell::Cell;
@@ -33,8 +31,8 @@ pub(crate) mod internal {
     use neon_runtime::scope::Root;
     use mem::Handle;
     use vm::VmResult;
-    use js::JsObject;
-    use super::{ClassMap, LoanError, ModuleContext};
+    use js::{JsObject, LoanError};
+    use super::{ClassMap, ModuleContext};
 
     pub unsafe trait Pointer {
         unsafe fn as_ptr(&self) -> *const c_void;
@@ -333,7 +331,7 @@ pub enum CallKind {
 }
 
 pub struct VmGuard<'a> {
-    ledger: RefCell<Ledger>,
+    pub(crate) ledger: RefCell<Ledger>,
     phantom: PhantomData<&'a ()>
 }
 
@@ -343,90 +341,6 @@ impl<'a> VmGuard<'a> {
             ledger: RefCell::new(Ledger::new()),
             phantom: PhantomData
         }
-    }
-}
-
-pub enum LoanError {
-    Mutating(*const c_void),
-    Frozen(*const c_void)
-}
-
-impl fmt::Display for LoanError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            LoanError::Mutating(p) => {
-                write!(f, "outstanding mutable loan exists for object at {:?}", p)
-            }
-            LoanError::Frozen(p) => {
-                write!(f, "object at {:?} is frozen", p)
-            }
-        }
-    }
-}
-
-// FIXME: this should be covariant in 'a and T -- is it?
-// https://doc.rust-lang.org/nomicon/subtyping.html
-pub struct Ref<'a, T: Pointer> {
-    pointer: T,
-    guard: &'a VmGuard<'a>
-}
-
-impl<'a, T: Pointer> Ref<'a, T> {
-    pub(crate) unsafe fn new(guard: &'a VmGuard<'a>, pointer: T) -> Result<Self, LoanError> {
-        let mut ledger = guard.ledger.borrow_mut();
-        ledger.try_borrow(pointer.as_ptr())?;
-        Ok(Ref { pointer, guard })
-    }
-}
-
-impl<'a, T: Pointer> Drop for Ref<'a, T> {
-    fn drop(&mut self) {
-        let mut ledger = self.guard.ledger.borrow_mut();
-        ledger.settle(unsafe { self.pointer.as_ptr() });
-    }
-}
-
-impl<'a, T: Pointer> Deref for Ref<'a, T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.pointer
-    }
-}
-
-// FIXME: I think this should be invariant in T -- is it?
-// https://doc.rust-lang.org/nomicon/subtyping.html
-pub struct RefMut<'a, T: Pointer> {
-    pointer: T,
-    guard: &'a VmGuard<'a>
-}
-
-impl<'a, T: Pointer> RefMut<'a, T> {
-    pub(crate) unsafe fn new(guard: &'a VmGuard<'a>, mut pointer: T) -> Result<Self, LoanError> {
-        let mut ledger = guard.ledger.borrow_mut();
-        ledger.try_borrow_mut(pointer.as_mut())?;
-        Ok(RefMut { pointer, guard })
-    }
-}
-
-impl<'a, T: Pointer> Drop for RefMut<'a, T> {
-    fn drop(&mut self) {
-        let mut ledger = self.guard.ledger.borrow_mut();
-        ledger.settle_mut(unsafe { self.pointer.as_mut() });
-    }
-}
-
-impl<'a, T: Pointer> Deref for RefMut<'a, T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        &self.pointer
-    }
-}
-
-impl<'a, T: Pointer> DerefMut for RefMut<'a, T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.pointer
     }
 }
 
