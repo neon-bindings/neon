@@ -5,7 +5,7 @@ use std::panic::{UnwindSafe, catch_unwind};
 use neon_runtime;
 use neon_runtime::raw;
 
-use vm::{Throw, Vm, VmResult};
+use vm::{Throw, Context, VmResult};
 use js::{Value, Object, ToJsString, build};
 use js::internal::ValueInternal;
 use mem::{Handle, Managed};
@@ -50,8 +50,8 @@ fn message(msg: &str) -> CString {
 }
 
 impl JsError {
-    pub fn new<'a, V: Vm<'a>, U: ToJsString>(vm: &mut V, kind: Kind, msg: U) -> VmResult<Handle<'a, JsError>> {
-        let msg = msg.to_js_string(vm);
+    pub fn new<'a, C: Context<'a>, U: ToJsString>(cx: &mut C, kind: Kind, msg: U) -> VmResult<Handle<'a, JsError>> {
+        let msg = msg.to_js_string(cx);
         build(|out| {
             unsafe {
                 let raw = msg.to_raw();

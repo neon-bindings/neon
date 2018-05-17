@@ -11,7 +11,7 @@ use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::tag::Tag;
 use mem::{Handle, Managed};
-use vm::{Vm, VmGuard, Ref, RefMut, LoanError, CallContext, Callback, VmResult, Throw, JsResult, This};
+use vm::{Context, VmGuard, Ref, RefMut, LoanError, CallContext, Callback, VmResult, Throw, JsResult, This};
 use vm::internal::{Isolate, Pointer};
 use js::error::{JsError, Kind};
 use self::internal::{ValueInternal, SuperType, FunctionCallback};
@@ -53,11 +53,11 @@ pub(crate) mod internal {
     impl<T: Value> Callback<()> for FunctionCallback<T> {
         extern "C" fn invoke(info: &CallbackInfo) {
             unsafe {
-                info.with_vm::<JsObject, _, _>(|vm| {
+                info.with_cx::<JsObject, _, _>(|cx| {
                     let data = info.data();
                     let dynamic_callback: fn(CallContext<JsObject>) -> JsResult<T> =
                         mem::transmute(neon_runtime::fun::get_dynamic_callback(data.to_raw()));
-                    if let Ok(value) = convert_panics(|| { dynamic_callback(vm) }) {
+                    if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
                         info.set_return(value);
                     }
                 })
@@ -95,11 +95,11 @@ impl<T: Object> SuperType<T> for JsObject {
 
 /// The trait shared by all JavaScript values.
 pub trait Value: ValueInternal {
-    fn to_string<'a, V: Vm<'a>>(self, _: &mut V) -> JsResult<'a, JsString> {
+    fn to_string<'a, C: Context<'a>>(self, _: &mut C) -> JsResult<'a, JsString> {
         build(|out| { unsafe { neon_runtime::convert::to_string(out, self.to_raw()) } })
     }
 
-    fn as_value<'a, V: Vm<'a>>(self, _: &mut V) -> Handle<'a, JsValue> {
+    fn as_value<'a, C: Context<'a>>(self, _: &mut C) -> Handle<'a, JsValue> {
         JsValue::new_internal(self.to_raw())
     }
 }
@@ -252,7 +252,7 @@ impl ValueInternal for JsNull {
 pub struct JsBoolean(raw::Local);
 
 impl JsBoolean {
-    pub fn new<'a, V: Vm<'a>>(_: &mut V, b: bool) -> Handle<'a, JsBoolean> {
+    pub fn new<'a, C: Context<'a>>(_: &mut C, b: bool) -> Handle<'a, JsBoolean> {
         JsBoolean::new_internal(b)
     }
 
@@ -322,12 +322,12 @@ impl JsString {
         }
     }
 
-    pub fn new<'a, V: Vm<'a>>(vm: &mut V, val: &str) -> Option<Handle<'a, JsString>> {
-        JsString::new_internal(vm.isolate(), val)
+    pub fn new<'a, C: Context<'a>>(cx: &mut C, val: &str) -> Option<Handle<'a, JsString>> {
+        JsString::new_internal(cx.isolate(), val)
     }
 
-    pub fn new_or_throw<'a, V: Vm<'a>>(vm: &mut V, val: &str) -> VmResult<Handle<'a, JsString>> {
-        match JsString::new(vm, val) {
+    pub fn new_or_throw<'a, C: Context<'a>>(cx: &mut C, val: &str) -> VmResult<Handle<'a, JsString>> {
+        match JsString::new(cx, val) {
             Some(v) => Ok(v),
             None => JsError::throw(Kind::TypeError, "invalid string contents")
         }
@@ -350,20 +350,20 @@ impl JsString {
 }
 
 pub trait ToJsString {
-    fn to_js_string<'a, V: Vm<'a>>(&self, vm: &mut V) -> Handle<'a, JsString>;
+    fn to_js_string<'a, C: Context<'a>>(&self, cx: &mut C) -> Handle<'a, JsString>;
 }
 
 impl<'b> ToJsString for Handle<'b, JsString> {
-    fn to_js_string<'a, V: Vm<'a>>(&self, _: &mut V) -> Handle<'a, JsString> {
+    fn to_js_string<'a, C: Context<'a>>(&self, _: &mut C) -> Handle<'a, JsString> {
         Handle::new_internal(JsString::from_raw(self.to_raw()))
     }
 }
 
 impl<'b> ToJsString for &'b str {
-    fn to_js_string<'a, V: Vm<'a>>(&self, vm: &mut V) -> Handle<'a, JsString> {
-        match JsString::new_internal(vm.isolate(), self) {
+    fn to_js_string<'a, C: Context<'a>>(&self, cx: &mut C) -> Handle<'a, JsString> {
+        match JsString::new_internal(cx.isolate(), self) {
             Some(s) => s,
-            None => JsString::new_internal(vm.isolate(), "").unwrap()
+            None => JsString::new_internal(cx.isolate(), "").unwrap()
         }
     }
 }
@@ -395,8 +395,8 @@ fn lower_str_unwrap(s: &str) -> (*const u8, i32) {
 pub struct JsInteger(raw::Local);
 
 impl JsInteger {
-    pub fn new<'a, V: Vm<'a>>(vm: &mut V, i: i32) -> Handle<'a, JsInteger> {
-        JsInteger::new_internal(vm.isolate(), i)
+    pub fn new<'a, C: Context<'a>>(cx: &mut C, i: i32) -> Handle<'a, JsInteger> {
+        JsInteger::new_internal(cx.isolate(), i)
     }
 
     pub(crate) fn new_internal<'a>(isolate: Isolate, i: i32) -> Handle<'a, JsInteger> {
@@ -445,8 +445,8 @@ impl ValueInternal for JsInteger {
 pub struct JsNumber(raw::Local);
 
 impl JsNumber {
-    pub fn new<'a, V: Vm<'a>, T: Into<f64>>(vm: &mut V, x: T) -> Handle<'a, JsNumber> {
-        JsNumber::new_internal(vm.isolate(), x.into())
+    pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, x: T) -> Handle<'a, JsNumber> {
+        JsNumber::new_internal(cx.isolate(), x.into())
     }
 
     pub(crate) fn new_internal<'a>(isolate: Isolate, v: f64) -> Handle<'a, JsNumber> {
@@ -541,15 +541,15 @@ impl<'a> Key for &'a str {
 
 /// The trait of all object types.
 pub trait Object: Value {
-    fn get<'a, V: Vm<'a>, K: Key>(self, _: &mut V, key: K) -> VmResult<Handle<'a, JsValue>> {
+    fn get<'a, C: Context<'a>, K: Key>(self, _: &mut C, key: K) -> VmResult<Handle<'a, JsValue>> {
         build(|out| { unsafe { key.get(out, self.to_raw()) } })
     }
 
-    fn get_own_property_names<'a, V: Vm<'a>>(self, _: &mut V) -> JsResult<'a, JsArray> {
+    fn get_own_property_names<'a, C: Context<'a>>(self, _: &mut C) -> JsResult<'a, JsArray> {
         build(|out| { unsafe { neon_runtime::object::get_own_property_names(out, self.to_raw()) } })
     }
 
-    fn set<'a, V: Vm<'a>, K: Key, W: Value>(self, _: &mut V, key: K, val: Handle<W>) -> VmResult<bool> {
+    fn set<'a, C: Context<'a>, K: Key, W: Value>(self, _: &mut C, key: K, val: Handle<W>) -> VmResult<bool> {
         let mut result = false;
         if unsafe { key.set(&mut result, self.to_raw(), val.to_raw()) } {
             Ok(result)
@@ -562,7 +562,7 @@ pub trait Object: Value {
 impl Object for JsObject { }
 
 impl JsObject {
-    pub fn new<'a, V: Vm<'a>>(_: &mut V) -> Handle<'a, JsObject> {
+    pub fn new<'a, C: Context<'a>>(_: &mut C) -> Handle<'a, JsObject> {
         JsObject::new_internal()
     }
 
@@ -586,8 +586,8 @@ impl JsObject {
 pub struct JsArray(raw::Local);
 
 impl JsArray {
-    pub fn new<'a, V: Vm<'a>>(vm: &mut V, len: u32) -> Handle<'a, JsArray> {
-        JsArray::new_internal(vm.isolate(), len)
+    pub fn new<'a, C: Context<'a>>(cx: &mut C, len: u32) -> Handle<'a, JsArray> {
+        JsArray::new_internal(cx.isolate(), len)
     }
 
     pub(crate) fn new_internal<'a>(isolate: Isolate, len: u32) -> Handle<'a, JsArray> {
@@ -598,7 +598,7 @@ impl JsArray {
         }
     }
 
-    pub fn to_vec<'a, V: Vm<'a>>(self, vm: &mut V) -> VmResult<Vec<Handle<'a, JsValue>>> {
+    pub fn to_vec<'a, C: Context<'a>>(self, cx: &mut C) -> VmResult<Vec<Handle<'a, JsValue>>> {
         let mut result = Vec::with_capacity(self.len() as usize);
         let mut i = 0;
         loop {
@@ -607,7 +607,7 @@ impl JsArray {
             if i >= self.len() {
                 return Ok(result);
             }
-            result.push(self.get(vm, i)?);
+            result.push(self.get(cx, i)?);
             i += 1;
         }
     }
@@ -648,7 +648,7 @@ impl<T: Object> Object for JsFunction<T> { }
 // Maximum number of function arguments in V8.
 const V8_ARGC_LIMIT: usize = 65535;
 
-unsafe fn prepare_call<'a, 'b, V: Vm<'a>, A>(vm: &mut V, args: &mut [Handle<'b, A>]) -> VmResult<(*mut c_void, i32, *mut c_void)>
+unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [Handle<'b, A>]) -> VmResult<(*mut c_void, i32, *mut c_void)>
     where A: Value + 'b
 {
     let argv = args.as_mut_ptr();
@@ -656,18 +656,18 @@ unsafe fn prepare_call<'a, 'b, V: Vm<'a>, A>(vm: &mut V, args: &mut [Handle<'b, 
     if argc > V8_ARGC_LIMIT {
         return JsError::throw(Kind::RangeError, "too many arguments");
     }
-    let isolate: *mut c_void = mem::transmute(vm.isolate().to_raw());
+    let isolate: *mut c_void = mem::transmute(cx.isolate().to_raw());
     Ok((isolate, argc as i32, argv as *mut c_void))
 }
 
 impl JsFunction {
-    pub fn new<'a, V, U>(vm: &mut V, f: fn(CallContext<JsObject>) -> JsResult<U>) -> JsResult<'a, JsFunction>
-        where V: Vm<'a>,
+    pub fn new<'a, C, U>(cx: &mut C, f: fn(CallContext<JsObject>) -> JsResult<U>) -> JsResult<'a, JsFunction>
+        where C: Context<'a>,
               U: Value
     {
         build(|out| {
             unsafe {
-                let isolate: *mut c_void = mem::transmute(vm.isolate().to_raw());
+                let isolate: *mut c_void = mem::transmute(cx.isolate().to_raw());
                 let callback = FunctionCallback(f).into_c_callback();
                 neon_runtime::fun::new(out, isolate, callback)
             }
@@ -675,14 +675,14 @@ impl JsFunction {
     }
 }
 
-impl<C: Object> JsFunction<C> {
-    pub fn call<'a, 'b, V: Vm<'a>, T, A, AS>(self, vm: &mut V, this: Handle<'b, T>, args: AS) -> JsResult<'a, JsValue>
+impl<CL: Object> JsFunction<CL> {
+    pub fn call<'a, 'b, C: Context<'a>, T, A, AS>(self, cx: &mut C, this: Handle<'b, T>, args: AS) -> JsResult<'a, JsValue>
         where T: Value,
               A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
     {
         let mut args = args.into_iter().collect::<Vec<_>>();
-        let (isolate, argc, argv) = unsafe { prepare_call(vm, &mut args) }?;
+        let (isolate, argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
         build(|out| {
             unsafe {
                 neon_runtime::fun::call(out, isolate, self.to_raw(), this.to_raw(), argc, argv)
@@ -690,12 +690,12 @@ impl<C: Object> JsFunction<C> {
         })
     }
 
-    pub fn construct<'a, 'b, V: Vm<'a>, A, AS>(self, vm: &mut V, args: AS) -> JsResult<'a, C>
+    pub fn construct<'a, 'b, C: Context<'a>, A, AS>(self, cx: &mut C, args: AS) -> JsResult<'a, CL>
         where A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
     {
         let mut args = args.into_iter().collect::<Vec<_>>();
-        let (isolate, argc, argv) = unsafe { prepare_call(vm, &mut args) }?;
+        let (isolate, argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
         build(|out| {
             unsafe {
                 neon_runtime::fun::construct(out, isolate, self.to_raw(), argc, argv)

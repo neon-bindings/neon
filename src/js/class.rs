@@ -5,7 +5,7 @@ use std::os::raw::c_void;
 use neon_runtime;
 use neon_runtime::raw;
 use mem::{Handle, Managed};
-use vm::{JsResult, VmResult, Throw, This, Vm, VmGuard, Ref, RefMut, LoanError, Callback};
+use vm::{JsResult, VmResult, Throw, This, Context, VmGuard, Ref, RefMut, LoanError, Callback};
 use vm::internal::Isolate;
 use js::{Value, JsFunction, Object, JsValue, Borrow, BorrowMut, build};
 use js::internal::ValueInternal;
@@ -21,8 +21,8 @@ pub(crate) mod internal {
     use neon_runtime::raw;
     use super::{JsClass, Class, ClassInternal};
     use js::{JsValue, JsObject, JsUndefined};
-    use vm::{JsResult, VmResult, CallbackInfo, Callback, CallContext, Vm, Throw};
-    use vm::internal::VmInternal;
+    use vm::{JsResult, VmResult, CallbackInfo, Callback, CallContext, Context, Throw};
+    use vm::internal::ContextInternal;
     use mem::{Handle, Managed};
     use js::error::convert_panics;
 
@@ -32,18 +32,18 @@ pub(crate) mod internal {
     impl<T: Class> Callback<()> for MethodCallback<T> {
         extern "C" fn invoke(info: &CallbackInfo) {
             unsafe {
-                info.with_vm::<T, _, _>(|mut vm| {
+                info.with_cx::<T, _, _>(|mut cx| {
                     let data = info.data();
-                    let this: Handle<JsValue> = Handle::new_internal(JsValue::from_raw(info.this(&mut vm)));
+                    let this: Handle<JsValue> = Handle::new_internal(JsValue::from_raw(info.this(&mut cx)));
                     if !this.is_a::<T>() {
-                        if let Ok(metadata) = T::metadata(&mut vm) {
-                            neon_runtime::class::throw_this_error(mem::transmute(vm.isolate()), metadata.pointer);
+                        if let Ok(metadata) = T::metadata(&mut cx) {
+                            neon_runtime::class::throw_this_error(mem::transmute(cx.isolate()), metadata.pointer);
                         }
                         return;
                     };
                     let dynamic_callback: fn(CallContext<T>) -> JsResult<JsValue> =
                         mem::transmute(neon_runtime::fun::get_dynamic_callback(data.to_raw()));
-                    if let Ok(value) = convert_panics(|| { dynamic_callback(vm) }) {
+                    if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
                         info.set_return(value);
                     }
                 })
@@ -60,10 +60,10 @@ pub(crate) mod internal {
 
     impl ConstructorCallCallback {
         pub(crate) fn default<T: Class>() -> Self {
-            fn callback<T: Class>(mut vm: CallContext<JsValue>) -> JsResult<JsValue> {
+            fn callback<T: Class>(mut cx: CallContext<JsValue>) -> JsResult<JsValue> {
                 unsafe {
-                    if let Ok(metadata) = T::metadata(&mut vm) {
-                        neon_runtime::class::throw_call_error(mem::transmute(vm.isolate()), metadata.pointer);
+                    if let Ok(metadata) = T::metadata(&mut cx) {
+                        neon_runtime::class::throw_call_error(mem::transmute(cx.isolate()), metadata.pointer);
                     }
                 }
                 Err(Throw)
@@ -76,11 +76,11 @@ pub(crate) mod internal {
     impl Callback<()> for ConstructorCallCallback {
         extern "C" fn invoke(info: &CallbackInfo) {
             unsafe {
-                info.with_vm(|vm| {
+                info.with_cx(|cx| {
                     let data = info.data();
                     let kernel: fn(CallContext<JsValue>) -> JsResult<JsValue> =
                         mem::transmute(neon_runtime::class::get_call_kernel(data.to_raw()));
-                    if let Ok(value) = convert_panics(|| { kernel(vm) }) {
+                    if let Ok(value) = convert_panics(|| { kernel(cx) }) {
                         info.set_return(value);
                     }
                 })
@@ -98,11 +98,11 @@ pub(crate) mod internal {
     impl<T: Class> Callback<*mut c_void> for AllocateCallback<T> {
         extern "C" fn invoke(info: &CallbackInfo) -> *mut c_void {
             unsafe {
-                info.with_vm(|vm| {
+                info.with_cx(|cx| {
                     let data = info.data();
                     let kernel: fn(CallContext<JsUndefined>) -> VmResult<T::Internals> =
                         mem::transmute(neon_runtime::class::get_allocate_kernel(data.to_raw()));
-                    if let Ok(value) = convert_panics(|| { kernel(vm) }) {
+                    if let Ok(value) = convert_panics(|| { kernel(cx) }) {
                         let p = Box::into_raw(Box::new(value));
                         mem::transmute(p)
                     } else {
@@ -123,11 +123,11 @@ pub(crate) mod internal {
     impl<T: Class> Callback<bool> for ConstructCallback<T> {
         extern "C" fn invoke(info: &CallbackInfo) -> bool {
             unsafe {
-                info.with_vm(|vm| {
+                info.with_cx(|cx| {
                     let data = info.data();
                     let kernel: fn(CallContext<T>) -> VmResult<Option<Handle<JsObject>>> =
                         mem::transmute(neon_runtime::class::get_construct_kernel(data.to_raw()));
-                    match convert_panics(|| { kernel(vm) }) {
+                    match convert_panics(|| { kernel(cx) }) {
                         Ok(None) => true,
                         Ok(Some(obj)) => {
                             info.set_return(obj);
@@ -151,9 +151,9 @@ pub(crate) mod internal {
     }
 
     impl ClassMetadata {
-        pub unsafe fn class<'a, T: Class, V: Vm<'a>>(&self, vm: &mut V) -> Handle<'a, JsClass<T>> {
+        pub unsafe fn class<'a, T: Class, C: Context<'a>>(&self, cx: &mut C) -> Handle<'a, JsClass<T>> {
             let mut local: raw::Local = mem::zeroed();
-            neon_runtime::class::metadata_to_class(&mut local, mem::transmute(vm.isolate()), self.pointer);
+            neon_runtime::class::metadata_to_class(&mut local, mem::transmute(cx.isolate()), self.pointer);
             Handle::new_internal(JsClass {
                 handle: local,
                 phantom: PhantomData
@@ -209,11 +209,11 @@ extern "C" fn drop_internals<T>(internals: *mut c_void) {
 pub trait Class: Managed + Any {
     type Internals;
 
-    fn setup<'a, V: Vm<'a>>(_: &mut V) -> VmResult<ClassDescriptor<'a, Self>>;
+    fn setup<'a, C: Context<'a>>(_: &mut C) -> VmResult<ClassDescriptor<'a, Self>>;
 
-    fn class<'a, V: Vm<'a>>(vm: &mut V) -> JsResult<'a, JsClass<Self>> {
-        let metadata = Self::metadata(vm)?;
-        Ok(unsafe { metadata.class(vm) })
+    fn class<'a, C: Context<'a>>(cx: &mut C) -> JsResult<'a, JsClass<Self>> {
+        let metadata = Self::metadata(cx)?;
+        Ok(unsafe { metadata.class(cx) })
     }
 
     fn describe<'a>(name: &'a str, allocate: AllocateCallback<Self>) -> ClassDescriptor<'a, Self> {
@@ -230,24 +230,24 @@ unsafe impl<T: Class> This for T {
 impl<T: Class> Object for T { }
 
 pub(crate) trait ClassInternal: Class {
-    fn metadata_opt<'a, V: Vm<'a>>(vm: &mut V) -> Option<ClassMetadata> {
-        vm.isolate()
+    fn metadata_opt<'a, C: Context<'a>>(cx: &mut C) -> Option<ClassMetadata> {
+        cx.isolate()
           .class_map()
           .get(&TypeId::of::<Self>())
           .map(|m| m.clone())
     }
 
-    fn metadata<'a, V: Vm<'a>>(vm: &mut V) -> VmResult<ClassMetadata> {
-        match Self::metadata_opt(vm) {
+    fn metadata<'a, C: Context<'a>>(cx: &mut C) -> VmResult<ClassMetadata> {
+        match Self::metadata_opt(cx) {
             Some(metadata) => Ok(metadata),
-            None => Self::create(vm)
+            None => Self::create(cx)
         }
     }
 
-    fn create<'a, V: Vm<'a>>(vm: &mut V) -> VmResult<ClassMetadata> {
-        let descriptor = Self::setup(vm)?;
+    fn create<'a, C: Context<'a>>(cx: &mut C) -> VmResult<ClassMetadata> {
+        let descriptor = Self::setup(cx)?;
         unsafe {
-            let isolate: *mut c_void = mem::transmute(vm.isolate());
+            let isolate: *mut c_void = mem::transmute(cx.isolate());
 
             let allocate = descriptor.allocate.into_c_callback();
             let construct = descriptor.construct.map(|callback| callback.into_c_callback()).unwrap_or_default();
@@ -285,7 +285,7 @@ pub(crate) trait ClassInternal: Class {
                 pointer: metadata_pointer
             };
 
-            vm.isolate().class_map().set(TypeId::of::<Self>(), metadata);
+            cx.isolate().class_map().set(TypeId::of::<Self>(), metadata);
 
             Ok(metadata)
         }
@@ -328,7 +328,7 @@ impl<T: Class> JsClass<T> {
         }
     }
 
-    pub fn constructor<'a, V: Vm<'a>>(&self, _: &mut V) -> JsResult<'a, JsFunction<T>> {
+    pub fn constructor<'a, C: Context<'a>>(&self, _: &mut C) -> JsResult<'a, JsFunction<T>> {
         build(|out| {
             unsafe {
                 neon_runtime::class::constructor(out, self.to_raw())

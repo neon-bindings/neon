@@ -28,10 +28,10 @@ pub mod macro_internal;
 /// Example:
 ///
 /// ```rust,ignore
-/// register_module!(vm, {
-///     vm.export_function("foo", foo)?;
-///     vm.export_function("bar", bar)?;
-///     vm.export_function("baz", baz)?;
+/// register_module!(cx, {
+///     cx.export_function("foo", foo)?;
+///     cx.export_function("bar", bar)?;
+///     cx.export_function("baz", baz)?;
 ///     Ok(())
 /// });
 /// ```
@@ -178,7 +178,7 @@ macro_rules! class_definition {
         impl $crate::js::class::Class for $cls {
             type Internals = $typ;
 
-            fn setup<'a, V: $crate::vm::Vm<'a>>(_: &mut V) -> $crate::vm::VmResult<$crate::js::class::ClassDescriptor<'a, Self>> {
+            fn setup<'a, C: $crate::vm::Context<'a>>(_: &mut C) -> $crate::vm::VmResult<$crate::js::class::ClassDescriptor<'a, Self>> {
                 ::std::result::Result::Ok(Self::describe(stringify!($cname), $allocator)
                                              $(.construct($new_ctor))*
                                              $(.call($call_ctor))*
@@ -218,22 +218,22 @@ macro_rules! impl_managed {
 ///
 ///     /// A class for generating greeting strings.
 ///     pub class JsGreeter for Greeter {
-///         init(vm) {
-///             let greeting = vm.argument(0)?.to_string(&mut vm)?.value();
+///         init(cx) {
+///             let greeting = cx.argument(0)?.to_string(&mut cx)?.value();
 ///             Ok(Greeter {
 ///                 greeting: greeting
 ///             })
 ///         }
 ///
-///         method hello(vm) {
-///             let name = vm.argument(0)?.to_string(&mut vm)?.value();
-///             let this = vm.this();
+///         method hello(cx) {
+///             let name = cx.argument(0)?.to_string(&mut cx)?.value();
+///             let this = cx.this();
 ///             let msg = {
-///                 let guard = vm.lock();
+///                 let guard = cx.lock();
 ///                 let greeter = this.borrow(&guard);
 ///                 format!("{}, {}!", greeter.greeting, name)
 ///             };
-///             Ok(vm.string(&msg[..])?.upcast())
+///             Ok(cx.string(&msg[..])?.upcast())
 ///         }
 ///     }
 ///

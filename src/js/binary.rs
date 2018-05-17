@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use std::mem;
 use std::os::raw::c_void;
 use std::slice;
-use vm::{Vm, VmResult};
+use vm::{Context, VmResult};
 use js::{Value, Object, Borrow, BorrowMut, build};
 use js::internal::ValueInternal;
 use mem::{Handle, Managed};
@@ -16,7 +16,7 @@ use neon_runtime::raw;
 pub struct JsBuffer(raw::Local);
 
 impl JsBuffer {
-    pub fn new<'a, V: Vm<'a>>(_: &mut V, size: u32) -> VmResult<Handle<'a, JsBuffer>> {
+    pub fn new<'a, C: Context<'a>>(_: &mut C, size: u32) -> VmResult<Handle<'a, JsBuffer>> {
         build(|out| { unsafe { neon_runtime::buffer::new(out, size) } })
     }
 }
@@ -42,8 +42,8 @@ impl Object for JsBuffer { }
 pub struct JsArrayBuffer(raw::Local);
 
 impl JsArrayBuffer {
-    pub fn new<'a, V: Vm<'a>>(vm: &mut V, size: u32) -> VmResult<Handle<'a, JsArrayBuffer>> {
-        build(|out| { unsafe { neon_runtime::arraybuffer::new(out, mem::transmute(vm.isolate()), size) } })
+    pub fn new<'a, C: Context<'a>>(cx: &mut C, size: u32) -> VmResult<Handle<'a, JsArrayBuffer>> {
+        build(|out| { unsafe { neon_runtime::arraybuffer::new(out, mem::transmute(cx.isolate()), size) } })
     }
 }
 

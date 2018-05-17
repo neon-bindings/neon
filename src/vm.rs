@@ -21,7 +21,7 @@ use js::class::internal::ClassMetadata;
 use js::class::Class;
 use js::error::{JsError, Kind};
 use mem::{Handle, Managed};
-use self::internal::{Pointer, Ledger, VmInternal, Scope, Context};
+use self::internal::{Pointer, Ledger, ContextInternal, Scope, ScopeMetadata};
 
 pub(crate) mod internal {
     use std::cell::Cell;
@@ -141,13 +141,13 @@ pub(crate) mod internal {
         }
     }
 
-    pub struct Context {
+    pub struct ScopeMetadata {
         isolate: Isolate,
         active: Cell<bool>
     }
 
     pub struct Scope<'a, R: Root + 'static> {
-        pub context: Context,
+        pub metadata: ScopeMetadata,
         pub handle_scope: &'a mut R
     }
 
@@ -160,7 +160,7 @@ pub(crate) mod internal {
             }
             let result = {
                 let scope = Scope {
-                    context: Context {
+                    metadata: ScopeMetadata {
                         isolate,
                         active: Cell::new(true)
                     },
@@ -175,15 +175,15 @@ pub(crate) mod internal {
         }
     }
 
-    pub trait VmInternal<'a>: Sized {
-        fn context(&self) -> &Context;
+    pub trait ContextInternal<'a>: Sized {
+        fn scope_metadata(&self) -> &ScopeMetadata;
 
         fn isolate(&self) -> Isolate {
-            self.context().isolate
+            self.scope_metadata().isolate
         }
 
         fn is_active(&self) -> bool {
-            self.context().active.get()
+            self.scope_metadata().active.get()
         }
 
         fn check_active(&self) {
@@ -192,13 +192,13 @@ pub(crate) mod internal {
             }
         }
 
-        fn activate(&self) { self.context().active.set(true); }
-        fn deactivate(&self) { self.context().active.set(false); }
+        fn activate(&self) { self.scope_metadata().active.set(true); }
+        fn deactivate(&self) { self.scope_metadata().active.set(false); }
     }
 
     pub fn initialize_module(exports: Handle<JsObject>, init: fn(ModuleContext) -> VmResult<()>) {
-        ModuleContext::with(exports, |vm| {
-            let _ = init(vm);
+        ModuleContext::with(exports, |cx| {
+            let _ = init(cx);
         });
     }
 }
@@ -255,7 +255,7 @@ impl CallbackInfo {
         }
     }
 
-    pub unsafe fn with_vm<T: This, U, F: for<'a> FnOnce(CallContext<'a, T>) -> U>(&self, f: F) -> U {
+    pub unsafe fn with_cx<T: This, U, F: for<'a> FnOnce(CallContext<'a, T>) -> U>(&self, f: F) -> U {
         CallContext::<T>::with(self, f)
     }
 
@@ -279,7 +279,7 @@ impl CallbackInfo {
         }
     }
 
-    pub fn get<'b, V: Vm<'b>>(&self, _: &mut V, i: i32) -> Option<Handle<'b, JsValue>> {
+    pub fn get<'b, C: Context<'b>>(&self, _: &mut C, i: i32) -> Option<Handle<'b, JsValue>> {
         if i < 0 || i >= self.len() {
             return None;
         }
@@ -290,7 +290,7 @@ impl CallbackInfo {
         }
     }
 
-    pub fn require<'b, V: Vm<'b>>(&self, _: &mut V, i: i32) -> JsResult<'b, JsValue> {
+    pub fn require<'b, C: Context<'b>>(&self, _: &mut C, i: i32) -> JsResult<'b, JsValue> {
         if i < 0 || i >= self.len() {
             return JsError::throw(Kind::TypeError, "not enough arguments");
         }
@@ -301,7 +301,7 @@ impl CallbackInfo {
         }
     }
 
-    pub fn this<'b, V: Vm<'b>>(&self, _: &mut V) -> raw::Local {
+    pub fn this<'b, V: Context<'b>>(&self, _: &mut V) -> raw::Local {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
             neon_runtime::call::this(mem::transmute(&self.info), &mut local);
@@ -309,7 +309,7 @@ impl CallbackInfo {
         }
     }
 
-    pub fn callee<'a, V: Vm<'a>>(&self, _: &mut V) -> Handle<'a, JsFunction> {
+    pub fn callee<'a, C: Context<'a>>(&self, _: &mut C) -> Handle<'a, JsFunction> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
             if neon_runtime::call::callee(mem::transmute(&self.info), &mut local) {
@@ -430,7 +430,7 @@ impl<'a, T: Pointer> DerefMut for RefMut<'a, T> {
     }
 }
 
-pub trait Vm<'a>: VmInternal<'a> {
+pub trait Context<'a>: ContextInternal<'a> {
     fn lock(&self) -> VmGuard {
         self.check_active();
         VmGuard::new()
@@ -452,10 +452,10 @@ pub trait Vm<'a>: VmInternal<'a> {
     {
         self.check_active();
         self.deactivate();
-        let result = ComputeContext::with(|vm| {
+        let result = ComputeContext::with(|cx| {
             unsafe {
-                let escapable_handle_scope = vm.scope.handle_scope as *mut raw::EscapableHandleScope;
-                let escapee = f(vm)?;
+                let escapable_handle_scope = cx.scope.handle_scope as *mut raw::EscapableHandleScope;
+                let escapee = f(cx)?;
                 let mut result_local: raw::Local = mem::zeroed();
                 neon_runtime::scope::escape(&mut result_local, escapable_handle_scope, escapee.to_raw());
                 Ok(Handle::new_internal(V::from_raw(result_local)))
@@ -540,13 +540,13 @@ impl<'a> ModuleContext<'a> {
     }
 }
 
-impl<'a> VmInternal<'a> for ModuleContext<'a> {
-    fn context(&self) -> &Context {
-        &self.scope.context
+impl<'a> ContextInternal<'a> for ModuleContext<'a> {
+    fn scope_metadata(&self) -> &ScopeMetadata {
+        &self.scope.metadata
     }
 }
 
-impl<'a> Vm<'a> for ModuleContext<'a> { }
+impl<'a> Context<'a> for ModuleContext<'a> { }
 
 pub struct ExecuteContext<'a> {
     scope: Scope<'a, raw::HandleScope>
@@ -560,13 +560,13 @@ impl<'a> ExecuteContext<'a> {
     }
 }
 
-impl<'a> VmInternal<'a> for ExecuteContext<'a> {
-    fn context(&self) -> &Context {
-        &self.scope.context
+impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
+    fn scope_metadata(&self) -> &ScopeMetadata {
+        &self.scope.metadata
     }
 }
 
-impl<'a> Vm<'a> for ExecuteContext<'a> { }
+impl<'a> Context<'a> for ExecuteContext<'a> { }
 
 pub struct ComputeContext<'a, 'outer> {
     scope: Scope<'a, raw::EscapableHandleScope>,
@@ -586,13 +586,13 @@ impl<'a, 'b> ComputeContext<'a, 'b> {
     }
 }
 
-impl<'a, 'b> VmInternal<'a> for ComputeContext<'a, 'b> {
-    fn context(&self) -> &Context {
-        &self.scope.context
+impl<'a, 'b> ContextInternal<'a> for ComputeContext<'a, 'b> {
+    fn scope_metadata(&self) -> &ScopeMetadata {
+        &self.scope.metadata
     }
 }
 
-impl<'a, 'b> Vm<'a> for ComputeContext<'a, 'b> { }
+impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> { }
 
 pub struct CallContext<'a, T: This> {
     scope: Scope<'a, raw::HandleScope>,
@@ -640,13 +640,13 @@ impl<'a, T: This> CallContext<'a, T> {
     }
 }
 
-impl<'a, T: This> VmInternal<'a> for CallContext<'a, T> {
-    fn context(&self) -> &Context {
-        &self.scope.context
+impl<'a, T: This> ContextInternal<'a> for CallContext<'a, T> {
+    fn scope_metadata(&self) -> &ScopeMetadata {
+        &self.scope.metadata
     }
 }
 
-impl<'a, T: This> Vm<'a> for CallContext<'a, T> { }
+impl<'a, T: This> Context<'a> for CallContext<'a, T> { }
 
 pub type FunctionContext<'a> = CallContext<'a, JsObject>;
 

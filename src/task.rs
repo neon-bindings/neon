@@ -7,8 +7,8 @@ use std::os::raw::c_void;
 use js::{Value, JsFunction};
 use mem::Handle;
 use mem::Managed;
-use vm::{Vm, JsResult};
-use vm::internal::{VmInternal, Scope, Context};
+use vm::{Context, JsResult};
+use vm::internal::{ContextInternal, Scope, ScopeMetadata};
 use neon_runtime;
 use neon_runtime::raw;
 
@@ -24,15 +24,13 @@ impl<'a> TaskContext<'a> {
     }
 }
 
-impl<'a> VmInternal<'a> for TaskContext<'a> {
-    fn context(&self) -> &Context {
-        &self.scope.context
+impl<'a> ContextInternal<'a> for TaskContext<'a> {
+    fn scope_metadata(&self) -> &ScopeMetadata {
+        &self.scope.metadata
     }
 }
 
-impl<'a> Vm<'a> for TaskContext<'a> {
-
-}
+impl<'a> Context<'a> for TaskContext<'a> { }
 
 /// A Rust task that can be executed in a background thread.
 pub trait Task: Send + Sized {
@@ -49,7 +47,7 @@ pub trait Task: Send + Sized {
     fn perform(&self) -> Result<Self::Output, Self::Error>;
 
     /// Convert the result of the task to a JavaScript value to be passed to the asynchronous callback. This method is executed on the main thread at some point after the background task is completed.
-    fn complete<'a>(self, vm: TaskContext<'a>, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent>;
+    fn complete<'a>(self, cx: TaskContext<'a>, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent>;
 
     /// Schedule a task to be executed on a background thread.
     ///
@@ -81,8 +79,8 @@ unsafe extern "C" fn perform_task<T: Task>(task: *mut c_void) -> *mut c_void {
 unsafe extern "C" fn complete_task<T: Task>(task: *mut c_void, result: *mut c_void, out: &mut raw::Local) {
     let result: Result<T::Output, T::Error> = *Box::from_raw(mem::transmute(result));
     let task: Box<T> = Box::from_raw(mem::transmute(task));
-    TaskContext::with(|vm| {
-        if let Ok(result) = task.complete(vm, result) {
+    TaskContext::with(|cx| {
+        if let Ok(result) = task.complete(cx, result) {
             *out = result.to_raw();
         }
     })
