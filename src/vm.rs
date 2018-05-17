@@ -546,9 +546,7 @@ impl<'a> VmInternal<'a> for ModuleContext<'a> {
     }
 }
 
-impl<'a> Vm<'a> for ModuleContext<'a> {
-
-}
+impl<'a> Vm<'a> for ModuleContext<'a> { }
 
 pub struct ExecuteContext<'a> {
     scope: Scope<'a, raw::HandleScope>
@@ -568,8 +566,7 @@ impl<'a> VmInternal<'a> for ExecuteContext<'a> {
     }
 }
 
-impl<'a> Vm<'a> for ExecuteContext<'a> {
-}
+impl<'a> Vm<'a> for ExecuteContext<'a> { }
 
 pub struct ComputeContext<'a, 'outer> {
     scope: Scope<'a, raw::EscapableHandleScope>,
@@ -595,8 +592,7 @@ impl<'a, 'b> VmInternal<'a> for ComputeContext<'a, 'b> {
     }
 }
 
-impl<'a, 'b> Vm<'a> for ComputeContext<'a, 'b> {
-}
+impl<'a, 'b> Vm<'a> for ComputeContext<'a, 'b> { }
 
 pub struct CallContext<'a, T: This> {
     scope: Scope<'a, raw::HandleScope>,
@@ -650,9 +646,11 @@ impl<'a, T: This> VmInternal<'a> for CallContext<'a, T> {
     }
 }
 
-impl<'a, T: This> Vm<'a> for CallContext<'a, T> {
+impl<'a, T: This> Vm<'a> for CallContext<'a, T> { }
 
-}
+pub type FunctionContext<'a> = CallContext<'a, JsObject>;
+
+pub type MethodContext<'a, T> = CallContext<'a, T>;
 
 /// A dynamically computed callback that can be passed through C to the JS VM.
 /// This type makes it possible to export a dynamically computed Rust function
