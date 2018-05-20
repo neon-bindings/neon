@@ -533,11 +533,8 @@ impl<'a, T: This> CallContext<'a, T> {
 
     pub fn len(&self) -> i32 { self.info.len() }
 
-    pub fn argument_opt<V: Value>(&mut self, i: i32) -> VmResult<Option<Handle<'a, V>>> {
-        Ok(match self.info.get(self, i) {
-            Some(h) => Some(h.check()?),
-            None => None
-        })
+    pub fn argument_opt(&mut self, i: i32) -> Option<Handle<'a, JsValue>> {
+        self.info.get(self, i)
     }
 
     pub fn argument<V: Value>(&mut self, i: i32) -> JsResult<'a, V> {
