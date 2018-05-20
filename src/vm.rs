@@ -571,6 +571,28 @@ pub type FunctionContext<'a> = CallContext<'a, JsObject>;
 
 pub type MethodContext<'a, T> = CallContext<'a, T>;
 
+pub struct TaskContext<'a> {
+    /// We use an "inherited HandleScope" here because the C++ `neon::Task::complete`
+    /// method sets up and tears down a `HandleScope` for us.
+    scope: Scope<'a, raw::InheritedHandleScope>
+}
+
+impl<'a> TaskContext<'a> {
+    pub(crate) fn with<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(f: F) -> T {
+        Scope::with(|scope| {
+            f(TaskContext { scope })
+        })
+    }
+}
+
+impl<'a> ContextInternal<'a> for TaskContext<'a> {
+    fn scope_metadata(&self) -> &ScopeMetadata {
+        &self.scope.metadata
+    }
+}
+
+impl<'a> Context<'a> for TaskContext<'a> { }
+
 /// A dynamically computed callback that can be passed through C to the JS VM.
 /// This type makes it possible to export a dynamically computed Rust function
 /// as a pair of 1) a raw pointer to the dynamically computed function, and 2)

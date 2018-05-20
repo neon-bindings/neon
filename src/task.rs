@@ -7,32 +7,9 @@ use std::os::raw::c_void;
 use js::{Value, JsFunction};
 use mem::Handle;
 use mem::Managed;
-use vm::{Context, JsResult};
-use vm::internal::{ContextInternal, Scope, ScopeMetadata};
+use vm::{TaskContext, JsResult};
 use neon_runtime;
 use neon_runtime::raw;
-
-pub struct TaskContext<'a> {
-    /// We use an "inherited HandleScope" here because the C++ `neon::Task::complete`
-    /// method sets up and tears down a `HandleScope` for us.
-    scope: Scope<'a, raw::InheritedHandleScope>
-}
-
-impl<'a> TaskContext<'a> {
-    fn with<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(f: F) -> T {
-        Scope::with(|scope| {
-            f(TaskContext { scope })
-        })
-    }
-}
-
-impl<'a> ContextInternal<'a> for TaskContext<'a> {
-    fn scope_metadata(&self) -> &ScopeMetadata {
-        &self.scope.metadata
-    }
-}
-
-impl<'a> Context<'a> for TaskContext<'a> { }
 
 /// A Rust task that can be executed in a background thread.
 pub trait Task: Send + Sized {

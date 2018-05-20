@@ -1,9 +1,7 @@
-// FIXME: should FunctionContext live in js?
-use neon::vm::{FunctionContext, JsResult, Context};
+use neon::vm::{FunctionContext, TaskContext, JsResult, Context};
 use neon::js::{JsUndefined, JsNumber, JsFunction};
 use neon::js::error::{Kind, JsError};
-// FIXME: should TaskContext live in vm?
-use neon::task::{Task, TaskContext};
+use neon::task::Task;
 
 struct SuccessTask;
 
