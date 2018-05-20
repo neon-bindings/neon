@@ -149,7 +149,7 @@ macro_rules! class_definition {
                                   $body
                               }
 
-                              $crate::macro_internal::ConstructCallback::new(_______constructor_rust_y_u_no_hygienic_items_______)
+                              $crate::macro_internal::ConstructCallback(_______constructor_rust_y_u_no_hygienic_items_______)
                           }) ;
                           $mnames ;
                           $mdefs ;
@@ -166,7 +166,7 @@ macro_rules! class_definition {
                                   $body
                               }
 
-                              $crate::macro_internal::ConstructorCallCallback::new(_______call_rust_y_u_no_hygienic_items_______)
+                              $crate::macro_internal::ConstructorCallCallback(_______call_rust_y_u_no_hygienic_items_______)
                           }) ;
                           $new_ctor ;
                           $mnames ;
