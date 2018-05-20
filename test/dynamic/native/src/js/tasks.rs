@@ -1,8 +1,9 @@
-use neon::vm::{Call, JsResult};
-use neon::scope::{Scope};
+// FIXME: should FunctionContext live in js?
+use neon::vm::{FunctionContext, JsResult, Context};
 use neon::js::{JsUndefined, JsNumber, JsFunction};
 use neon::js::error::{Kind, JsError};
-use neon::task::Task;
+// FIXME: should TaskContext live in vm?
+use neon::task::{Task, TaskContext};
 
 struct SuccessTask;
 
@@ -15,15 +16,15 @@ impl Task for SuccessTask {
         Ok(17)
     }
 
-    fn complete<'a, T: Scope<'a>>(self, scope: &'a mut T, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent> {
-        Ok(JsNumber::new(scope, result.unwrap() as f64))
+    fn complete(self, mut cx: TaskContext, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent> {
+        Ok(cx.number(result.unwrap()))
     }
 }
 
-pub fn perform_async_task(call: Call) -> JsResult<JsUndefined> {
-    let f = call.arguments.require(call.scope, 0)?.check::<JsFunction>()?;
+pub fn perform_async_task(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let f = cx.argument::<JsFunction>(0)?;
     SuccessTask.schedule(f);
-    Ok(JsUndefined::new())
+    Ok(cx.undefined())
 }
 
 struct FailureTask;
@@ -37,13 +38,14 @@ impl Task for FailureTask {
         Err(format!("I am a failing task"))
     }
 
-    fn complete<'a, T: Scope<'a>>(self, _: &'a mut T, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent> {
+    fn complete(self, _: TaskContext, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent> {
+        // FIXME: does throw need an &mut context for soundness?
         JsError::throw(Kind::Error, &result.unwrap_err())
     }
 }
 
-pub fn perform_failing_task(call: Call) -> JsResult<JsUndefined> {
-    let f = call.arguments.require(call.scope, 0)?.check::<JsFunction>()?;
+pub fn perform_failing_task(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let f = cx.argument::<JsFunction>(0)?;
     FailureTask.schedule(f);
-    Ok(JsUndefined::new())
+    Ok(cx.undefined())
 }
