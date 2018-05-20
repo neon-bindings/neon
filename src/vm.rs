@@ -410,6 +410,14 @@ pub trait Context<'a>: ContextInternal<'a> {
     fn array_buffer(&mut self, size: u32) -> VmResult<Handle<'a, JsArrayBuffer>> {
         JsArrayBuffer::new(self, size)
     }
+
+    fn global(&mut self) -> Handle<'a, JsObject> {
+        JsObject::build(|out| {
+            unsafe {
+                neon_runtime::scope::get_global(self.isolate().to_raw(), out);
+            }
+        })
+    }
 }
 
 pub struct ModuleContext<'a> {
