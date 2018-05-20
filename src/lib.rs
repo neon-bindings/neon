@@ -102,12 +102,12 @@ macro_rules! register_module {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! class_definition {
-    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; init($call:ident) $body:block $($rest:tt)* ) => {
+    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; init($cx:pat) $body:block $($rest:tt)* ) => {
         class_definition!($cls ;
                           $cname ;
                           $typ ;
                           {
-                              fn _______allocator_rust_y_u_no_hygienic_items_______(mut $call: $crate::vm::CallContext<$crate::js::JsUndefined>) -> $crate::vm::VmResult<$typ> {
+                              fn _______allocator_rust_y_u_no_hygienic_items_______($cx: $crate::vm::CallContext<$crate::js::JsUndefined>) -> $crate::vm::VmResult<$typ> {
                                   $body
                               }
 
@@ -120,7 +120,7 @@ macro_rules! class_definition {
                           $($rest)*);
     };
 
-    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; ($($mname:tt)*) ; ($($mdef:tt)*) ; method $name:ident($call:ident) $body:block $($rest:tt)* ) => {
+    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; ($($mname:tt)*) ; ($($mdef:tt)*) ; method $name:ident($cx:pat) $body:block $($rest:tt)* ) => {
         class_definition!($cls ;
                           $cname ;
                           $typ ;
@@ -129,7 +129,7 @@ macro_rules! class_definition {
                           $new_ctor ;
                           ($($mname)* $name) ;
                           ($($mdef)* {
-                              fn _______method_rust_y_u_no_hygienic_items_______(mut $call: $crate::vm::CallContext<$cls>) -> $crate::vm::JsResult<$crate::js::JsValue> {
+                              fn _______method_rust_y_u_no_hygienic_items_______($cx: $crate::vm::CallContext<$cls>) -> $crate::vm::JsResult<$crate::js::JsValue> {
                                   $body
                               }
 
@@ -138,14 +138,14 @@ macro_rules! class_definition {
                           $($rest)*);
     };
 
-    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; constructor($call:ident) $body:block $($rest:tt)* ) => {
+    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; constructor($cx:pat) $body:block $($rest:tt)* ) => {
         class_definition!($cls ;
                           $cname ;
                           $typ ;
                           $allocator ;
                           $call_ctor ;
                           ({
-                              fn _______constructor_rust_y_u_no_hygienic_items_______(mut $call: $crate::vm::CallContext<$cls>) -> $crate::vm::VmResult<Option<$crate::mem::Handle<$crate::js::JsObject>>> {
+                              fn _______constructor_rust_y_u_no_hygienic_items_______($cx: $crate::vm::CallContext<$cls>) -> $crate::vm::VmResult<Option<$crate::mem::Handle<$crate::js::JsObject>>> {
                                   $body
                               }
 
@@ -156,13 +156,13 @@ macro_rules! class_definition {
                           $($rest)*);
     };
 
-    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; call($call:ident) $body:block $($rest:tt)* ) => {
+    ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; call($cx:pat) $body:block $($rest:tt)* ) => {
         class_definition!($cls ;
                           $cname ;
                           $typ ;
                           $allocator ;
                           ({
-                              fn _______call_rust_y_u_no_hygienic_items_______(mut $call: $crate::vm::CallContext<$crate::js::JsValue>) -> $crate::vm::JsResult<$crate::js::JsValue> {
+                              fn _______call_rust_y_u_no_hygienic_items_______($cx: $crate::vm::CallContext<$crate::js::JsValue>) -> $crate::vm::JsResult<$crate::js::JsValue> {
                                   $body
                               }
 
