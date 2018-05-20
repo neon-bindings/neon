@@ -13,7 +13,9 @@ use neon_runtime;
 use neon_runtime::raw;
 
 pub struct TaskContext<'a> {
-    scope: Scope<'a, raw::HandleScope>
+    /// We use an "inherited HandleScope" here because the C++ `neon::Task::complete`
+    /// method sets up and tears down a `HandleScope` for us.
+    scope: Scope<'a, raw::InheritedHandleScope>
 }
 
 impl<'a> TaskContext<'a> {

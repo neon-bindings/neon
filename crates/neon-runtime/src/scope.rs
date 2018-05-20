@@ -1,7 +1,7 @@
 //! Facilities for working with `v8::HandleScope`s and `v8::EscapableHandleScope`s.
 
 use std::os::raw::c_void;
-use raw::{HandleScope, EscapableHandleScope, Local, Isolate};
+use raw::{HandleScope, EscapableHandleScope, InheritedHandleScope, Local, Isolate};
 
 pub trait Root {
     unsafe fn allocate() -> Self;
@@ -27,6 +27,12 @@ impl Root for EscapableHandleScope {
     unsafe fn exit(&mut self) {
         exit_escapable(self)
     }
+}
+
+impl Root for InheritedHandleScope {
+    unsafe fn allocate() -> Self { InheritedHandleScope }
+    unsafe fn enter(&mut self, _: *mut Isolate) { }
+    unsafe fn exit(&mut self) { }
 }
 
 extern "C" {

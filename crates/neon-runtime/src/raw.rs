@@ -57,3 +57,6 @@ pub struct EscapableHandleScope {
 impl EscapableHandleScope {
     pub fn new() -> EscapableHandleScope { unsafe { mem::zeroed() } }
 }
+
+#[derive(Clone, Copy)]
+pub struct InheritedHandleScope;
