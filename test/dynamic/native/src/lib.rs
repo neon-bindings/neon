@@ -19,8 +19,7 @@ use js::functions::*;
 use js::classes::*;
 use js::tasks::*;
 
-// FIXME: first argument should be a `pat` so I can explicitly make it mut
-register_module!(cx, {
+register_module!(mut cx, {
     cx.export_function("return_js_string", return_js_string)?;
 
     cx.export_function("return_js_number", return_js_number)?;

@@ -20,15 +20,17 @@ pub mod meta;
 #[doc(hidden)]
 pub mod macro_internal;
 
-// FIXME: document that the first argument is an identifier that binds a ModuleContext
-
 /// Register the current crate as a Node module, providing startup
 /// logic for initializing the module object at runtime.
+///
+/// The first argument is a pattern bound to a `neon::vm::ModuleContext`. This
+/// is usually bound to a mutable variable `mut cx`, which can then be used to
+/// pass to Neon APIs that require mutable access to a VM context.
 ///
 /// Example:
 ///
 /// ```rust,ignore
-/// register_module!(cx, {
+/// register_module!(mut cx, {
 ///     cx.export_function("foo", foo)?;
 ///     cx.export_function("bar", bar)?;
 ///     cx.export_function("baz", baz)?;
@@ -37,14 +39,14 @@ pub mod macro_internal;
 /// ```
 #[macro_export]
 macro_rules! register_module {
-    ($module:ident, $init:block) => {
+    ($module:pat, $init:block) => {
         // Mark this function as a global constructor (like C++).
         #[allow(improper_ctypes)]
         #[cfg_attr(target_os = "linux", link_section = ".ctors")]
         #[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
         #[cfg_attr(target_os = "windows", link_section = ".CRT$XCU")]
         pub static __LOAD_NEON_MODULE: extern "C" fn() = {
-            fn __init_neon_module(mut $module: $crate::vm::ModuleContext) -> $crate::vm::VmResult<()> $init
+            fn __init_neon_module($module: $crate::vm::ModuleContext) -> $crate::vm::VmResult<()> $init
 
             extern "C" fn __load_neon_module() {
                 // Put everything else in the ctor fn so the user fn can't see it.
@@ -218,14 +220,14 @@ macro_rules! impl_managed {
 ///
 ///     /// A class for generating greeting strings.
 ///     pub class JsGreeter for Greeter {
-///         init(cx) {
+///         init(mut cx) {
 ///             let greeting = cx.argument(0)?.to_string(&mut cx)?.value();
 ///             Ok(Greeter {
 ///                 greeting: greeting
 ///             })
 ///         }
 ///
-///         method hello(cx) {
+///         method hello(mut cx) {
 ///             let name = cx.argument(0)?.to_string(&mut cx)?.value();
 ///             let this = cx.this();
 ///             let msg = {
