@@ -36,9 +36,8 @@ impl Task for FailureTask {
         Err(format!("I am a failing task"))
     }
 
-    fn complete(self, _: TaskContext, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent> {
-        // FIXME: does throw need an &mut context for soundness?
-        JsError::throw(Kind::Error, &result.unwrap_err())
+    fn complete(self, mut cx: TaskContext, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent> {
+        JsError::throw(&mut cx, Kind::Error, &result.unwrap_err())
     }
 }
 

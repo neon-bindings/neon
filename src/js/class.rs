@@ -1,7 +1,7 @@
 use std::any::{Any, TypeId};
 use std::mem;
-use std::marker::PhantomData;
 use std::os::raw::c_void;
+use std::slice;
 use neon_runtime;
 use neon_runtime::raw;
 use mem::{Handle, Managed};
@@ -9,18 +9,16 @@ use vm::{JsResult, VmResult, Throw, This, Context, VmGuard, Callback};
 use vm::internal::Isolate;
 use js::{Value, JsFunction, Object, JsValue, Borrow, BorrowMut, Ref, RefMut, LoanError, build};
 use js::internal::ValueInternal;
-use js::error::{JsError, Kind};
 use self::internal::{ClassMetadata, MethodCallback, ConstructorCallCallback, AllocateCallback, ConstructCallback};
 
 pub(crate) mod internal {
     use std::mem;
-    use std::marker::PhantomData;
     use std::os::raw::c_void;
     use std::ptr::null_mut;
     use neon_runtime;
     use neon_runtime::raw;
-    use super::{JsClass, Class, ClassInternal};
-    use js::{JsValue, JsObject, JsUndefined};
+    use super::{Class, ClassInternal};
+    use js::{JsValue, JsObject, JsFunction, JsUndefined, build};
     use vm::{JsResult, VmResult, CallbackInfo, Callback, CallContext, Context, Throw};
     use vm::internal::ContextInternal;
     use mem::{Handle, Managed};
@@ -151,12 +149,9 @@ pub(crate) mod internal {
     }
 
     impl ClassMetadata {
-        pub unsafe fn class<'a, T: Class, C: Context<'a>>(&self, cx: &mut C) -> Handle<'a, JsClass<T>> {
-            let mut local: raw::Local = mem::zeroed();
-            neon_runtime::class::metadata_to_class(&mut local, mem::transmute(cx.isolate()), self.pointer);
-            Handle::new_internal(JsClass {
-                handle: local,
-                phantom: PhantomData
+        pub unsafe fn constructor<'a, T: Class, C: Context<'a>>(&self, cx: &mut C) -> JsResult<'a, JsFunction<T>> {
+            build(|out| {
+                neon_runtime::class::metadata_to_constructor(out, mem::transmute(cx.isolate()), self.pointer)
             })
         }
 
@@ -211,9 +206,17 @@ pub trait Class: Managed + Any {
 
     fn setup<'a, C: Context<'a>>(_: &mut C) -> VmResult<ClassDescriptor<'a, Self>>;
 
-    fn class<'a, C: Context<'a>>(cx: &mut C) -> JsResult<'a, JsClass<Self>> {
+    fn constructor<'a, C: Context<'a>>(cx: &mut C) -> JsResult<'a, JsFunction<Self>> {
         let metadata = Self::metadata(cx)?;
-        Ok(unsafe { metadata.class(cx) })
+        unsafe { metadata.constructor(cx) }
+    }
+
+    fn new<'a, 'b, C: Context<'a>, A, AS>(cx: &mut C, args: AS) -> JsResult<'a, Self>
+        where A: Value + 'b,
+              AS: IntoIterator<Item=Handle<'b, A>>
+    {
+        let constructor = Self::constructor(cx)?;
+        constructor.construct(cx, args)
     }
 
     fn describe<'a>(name: &'a str, allocate: AllocateCallback<Self>) -> ClassDescriptor<'a, Self> {
@@ -295,6 +298,23 @@ pub(crate) trait ClassInternal: Class {
 impl<T: Class> ClassInternal for T { }
 
 impl<T: Class> ValueInternal for T {
+    fn name() -> String {
+        let mut isolate: Isolate = unsafe {
+            mem::transmute(neon_runtime::call::current_isolate())
+        };
+        let raw_isolate = unsafe { mem::transmute(isolate) };
+        let map = isolate.class_map();
+        match map.get(&TypeId::of::<T>()) {
+            None => "unknown".to_string(),
+            Some(ref metadata) => unsafe {
+                let mut chars: *mut u8 = mem::uninitialized();
+                let mut len: usize = mem::uninitialized();
+                neon_runtime::class::get_name(&mut chars, &mut len, raw_isolate, metadata.pointer);
+                String::from_utf8_lossy(slice::from_raw_parts_mut(chars, len)).to_string()
+            }
+        }
+    }
+
     fn is_typeof<Other: Value>(value: Other) -> bool {
         let mut isolate: Isolate = unsafe {
             mem::transmute(neon_runtime::call::current_isolate())
@@ -310,32 +330,6 @@ impl<T: Class> ValueInternal for T {
 }
 
 impl<T: Class> Value for T { }
-
-#[repr(C)]
-#[derive(Clone, Copy)]
-pub struct JsClass<T: Class> {
-    handle: raw::Local,
-    phantom: PhantomData<T>
-}
-
-impl<T: Class> JsClass<T> {
-    pub fn check<U: Value>(&self, v: Handle<U>, msg: &str) -> JsResult<T> {
-        let local = v.to_raw();
-        if unsafe { neon_runtime::class::check(self.to_raw(), local) } {
-            Ok(Handle::new_internal(T::from_raw(local)))
-        } else {
-            JsError::throw(Kind::TypeError, msg)
-        }
-    }
-
-    pub fn constructor<'a, C: Context<'a>>(&self, _: &mut C) -> JsResult<'a, JsFunction<T>> {
-        build(|out| {
-            unsafe {
-                neon_runtime::class::constructor(out, self.to_raw())
-            }
-        })
-    }
-}
 
 impl<'a, T: Class> Borrow for &'a T {
     type Target = &'a mut T::Internals;
@@ -361,17 +355,6 @@ impl<'a, T: Class> BorrowMut for &'a mut T {
         unsafe {
             let ptr: *mut c_void = neon_runtime::class::get_instance_internals(self.to_raw());
             RefMut::new(guard, mem::transmute(ptr))
-        }
-    }
-}
-
-impl<T: Class> Managed for JsClass<T> {
-    fn to_raw(self) -> raw::Local { self.handle }
-
-    fn from_raw(h: raw::Local) -> Self {
-        JsClass {
-            handle: h,
-            phantom: PhantomData
         }
     }
 }

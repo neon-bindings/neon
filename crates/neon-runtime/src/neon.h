@@ -124,12 +124,12 @@ extern "C" {
   void *Neon_Class_GetConstructKernel(v8::Local<v8::External> wrapper);
   void *Neon_Class_GetAllocateKernel(v8::Local<v8::External> wrapper);
   bool Neon_Class_Constructor(v8::Local<v8::Function> *out, v8::Local<v8::FunctionTemplate> ft);
-  bool Neon_Class_Check(v8::Local<v8::FunctionTemplate> ft, v8::Local<v8::Value> v);
   bool Neon_Class_HasInstance(void *metadata, v8::Local<v8::Value> v);
   bool Neon_Class_SetName(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length);
+  void Neon_Class_GetName(const char **chars_out, size_t *len_out, v8::Isolate *isolate, void *metadata);
   void Neon_Class_ThrowThisError(v8::Isolate *isolate, void *metadata_pointer);
   bool Neon_Class_AddMethod(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length, v8::Local<v8::FunctionTemplate> method);
-  void Neon_Class_MetadataToClass(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, void *metadata);
+  bool Neon_Class_MetadataToConstructor(v8::Local<v8::Function> *out, v8::Isolate *isolate, void *metadata);
   void *Neon_Class_GetInstanceInternals(v8::Local<v8::Object> obj);
 
   uint32_t Neon_Module_GetVersion();

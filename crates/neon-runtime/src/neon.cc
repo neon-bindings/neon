@@ -356,10 +356,6 @@ extern "C" bool Neon_Class_Constructor(v8::Local<v8::Function> *out, v8::Local<v
   return maybe.ToLocal(out);
 }
 
-extern "C" bool Neon_Class_Check(v8::Local<v8::FunctionTemplate> ft, v8::Local<v8::Value> v) {
-  return ft->HasInstance(v);
-}
-
 extern "C" bool Neon_Class_HasInstance(void *metadata_pointer, v8::Local<v8::Value> v) {
   neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(metadata_pointer);
   return metadata->GetTemplate(v8::Isolate::GetCurrent())->HasInstance(v);
@@ -376,6 +372,13 @@ extern "C" bool Neon_Class_SetName(v8::Isolate *isolate, void *metadata_pointer,
   ft->SetClassName(class_name);
   metadata->SetName(neon::Slice(name, byte_length));
   return true;
+}
+
+extern "C" void Neon_Class_GetName(const char **chars_out, size_t *len_out, v8::Isolate *isolate, void *metadata_pointer) {
+  neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(metadata_pointer);
+  neon::Slice name = metadata->GetName();
+  *chars_out = name.GetBuffer();
+  *len_out = name.GetLength();
 }
 
 extern "C" void Neon_Class_ThrowCallError(v8::Isolate *isolate, void *metadata_pointer) {
@@ -403,8 +406,10 @@ extern "C" bool Neon_Class_AddMethod(v8::Isolate *isolate, void *metadata_pointe
   return true;
 }
 
-extern "C" void Neon_Class_MetadataToClass(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, void *metadata) {
-  *out = static_cast<neon::ClassMetadata *>(metadata)->GetTemplate(isolate);
+extern "C" bool Neon_Class_MetadataToConstructor(v8::Local<v8::Function> *out, v8::Isolate *isolate, void *metadata) {
+  v8::Local<v8::FunctionTemplate> ft = static_cast<neon::ClassMetadata *>(metadata)->GetTemplate(isolate);
+  v8::MaybeLocal<v8::Function> maybe = ft->GetFunction();
+  return maybe.ToLocal(out);
 }
 
 extern "C" void *Neon_Class_GetInstanceInternals(v8::Local<v8::Object> obj) {

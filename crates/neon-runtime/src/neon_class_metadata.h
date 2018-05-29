@@ -60,6 +60,7 @@ public:
     construct_kernel_ = construct_kernel;
     call_callback_ = call_callback;
     call_kernel_ = call_kernel;
+    class_name_ = nullptr;
     this_error_ = nullptr;
     call_error_ = nullptr;
   }
@@ -88,11 +89,18 @@ public:
   }
 
   void SetName(Slice name) {
+    class_name_ = new String(name.GetLength());
+    *class_name_ << name;
+
     this_error_ = new String(sizeof("this is not an object of type .") - 1 + name.GetLength());
     *this_error_ << "this is not an object of type " << name << ".";
 
     call_error_ = new String(sizeof(" constructor called without new.") - 1 + name.GetLength());
     *call_error_ << name << " constructor called without new.";
+  }
+
+  Slice GetName() {
+    return class_name_->Borrow();
   }
 
   Slice GetThisError() {
@@ -107,6 +115,9 @@ protected:
 
   virtual ~ClassMetadata() {
     template_.Reset();
+    if (class_name_) {
+      delete class_name_;
+    }
     if (this_error_) {
       delete this_error_;
     }
@@ -128,6 +139,7 @@ private:
   }
 
   v8::Global<v8::FunctionTemplate> template_;
+  String *class_name_;
   String *this_error_;
   String *call_error_;
 

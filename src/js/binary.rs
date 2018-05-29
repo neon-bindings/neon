@@ -28,6 +28,8 @@ impl Managed for JsBuffer {
 }
 
 impl ValueInternal for JsBuffer {
+    fn name() -> String { "Buffer".to_string() }
+
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_buffer(other.to_raw()) }
     }
@@ -54,6 +56,8 @@ impl Managed for JsArrayBuffer {
 }
 
 impl ValueInternal for JsArrayBuffer {
+    fn name() -> String { "ArrayBuffer".to_string() }
+
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_arraybuffer(other.to_raw()) }
     }

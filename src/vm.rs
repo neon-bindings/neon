@@ -219,6 +219,10 @@ impl Error for Throw {
 pub type VmResult<T> = Result<T, Throw>;
 pub type JsResult<'b, T> = VmResult<Handle<'b, T>>;
 
+pub trait JsResultExt<'a, V: Value> {
+    fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, V>;
+}
+
 pub(crate) struct ClassMap {
     map: HashMap<TypeId, ClassMetadata>
 }
@@ -288,9 +292,9 @@ impl CallbackInfo {
         }
     }
 
-    pub fn require<'b, C: Context<'b>>(&self, _: &mut C, i: i32) -> JsResult<'b, JsValue> {
+    pub fn require<'b, C: Context<'b>>(&self, cx: &mut C, i: i32) -> JsResult<'b, JsValue> {
         if i < 0 || i >= self.len() {
-            return JsError::throw(Kind::TypeError, "not enough arguments");
+            return JsError::throw(cx, Kind::TypeError, "not enough arguments");
         }
         unsafe {
             let mut local: raw::Local = mem::zeroed();
@@ -446,8 +450,7 @@ impl<'a> ModuleContext<'a> {
     }
 
     pub fn export_class<T: Class>(&mut self, key: &str) -> VmResult<()> {
-        let class = T::class(self)?;
-        let constructor = class.constructor(self)?;
+        let constructor = T::constructor(self)?;
         self.exports.set(self, key, constructor)?;
         Ok(())
     }
@@ -547,7 +550,7 @@ impl<'a, T: This> CallContext<'a, T> {
 
     pub fn argument<V: Value>(&mut self, i: i32) -> JsResult<'a, V> {
         let a = self.info.require(self, i)?;
-        a.check()
+        a.downcast().unwrap_or_throw(self)
     }
 
     pub fn this(&mut self) -> Handle<'a, T> {

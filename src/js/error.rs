@@ -10,7 +10,7 @@ use js::{Value, Object, ToJsString, build};
 use js::internal::ValueInternal;
 use mem::{Handle, Managed};
 
-pub fn throw<'a, T: Value, U>(v: Handle<'a, T>) -> VmResult<U> {
+pub fn throw<'a, 'b, C: Context<'a>, T: Value, U>(_: &mut C, v: Handle<'b, T>) -> VmResult<U> {
     unsafe {
         neon_runtime::error::throw(v.to_raw());
     }
@@ -28,6 +28,8 @@ impl Managed for JsError {
 }
 
 impl ValueInternal for JsError {
+    fn name() -> String { "Error".to_string() }
+
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_error(other.to_raw()) }
     }
@@ -67,20 +69,24 @@ impl JsError {
         })
     }
 
-    pub fn throw<T>(kind: Kind, msg: &str) -> VmResult<T> {
-        let msg = &message(msg);
+    pub fn throw<'a, C: Context<'a>, T>(_: &mut C, kind: Kind, msg: &str) -> VmResult<T> {
         unsafe {
-            let ptr = mem::transmute(msg.as_ptr());
-            match kind {
-                Kind::Error          => neon_runtime::error::throw_error_from_cstring(ptr),
-                Kind::TypeError      => neon_runtime::error::throw_type_error_from_cstring(ptr),
-                Kind::ReferenceError => neon_runtime::error::throw_reference_error_from_cstring(ptr),
-                Kind::RangeError     => neon_runtime::error::throw_range_error_from_cstring(ptr),
-                Kind::SyntaxError    => neon_runtime::error::throw_syntax_error_from_cstring(ptr)
-            }
+            throw_new(kind, msg)
         }
-        Err(Throw)
     }
+}
+
+unsafe fn throw_new<T>(kind: Kind, msg: &str) -> VmResult<T> {
+    let msg = &message(msg);
+    let ptr = mem::transmute(msg.as_ptr());
+    match kind {
+        Kind::Error          => neon_runtime::error::throw_error_from_cstring(ptr),
+        Kind::TypeError      => neon_runtime::error::throw_type_error_from_cstring(ptr),
+        Kind::ReferenceError => neon_runtime::error::throw_reference_error_from_cstring(ptr),
+        Kind::RangeError     => neon_runtime::error::throw_range_error_from_cstring(ptr),
+        Kind::SyntaxError    => neon_runtime::error::throw_syntax_error_from_cstring(ptr)
+    }
+    Err(Throw)
 }
 
 pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> VmResult<T>>(f: F) -> VmResult<T> {
@@ -94,7 +100,9 @@ pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> VmResult<T>>(f: F) -
             } else {
                 format!("internal error in native module")
             };
-            JsError::throw::<T>(Kind::Error, &msg[..])
+            unsafe {
+                throw_new::<T>(Kind::Error, &msg[..])
+            }
         }
     }
 }

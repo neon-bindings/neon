@@ -4,12 +4,14 @@
 
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
+use std::error::Error;
+use std::fmt::{self, Debug, Display};
 use neon_runtime;
 use neon_runtime::raw;
 use js::Value;
 use js::internal::SuperType;
 use js::error::{JsError, Kind};
-use vm::JsResult;
+use vm::{Context, JsResult, JsResultExt};
 
 pub trait Managed: Copy {
     fn to_raw(self) -> raw::Local;
@@ -41,24 +43,66 @@ impl<'a, T: Managed + 'a> Handle<'a, T> {
     }
 }
 
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone)]
+pub struct DowncastError<F: Value, T: Value> {
+    phantom_from: PhantomData<F>,
+    phantom_to: PhantomData<T>,
+    description: String
+}
+
+impl<F: Value, T: Value> Debug for DowncastError<F, T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "DowncastError")
+    }
+}
+
+impl<F: Value, T: Value> DowncastError<F, T> {
+    fn new() -> Self {
+        DowncastError {
+            phantom_from: PhantomData,
+            phantom_to: PhantomData,
+            description: format!("failed downcast to {}", T::name())
+        }
+    }
+}
+
+impl<F: Value, T: Value> Display for DowncastError<F, T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self.description())
+    }
+}
+
+impl<F: Value, T: Value> Error for DowncastError<F, T> {
+    fn description(&self) -> &str {
+        &self.description
+    }
+}
+
+pub type DowncastResult<'a, F, T> = Result<Handle<'a, T>, DowncastError<F, T>>;
+
+impl<'a, F: Value, T: Value> JsResultExt<'a, T> for DowncastResult<'a, F, T> {
+    fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, T> {
+        match self {
+            Ok(v) => Ok(v),
+            Err(e) => JsError::throw(cx, Kind::TypeError, &e.description)
+        }
+    }
+}
+
 impl<'a, T: Value> Handle<'a, T> {
-    // This method does not require a scope because it only copies a handle.
+    // This method does not require a VM context because it only copies a handle.
     pub fn upcast<U: Value + SuperType<T>>(&self) -> Handle<'a, U> {
         Handle::new_internal(SuperType::upcast_internal(self.value))
     }
 
     pub fn is_a<U: Value>(&self) -> bool {
-        U::downcast(self.value).is_some()
+        U::is_typeof(self.value)
     }
 
-    pub fn downcast<U: Value>(&self) -> Option<Handle<'a, U>> {
-        U::downcast(self.value).map(Handle::new_internal)
-    }
-
-    pub fn check<U: Value>(&self) -> JsResult<'a, U> {
+    pub fn downcast<U: Value>(&self) -> DowncastResult<'a, T, U> {
         match U::downcast(self.value) {
             Some(v) => Ok(Handle::new_internal(v)),
-            None => JsError::throw(Kind::TypeError, "type error")
+            None => Err(DowncastError::new())
         }
     }
 }

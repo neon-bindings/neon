@@ -30,6 +30,8 @@ pub(crate) mod internal {
     use super::Value;
 
     pub trait ValueInternal: Managed + 'static {
+        fn name() -> String;
+
         fn is_typeof<Other: Value>(other: Other) -> bool;
 
         fn downcast<Other: Value>(other: Other) -> Option<Self> {
@@ -137,6 +139,8 @@ impl Managed for JsValue {
 }
 
 impl ValueInternal for JsValue {
+    fn name() -> String { "any".to_string() }
+
     fn is_typeof<Other: Value>(_: Other) -> bool {
         true
     }
@@ -210,6 +214,8 @@ unsafe impl This for JsUndefined {
 }
 
 impl ValueInternal for JsUndefined {
+    fn name() -> String { "undefined".to_string() }
+
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_undefined(other.to_raw()) }
     }
@@ -243,6 +249,8 @@ impl Managed for JsNull {
 }
 
 impl ValueInternal for JsNull {
+    fn name() -> String { "null".to_string() }
+
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_null(other.to_raw()) }
     }
@@ -282,6 +290,8 @@ impl Managed for JsBoolean {
 }
 
 impl ValueInternal for JsBoolean {
+    fn name() -> String { "boolean".to_string() }
+
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_boolean(other.to_raw()) }
     }
@@ -301,6 +311,8 @@ impl Managed for JsString {
 }
 
 impl ValueInternal for JsString {
+    fn name() -> String { "string".to_string() }
+
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_string(other.to_raw()) }
     }
@@ -331,7 +343,7 @@ impl JsString {
     pub fn new_or_throw<'a, C: Context<'a>>(cx: &mut C, val: &str) -> VmResult<Handle<'a, JsString>> {
         match JsString::new(cx, val) {
             Some(v) => Ok(v),
-            None => JsError::throw(Kind::TypeError, "invalid string contents")
+            None => JsError::throw(cx, Kind::TypeError, "invalid string contents")
         }
     }
 
@@ -436,6 +448,8 @@ impl Managed for JsInteger {
 }
 
 impl ValueInternal for JsInteger {
+    fn name() -> String { "integer".to_string() }
+
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_integer(other.to_raw()) }
     }
@@ -475,6 +489,8 @@ impl Managed for JsNumber {
 }
 
 impl ValueInternal for JsNumber {
+    fn name() -> String { "number".to_string() }
+
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_number(other.to_raw()) }
     }
@@ -498,6 +514,8 @@ unsafe impl This for JsObject {
 }
 
 impl ValueInternal for JsObject {
+    fn name() -> String { "object".to_string() }
+
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_object(other.to_raw()) }
     }
@@ -630,6 +648,8 @@ impl Managed for JsArray {
 }
 
 impl ValueInternal for JsArray {
+    fn name() -> String { "Array".to_string() }
+
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_array(other.to_raw()) }
     }
@@ -656,7 +676,7 @@ unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [Handle
     let argv = args.as_mut_ptr();
     let argc = args.len();
     if argc > V8_ARGC_LIMIT {
-        return JsError::throw(Kind::RangeError, "too many arguments");
+        return JsError::throw(cx, Kind::RangeError, "too many arguments");
     }
     let isolate: *mut c_void = mem::transmute(cx.isolate().to_raw());
     Ok((isolate, argc as i32, argv as *mut c_void))
@@ -720,6 +740,8 @@ impl<T: Object> Managed for JsFunction<T> {
 }
 
 impl<T: Object> ValueInternal for JsFunction<T> {
+    fn name() -> String { "function".to_string() }
+
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_function(other.to_raw()) }
     }
