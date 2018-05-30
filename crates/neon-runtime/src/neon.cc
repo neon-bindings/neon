@@ -201,9 +201,9 @@ extern "C" bool Neon_Buffer_New(v8::Local<v8::Object> *out, uint32_t size) {
   return maybe.ToLocal(out);
 }
 
-extern "C" void Neon_Buffer_Data(buf_t *out, v8::Local<v8::Object> obj) {
-  out->data = node::Buffer::Data(obj);
-  out->len = node::Buffer::Length(obj);
+extern "C" void Neon_Buffer_Data(void **base_out, size_t *len_out, v8::Local<v8::Object> obj) {
+  *base_out = node::Buffer::Data(obj);
+  *len_out = node::Buffer::Length(obj);
 }
 
 extern "C" bool Neon_Tag_IsBuffer(v8::Local<v8::Value> obj) {
@@ -215,13 +215,7 @@ extern "C" bool Neon_ArrayBuffer_New(v8::Local<v8::ArrayBuffer> *out, v8::Isolat
   return true;
 }
 
-extern "C" void Neon_ArrayBuffer_Data(buf_t *out, v8::Local<v8::ArrayBuffer> buffer) {
-  v8::ArrayBuffer::Contents contents = buffer->GetContents();
-  out->data = contents.Data();
-  out->len = contents.ByteLength();
-}
-
-extern "C" void Neon_ArrayBuffer_GetArrayBufferData(void **base_out, size_t *len_out, v8::Local<v8::ArrayBuffer> buffer) {
+extern "C" void Neon_ArrayBuffer_Data(void **base_out, size_t *len_out, v8::Local<v8::ArrayBuffer> buffer) {
   v8::ArrayBuffer::Contents contents = buffer->GetContents();
   *base_out = contents.Data();
   *len_out = contents.ByteLength();

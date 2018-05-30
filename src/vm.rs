@@ -14,7 +14,7 @@ use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::call::CCallback;
 use js::{JsValue, Value, Object, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, JsNull, JsUndefined, Ref, RefMut, Borrow, BorrowMut};
-use js::binary::JsArrayBuffer;
+use js::binary::{JsArrayBuffer, JsBuffer};
 use js::class::internal::ClassMetadata;
 use js::class::Class;
 use js::error::{JsError, Kind};
@@ -507,8 +507,13 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Convenience method for creating an empty `JsArrayBuffer` value.
-    fn array_buffer(&mut self, size: u32) -> VmResult<Handle<'a, JsArrayBuffer>> {
+    fn array_buffer(&mut self, size: u32) -> JsResult<'a, JsArrayBuffer> {
         JsArrayBuffer::new(self, size)
+    }
+
+    /// Convenience method for creating an empty `JsBuffer` value.
+    fn buffer(&mut self, size: u32) -> JsResult<'a, JsBuffer> {
+        JsBuffer::new(self, size)
     }
 
     /// Produces a handle to the JavaScript global object.

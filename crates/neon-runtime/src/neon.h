@@ -5,11 +5,6 @@
 #include <stdint.h>
 #include <v8.h>
 
-typedef struct {
-  void* data;
-  size_t len;
-} buf_t;
-
 // analog Rust enum `Tag` defined in lib.rs
 typedef enum {
   tag_null,
@@ -75,11 +70,10 @@ extern "C" {
   bool Neon_Convert_ToObject(v8::Local<v8::Object> *out, v8::Local<v8::Value> *value);
 
   bool Neon_Buffer_New(v8::Local<v8::Object> *out, uint32_t size);
-  void Neon_Buffer_Data(buf_t *out, v8::Local<v8::Object> obj);
+  void Neon_Buffer_Data(void **base_out, size_t *len_out, v8::Local<v8::Object> obj);
 
   bool Neon_ArrayBuffer_New(v8::Local<v8::ArrayBuffer> *out, v8::Isolate *isolate, uint32_t size);
-  void Neon_ArrayBuffer_Data(buf_t *out, v8::Local<v8::ArrayBuffer> buffer);
-  void Neon_ArrayBuffer_GetArrayBufferData(void **base_out, size_t *len_out, v8::Local<v8::ArrayBuffer> buffer);
+  void Neon_ArrayBuffer_Data(void **base_out, size_t *len_out, v8::Local<v8::ArrayBuffer> buffer);
 
   typedef void(*Neon_ChainedScopeCallback)(void *, void *, void *, void *);
   typedef void(*Neon_NestedScopeCallback)(void *, void *, void *);
