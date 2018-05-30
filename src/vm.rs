@@ -13,7 +13,7 @@ use std::panic::UnwindSafe;
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::call::CCallback;
-use js::{JsValue, Value, Object, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, JsNull, JsUndefined};
+use js::{JsValue, Value, Object, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, JsNull, JsUndefined, Ref, Borrow};
 use js::binary::JsArrayBuffer;
 use js::class::internal::ClassMetadata;
 use js::class::Class;
@@ -352,6 +352,14 @@ pub trait Context<'a>: ContextInternal<'a> {
     fn lock(&self) -> VmGuard {
         self.check_active();
         VmGuard::new()
+    }
+
+    fn borrow<'c, V: Value, T, F: for<'b> FnOnce(Ref<'b, <&'c V as Borrow>::Target>) -> T>(&self, v: &'c Handle<V>, f: F) -> T
+        where &'c V: Borrow
+    {
+        let guard = self.lock();
+        let contents = v.borrow(&guard);
+        f(contents)
     }
 
     fn execute_scoped<T, F>(&self, f: F) -> T
