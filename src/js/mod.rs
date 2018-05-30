@@ -153,6 +153,8 @@ unsafe impl This for JsValue {
 }
 
 impl<'a> Handle<'a, JsValue> {
+
+    /// Produce a `Variant` for this value.
     pub fn variant(self) -> Variant<'a> {
         match unsafe { neon_runtime::tag::of(self.to_raw()) } {
             Tag::Null => Variant::Null(JsNull::new()),
@@ -168,6 +170,7 @@ impl<'a> Handle<'a, JsValue> {
             Tag::Other => Variant::Other(self.clone())
         }
     }
+
 }
 
 impl JsValue {
@@ -363,7 +366,9 @@ impl JsString {
     }
 }
 
+/// A trait for invoking the JS `[[ToString]]` conversion protocol.
 pub trait ToJsString {
+    /// Invoke the JS `[[ToString]]` conversion protocol.
     fn to_js_string<'a, C: Context<'a>>(&self, cx: &mut C) -> Handle<'a, JsString>;
 }
 
@@ -747,9 +752,15 @@ impl<T: Object> ValueInternal for JsFunction<T> {
     }
 }
 
+/// A trait for JS values whose internal contents can be borrowed immutably by Rust while the JS VM is locked.
 pub trait Borrow: Sized {
+
+    /// The type of the value's internal contents.
     type Target: Pointer;
 
+    /// Borrow the contents of this value immutably.
+    /// 
+    /// If there is already an outstanding mutable loan for this value, this method panics.
     fn borrow<'a>(self, guard: &'a VmGuard<'a>) -> Ref<'a, Self::Target> {
         match self.try_borrow(guard) {
             Ok(r) => r,
@@ -757,10 +768,19 @@ pub trait Borrow: Sized {
         }
     }
 
+    /// Borrow the contents of this value immutably.
+    /// 
+    /// If there is already an outstanding mutable loan for this value, this method fails with a `LoanError`.
     fn try_borrow<'a>(self, guard: &'a VmGuard<'a>) -> Result<Ref<'a, Self::Target>, LoanError>;
+
 }
 
+/// A trait for JS values whose internal contents can be borrowed mutably by Rust while the JS VM is locked.
 pub trait BorrowMut: Borrow {
+
+    /// Borrow the contents of this value mutably.
+    /// 
+    /// If there is already an outstanding loan for this value, this method panics.
     fn borrow_mut<'a>(self, guard: &'a VmGuard<'a>) -> RefMut<'a, Self::Target> {
         match self.try_borrow_mut(guard) {
             Ok(r) => r,
@@ -768,12 +788,22 @@ pub trait BorrowMut: Borrow {
         }
     }
 
+    /// Borrow the contents of this value mutably.
+    /// 
+    /// If there is already an outstanding loan for this value, this method panics.
     fn try_borrow_mut<'a>(self, guard: &'a VmGuard<'a>) -> Result<RefMut<'a, Self::Target>, LoanError>;
+
 }
 
+/// An error produced by a failed loan in the `Borrow` or `BorrowMut` traits.
 pub enum LoanError {
+
+    /// Indicates that there is already an outstanding mutable loan for the object at this address.
     Mutating(*const c_void),
+
+    /// Indicates that there is already an outstanding immutable loan for the object at this address.
     Frozen(*const c_void)
+
 }
 
 impl fmt::Display for LoanError {
@@ -789,8 +819,7 @@ impl fmt::Display for LoanError {
     }
 }
 
-// FIXME: this should be covariant in 'a and T -- is it?
-// https://doc.rust-lang.org/nomicon/subtyping.html
+/// An immutable reference to the contents of a borrowed JS value.
 pub struct Ref<'a, T: Pointer> {
     pointer: T,
     guard: &'a VmGuard<'a>
@@ -819,8 +848,7 @@ impl<'a, T: Pointer> Deref for Ref<'a, T> {
     }
 }
 
-// FIXME: I think this should be invariant in T -- is it?
-// https://doc.rust-lang.org/nomicon/subtyping.html
+/// A mutable reference to the contents of a borrowed JS value.
 pub struct RefMut<'a, T: Pointer> {
     pointer: T,
     guard: &'a VmGuard<'a>

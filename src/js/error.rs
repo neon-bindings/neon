@@ -1,3 +1,5 @@
+//! Types and traits representing JavaScript error values.
+
 use std::mem;
 use std::ffi::CString;
 use std::panic::{UnwindSafe, catch_unwind};
@@ -10,6 +12,7 @@ use js::{Value, Object, ToJsString, build};
 use js::internal::ValueInternal;
 use mem::{Handle, Managed};
 
+/// Throws a JS value.
 pub fn throw<'a, 'b, C: Context<'a>, T: Value, U>(_: &mut C, v: Handle<'b, T>) -> VmResult<U> {
     unsafe {
         neon_runtime::error::throw(v.to_raw());
@@ -17,6 +20,7 @@ pub fn throw<'a, 'b, C: Context<'a>, T: Value, U>(_: &mut C, v: Handle<'b, T>) -
     Err(Throw)
 }
 
+/// A JS `Error` object.
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct JsError(raw::Local);
@@ -39,12 +43,24 @@ impl Value for JsError { }
 
 impl Object for JsError { }
 
+/// Distinguishes between the different standard JS subclasses of `Error`.
 pub enum Kind {
+
+    /// Represents a direct instance of the [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error) class.
     Error,
+
+    /// Represents an instance of the [`TypeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypeError) class.
     TypeError,
+
+    /// Represents an instance of the [`ReferenceError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ReferenceError) class.
     ReferenceError,
+
+    /// Represents an instance of the [`RangeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RangeError) class.
     RangeError,
+
+    /// Represents an instance of the [`SyntaxError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/SyntaxError) class.
     SyntaxError
+
 }
 
 fn message(msg: &str) -> CString {
@@ -52,6 +68,8 @@ fn message(msg: &str) -> CString {
 }
 
 impl JsError {
+
+    /// Constructs a new error object.
     pub fn new<'a, C: Context<'a>, U: ToJsString>(cx: &mut C, kind: Kind, msg: U) -> VmResult<Handle<'a, JsError>> {
         let msg = msg.to_js_string(cx);
         build(|out| {
@@ -69,11 +87,13 @@ impl JsError {
         })
     }
 
+    /// Convenience method for throwing a new error object.
     pub fn throw<'a, C: Context<'a>, T>(_: &mut C, kind: Kind, msg: &str) -> VmResult<T> {
         unsafe {
             throw_new(kind, msg)
         }
     }
+
 }
 
 unsafe fn throw_new<T>(kind: Kind, msg: &str) -> VmResult<T> {

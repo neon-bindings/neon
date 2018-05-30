@@ -201,6 +201,7 @@ pub(crate) mod internal {
     }
 }
 
+/// An error sentinel type used by `VmResult` (and `JsResult`) to indicate that the JS VM has entered into a throwing state.
 #[derive(Debug)]
 pub struct Throw;
 
@@ -216,9 +217,14 @@ impl Error for Throw {
     }
 }
 
+/// The result of a computation that might send the JS VM into a throwing state.
 pub type VmResult<T> = Result<T, Throw>;
+
+/// The result of a computation that produces a JS value and might send the JS VM into a throwing state.
 pub type JsResult<'b, T> = VmResult<Handle<'b, T>>;
 
+/// An extension trait for `Result` values that can be converted into `JsResult` values by throwing a JavaScript
+/// exception in the error case.
 pub trait JsResultExt<'a, V: Value> {
     fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, V>;
 }
@@ -323,17 +329,21 @@ impl CallbackInfo {
     }
 }
 
-/// A type that may be the type of a function's `this` binding.
+/// The trait of types that can be a function's `this` binding.
 pub unsafe trait This: Managed {
     fn as_this(h: raw::Local) -> Self;
 }
 
+/// Indicates whether a function call was called with JavaScript's `[[Call]]` or `[[Construct]]` semantics.
 #[derive(Clone, Copy, Debug)]
 pub enum CallKind {
     Construct,
     Call
 }
 
+/// An RAII implementation of a "scoped lock" of the JS VM. When this structure is dropped (falls out of scope), the VM will be unlocked.
+///
+/// Types of JS values that support the `Borrow` and `BorrowMut` traits can be inspected while the VM is locked by passing a reference to a `VmGuard` to their methods.
 pub struct VmGuard<'a> {
     pub(crate) ledger: RefCell<Ledger>,
     phantom: PhantomData<&'a ()>
@@ -348,12 +358,37 @@ impl<'a> VmGuard<'a> {
     }
 }
 
+/// A contextual view of the JS VM. Most operations that interact with the VM require passing a reference to a VM context.
+/// 
+/// A VM context has a lifetime `'a`, which tracks the rooting of handles managed by the JS garbage collector. All handles created during the lifetime of a context are rooted for that duration and cannot outlive the context.
 pub trait Context<'a>: ContextInternal<'a> {
+
+    /// Lock the JS VM, returning an RAII guard that keeps the lock active as long as the guard is alive.
+    /// 
+    /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
     fn lock(&self) -> VmGuard {
         self.check_active();
         VmGuard::new()
     }
 
+    /// Convenience method for locking the VM and borrowing a single JS value's internals.
+    /// 
+    /// # Example:
+    /// 
+    /// ```no_run
+    /// use neon::js::{JsNumber, Borrow, Ref};
+    /// use neon::js::binary::JsArrayBuffer;
+    /// # use neon::vm::{JsResult, FunctionContext};
+    /// use neon::vm::Context;
+    /// use neon::mem::Handle;
+    /// 
+    /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    /// let b: Handle<JsArrayBuffer> = cx.argument(0)?;
+    /// let x: u32 = cx.borrow(&b, |data| { data.as_slice()[0] });
+    /// let n: Handle<JsNumber> = cx.number(x);
+    /// # Ok(n)
+    /// # }
+    /// ```
     fn borrow<'c, V, T, F>(&self, v: &'c Handle<V>, f: F) -> T
         where V: Value,
               &'c V: Borrow,
@@ -364,6 +399,27 @@ pub trait Context<'a>: ContextInternal<'a> {
         f(contents)
     }
 
+    /// Convenience method for locking the VM and mutably borrowing a single JS value's internals.
+    /// 
+    /// # Example:
+    /// 
+    /// ```no_run
+    /// use neon::js::{BorrowMut, RefMut};
+    /// # use neon::js::JsUndefined;
+    /// use neon::js::binary::JsArrayBuffer;
+    /// # use neon::vm::{JsResult, FunctionContext};
+    /// use neon::vm::Context;
+    /// use neon::mem::Handle;
+    /// 
+    /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    /// let mut b: Handle<JsArrayBuffer> = cx.argument(0)?;
+    /// cx.borrow_mut(&mut b, |data| {
+    ///     let slice = data.as_mut_slice::<u32>();
+    ///     slice[0] += 1;
+    /// });
+    /// # Ok(cx.undefined())
+    /// # }
+    /// ```
     fn borrow_mut<'c, V, T, F>(&self, v: &'c mut Handle<V>, f: F) -> T
         where V: Value,
               &'c mut V: BorrowMut,
@@ -374,6 +430,11 @@ pub trait Context<'a>: ContextInternal<'a> {
         f(contents)
     }
 
+    /// Executes a computation in a new memory management scope.
+    /// 
+    /// Handles created in the new scope are rooted for the duration of the computation and cannot escape.
+    /// 
+    /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
     fn execute_scoped<T, F>(&self, f: F) -> T
         where F: for<'b> FnOnce(ExecuteContext<'b>) -> T
     {
@@ -384,6 +445,11 @@ pub trait Context<'a>: ContextInternal<'a> {
         result
     }
 
+    /// Executes a computation in a new memory management scope and computes a single result value that outlives the computation.
+    /// 
+    /// Handles created in the new scope are rooted for the duration of the computation and cannot escape, with the exception of the result value, which is rooted in the current context.
+    /// 
+    /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
     fn compute_scoped<V, F>(&self, f: F) -> JsResult<'a, V>
         where V: Value,
               F: for<'b, 'c> FnOnce(ComputeContext<'b, 'c>) -> JsResult<'b, V>
@@ -403,38 +469,49 @@ pub trait Context<'a>: ContextInternal<'a> {
         result
     }
 
+    /// Convenience method for creating a `JsBoolean` value.
     fn boolean(&mut self, b: bool) -> Handle<'a, JsBoolean> {
         JsBoolean::new(self, b)
     }
 
+    /// Convenience method for creating a `JsNumber` value.
     fn number<T: Into<f64>>(&mut self, x: T) -> Handle<'a, JsNumber> {
         JsNumber::new(self, x.into())
     }
 
+    /// Convenience method for creating a `JsString` value.
+    /// 
+    /// If the string exceeds the limits of the JS VM, this method panics.
     fn string(&mut self, s: &str) -> Handle<'a, JsString> {
         JsString::new(self, s).expect("encoding error")
     }
 
+    /// Convenience method for creating a `JsNull` value.
     fn null(&mut self) -> Handle<'a, JsNull> {
         JsNull::new()
     }
 
+    /// Convenience method for creating a `JsUndefined` value.
     fn undefined(&mut self) -> Handle<'a, JsUndefined> {
         JsUndefined::new()
     }
 
+    /// Convenience method for creating an empty `JsObject` value.
     fn empty_object(&mut self) -> Handle<'a, JsObject> {
         JsObject::new(self)
     }
 
+    /// Convenience method for creating an empty `JsArray` value.
     fn empty_array(&mut self) -> Handle<'a, JsArray> {
         JsArray::new(self, 0)
     }
 
+    /// Convenience method for creating an empty `JsArrayBuffer` value.
     fn array_buffer(&mut self, size: u32) -> VmResult<Handle<'a, JsArrayBuffer>> {
         JsArrayBuffer::new(self, size)
     }
 
+    /// Produces a handle to the JavaScript global object.
     fn global(&mut self) -> Handle<'a, JsObject> {
         JsObject::build(|out| {
             unsafe {
@@ -444,6 +521,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 }
 
+/// A view of the JS VM in the context of top-level initialization of a Neon module.
 pub struct ModuleContext<'a> {
     scope: Scope<'a, raw::HandleScope>,
     exports: Handle<'a, JsObject>
@@ -463,23 +541,27 @@ impl<'a> ModuleContext<'a> {
         })
     }
 
+    /// Convenience method for exporting a Neon function from a module.
     pub fn export_function<T: Value>(&mut self, key: &str, f: fn(CallContext<JsObject>) -> JsResult<T>) -> VmResult<()> {
         let value = JsFunction::new(self, f)?.upcast::<JsValue>();
         self.exports.set(self, key, value)?;
         Ok(())
     }
 
+    /// Convenience method for exporting a Neon class constructor from a module.
     pub fn export_class<T: Class>(&mut self, key: &str) -> VmResult<()> {
         let constructor = T::constructor(self)?;
         self.exports.set(self, key, constructor)?;
         Ok(())
     }
 
+    /// Exports a JavaScript value from a Neon module.
     pub fn export_value<T: Value>(&mut self, key: &str, val: Handle<T>) -> VmResult<()> {
         self.exports.set(self, key, val)?;
         Ok(())
     }
 
+    /// Produces a handle to a module's exports object.
     pub fn exports_object(&mut self) -> JsResult<'a, JsObject> {
         Ok(self.exports)
     }
@@ -493,6 +575,7 @@ impl<'a> ContextInternal<'a> for ModuleContext<'a> {
 
 impl<'a> Context<'a> for ModuleContext<'a> { }
 
+/// A view of the JS VM in the context of a scoped computation started by `Context::execute_scoped()`.
 pub struct ExecuteContext<'a> {
     scope: Scope<'a, raw::HandleScope>
 }
@@ -513,6 +596,7 @@ impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
 
 impl<'a> Context<'a> for ExecuteContext<'a> { }
 
+/// A view of the JS VM in the context of a scoped computation started by `Context::compute_scoped()`.
 pub struct ComputeContext<'a, 'outer> {
     scope: Scope<'a, raw::EscapableHandleScope>,
     phantom_inner: PhantomData<&'a ()>,
@@ -539,19 +623,21 @@ impl<'a, 'b> ContextInternal<'a> for ComputeContext<'a, 'b> {
 
 impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> { }
 
+/// A view of the JS VM in the context of a function call.
+/// 
+/// The type parameter `T` is the type of the `this`-binding.
 pub struct CallContext<'a, T: This> {
     scope: Scope<'a, raw::HandleScope>,
     info: &'a CallbackInfo,
     phantom_type: PhantomData<T>
 }
 
-impl<'a, T: This> CallContext<'a, T> {
-    pub fn kind(&self) -> CallKind { self.info.kind() }
-}
-
 impl<'a, T: This> UnwindSafe for CallContext<'a, T> { }
 
 impl<'a, T: This> CallContext<'a, T> {
+    /// Indicates whether the function was called via the JavaScript `[[Call]]` or `[[Construct]]` semantics.
+    pub fn kind(&self) -> CallKind { self.info.kind() }
+
     pub(crate) fn with<U, F: for<'b> FnOnce(CallContext<'b, T>) -> U>(info: &'a CallbackInfo, f: F) -> U {
         Scope::with(|scope| {
             f(CallContext {
@@ -562,21 +648,26 @@ impl<'a, T: This> CallContext<'a, T> {
         })
     }
 
+    /// Indicates the number of arguments that were passed to the function.
     pub fn len(&self) -> i32 { self.info.len() }
 
+    /// Produces the `i`th argument, or `None` if `i` is greater than or equal to `self.len()`.
     pub fn argument_opt(&mut self, i: i32) -> Option<Handle<'a, JsValue>> {
         self.info.get(self, i)
     }
 
+    /// Produces the `i`th argument and casts it to the type `V`, or throws an exception if `i` is greater than or equal to `self.len()` or cannot be cast to `V`.
     pub fn argument<V: Value>(&mut self, i: i32) -> JsResult<'a, V> {
         let a = self.info.require(self, i)?;
         a.downcast().unwrap_or_throw(self)
     }
 
+    /// Produces a handle to the `this`-binding.
     pub fn this(&mut self) -> Handle<'a, T> {
         Handle::new_internal(T::as_this(self.info.this(self)))
     }
 
+    /// Produces a handle to this function.
     pub fn callee(&mut self) -> Handle<'a, JsFunction> {
         self.info.callee(self)
     }
@@ -590,10 +681,13 @@ impl<'a, T: This> ContextInternal<'a> for CallContext<'a, T> {
 
 impl<'a, T: This> Context<'a> for CallContext<'a, T> { }
 
+/// A shorthand for a `CallContext` with `this`-type `JsObject`.
 pub type FunctionContext<'a> = CallContext<'a, JsObject>;
 
+/// An alias for `CallContext`, useful for indicating that the function is a method of a class.
 pub type MethodContext<'a, T> = CallContext<'a, T>;
 
+/// A view of the JS VM in the context of a task completion callback.
 pub struct TaskContext<'a> {
     /// We use an "inherited HandleScope" here because the C++ `neon::Task::complete`
     /// method sets up and tears down a `HandleScope` for us.

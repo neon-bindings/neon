@@ -1,3 +1,5 @@
+//! Types and traits representing JavaScript classes backed by Rust data.
+
 use std::any::{Any, TypeId};
 use std::mem;
 use std::os::raw::c_void;
@@ -161,6 +163,7 @@ pub(crate) mod internal {
     }
 }
 
+#[doc(hidden)]
 pub struct ClassDescriptor<'a, T: Class> {
     name: &'a str,
     allocate: AllocateCallback<T>,
@@ -170,6 +173,8 @@ pub struct ClassDescriptor<'a, T: Class> {
 }
 
 impl<'a, T: Class> ClassDescriptor<'a, T> {
+
+    /// Constructs a new minimal `ClassDescriptor` with a name and allocator.
     pub fn new<'b, U: Class>(name: &'b str, allocate: AllocateCallback<U>) -> ClassDescriptor<'b, U> {
         ClassDescriptor {
             name: name,
@@ -180,20 +185,24 @@ impl<'a, T: Class> ClassDescriptor<'a, T> {
         }
     }
 
+    /// Adds `[[Call]]` behavior for the constructor to this class descriptor.
     pub fn call(mut self, callback: ConstructorCallCallback) -> Self {
         self.call = Some(callback);
         self
     }
 
+    /// Adds `[[Construct]]` behavior for the constructor to this class descriptor.
     pub fn construct(mut self, callback: ConstructCallback<T>) -> Self {
         self.construct = Some(callback);
         self
     }
 
+    /// Adds a method to this class descriptor.
     pub fn method(mut self, name: &'a str, callback: MethodCallback<T>) -> Self {
         self.methods.push((name, callback));
         self
     }
+
 }
 
 extern "C" fn drop_internals<T>(internals: *mut c_void) {
@@ -201,16 +210,23 @@ extern "C" fn drop_internals<T>(internals: *mut c_void) {
     mem::drop(p);
 }
 
+/// The trait implemented by Neon classes.
+/// 
+/// This trait is not intended to be implemented manually; it is implemented automatically by
+/// creating a class with the `class` syntax of the `declare_types!` macro.
 pub trait Class: Managed + Any {
     type Internals;
 
+    #[doc(hidden)]
     fn setup<'a, C: Context<'a>>(_: &mut C) -> VmResult<ClassDescriptor<'a, Self>>;
 
+    /// Produces a handle to the constructor function for this class.
     fn constructor<'a, C: Context<'a>>(cx: &mut C) -> JsResult<'a, JsFunction<Self>> {
         let metadata = Self::metadata(cx)?;
         unsafe { metadata.constructor(cx) }
     }
 
+    /// Convenience method for constructing new instances of this class without having to extract the constructor function.
     fn new<'a, 'b, C: Context<'a>, A, AS>(cx: &mut C, args: AS) -> JsResult<'a, Self>
         where A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
@@ -219,6 +235,7 @@ pub trait Class: Managed + Any {
         constructor.construct(cx, args)
     }
 
+    #[doc(hidden)]
     fn describe<'a>(name: &'a str, allocate: AllocateCallback<Self>) -> ClassDescriptor<'a, Self> {
         ClassDescriptor::<Self>::new(name, allocate)
     }
