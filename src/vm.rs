@@ -13,7 +13,7 @@ use std::panic::UnwindSafe;
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::call::CCallback;
-use js::{JsValue, Value, Object, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, JsNull, JsUndefined, Ref, Borrow};
+use js::{JsValue, Value, Object, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, JsNull, JsUndefined, Ref, RefMut, Borrow, BorrowMut};
 use js::binary::JsArrayBuffer;
 use js::class::internal::ClassMetadata;
 use js::class::Class;
@@ -354,11 +354,23 @@ pub trait Context<'a>: ContextInternal<'a> {
         VmGuard::new()
     }
 
-    fn borrow<'c, V: Value, T, F: for<'b> FnOnce(Ref<'b, <&'c V as Borrow>::Target>) -> T>(&self, v: &'c Handle<V>, f: F) -> T
-        where &'c V: Borrow
+    fn borrow<'c, V, T, F>(&self, v: &'c Handle<V>, f: F) -> T
+        where V: Value,
+              &'c V: Borrow,
+              F: for<'b> FnOnce(Ref<'b, <&'c V as Borrow>::Target>) -> T
     {
         let guard = self.lock();
         let contents = v.borrow(&guard);
+        f(contents)
+    }
+
+    fn borrow_mut<'c, V, T, F>(&self, v: &'c mut Handle<V>, f: F) -> T
+        where V: Value,
+              &'c mut V: BorrowMut,
+              F: for<'b> FnOnce(RefMut<'b, <&'c mut V as Borrow>::Target>) -> T
+    {
+        let guard = self.lock();
+        let contents = v.borrow_mut(&guard);
         f(contents)
     }
 
