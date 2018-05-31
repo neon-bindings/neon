@@ -13,7 +13,7 @@ use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::tag::Tag;
 use mem::{Handle, Managed};
-use vm::{Context, VmGuard, CallContext, Callback, VmResult, Throw, JsResult, This};
+use vm::{Context, VmGuard, FunctionContext, Callback, VmResult, Throw, JsResult, This};
 use vm::internal::{Isolate, Pointer};
 use js::error::{JsError, Kind};
 use self::internal::{ValueInternal, SuperType, FunctionCallback};
@@ -24,7 +24,7 @@ pub(crate) mod internal {
     use neon_runtime;
     use neon_runtime::raw;
     use mem::{Handle, Managed};
-    use vm::{JsResult, CallbackInfo, CallContext, Callback};
+    use vm::{JsResult, CallbackInfo, FunctionContext, Callback};
     use js::error::convert_panics;
     use js::JsObject;
     use super::Value;
@@ -52,14 +52,14 @@ pub(crate) mod internal {
     }
 
     #[repr(C)]
-    pub struct FunctionCallback<T: Value>(pub fn(CallContext<JsObject>) -> JsResult<T>);
+    pub struct FunctionCallback<T: Value>(pub fn(FunctionContext) -> JsResult<T>);
 
     impl<T: Value> Callback<()> for FunctionCallback<T> {
         extern "C" fn invoke(info: &CallbackInfo) {
             unsafe {
                 info.with_cx::<JsObject, _, _>(|cx| {
                     let data = info.data();
-                    let dynamic_callback: fn(CallContext<JsObject>) -> JsResult<T> =
+                    let dynamic_callback: fn(FunctionContext) -> JsResult<T> =
                         mem::transmute(neon_runtime::fun::get_dynamic_callback(data.to_raw()));
                     if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
                         info.set_return(value);
@@ -688,7 +688,7 @@ unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [Handle
 }
 
 impl JsFunction {
-    pub fn new<'a, C, U>(cx: &mut C, f: fn(CallContext<JsObject>) -> JsResult<U>) -> JsResult<'a, JsFunction>
+    pub fn new<'a, C, U>(cx: &mut C, f: fn(FunctionContext) -> JsResult<U>) -> JsResult<'a, JsFunction>
         where C: Context<'a>,
               U: Value
     {
