@@ -1,6 +1,6 @@
 use neon::vm::{FunctionContext, JsResult, JsResultExt, This, CallContext, Context};
 use neon::mem::Handle;
-use neon::js::{JsNumber, JsFunction, Object, JsValue, JsUndefined, JsString, Value};
+use neon::js::{JsNumber, JsFunction, JsObject, Object, JsValue, JsUndefined, JsString, JsBoolean, Value};
 use neon::js::error::{JsError, Kind};
 
 fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
@@ -51,4 +51,58 @@ pub fn panic(_: FunctionContext) -> JsResult<JsUndefined> {
 pub fn panic_after_throw(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     JsError::throw::<_, ()>(&mut cx, Kind::RangeError, "entering throw state with a RangeError").unwrap_err();
     panic!("this should override the RangeError")
+}
+
+pub fn num_arguments(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let n = cx.len();
+    Ok(cx.number(n))
+}
+
+pub fn return_this(mut cx: FunctionContext) -> JsResult<JsValue> {
+    Ok(cx.this().upcast())
+}
+
+pub fn require_object_this(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let this = cx.this();
+    let this = this.downcast::<JsObject>().unwrap_or_throw(&mut cx)?;
+    let t = cx.boolean(true);
+    this.set(&mut cx, "modified", t)?;
+    Ok(cx.undefined())
+}
+
+pub fn return_callee(mut cx: FunctionContext) -> JsResult<JsFunction> {
+    let f = cx.callee();
+    Ok(f)
+}
+
+pub fn is_argument_zero_some(mut cx: FunctionContext) -> JsResult<JsBoolean> {
+    let b = cx.argument_opt(0).is_some();
+    Ok(cx.boolean(b))
+}
+
+pub fn require_argument_zero_string(mut cx: FunctionContext) -> JsResult<JsString> {
+    let s = cx.argument(0)?;
+    Ok(s)
+}
+
+pub fn execute_scoped(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let mut i = 0;
+    for _ in 1..100 {
+        cx.execute_scoped(|mut cx| {
+            let n = cx.number(1);
+            i += n.value() as i32;
+        });
+    }
+    Ok(cx.number(i))
+}
+
+pub fn compute_scoped(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let mut i = cx.number(0);
+    for _ in 1..100 {
+        i = cx.compute_scoped(|mut cx| {
+            let n = cx.number(1);
+            Ok(cx.number((i.value() as i32) + (n.value() as i32)))
+        })?;
+    }
+    Ok(i)
 }

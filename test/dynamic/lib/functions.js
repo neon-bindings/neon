@@ -29,4 +29,63 @@ describe('JsFunction', function() {
   it('lets panic override a throw', function() {
     assert.throws(function() { addon.panic_after_throw() }, Error, /^internal error in native module: this should override the RangeError$/);
   });
+
+  it('computes the right number of arguments', function() {
+    assert.equal(addon.num_arguments(), 0);
+    assert.equal(addon.num_arguments('a'), 1);
+    assert.equal(addon.num_arguments('a', 'b'), 2);
+    assert.equal(addon.num_arguments('a', 'b', 'c'), 3);
+    assert.equal(addon.num_arguments('a', 'b', 'c', 'd'), 4);
+  });
+
+  it('gets the right `this`-value', function() {
+    var o = { iamobject: 'i am object' };
+    assert.equal(addon.return_this.call(o), o);
+
+    var d = new Date();
+    assert.equal(addon.return_this.call(d), d);
+
+    var n = 19;
+    assert.notStrictEqual(addon.return_this.call(n), n);
+  });
+
+  it('can manipulate an object `this` binding', function() {
+    var o = { modified: false };
+    addon.require_object_this.call(o);
+    assert.equal(o.modified, true);
+    // Doesn't throw because of implicit primitive wrapping:
+    addon.require_object_this.call(42);
+  });
+
+  it('implicitly gets global', function() {
+    var global = (new Function("return this"))();
+    assert.equal(addon.return_this.call(undefined), global);
+  });
+
+  it('returns its own function', function() {
+    assert.equal(addon.return_callee(), addon.return_callee);
+  });
+
+  it('exposes an argument via arguments_opt iff it is there', function() {
+    assert.equal(addon.is_argument_zero_some(), false);
+    assert.equal(addon.is_argument_zero_some('a'), true);
+    assert.equal(addon.is_argument_zero_some('a', 'b'), true);
+    assert.equal(addon.is_argument_zero_some.call(null), false);
+    assert.equal(addon.is_argument_zero_some.call(null, ['a']), true);
+    assert.equal(addon.is_argument_zero_some.call(null, ['a', 'b']), true);
+  });
+
+  it('correctly casts an argument via cx.arguments', function() {
+    assert.equal(addon.require_argument_zero_string('foobar'), 'foobar');
+    assert.throws(function() { addon.require_argument_zero_string(new Date()) }, TypeError);
+    assert.throws(function() { addon.require_argument_zero_string(17) }, TypeError);
+  });
+
+  it('executes a scoped computation', function() {
+    assert.equal(addon.execute_scoped(), 99);
+  });
+
+  it('computes a value in a scoped computation', function() {
+    assert.equal(addon.compute_scoped(), 99);
+  });
 });
