@@ -30,9 +30,9 @@ See the [Getting Started guide](https://guides.neon-bindings.com/getting-started
 
 ### Node.js
 
-| Node 4 | Node 6 | Node 7 | Node 8 |
-| ------ | ------ | ------ | ------ |
-| ✓      | ✓      | ✓      | ✓      |
+| Node 6 | Node 8 | Node 10 |
+| ------ | ------ | ------- |
+| ✓      | ✓      | ✓       |
 
 Support for [LTS versions of Node](https://github.com/nodejs/LTS#lts-schedule) and current are expected. If you're using a different version of Node and believe it should be supported, let us know.
 

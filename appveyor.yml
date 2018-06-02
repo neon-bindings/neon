@@ -4,17 +4,14 @@ environment:
   RUST_BACKTRACE: 1
   matrix:
     - PLATFORM: x64
-      NODEJS_VERSION: "4"
-      RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
-    - PLATFORM: x64
       NODEJS_VERSION: "6"
       RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
     - PLATFORM: x64
       NODEJS_VERSION: "8"
       RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
     - PLATFORM: x64
-      NODEJS_VERSION: "4"
-      RUST_TOOLCHAIN: beta-x86_64-pc-windows-msvc
+      NODEJS_VERSION: "10"
+      RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
     - PLATFORM: x64
       NODEJS_VERSION: "6"
       RUST_TOOLCHAIN: beta-x86_64-pc-windows-msvc
@@ -22,13 +19,16 @@ environment:
       NODEJS_VERSION: "8"
       RUST_TOOLCHAIN: beta-x86_64-pc-windows-msvc
     - PLATFORM: x64
-      NODEJS_VERSION: "4"
-      RUST_TOOLCHAIN: nightly-x86_64-pc-windows-msvc
+      NODEJS_VERSION: "10"
+      RUST_TOOLCHAIN: beta-x86_64-pc-windows-msvc
     - PLATFORM: x64
       NODEJS_VERSION: "6"
       RUST_TOOLCHAIN: nightly-x86_64-pc-windows-msvc
     - PLATFORM: x64
       NODEJS_VERSION: "8"
+      RUST_TOOLCHAIN: nightly-x86_64-pc-windows-msvc
+    - PLATFORM: x64
+      NODEJS_VERSION: "10"
       RUST_TOOLCHAIN: nightly-x86_64-pc-windows-msvc
 
 install:
