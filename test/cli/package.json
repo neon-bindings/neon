@@ -40,7 +40,7 @@
     "@types/semver": "^5.3.31",
     "@types/tmp": "0.0.33",
     "chai": "^3.4.1",
-    "mocha": "^3.5.3",
+    "mocha": "^5.2.0",
     "node-suspect": "^0.1.1",
     "tmp": "0.0.33",
     "ts-dict": "^0.1.1",
