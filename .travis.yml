@@ -18,6 +18,8 @@ before_install:
   - source $HOME/.nvm/nvm.sh
   - nvm install ${TRAVIS_NODE_VERSION}
   - nvm use ${TRAVIS_NODE_VERSION}
+  - node -v
+  - npm -v
 
 addons:
   apt:
