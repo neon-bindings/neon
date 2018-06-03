@@ -1,3 +1,9 @@
+# Version 0.1.23
+
+* Optimization in `Scope` structures, thanks to [@maciejhirsz](https://github.com/maciejhirsz) (#282)
+* Fixed a memory leak in the `Task` API, thanks to [@kjvalencik](https://github.com/kjvalencik) (#291)
+* Add support for Node 10, thanks to [@mhsjlw](https://github.com/mhsjlw) and [@nomadtechie](https://github.com/nomadtechie) (#314)
+
 # Version 0.1.22
 
 * Reinstate `JsInteger` (although it's deprecated) for now, to be removed in 0.2. (#279)
