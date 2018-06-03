@@ -5,11 +5,8 @@
   "main": "lib/index.js",
   "author": "The Neon Community",
   "license": "MIT",
-  "dependencies": {
-    "neon-cli": "../../cli"
-  },
   "scripts": {
-    "install": "neon build",
+    "install": "node ../../cli/bin/cli.js build",
     "test": "mocha --recursive lib"
   },
   "devDependencies": {

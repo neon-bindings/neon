@@ -296,6 +296,12 @@ mod tests {
         Path::new(env!("CARGO_MANIFEST_DIR")).to_path_buf()
     }
 
+    fn log(test_name: &str) {
+        eprintln!("======================================================");
+        eprintln!("Neon test: {}", test_name);
+        eprintln!("======================================================");
+    }
+
     fn run(cmd: &str, dir: &Path) {
         let (shell, command_flag) = if cfg!(windows) {
             ("cmd", "/C")
@@ -311,13 +317,20 @@ mod tests {
                         .success());
     }
 
+    fn cli_setup() {
+        let cli = project_root().join("cli");
+
+        run("npm install", &cli);
+        run("npm run transpile", &cli);
+    }
+
     #[test]
     fn cli_test() {
         let _guard = TEST_MUTEX.lock();
 
-        let cli = project_root().join("cli");
-        run("npm install", &cli);
-        run("npm run transpile", &cli);
+        log("cli_test");
+
+        cli_setup();
 
         let test_cli = project_root().join("test").join("cli");
         run("npm install", &test_cli);
@@ -330,6 +343,8 @@ mod tests {
     fn static_test() {
         let _guard = TEST_MUTEX.lock();
 
+        log("static_test");
+
         if version_meta().unwrap().channel != Channel::Nightly {
             return;
         }
@@ -341,9 +356,9 @@ mod tests {
     fn dynamic_test() {
         let _guard = TEST_MUTEX.lock();
 
-        let cli = project_root().join("cli");
-        run("npm install", &cli);
-        run("npm run transpile", &cli);
+        log("dynamic_test");
+
+        cli_setup();
 
         let test_dynamic = project_root().join("test").join("dynamic");
         run("npm install", &test_dynamic);
