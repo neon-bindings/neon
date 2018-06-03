@@ -29,7 +29,7 @@ addons:
     - g++-4.8
 
 script: |
-  cargo test --release
+  cargo test --release -- --nocapture
 
 jobs:
   include:
