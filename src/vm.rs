@@ -201,8 +201,11 @@ impl CallbackInfo {
     pub fn callee<'a, T: Scope<'a>>(&self, _: &mut T) -> Handle<'a, JsFunction> {
         unsafe {
             let mut local: raw::Local = mem::zeroed();
-            neon_runtime::call::callee(mem::transmute(&self.info), &mut local);
-            Handle::new_internal(JsFunction::from_raw(local))
+            if neon_runtime::call::callee(mem::transmute(&self.info), &mut local) {
+                Handle::new_internal(JsFunction::from_raw(local))
+            } else {
+                panic!("Arguments::callee() is not supported in Node >= 10")
+            }
         }
     }
 }

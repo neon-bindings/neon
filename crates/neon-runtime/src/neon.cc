@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "node.h"
+#include "node_version.h"
 #include "neon.h"
 #include "neon_string.h"
 #include "neon_class_metadata.h"
@@ -28,8 +29,13 @@ extern "C" void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Lo
   *out = info->This();
 }
 
-extern "C" void Neon_Call_Callee(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Function> *out) {
+extern "C" bool Neon_Call_Callee(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Function> *out) {
+#if NODE_MAJOR_VERSION < 10
   *out = info->Callee();
+  return true;
+#else
+  return false;
+#endif
 }
 
 extern "C" void Neon_Call_Data(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> *out) {

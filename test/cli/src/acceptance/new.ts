@@ -26,14 +26,14 @@ describe('neon new', function() {
           assert.propertyVal(pkg, 'version', '0.1.0');
           assert.propertyVal(pkg, 'description', 'My new app!');
           assert.propertyVal(pkg, 'license', 'MIT');
-          assert.deepProperty(pkg, 'dependencies.neon-cli');
+          assert.nestedProperty(pkg, 'dependencies.neon-cli');
 
           let cargo = TOML.parse(readFile(this.cwd, 'my-app/native/Cargo.toml'));
-          assert.deepPropertyVal(cargo, 'package.name', 'my-app');
-          assert.deepPropertyVal(cargo, 'package.version', '0.1.0');
-          assert.deepPropertyVal(cargo, 'package.license', 'MIT');
-          assert.deepPropertyVal(cargo, 'lib.name', 'my_app');
-          assert.deepProperty(cargo, 'dependencies.neon');
+          assert.nestedPropertyVal(cargo, 'package.name', 'my-app');
+          assert.nestedPropertyVal(cargo, 'package.version', '0.1.0');
+          assert.nestedPropertyVal(cargo, 'package.license', 'MIT');
+          assert.nestedPropertyVal(cargo, 'lib.name', 'my_app');
+          assert.nestedProperty(cargo, 'dependencies.neon');
 
           let indexjs = readFile(this.cwd, 'my-app/lib/index.js');
           assert.include(indexjs, `require('../native')`);
@@ -67,8 +67,8 @@ describe('neon new', function() {
           assert.match(readme, /@me\/my-package/);
 
           let cargo = TOML.parse(readFile(this.cwd, 'my-package/native/Cargo.toml'));
-          assert.deepPropertyVal(cargo, 'package.name', 'my-package');
-          assert.deepPropertyVal(cargo, 'lib.name', 'my_package');
+          assert.nestedPropertyVal(cargo, 'package.name', 'my-package');
+          assert.nestedPropertyVal(cargo, 'lib.name', 'my_package');
 
           done();
         });
@@ -91,7 +91,7 @@ describe('neon new', function() {
 
           let pkg = JSON.parse(readFile(this.cwd, 'my-app/package.json'));
           assert.propertyVal(pkg, 'description', 'Foo "bar"');
-          assert.deepPropertyVal(pkg, 'repository.url', 'http://www.example.com/foo.git?bar=%22baz%22');
+          assert.nestedPropertyVal(pkg, 'repository.url', 'http://www.example.com/foo.git?bar=%22baz%22');
           assert.propertyVal(pkg, 'author', 'Foo "Bar" Baz <hughjass@example.com>');
 
           let cargo = TOML.parse(readFile(this.cwd, 'my-app/native/Cargo.toml'));
