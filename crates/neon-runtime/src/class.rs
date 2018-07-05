@@ -1,4 +1,5 @@
 use std::os::raw::c_void;
+use call::CCallback;
 use raw::{Isolate, Local};
 
 extern "C" {
@@ -11,10 +12,13 @@ extern "C" {
 
     #[link_name = "Neon_Class_CreateBase"]
     pub fn create_base(isolate: *mut Isolate,
-                       allocate_callback: *mut c_void, allocate_kernel: *mut c_void,
-                       construct_callback: *mut c_void, construct_kernel: *mut c_void,
-                       call_callback: *mut c_void, call_kernel: *mut c_void,
+                       allocate: CCallback,
+                       construct: CCallback,
+                       call: CCallback,
                        drop: extern "C" fn(*mut c_void)) -> *mut c_void;
+
+    #[link_name = "Neon_Class_GetName"]
+    pub fn get_name<'a>(base_out: &'a mut *mut u8, size_out: &'a mut usize, isolate: *mut Isolate, metadata: *const c_void);
 
     #[link_name = "Neon_Class_SetName"]
     pub fn set_name(isolate: *mut Isolate, metadata: *mut c_void, name: *const u8, byte_length: u32) -> bool;
@@ -28,8 +32,10 @@ extern "C" {
     #[link_name = "Neon_Class_AddMethod"]
     pub fn add_method(isolate: *mut Isolate, metadata: *mut c_void, name: *const u8, byte_length: u32, method: Local) -> bool;
 
-    #[link_name = "Neon_Class_MetadataToClass"]
-    pub fn metadata_to_class(out: &mut Local, isolate: *mut Isolate, metadata: *mut c_void);
+    #[link_name = "Neon_Class_MetadataToConstructor"]
+    pub fn metadata_to_constructor(out: &mut Local, isolate: *mut Isolate, metadata: *mut c_void) -> bool;
+
+    // FIXME: get rid of all the "kernel" nomenclature
 
     #[link_name = "Neon_Class_GetAllocateKernel"]
     pub fn get_allocate_kernel(obj: Local) -> *mut c_void;
@@ -42,9 +48,6 @@ extern "C" {
 
     #[link_name = "Neon_Class_Constructor"]
     pub fn constructor(out: &mut Local, ft: Local) -> bool;
-
-    #[link_name = "Neon_Class_Check"]
-    pub fn check(c: Local, v: Local) -> bool;
 
     #[link_name = "Neon_Class_HasInstance"]
     pub fn has_instance(metadata: *mut c_void, v: Local) -> bool;

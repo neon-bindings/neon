@@ -42,17 +42,28 @@ Neon supports Rust stable version 1.18 and higher. We test on the latest stable,
 
 # A Taste...
 
-A Neon function takes a `Call` object and produces a Rust `Result` that's either a JS value or the `Throw` constant (meaning a JS exception was thrown). The `Call` object provides access to a memory management scope, which safely manages the rooting of handles to heap objects:
-
 ```rust
-fn make_an_array(call: Call) -> JsResult<JsArray> {
-    let scope = call.scope; // the current scope for rooting handles
-    let array: Handle<JsArray> = JsArray::new(scope, 3);
-    array.set(0, JsNumber::new(scope, 9000))?;
-    array.set(1, JsNumber::new(scope))?;
-    array.set(2, JsNumber::new(scope, 3.14159))?;
+fn make_an_array(mut cx: FunctionContext) -> JsResult<JsArray> {
+    // Create some values:
+    let n = cx.number(9000);
+    let s = cx.string("hello");
+    let b = cx.boolean(true);
+
+    // Create a new array:
+    let array: Handle<JsArray> = cx.empty_array()?;
+
+    // Push the values into the array:
+    array.set(&mut cx, 0, n)?;
+    array.set(&mut cx, 1, s)?;
+    array.set(&mut cx, 2, b)?;
+
+    // Return the array:
     Ok(array)
 }
+
+register_module!(mut cx, {
+    cx.export_function("makeAnArray", make_an_array)?;
+})
 ```
 
 To learn more, check out the [Neon guides](https://guides.neon-bindings.com).

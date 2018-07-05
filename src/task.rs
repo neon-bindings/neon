@@ -7,9 +7,7 @@ use std::os::raw::c_void;
 use js::{Value, JsFunction};
 use mem::Handle;
 use mem::Managed;
-use scope::{Scope, RootScope};
-use vm::JsResult;
-use vm::internal::Isolate;
+use vm::{TaskContext, JsResult};
 use neon_runtime;
 use neon_runtime::raw;
 
@@ -28,7 +26,7 @@ pub trait Task: Send + Sized {
     fn perform(&self) -> Result<Self::Output, Self::Error>;
 
     /// Convert the result of the task to a JavaScript value to be passed to the asynchronous callback. This method is executed on the main thread at some point after the background task is completed.
-    fn complete<'a, T: Scope<'a>>(self, scope: &'a mut T, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent>;
+    fn complete<'a>(self, cx: TaskContext<'a>, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent>;
 
     /// Schedule a task to be executed on a background thread.
     ///
@@ -60,12 +58,9 @@ unsafe extern "C" fn perform_task<T: Task>(task: *mut c_void) -> *mut c_void {
 unsafe extern "C" fn complete_task<T: Task>(task: *mut c_void, result: *mut c_void, out: &mut raw::Local) {
     let result: Result<T::Output, T::Error> = *Box::from_raw(mem::transmute(result));
     let task: Box<T> = Box::from_raw(mem::transmute(task));
-
-    // The neon::Task::complete() method installs an outer v8::HandleScope
-    // that is responsible for managing the out pointer, so it's safe to
-    // create the RootScope here without creating a local v8::HandleScope.
-    let mut scope = RootScope::new(Isolate::current());
-    if let Ok(result) = task.complete(&mut scope, result) {
-        *out = result.to_raw();
-    }
+    TaskContext::with(|cx| {
+        if let Ok(result) = task.complete(cx, result) {
+            *out = result.to_raw();
+        }
+    })
 }

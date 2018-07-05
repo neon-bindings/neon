@@ -5,11 +5,6 @@
 #include <stdint.h>
 #include <v8.h>
 
-typedef struct {
-  void* data;
-  size_t len;
-} buf_t;
-
 // analog Rust enum `Tag` defined in lib.rs
 typedef enum {
   tag_null,
@@ -24,6 +19,12 @@ typedef enum {
   tag_function,
   tag_other
 } tag_t;
+
+// corresponding Rust struct `CCallback` defined in fun.rs
+typedef struct {
+  void* static_callback;
+  void* dynamic_callback;
+} callback_t;
 
 extern "C" {
 
@@ -69,30 +70,31 @@ extern "C" {
   bool Neon_Convert_ToObject(v8::Local<v8::Object> *out, v8::Local<v8::Value> *value);
 
   bool Neon_Buffer_New(v8::Local<v8::Object> *out, uint32_t size);
-  void Neon_Buffer_Data(buf_t *out, v8::Local<v8::Object> obj);
+  void Neon_Buffer_Data(void **base_out, size_t *len_out, v8::Local<v8::Object> obj);
 
   bool Neon_ArrayBuffer_New(v8::Local<v8::ArrayBuffer> *out, v8::Isolate *isolate, uint32_t size);
-  void Neon_ArrayBuffer_Data(buf_t *out, v8::Local<v8::ArrayBuffer> buffer);
+  void Neon_ArrayBuffer_Data(void **base_out, size_t *len_out, v8::Local<v8::ArrayBuffer> buffer);
 
   typedef void(*Neon_ChainedScopeCallback)(void *, void *, void *, void *);
   typedef void(*Neon_NestedScopeCallback)(void *, void *, void *);
   typedef void(*Neon_RootScopeCallback)(void *, void *, void *);
-  typedef void(*Neon_ModuleScopeCallback)(void *, v8::Local<v8::Object>, void *);
 
   void Neon_Scope_Escape(v8::Local<v8::Value> *out, Nan::EscapableHandleScope *scope, v8::Local<v8::Value> value);
   void Neon_Scope_Nested(void *out, void *closure, Neon_NestedScopeCallback callback, void *realm);
   void Neon_Scope_Chained(void *out, void *closure, Neon_ChainedScopeCallback callback, void *parent_scope);
   void Neon_Scope_Enter(v8::HandleScope *scope, v8::Isolate *isolate);
   void Neon_Scope_Exit(v8::HandleScope *scope);
+  void Neon_Scope_Enter_Escapable(v8::EscapableHandleScope *scope, v8::Isolate *isolate);
+  void Neon_Scope_Exit_Escapable(v8::EscapableHandleScope *scope);
   size_t Neon_Scope_Sizeof();
   size_t Neon_Scope_Alignof();
   size_t Neon_Scope_SizeofEscapable();
   size_t Neon_Scope_AlignofEscapable();
   void Neon_Scope_GetGlobal(v8::Isolate *isolate, v8::Local<v8::Value> *out);
 
-  bool Neon_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, v8::FunctionCallback callback, void *kernel);
-  void Neon_Fun_ExecKernel(void *kernel, Neon_RootScopeCallback callback, v8::FunctionCallbackInfo<v8::Value> *info, void *scope);
-  void *Neon_Fun_GetKernel(v8::Local<v8::External> obj);
+  bool Neon_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, callback_t callback);
+  bool Neon_Fun_Template_New(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, callback_t callback);
+  void *Neon_Fun_GetDynamicCallback(v8::Local<v8::External> obj);
   bool Neon_Fun_Call(v8::Local<v8::Value> *out, v8::Isolate *isolate, v8::Local<v8::Function> fun, v8::Local<v8::Value> self, int32_t argc, v8::Local<v8::Value> argv[]);
   bool Neon_Fun_Construct(v8::Local<v8::Object> *out, v8::Isolate *isolate, v8::Local<v8::Function> fun, int32_t argc, v8::Local<v8::Value> argv[]);
 
@@ -107,26 +109,24 @@ extern "C" {
   void *Neon_Class_GetClassMap(v8::Isolate *isolate);
   void Neon_Class_SetClassMap(v8::Isolate *isolate, void *map, Neon_DropCallback free_map);
   void *Neon_Class_CreateBase(v8::Isolate *isolate,
-                              Neon_AllocateCallback allocate_callback,
-                              void *allocate_kernel,
-                              Neon_ConstructCallback construct_callback,
-                              void *construct_kernel,
-                              v8::FunctionCallback call_callback,
-                              void *call_kernel,
+                              callback_t allocate,
+                              callback_t construct,
+                              callback_t call,
                               Neon_DropCallback drop);
+  // FIXME: get rid of all the "kernel" nomenclature
   void *Neon_Class_GetCallKernel(v8::Local<v8::External> wrapper);
   void *Neon_Class_GetConstructKernel(v8::Local<v8::External> wrapper);
   void *Neon_Class_GetAllocateKernel(v8::Local<v8::External> wrapper);
   bool Neon_Class_Constructor(v8::Local<v8::Function> *out, v8::Local<v8::FunctionTemplate> ft);
-  bool Neon_Class_Check(v8::Local<v8::FunctionTemplate> ft, v8::Local<v8::Value> v);
   bool Neon_Class_HasInstance(void *metadata, v8::Local<v8::Value> v);
   bool Neon_Class_SetName(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length);
+  void Neon_Class_GetName(const char **chars_out, size_t *len_out, v8::Isolate *isolate, void *metadata);
   void Neon_Class_ThrowThisError(v8::Isolate *isolate, void *metadata_pointer);
   bool Neon_Class_AddMethod(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length, v8::Local<v8::FunctionTemplate> method);
-  void Neon_Class_MetadataToClass(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, void *metadata);
+  bool Neon_Class_MetadataToConstructor(v8::Local<v8::Function> *out, v8::Isolate *isolate, void *metadata);
   void *Neon_Class_GetInstanceInternals(v8::Local<v8::Object> obj);
 
-  void Neon_Module_ExecKernel(void *kernel, Neon_ModuleScopeCallback callback, v8::Local<v8::Object> exports, void *scope);
+  uint32_t Neon_Module_GetVersion();
 
   tag_t Neon_Tag_Of(v8::Local<v8::Value> val);
   bool Neon_Tag_IsUndefined(v8::Local<v8::Value> val);

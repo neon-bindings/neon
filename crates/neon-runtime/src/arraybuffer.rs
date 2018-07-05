@@ -1,11 +1,8 @@
 //! Facilities for working with `v8::ArrayBuffer`s.
 
 use raw::Local;
-use cslice::CMutSlice;
 use std::os::raw::c_void;
 
-// Suppress a spurious rustc warning about the use of CMutSlice.
-#[allow(improper_ctypes)]
 extern "C" {
 
     /// Mutates the `out` argument provided to refer to a newly created `v8::ArrayBuffer` object.
@@ -13,8 +10,7 @@ extern "C" {
     #[link_name = "Neon_ArrayBuffer_New"]
     pub fn new(out: &mut Local, isolate: *mut c_void, size: u32) -> bool;
 
-    /// Mutates the `out` argument provided populating the `data` and `len` properties.
+    /// Mutates the `base_out` and `size_out` arguments to access the data of a `v8::ArrayBuffer` object.
     #[link_name = "Neon_ArrayBuffer_Data"]
-    pub fn data<'a, 'b>(out: &'a mut CMutSlice<'b, u8>, obj: Local);
-
+    pub fn data<'a, 'b>(base_out: &'a mut *mut c_void, size_out: &'a mut usize, obj: Local);
 }

@@ -1,7 +1,7 @@
-use neon::js::{JsString, JsNumber};
+use neon::js::{JsString, JsNumber, Borrow};
 use neon::mem::Handle;
-use neon::vm::Lock;
 use neon::js::error::{JsError, Kind};
+use neon::vm::Context;
 
 pub struct User {
   id: i32,
@@ -34,12 +34,11 @@ declare_types! {
   }
 
   pub class JsUser for User {
-    init(call) {
-      let scope = call.scope;
-      let id = call.arguments.require(scope, 0)?.check::<JsNumber>()?;
-      let first_name: Handle<JsString> = call.arguments.require(scope, 1)?.check::<JsString>()?;
-      let last_name: Handle<JsString> = call.arguments.require(scope, 2)?.check::<JsString>()?;
-      let email: Handle<JsString> = call.arguments.require(scope, 3)?.check::<JsString>()?;
+    init(mut cx) {
+      let id = cx.argument::<JsNumber>(0)?;
+      let first_name: Handle<JsString> = cx.argument::<JsString>(1)?;
+      let last_name: Handle<JsString> = cx.argument::<JsString>(2)?;
+      let email: Handle<JsString> = cx.argument::<JsString>(3)?;
 
       Ok(User {
         id: id.value() as i32,
@@ -49,29 +48,45 @@ declare_types! {
       })
     }
 
-    method get(call) {
-      let scope = call.scope;
+    method get(mut cx) {
+      let attr: String = cx.argument::<JsString>(0)?.value();
 
-      let attr: String = call.arguments.require(scope, 0)?.check::<JsString>()?.value();
+      let this = cx.this();
 
       match &attr[..] {
         "id" => {
-          let id = call.arguments.this(scope).grab(|user| { user.id.clone() });
-          Ok(JsNumber::new(scope, id as f64).upcast())
+          let id = {
+            let guard = cx.lock();
+            let user = this.borrow(&guard);
+            user.id
+          };
+          Ok(cx.number(id).upcast())
         },
         "first_name" => {
-          let first_name = call.arguments.this(scope).grab(|user| { user.first_name.clone() });
-          Ok(JsString::new_or_throw(scope, &first_name[..])?.upcast())
+          let first_name = {
+            let guard = cx.lock();
+            let user = this.borrow(&guard);
+            user.first_name.clone()
+          };
+          Ok(cx.string(&first_name).upcast())
         },
         "last_name" => {
-          let last_name = call.arguments.this(scope).grab(|user| { user.last_name.clone() });
-          Ok(JsString::new_or_throw(scope, &last_name[..])?.upcast())
+          let last_name = {
+            let guard = cx.lock();
+            let user = this.borrow(&guard);
+            user.last_name.clone()
+          };
+          Ok(cx.string(&last_name).upcast())
         },
         "email" => {
-          let email = call.arguments.this(scope).grab(|user| { user.email.clone() });
-          Ok(JsString::new_or_throw(scope, &email[..])?.upcast())
+          let email = {
+            let guard = cx.lock();
+            let user = this.borrow(&guard);
+            user.email.clone()
+          };
+          Ok(cx.string(&email).upcast())
         },
-        _ => JsError::throw(Kind::TypeError, "property does not exist")
+        _ => JsError::throw(&mut cx, Kind::TypeError, "property does not exist")
       }
     }
 
