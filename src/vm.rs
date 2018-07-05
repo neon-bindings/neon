@@ -388,13 +388,13 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// let n: Handle<JsNumber> = cx.number(x);
     /// # Ok(n)
     /// # }
-    ///
+    /// ```
+    /// 
     /// Note: the borrowed value is required to be a reference to a handle instead of a handle
     /// as a workaround for a [Rust compiler bug](https://github.com/rust-lang/rust/issues/29997).
     /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
     /// but while the extra `&` is a small ergonomics regression, this API is still a nice
     /// convenience.
-    /// ```
     fn borrow<'c, V, T, F>(&self, v: &'c Handle<V>, f: F) -> T
         where V: Value,
               &'c V: Borrow,
@@ -425,13 +425,13 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// });
     /// # Ok(cx.undefined())
     /// # }
-    ///
+    /// ```
+    /// 
     /// Note: the borrowed value is required to be a reference to a handle instead of a handle
     /// as a workaround for a [Rust compiler bug](https://github.com/rust-lang/rust/issues/29997).
     /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
     /// but while the extra `&mut` is a small ergonomics regression, this API is still a nice
     /// convenience.
-    /// ```
     fn borrow_mut<'c, V, T, F>(&self, v: &'c mut Handle<V>, f: F) -> T
         where V: Value,
               &'c mut V: BorrowMut,
