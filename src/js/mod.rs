@@ -1,8 +1,8 @@
 //! Types and traits representing JavaScript values.
 
-pub mod binary;
-pub mod error;
-pub mod class;
+pub(crate) mod binary;
+pub(crate) mod error;
+pub(crate) mod class;
 
 use std::fmt;
 use std::mem;
@@ -13,8 +13,11 @@ use neon_runtime;
 use neon_runtime::raw;
 use vm::{Context, VmGuard, FunctionContext, Callback, VmResult, Throw, JsResult, JsResultExt, This, Handle, Managed};
 use vm::internal::{Isolate, Pointer};
-use js::error::{JsError, Kind};
 use self::internal::{ValueInternal, SuperType, FunctionCallback};
+
+pub use self::binary::{JsBuffer, JsArrayBuffer, BinaryData, BinaryViewType};
+pub use self::class::{Class, ClassDescriptor};
+pub use self::error::{JsError, ErrorKind};
 
 pub(crate) mod internal {
     use std::mem;
@@ -279,7 +282,7 @@ impl<'a> JsResultExt<'a, JsString> for StringResult<'a> {
     fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, JsString> {
         match self {
             Ok(v) => Ok(v),
-            Err(e) => JsError::throw(cx, Kind::RangeError, &e.to_string())
+            Err(e) => JsError::throw(cx, ErrorKind::RangeError, &e.to_string())
         }
     }
 }
@@ -607,7 +610,7 @@ unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [Handle
     let argv = args.as_mut_ptr();
     let argc = args.len();
     if argc > V8_ARGC_LIMIT {
-        return JsError::throw(cx, Kind::RangeError, "too many arguments");
+        return JsError::throw(cx, ErrorKind::RangeError, "too many arguments");
     }
     let isolate: *mut c_void = mem::transmute(cx.isolate().to_raw());
     Ok((isolate, argc as i32, argv as *mut c_void))

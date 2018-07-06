@@ -1,6 +1,5 @@
 use neon::vm::{FunctionContext, JsResult, JsResultExt, This, CallContext, Context, Handle};
-use neon::js::{JsNumber, JsFunction, JsObject, Object, JsValue, JsUndefined, JsString, JsBoolean, Value};
-use neon::js::error::{JsError, Kind};
+use neon::js::{JsNumber, JsFunction, JsObject, Object, JsValue, JsUndefined, JsString, JsBoolean, Value, JsError, ErrorKind};
 
 fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let x = cx.argument::<JsNumber>(0)?.value();
@@ -48,7 +47,7 @@ pub fn panic(_: FunctionContext) -> JsResult<JsUndefined> {
 }
 
 pub fn panic_after_throw(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    JsError::throw::<_, ()>(&mut cx, Kind::RangeError, "entering throw state with a RangeError").unwrap_err();
+    JsError::throw::<_, ()>(&mut cx, ErrorKind::RangeError, "entering throw state with a RangeError").unwrap_err();
     panic!("this should override the RangeError")
 }
 

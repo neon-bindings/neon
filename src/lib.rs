@@ -176,10 +176,10 @@ macro_rules! class_definition {
     };
 
     ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:block ; ($($call_ctor:block)*) ; ($($new_ctor:block)*) ; ($($mname:ident)*) ; ($($mdef:block)*) ; $($rest:tt)* ) => {
-        impl $crate::js::class::Class for $cls {
+        impl $crate::js::Class for $cls {
             type Internals = $typ;
 
-            fn setup<'a, C: $crate::vm::Context<'a>>(_: &mut C) -> $crate::vm::VmResult<$crate::js::class::ClassDescriptor<'a, Self>> {
+            fn setup<'a, C: $crate::vm::Context<'a>>(_: &mut C) -> $crate::vm::VmResult<$crate::js::ClassDescriptor<'a, Self>> {
                 ::std::result::Result::Ok(Self::describe(stringify!($cname), $allocator)
                                              $(.construct($new_ctor))*
                                              $(.call($call_ctor))*

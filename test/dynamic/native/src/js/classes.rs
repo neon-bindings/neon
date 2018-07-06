@@ -1,5 +1,4 @@
-use neon::js::{JsString, JsNumber, Borrow};
-use neon::js::error::{JsError, Kind};
+use neon::js::{JsString, JsNumber, Borrow, JsError, ErrorKind};
 use neon::vm::{Context, Handle};
 
 pub struct User {
@@ -85,7 +84,7 @@ declare_types! {
           };
           Ok(cx.string(&email).upcast())
         },
-        _ => JsError::throw(&mut cx, Kind::TypeError, "property does not exist")
+        _ => JsError::throw(&mut cx, ErrorKind::TypeError, "property does not exist")
       }
     }
 

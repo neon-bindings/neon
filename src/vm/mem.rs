@@ -8,7 +8,7 @@ use neon_runtime;
 use neon_runtime::raw;
 use js::Value;
 use js::internal::SuperType;
-use js::error::{JsError, Kind};
+use js::error::{JsError, ErrorKind};
 use vm::{Context, JsResult, JsResultExt};
 
 /// The trait of data that is managed by the JS garbage collector and can only be accessed via handles.
@@ -86,7 +86,7 @@ impl<'a, F: Value, T: Value> JsResultExt<'a, T> for DowncastResult<'a, F, T> {
     fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, T> {
         match self {
             Ok(v) => Ok(v),
-            Err(e) => JsError::throw(cx, Kind::TypeError, &e.description)
+            Err(e) => JsError::throw(cx, ErrorKind::TypeError, &e.description)
         }
     }
 }

@@ -116,7 +116,7 @@ impl<'a> BinaryData<'a> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::js::binary::JsArrayBuffer;
+    /// use neon::js::JsArrayBuffer;
     /// use neon::vm::{Context, Handle};
     /// # use neon::js::JsUndefined;
     /// # use neon::vm::{JsResult, FunctionContext};
@@ -142,7 +142,7 @@ impl<'a> BinaryData<'a> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::js::binary::JsArrayBuffer;
+    /// use neon::js::JsArrayBuffer;
     /// use neon::vm::{Context, Handle};
     /// # use neon::js::JsUndefined;
     /// # use neon::vm::{JsResult, FunctionContext};

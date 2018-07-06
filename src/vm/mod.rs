@@ -17,7 +17,7 @@ use js::{JsValue, Value, Object, JsObject, JsArray, JsFunction, JsBoolean, JsNum
 use js::binary::{JsArrayBuffer, JsBuffer};
 use js::class::internal::ClassMetadata;
 use js::class::Class;
-use js::error::{JsError, Kind};
+use js::error::{JsError, ErrorKind};
 use self::internal::{Ledger, ContextInternal, Scope, ScopeMetadata};
 
 pub(crate) mod mem;
@@ -220,6 +220,14 @@ impl Error for Throw {
     }
 }
 
+/// Throws a JS value.
+pub fn throw<'a, 'b, C: Context<'a>, T: Value, U>(_: &mut C, v: Handle<'b, T>) -> VmResult<U> {
+    unsafe {
+        neon_runtime::error::throw(v.to_raw());
+    }
+    Err(Throw)
+}
+
 /// The result of a computation that might send the JS VM into a throwing state.
 pub type VmResult<T> = Result<T, Throw>;
 
@@ -303,7 +311,7 @@ impl CallbackInfo {
 
     pub fn require<'b, C: Context<'b>>(&self, cx: &mut C, i: i32) -> JsResult<'b, JsValue> {
         if i < 0 || i >= self.len() {
-            return JsError::throw(cx, Kind::TypeError, "not enough arguments");
+            return JsError::throw(cx, ErrorKind::TypeError, "not enough arguments");
         }
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
@@ -368,8 +376,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::js::{JsNumber, Borrow, Ref};
-    /// use neon::js::binary::JsArrayBuffer;
+    /// use neon::js::{JsNumber, Borrow, Ref, JsArrayBuffer};
     /// # use neon::vm::{JsResult, FunctionContext};
     /// use neon::vm::{Context, Handle};
     /// 
@@ -401,9 +408,8 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::js::{BorrowMut, RefMut};
+    /// use neon::js::{BorrowMut, RefMut, JsArrayBuffer};
     /// # use neon::js::JsUndefined;
-    /// use neon::js::binary::JsArrayBuffer;
     /// # use neon::vm::{JsResult, FunctionContext};
     /// use neon::vm::{Context, Handle};
     /// 

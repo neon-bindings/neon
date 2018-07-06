@@ -1,6 +1,5 @@
 use neon::vm::{FunctionContext, TaskContext, JsResult, Context};
-use neon::js::{JsUndefined, JsNumber, JsFunction};
-use neon::js::error::{Kind, JsError};
+use neon::js::{JsUndefined, JsNumber, JsFunction, JsError, ErrorKind};
 use neon::thread::Task;
 
 struct SuccessTask;
@@ -37,7 +36,7 @@ impl Task for FailureTask {
     }
 
     fn complete(self, mut cx: TaskContext, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent> {
-        JsError::throw(&mut cx, Kind::Error, &result.unwrap_err())
+        JsError::throw(&mut cx, ErrorKind::Error, &result.unwrap_err())
     }
 }
 
