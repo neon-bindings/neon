@@ -13,7 +13,7 @@ use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::tag::Tag;
 use mem::{Handle, Managed};
-use vm::{Context, VmGuard, FunctionContext, Callback, VmResult, Throw, JsResult, This};
+use vm::{Context, VmGuard, FunctionContext, Callback, VmResult, Throw, JsResult, JsResultExt, This};
 use vm::internal::{Isolate, Pointer};
 use js::error::{JsError, Kind};
 use self::internal::{ValueInternal, SuperType, FunctionCallback};
@@ -305,6 +305,26 @@ impl ValueInternal for JsBoolean {
 #[derive(Clone, Copy)]
 pub struct JsString(raw::Local);
 
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
+pub struct StringOverflow(usize);
+
+impl fmt::Display for StringOverflow {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "string size out of range: {}", self.0)
+    }
+}
+
+pub type StringResult<'a> = Result<Handle<'a, JsString>, StringOverflow>;
+
+impl<'a> JsResultExt<'a, JsString> for StringResult<'a> {
+    fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, JsString> {
+        match self {
+            Ok(v) => Ok(v),
+            Err(e) => JsError::throw(cx, Kind::RangeError, &e.to_string())
+        }
+    }
+}
+
 impl Value for JsString { }
 
 impl Managed for JsString {
@@ -339,14 +359,15 @@ impl JsString {
         }
     }
 
-    pub fn new<'a, C: Context<'a>>(cx: &mut C, val: &str) -> Option<Handle<'a, JsString>> {
-        JsString::new_internal(cx.isolate(), val)
+    pub fn new<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, val: S) -> Handle<'a, JsString> {
+        JsString::try_new(cx, val).unwrap()
     }
 
-    pub fn new_or_throw<'a, C: Context<'a>>(cx: &mut C, val: &str) -> VmResult<Handle<'a, JsString>> {
-        match JsString::new(cx, val) {
-            Some(v) => Ok(v),
-            None => JsError::throw(cx, Kind::TypeError, "invalid string contents")
+    pub fn try_new<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, val: S) -> StringResult<'a> {
+        let val = val.as_ref();
+        match JsString::new_internal(cx.isolate(), val) {
+            Some(s) => Ok(s),
+            None => Err(StringOverflow(val.len()))
         }
     }
 

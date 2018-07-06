@@ -13,7 +13,7 @@ use std::panic::UnwindSafe;
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::call::CCallback;
-use js::{JsValue, Value, Object, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, JsNull, JsUndefined, Ref, RefMut, Borrow, BorrowMut};
+use js::{JsValue, Value, Object, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined, Ref, RefMut, Borrow, BorrowMut};
 use js::binary::{JsArrayBuffer, JsBuffer};
 use js::class::internal::ClassMetadata;
 use js::class::Class;
@@ -494,8 +494,15 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Convenience method for creating a `JsString` value.
     /// 
     /// If the string exceeds the limits of the JS VM, this method panics.
-    fn string(&mut self, s: &str) -> Handle<'a, JsString> {
-        JsString::new(self, s).expect("encoding error")
+    fn string<S: AsRef<str>>(&mut self, s: S) -> Handle<'a, JsString> {
+        JsString::new(self, s)
+    }
+
+    /// Convenience method for creating a `JsString` value.
+    /// 
+    /// If the string exceeds the limits of the JS VM, this method returns an `Err` value.
+    fn try_string<S: AsRef<str>>(&mut self, s: S) -> StringResult<'a> {
+        JsString::try_new(self, s)
     }
 
     /// Convenience method for creating a `JsNull` value.
