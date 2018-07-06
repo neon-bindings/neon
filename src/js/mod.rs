@@ -11,7 +11,6 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut, Drop};
 use neon_runtime;
 use neon_runtime::raw;
-use neon_runtime::tag::Tag;
 use mem::{Handle, Managed};
 use vm::{Context, VmGuard, FunctionContext, Callback, VmResult, Throw, JsResult, JsResultExt, This};
 use vm::internal::{Isolate, Pointer};
@@ -108,21 +107,6 @@ pub trait Value: ValueInternal {
     }
 }
 
-/// A wrapper type for JavaScript values that makes it convenient to
-/// check a value's type dynamically using Rust's pattern-matching.
-pub enum Variant<'a> {
-    Null(Handle<'a, JsNull>),
-    Undefined(Handle<'a, JsUndefined>),
-    Boolean(Handle<'a, JsBoolean>),
-    Number(Handle<'a, JsNumber>),
-    String(Handle<'a, JsString>),
-    Object(Handle<'a, JsObject>),
-    Array(Handle<'a, JsArray>),
-    Function(Handle<'a, JsFunction>),
-    Other(Handle<'a, JsValue>)
-}
-
-
 /// A JavaScript value of any type.
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -148,25 +132,6 @@ unsafe impl This for JsValue {
     fn as_this(h: raw::Local) -> Self {
         JsValue(h)
     }
-}
-
-impl<'a> Handle<'a, JsValue> {
-
-    /// Produce a `Variant` for this value.
-    pub fn variant(self) -> Variant<'a> {
-        match unsafe { neon_runtime::tag::of(self.to_raw()) } {
-            Tag::Null => Variant::Null(JsNull::new()),
-            Tag::Undefined => Variant::Undefined(JsUndefined::new()),
-            Tag::Boolean => Variant::Boolean(Handle::new_internal(JsBoolean(self.to_raw()))),
-            Tag::Number => Variant::Number(Handle::new_internal(JsNumber(self.to_raw()))),
-            Tag::String => Variant::String(Handle::new_internal(JsString(self.to_raw()))),
-            Tag::Object => Variant::Object(Handle::new_internal(JsObject(self.to_raw()))),
-            Tag::Array => Variant::Array(Handle::new_internal(JsArray(self.to_raw()))),
-            Tag::Function => Variant::Function(Handle::new_internal(JsFunction { raw: self.to_raw(), marker: PhantomData })),
-            Tag::Other => Variant::Other(self.clone())
-        }
-    }
-
 }
 
 impl JsValue {

@@ -5,19 +5,6 @@
 #include <stdint.h>
 #include <v8.h>
 
-// analog Rust enum `Tag` defined in lib.rs
-typedef enum {
-  tag_null,
-  tag_undefined,
-  tag_boolean,
-  tag_number,
-  tag_string,
-  tag_object,
-  tag_array,
-  tag_function,
-  tag_other
-} tag_t;
-
 // corresponding Rust struct `CCallback` defined in fun.rs
 typedef struct {
   void* static_callback;
@@ -122,7 +109,6 @@ extern "C" {
 
   uint32_t Neon_Module_GetVersion();
 
-  tag_t Neon_Tag_Of(v8::Local<v8::Value> val);
   bool Neon_Tag_IsUndefined(v8::Local<v8::Value> val);
   bool Neon_Tag_IsNull(v8::Local<v8::Value> val);
   bool Neon_Tag_IsBoolean(v8::Local<v8::Value> val);

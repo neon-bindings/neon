@@ -436,18 +436,6 @@ extern "C" bool Neon_Fun_Construct(v8::Local<v8::Object> *out, v8::Isolate *isol
   return maybe_result.ToLocal(out);
 }
 
-extern "C" tag_t Neon_Tag_Of(v8::Local<v8::Value> val) {
-  return val->IsNull()                    ? tag_null
-    : val->IsUndefined()                  ? tag_undefined
-    : (val->IsTrue() || val->IsFalse())   ? tag_boolean
-    : val->IsNumber()                     ? tag_number
-    : val->IsString()                     ? tag_string
-    : val->IsArray()                      ? tag_array
-    : val->IsFunction()                   ? tag_function
-    : val->IsObject()                     ? tag_object
-                                          : tag_other;
-}
-
 extern "C" bool Neon_Tag_IsUndefined(v8::Local<v8::Value> val) {
   return val->IsUndefined();
 }
