@@ -14,7 +14,7 @@ extern crate lazy_static;
 pub mod mem;
 pub mod vm;
 pub mod js;
-pub mod task;
+pub mod thread;
 pub mod meta;
 
 #[doc(hidden)]

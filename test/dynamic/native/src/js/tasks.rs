@@ -1,7 +1,7 @@
 use neon::vm::{FunctionContext, TaskContext, JsResult, Context};
 use neon::js::{JsUndefined, JsNumber, JsFunction};
 use neon::js::error::{Kind, JsError};
-use neon::task::Task;
+use neon::thread::Task;
 
 struct SuccessTask;
 

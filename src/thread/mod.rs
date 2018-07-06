@@ -1,4 +1,4 @@
-//! A trait for defining Rust _tasks_ to be executed in a background thread.
+//! Types and traits for implementing multithreaded computation in a Node plugin.
 
 use std::marker::{Send, Sized};
 use std::mem;
