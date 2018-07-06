@@ -70,11 +70,6 @@ pub fn require_object_this(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     Ok(cx.undefined())
 }
 
-pub fn return_callee(mut cx: FunctionContext) -> JsResult<JsFunction> {
-    let f = cx.callee();
-    Ok(f)
-}
-
 pub fn is_argument_zero_some(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     let b = cx.argument_opt(0).is_some();
     Ok(cx.boolean(b))

@@ -29,15 +29,6 @@ extern "C" void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Lo
   *out = info->This();
 }
 
-extern "C" bool Neon_Call_Callee(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Function> *out) {
-#if NODE_MAJOR_VERSION < 10
-  *out = info->Callee();
-  return true;
-#else
-  return false;
-#endif
-}
-
 extern "C" void Neon_Call_Data(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> *out) {
   /*
   printf("Call_Data: v8 info  = %p\n", *(void **)info);

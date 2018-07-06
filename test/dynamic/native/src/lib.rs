@@ -57,7 +57,6 @@ register_module!(mut cx, {
     cx.export_function("num_arguments", num_arguments)?;
     cx.export_function("return_this", return_this)?;
     cx.export_function("require_object_this", require_object_this)?;
-    cx.export_function("return_callee", return_callee)?;
     cx.export_function("is_argument_zero_some", is_argument_zero_some)?;
     cx.export_function("require_argument_zero_string", require_argument_zero_string)?;
     cx.export_function("execute_scoped", execute_scoped)?;

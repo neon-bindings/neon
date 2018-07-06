@@ -316,17 +316,6 @@ impl CallbackInfo {
             local
         }
     }
-
-    pub fn callee<'a, C: Context<'a>>(&self, _: &mut C) -> Handle<'a, JsFunction> {
-        unsafe {
-            let mut local: raw::Local = mem::zeroed();
-            if neon_runtime::call::callee(mem::transmute(&self.info), &mut local) {
-                Handle::new_internal(JsFunction::from_raw(local))
-            } else {
-                panic!("Arguments::callee() is not supported in Node >= 10")
-            }
-        }
-    }
 }
 
 /// The trait of types that can be a function's `this` binding.
@@ -689,11 +678,6 @@ impl<'a, T: This> CallContext<'a, T> {
     /// Produces a handle to the `this`-binding.
     pub fn this(&mut self) -> Handle<'a, T> {
         Handle::new_internal(T::as_this(self.info.this(self)))
-    }
-
-    /// Produces a handle to this function.
-    pub fn callee(&mut self) -> Handle<'a, JsFunction> {
-        self.info.callee(self)
     }
 }
 
