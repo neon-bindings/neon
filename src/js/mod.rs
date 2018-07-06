@@ -114,8 +114,6 @@ pub enum Variant<'a> {
     Null(Handle<'a, JsNull>),
     Undefined(Handle<'a, JsUndefined>),
     Boolean(Handle<'a, JsBoolean>),
-    // DEPRECATE(0.2)
-    Integer(Handle<'a, JsInteger>),
     Number(Handle<'a, JsNumber>),
     String(Handle<'a, JsString>),
     Object(Handle<'a, JsObject>),
@@ -160,8 +158,6 @@ impl<'a> Handle<'a, JsValue> {
             Tag::Null => Variant::Null(JsNull::new()),
             Tag::Undefined => Variant::Undefined(JsUndefined::new()),
             Tag::Boolean => Variant::Boolean(Handle::new_internal(JsBoolean(self.to_raw()))),
-            // DEPRECATE(0.2)
-            Tag::Integer => Variant::Integer(Handle::new_internal(JsInteger(self.to_raw()))),
             Tag::Number => Variant::Number(Handle::new_internal(JsNumber(self.to_raw()))),
             Tag::String => Variant::String(Handle::new_internal(JsString(self.to_raw()))),
             Tag::Object => Variant::Object(Handle::new_internal(JsObject(self.to_raw()))),
@@ -425,60 +421,6 @@ fn lower_str_unwrap(s: &str) -> (*const u8, i32) {
     lower_str(s).unwrap_or_else(|| {
         panic!("{} < i32::MAX", s.len())
     })
-}
-
-// DEPRECATE(0.2)
-/// A JavaScript number value whose value is known statically to be a
-/// 32-bit integer.
-#[repr(C)]
-#[derive(Clone, Copy)]
-pub struct JsInteger(raw::Local);
-
-impl JsInteger {
-    pub fn new<'a, C: Context<'a>>(cx: &mut C, i: i32) -> Handle<'a, JsInteger> {
-        JsInteger::new_internal(cx.isolate(), i)
-    }
-
-    pub(crate) fn new_internal<'a>(isolate: Isolate, i: i32) -> Handle<'a, JsInteger> {
-        unsafe {
-            let mut local: raw::Local = mem::zeroed();
-            neon_runtime::primitive::integer(&mut local, isolate.to_raw(), i);
-            Handle::new_internal(JsInteger(local))
-        }
-    }
-
-    pub fn is_u32(self) -> bool {
-        unsafe {
-            neon_runtime::primitive::is_u32(self.to_raw())
-       }
-    }
-    pub fn is_i32(self) -> bool {
-        unsafe {
-            neon_runtime::primitive::is_i32(self.to_raw())
-        }
-    }
-
-    pub fn value(self) -> i64 {
-        unsafe {
-            neon_runtime::primitive::integer_value(self.to_raw())
-        }
-    }
-}
-
-impl Value for JsInteger { }
-
-impl Managed for JsInteger {
-    fn to_raw(self) -> raw::Local { self.0 }
-
-    fn from_raw(h: raw::Local) -> Self { JsInteger(h) }
-}
-
-impl ValueInternal for JsInteger {
-    fn name() -> String { "integer".to_string() }
-
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_integer(other.to_raw()) }
-    }
 }
 
 /// A JavaScript number value.

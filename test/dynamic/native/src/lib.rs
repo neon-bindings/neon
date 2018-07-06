@@ -27,14 +27,10 @@ register_module!(mut cx, {
     cx.export_function("return_negative_js_number", return_negative_js_number)?;
     cx.export_function("return_float_js_number", return_float_js_number)?;
     cx.export_function("return_negative_float_js_number", return_negative_float_js_number)?;
-    // DEPRECATE(0.2)
-    cx.export_function("return_js_integer", return_js_integer)?;
     cx.export_function("accept_and_return_js_number", accept_and_return_js_number)?;
     cx.export_function("accept_and_return_large_js_number", accept_and_return_large_js_number)?;
     cx.export_function("accept_and_return_float_js_number", accept_and_return_float_js_number)?;
     cx.export_function("accept_and_return_negative_js_number", accept_and_return_negative_js_number)?;
-    // DEPRECATE(0.2)
-    cx.export_function("accept_and_return_js_integer", accept_and_return_js_integer)?;
 
     cx.export_function("return_js_array", return_js_array)?;
     cx.export_function("return_js_array_with_number", return_js_array_with_number)?;
