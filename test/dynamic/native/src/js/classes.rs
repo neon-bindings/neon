@@ -1,7 +1,6 @@
 use neon::js::{JsString, JsNumber, Borrow};
-use neon::mem::Handle;
 use neon::js::error::{JsError, Kind};
-use neon::vm::Context;
+use neon::vm::{Context, Handle};
 
 pub struct User {
   id: i32,

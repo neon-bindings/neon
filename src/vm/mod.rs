@@ -1,7 +1,7 @@
 //! Abstractions representing the JavaScript virtual machine and its control flow.
 
+use std;
 use std::cell::RefCell;
-use std::mem;
 use std::any::TypeId;
 use std::convert::Into;
 use std::error::Error;
@@ -18,18 +18,21 @@ use js::binary::{JsArrayBuffer, JsBuffer};
 use js::class::internal::ClassMetadata;
 use js::class::Class;
 use js::error::{JsError, Kind};
-use mem::{Handle, Managed};
 use self::internal::{Ledger, ContextInternal, Scope, ScopeMetadata};
 
+pub(crate) mod mem;
+
+pub use self::mem::{Managed, Handle, DowncastError, DowncastResult};
+
 pub(crate) mod internal {
+    use std;
     use std::cell::Cell;
-    use std::mem;
     use std::collections::HashSet;
     use std::os::raw::c_void;
     use neon_runtime;
     use neon_runtime::raw;
     use neon_runtime::scope::Root;
-    use mem::Handle;
+    use super::mem::Handle;
     use vm::VmResult;
     use js::{JsObject, LoanError};
     use super::{ClassMap, ModuleContext};
@@ -51,12 +54,12 @@ pub(crate) mod internal {
     unsafe impl<'a, T> Pointer for &'a mut T {
         unsafe fn as_ptr(&self) -> *const c_void {
             let r: &T = &**self;
-            mem::transmute(r)
+            std::mem::transmute(r)
         }
 
         unsafe fn as_mut(&mut self) -> *mut c_void {
             let r: &mut T = &mut **self;
-            mem::transmute(r)
+            std::mem::transmute(r)
         }
     }
 
@@ -109,7 +112,7 @@ pub(crate) mod internal {
     pub struct Isolate(*mut raw::Isolate);
 
     extern "C" fn drop_class_map(map: Box<ClassMap>) {
-        mem::drop(map);
+        std::mem::drop(map);
     }
 
     impl Isolate {
@@ -123,18 +126,18 @@ pub(crate) mod internal {
             if ptr.is_null() {
                 let b: Box<ClassMap> = Box::new(ClassMap::new());
                 let raw = Box::into_raw(b);
-                ptr = unsafe { mem::transmute(raw) };
-                let free_map: *mut c_void = unsafe { mem::transmute(drop_class_map as usize) };
+                ptr = unsafe { std::mem::transmute(raw) };
+                let free_map: *mut c_void = unsafe { std::mem::transmute(drop_class_map as usize) };
                 unsafe {
                     neon_runtime::class::set_class_map(self.to_raw(), ptr, free_map);
                 }
             }
-            unsafe { mem::transmute(ptr) }
+            unsafe { std::mem::transmute(ptr) }
         }
 
         pub(crate) fn current() -> Isolate {
             unsafe {
-                mem::transmute(neon_runtime::call::current_isolate())
+                std::mem::transmute(neon_runtime::call::current_isolate())
             }
         }
     }
@@ -257,7 +260,7 @@ pub(crate) struct CallbackInfo {
 impl CallbackInfo {
     pub fn data<'a>(&self) -> Handle<'a, JsValue> {
         unsafe {
-            let mut local: raw::Local = mem::zeroed();
+            let mut local: raw::Local = std::mem::zeroed();
             neon_runtime::call::data(&self.info, &mut local);
             Handle::new_internal(JsValue::from_raw(local))
         }
@@ -274,7 +277,7 @@ impl CallbackInfo {
     }
 
     fn kind(&self) -> CallKind {
-        if unsafe { neon_runtime::call::is_construct(mem::transmute(self)) } {
+        if unsafe { neon_runtime::call::is_construct(std::mem::transmute(self)) } {
             CallKind::Construct
         } else {
             CallKind::Call
@@ -292,7 +295,7 @@ impl CallbackInfo {
             return None;
         }
         unsafe {
-            let mut local: raw::Local = mem::zeroed();
+            let mut local: raw::Local = std::mem::zeroed();
             neon_runtime::call::get(&self.info, i, &mut local);
             Some(Handle::new_internal(JsValue::from_raw(local)))
         }
@@ -303,7 +306,7 @@ impl CallbackInfo {
             return JsError::throw(cx, Kind::TypeError, "not enough arguments");
         }
         unsafe {
-            let mut local: raw::Local = mem::zeroed();
+            let mut local: raw::Local = std::mem::zeroed();
             neon_runtime::call::get(&self.info, i, &mut local);
             Ok(Handle::new_internal(JsValue::from_raw(local)))
         }
@@ -311,8 +314,8 @@ impl CallbackInfo {
 
     pub fn this<'b, V: Context<'b>>(&self, _: &mut V) -> raw::Local {
         unsafe {
-            let mut local: raw::Local = mem::zeroed();
-            neon_runtime::call::this(mem::transmute(&self.info), &mut local);
+            let mut local: raw::Local = std::mem::zeroed();
+            neon_runtime::call::this(std::mem::transmute(&self.info), &mut local);
             local
         }
     }
@@ -368,8 +371,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// use neon::js::{JsNumber, Borrow, Ref};
     /// use neon::js::binary::JsArrayBuffer;
     /// # use neon::vm::{JsResult, FunctionContext};
-    /// use neon::vm::Context;
-    /// use neon::mem::Handle;
+    /// use neon::vm::{Context, Handle};
     /// 
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     /// let b: Handle<JsArrayBuffer> = cx.argument(0)?;
@@ -403,8 +405,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// # use neon::js::JsUndefined;
     /// use neon::js::binary::JsArrayBuffer;
     /// # use neon::vm::{JsResult, FunctionContext};
-    /// use neon::vm::Context;
-    /// use neon::mem::Handle;
+    /// use neon::vm::{Context, Handle};
     /// 
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     /// let mut b: Handle<JsArrayBuffer> = cx.argument(0)?;
@@ -461,7 +462,7 @@ pub trait Context<'a>: ContextInternal<'a> {
             unsafe {
                 let escapable_handle_scope = cx.scope.handle_scope as *mut raw::EscapableHandleScope;
                 let escapee = f(cx)?;
-                let mut result_local: raw::Local = mem::zeroed();
+                let mut result_local: raw::Local = std::mem::zeroed();
                 neon_runtime::scope::escape(&mut result_local, escapable_handle_scope, escapee.to_raw());
                 Ok(Handle::new_internal(V::from_raw(result_local)))
             }
@@ -544,8 +545,8 @@ impl<'a> UnwindSafe for ModuleContext<'a> { }
 
 impl<'a> ModuleContext<'a> {
     pub(crate) fn with<T, F: for<'b> FnOnce(ModuleContext<'b>) -> T>(exports: Handle<'a, JsObject>, f: F) -> T {
-        debug_assert!(unsafe { neon_runtime::scope::size() } <= mem::size_of::<raw::HandleScope>());
-        debug_assert!(unsafe { neon_runtime::scope::alignment() } <= mem::align_of::<raw::HandleScope>());
+        debug_assert!(unsafe { neon_runtime::scope::size() } <= std::mem::size_of::<raw::HandleScope>());
+        debug_assert!(unsafe { neon_runtime::scope::alignment() } <= std::mem::align_of::<raw::HandleScope>());
         Scope::with(|scope| {
             f(ModuleContext {
                 scope,
@@ -736,7 +737,7 @@ pub(crate) trait Callback<T: Clone + Copy + Sized>: Sized {
     /// method and the computed callback, both converted to raw void pointers.
     fn into_c_callback(self) -> CCallback {
         CCallback {
-            static_callback: unsafe { mem::transmute(Self::invoke as usize) },
+            static_callback: unsafe { std::mem::transmute(Self::invoke as usize) },
             dynamic_callback: self.as_ptr()
         }
     }

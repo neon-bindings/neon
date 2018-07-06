@@ -1,5 +1,4 @@
-use neon::vm::{FunctionContext, JsResult, Context};
-use neon::mem::Handle;
+use neon::vm::{FunctionContext, JsResult, Context, Handle};
 use neon::js::{JsArray, Object};
 
 pub fn return_js_array(mut cx: FunctionContext) -> JsResult<JsArray> {

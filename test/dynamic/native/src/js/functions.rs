@@ -1,5 +1,4 @@
-use neon::vm::{FunctionContext, JsResult, JsResultExt, This, CallContext, Context};
-use neon::mem::Handle;
+use neon::vm::{FunctionContext, JsResult, JsResultExt, This, CallContext, Context, Handle};
 use neon::js::{JsNumber, JsFunction, JsObject, Object, JsValue, JsUndefined, JsString, JsBoolean, Value};
 use neon::js::error::{JsError, Kind};
 

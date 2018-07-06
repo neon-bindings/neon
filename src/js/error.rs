@@ -7,10 +7,9 @@ use std::panic::{UnwindSafe, catch_unwind};
 use neon_runtime;
 use neon_runtime::raw;
 
-use vm::{Throw, Context, VmResult};
+use vm::{Throw, Context, VmResult, Handle, Managed};
 use js::{Value, Object, ToJsString, build};
 use js::internal::ValueInternal;
-use mem::{Handle, Managed};
 
 /// Throws a JS value.
 pub fn throw<'a, 'b, C: Context<'a>, T: Value, U>(_: &mut C, v: Handle<'b, T>) -> VmResult<U> {

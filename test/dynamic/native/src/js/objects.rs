@@ -1,5 +1,4 @@
-use neon::vm::{FunctionContext, JsResult, Context};
-use neon::mem::Handle;
+use neon::vm::{FunctionContext, JsResult, Context, Handle};
 use neon::js::{JsUndefined, JsObject, Object, JsNumber, Borrow, BorrowMut};
 use neon::js::binary::{JsArrayBuffer, JsBuffer};
 

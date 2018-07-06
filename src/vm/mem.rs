@@ -109,7 +109,7 @@ impl<'a, T: Value> Handle<'a, T> {
     /// # use neon::js::JsUndefined;
     /// # use neon::vm::{JsResult, FunctionContext};
     /// # use neon::vm::Context;
-    /// use neon::mem::Handle;
+    /// use neon::vm::Handle;
     /// 
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     /// let v: Handle<JsValue> = cx.number(17).upcast();
