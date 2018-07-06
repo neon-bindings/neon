@@ -43,11 +43,6 @@ extern "C" {
     pub fn this(info: &FunctionCallbackInfo, out: &mut Local);
 
     /// Mutates the `out` argument provided to refer to the `v8::Local` handle value of the
-    /// currently executing function.
-    #[link_name = "Neon_Call_Callee"]
-    pub fn callee(info: &FunctionCallbackInfo, out: &mut Local) -> bool;
-
-    /// Mutates the `out` argument provided to refer to the `v8::Local` handle value of the
     /// `v8::FunctionCallbackInfo` `Data`.
     #[link_name = "Neon_Call_Data"]
     pub fn data(info: &FunctionCallbackInfo, out: &mut Local);

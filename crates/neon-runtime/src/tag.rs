@@ -2,28 +2,7 @@
 
 use raw::Local;
 
-// analog C enum `tag_t` defined in neon.h
-#[repr(C)]
-#[derive(PartialEq, Eq)]
-pub enum Tag {
-    Null,
-    Undefined,
-    Boolean,
-    // DEPRECATE(0.2)
-    Integer,
-    Number,
-    String,
-    Object,
-    Array,
-    Function,
-    Other
-}
-
 extern "C" {
-
-    /// Returns the `Tag` of the value provided.
-    #[link_name = "Neon_Tag_Of"]
-    pub fn of(val: Local) -> Tag;
 
     /// Indicates if the value type is `Undefined`.
     #[link_name = "Neon_Tag_IsUndefined"]
@@ -32,11 +11,6 @@ extern "C" {
     /// Indicates if the value type is `Null`.
     #[link_name = "Neon_Tag_IsNull"]
     pub fn is_null(val: Local) -> bool;
-
-    // DEPRECATE(0.2)
-    /// Indicates if the value type is `Integer`.
-    #[link_name = "Neon_Tag_IsInteger"]
-    pub fn is_integer(val: Local) -> bool;
 
     /// Indicates if the value type is `Number`.
     #[link_name = "Neon_Tag_IsNumber"]

@@ -5,21 +5,6 @@
 #include <stdint.h>
 #include <v8.h>
 
-// analog Rust enum `Tag` defined in lib.rs
-typedef enum {
-  tag_null,
-  tag_undefined,
-  tag_boolean,
-  // DEPRECATE(0.2)
-  tag_integer,
-  tag_number,
-  tag_string,
-  tag_object,
-  tag_array,
-  tag_function,
-  tag_other
-} tag_t;
-
 // corresponding Rust struct `CCallback` defined in fun.rs
 typedef struct {
   void* static_callback;
@@ -33,21 +18,16 @@ extern "C" {
   void *Neon_Call_CurrentIsolate();
   bool Neon_Call_IsConstruct(v8::FunctionCallbackInfo<v8::Value> *info);
   void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out);
-  bool Neon_Call_Callee(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Function> *out);
   void Neon_Call_Data(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> *out);
   int32_t Neon_Call_Length(v8::FunctionCallbackInfo<v8::Value> *info);
   void Neon_Call_Get(v8::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out);
 
-  // DEPRECATE(0.2)
-  void Neon_Primitive_Integer(v8::Local<v8::Integer> *out, v8::Isolate *isolate, int32_t x);
   void Neon_Primitive_Number(v8::Local<v8::Number> *out, v8::Isolate *isolate, double value);
   void Neon_Primitive_Undefined(v8::Local<v8::Primitive> *out);
   void Neon_Primitive_Null(v8::Local<v8::Primitive> *out);
   void Neon_Primitive_Boolean(v8::Local<v8::Boolean> *out, bool b);
   bool Neon_Primitive_IsUint32(v8::Local<v8::Primitive> p);
   bool Neon_Primitive_IsInt32(v8::Local<v8::Primitive> p);
-  // DEPRECATE(0.2)
-  int64_t Neon_Primitive_IntegerValue(v8::Local<v8::Integer> i);
 
   void Neon_Object_New(v8::Local<v8::Object> *out);
   bool Neon_Object_GetOwnPropertyNames(v8::Local<v8::Array> *out, v8::Local<v8::Object> obj);
@@ -128,12 +108,9 @@ extern "C" {
 
   uint32_t Neon_Module_GetVersion();
 
-  tag_t Neon_Tag_Of(v8::Local<v8::Value> val);
   bool Neon_Tag_IsUndefined(v8::Local<v8::Value> val);
   bool Neon_Tag_IsNull(v8::Local<v8::Value> val);
   bool Neon_Tag_IsBoolean(v8::Local<v8::Value> val);
-  // DEPRECATE(0.2)
-  bool Neon_Tag_IsInteger(v8::Local<v8::Value> val);
   bool Neon_Tag_IsNumber(v8::Local<v8::Value> val);
   bool Neon_Tag_IsString(v8::Local<v8::Value> val);
   bool Neon_Tag_IsObject(v8::Local<v8::Value> val);

@@ -11,7 +11,6 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut, Drop};
 use neon_runtime;
 use neon_runtime::raw;
-use neon_runtime::tag::Tag;
 use mem::{Handle, Managed};
 use vm::{Context, VmGuard, FunctionContext, Callback, VmResult, Throw, JsResult, JsResultExt, This};
 use vm::internal::{Isolate, Pointer};
@@ -108,23 +107,6 @@ pub trait Value: ValueInternal {
     }
 }
 
-/// A wrapper type for JavaScript values that makes it convenient to
-/// check a value's type dynamically using Rust's pattern-matching.
-pub enum Variant<'a> {
-    Null(Handle<'a, JsNull>),
-    Undefined(Handle<'a, JsUndefined>),
-    Boolean(Handle<'a, JsBoolean>),
-    // DEPRECATE(0.2)
-    Integer(Handle<'a, JsInteger>),
-    Number(Handle<'a, JsNumber>),
-    String(Handle<'a, JsString>),
-    Object(Handle<'a, JsObject>),
-    Array(Handle<'a, JsArray>),
-    Function(Handle<'a, JsFunction>),
-    Other(Handle<'a, JsValue>)
-}
-
-
 /// A JavaScript value of any type.
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -150,27 +132,6 @@ unsafe impl This for JsValue {
     fn as_this(h: raw::Local) -> Self {
         JsValue(h)
     }
-}
-
-impl<'a> Handle<'a, JsValue> {
-
-    /// Produce a `Variant` for this value.
-    pub fn variant(self) -> Variant<'a> {
-        match unsafe { neon_runtime::tag::of(self.to_raw()) } {
-            Tag::Null => Variant::Null(JsNull::new()),
-            Tag::Undefined => Variant::Undefined(JsUndefined::new()),
-            Tag::Boolean => Variant::Boolean(Handle::new_internal(JsBoolean(self.to_raw()))),
-            // DEPRECATE(0.2)
-            Tag::Integer => Variant::Integer(Handle::new_internal(JsInteger(self.to_raw()))),
-            Tag::Number => Variant::Number(Handle::new_internal(JsNumber(self.to_raw()))),
-            Tag::String => Variant::String(Handle::new_internal(JsString(self.to_raw()))),
-            Tag::Object => Variant::Object(Handle::new_internal(JsObject(self.to_raw()))),
-            Tag::Array => Variant::Array(Handle::new_internal(JsArray(self.to_raw()))),
-            Tag::Function => Variant::Function(Handle::new_internal(JsFunction { raw: self.to_raw(), marker: PhantomData })),
-            Tag::Other => Variant::Other(self.clone())
-        }
-    }
-
 }
 
 impl JsValue {
@@ -427,60 +388,6 @@ fn lower_str_unwrap(s: &str) -> (*const u8, i32) {
     })
 }
 
-// DEPRECATE(0.2)
-/// A JavaScript number value whose value is known statically to be a
-/// 32-bit integer.
-#[repr(C)]
-#[derive(Clone, Copy)]
-pub struct JsInteger(raw::Local);
-
-impl JsInteger {
-    pub fn new<'a, C: Context<'a>>(cx: &mut C, i: i32) -> Handle<'a, JsInteger> {
-        JsInteger::new_internal(cx.isolate(), i)
-    }
-
-    pub(crate) fn new_internal<'a>(isolate: Isolate, i: i32) -> Handle<'a, JsInteger> {
-        unsafe {
-            let mut local: raw::Local = mem::zeroed();
-            neon_runtime::primitive::integer(&mut local, isolate.to_raw(), i);
-            Handle::new_internal(JsInteger(local))
-        }
-    }
-
-    pub fn is_u32(self) -> bool {
-        unsafe {
-            neon_runtime::primitive::is_u32(self.to_raw())
-       }
-    }
-    pub fn is_i32(self) -> bool {
-        unsafe {
-            neon_runtime::primitive::is_i32(self.to_raw())
-        }
-    }
-
-    pub fn value(self) -> i64 {
-        unsafe {
-            neon_runtime::primitive::integer_value(self.to_raw())
-        }
-    }
-}
-
-impl Value for JsInteger { }
-
-impl Managed for JsInteger {
-    fn to_raw(self) -> raw::Local { self.0 }
-
-    fn from_raw(h: raw::Local) -> Self { JsInteger(h) }
-}
-
-impl ValueInternal for JsInteger {
-    fn name() -> String { "integer".to_string() }
-
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_integer(other.to_raw()) }
-    }
-}
-
 /// A JavaScript number value.
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -548,38 +455,38 @@ impl ValueInternal for JsObject {
 }
 
 /// A property key in a JavaScript object.
-pub trait Key {
-    unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool;
-    unsafe fn set(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool;
+pub trait PropertyKey {
+    unsafe fn get_from(self, out: &mut raw::Local, obj: raw::Local) -> bool;
+    unsafe fn set_from(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool;
 }
 
-impl Key for u32 {
-    unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool {
+impl PropertyKey for u32 {
+    unsafe fn get_from(self, out: &mut raw::Local, obj: raw::Local) -> bool {
         neon_runtime::object::get_index(out, obj, self)
     }
 
-    unsafe fn set(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
+    unsafe fn set_from(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
         neon_runtime::object::set_index(out, obj, self, val)
     }
 }
 
-impl<'a, K: Value> Key for Handle<'a, K> {
-    unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool {
+impl<'a, K: Value> PropertyKey for Handle<'a, K> {
+    unsafe fn get_from(self, out: &mut raw::Local, obj: raw::Local) -> bool {
         neon_runtime::object::get(out, obj, self.to_raw())
     }
 
-    unsafe fn set(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
+    unsafe fn set_from(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
         neon_runtime::object::set(out, obj, self.to_raw(), val)
     }
 }
 
-impl<'a> Key for &'a str {
-    unsafe fn get(self, out: &mut raw::Local, obj: raw::Local) -> bool {
+impl<'a> PropertyKey for &'a str {
+    unsafe fn get_from(self, out: &mut raw::Local, obj: raw::Local) -> bool {
         let (ptr, len) = lower_str_unwrap(self);
         neon_runtime::object::get_string(out, obj, ptr, len)
     }
 
-    unsafe fn set(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
+    unsafe fn set_from(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
         let (ptr, len) = lower_str_unwrap(self);
         neon_runtime::object::set_string(out, obj, ptr, len, val)
     }
@@ -587,17 +494,17 @@ impl<'a> Key for &'a str {
 
 /// The trait of all object types.
 pub trait Object: Value {
-    fn get<'a, C: Context<'a>, K: Key>(self, _: &mut C, key: K) -> VmResult<Handle<'a, JsValue>> {
-        build(|out| { unsafe { key.get(out, self.to_raw()) } })
+    fn get<'a, C: Context<'a>, K: PropertyKey>(self, _: &mut C, key: K) -> VmResult<Handle<'a, JsValue>> {
+        build(|out| { unsafe { key.get_from(out, self.to_raw()) } })
     }
 
     fn get_own_property_names<'a, C: Context<'a>>(self, _: &mut C) -> JsResult<'a, JsArray> {
         build(|out| { unsafe { neon_runtime::object::get_own_property_names(out, self.to_raw()) } })
     }
 
-    fn set<'a, C: Context<'a>, K: Key, W: Value>(self, _: &mut C, key: K, val: Handle<W>) -> VmResult<bool> {
+    fn set<'a, C: Context<'a>, K: PropertyKey, W: Value>(self, _: &mut C, key: K, val: Handle<W>) -> VmResult<bool> {
         let mut result = false;
-        if unsafe { key.set(&mut result, self.to_raw(), val.to_raw()) } {
+        if unsafe { key.set_from(&mut result, self.to_raw(), val.to_raw()) } {
             Ok(result)
         } else {
             Err(Throw)

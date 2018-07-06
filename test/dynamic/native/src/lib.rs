@@ -27,14 +27,10 @@ register_module!(mut cx, {
     cx.export_function("return_negative_js_number", return_negative_js_number)?;
     cx.export_function("return_float_js_number", return_float_js_number)?;
     cx.export_function("return_negative_float_js_number", return_negative_float_js_number)?;
-    // DEPRECATE(0.2)
-    cx.export_function("return_js_integer", return_js_integer)?;
     cx.export_function("accept_and_return_js_number", accept_and_return_js_number)?;
     cx.export_function("accept_and_return_large_js_number", accept_and_return_large_js_number)?;
     cx.export_function("accept_and_return_float_js_number", accept_and_return_float_js_number)?;
     cx.export_function("accept_and_return_negative_js_number", accept_and_return_negative_js_number)?;
-    // DEPRECATE(0.2)
-    cx.export_function("accept_and_return_js_integer", accept_and_return_js_integer)?;
 
     cx.export_function("return_js_array", return_js_array)?;
     cx.export_function("return_js_array_with_number", return_js_array_with_number)?;
@@ -61,7 +57,6 @@ register_module!(mut cx, {
     cx.export_function("num_arguments", num_arguments)?;
     cx.export_function("return_this", return_this)?;
     cx.export_function("require_object_this", require_object_this)?;
-    cx.export_function("return_callee", return_callee)?;
     cx.export_function("is_argument_zero_some", is_argument_zero_some)?;
     cx.export_function("require_argument_zero_string", require_argument_zero_string)?;
     cx.export_function("execute_scoped", execute_scoped)?;

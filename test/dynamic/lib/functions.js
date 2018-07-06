@@ -62,13 +62,6 @@ describe('JsFunction', function() {
     assert.equal(addon.return_this.call(undefined), global);
   });
 
-  it('returns its own function', function() {
-    // callee dynamically fails in Node >= 10, so only test it in older Nodes
-    if (process.versions.node.substring(0, process.versions.node.indexOf('.')) < 10) {
-      assert.equal(addon.return_callee(), addon.return_callee);
-    }
-  });
-
   it('exposes an argument via arguments_opt iff it is there', function() {
     assert.equal(addon.is_argument_zero_some(), false);
     assert.equal(addon.is_argument_zero_some('a'), true);
