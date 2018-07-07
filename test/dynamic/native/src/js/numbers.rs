@@ -1,5 +1,4 @@
-use neon::vm::{FunctionContext, JsResult, Context, Handle};
-use neon::js::JsNumber;
+use neon::prelude::*;
 
 pub fn return_js_number(mut cx: FunctionContext) -> JsResult<JsNumber> {
     Ok(cx.number(9000_f64))

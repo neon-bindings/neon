@@ -15,6 +15,7 @@ pub mod vm;
 pub mod js;
 pub mod thread;
 pub mod meta;
+pub mod prelude;
 
 #[doc(hidden)]
 pub mod macro_internal;

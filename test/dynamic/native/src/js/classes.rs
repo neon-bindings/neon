@@ -1,5 +1,4 @@
-use neon::js::{JsString, JsNumber, Borrow, JsError, ErrorKind};
-use neon::vm::{Context, Handle};
+use neon::prelude::*;
 
 pub struct User {
   id: i32,

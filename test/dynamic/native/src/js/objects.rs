@@ -1,5 +1,4 @@
-use neon::vm::{FunctionContext, JsResult, Context, Handle};
-use neon::js::{JsUndefined, JsObject, Object, JsNumber, Borrow, BorrowMut, JsBuffer, JsArrayBuffer};
+use neon::prelude::*;
 
 pub fn return_js_global_object(mut cx: FunctionContext) -> JsResult<JsObject> {
     Ok(cx.global())
