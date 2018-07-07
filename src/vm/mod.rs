@@ -220,14 +220,6 @@ impl Error for Throw {
     }
 }
 
-/// Throws a JS value.
-pub fn throw<'a, 'b, C: Context<'a>, T: Value, U>(_: &mut C, v: Handle<'b, T>) -> VmResult<U> {
-    unsafe {
-        neon_runtime::error::throw(v.to_raw());
-    }
-    Err(Throw)
-}
-
 /// The result of a computation that might send the JS VM into a throwing state.
 pub type VmResult<T> = Result<T, Throw>;
 
@@ -538,6 +530,14 @@ pub trait Context<'a>: ContextInternal<'a> {
                 neon_runtime::scope::get_global(self.isolate().to_raw(), out);
             }
         })
+    }
+
+    /// Throws a JS value.
+    fn throw<'b, T: Value, U>(&mut self, v: Handle<'b, T>) -> VmResult<U> {
+        unsafe {
+            neon_runtime::error::throw(v.to_raw());
+        }
+        Err(Throw)
     }
 }
 
