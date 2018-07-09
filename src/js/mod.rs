@@ -3,30 +3,32 @@
 pub(crate) mod binary;
 pub(crate) mod error;
 pub(crate) mod class;
+pub(crate) mod mem;
 
+use std;
 use std::fmt;
-use std::mem;
 use std::os::raw::c_void;
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut, Drop};
 use neon_runtime;
 use neon_runtime::raw;
-use vm::{Context, VmGuard, FunctionContext, Callback, VmResult, Throw, JsResult, JsResultExt, This, Handle, Managed};
+use vm::{Context, VmGuard, FunctionContext, Callback, VmResult, Throw, JsResult, JsResultExt, This};
 use vm::internal::{Isolate, Pointer};
 use self::internal::{ValueInternal, SuperType, FunctionCallback};
 
 pub use self::binary::{JsBuffer, JsArrayBuffer, BinaryData, BinaryViewType};
 pub use self::class::{Class, ClassDescriptor};
 pub use self::error::{JsError, ErrorKind};
+pub use self::mem::{Handle, Managed, DowncastError, DowncastResult};
 
 pub(crate) mod internal {
     use std::mem;
     use std::os::raw::c_void;
     use neon_runtime;
     use neon_runtime::raw;
-    use vm::{JsResult, CallbackInfo, FunctionContext, Callback, Handle, Managed};
+    use vm::{JsResult, CallbackInfo, FunctionContext, Callback};
     use js::error::convert_panics;
-    use js::JsObject;
+    use js::{JsObject, Handle, Managed};
     use super::Value;
 
     pub trait ValueInternal: Managed + 'static {
@@ -76,7 +78,7 @@ pub(crate) mod internal {
 
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(init: F) -> JsResult<'a, T> {
     unsafe {
-        let mut local: raw::Local = mem::zeroed();
+        let mut local: raw::Local = std::mem::zeroed();
         if init(&mut local) {
             Ok(Handle::new_internal(T::from_raw(local)))
         } else {
@@ -153,7 +155,7 @@ impl JsUndefined {
 
     pub(crate) fn new_internal<'a>() -> Handle<'a, JsUndefined> {
         unsafe {
-            let mut local: raw::Local = mem::zeroed();
+            let mut local: raw::Local = std::mem::zeroed();
             neon_runtime::primitive::undefined(&mut local);
             Handle::new_internal(JsUndefined(local))
         }
@@ -171,7 +173,7 @@ impl Managed for JsUndefined {
 unsafe impl This for JsUndefined {
     fn as_this(_: raw::Local) -> Self {
         unsafe {
-            let mut local: raw::Local = mem::zeroed();
+            let mut local: raw::Local = std::mem::zeroed();
             neon_runtime::primitive::undefined(&mut local);
             JsUndefined(local)
         }
@@ -198,7 +200,7 @@ impl JsNull {
 
     pub(crate) fn new_internal<'a>() -> Handle<'a, JsNull> {
         unsafe {
-            let mut local: raw::Local = mem::zeroed();
+            let mut local: raw::Local = std::mem::zeroed();
             neon_runtime::primitive::null(&mut local);
             Handle::new_internal(JsNull(local))
         }
@@ -233,7 +235,7 @@ impl JsBoolean {
 
     pub(crate) fn new_internal<'a>(b: bool) -> Handle<'a, JsBoolean> {
         unsafe {
-            let mut local: raw::Local = mem::zeroed();
+            let mut local: raw::Local = std::mem::zeroed();
             neon_runtime::primitive::boolean(&mut local, b);
             Handle::new_internal(JsBoolean(local))
         }
@@ -315,7 +317,7 @@ impl JsString {
             let capacity = neon_runtime::string::utf8_len(self.to_raw());
             let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
             let p = buffer.as_mut_ptr();
-            mem::forget(buffer);
+            std::mem::forget(buffer);
             let len = neon_runtime::string::data(p, capacity, self.to_raw());
             String::from_raw_parts(p, len as usize, capacity as usize)
         }
@@ -339,7 +341,7 @@ impl JsString {
             None => { return None; }
         };
         unsafe {
-            let mut local: raw::Local = mem::zeroed();
+            let mut local: raw::Local = std::mem::zeroed();
             if neon_runtime::string::new(&mut local, isolate.to_raw(), ptr, len) {
                 Some(Handle::new_internal(JsString(local)))
             } else {
@@ -401,7 +403,7 @@ impl JsNumber {
 
     pub(crate) fn new_internal<'a>(isolate: Isolate, v: f64) -> Handle<'a, JsNumber> {
         unsafe {
-            let mut local: raw::Local = mem::zeroed();
+            let mut local: raw::Local = std::mem::zeroed();
             neon_runtime::primitive::number(&mut local, isolate.to_raw(), v);
             Handle::new_internal(JsNumber(local))
         }
@@ -526,7 +528,7 @@ impl JsObject {
 
     pub(crate) fn build<'a, F: FnOnce(&mut raw::Local)>(init: F) -> Handle<'a, JsObject> {
         unsafe {
-            let mut local: raw::Local = mem::zeroed();
+            let mut local: raw::Local = std::mem::zeroed();
             init(&mut local);
             Handle::new_internal(JsObject(local))
         }
@@ -546,7 +548,7 @@ impl JsArray {
 
     pub(crate) fn new_internal<'a>(isolate: Isolate, len: u32) -> Handle<'a, JsArray> {
         unsafe {
-            let mut local: raw::Local = mem::zeroed();
+            let mut local: raw::Local = std::mem::zeroed();
             neon_runtime::array::new(&mut local, isolate.to_raw(), len);
             Handle::new_internal(JsArray(local))
         }
@@ -612,7 +614,7 @@ unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [Handle
     if argc > V8_ARGC_LIMIT {
         return JsError::throw(cx, ErrorKind::RangeError, "too many arguments");
     }
-    let isolate: *mut c_void = mem::transmute(cx.isolate().to_raw());
+    let isolate: *mut c_void = std::mem::transmute(cx.isolate().to_raw());
     Ok((isolate, argc as i32, argv as *mut c_void))
 }
 
@@ -623,7 +625,7 @@ impl JsFunction {
     {
         build(|out| {
             unsafe {
-                let isolate: *mut c_void = mem::transmute(cx.isolate().to_raw());
+                let isolate: *mut c_void = std::mem::transmute(cx.isolate().to_raw());
                 let callback = FunctionCallback(f).into_c_callback();
                 neon_runtime::fun::new(out, isolate, callback)
             }

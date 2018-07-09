@@ -7,8 +7,8 @@ use std::panic::{UnwindSafe, catch_unwind};
 use neon_runtime;
 use neon_runtime::raw;
 
-use vm::{Throw, Context, VmResult, Handle, Managed};
-use js::{Value, Object, ToJsString, build};
+use vm::{Throw, Context, VmResult};
+use js::{Value, Object, ToJsString, Handle, Managed, build};
 use js::internal::ValueInternal;
 
 /// A JS `Error` object.

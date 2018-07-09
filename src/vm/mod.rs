@@ -14,15 +14,12 @@ use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::call::CCallback;
 use js::{JsValue, Value, Object, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined, Ref, RefMut, Borrow, BorrowMut};
+use js::mem::{Managed, Handle};
 use js::binary::{JsArrayBuffer, JsBuffer};
 use js::class::internal::ClassMetadata;
 use js::class::Class;
 use js::error::{JsError, ErrorKind};
 use self::internal::{Ledger, ContextInternal, Scope, ScopeMetadata};
-
-pub(crate) mod mem;
-
-pub use self::mem::{Managed, Handle, DowncastError, DowncastResult};
 
 pub(crate) mod internal {
     use std;
@@ -32,7 +29,7 @@ pub(crate) mod internal {
     use neon_runtime;
     use neon_runtime::raw;
     use neon_runtime::scope::Root;
-    use super::mem::Handle;
+    use js::mem::Handle;
     use vm::VmResult;
     use js::{JsObject, LoanError};
     use super::{ClassMap, ModuleContext};

@@ -6,9 +6,9 @@ use std::os::raw::c_void;
 use std::slice;
 use neon_runtime;
 use neon_runtime::raw;
-use vm::{JsResult, VmResult, Throw, This, Context, VmGuard, Callback, Handle, Managed};
+use vm::{JsResult, VmResult, Throw, This, Context, VmGuard, Callback};
 use vm::internal::Isolate;
-use js::{Value, JsFunction, Object, JsValue, Borrow, BorrowMut, Ref, RefMut, LoanError, build};
+use js::{Value, JsFunction, Object, JsValue, Handle, Managed, Borrow, BorrowMut, Ref, RefMut, LoanError, build};
 use js::internal::ValueInternal;
 use self::internal::{ClassMetadata, MethodCallback, ConstructorCallCallback, AllocateCallback, ConstructCallback};
 
@@ -19,8 +19,8 @@ pub(crate) mod internal {
     use neon_runtime;
     use neon_runtime::raw;
     use super::{Class, ClassInternal};
-    use js::{JsValue, JsObject, JsFunction, JsUndefined, build};
-    use vm::{JsResult, VmResult, CallbackInfo, Callback, CallContext, Context, Throw, Handle, Managed};
+    use js::{JsValue, JsObject, JsFunction, JsUndefined, Handle, Managed, build};
+    use vm::{JsResult, VmResult, CallbackInfo, Callback, CallContext, Context, Throw};
     use vm::internal::ContextInternal;
     use js::error::convert_panics;
 
