@@ -219,6 +219,7 @@ impl ValueInternal for JsBoolean {
 #[derive(Clone, Copy)]
 pub struct JsString(raw::Local);
 
+/// An error produced when constructing a string that exceeds the JS engine's maximum string size.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
 pub struct StringOverflow(usize);
 
@@ -228,6 +229,7 @@ impl fmt::Display for StringOverflow {
     }
 }
 
+/// The result of constructing a new `JsString`.
 pub type StringResult<'a> = Result<Handle<'a, JsString>, StringOverflow>;
 
 impl<'a> ResultExt<'a, JsString> for StringResult<'a> {
