@@ -133,9 +133,9 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// ```no_run
     /// use neon::value::{Handle, JsNumber, JsArrayBuffer};
     /// use neon::borrow::{Borrow, Ref};
-    /// # use neon::cx::FunctionContext;
+    /// # use neon::context::FunctionContext;
     /// # use neon::value::JsResult;
-    /// use neon::cx::Context;
+    /// use neon::context::Context;
     /// 
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     /// let b: Handle<JsArrayBuffer> = cx.argument(0)?;
@@ -168,8 +168,8 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// use neon::value::{Handle, JsArrayBuffer};
     /// use neon::borrow::BorrowMut;
     /// # use neon::value::{JsResult, JsUndefined};
-    /// # use neon::cx::FunctionContext;
-    /// use neon::cx::Context;
+    /// # use neon::context::FunctionContext;
+    /// use neon::context::Context;
     /// 
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     /// let mut b: Handle<JsArrayBuffer> = cx.argument(0)?;

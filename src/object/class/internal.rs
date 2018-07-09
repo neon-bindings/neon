@@ -5,8 +5,8 @@ use neon_runtime;
 use neon_runtime::raw;
 use super::{Class, ClassInternal, Callback};
 use value::{JsResult, JsValue, JsObject, JsFunction, JsUndefined, Handle, Managed, build};
-use cx::{CallbackInfo, CallContext, Context};
-use cx::internal::ContextInternal;
+use context::{CallbackInfo, CallContext, Context};
+use context::internal::ContextInternal;
 use result::{NeonResult, Throw};
 use value::error::convert_panics;
 

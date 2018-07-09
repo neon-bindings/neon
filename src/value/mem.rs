@@ -9,7 +9,7 @@ use neon_runtime::raw;
 use value::{JsResult, Value};
 use value::internal::SuperType;
 use value::error::{JsError, ErrorKind};
-use cx::Context;
+use context::Context;
 use result::ResultExt;
 
 /// The trait of data that is managed by the JS garbage collector and can only be accessed via handles.
@@ -108,8 +108,8 @@ impl<'a, T: Value> Handle<'a, T> {
     /// ```no_run
     /// use neon::value::{JsValue, JsString, JsNumber};
     /// # use neon::value::{JsResult, JsUndefined};
-    /// # use neon::cx::FunctionContext;
-    /// # use neon::cx::Context;
+    /// # use neon::context::FunctionContext;
+    /// # use neon::context::Context;
     /// use neon::value::Handle;
     /// 
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {

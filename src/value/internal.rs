@@ -2,7 +2,7 @@ use std::mem;
 use std::os::raw::c_void;
 use neon_runtime;
 use neon_runtime::raw;
-use cx::{CallbackInfo, FunctionContext};
+use context::{CallbackInfo, FunctionContext};
 use value::error::convert_panics;
 use value::{JsObject, Handle, Managed};
 use object::class::Callback;

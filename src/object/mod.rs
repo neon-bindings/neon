@@ -5,7 +5,7 @@ pub(crate) mod class;
 use neon_runtime;
 use neon_runtime::raw;
 use value::{Handle, Managed, JsResult, Value, JsValue, JsArray, lower_str_unwrap, build};
-use cx::Context;
+use context::Context;
 use result::{NeonResult, Throw};
 
 pub use self::class::{Class, ClassDescriptor};

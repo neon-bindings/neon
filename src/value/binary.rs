@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 use std::mem;
 use std::os::raw::c_void;
 use std::slice;
-use cx::{Context, Lock};
+use context::{Context, Lock};
 use borrow::{Borrow, BorrowMut, Ref, RefMut, LoanError};
 use borrow::internal::Pointer;
 use value::{JsResult, Value, Object, build};
@@ -118,9 +118,9 @@ impl<'a> BinaryData<'a> {
     /// 
     /// ```no_run
     /// use neon::value::{Handle, JsArrayBuffer};
-    /// use neon::cx::Context;
+    /// use neon::context::Context;
     /// # use neon::value::{JsResult, JsUndefined};
-    /// # use neon::cx::FunctionContext;
+    /// # use neon::context::FunctionContext;
     /// # fn get_x_and_y(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     /// 
     /// let b: Handle<JsArrayBuffer> = cx.argument(0)?;
@@ -144,9 +144,9 @@ impl<'a> BinaryData<'a> {
     /// 
     /// ```no_run
     /// use neon::value::{Handle, JsArrayBuffer};
-    /// use neon::cx::Context;
+    /// use neon::context::Context;
     /// # use neon::value::{JsResult, JsUndefined};
-    /// # use neon::cx::FunctionContext;
+    /// # use neon::context::FunctionContext;
     /// # fn modify_buffer(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     /// 
     /// let mut b: Handle<JsArrayBuffer> = cx.argument(0)?;

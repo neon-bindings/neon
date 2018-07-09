@@ -3,7 +3,7 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use value::{JsResult, Value};
-use cx::Context;
+use context::Context;
 
 /// An error sentinel type used by `NeonResult` (and `JsResult`) to indicate that the JS engine has entered into a throwing state.
 #[derive(Debug)]

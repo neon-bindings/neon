@@ -7,7 +7,7 @@ use std::panic::{UnwindSafe, catch_unwind};
 use neon_runtime;
 use neon_runtime::raw;
 
-use cx::Context;
+use context::Context;
 use result::{NeonResult, Throw};
 use value::{Value, Object, ToJsString, Handle, Managed, build};
 use value::internal::ValueInternal;

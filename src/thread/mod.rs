@@ -6,7 +6,7 @@ use std::os::raw::c_void;
 
 use value::{JsResult, Value, JsFunction};
 use value::mem::{Handle, Managed};
-use cx::TaskContext;
+use context::TaskContext;
 use neon_runtime;
 use neon_runtime::raw;
 

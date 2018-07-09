@@ -6,7 +6,7 @@ use std::ops::{Deref, DerefMut, Drop};
 use std::fmt;
 use std::os::raw::c_void;
 
-use cx::Lock;
+use context::Lock;
 use self::internal::Pointer;
 
 /// A trait for JS values whose internal contents can be borrowed immutably by Rust while the JS engine is locked.
