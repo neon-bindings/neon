@@ -4,6 +4,7 @@ use std::any::{Any, TypeId};
 use std::mem;
 use std::os::raw::c_void;
 use std::slice;
+use std::collections::HashMap;
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::call::CCallback;
@@ -163,6 +164,26 @@ pub(crate) mod internal {
         pub unsafe fn has_instance(&self, value: raw::Local) -> bool {
             neon_runtime::class::has_instance(self.pointer, value)
         }
+    }
+}
+
+pub(crate) struct ClassMap {
+    map: HashMap<TypeId, ClassMetadata>
+}
+
+impl ClassMap {
+    pub(crate) fn new() -> ClassMap {
+        ClassMap {
+            map: HashMap::new()
+        }
+    }
+
+    pub(crate) fn get(&self, key: &TypeId) -> Option<&ClassMetadata> {
+        self.map.get(key)
+    }
+
+    pub(crate) fn set(&mut self, key: TypeId, val: ClassMetadata) {
+        self.map.insert(key, val);
     }
 }
 

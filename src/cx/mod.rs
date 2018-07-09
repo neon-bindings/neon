@@ -2,10 +2,8 @@
 
 use std;
 use std::cell::RefCell;
-use std::any::TypeId;
 use std::convert::Into;
 use std::marker::PhantomData;
-use std::collections::HashMap;
 use std::panic::UnwindSafe;
 use neon_runtime;
 use neon_runtime::raw;
@@ -17,7 +15,6 @@ use value::binary::{JsArrayBuffer, JsBuffer};
 use value::error::{JsError, ErrorKind};
 use object::{Object, This};
 use object::class::Class;
-use object::class::internal::ClassMetadata;
 use result::{NeonResult, Throw, ResultExt};
 use self::internal::{ContextInternal, Scope, ScopeMetadata};
 
@@ -28,10 +25,11 @@ pub(crate) mod internal {
     use neon_runtime;
     use neon_runtime::raw;
     use neon_runtime::scope::Root;
-    use value::mem::Handle;
-    use result::NeonResult;
     use value::JsObject;
-    use super::{ClassMap, ModuleContext};
+    use value::mem::Handle;
+    use object::class::ClassMap;
+    use result::NeonResult;
+    use super::ModuleContext;
 
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -127,26 +125,6 @@ pub(crate) mod internal {
         ModuleContext::with(exports, |cx| {
             let _ = init(cx);
         });
-    }
-}
-
-pub(crate) struct ClassMap {
-    map: HashMap<TypeId, ClassMetadata>
-}
-
-impl ClassMap {
-    fn new() -> ClassMap {
-        ClassMap {
-            map: HashMap::new()
-        }
-    }
-
-    pub fn get(&self, key: &TypeId) -> Option<&ClassMetadata> {
-        self.map.get(key)
-    }
-
-    pub fn set(&mut self, key: TypeId, val: ClassMetadata) {
-        self.map.insert(key, val);
     }
 }
 
