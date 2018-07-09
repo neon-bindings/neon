@@ -2,7 +2,7 @@ use std::ops::{Deref, DerefMut, Drop};
 use std::fmt;
 use std::os::raw::c_void;
 
-use vm::VmGuard;
+use cx::VmGuard;
 use self::internal::Pointer;
 
 pub(crate) mod internal {

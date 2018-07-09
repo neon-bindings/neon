@@ -9,7 +9,7 @@ use neon_runtime::raw;
 use value::{JsResult, Value};
 use value::internal::SuperType;
 use value::error::{JsError, ErrorKind};
-use vm::Context;
+use cx::Context;
 use result::ResultExt;
 
 /// The trait of data that is managed by the JS garbage collector and can only be accessed via handles.

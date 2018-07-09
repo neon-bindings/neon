@@ -11,7 +11,7 @@ extern crate rustc_version;
 #[macro_use]
 extern crate lazy_static;
 
-pub mod vm;
+pub mod cx;
 pub mod value;
 pub mod object;
 pub mod borrow;

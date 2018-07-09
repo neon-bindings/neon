@@ -7,8 +7,8 @@ use std::slice;
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::call::CCallback;
-use vm::{Context, VmGuard, CallbackInfo};
-use vm::internal::Isolate;
+use cx::{Context, VmGuard, CallbackInfo};
+use cx::internal::Isolate;
 use result::{NeonResult, Throw};
 use borrow::{Borrow, BorrowMut, Ref, RefMut, LoanError};
 use value::{JsResult, Value, JsFunction, JsValue, Handle, Managed, build};
@@ -24,8 +24,8 @@ pub(crate) mod internal {
     use neon_runtime::raw;
     use super::{Class, ClassInternal, Callback};
     use value::{JsResult, JsValue, JsObject, JsFunction, JsUndefined, Handle, Managed, build};
-    use vm::{CallbackInfo, CallContext, Context};
-    use vm::internal::ContextInternal;
+    use cx::{CallbackInfo, CallContext, Context};
+    use cx::internal::ContextInternal;
     use result::{NeonResult, Throw};
     use value::error::convert_panics;
 

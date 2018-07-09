@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use value::{JsResult, Value};
-use vm::Context;
+use cx::Context;
 
 /// An error sentinel type used by `VmResult` (and `JsResult`) to indicate that the JS VM has entered into a throwing state.
 #[derive(Debug)]

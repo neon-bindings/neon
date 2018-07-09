@@ -4,13 +4,12 @@ use std::marker::PhantomData;
 use std::mem;
 use std::os::raw::c_void;
 use std::slice;
-use vm::Context;
+use cx::{Context, VmGuard};
 use borrow::{Borrow, BorrowMut, Ref, RefMut, LoanError};
 use borrow::internal::Pointer;
 use value::{JsResult, Value, Object, build};
 use value::mem::Managed;
 use value::internal::ValueInternal;
-use vm::VmGuard;
 use neon_runtime;
 use neon_runtime::raw;
 
