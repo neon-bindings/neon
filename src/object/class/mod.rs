@@ -6,10 +6,12 @@ use std::os::raw::c_void;
 use std::slice;
 use neon_runtime;
 use neon_runtime::raw;
-use vm::{JsResult, VmResult, Throw, Context, VmGuard, Callback};
+use neon_runtime::call::CCallback;
+use vm::{Context, VmGuard, CallbackInfo};
 use vm::internal::Isolate;
+use result::{NeonResult, Throw};
 use borrow::{Borrow, BorrowMut, Ref, RefMut, LoanError};
-use value::{Value, JsFunction, JsValue, Handle, Managed, build};
+use value::{JsResult, Value, JsFunction, JsValue, Handle, Managed, build};
 use value::internal::ValueInternal;
 use object::{Object, This};
 use self::internal::{ClassMetadata, MethodCallback, ConstructorCallCallback, AllocateCallback, ConstructCallback};
@@ -20,10 +22,11 @@ pub(crate) mod internal {
     use std::ptr::null_mut;
     use neon_runtime;
     use neon_runtime::raw;
-    use super::{Class, ClassInternal};
-    use value::{JsValue, JsObject, JsFunction, JsUndefined, Handle, Managed, build};
-    use vm::{JsResult, VmResult, CallbackInfo, Callback, CallContext, Context, Throw};
+    use super::{Class, ClassInternal, Callback};
+    use value::{JsResult, JsValue, JsObject, JsFunction, JsUndefined, Handle, Managed, build};
+    use vm::{CallbackInfo, CallContext, Context};
     use vm::internal::ContextInternal;
+    use result::{NeonResult, Throw};
     use value::error::convert_panics;
 
     #[repr(C)]
@@ -93,14 +96,14 @@ pub(crate) mod internal {
     }
 
     #[repr(C)]
-    pub struct AllocateCallback<T: Class>(pub fn(CallContext<JsUndefined>) -> VmResult<T::Internals>);
+    pub struct AllocateCallback<T: Class>(pub fn(CallContext<JsUndefined>) -> NeonResult<T::Internals>);
 
     impl<T: Class> Callback<*mut c_void> for AllocateCallback<T> {
         extern "C" fn invoke(info: &CallbackInfo) -> *mut c_void {
             unsafe {
                 info.with_cx(|cx| {
                     let data = info.data();
-                    let kernel: fn(CallContext<JsUndefined>) -> VmResult<T::Internals> =
+                    let kernel: fn(CallContext<JsUndefined>) -> NeonResult<T::Internals> =
                         mem::transmute(neon_runtime::class::get_allocate_kernel(data.to_raw()));
                     if let Ok(value) = convert_panics(|| { kernel(cx) }) {
                         let p = Box::into_raw(Box::new(value));
@@ -118,14 +121,14 @@ pub(crate) mod internal {
     }
 
     #[repr(C)]
-    pub struct ConstructCallback<T: Class>(pub fn(CallContext<T>) -> VmResult<Option<Handle<JsObject>>>);
+    pub struct ConstructCallback<T: Class>(pub fn(CallContext<T>) -> NeonResult<Option<Handle<JsObject>>>);
 
     impl<T: Class> Callback<bool> for ConstructCallback<T> {
         extern "C" fn invoke(info: &CallbackInfo) -> bool {
             unsafe {
                 info.with_cx(|cx| {
                     let data = info.data();
-                    let kernel: fn(CallContext<T>) -> VmResult<Option<Handle<JsObject>>> =
+                    let kernel: fn(CallContext<T>) -> NeonResult<Option<Handle<JsObject>>> =
                         mem::transmute(neon_runtime::class::get_construct_kernel(data.to_raw()));
                     match convert_panics(|| { kernel(cx) }) {
                         Ok(None) => true,
@@ -218,7 +221,7 @@ pub trait Class: Managed + Any {
     type Internals;
 
     #[doc(hidden)]
-    fn setup<'a, C: Context<'a>>(_: &mut C) -> VmResult<ClassDescriptor<'a, Self>>;
+    fn setup<'a, C: Context<'a>>(_: &mut C) -> NeonResult<ClassDescriptor<'a, Self>>;
 
     /// Produces a handle to the constructor function for this class.
     fn constructor<'a, C: Context<'a>>(cx: &mut C) -> JsResult<'a, JsFunction<Self>> {
@@ -257,14 +260,14 @@ pub(crate) trait ClassInternal: Class {
           .map(|m| m.clone())
     }
 
-    fn metadata<'a, C: Context<'a>>(cx: &mut C) -> VmResult<ClassMetadata> {
+    fn metadata<'a, C: Context<'a>>(cx: &mut C) -> NeonResult<ClassMetadata> {
         match Self::metadata_opt(cx) {
             Some(metadata) => Ok(metadata),
             None => Self::create(cx)
         }
     }
 
-    fn create<'a, C: Context<'a>>(cx: &mut C) -> VmResult<ClassMetadata> {
+    fn create<'a, C: Context<'a>>(cx: &mut C) -> NeonResult<ClassMetadata> {
         let descriptor = Self::setup(cx)?;
         unsafe {
             let isolate: *mut c_void = mem::transmute(cx.isolate());
@@ -372,6 +375,30 @@ impl<'a, T: Class> BorrowMut for &'a mut T {
         unsafe {
             let ptr: *mut c_void = neon_runtime::class::get_instance_internals(self.to_raw());
             RefMut::new(guard, mem::transmute(ptr))
+        }
+    }
+}
+
+/// A dynamically computed callback that can be passed through C to the JS VM.
+/// This type makes it possible to export a dynamically computed Rust function
+/// as a pair of 1) a raw pointer to the dynamically computed function, and 2)
+/// a static function that knows how to transmute that raw pointer and call it.
+pub(crate) trait Callback<T: Clone + Copy + Sized>: Sized {
+
+    /// Extracts the computed Rust function and invokes it. The Neon runtime
+    /// ensures that the computed function is provided as the extra data field,
+    /// wrapped as a V8 External, in the `CallbackInfo` argument.
+    extern "C" fn invoke(info: &CallbackInfo) -> T;
+
+    /// Converts the callback to a raw void pointer.
+    fn as_ptr(self) -> *mut c_void;
+
+    /// Exports the callback as a pair consisting of the static `Self::invoke`
+    /// method and the computed callback, both converted to raw void pointers.
+    fn into_c_callback(self) -> CCallback {
+        CCallback {
+            static_callback: unsafe { mem::transmute(Self::invoke as usize) },
+            dynamic_callback: self.as_ptr()
         }
     }
 }

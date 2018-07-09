@@ -10,9 +10,11 @@ use std::os::raw::c_void;
 use std::marker::PhantomData;
 use neon_runtime;
 use neon_runtime::raw;
-use vm::{Context, FunctionContext, Callback, VmResult, Throw, JsResult, JsResultExt};
+use vm::{Context, FunctionContext};
 use vm::internal::Isolate;
+use result::{NeonResult, Throw, ResultExt};
 use object::{Object, This};
+use object::class::Callback;
 use self::internal::{ValueInternal, SuperType, FunctionCallback};
 
 pub use self::binary::{JsBuffer, JsArrayBuffer, BinaryData, BinaryViewType};
@@ -24,10 +26,11 @@ pub(crate) mod internal {
     use std::os::raw::c_void;
     use neon_runtime;
     use neon_runtime::raw;
-    use vm::{JsResult, CallbackInfo, FunctionContext, Callback};
+    use vm::{CallbackInfo, FunctionContext};
     use value::error::convert_panics;
     use value::{JsObject, Handle, Managed};
-    use super::Value;
+    use object::class::Callback;
+    use super::{JsResult, Value};
 
     pub trait ValueInternal: Managed + 'static {
         fn name() -> String;
@@ -73,6 +76,9 @@ pub(crate) mod internal {
         }
     }
 }
+
+/// The result of a computation that produces a JS value and might send the JS VM into a throwing state.
+pub type JsResult<'b, T> = NeonResult<Handle<'b, T>>;
 
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(init: F) -> JsResult<'a, T> {
     unsafe {
@@ -278,7 +284,7 @@ impl fmt::Display for StringOverflow {
 
 pub type StringResult<'a> = Result<Handle<'a, JsString>, StringOverflow>;
 
-impl<'a> JsResultExt<'a, JsString> for StringResult<'a> {
+impl<'a> ResultExt<'a, JsString> for StringResult<'a> {
     fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, JsString> {
         match self {
             Ok(v) => Ok(v),
@@ -494,7 +500,7 @@ impl JsArray {
         }
     }
 
-    pub fn to_vec<'a, C: Context<'a>>(self, cx: &mut C) -> VmResult<Vec<Handle<'a, JsValue>>> {
+    pub fn to_vec<'a, C: Context<'a>>(self, cx: &mut C) -> NeonResult<Vec<Handle<'a, JsValue>>> {
         let mut result = Vec::with_capacity(self.len() as usize);
         let mut i = 0;
         loop {
@@ -546,7 +552,7 @@ impl<T: Object> Object for JsFunction<T> { }
 // Maximum number of function arguments in V8.
 const V8_ARGC_LIMIT: usize = 65535;
 
-unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [Handle<'b, A>]) -> VmResult<(*mut c_void, i32, *mut c_void)>
+unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [Handle<'b, A>]) -> NeonResult<(*mut c_void, i32, *mut c_void)>
     where A: Value + 'b
 {
     let argv = args.as_mut_ptr();

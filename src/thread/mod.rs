@@ -4,9 +4,9 @@ use std::marker::{Send, Sized};
 use std::mem;
 use std::os::raw::c_void;
 
-use value::{Value, JsFunction};
+use value::{JsResult, Value, JsFunction};
 use value::mem::{Handle, Managed};
-use vm::{TaskContext, JsResult};
+use vm::TaskContext;
 use neon_runtime;
 use neon_runtime::raw;
 

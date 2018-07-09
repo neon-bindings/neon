@@ -7,7 +7,8 @@ use std::panic::{UnwindSafe, catch_unwind};
 use neon_runtime;
 use neon_runtime::raw;
 
-use vm::{Throw, Context, VmResult};
+use vm::Context;
+use result::{NeonResult, Throw};
 use value::{Value, Object, ToJsString, Handle, Managed, build};
 use value::internal::ValueInternal;
 
@@ -61,7 +62,7 @@ fn message(msg: &str) -> CString {
 impl JsError {
 
     /// Constructs a new error object.
-    pub fn new<'a, C: Context<'a>, U: ToJsString>(cx: &mut C, kind: ErrorKind, msg: U) -> VmResult<Handle<'a, JsError>> {
+    pub fn new<'a, C: Context<'a>, U: ToJsString>(cx: &mut C, kind: ErrorKind, msg: U) -> NeonResult<Handle<'a, JsError>> {
         let msg = msg.to_js_string(cx);
         build(|out| {
             unsafe {
@@ -79,7 +80,7 @@ impl JsError {
     }
 
     /// Convenience method for throwing a new error object.
-    pub fn throw<'a, C: Context<'a>, T>(_: &mut C, kind: ErrorKind, msg: &str) -> VmResult<T> {
+    pub fn throw<'a, C: Context<'a>, T>(_: &mut C, kind: ErrorKind, msg: &str) -> NeonResult<T> {
         unsafe {
             throw_new(kind, msg)
         }
@@ -87,7 +88,7 @@ impl JsError {
 
 }
 
-unsafe fn throw_new<T>(kind: ErrorKind, msg: &str) -> VmResult<T> {
+unsafe fn throw_new<T>(kind: ErrorKind, msg: &str) -> NeonResult<T> {
     let msg = &message(msg);
     let ptr = mem::transmute(msg.as_ptr());
     match kind {
@@ -100,7 +101,7 @@ unsafe fn throw_new<T>(kind: ErrorKind, msg: &str) -> VmResult<T> {
     Err(Throw)
 }
 
-pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> VmResult<T>>(f: F) -> VmResult<T> {
+pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> NeonResult<T>>(f: F) -> NeonResult<T> {
     match catch_unwind(|| { f() }) {
         Ok(result) => result,
         Err(panic) => {

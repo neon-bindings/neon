@@ -4,24 +4,21 @@ use std;
 use std::cell::RefCell;
 use std::any::TypeId;
 use std::convert::Into;
-use std::error::Error;
-use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::marker::PhantomData;
 use std::collections::HashMap;
-use std::os::raw::c_void;
 use std::panic::UnwindSafe;
 use neon_runtime;
 use neon_runtime::raw;
-use neon_runtime::call::CCallback;
 use borrow::{Ref, RefMut, Borrow, BorrowMut};
 use borrow::internal::Ledger;
-use value::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
+use value::{JsResult, JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
 use value::mem::{Managed, Handle};
 use value::binary::{JsArrayBuffer, JsBuffer};
 use value::error::{JsError, ErrorKind};
 use object::{Object, This};
 use object::class::Class;
 use object::class::internal::ClassMetadata;
+use result::{NeonResult, Throw, ResultExt};
 use self::internal::{ContextInternal, Scope, ScopeMetadata};
 
 pub(crate) mod internal {
@@ -32,7 +29,7 @@ pub(crate) mod internal {
     use neon_runtime::raw;
     use neon_runtime::scope::Root;
     use value::mem::Handle;
-    use vm::VmResult;
+    use result::NeonResult;
     use value::JsObject;
     use super::{ClassMap, ModuleContext};
 
@@ -126,39 +123,11 @@ pub(crate) mod internal {
         fn deactivate(&self) { self.scope_metadata().active.set(false); }
     }
 
-    pub fn initialize_module(exports: Handle<JsObject>, init: fn(ModuleContext) -> VmResult<()>) {
+    pub fn initialize_module(exports: Handle<JsObject>, init: fn(ModuleContext) -> NeonResult<()>) {
         ModuleContext::with(exports, |cx| {
             let _ = init(cx);
         });
     }
-}
-
-/// An error sentinel type used by `VmResult` (and `JsResult`) to indicate that the JS VM has entered into a throwing state.
-#[derive(Debug)]
-pub struct Throw;
-
-impl Display for Throw {
-    fn fmt(&self, fmt: &mut Formatter) -> FmtResult {
-        fmt.write_str("JavaScript Error")
-    }
-}
-
-impl Error for Throw {
-    fn description(&self) -> &str {
-        "javascript error"
-    }
-}
-
-/// The result of a computation that might send the JS VM into a throwing state.
-pub type VmResult<T> = Result<T, Throw>;
-
-/// The result of a computation that produces a JS value and might send the JS VM into a throwing state.
-pub type JsResult<'b, T> = VmResult<Handle<'b, T>>;
-
-/// An extension trait for `Result` values that can be converted into `JsResult` values by throwing a JavaScript
-/// exception in the error case.
-pub trait JsResultExt<'a, V: Value> {
-    fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, V>;
 }
 
 pub(crate) struct ClassMap {
@@ -457,7 +426,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Throws a JS value.
-    fn throw<'b, T: Value, U>(&mut self, v: Handle<'b, T>) -> VmResult<U> {
+    fn throw<'b, T: Value, U>(&mut self, v: Handle<'b, T>) -> NeonResult<U> {
         unsafe {
             neon_runtime::error::throw(v.to_raw());
         }
@@ -486,21 +455,21 @@ impl<'a> ModuleContext<'a> {
     }
 
     /// Convenience method for exporting a Neon function from a module.
-    pub fn export_function<T: Value>(&mut self, key: &str, f: fn(FunctionContext) -> JsResult<T>) -> VmResult<()> {
+    pub fn export_function<T: Value>(&mut self, key: &str, f: fn(FunctionContext) -> JsResult<T>) -> NeonResult<()> {
         let value = JsFunction::new(self, f)?.upcast::<JsValue>();
         self.exports.set(self, key, value)?;
         Ok(())
     }
 
     /// Convenience method for exporting a Neon class constructor from a module.
-    pub fn export_class<T: Class>(&mut self, key: &str) -> VmResult<()> {
+    pub fn export_class<T: Class>(&mut self, key: &str) -> NeonResult<()> {
         let constructor = T::constructor(self)?;
         self.exports.set(self, key, constructor)?;
         Ok(())
     }
 
     /// Exports a JavaScript value from a Neon module.
-    pub fn export_value<T: Value>(&mut self, key: &str, val: Handle<T>) -> VmResult<()> {
+    pub fn export_value<T: Value>(&mut self, key: &str, val: Handle<T>) -> NeonResult<()> {
         self.exports.set(self, key, val)?;
         Ok(())
     }
@@ -648,27 +617,3 @@ impl<'a> ContextInternal<'a> for TaskContext<'a> {
 }
 
 impl<'a> Context<'a> for TaskContext<'a> { }
-
-/// A dynamically computed callback that can be passed through C to the JS VM.
-/// This type makes it possible to export a dynamically computed Rust function
-/// as a pair of 1) a raw pointer to the dynamically computed function, and 2)
-/// a static function that knows how to transmute that raw pointer and call it.
-pub(crate) trait Callback<T: Clone + Copy + Sized>: Sized {
-
-    /// Extracts the computed Rust function and invokes it. The Neon runtime
-    /// ensures that the computed function is provided as the extra data field,
-    /// wrapped as a V8 External, in the `CallbackInfo` argument.
-    extern "C" fn invoke(info: &CallbackInfo) -> T;
-
-    /// Converts the callback to a raw void pointer.
-    fn as_ptr(self) -> *mut c_void;
-
-    /// Exports the callback as a pair consisting of the static `Self::invoke`
-    /// method and the computed callback, both converted to raw void pointers.
-    fn into_c_callback(self) -> CCallback {
-        CCallback {
-            static_callback: unsafe { std::mem::transmute(Self::invoke as usize) },
-            dynamic_callback: self.as_ptr()
-        }
-    }
-}

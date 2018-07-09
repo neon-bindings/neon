@@ -2,8 +2,9 @@ pub(crate) mod class;
 
 use neon_runtime;
 use neon_runtime::raw;
-use value::{Handle, Managed, Value, JsValue, JsArray, lower_str_unwrap, build};
-use vm::{Context, VmResult, JsResult, Throw};
+use value::{Handle, Managed, JsResult, Value, JsValue, JsArray, lower_str_unwrap, build};
+use vm::Context;
+use result::{NeonResult, Throw};
 
 pub use self::class::{Class, ClassDescriptor};
 
@@ -47,7 +48,7 @@ impl<'a> PropertyKey for &'a str {
 
 /// The trait of all object types.
 pub trait Object: Value {
-    fn get<'a, C: Context<'a>, K: PropertyKey>(self, _: &mut C, key: K) -> VmResult<Handle<'a, JsValue>> {
+    fn get<'a, C: Context<'a>, K: PropertyKey>(self, _: &mut C, key: K) -> NeonResult<Handle<'a, JsValue>> {
         build(|out| { unsafe { key.get_from(out, self.to_raw()) } })
     }
 
@@ -55,7 +56,7 @@ pub trait Object: Value {
         build(|out| { unsafe { neon_runtime::object::get_own_property_names(out, self.to_raw()) } })
     }
 
-    fn set<'a, C: Context<'a>, K: PropertyKey, W: Value>(self, _: &mut C, key: K, val: Handle<W>) -> VmResult<bool> {
+    fn set<'a, C: Context<'a>, K: PropertyKey, W: Value>(self, _: &mut C, key: K, val: Handle<W>) -> NeonResult<bool> {
         let mut result = false;
         if unsafe { key.set_from(&mut result, self.to_raw(), val.to_raw()) } {
             Ok(result)

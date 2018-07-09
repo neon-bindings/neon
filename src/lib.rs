@@ -15,6 +15,7 @@ pub mod vm;
 pub mod value;
 pub mod object;
 pub mod borrow;
+pub mod result;
 pub mod thread;
 pub mod meta;
 pub mod prelude;
