@@ -6,6 +6,17 @@ rust:
   - beta
   - nightly
 
+matrix:
+  exclude:
+    - env: TRAVIS_NODE_VERSION="8"
+      rust: beta
+    - env: TRAVIS_NODE_VERSION="8"
+      rust: nightly
+    - env: TRAVIS_NODE_VERSION="6"
+      rust: beta
+    - env: TRAVIS_NODE_VERSION="6"
+      rust: nightly
+
 env:
   matrix:
     - TRAVIS_NODE_VERSION="10"
