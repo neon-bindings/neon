@@ -5,11 +5,12 @@ use std::mem;
 use std::os::raw::c_void;
 use std::slice;
 use vm::{Context, JsResult};
-use value::{Value, Object, Borrow, BorrowMut, Ref, RefMut, LoanError, build};
+use borrow::{Borrow, BorrowMut, Ref, RefMut, LoanError};
+use borrow::internal::Pointer;
+use value::{Value, Object, build};
 use value::mem::Managed;
 use value::internal::ValueInternal;
 use vm::VmGuard;
-use vm::internal::Pointer;
 use neon_runtime;
 use neon_runtime::raw;
 
