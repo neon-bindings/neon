@@ -6,10 +6,11 @@ use std::os::raw::c_void;
 use std::slice;
 use neon_runtime;
 use neon_runtime::raw;
-use vm::{JsResult, VmResult, Throw, This, Context, VmGuard, Callback};
+use vm::{JsResult, VmResult, Throw, Context, VmGuard, Callback};
 use vm::internal::Isolate;
-use value::{Value, JsFunction, Object, JsValue, Handle, Managed, Borrow, BorrowMut, Ref, RefMut, LoanError, build};
+use value::{Value, JsFunction, JsValue, Handle, Managed, Borrow, BorrowMut, Ref, RefMut, LoanError, build};
 use value::internal::ValueInternal;
+use object::{Object, This};
 use self::internal::{ClassMetadata, MethodCallback, ConstructorCallCallback, AllocateCallback, ConstructCallback};
 
 pub(crate) mod internal {

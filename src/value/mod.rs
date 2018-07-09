@@ -2,7 +2,6 @@
 
 pub(crate) mod binary;
 pub(crate) mod error;
-pub(crate) mod class;
 pub(crate) mod mem;
 
 use std;
@@ -12,12 +11,12 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut, Drop};
 use neon_runtime;
 use neon_runtime::raw;
-use vm::{Context, VmGuard, FunctionContext, Callback, VmResult, Throw, JsResult, JsResultExt, This};
+use vm::{Context, VmGuard, FunctionContext, Callback, VmResult, Throw, JsResult, JsResultExt};
 use vm::internal::{Isolate, Pointer};
+use object::{Object, This};
 use self::internal::{ValueInternal, SuperType, FunctionCallback};
 
 pub use self::binary::{JsBuffer, JsArrayBuffer, BinaryData, BinaryViewType};
-pub use self::class::{Class, ClassDescriptor};
 pub use self::error::{JsError, ErrorKind};
 pub use self::mem::{Handle, Managed, DowncastError, DowncastResult};
 
@@ -385,7 +384,7 @@ fn lower_str(s: &str) -> Option<(*const u8, i32)> {
     Some((s.as_ptr(), len as i32))
 }
 
-fn lower_str_unwrap(s: &str) -> (*const u8, i32) {
+pub(crate) fn lower_str_unwrap(s: &str) -> (*const u8, i32) {
     lower_str(s).unwrap_or_else(|| {
         panic!("{} < i32::MAX", s.len())
     })
@@ -454,64 +453,6 @@ impl ValueInternal for JsObject {
 
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_object(other.to_raw()) }
-    }
-}
-
-/// A property key in a JavaScript object.
-pub trait PropertyKey {
-    unsafe fn get_from(self, out: &mut raw::Local, obj: raw::Local) -> bool;
-    unsafe fn set_from(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool;
-}
-
-impl PropertyKey for u32 {
-    unsafe fn get_from(self, out: &mut raw::Local, obj: raw::Local) -> bool {
-        neon_runtime::object::get_index(out, obj, self)
-    }
-
-    unsafe fn set_from(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
-        neon_runtime::object::set_index(out, obj, self, val)
-    }
-}
-
-impl<'a, K: Value> PropertyKey for Handle<'a, K> {
-    unsafe fn get_from(self, out: &mut raw::Local, obj: raw::Local) -> bool {
-        neon_runtime::object::get(out, obj, self.to_raw())
-    }
-
-    unsafe fn set_from(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
-        neon_runtime::object::set(out, obj, self.to_raw(), val)
-    }
-}
-
-impl<'a> PropertyKey for &'a str {
-    unsafe fn get_from(self, out: &mut raw::Local, obj: raw::Local) -> bool {
-        let (ptr, len) = lower_str_unwrap(self);
-        neon_runtime::object::get_string(out, obj, ptr, len)
-    }
-
-    unsafe fn set_from(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
-        let (ptr, len) = lower_str_unwrap(self);
-        neon_runtime::object::set_string(out, obj, ptr, len, val)
-    }
-}
-
-/// The trait of all object types.
-pub trait Object: Value {
-    fn get<'a, C: Context<'a>, K: PropertyKey>(self, _: &mut C, key: K) -> VmResult<Handle<'a, JsValue>> {
-        build(|out| { unsafe { key.get_from(out, self.to_raw()) } })
-    }
-
-    fn get_own_property_names<'a, C: Context<'a>>(self, _: &mut C) -> JsResult<'a, JsArray> {
-        build(|out| { unsafe { neon_runtime::object::get_own_property_names(out, self.to_raw()) } })
-    }
-
-    fn set<'a, C: Context<'a>, K: PropertyKey, W: Value>(self, _: &mut C, key: K, val: Handle<W>) -> VmResult<bool> {
-        let mut result = false;
-        if unsafe { key.set_from(&mut result, self.to_raw(), val.to_raw()) } {
-            Ok(result)
-        } else {
-            Err(Throw)
-        }
     }
 }
 

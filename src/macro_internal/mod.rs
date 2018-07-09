@@ -2,7 +2,7 @@
 /// but are subject to change and should never be explicitly used.
 
 // Used by the class macro.
-pub use value::class::internal::{AllocateCallback, ConstructCallback, ConstructorCallCallback, MethodCallback};
+pub use object::class::internal::{AllocateCallback, ConstructCallback, ConstructorCallCallback, MethodCallback};
 pub use vm::internal::initialize_module;
 
 // An alias for neon_runtime so macros can refer to it.

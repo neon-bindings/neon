@@ -13,6 +13,7 @@ extern crate lazy_static;
 
 pub mod vm;
 pub mod value;
+pub mod object;
 pub mod thread;
 pub mod meta;
 pub mod prelude;

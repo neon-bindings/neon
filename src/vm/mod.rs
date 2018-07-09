@@ -13,12 +13,13 @@ use std::panic::UnwindSafe;
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::call::CCallback;
-use value::{JsValue, Value, Object, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined, Ref, RefMut, Borrow, BorrowMut};
+use value::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined, Ref, RefMut, Borrow, BorrowMut};
 use value::mem::{Managed, Handle};
 use value::binary::{JsArrayBuffer, JsBuffer};
-use value::class::internal::ClassMetadata;
-use value::class::Class;
 use value::error::{JsError, ErrorKind};
+use object::{Object, This};
+use object::class::Class;
+use object::class::internal::ClassMetadata;
 use self::internal::{Ledger, ContextInternal, Scope, ScopeMetadata};
 
 pub(crate) mod internal {
@@ -316,11 +317,6 @@ impl CallbackInfo {
             local
         }
     }
-}
-
-/// The trait of types that can be a function's `this` binding.
-pub unsafe trait This: Managed {
-    fn as_this(h: raw::Local) -> Self;
 }
 
 /// Indicates whether a function call was called with JavaScript's `[[Call]]` or `[[Construct]]` semantics.
