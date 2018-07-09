@@ -8,8 +8,8 @@ use neon_runtime;
 use neon_runtime::raw;
 use vm::{JsResult, VmResult, Throw, This, Context, VmGuard, Callback};
 use vm::internal::Isolate;
-use js::{Value, JsFunction, Object, JsValue, Handle, Managed, Borrow, BorrowMut, Ref, RefMut, LoanError, build};
-use js::internal::ValueInternal;
+use value::{Value, JsFunction, Object, JsValue, Handle, Managed, Borrow, BorrowMut, Ref, RefMut, LoanError, build};
+use value::internal::ValueInternal;
 use self::internal::{ClassMetadata, MethodCallback, ConstructorCallCallback, AllocateCallback, ConstructCallback};
 
 pub(crate) mod internal {
@@ -19,10 +19,10 @@ pub(crate) mod internal {
     use neon_runtime;
     use neon_runtime::raw;
     use super::{Class, ClassInternal};
-    use js::{JsValue, JsObject, JsFunction, JsUndefined, Handle, Managed, build};
+    use value::{JsValue, JsObject, JsFunction, JsUndefined, Handle, Managed, build};
     use vm::{JsResult, VmResult, CallbackInfo, Callback, CallContext, Context, Throw};
     use vm::internal::ContextInternal;
-    use js::error::convert_panics;
+    use value::error::convert_panics;
 
     #[repr(C)]
     pub struct MethodCallback<T: Class>(pub fn(CallContext<T>) -> JsResult<JsValue>);

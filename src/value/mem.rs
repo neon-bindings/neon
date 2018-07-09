@@ -6,9 +6,9 @@ use std::error::Error;
 use std::fmt::{self, Debug, Display};
 use neon_runtime;
 use neon_runtime::raw;
-use js::Value;
-use js::internal::SuperType;
-use js::error::{JsError, ErrorKind};
+use value::Value;
+use value::internal::SuperType;
+use value::error::{JsError, ErrorKind};
 use vm::{Context, JsResult, JsResultExt};
 
 /// The trait of data that is managed by the JS garbage collector and can only be accessed via handles.
@@ -105,8 +105,8 @@ impl<'a, T: Value> Handle<'a, T> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::js::{JsValue, JsString, JsNumber};
-    /// # use neon::js::JsUndefined;
+    /// use neon::value::{JsValue, JsString, JsNumber};
+    /// # use neon::value::JsUndefined;
     /// # use neon::vm::{JsResult, FunctionContext};
     /// # use neon::vm::Context;
     /// use neon::vm::Handle;

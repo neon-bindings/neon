@@ -8,8 +8,8 @@ use neon_runtime;
 use neon_runtime::raw;
 
 use vm::{Throw, Context, VmResult};
-use js::{Value, Object, ToJsString, Handle, Managed, build};
-use js::internal::ValueInternal;
+use value::{Value, Object, ToJsString, Handle, Managed, build};
+use value::internal::ValueInternal;
 
 /// A JS `Error` object.
 #[repr(C)]

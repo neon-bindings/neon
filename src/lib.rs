@@ -12,7 +12,7 @@ extern crate rustc_version;
 extern crate lazy_static;
 
 pub mod vm;
-pub mod js;
+pub mod value;
 pub mod thread;
 pub mod meta;
 pub mod prelude;
@@ -57,9 +57,9 @@ macro_rules! register_module {
                     dso_handle: *mut u8,
                     filename: *const u8,
                     register_func: Option<extern "C" fn(
-                        $crate::vm::Handle<$crate::js::JsObject>, *mut u8, *mut u8)>,
+                        $crate::value::Handle<$crate::value::JsObject>, *mut u8, *mut u8)>,
                     context_register_func: Option<extern "C" fn(
-                        $crate::vm::Handle<$crate::js::JsObject>, *mut u8, *mut u8, *mut u8)>,
+                        $crate::value::Handle<$crate::value::JsObject>, *mut u8, *mut u8, *mut u8)>,
                     modname: *const u8,
                     priv_data: *mut u8,
                     link: *mut __NodeModule
@@ -78,7 +78,7 @@ macro_rules! register_module {
                 };
 
                 extern "C" fn __register_neon_module(
-                        m: $crate::vm::Handle<$crate::js::JsObject>, _: *mut u8, _: *mut u8) {
+                        m: $crate::value::Handle<$crate::value::JsObject>, _: *mut u8, _: *mut u8) {
                     $crate::macro_internal::initialize_module(m, __init_neon_module);
                 }
 
@@ -109,7 +109,7 @@ macro_rules! class_definition {
                           $cname ;
                           $typ ;
                           {
-                              fn _______allocator_rust_y_u_no_hygienic_items_______($cx: $crate::vm::CallContext<$crate::js::JsUndefined>) -> $crate::vm::VmResult<$typ> {
+                              fn _______allocator_rust_y_u_no_hygienic_items_______($cx: $crate::vm::CallContext<$crate::value::JsUndefined>) -> $crate::vm::VmResult<$typ> {
                                   $body
                               }
 
@@ -131,7 +131,7 @@ macro_rules! class_definition {
                           $new_ctor ;
                           ($($mname)* $name) ;
                           ($($mdef)* {
-                              fn _______method_rust_y_u_no_hygienic_items_______($cx: $crate::vm::CallContext<$cls>) -> $crate::vm::JsResult<$crate::js::JsValue> {
+                              fn _______method_rust_y_u_no_hygienic_items_______($cx: $crate::vm::CallContext<$cls>) -> $crate::vm::JsResult<$crate::value::JsValue> {
                                   $body
                               }
 
@@ -147,7 +147,7 @@ macro_rules! class_definition {
                           $allocator ;
                           $call_ctor ;
                           ({
-                              fn _______constructor_rust_y_u_no_hygienic_items_______($cx: $crate::vm::CallContext<$cls>) -> $crate::vm::VmResult<Option<$crate::vm::Handle<$crate::js::JsObject>>> {
+                              fn _______constructor_rust_y_u_no_hygienic_items_______($cx: $crate::vm::CallContext<$cls>) -> $crate::vm::VmResult<Option<$crate::value::Handle<$crate::value::JsObject>>> {
                                   $body
                               }
 
@@ -164,7 +164,7 @@ macro_rules! class_definition {
                           $typ ;
                           $allocator ;
                           ({
-                              fn _______call_rust_y_u_no_hygienic_items_______($cx: $crate::vm::CallContext<$crate::js::JsValue>) -> $crate::vm::JsResult<$crate::js::JsValue> {
+                              fn _______call_rust_y_u_no_hygienic_items_______($cx: $crate::vm::CallContext<$crate::value::JsValue>) -> $crate::vm::JsResult<$crate::value::JsValue> {
                                   $body
                               }
 
@@ -177,10 +177,10 @@ macro_rules! class_definition {
     };
 
     ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:block ; ($($call_ctor:block)*) ; ($($new_ctor:block)*) ; ($($mname:ident)*) ; ($($mdef:block)*) ; $($rest:tt)* ) => {
-        impl $crate::js::Class for $cls {
+        impl $crate::value::Class for $cls {
             type Internals = $typ;
 
-            fn setup<'a, C: $crate::vm::Context<'a>>(_: &mut C) -> $crate::vm::VmResult<$crate::js::ClassDescriptor<'a, Self>> {
+            fn setup<'a, C: $crate::vm::Context<'a>>(_: &mut C) -> $crate::vm::VmResult<$crate::value::ClassDescriptor<'a, Self>> {
                 ::std::result::Result::Ok(Self::describe(stringify!($cname), $allocator)
                                              $(.construct($new_ctor))*
                                              $(.call($call_ctor))*
@@ -194,7 +194,7 @@ macro_rules! class_definition {
 #[macro_export]
 macro_rules! impl_managed {
     ($cls:ident) => {
-        impl $crate::vm::Managed for $cls {
+        impl $crate::value::Managed for $cls {
             fn to_raw(self) -> $crate::macro_internal::runtime::raw::Local {
                 let $cls(raw) = self;
                 raw

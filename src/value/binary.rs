@@ -5,9 +5,9 @@ use std::mem;
 use std::os::raw::c_void;
 use std::slice;
 use vm::{Context, JsResult};
-use js::{Value, Object, Borrow, BorrowMut, Ref, RefMut, LoanError, build};
-use js::mem::Managed;
-use js::internal::ValueInternal;
+use value::{Value, Object, Borrow, BorrowMut, Ref, RefMut, LoanError, build};
+use value::mem::Managed;
+use value::internal::ValueInternal;
 use vm::VmGuard;
 use vm::internal::Pointer;
 use neon_runtime;
@@ -117,9 +117,9 @@ impl<'a> BinaryData<'a> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::js::JsArrayBuffer;
+    /// use neon::value::JsArrayBuffer;
     /// use neon::vm::{Context, Handle};
-    /// # use neon::js::JsUndefined;
+    /// # use neon::value::JsUndefined;
     /// # use neon::vm::{JsResult, FunctionContext};
     /// # fn get_x_and_y(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     /// 
@@ -143,9 +143,9 @@ impl<'a> BinaryData<'a> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::js::JsArrayBuffer;
+    /// use neon::value::JsArrayBuffer;
     /// use neon::vm::{Context, Handle};
-    /// # use neon::js::JsUndefined;
+    /// # use neon::value::JsUndefined;
     /// # use neon::vm::{JsResult, FunctionContext};
     /// # fn modify_buffer(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     /// 

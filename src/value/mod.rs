@@ -27,8 +27,8 @@ pub(crate) mod internal {
     use neon_runtime;
     use neon_runtime::raw;
     use vm::{JsResult, CallbackInfo, FunctionContext, Callback};
-    use js::error::convert_panics;
-    use js::{JsObject, Handle, Managed};
+    use value::error::convert_panics;
+    use value::{JsObject, Handle, Managed};
     use super::Value;
 
     pub trait ValueInternal: Managed + 'static {

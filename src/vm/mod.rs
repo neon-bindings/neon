@@ -13,12 +13,12 @@ use std::panic::UnwindSafe;
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::call::CCallback;
-use js::{JsValue, Value, Object, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined, Ref, RefMut, Borrow, BorrowMut};
-use js::mem::{Managed, Handle};
-use js::binary::{JsArrayBuffer, JsBuffer};
-use js::class::internal::ClassMetadata;
-use js::class::Class;
-use js::error::{JsError, ErrorKind};
+use value::{JsValue, Value, Object, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined, Ref, RefMut, Borrow, BorrowMut};
+use value::mem::{Managed, Handle};
+use value::binary::{JsArrayBuffer, JsBuffer};
+use value::class::internal::ClassMetadata;
+use value::class::Class;
+use value::error::{JsError, ErrorKind};
 use self::internal::{Ledger, ContextInternal, Scope, ScopeMetadata};
 
 pub(crate) mod internal {
@@ -29,9 +29,9 @@ pub(crate) mod internal {
     use neon_runtime;
     use neon_runtime::raw;
     use neon_runtime::scope::Root;
-    use js::mem::Handle;
+    use value::mem::Handle;
     use vm::VmResult;
-    use js::{JsObject, LoanError};
+    use value::{JsObject, LoanError};
     use super::{ClassMap, ModuleContext};
 
     pub unsafe trait Pointer {
@@ -365,7 +365,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::js::{JsNumber, Borrow, Ref, JsArrayBuffer};
+    /// use neon::value::{JsNumber, Borrow, Ref, JsArrayBuffer};
     /// # use neon::vm::{JsResult, FunctionContext};
     /// use neon::vm::{Context, Handle};
     /// 
@@ -397,8 +397,8 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::js::{BorrowMut, RefMut, JsArrayBuffer};
-    /// # use neon::js::JsUndefined;
+    /// use neon::value::{BorrowMut, RefMut, JsArrayBuffer};
+    /// # use neon::value::JsUndefined;
     /// # use neon::vm::{JsResult, FunctionContext};
     /// use neon::vm::{Context, Handle};
     /// 
