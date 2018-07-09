@@ -117,10 +117,10 @@ impl<'a> BinaryData<'a> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::value::JsArrayBuffer;
-    /// use neon::vm::{Context, Handle};
-    /// # use neon::value::JsUndefined;
-    /// # use neon::vm::{JsResult, FunctionContext};
+    /// use neon::value::{Handle, JsArrayBuffer};
+    /// use neon::cx::Context;
+    /// # use neon::value::{JsResult, JsUndefined};
+    /// # use neon::cx::FunctionContext;
     /// # fn get_x_and_y(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     /// 
     /// let b: Handle<JsArrayBuffer> = cx.argument(0)?;
@@ -143,10 +143,10 @@ impl<'a> BinaryData<'a> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::value::JsArrayBuffer;
-    /// use neon::vm::{Context, Handle};
-    /// # use neon::value::JsUndefined;
-    /// # use neon::vm::{JsResult, FunctionContext};
+    /// use neon::value::{Handle, JsArrayBuffer};
+    /// use neon::cx::Context;
+    /// # use neon::value::{JsResult, JsUndefined};
+    /// # use neon::cx::FunctionContext;
     /// # fn modify_buffer(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     /// 
     /// let mut b: Handle<JsArrayBuffer> = cx.argument(0)?;

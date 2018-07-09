@@ -1,6 +1,4 @@
 use neon::prelude::*;
-use neon::thread::Task;
-use neon::vm::TaskContext;
 
 struct SuccessTask;
 

@@ -273,7 +273,8 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::value::{Handle, BorrowMut, RefMut, JsArrayBuffer};
+    /// use neon::value::{Handle, JsArrayBuffer};
+    /// use neon::borrow::BorrowMut;
     /// # use neon::value::{JsResult, JsUndefined};
     /// # use neon::cx::FunctionContext;
     /// use neon::cx::Context;

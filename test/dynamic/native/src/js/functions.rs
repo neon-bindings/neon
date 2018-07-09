@@ -1,5 +1,5 @@
 use neon::prelude::*;
-use neon::vm::This;
+use neon::object::This;
 
 fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let x = cx.argument::<JsNumber>(0)?.value();

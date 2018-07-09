@@ -3,5 +3,6 @@
 pub use value::{Handle, JsResult, JsBuffer, JsArrayBuffer, BinaryData, JsError, ErrorKind, Value, JsValue, JsUndefined, JsNull, JsBoolean, JsString, ToJsString, JsNumber, JsObject, JsArray, JsFunction};
 pub use object::{Object, Class};
 pub use borrow::{Borrow, BorrowMut};
-pub use cx::{CallKind, Context, ModuleContext, ExecuteContext, ComputeContext, CallContext, FunctionContext, MethodContext};
+pub use cx::{CallKind, Context, ModuleContext, ExecuteContext, ComputeContext, CallContext, FunctionContext, MethodContext, TaskContext};
 pub use result::{NeonResult, ResultExt};
+pub use thread::Task;
