@@ -228,15 +228,15 @@ pub enum CallKind {
 
 /// An RAII implementation of a "scoped lock" of the JS VM. When this structure is dropped (falls out of scope), the VM will be unlocked.
 ///
-/// Types of JS values that support the `Borrow` and `BorrowMut` traits can be inspected while the VM is locked by passing a reference to a `VmGuard` to their methods.
-pub struct VmGuard<'a> {
+/// Types of JS values that support the `Borrow` and `BorrowMut` traits can be inspected while the VM is locked by passing a reference to a `Lock` to their methods.
+pub struct Lock<'a> {
     pub(crate) ledger: RefCell<Ledger>,
     phantom: PhantomData<&'a ()>
 }
 
-impl<'a> VmGuard<'a> {
+impl<'a> Lock<'a> {
     fn new() -> Self {
-        VmGuard {
+        Lock {
             ledger: RefCell::new(Ledger::new()),
             phantom: PhantomData
         }
@@ -251,9 +251,9 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Lock the JS VM, returning an RAII guard that keeps the lock active as long as the guard is alive.
     /// 
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
-    fn lock(&self) -> VmGuard {
+    fn lock(&self) -> Lock {
         self.check_active();
-        VmGuard::new()
+        Lock::new()
     }
 
     /// Convenience method for locking the VM and borrowing a single JS value's internals.
@@ -283,8 +283,8 @@ pub trait Context<'a>: ContextInternal<'a> {
               &'c V: Borrow,
               F: for<'b> FnOnce(Ref<'b, <&'c V as Borrow>::Target>) -> T
     {
-        let guard = self.lock();
-        let contents = v.borrow(&guard);
+        let lock = self.lock();
+        let contents = v.borrow(&lock);
         f(contents)
     }
 
@@ -318,8 +318,8 @@ pub trait Context<'a>: ContextInternal<'a> {
               &'c mut V: BorrowMut,
               F: for<'b> FnOnce(RefMut<'b, <&'c mut V as Borrow>::Target>) -> T
     {
-        let guard = self.lock();
-        let contents = v.borrow_mut(&guard);
+        let lock = self.lock();
+        let contents = v.borrow_mut(&lock);
         f(contents)
     }
 

@@ -2,7 +2,7 @@ use std::ops::{Deref, DerefMut, Drop};
 use std::fmt;
 use std::os::raw::c_void;
 
-use cx::VmGuard;
+use cx::Lock;
 use self::internal::Pointer;
 
 pub(crate) mod internal {
@@ -91,8 +91,8 @@ pub trait Borrow: Sized {
     /// Borrow the contents of this value immutably.
     /// 
     /// If there is already an outstanding mutable loan for this value, this method panics.
-    fn borrow<'a>(self, guard: &'a VmGuard<'a>) -> Ref<'a, Self::Target> {
-        match self.try_borrow(guard) {
+    fn borrow<'a>(self, lock: &'a Lock<'a>) -> Ref<'a, Self::Target> {
+        match self.try_borrow(lock) {
             Ok(r) => r,
             Err(e) => panic!("{}", e)
         }
@@ -101,7 +101,7 @@ pub trait Borrow: Sized {
     /// Borrow the contents of this value immutably.
     /// 
     /// If there is already an outstanding mutable loan for this value, this method fails with a `LoanError`.
-    fn try_borrow<'a>(self, guard: &'a VmGuard<'a>) -> Result<Ref<'a, Self::Target>, LoanError>;
+    fn try_borrow<'a>(self, lock: &'a Lock<'a>) -> Result<Ref<'a, Self::Target>, LoanError>;
 
 }
 
@@ -111,8 +111,8 @@ pub trait BorrowMut: Borrow {
     /// Borrow the contents of this value mutably.
     /// 
     /// If there is already an outstanding loan for this value, this method panics.
-    fn borrow_mut<'a>(self, guard: &'a VmGuard<'a>) -> RefMut<'a, Self::Target> {
-        match self.try_borrow_mut(guard) {
+    fn borrow_mut<'a>(self, lock: &'a Lock<'a>) -> RefMut<'a, Self::Target> {
+        match self.try_borrow_mut(lock) {
             Ok(r) => r,
             Err(e) => panic!("{}", e)
         }
@@ -121,7 +121,7 @@ pub trait BorrowMut: Borrow {
     /// Borrow the contents of this value mutably.
     /// 
     /// If there is already an outstanding loan for this value, this method panics.
-    fn try_borrow_mut<'a>(self, guard: &'a VmGuard<'a>) -> Result<RefMut<'a, Self::Target>, LoanError>;
+    fn try_borrow_mut<'a>(self, lock: &'a Lock<'a>) -> Result<RefMut<'a, Self::Target>, LoanError>;
 
 }
 
@@ -152,20 +152,20 @@ impl fmt::Display for LoanError {
 /// An immutable reference to the contents of a borrowed JS value.
 pub struct Ref<'a, T: Pointer> {
     pointer: T,
-    guard: &'a VmGuard<'a>
+    lock: &'a Lock<'a>
 }
 
 impl<'a, T: Pointer> Ref<'a, T> {
-    pub(crate) unsafe fn new(guard: &'a VmGuard<'a>, pointer: T) -> Result<Self, LoanError> {
-        let mut ledger = guard.ledger.borrow_mut();
+    pub(crate) unsafe fn new(lock: &'a Lock<'a>, pointer: T) -> Result<Self, LoanError> {
+        let mut ledger = lock.ledger.borrow_mut();
         ledger.try_borrow(pointer.as_ptr())?;
-        Ok(Ref { pointer, guard })
+        Ok(Ref { pointer, lock })
     }
 }
 
 impl<'a, T: Pointer> Drop for Ref<'a, T> {
     fn drop(&mut self) {
-        let mut ledger = self.guard.ledger.borrow_mut();
+        let mut ledger = self.lock.ledger.borrow_mut();
         ledger.settle(unsafe { self.pointer.as_ptr() });
     }
 }
@@ -181,20 +181,20 @@ impl<'a, T: Pointer> Deref for Ref<'a, T> {
 /// A mutable reference to the contents of a borrowed JS value.
 pub struct RefMut<'a, T: Pointer> {
     pointer: T,
-    guard: &'a VmGuard<'a>
+    lock: &'a Lock<'a>
 }
 
 impl<'a, T: Pointer> RefMut<'a, T> {
-    pub(crate) unsafe fn new(guard: &'a VmGuard<'a>, mut pointer: T) -> Result<Self, LoanError> {
-        let mut ledger = guard.ledger.borrow_mut();
+    pub(crate) unsafe fn new(lock: &'a Lock<'a>, mut pointer: T) -> Result<Self, LoanError> {
+        let mut ledger = lock.ledger.borrow_mut();
         ledger.try_borrow_mut(pointer.as_mut())?;
-        Ok(RefMut { pointer, guard })
+        Ok(RefMut { pointer, lock })
     }
 }
 
 impl<'a, T: Pointer> Drop for RefMut<'a, T> {
     fn drop(&mut self) {
-        let mut ledger = self.guard.ledger.borrow_mut();
+        let mut ledger = self.lock.ledger.borrow_mut();
         ledger.settle_mut(unsafe { self.pointer.as_mut() });
     }
 }
