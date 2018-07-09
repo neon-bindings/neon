@@ -96,7 +96,7 @@ impl<'a, T: Value> Handle<'a, T> {
 
     /// Safely upcast a handle to a supertype.
     /// 
-    /// This method does not require a VM context because it only copies a handle.
+    /// This method does not require an execution context because it only copies a handle.
     pub fn upcast<U: Value + SuperType<T>>(&self) -> Handle<'a, U> {
         Handle::new_internal(SuperType::upcast_internal(self.value))
     }
@@ -107,10 +107,10 @@ impl<'a, T: Value> Handle<'a, T> {
     /// 
     /// ```no_run
     /// use neon::value::{JsValue, JsString, JsNumber};
-    /// # use neon::value::JsUndefined;
-    /// # use neon::vm::{JsResult, FunctionContext};
-    /// # use neon::vm::Context;
-    /// use neon::vm::Handle;
+    /// # use neon::value::{JsResult, JsUndefined};
+    /// # use neon::cx::FunctionContext;
+    /// # use neon::cx::Context;
+    /// use neon::value::Handle;
     /// 
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     /// let v: Handle<JsValue> = cx.number(17).upcast();

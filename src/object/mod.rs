@@ -1,3 +1,5 @@
+//! Traits for working with JavaScript objects.
+
 pub(crate) mod class;
 
 use neon_runtime;

@@ -1,3 +1,5 @@
+//! Types and traits for obtaining temporary access to the internals of JavaScript values.
+
 use std::ops::{Deref, DerefMut, Drop};
 use std::fmt;
 use std::os::raw::c_void;
@@ -82,7 +84,7 @@ pub(crate) mod internal {
     }
 }
 
-/// A trait for JS values whose internal contents can be borrowed immutably by Rust while the JS VM is locked.
+/// A trait for JS values whose internal contents can be borrowed immutably by Rust while the JS engine is locked.
 pub trait Borrow: Sized {
 
     /// The type of the value's internal contents.
@@ -105,7 +107,7 @@ pub trait Borrow: Sized {
 
 }
 
-/// A trait for JS values whose internal contents can be borrowed mutably by Rust while the JS VM is locked.
+/// A trait for JS values whose internal contents can be borrowed mutably by Rust while the JS engine is locked.
 pub trait BorrowMut: Borrow {
 
     /// Borrow the contents of this value mutably.

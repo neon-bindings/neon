@@ -26,9 +26,9 @@ pub mod macro_internal;
 /// Register the current crate as a Node module, providing startup
 /// logic for initializing the module object at runtime.
 ///
-/// The first argument is a pattern bound to a `neon::vm::ModuleContext`. This
+/// The first argument is a pattern bound to a `neon::cx::ModuleContext`. This
 /// is usually bound to a mutable variable `mut cx`, which can then be used to
-/// pass to Neon APIs that require mutable access to a VM context.
+/// pass to Neon APIs that require mutable access to an execution context.
 ///
 /// Example:
 ///
@@ -49,7 +49,7 @@ macro_rules! register_module {
         #[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
         #[cfg_attr(target_os = "windows", link_section = ".CRT$XCU")]
         pub static __LOAD_NEON_MODULE: extern "C" fn() = {
-            fn __init_neon_module($module: $crate::vm::ModuleContext) -> $crate::vm::VmResult<()> $init
+            fn __init_neon_module($module: $crate::cx::ModuleContext) -> $crate::result::NeonResult<()> $init
 
             extern "C" fn __load_neon_module() {
                 // Put everything else in the ctor fn so the user fn can't see it.
@@ -112,7 +112,7 @@ macro_rules! class_definition {
                           $cname ;
                           $typ ;
                           {
-                              fn _______allocator_rust_y_u_no_hygienic_items_______($cx: $crate::vm::CallContext<$crate::value::JsUndefined>) -> $crate::vm::VmResult<$typ> {
+                              fn _______allocator_rust_y_u_no_hygienic_items_______($cx: $crate::cx::CallContext<$crate::value::JsUndefined>) -> $crate::result::NeonResult<$typ> {
                                   $body
                               }
 
@@ -134,7 +134,7 @@ macro_rules! class_definition {
                           $new_ctor ;
                           ($($mname)* $name) ;
                           ($($mdef)* {
-                              fn _______method_rust_y_u_no_hygienic_items_______($cx: $crate::vm::CallContext<$cls>) -> $crate::vm::JsResult<$crate::value::JsValue> {
+                              fn _______method_rust_y_u_no_hygienic_items_______($cx: $crate::cx::CallContext<$cls>) -> $crate::value::JsResult<$crate::value::JsValue> {
                                   $body
                               }
 
@@ -150,7 +150,7 @@ macro_rules! class_definition {
                           $allocator ;
                           $call_ctor ;
                           ({
-                              fn _______constructor_rust_y_u_no_hygienic_items_______($cx: $crate::vm::CallContext<$cls>) -> $crate::vm::VmResult<Option<$crate::value::Handle<$crate::value::JsObject>>> {
+                              fn _______constructor_rust_y_u_no_hygienic_items_______($cx: $crate::cx::CallContext<$cls>) -> $crate::result::NeonResult<Option<$crate::value::Handle<$crate::value::JsObject>>> {
                                   $body
                               }
 
@@ -167,7 +167,7 @@ macro_rules! class_definition {
                           $typ ;
                           $allocator ;
                           ({
-                              fn _______call_rust_y_u_no_hygienic_items_______($cx: $crate::vm::CallContext<$crate::value::JsValue>) -> $crate::vm::JsResult<$crate::value::JsValue> {
+                              fn _______call_rust_y_u_no_hygienic_items_______($cx: $crate::cx::CallContext<$crate::value::JsValue>) -> $crate::value::JsResult<$crate::value::JsValue> {
                                   $body
                               }
 
@@ -180,10 +180,10 @@ macro_rules! class_definition {
     };
 
     ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:block ; ($($call_ctor:block)*) ; ($($new_ctor:block)*) ; ($($mname:ident)*) ; ($($mdef:block)*) ; $($rest:tt)* ) => {
-        impl $crate::value::Class for $cls {
+        impl $crate::object::Class for $cls {
             type Internals = $typ;
 
-            fn setup<'a, C: $crate::vm::Context<'a>>(_: &mut C) -> $crate::vm::VmResult<$crate::value::ClassDescriptor<'a, Self>> {
+            fn setup<'a, C: $crate::cx::Context<'a>>(_: &mut C) -> $crate::result::NeonResult<$crate::object::ClassDescriptor<'a, Self>> {
                 ::std::result::Result::Ok(Self::describe(stringify!($cname), $allocator)
                                              $(.construct($new_ctor))*
                                              $(.call($call_ctor))*

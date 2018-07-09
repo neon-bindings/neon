@@ -1,4 +1,4 @@
-//! Types and traits representing JavaScript values.
+//! Types and traits for working with JavaScript values.
 
 pub(crate) mod binary;
 pub(crate) mod error;
@@ -77,7 +77,7 @@ pub(crate) mod internal {
     }
 }
 
-/// The result of a computation that produces a JS value and might send the JS VM into a throwing state.
+/// The result of a computation that produces a JS value and might send the JS engine into a throwing state.
 pub type JsResult<'b, T> = NeonResult<Handle<'b, T>>;
 
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(init: F) -> JsResult<'a, T> {

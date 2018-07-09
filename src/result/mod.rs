@@ -1,9 +1,11 @@
+//! Types and traits for working with JavaScript exceptions.
+
 use std::error::Error;
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use value::{JsResult, Value};
 use cx::Context;
 
-/// An error sentinel type used by `VmResult` (and `JsResult`) to indicate that the JS VM has entered into a throwing state.
+/// An error sentinel type used by `NeonResult` (and `JsResult`) to indicate that the JS engine has entered into a throwing state.
 #[derive(Debug)]
 pub struct Throw;
 
@@ -19,7 +21,7 @@ impl Error for Throw {
     }
 }
 
-/// The result of a computation that might send the JS VM into a throwing state.
+/// The result of a computation that might send the JS engine into a throwing state.
 pub type NeonResult<T> = Result<T, Throw>;
 
 /// An extension trait for `Result` values that can be converted into `JsResult` values by throwing a JavaScript

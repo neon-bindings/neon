@@ -400,7 +400,7 @@ impl<'a, T: Class> BorrowMut for &'a mut T {
     }
 }
 
-/// A dynamically computed callback that can be passed through C to the JS VM.
+/// A dynamically computed callback that can be passed through C to the engine.
 /// This type makes it possible to export a dynamically computed Rust function
 /// as a pair of 1) a raw pointer to the dynamically computed function, and 2)
 /// a static function that knows how to transmute that raw pointer and call it.

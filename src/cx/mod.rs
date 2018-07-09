@@ -1,4 +1,4 @@
-//! Abstractions representing the JavaScript virtual machine and its control flow.
+//! Types and traits that represent _execution contexts_, which manage access to the JavaScript engine.
 
 use std;
 use std::cell::RefCell;
@@ -113,7 +113,7 @@ pub(crate) mod internal {
 
         fn check_active(&self) {
             if !self.is_active() {
-                panic!("VM context is inactive");
+                panic!("execution context is inactive");
             }
         }
 
@@ -204,9 +204,9 @@ pub enum CallKind {
     Call
 }
 
-/// An RAII implementation of a "scoped lock" of the JS VM. When this structure is dropped (falls out of scope), the VM will be unlocked.
+/// An RAII implementation of a "scoped lock" of the JS engine. When this structure is dropped (falls out of scope), the engine will be unlocked.
 ///
-/// Types of JS values that support the `Borrow` and `BorrowMut` traits can be inspected while the VM is locked by passing a reference to a `Lock` to their methods.
+/// Types of JS values that support the `Borrow` and `BorrowMut` traits can be inspected while the engine is locked by passing a reference to a `Lock` to their methods.
 pub struct Lock<'a> {
     pub(crate) ledger: RefCell<Ledger>,
     phantom: PhantomData<&'a ()>
@@ -221,12 +221,12 @@ impl<'a> Lock<'a> {
     }
 }
 
-/// A contextual view of the JS VM. Most operations that interact with the VM require passing a reference to a VM context.
+/// An _execution context_, which provides context-sensitive access to the JavaScript engine. Most operations that interact with the engine require passing a reference to a context.
 /// 
-/// A VM context has a lifetime `'a`, which tracks the rooting of handles managed by the JS garbage collector. All handles created during the lifetime of a context are rooted for that duration and cannot outlive the context.
+/// A context has a lifetime `'a`, which ensures the safety of handles managed by the JS garbage collector. All handles created during the lifetime of a context are kept alive for that duration and cannot outlive the context.
 pub trait Context<'a>: ContextInternal<'a> {
 
-    /// Lock the JS VM, returning an RAII guard that keeps the lock active as long as the guard is alive.
+    /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
     /// 
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
     fn lock(&self) -> Lock {
@@ -234,14 +234,16 @@ pub trait Context<'a>: ContextInternal<'a> {
         Lock::new()
     }
 
-    /// Convenience method for locking the VM and borrowing a single JS value's internals.
+    /// Convenience method for locking the JavaScript engine and borrowing a single JS value's internals.
     /// 
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::value::{JsNumber, Borrow, Ref, JsArrayBuffer};
-    /// # use neon::vm::{JsResult, FunctionContext};
-    /// use neon::vm::{Context, Handle};
+    /// use neon::value::{Handle, JsNumber, JsArrayBuffer};
+    /// use neon::borrow::{Borrow, Ref};
+    /// # use neon::cx::FunctionContext;
+    /// # use neon::value::JsResult;
+    /// use neon::cx::Context;
     /// 
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     /// let b: Handle<JsArrayBuffer> = cx.argument(0)?;
@@ -266,15 +268,15 @@ pub trait Context<'a>: ContextInternal<'a> {
         f(contents)
     }
 
-    /// Convenience method for locking the VM and mutably borrowing a single JS value's internals.
+    /// Convenience method for locking the JavaScript engine and mutably borrowing a single JS value's internals.
     /// 
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::value::{BorrowMut, RefMut, JsArrayBuffer};
-    /// # use neon::value::JsUndefined;
-    /// # use neon::vm::{JsResult, FunctionContext};
-    /// use neon::vm::{Context, Handle};
+    /// use neon::value::{Handle, BorrowMut, RefMut, JsArrayBuffer};
+    /// # use neon::value::{JsResult, JsUndefined};
+    /// # use neon::cx::FunctionContext;
+    /// use neon::cx::Context;
     /// 
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     /// let mut b: Handle<JsArrayBuffer> = cx.argument(0)?;
@@ -303,7 +305,7 @@ pub trait Context<'a>: ContextInternal<'a> {
 
     /// Executes a computation in a new memory management scope.
     /// 
-    /// Handles created in the new scope are rooted for the duration of the computation and cannot escape.
+    /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape.
     /// 
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
     fn execute_scoped<T, F>(&self, f: F) -> T
@@ -318,7 +320,7 @@ pub trait Context<'a>: ContextInternal<'a> {
 
     /// Executes a computation in a new memory management scope and computes a single result value that outlives the computation.
     /// 
-    /// Handles created in the new scope are rooted for the duration of the computation and cannot escape, with the exception of the result value, which is rooted in the current context.
+    /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape, with the exception of the result value, which is rooted in the outer context.
     /// 
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
     fn compute_scoped<V, F>(&self, f: F) -> JsResult<'a, V>
@@ -352,14 +354,14 @@ pub trait Context<'a>: ContextInternal<'a> {
 
     /// Convenience method for creating a `JsString` value.
     /// 
-    /// If the string exceeds the limits of the JS VM, this method panics.
+    /// If the string exceeds the limits of the JS engine, this method panics.
     fn string<S: AsRef<str>>(&mut self, s: S) -> Handle<'a, JsString> {
         JsString::new(self, s)
     }
 
     /// Convenience method for creating a `JsString` value.
     /// 
-    /// If the string exceeds the limits of the JS VM, this method returns an `Err` value.
+    /// If the string exceeds the limits of the JS engine, this method returns an `Err` value.
     fn try_string<S: AsRef<str>>(&mut self, s: S) -> StringResult<'a> {
         JsString::try_new(self, s)
     }
@@ -412,7 +414,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 }
 
-/// A view of the JS VM in the context of top-level initialization of a Neon module.
+/// A view of the JS engine in the context of top-level initialization of a Neon module.
 pub struct ModuleContext<'a> {
     scope: Scope<'a, raw::HandleScope>,
     exports: Handle<'a, JsObject>
@@ -466,7 +468,7 @@ impl<'a> ContextInternal<'a> for ModuleContext<'a> {
 
 impl<'a> Context<'a> for ModuleContext<'a> { }
 
-/// A view of the JS VM in the context of a scoped computation started by `Context::execute_scoped()`.
+/// A view of the JS engine in the context of a scoped computation started by `Context::execute_scoped()`.
 pub struct ExecuteContext<'a> {
     scope: Scope<'a, raw::HandleScope>
 }
@@ -487,7 +489,7 @@ impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
 
 impl<'a> Context<'a> for ExecuteContext<'a> { }
 
-/// A view of the JS VM in the context of a scoped computation started by `Context::compute_scoped()`.
+/// A view of the JS engine in the context of a scoped computation started by `Context::compute_scoped()`.
 pub struct ComputeContext<'a, 'outer> {
     scope: Scope<'a, raw::EscapableHandleScope>,
     phantom_inner: PhantomData<&'a ()>,
@@ -514,7 +516,7 @@ impl<'a, 'b> ContextInternal<'a> for ComputeContext<'a, 'b> {
 
 impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> { }
 
-/// A view of the JS VM in the context of a function call.
+/// A view of the JS engine in the context of a function call.
 /// 
 /// The type parameter `T` is the type of the `this`-binding.
 pub struct CallContext<'a, T: This> {
@@ -573,7 +575,7 @@ pub type FunctionContext<'a> = CallContext<'a, JsObject>;
 /// An alias for `CallContext`, useful for indicating that the function is a method of a class.
 pub type MethodContext<'a, T> = CallContext<'a, T>;
 
-/// A view of the JS VM in the context of a task completion callback.
+/// A view of the JS engine in the context of a task completion callback.
 pub struct TaskContext<'a> {
     /// We use an "inherited HandleScope" here because the C++ `neon::Task::complete`
     /// method sets up and tears down a `HandleScope` for us.
