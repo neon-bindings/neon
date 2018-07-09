@@ -106,12 +106,7 @@ impl<'a, T: Value> Handle<'a, T> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::value::{JsValue, JsString, JsNumber};
-    /// # use neon::value::{JsResult, JsUndefined};
-    /// # use neon::context::FunctionContext;
-    /// # use neon::context::Context;
-    /// use neon::value::Handle;
-    /// 
+    /// # use neon::prelude::*;
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     /// let v: Handle<JsValue> = cx.number(17).upcast();
     /// v.is_a::<JsString>(); // false

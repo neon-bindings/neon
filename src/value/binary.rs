@@ -117,12 +117,8 @@ impl<'a> BinaryData<'a> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::value::{Handle, JsArrayBuffer};
-    /// use neon::context::Context;
-    /// # use neon::value::{JsResult, JsUndefined};
-    /// # use neon::context::FunctionContext;
+    /// # use neon::prelude::*;
     /// # fn get_x_and_y(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    /// 
     /// let b: Handle<JsArrayBuffer> = cx.argument(0)?;
     /// let (x, y) = cx.borrow(&b, |data| {
     ///     let slice = data.as_slice::<i32>();
@@ -143,12 +139,8 @@ impl<'a> BinaryData<'a> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::value::{Handle, JsArrayBuffer};
-    /// use neon::context::Context;
-    /// # use neon::value::{JsResult, JsUndefined};
-    /// # use neon::context::FunctionContext;
+    /// # use neon::prelude::*;
     /// # fn modify_buffer(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    /// 
     /// let mut b: Handle<JsArrayBuffer> = cx.argument(0)?;
     /// cx.borrow_mut(&mut b, |data| {
     ///     let slice = data.as_mut_slice::<f64>();
