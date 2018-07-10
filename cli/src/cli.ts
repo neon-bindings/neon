@@ -138,7 +138,6 @@ const spec: Spec = {
            { name: "path", alias: "p", type: Boolean },
            { name: "rust", alias: "r", type: channel, defaultValue: "default" },
            { name: "modules", type: String, multiple: true, defaultOption: true },
-           { name: "node_module_version", type: Number },
            { name: "help", alias: "h", type: Boolean }],
     usage: [{
       header: "neon build",
@@ -181,8 +180,7 @@ const spec: Spec = {
 
         await neon_build(module,
                          options.rust as Toolchain,
-                         !options.debug,
-                         String(options.node_module_version));
+                         !options.debug);
       }
     }
   },

@@ -71,8 +71,7 @@ export default class Target {
   }
 
   async build(toolchain: rust.Toolchain,
-              settings: BuildSettings,
-              abi: string = process.versions.modules)
+              settings: BuildSettings)
   {
     let macos = process.platform === 'darwin';
 
@@ -86,9 +85,7 @@ export default class Target {
     try {
       let result = await rust.spawn("cargo", args, toolchain, {
         cwd: this.crate.root,
-        stdio: 'inherit',
-        // Pass the Node modules ABI version to the build as an environment variable.
-        env: Object.assign({}, process.env, { NEON_NODE_ABI: abi })
+        stdio: 'inherit'
       });
 
       if (result !== 0) {
