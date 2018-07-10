@@ -47,7 +47,7 @@ pub fn panic(_: FunctionContext) -> JsResult<JsUndefined> {
 }
 
 pub fn panic_after_throw(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    JsError::throw::<_, ()>(&mut cx, ErrorKind::RangeError, "entering throw state with a RangeError").unwrap_err();
+    cx.throw_range_error::<_, ()>("entering throw state with a RangeError").unwrap_err();
     panic!("this should override the RangeError")
 }
 

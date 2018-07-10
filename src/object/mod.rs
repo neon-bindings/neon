@@ -4,7 +4,8 @@ pub(crate) mod class;
 
 use neon_runtime;
 use neon_runtime::raw;
-use value::{Handle, Managed, JsResult, Value, JsValue, JsArray, lower_str_unwrap, build};
+use value::{Handle, Managed, JsResult, Value, JsValue, JsArray, build};
+use value::utf8::Utf8;
 use context::Context;
 use result::{NeonResult, Throw};
 
@@ -38,12 +39,12 @@ impl<'a, K: Value> PropertyKey for Handle<'a, K> {
 
 impl<'a> PropertyKey for &'a str {
     unsafe fn get_from(self, out: &mut raw::Local, obj: raw::Local) -> bool {
-        let (ptr, len) = lower_str_unwrap(self);
+        let (ptr, len) = Utf8::from(self).into_small_unwrap().lower();
         neon_runtime::object::get_string(out, obj, ptr, len)
     }
 
     unsafe fn set_from(self, out: &mut bool, obj: raw::Local, val: raw::Local) -> bool {
-        let (ptr, len) = lower_str_unwrap(self);
+        let (ptr, len) = Utf8::from(self).into_small_unwrap().lower();
         neon_runtime::object::set_string(out, obj, ptr, len, val)
     }
 }

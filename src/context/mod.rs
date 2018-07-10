@@ -14,7 +14,7 @@ use borrow::internal::Ledger;
 use value::{JsResult, JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
 use value::mem::{Managed, Handle};
 use value::binary::{JsArrayBuffer, JsBuffer};
-use value::error::{JsError, ErrorKind};
+use value::error::JsError;
 use object::{Object, This};
 use object::class::Class;
 use result::{NeonResult, Throw, ResultExt};
@@ -71,7 +71,7 @@ impl CallbackInfo {
 
     pub fn require<'b, C: Context<'b>>(&self, cx: &mut C, i: i32) -> JsResult<'b, JsValue> {
         if i < 0 || i >= self.len() {
-            return JsError::throw(cx, ErrorKind::TypeError, "not enough arguments");
+            return cx.throw_type_error("not enough arguments");
         }
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
@@ -294,6 +294,39 @@ pub trait Context<'a>: ContextInternal<'a> {
             neon_runtime::error::throw(v.to_raw());
         }
         Err(Throw)
+    }
+
+    /// Creates a direct instance of the [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error) class.
+    fn error<S: AsRef<str>>(&mut self, msg: S) -> JsResult<'a, JsError> {
+        JsError::error(self, msg)
+    }
+
+    /// Creates an instance of the [`TypeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypeError) class.
+    fn type_error<S: AsRef<str>>(&mut self, msg: S) -> JsResult<'a, JsError> {
+        JsError::type_error(self, msg)
+    }
+
+    /// Creates an instance of the [`RangeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RangeError) class.
+    fn range_error<S: AsRef<str>>(&mut self, msg: S) -> JsResult<'a, JsError> {
+        JsError::range_error(self, msg)
+    }
+
+    /// Throws a direct instance of the [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error) class.
+    fn throw_error<S: AsRef<str>, T>(&mut self, msg: S) -> NeonResult<T> {
+        let err = JsError::error(self, msg)?;
+        self.throw(err)
+    }
+
+    /// Throws an instance of the [`TypeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypeError) class.
+    fn throw_type_error<S: AsRef<str>, T>(&mut self, msg: S) -> NeonResult<T> {
+        let err = JsError::type_error(self, msg)?;
+        self.throw(err)
+    }
+
+    /// Throws an instance of the [`RangeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RangeError) class.
+    fn throw_range_error<S: AsRef<str>, T>(&mut self, msg: S) -> NeonResult<T> {
+        let err = JsError::range_error(self, msg)?;
+        self.throw(err)
     }
 }
 

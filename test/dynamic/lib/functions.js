@@ -23,11 +23,11 @@ describe('JsFunction', function() {
   });
 
   it('converts a Rust panic to a throw in a function', function() {
-    assert.throws(function() { addon.panic() }, Error, /^internal error in native module: zomg$/);
+    assert.throws(function() { addon.panic() }, Error, /^internal error in Neon module: zomg$/);
   });
 
   it('lets panic override a throw', function() {
-    assert.throws(function() { addon.panic_after_throw() }, Error, /^internal error in native module: this should override the RangeError$/);
+    assert.throws(function() { addon.panic_after_throw() }, Error, /^internal error in Neon module: this should override the RangeError$/);
   });
 
   it('computes the right number of arguments', function() {

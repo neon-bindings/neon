@@ -25,18 +25,18 @@ describe('JsClass', function() {
 
   it('converts a Rust panic to a throw in a method', function() {
     var u = new User(1, "some", "thing", "else");
-    assert.throws(function() { u.panic() }, Error, /^internal error in native module: User.prototype.panic$/);
+    assert.throws(function() { u.panic() }, Error, /^internal error in Neon module: User.prototype.panic$/);
   });
 
   it('converts a Rust panic to a throw in a constructor call', function() {
-    assert.throws(function() { PanickyConstructor() }, Error, /^internal error in native module: constructor call panicking$/);
+    assert.throws(function() { PanickyConstructor() }, Error, /^internal error in Neon module: constructor call panicking$/);
   });
 
   it('converts a Rust panic to a throw in a constructor new', function() {
-    assert.throws(function() { new PanickyConstructor() }, Error, /^internal error in native module: constructor panicking$/);
+    assert.throws(function() { new PanickyConstructor() }, Error, /^internal error in Neon module: constructor panicking$/);
   });
 
   it('converts a Rust panic to a throw in a constructor allocator', function() {
-    assert.throws(function() { new PanickyAllocator() }, Error, /^internal error in native module: allocator panicking$/);
+    assert.throws(function() { new PanickyAllocator() }, Error, /^internal error in Neon module: allocator panicking$/);
   });
 });

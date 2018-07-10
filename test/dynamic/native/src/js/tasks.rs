@@ -34,7 +34,7 @@ impl Task for FailureTask {
     }
 
     fn complete(self, mut cx: TaskContext, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent> {
-        JsError::throw(&mut cx, ErrorKind::Error, &result.unwrap_err())
+        cx.throw_error(&result.unwrap_err())
     }
 }
 

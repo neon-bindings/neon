@@ -475,36 +475,22 @@ extern "C" void Neon_Error_NewTypeError(v8::Local<v8::Value> *out, v8::Local<v8:
   *out = v8::Exception::TypeError(msg);
 }
 
-extern "C" void Neon_Error_NewReferenceError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg) {
-  *out = v8::Exception::ReferenceError(msg);
-}
-
 extern "C" void Neon_Error_NewRangeError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg) {
   *out = v8::Exception::RangeError(msg);
 }
 
-extern "C" void Neon_Error_NewSyntaxError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg) {
-  *out = v8::Exception::SyntaxError(msg);
-}
+extern "C" void Neon_Error_ThrowErrorFromUtf8(const uint8_t *data, int32_t len) {
+  v8::Isolate *isolate = v8::Isolate::GetCurrent();
+  Nan::MaybeLocal<v8::String> maybe = v8::String::NewFromUtf8(isolate, (const char*)data, v8::NewStringType::kNormal, len);
 
-extern "C" void Neon_Error_ThrowErrorFromCString(const char *msg) {
-  Nan::ThrowError(msg);
-}
+  v8::Local<v8::String> msg;
+  if (!maybe.ToLocal(&msg)) {
+    Nan::ThrowError("an unknown Neon error occurred");
+    return;
+  }
 
-extern "C" void Neon_Error_ThrowTypeErrorFromCString(const char *msg) {
-  Nan::ThrowTypeError(msg);
-}
-
-extern "C" void Neon_Error_ThrowReferenceErrorFromCString(const char *msg) {
-  Nan::ThrowReferenceError(msg);
-}
-
-extern "C" void Neon_Error_ThrowRangeErrorFromCString(const char *msg) {
-  Nan::ThrowRangeError(msg);
-}
-
-extern "C" void Neon_Error_ThrowSyntaxErrorFromCString(const char *msg) {
-  Nan::ThrowSyntaxError(msg);
+  v8::Local<v8::Value> err = v8::Exception::Error(msg);
+  Nan::ThrowError(err);
 }
 
 extern "C" bool Neon_Mem_SameHandle(v8::Local<v8::Value> v1, v8::Local<v8::Value> v2) {
