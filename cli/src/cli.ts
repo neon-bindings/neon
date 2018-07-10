@@ -149,15 +149,10 @@ const spec: Spec = {
     }, {
       header: "Options",
       optionList: [{
-        name: "rust",
+        name: "release",
         alias: "r",
-        type: channel,
-        description: "Rust channel (default, nightly, beta, or stable). [default: default]"
-      }, {
-        name: "debug",
-        alias: "d",
         type: Boolean,
-        description: "Debug build."
+        description: "Release build."
       }, {
         name: "path",
         alias: "p",
@@ -178,9 +173,7 @@ const spec: Spec = {
       for (let module of modules) {
         logIf(multiple, "building", this.cwd, module);
 
-        await neon_build(module,
-                         options.rust as Toolchain,
-                         !options.debug);
+        await neon_build(module, this.toolchain, !!options.release);
       }
     }
   },
@@ -245,11 +238,19 @@ const spec: Spec = {
 };
 
 export default class CLI {
+  readonly toolchain: Toolchain | null;
   readonly argv: string[];
   readonly cwd: string;
 
   constructor(argv: string[], cwd: string) {
-    this.argv = argv.slice(2);
+    // Check for a toolchain argument in the style of Rust tools (e.g., `neon +nightly build`).
+    if (argv.length > 2 && argv[2].trim().startsWith('+')) {
+      this.toolchain = argv[2].substring(1).trim();
+      this.argv = argv.slice(3);
+    } else {
+      this.toolchain = null;
+      this.argv = argv.slice(2);
+    }
     this.cwd = cwd;
   }
 
