@@ -1,13 +1,12 @@
-//! A trait for defining Rust _tasks_ to be executed in a background thread.
+//! Types and traits for implementing multithreaded computation in a Node plugin.
 
 use std::marker::{Send, Sized};
 use std::mem;
 use std::os::raw::c_void;
 
-use js::{Value, JsFunction};
-use mem::Handle;
-use mem::Managed;
-use vm::{TaskContext, JsResult};
+use value::{JsResult, Value, JsFunction};
+use value::mem::{Handle, Managed};
+use context::TaskContext;
 use neon_runtime;
 use neon_runtime::raw;
 

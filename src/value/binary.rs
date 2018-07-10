@@ -4,12 +4,12 @@ use std::marker::PhantomData;
 use std::mem;
 use std::os::raw::c_void;
 use std::slice;
-use vm::{Context, JsResult};
-use js::{Value, Object, Borrow, BorrowMut, Ref, RefMut, LoanError, build};
-use js::internal::ValueInternal;
-use mem::Managed;
-use vm::VmGuard;
-use vm::internal::Pointer;
+use context::{Context, Lock};
+use borrow::{Borrow, BorrowMut, Ref, RefMut, LoanError};
+use borrow::internal::Pointer;
+use value::{JsResult, Value, Object, build};
+use value::mem::Managed;
+use value::internal::ValueInternal;
 use neon_runtime;
 use neon_runtime::raw;
 
@@ -117,13 +117,8 @@ impl<'a> BinaryData<'a> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::js::binary::JsArrayBuffer;
-    /// use neon::vm::Context;
-    /// use neon::mem::Handle;
-    /// # use neon::js::JsUndefined;
-    /// # use neon::vm::{JsResult, FunctionContext};
+    /// # use neon::prelude::*;
     /// # fn get_x_and_y(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    /// 
     /// let b: Handle<JsArrayBuffer> = cx.argument(0)?;
     /// let (x, y) = cx.borrow(&b, |data| {
     ///     let slice = data.as_slice::<i32>();
@@ -144,13 +139,8 @@ impl<'a> BinaryData<'a> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::js::binary::JsArrayBuffer;
-    /// use neon::vm::Context;
-    /// use neon::mem::Handle;
-    /// # use neon::js::JsUndefined;
-    /// # use neon::vm::{JsResult, FunctionContext};
+    /// # use neon::prelude::*;
     /// # fn modify_buffer(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    /// 
     /// let mut b: Handle<JsArrayBuffer> = cx.argument(0)?;
     /// cx.borrow_mut(&mut b, |data| {
     ///     let slice = data.as_mut_slice::<f64>();
@@ -175,7 +165,7 @@ impl<'a> BinaryData<'a> {
 impl<'a> Borrow for &'a JsBuffer {
     type Target = BinaryData<'a>;
 
-    fn try_borrow<'b>(self, guard: &'b VmGuard<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
+    fn try_borrow<'b>(self, guard: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
         let mut pointer: BinaryData = unsafe { mem::uninitialized() };
         unsafe {
             neon_runtime::buffer::data(&mut pointer.base, &mut pointer.size, self.to_raw());
@@ -187,13 +177,13 @@ impl<'a> Borrow for &'a JsBuffer {
 impl<'a> Borrow for &'a mut JsBuffer {
     type Target = BinaryData<'a>;
 
-    fn try_borrow<'b>(self, guard: &'b VmGuard<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
+    fn try_borrow<'b>(self, guard: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
         (self as &'a JsBuffer).try_borrow(guard)
     }
 }
 
 impl<'a> BorrowMut for &'a mut JsBuffer {
-    fn try_borrow_mut<'b>(self, guard: &'b VmGuard<'b>) -> Result<RefMut<'b, Self::Target>, LoanError> {
+    fn try_borrow_mut<'b>(self, guard: &'b Lock<'b>) -> Result<RefMut<'b, Self::Target>, LoanError> {
         let mut pointer: BinaryData = unsafe { mem::uninitialized() };
         unsafe {
             neon_runtime::buffer::data(&mut pointer.base, &mut pointer.size, self.to_raw());
@@ -205,7 +195,7 @@ impl<'a> BorrowMut for &'a mut JsBuffer {
 impl<'a> Borrow for &'a JsArrayBuffer {
     type Target = BinaryData<'a>;
 
-    fn try_borrow<'b>(self, guard: &'b VmGuard<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
+    fn try_borrow<'b>(self, guard: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
         let mut pointer: BinaryData = unsafe { mem::uninitialized() };
         unsafe {
             neon_runtime::arraybuffer::data(&mut pointer.base, &mut pointer.size, self.to_raw());
@@ -217,13 +207,13 @@ impl<'a> Borrow for &'a JsArrayBuffer {
 impl<'a> Borrow for &'a mut JsArrayBuffer {
     type Target = BinaryData<'a>;
 
-    fn try_borrow<'b>(self, guard: &'b VmGuard<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
+    fn try_borrow<'b>(self, guard: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
         (self as &'a JsArrayBuffer).try_borrow(guard)
     }
 }
 
 impl<'a> BorrowMut for &'a mut JsArrayBuffer {
-    fn try_borrow_mut<'b>(self, guard: &'b VmGuard<'b>) -> Result<RefMut<'b, Self::Target>, LoanError> {
+    fn try_borrow_mut<'b>(self, guard: &'b Lock<'b>) -> Result<RefMut<'b, Self::Target>, LoanError> {
         let mut pointer: BinaryData = unsafe { mem::uninitialized() };
         unsafe {
             neon_runtime::arraybuffer::data(&mut pointer.base, &mut pointer.size, self.to_raw());

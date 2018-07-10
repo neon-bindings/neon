@@ -6,10 +6,11 @@ use std::error::Error;
 use std::fmt::{self, Debug, Display};
 use neon_runtime;
 use neon_runtime::raw;
-use js::Value;
-use js::internal::SuperType;
-use js::error::{JsError, Kind};
-use vm::{Context, JsResult, JsResultExt};
+use value::{JsResult, Value};
+use value::internal::SuperType;
+use value::error::{JsError, ErrorKind};
+use context::Context;
+use result::ResultExt;
 
 /// The trait of data that is managed by the JS garbage collector and can only be accessed via handles.
 pub trait Managed: Copy {
@@ -82,11 +83,11 @@ impl<F: Value, T: Value> Error for DowncastError<F, T> {
 /// The result of a call to `Handle::downcast()`.
 pub type DowncastResult<'a, F, T> = Result<Handle<'a, T>, DowncastError<F, T>>;
 
-impl<'a, F: Value, T: Value> JsResultExt<'a, T> for DowncastResult<'a, F, T> {
+impl<'a, F: Value, T: Value> ResultExt<'a, T> for DowncastResult<'a, F, T> {
     fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, T> {
         match self {
             Ok(v) => Ok(v),
-            Err(e) => JsError::throw(cx, Kind::TypeError, &e.description)
+            Err(e) => JsError::throw(cx, ErrorKind::TypeError, &e.description)
         }
     }
 }
@@ -95,7 +96,7 @@ impl<'a, T: Value> Handle<'a, T> {
 
     /// Safely upcast a handle to a supertype.
     /// 
-    /// This method does not require a VM context because it only copies a handle.
+    /// This method does not require an execution context because it only copies a handle.
     pub fn upcast<U: Value + SuperType<T>>(&self) -> Handle<'a, U> {
         Handle::new_internal(SuperType::upcast_internal(self.value))
     }
@@ -105,12 +106,7 @@ impl<'a, T: Value> Handle<'a, T> {
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::js::{JsValue, JsString, JsNumber};
-    /// # use neon::js::JsUndefined;
-    /// # use neon::vm::{JsResult, FunctionContext};
-    /// # use neon::vm::Context;
-    /// use neon::mem::Handle;
-    /// 
+    /// # use neon::prelude::*;
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     /// let v: Handle<JsValue> = cx.number(17).upcast();
     /// v.is_a::<JsString>(); // false

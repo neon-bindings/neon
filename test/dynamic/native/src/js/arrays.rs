@@ -1,6 +1,4 @@
-use neon::vm::{FunctionContext, JsResult, Context};
-use neon::mem::Handle;
-use neon::js::{JsArray, Object};
+use neon::prelude::*;
 
 pub fn return_js_array(mut cx: FunctionContext) -> JsResult<JsArray> {
     Ok(cx.empty_array())

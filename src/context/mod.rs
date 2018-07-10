@@ -1,253 +1,24 @@
-//! Abstractions representing the JavaScript virtual machine and its control flow.
+//! Types and traits that represent _execution contexts_, which manage access to the JavaScript engine.
 
+pub(crate) mod internal;
+
+use std;
 use std::cell::RefCell;
-use std::mem;
-use std::any::TypeId;
 use std::convert::Into;
-use std::error::Error;
-use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::marker::PhantomData;
-use std::collections::HashMap;
-use std::os::raw::c_void;
 use std::panic::UnwindSafe;
 use neon_runtime;
 use neon_runtime::raw;
-use neon_runtime::call::CCallback;
-use js::{JsValue, Value, Object, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined, Ref, RefMut, Borrow, BorrowMut};
-use js::binary::{JsArrayBuffer, JsBuffer};
-use js::class::internal::ClassMetadata;
-use js::class::Class;
-use js::error::{JsError, Kind};
-use mem::{Handle, Managed};
-use self::internal::{Ledger, ContextInternal, Scope, ScopeMetadata};
-
-pub(crate) mod internal {
-    use std::cell::Cell;
-    use std::mem;
-    use std::collections::HashSet;
-    use std::os::raw::c_void;
-    use neon_runtime;
-    use neon_runtime::raw;
-    use neon_runtime::scope::Root;
-    use mem::Handle;
-    use vm::VmResult;
-    use js::{JsObject, LoanError};
-    use super::{ClassMap, ModuleContext};
-
-    pub unsafe trait Pointer {
-        unsafe fn as_ptr(&self) -> *const c_void;
-        unsafe fn as_mut(&mut self) -> *mut c_void;
-    }
-
-    unsafe impl<T> Pointer for *mut T {
-        unsafe fn as_ptr(&self) -> *const c_void {
-            *self as *const c_void
-        }
-
-        unsafe fn as_mut(&mut self) -> *mut c_void {
-            *self as *mut c_void
-        }
-    }
-    unsafe impl<'a, T> Pointer for &'a mut T {
-        unsafe fn as_ptr(&self) -> *const c_void {
-            let r: &T = &**self;
-            mem::transmute(r)
-        }
-
-        unsafe fn as_mut(&mut self) -> *mut c_void {
-            let r: &mut T = &mut **self;
-            mem::transmute(r)
-        }
-    }
-
-    pub struct Ledger {
-        immutable_loans: HashSet<*const c_void>,
-        mutable_loans: HashSet<*const c_void>
-    }
-
-    impl Ledger {
-        pub fn new() -> Self {
-            Ledger {
-                immutable_loans: HashSet::new(),
-                mutable_loans: HashSet::new()
-            }
-        }
-
-        pub fn try_borrow<T>(&mut self, p: *const T) -> Result<(), LoanError> {
-            let p = p as *const c_void;
-            if self.mutable_loans.contains(&p) {
-                return Err(LoanError::Mutating(p));
-            }
-            self.immutable_loans.insert(p);
-            Ok(())
-        }
-
-        pub fn settle<T>(&mut self, p: *const T) {
-            let p = p as *const c_void;
-            self.immutable_loans.remove(&p);
-        }
-
-        pub fn try_borrow_mut<T>(&mut self, p: *mut T) -> Result<(), LoanError> {
-            let p = p as *const c_void;
-            if self.mutable_loans.contains(&p) {
-                return Err(LoanError::Mutating(p));
-            } else if self.immutable_loans.contains(&p) {
-                return Err(LoanError::Frozen(p));
-            }
-            self.mutable_loans.insert(p);
-            Ok(())
-        }
-
-        pub fn settle_mut<T>(&mut self, p: *mut T) {
-            let p = p as *const c_void;
-            self.mutable_loans.remove(&p);
-        }
-    }
-
-    #[repr(C)]
-    #[derive(Clone, Copy)]
-    pub struct Isolate(*mut raw::Isolate);
-
-    extern "C" fn drop_class_map(map: Box<ClassMap>) {
-        mem::drop(map);
-    }
-
-    impl Isolate {
-        pub(crate) fn to_raw(self) -> *mut raw::Isolate {
-            let Isolate(ptr) = self;
-            ptr
-        }
-
-        pub(crate) fn class_map(&mut self) -> &mut ClassMap {
-            let mut ptr: *mut c_void = unsafe { neon_runtime::class::get_class_map(self.to_raw()) };
-            if ptr.is_null() {
-                let b: Box<ClassMap> = Box::new(ClassMap::new());
-                let raw = Box::into_raw(b);
-                ptr = unsafe { mem::transmute(raw) };
-                let free_map: *mut c_void = unsafe { mem::transmute(drop_class_map as usize) };
-                unsafe {
-                    neon_runtime::class::set_class_map(self.to_raw(), ptr, free_map);
-                }
-            }
-            unsafe { mem::transmute(ptr) }
-        }
-
-        pub(crate) fn current() -> Isolate {
-            unsafe {
-                mem::transmute(neon_runtime::call::current_isolate())
-            }
-        }
-    }
-
-    pub struct ScopeMetadata {
-        isolate: Isolate,
-        active: Cell<bool>
-    }
-
-    pub struct Scope<'a, R: Root + 'static> {
-        pub metadata: ScopeMetadata,
-        pub handle_scope: &'a mut R
-    }
-
-    impl<'a, R: Root + 'static> Scope<'a, R> {
-        pub fn with<T, F: for<'b> FnOnce(Scope<'b, R>) -> T>(f: F) -> T {
-            let mut handle_scope: R = unsafe { R::allocate() };
-            let isolate = Isolate::current();
-            unsafe {
-                handle_scope.enter(isolate.to_raw());
-            }
-            let result = {
-                let scope = Scope {
-                    metadata: ScopeMetadata {
-                        isolate,
-                        active: Cell::new(true)
-                    },
-                    handle_scope: &mut handle_scope
-                };
-                f(scope)
-            };
-            unsafe {
-                handle_scope.exit();
-            }
-            result
-        }
-    }
-
-    pub trait ContextInternal<'a>: Sized {
-        fn scope_metadata(&self) -> &ScopeMetadata;
-
-        fn isolate(&self) -> Isolate {
-            self.scope_metadata().isolate
-        }
-
-        fn is_active(&self) -> bool {
-            self.scope_metadata().active.get()
-        }
-
-        fn check_active(&self) {
-            if !self.is_active() {
-                panic!("VM context is inactive");
-            }
-        }
-
-        fn activate(&self) { self.scope_metadata().active.set(true); }
-        fn deactivate(&self) { self.scope_metadata().active.set(false); }
-    }
-
-    pub fn initialize_module(exports: Handle<JsObject>, init: fn(ModuleContext) -> VmResult<()>) {
-        ModuleContext::with(exports, |cx| {
-            let _ = init(cx);
-        });
-    }
-}
-
-/// An error sentinel type used by `VmResult` (and `JsResult`) to indicate that the JS VM has entered into a throwing state.
-#[derive(Debug)]
-pub struct Throw;
-
-impl Display for Throw {
-    fn fmt(&self, fmt: &mut Formatter) -> FmtResult {
-        fmt.write_str("JavaScript Error")
-    }
-}
-
-impl Error for Throw {
-    fn description(&self) -> &str {
-        "javascript error"
-    }
-}
-
-/// The result of a computation that might send the JS VM into a throwing state.
-pub type VmResult<T> = Result<T, Throw>;
-
-/// The result of a computation that produces a JS value and might send the JS VM into a throwing state.
-pub type JsResult<'b, T> = VmResult<Handle<'b, T>>;
-
-/// An extension trait for `Result` values that can be converted into `JsResult` values by throwing a JavaScript
-/// exception in the error case.
-pub trait JsResultExt<'a, V: Value> {
-    fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, V>;
-}
-
-pub(crate) struct ClassMap {
-    map: HashMap<TypeId, ClassMetadata>
-}
-
-impl ClassMap {
-    fn new() -> ClassMap {
-        ClassMap {
-            map: HashMap::new()
-        }
-    }
-
-    pub fn get(&self, key: &TypeId) -> Option<&ClassMetadata> {
-        self.map.get(key)
-    }
-
-    pub fn set(&mut self, key: TypeId, val: ClassMetadata) {
-        self.map.insert(key, val);
-    }
-}
+use borrow::{Ref, RefMut, Borrow, BorrowMut};
+use borrow::internal::Ledger;
+use value::{JsResult, JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
+use value::mem::{Managed, Handle};
+use value::binary::{JsArrayBuffer, JsBuffer};
+use value::error::{JsError, ErrorKind};
+use object::{Object, This};
+use object::class::Class;
+use result::{NeonResult, Throw, ResultExt};
+use self::internal::{ContextInternal, Scope, ScopeMetadata};
 
 #[repr(C)]
 pub(crate) struct CallbackInfo {
@@ -257,7 +28,7 @@ pub(crate) struct CallbackInfo {
 impl CallbackInfo {
     pub fn data<'a>(&self) -> Handle<'a, JsValue> {
         unsafe {
-            let mut local: raw::Local = mem::zeroed();
+            let mut local: raw::Local = std::mem::zeroed();
             neon_runtime::call::data(&self.info, &mut local);
             Handle::new_internal(JsValue::from_raw(local))
         }
@@ -274,7 +45,7 @@ impl CallbackInfo {
     }
 
     fn kind(&self) -> CallKind {
-        if unsafe { neon_runtime::call::is_construct(mem::transmute(self)) } {
+        if unsafe { neon_runtime::call::is_construct(std::mem::transmute(self)) } {
             CallKind::Construct
         } else {
             CallKind::Call
@@ -292,7 +63,7 @@ impl CallbackInfo {
             return None;
         }
         unsafe {
-            let mut local: raw::Local = mem::zeroed();
+            let mut local: raw::Local = std::mem::zeroed();
             neon_runtime::call::get(&self.info, i, &mut local);
             Some(Handle::new_internal(JsValue::from_raw(local)))
         }
@@ -300,10 +71,10 @@ impl CallbackInfo {
 
     pub fn require<'b, C: Context<'b>>(&self, cx: &mut C, i: i32) -> JsResult<'b, JsValue> {
         if i < 0 || i >= self.len() {
-            return JsError::throw(cx, Kind::TypeError, "not enough arguments");
+            return JsError::throw(cx, ErrorKind::TypeError, "not enough arguments");
         }
         unsafe {
-            let mut local: raw::Local = mem::zeroed();
+            let mut local: raw::Local = std::mem::zeroed();
             neon_runtime::call::get(&self.info, i, &mut local);
             Ok(Handle::new_internal(JsValue::from_raw(local)))
         }
@@ -311,16 +82,11 @@ impl CallbackInfo {
 
     pub fn this<'b, V: Context<'b>>(&self, _: &mut V) -> raw::Local {
         unsafe {
-            let mut local: raw::Local = mem::zeroed();
-            neon_runtime::call::this(mem::transmute(&self.info), &mut local);
+            let mut local: raw::Local = std::mem::zeroed();
+            neon_runtime::call::this(std::mem::transmute(&self.info), &mut local);
             local
         }
     }
-}
-
-/// The trait of types that can be a function's `this` binding.
-pub unsafe trait This: Managed {
-    fn as_this(h: raw::Local) -> Self;
 }
 
 /// Indicates whether a function call was called with JavaScript's `[[Call]]` or `[[Construct]]` semantics.
@@ -330,47 +96,42 @@ pub enum CallKind {
     Call
 }
 
-/// An RAII implementation of a "scoped lock" of the JS VM. When this structure is dropped (falls out of scope), the VM will be unlocked.
+/// An RAII implementation of a "scoped lock" of the JS engine. When this structure is dropped (falls out of scope), the engine will be unlocked.
 ///
-/// Types of JS values that support the `Borrow` and `BorrowMut` traits can be inspected while the VM is locked by passing a reference to a `VmGuard` to their methods.
-pub struct VmGuard<'a> {
+/// Types of JS values that support the `Borrow` and `BorrowMut` traits can be inspected while the engine is locked by passing a reference to a `Lock` to their methods.
+pub struct Lock<'a> {
     pub(crate) ledger: RefCell<Ledger>,
     phantom: PhantomData<&'a ()>
 }
 
-impl<'a> VmGuard<'a> {
+impl<'a> Lock<'a> {
     fn new() -> Self {
-        VmGuard {
+        Lock {
             ledger: RefCell::new(Ledger::new()),
             phantom: PhantomData
         }
     }
 }
 
-/// A contextual view of the JS VM. Most operations that interact with the VM require passing a reference to a VM context.
+/// An _execution context_, which provides context-sensitive access to the JavaScript engine. Most operations that interact with the engine require passing a reference to a context.
 /// 
-/// A VM context has a lifetime `'a`, which tracks the rooting of handles managed by the JS garbage collector. All handles created during the lifetime of a context are rooted for that duration and cannot outlive the context.
+/// A context has a lifetime `'a`, which ensures the safety of handles managed by the JS garbage collector. All handles created during the lifetime of a context are kept alive for that duration and cannot outlive the context.
 pub trait Context<'a>: ContextInternal<'a> {
 
-    /// Lock the JS VM, returning an RAII guard that keeps the lock active as long as the guard is alive.
+    /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
     /// 
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
-    fn lock(&self) -> VmGuard {
+    fn lock(&self) -> Lock {
         self.check_active();
-        VmGuard::new()
+        Lock::new()
     }
 
-    /// Convenience method for locking the VM and borrowing a single JS value's internals.
+    /// Convenience method for locking the JavaScript engine and borrowing a single JS value's internals.
     /// 
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::js::{JsNumber, Borrow, Ref};
-    /// use neon::js::binary::JsArrayBuffer;
-    /// # use neon::vm::{JsResult, FunctionContext};
-    /// use neon::vm::Context;
-    /// use neon::mem::Handle;
-    /// 
+    /// # use neon::prelude::*;
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     /// let b: Handle<JsArrayBuffer> = cx.argument(0)?;
     /// let x: u32 = cx.borrow(&b, |data| { data.as_slice()[0] });
@@ -389,23 +150,17 @@ pub trait Context<'a>: ContextInternal<'a> {
               &'c V: Borrow,
               F: for<'b> FnOnce(Ref<'b, <&'c V as Borrow>::Target>) -> T
     {
-        let guard = self.lock();
-        let contents = v.borrow(&guard);
+        let lock = self.lock();
+        let contents = v.borrow(&lock);
         f(contents)
     }
 
-    /// Convenience method for locking the VM and mutably borrowing a single JS value's internals.
+    /// Convenience method for locking the JavaScript engine and mutably borrowing a single JS value's internals.
     /// 
     /// # Example:
     /// 
     /// ```no_run
-    /// use neon::js::{BorrowMut, RefMut};
-    /// # use neon::js::JsUndefined;
-    /// use neon::js::binary::JsArrayBuffer;
-    /// # use neon::vm::{JsResult, FunctionContext};
-    /// use neon::vm::Context;
-    /// use neon::mem::Handle;
-    /// 
+    /// # use neon::prelude::*;
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     /// let mut b: Handle<JsArrayBuffer> = cx.argument(0)?;
     /// cx.borrow_mut(&mut b, |data| {
@@ -426,14 +181,14 @@ pub trait Context<'a>: ContextInternal<'a> {
               &'c mut V: BorrowMut,
               F: for<'b> FnOnce(RefMut<'b, <&'c mut V as Borrow>::Target>) -> T
     {
-        let guard = self.lock();
-        let contents = v.borrow_mut(&guard);
+        let lock = self.lock();
+        let contents = v.borrow_mut(&lock);
         f(contents)
     }
 
     /// Executes a computation in a new memory management scope.
     /// 
-    /// Handles created in the new scope are rooted for the duration of the computation and cannot escape.
+    /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape.
     /// 
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
     fn execute_scoped<T, F>(&self, f: F) -> T
@@ -448,7 +203,7 @@ pub trait Context<'a>: ContextInternal<'a> {
 
     /// Executes a computation in a new memory management scope and computes a single result value that outlives the computation.
     /// 
-    /// Handles created in the new scope are rooted for the duration of the computation and cannot escape, with the exception of the result value, which is rooted in the current context.
+    /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape, with the exception of the result value, which is rooted in the outer context.
     /// 
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
     fn compute_scoped<V, F>(&self, f: F) -> JsResult<'a, V>
@@ -461,7 +216,7 @@ pub trait Context<'a>: ContextInternal<'a> {
             unsafe {
                 let escapable_handle_scope = cx.scope.handle_scope as *mut raw::EscapableHandleScope;
                 let escapee = f(cx)?;
-                let mut result_local: raw::Local = mem::zeroed();
+                let mut result_local: raw::Local = std::mem::zeroed();
                 neon_runtime::scope::escape(&mut result_local, escapable_handle_scope, escapee.to_raw());
                 Ok(Handle::new_internal(V::from_raw(result_local)))
             }
@@ -482,14 +237,14 @@ pub trait Context<'a>: ContextInternal<'a> {
 
     /// Convenience method for creating a `JsString` value.
     /// 
-    /// If the string exceeds the limits of the JS VM, this method panics.
+    /// If the string exceeds the limits of the JS engine, this method panics.
     fn string<S: AsRef<str>>(&mut self, s: S) -> Handle<'a, JsString> {
         JsString::new(self, s)
     }
 
     /// Convenience method for creating a `JsString` value.
     /// 
-    /// If the string exceeds the limits of the JS VM, this method returns an `Err` value.
+    /// If the string exceeds the limits of the JS engine, this method returns an `Err` value.
     fn try_string<S: AsRef<str>>(&mut self, s: S) -> StringResult<'a> {
         JsString::try_new(self, s)
     }
@@ -532,9 +287,17 @@ pub trait Context<'a>: ContextInternal<'a> {
             }
         })
     }
+
+    /// Throws a JS value.
+    fn throw<'b, T: Value, U>(&mut self, v: Handle<'b, T>) -> NeonResult<U> {
+        unsafe {
+            neon_runtime::error::throw(v.to_raw());
+        }
+        Err(Throw)
+    }
 }
 
-/// A view of the JS VM in the context of top-level initialization of a Neon module.
+/// A view of the JS engine in the context of top-level initialization of a Neon module.
 pub struct ModuleContext<'a> {
     scope: Scope<'a, raw::HandleScope>,
     exports: Handle<'a, JsObject>
@@ -544,8 +307,8 @@ impl<'a> UnwindSafe for ModuleContext<'a> { }
 
 impl<'a> ModuleContext<'a> {
     pub(crate) fn with<T, F: for<'b> FnOnce(ModuleContext<'b>) -> T>(exports: Handle<'a, JsObject>, f: F) -> T {
-        debug_assert!(unsafe { neon_runtime::scope::size() } <= mem::size_of::<raw::HandleScope>());
-        debug_assert!(unsafe { neon_runtime::scope::alignment() } <= mem::align_of::<raw::HandleScope>());
+        debug_assert!(unsafe { neon_runtime::scope::size() } <= std::mem::size_of::<raw::HandleScope>());
+        debug_assert!(unsafe { neon_runtime::scope::alignment() } <= std::mem::align_of::<raw::HandleScope>());
         Scope::with(|scope| {
             f(ModuleContext {
                 scope,
@@ -555,21 +318,21 @@ impl<'a> ModuleContext<'a> {
     }
 
     /// Convenience method for exporting a Neon function from a module.
-    pub fn export_function<T: Value>(&mut self, key: &str, f: fn(FunctionContext) -> JsResult<T>) -> VmResult<()> {
+    pub fn export_function<T: Value>(&mut self, key: &str, f: fn(FunctionContext) -> JsResult<T>) -> NeonResult<()> {
         let value = JsFunction::new(self, f)?.upcast::<JsValue>();
         self.exports.set(self, key, value)?;
         Ok(())
     }
 
     /// Convenience method for exporting a Neon class constructor from a module.
-    pub fn export_class<T: Class>(&mut self, key: &str) -> VmResult<()> {
+    pub fn export_class<T: Class>(&mut self, key: &str) -> NeonResult<()> {
         let constructor = T::constructor(self)?;
         self.exports.set(self, key, constructor)?;
         Ok(())
     }
 
     /// Exports a JavaScript value from a Neon module.
-    pub fn export_value<T: Value>(&mut self, key: &str, val: Handle<T>) -> VmResult<()> {
+    pub fn export_value<T: Value>(&mut self, key: &str, val: Handle<T>) -> NeonResult<()> {
         self.exports.set(self, key, val)?;
         Ok(())
     }
@@ -588,7 +351,7 @@ impl<'a> ContextInternal<'a> for ModuleContext<'a> {
 
 impl<'a> Context<'a> for ModuleContext<'a> { }
 
-/// A view of the JS VM in the context of a scoped computation started by `Context::execute_scoped()`.
+/// A view of the JS engine in the context of a scoped computation started by `Context::execute_scoped()`.
 pub struct ExecuteContext<'a> {
     scope: Scope<'a, raw::HandleScope>
 }
@@ -609,7 +372,7 @@ impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
 
 impl<'a> Context<'a> for ExecuteContext<'a> { }
 
-/// A view of the JS VM in the context of a scoped computation started by `Context::compute_scoped()`.
+/// A view of the JS engine in the context of a scoped computation started by `Context::compute_scoped()`.
 pub struct ComputeContext<'a, 'outer> {
     scope: Scope<'a, raw::EscapableHandleScope>,
     phantom_inner: PhantomData<&'a ()>,
@@ -636,7 +399,7 @@ impl<'a, 'b> ContextInternal<'a> for ComputeContext<'a, 'b> {
 
 impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> { }
 
-/// A view of the JS VM in the context of a function call.
+/// A view of the JS engine in the context of a function call.
 /// 
 /// The type parameter `T` is the type of the `this`-binding.
 pub struct CallContext<'a, T: This> {
@@ -695,7 +458,7 @@ pub type FunctionContext<'a> = CallContext<'a, JsObject>;
 /// An alias for `CallContext`, useful for indicating that the function is a method of a class.
 pub type MethodContext<'a, T> = CallContext<'a, T>;
 
-/// A view of the JS VM in the context of a task completion callback.
+/// A view of the JS engine in the context of a task completion callback.
 pub struct TaskContext<'a> {
     /// We use an "inherited HandleScope" here because the C++ `neon::Task::complete`
     /// method sets up and tears down a `HandleScope` for us.
@@ -717,27 +480,3 @@ impl<'a> ContextInternal<'a> for TaskContext<'a> {
 }
 
 impl<'a> Context<'a> for TaskContext<'a> { }
-
-/// A dynamically computed callback that can be passed through C to the JS VM.
-/// This type makes it possible to export a dynamically computed Rust function
-/// as a pair of 1) a raw pointer to the dynamically computed function, and 2)
-/// a static function that knows how to transmute that raw pointer and call it.
-pub(crate) trait Callback<T: Clone + Copy + Sized>: Sized {
-
-    /// Extracts the computed Rust function and invokes it. The Neon runtime
-    /// ensures that the computed function is provided as the extra data field,
-    /// wrapped as a V8 External, in the `CallbackInfo` argument.
-    extern "C" fn invoke(info: &CallbackInfo) -> T;
-
-    /// Converts the callback to a raw void pointer.
-    fn as_ptr(self) -> *mut c_void;
-
-    /// Exports the callback as a pair consisting of the static `Self::invoke`
-    /// method and the computed callback, both converted to raw void pointers.
-    fn into_c_callback(self) -> CCallback {
-        CCallback {
-            static_callback: unsafe { mem::transmute(Self::invoke as usize) },
-            dynamic_callback: self.as_ptr()
-        }
-    }
-}

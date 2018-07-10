@@ -1,7 +1,4 @@
-use neon::js::{JsString, JsNumber, Borrow};
-use neon::mem::Handle;
-use neon::js::error::{JsError, Kind};
-use neon::vm::Context;
+use neon::prelude::*;
 
 pub struct User {
   id: i32,
@@ -86,7 +83,7 @@ declare_types! {
           };
           Ok(cx.string(&email).upcast())
         },
-        _ => JsError::throw(&mut cx, Kind::TypeError, "property does not exist")
+        _ => JsError::throw(&mut cx, ErrorKind::TypeError, "property does not exist")
       }
     }
 

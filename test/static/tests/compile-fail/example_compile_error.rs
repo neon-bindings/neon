@@ -1,6 +1,6 @@
 extern crate neon;
 
-use neon::js::JsNumber;
+use neon::value::JsNumber;
 
 fn main() {
     JsNumber::new(cx, "9000")
