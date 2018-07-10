@@ -122,15 +122,9 @@ extern "C" {
 
   void Neon_Error_NewError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);
   void Neon_Error_NewTypeError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);
-  void Neon_Error_NewReferenceError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);
   void Neon_Error_NewRangeError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);
-  void Neon_Error_NewSyntaxError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);
   void Neon_Error_Throw(v8::Local<v8::Value> val);
-  void Neon_Error_ThrowErrorFromCString(const char *msg);
-  void Neon_Error_ThrowTypeErrorFromCString(const char *msg);
-  void Neon_Error_ThrowReferenceErrorFromCString(const char *msg);
-  void Neon_Error_ThrowRangeErrorFromCString(const char *msg);
-  void Neon_Error_ThrowSyntaxErrorFromCString(const char *msg);
+  void Neon_Error_ThrowErrorFromUtf8(const uint8_t *data, int32_t len);
 
   bool Neon_Mem_SameHandle(v8::Local<v8::Value> v1, v8::Local<v8::Value> v2);
 

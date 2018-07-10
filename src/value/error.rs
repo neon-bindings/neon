@@ -9,6 +9,7 @@ use context::Context;
 use result::{NeonResult, Throw};
 use value::{Value, Object, Handle, Managed, build};
 use value::internal::ValueInternal;
+use value::utf8::Utf8;
 
 /// A JS `Error` object.
 #[repr(C)]
@@ -71,10 +72,11 @@ pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> NeonResult<T>>(f: F)
             } else if let Some(str) = panic.downcast_ref::<&str>() {
                 format!("internal error in Neon module: {}", str)
             } else {
-                format!("internal error in Neon module")
+                "internal error in Neon module".to_string()
             };
+            let (data, len) = Utf8::from(&msg[..]).truncate().lower();
             unsafe {
-                neon_runtime::error::throw_error_from_cstring(msg[..].as_ptr());
+                neon_runtime::error::throw_error_from_utf8(data, len);
                 Err(Throw)
             }
         }

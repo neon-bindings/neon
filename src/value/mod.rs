@@ -5,6 +5,7 @@ pub(crate) mod error;
 pub(crate) mod mem;
 
 pub(crate) mod internal;
+pub(crate) mod utf8;
 
 use std;
 use std::fmt;
@@ -18,6 +19,7 @@ use result::{NeonResult, Throw, ResultExt};
 use object::{Object, This};
 use object::class::Callback;
 use self::internal::{ValueInternal, SuperType, FunctionCallback};
+use self::utf8::Utf8;
 
 pub use self::binary::{JsBuffer, JsArrayBuffer, BinaryData, BinaryViewType};
 pub use self::error::JsError;
@@ -288,10 +290,12 @@ impl JsString {
     }
 
     pub(crate) fn new_internal<'a>(isolate: Isolate, val: &str) -> Option<Handle<'a, JsString>> {
-        let (ptr, len) = match lower_str(val) {
-            Some(pair) => pair,
-            None => { return None; }
+        let (ptr, len) = if let Some(small) = Utf8::from(val).into_small() {
+            small.lower()
+        } else {
+            return None;
         };
+
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
             if neon_runtime::string::new(&mut local, isolate.to_raw(), ptr, len) {
@@ -322,25 +326,6 @@ impl<'b> ToJsString for &'b str {
             None => JsString::new_internal(cx.isolate(), "").unwrap()
         }
     }
-}
-
-// Lower a &str to the types expected by Node: a const *uint8_t buffer and an int32_t length.
-fn lower_str(s: &str) -> Option<(*const u8, i32)> {
-    // V8 currently refuses to allocate strings longer than `(1 << 20) - 16` bytes,
-    // but in case this changes over time, just ensure the buffer isn't longer than
-    // the largest positive signed integer, and delegate the tighter bounds checks
-    // to V8.
-    let len = s.len();
-    if len > (::std::i32::MAX as usize) {
-        return None;
-    }
-    Some((s.as_ptr(), len as i32))
-}
-
-pub(crate) fn lower_str_unwrap(s: &str) -> (*const u8, i32) {
-    lower_str(s).unwrap_or_else(|| {
-        panic!("{} < i32::MAX", s.len())
-    })
 }
 
 /// A JavaScript number value.
