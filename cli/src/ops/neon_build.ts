@@ -3,8 +3,7 @@ import * as rust from '../rust';
 
 export default async function neon_build(root: string,
                                          toolchain: rust.Toolchain,
-                                         release: boolean,
-                                         abi: string) {
+                                         release: boolean) {
   let project = new Project(root);
-  await project.build(toolchain, release, abi);
+  await project.build(toolchain, release);
 }
