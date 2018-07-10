@@ -8,7 +8,6 @@ use neon_runtime;
 use neon_runtime::raw;
 use value::{JsResult, Value};
 use value::internal::SuperType;
-use value::error::{JsError, ErrorKind};
 use context::Context;
 use result::ResultExt;
 
@@ -87,7 +86,7 @@ impl<'a, F: Value, T: Value> ResultExt<'a, T> for DowncastResult<'a, F, T> {
     fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, T> {
         match self {
             Ok(v) => Ok(v),
-            Err(e) => JsError::throw(cx, ErrorKind::TypeError, &e.description)
+            Err(e) => cx.throw_type_error(&e.description)
         }
     }
 }

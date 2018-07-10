@@ -1,7 +1,5 @@
 //! Types and traits representing JavaScript error values.
 
-use std::mem;
-use std::ffi::CString;
 use std::panic::{UnwindSafe, catch_unwind};
 
 use neon_runtime;
@@ -9,7 +7,7 @@ use neon_runtime::raw;
 
 use context::Context;
 use result::{NeonResult, Throw};
-use value::{Value, Object, ToJsString, Handle, Managed, build};
+use value::{Value, Object, Handle, Managed, build};
 use value::internal::ValueInternal;
 
 /// A JS `Error` object.
@@ -35,70 +33,33 @@ impl Value for JsError { }
 
 impl Object for JsError { }
 
-/// Distinguishes between the different standard JS subclasses of `Error`.
-pub enum ErrorKind {
-
-    /// Represents a direct instance of the [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error) class.
-    Error,
-
-    /// Represents an instance of the [`TypeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypeError) class.
-    TypeError,
-
-    /// Represents an instance of the [`ReferenceError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ReferenceError) class.
-    ReferenceError,
-
-    /// Represents an instance of the [`RangeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RangeError) class.
-    RangeError,
-
-    /// Represents an instance of the [`SyntaxError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/SyntaxError) class.
-    SyntaxError
-
-}
-
-fn message(msg: &str) -> CString {
-    CString::new(msg).ok().unwrap_or_else(|| { CString::new("").ok().unwrap() })
-}
-
 impl JsError {
-
-    /// Constructs a new error object.
-    pub fn new<'a, C: Context<'a>, U: ToJsString>(cx: &mut C, kind: ErrorKind, msg: U) -> NeonResult<Handle<'a, JsError>> {
-        let msg = msg.to_js_string(cx);
-        build(|out| {
-            unsafe {
-                let raw = msg.to_raw();
-                match kind {
-                    ErrorKind::Error          => neon_runtime::error::new_error(out, raw),
-                    ErrorKind::TypeError      => neon_runtime::error::new_type_error(out, raw),
-                    ErrorKind::ReferenceError => neon_runtime::error::new_reference_error(out, raw),
-                    ErrorKind::RangeError     => neon_runtime::error::new_range_error(out, raw),
-                    ErrorKind::SyntaxError    => neon_runtime::error::new_syntax_error(out, raw)
-                }
-            }
+    /// Creates a direct instance of the [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error) class.
+    pub fn error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<Handle<'a, JsError>> {
+        let msg = cx.string(msg.as_ref());
+        build(|out| unsafe {
+            neon_runtime::error::new_error(out, msg.to_raw());
             true
         })
     }
 
-    /// Convenience method for throwing a new error object.
-    pub fn throw<'a, C: Context<'a>, T>(_: &mut C, kind: ErrorKind, msg: &str) -> NeonResult<T> {
-        unsafe {
-            throw_new(kind, msg)
-        }
+    /// Creates an instance of the [`TypeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypeError) class.
+    pub fn type_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<Handle<'a, JsError>> {
+        let msg = cx.string(msg.as_ref());
+        build(|out| unsafe {
+            neon_runtime::error::new_type_error(out, msg.to_raw());
+            true
+        })
     }
 
-}
-
-unsafe fn throw_new<T>(kind: ErrorKind, msg: &str) -> NeonResult<T> {
-    let msg = &message(msg);
-    let ptr = mem::transmute(msg.as_ptr());
-    match kind {
-        ErrorKind::Error          => neon_runtime::error::throw_error_from_cstring(ptr),
-        ErrorKind::TypeError      => neon_runtime::error::throw_type_error_from_cstring(ptr),
-        ErrorKind::ReferenceError => neon_runtime::error::throw_reference_error_from_cstring(ptr),
-        ErrorKind::RangeError     => neon_runtime::error::throw_range_error_from_cstring(ptr),
-        ErrorKind::SyntaxError    => neon_runtime::error::throw_syntax_error_from_cstring(ptr)
+    /// Creates an instance of the [`RangeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RangeError) class.
+    pub fn range_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<Handle<'a, JsError>> {
+        let msg = cx.string(msg.as_ref());
+        build(|out| unsafe {
+            neon_runtime::error::new_range_error(out, msg.to_raw());
+            true
+        })
     }
-    Err(Throw)
 }
 
 pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> NeonResult<T>>(f: F) -> NeonResult<T> {
@@ -106,14 +67,15 @@ pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> NeonResult<T>>(f: F)
         Ok(result) => result,
         Err(panic) => {
             let msg = if let Some(string) = panic.downcast_ref::<String>() {
-                format!("internal error in native module: {}", string)
+                format!("internal error in Neon module: {}", string)
             } else if let Some(str) = panic.downcast_ref::<&str>() {
-                format!("internal error in native module: {}", str)
+                format!("internal error in Neon module: {}", str)
             } else {
-                format!("internal error in native module")
+                format!("internal error in Neon module")
             };
             unsafe {
-                throw_new::<T>(ErrorKind::Error, &msg[..])
+                neon_runtime::error::throw_error_from_cstring(msg[..].as_ptr());
+                Err(Throw)
             }
         }
     }

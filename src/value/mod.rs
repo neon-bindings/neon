@@ -20,7 +20,7 @@ use object::class::Callback;
 use self::internal::{ValueInternal, SuperType, FunctionCallback};
 
 pub use self::binary::{JsBuffer, JsArrayBuffer, BinaryData, BinaryViewType};
-pub use self::error::{JsError, ErrorKind};
+pub use self::error::JsError;
 pub use self::mem::{Handle, Managed, DowncastError, DowncastResult};
 
 /// The result of a computation that produces a JS value and might send the JS engine into a throwing state.
@@ -236,7 +236,7 @@ impl<'a> ResultExt<'a, JsString> for StringResult<'a> {
     fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, JsString> {
         match self {
             Ok(v) => Ok(v),
-            Err(e) => JsError::throw(cx, ErrorKind::RangeError, &e.to_string())
+            Err(e) => cx.throw_range_error(&e.to_string())
         }
     }
 }
@@ -506,7 +506,7 @@ unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [Handle
     let argv = args.as_mut_ptr();
     let argc = args.len();
     if argc > V8_ARGC_LIMIT {
-        return JsError::throw(cx, ErrorKind::RangeError, "too many arguments");
+        return cx.throw_range_error("too many arguments");
     }
     let isolate: *mut c_void = std::mem::transmute(cx.isolate().to_raw());
     Ok((isolate, argc as i32, argv as *mut c_void))

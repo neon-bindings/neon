@@ -83,7 +83,7 @@ declare_types! {
           };
           Ok(cx.string(&email).upcast())
         },
-        _ => JsError::throw(&mut cx, ErrorKind::TypeError, "property does not exist")
+        _ => cx.throw_type_error("property does not exist")
       }
     }
 
