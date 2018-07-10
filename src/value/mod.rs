@@ -307,27 +307,6 @@ impl JsString {
     }
 }
 
-/// A trait for invoking the JS `[[ToString]]` conversion protocol.
-pub trait ToJsString {
-    /// Invoke the JS `[[ToString]]` conversion protocol.
-    fn to_js_string<'a, C: Context<'a>>(&self, cx: &mut C) -> Handle<'a, JsString>;
-}
-
-impl<'b> ToJsString for Handle<'b, JsString> {
-    fn to_js_string<'a, C: Context<'a>>(&self, _: &mut C) -> Handle<'a, JsString> {
-        Handle::new_internal(JsString::from_raw(self.to_raw()))
-    }
-}
-
-impl<'b> ToJsString for &'b str {
-    fn to_js_string<'a, C: Context<'a>>(&self, cx: &mut C) -> Handle<'a, JsString> {
-        match JsString::new_internal(cx.isolate(), self) {
-            Some(s) => s,
-            None => JsString::new_internal(cx.isolate(), "").unwrap()
-        }
-    }
-}
-
 /// A JavaScript number value.
 #[repr(C)]
 #[derive(Clone, Copy)]
