@@ -15,13 +15,6 @@ import { Toolchain } from './rust';
 
 let metadata = JSON.loadSync(path.resolve(__dirname, '..', 'package.json'));
 
-function channel(value: string) {
-  if (['default', 'nightly', 'beta', 'stable'].indexOf(value) < 0) {
-    throw new Error("Expected one of 'default', 'nightly', 'beta', or 'stable', got '" + value + "'");
-  }
-  return value;
-}
-
 function commandUsage(command: string) {
   if (!spec[command]) {
     let e = new Error();
@@ -134,9 +127,8 @@ const spec: Spec = {
   },
 
   build: {
-    args: [{ name: "debug", alias: "d", type: Boolean },
+    args: [{ name: "release", alias: "r", type: Boolean },
            { name: "path", alias: "p", type: Boolean },
-           { name: "rust", alias: "r", type: channel, defaultValue: "default" },
            { name: "modules", type: String, multiple: true, defaultOption: true },
            { name: "help", alias: "h", type: Boolean }],
     usage: [{
