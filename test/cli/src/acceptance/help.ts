@@ -102,8 +102,7 @@ function testHelpBuild(proc: SpawnChain, done: () => void) {
     .wait("$ neon build [options]")
     .wait("$ neon build [options] module ...")
     .wait("Options")
-    .wait("-r, --rust")
-    .wait("-d, --debug")
+    .wait("-r, --release")
     .wait("-p, --path")
     .run(err => {
       if (err) throw err;

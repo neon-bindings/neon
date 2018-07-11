@@ -6,7 +6,7 @@
   "author": "The Neon Community",
   "license": "MIT",
   "scripts": {
-    "install": "node ../../cli/bin/cli.js build",
+    "install": "node ../../cli/bin/cli.js build --release",
     "test": "mocha --recursive lib"
   },
   "devDependencies": {
