@@ -82,7 +82,7 @@ describe('JsObject', function() {
   });
 
   it('correctly reads a Buffer using the lock API', function() {
-    var b = new Buffer(16);
+    var b = Buffer.allocUnsafe(16);
     b.writeUInt32LE(147,    0);
     b.writeUInt32LE(1133,   4);
     b.writeUInt32LE(109,    8);
@@ -94,7 +94,7 @@ describe('JsObject', function() {
   });
 
   it('correctly reads a Buffer using the borrow API', function() {
-    var b = new Buffer(16);
+    var b = Buffer.allocUnsafe(16);
     b.writeUInt32LE(149,      0);
     b.writeUInt32LE(2244,     4);
     b.writeUInt32LE(707,      8);
@@ -106,7 +106,7 @@ describe('JsObject', function() {
   });
 
   it('correctly writes to a Buffer using the lock API', function() {
-    var b = new Buffer(16);
+    var b = Buffer.allocUnsafe(16);
     b.fill(0);
     addon.write_buffer_with_lock(b, 0, 6);
     assert.equal(b.readUInt32LE(0), 6);
@@ -119,7 +119,7 @@ describe('JsObject', function() {
   });
 
   it('correctly writes to a Buffer using the borrow_mut API', function() {
-    var b = new Buffer(16);
+    var b = Buffer.allocUnsafe(16);
     b.fill(0);
     addon.write_buffer_with_borrow_mut(b, 0, 16);
     assert.equal(b.readUInt32LE(0), 16);
