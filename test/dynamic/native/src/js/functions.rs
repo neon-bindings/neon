@@ -14,16 +14,16 @@ pub fn call_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let f = cx.argument::<JsFunction>(0)?;
     let args: Vec<Handle<JsNumber>> = vec![cx.number(16.0)];
     let null = cx.null();
-    f.call(&mut cx, null, args)?.downcast::<JsNumber>().unwrap_or_throw(&mut cx)
+    f.call(&mut cx, null, args)?.downcast::<JsNumber>().or_throw(&mut cx)
 }
 
 pub fn construct_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let f = cx.argument::<JsFunction>(0)?;
     let zero = cx.number(0.0);
     let o = f.construct(&mut cx, vec![zero])?;
-    let get_utc_full_year_method = o.get(&mut cx, "getUTCFullYear")?.downcast::<JsFunction>().unwrap_or_throw(&mut cx)?;
+    let get_utc_full_year_method = o.get(&mut cx, "getUTCFullYear")?.downcast::<JsFunction>().or_throw(&mut cx)?;
     let args: Vec<Handle<JsValue>> = vec![];
-    get_utc_full_year_method.call(&mut cx, o.upcast::<JsValue>(), args)?.downcast::<JsNumber>().unwrap_or_throw(&mut cx)
+    get_utc_full_year_method.call(&mut cx, o.upcast::<JsValue>(), args)?.downcast::<JsNumber>().or_throw(&mut cx)
 }
 
 trait CheckArgument<'a> {
@@ -62,7 +62,7 @@ pub fn return_this(mut cx: FunctionContext) -> JsResult<JsValue> {
 
 pub fn require_object_this(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let this = cx.this();
-    let this = this.downcast::<JsObject>().unwrap_or_throw(&mut cx)?;
+    let this = this.downcast::<JsObject>().or_throw(&mut cx)?;
     let t = cx.boolean(true);
     this.set(&mut cx, "modified", t)?;
     Ok(cx.undefined())

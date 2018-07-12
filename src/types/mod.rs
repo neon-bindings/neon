@@ -1,8 +1,7 @@
-//! Types and traits for working with JavaScript values.
+//! Representations of JavaScript's core builtin types.
 
 pub(crate) mod binary;
 pub(crate) mod error;
-pub(crate) mod mem;
 
 pub(crate) mod internal;
 pub(crate) mod utf8;
@@ -15,18 +14,16 @@ use neon_runtime;
 use neon_runtime::raw;
 use context::{Context, FunctionContext};
 use context::internal::Isolate;
-use result::{NeonResult, Throw, ResultExt};
+use result::{NeonResult, JsResult, Throw, JsResultExt};
 use object::{Object, This};
 use object::class::Callback;
-use self::internal::{ValueInternal, SuperType, FunctionCallback};
+use handle::{Handle, Managed};
+use handle::internal::SuperType;
+use self::internal::{ValueInternal, FunctionCallback};
 use self::utf8::Utf8;
 
 pub use self::binary::{JsBuffer, JsArrayBuffer, BinaryData, BinaryViewType};
 pub use self::error::JsError;
-pub use self::mem::{Handle, Managed, DowncastError, DowncastResult};
-
-/// The result of a computation that produces a JS value and might send the JS engine into a throwing state.
-pub type JsResult<'b, T> = NeonResult<Handle<'b, T>>;
 
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(init: F) -> JsResult<'a, T> {
     unsafe {
@@ -234,8 +231,8 @@ impl fmt::Display for StringOverflow {
 /// The result of constructing a new `JsString`.
 pub type StringResult<'a> = Result<Handle<'a, JsString>, StringOverflow>;
 
-impl<'a> ResultExt<'a, JsString> for StringResult<'a> {
-    fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, JsString> {
+impl<'a> JsResultExt<'a, JsString> for StringResult<'a> {
+    fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, JsString> {
         match self {
             Ok(v) => Ok(v),
             Err(e) => cx.throw_range_error(&e.to_string())

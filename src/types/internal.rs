@@ -3,10 +3,11 @@ use std::os::raw::c_void;
 use neon_runtime;
 use neon_runtime::raw;
 use context::{CallbackInfo, FunctionContext};
-use value::error::convert_panics;
-use value::{JsObject, Handle, Managed};
+use types::error::convert_panics;
+use types::{JsObject, Handle, Managed};
+use result::JsResult;
 use object::class::Callback;
-use super::{JsResult, Value};
+use super::Value;
 
 pub trait ValueInternal: Managed + 'static {
     fn name() -> String;
@@ -24,10 +25,6 @@ pub trait ValueInternal: Managed + 'static {
     fn cast<'a, T: Value, F: FnOnce(raw::Local) -> T>(self, f: F) -> Handle<'a, T> {
         Handle::new_internal(f(self.to_raw()))
     }
-}
-
-pub trait SuperType<T: Value> {
-    fn upcast_internal(T) -> Self;
 }
 
 #[repr(C)]

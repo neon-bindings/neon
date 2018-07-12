@@ -1,4 +1,4 @@
-//! Types and traits that represent _execution contexts_, which manage access to the JavaScript engine.
+//! Node _execution contexts_, which manage access to the JavaScript engine at various points in the Node.js runtime lifecycle.
 
 pub(crate) mod internal;
 
@@ -11,13 +11,13 @@ use neon_runtime;
 use neon_runtime::raw;
 use borrow::{Ref, RefMut, Borrow, BorrowMut};
 use borrow::internal::Ledger;
-use value::{JsResult, JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
-use value::mem::{Managed, Handle};
-use value::binary::{JsArrayBuffer, JsBuffer};
-use value::error::JsError;
+use handle::{Managed, Handle};
+use types::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
+use types::binary::{JsArrayBuffer, JsBuffer};
+use types::error::JsError;
 use object::{Object, This};
 use object::class::Class;
-use result::{NeonResult, Throw, ResultExt};
+use result::{NeonResult, JsResult, Throw};
 use self::internal::{ContextInternal, Scope, ScopeMetadata};
 
 #[repr(C)]
@@ -468,7 +468,7 @@ impl<'a, T: This> CallContext<'a, T> {
     /// Produces the `i`th argument and casts it to the type `V`, or throws an exception if `i` is greater than or equal to `self.len()` or cannot be cast to `V`.
     pub fn argument<V: Value>(&mut self, i: i32) -> JsResult<'a, V> {
         let a = self.info.require(self, i)?;
-        a.downcast().unwrap_or_throw(self)
+        a.downcast_or_throw(self)
     }
 
     /// Produces a handle to the `this`-binding.

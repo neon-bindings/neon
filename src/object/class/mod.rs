@@ -12,10 +12,11 @@ use neon_runtime::raw;
 use neon_runtime::call::CCallback;
 use context::{Context, Lock, CallbackInfo};
 use context::internal::Isolate;
-use result::{NeonResult, Throw};
+use result::{NeonResult, JsResult, Throw};
 use borrow::{Borrow, BorrowMut, Ref, RefMut, LoanError};
-use value::{JsResult, Value, JsFunction, JsValue, Handle, Managed, build};
-use value::internal::ValueInternal;
+use handle::{Handle, Managed};
+use types::{Value, JsFunction, JsValue, build};
+use types::internal::ValueInternal;
 use object::{Object, This};
 use self::internal::{ClassMetadata, MethodCallback, ConstructorCallCallback, AllocateCallback, ConstructCallback};
 
