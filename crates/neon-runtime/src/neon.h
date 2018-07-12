@@ -53,6 +53,7 @@ extern "C" {
   void Neon_Buffer_Data(void **base_out, size_t *len_out, v8::Local<v8::Object> obj);
 
   bool Neon_ArrayBuffer_New(v8::Local<v8::ArrayBuffer> *out, v8::Isolate *isolate, uint32_t size);
+  bool Neon_ArrayBuffer_Uninitialized(v8::Local<v8::ArrayBuffer> *out, v8::Isolate *isolate, uint32_t size);
   void Neon_ArrayBuffer_Data(void **base_out, size_t *len_out, v8::Local<v8::ArrayBuffer> buffer);
 
   typedef void(*Neon_ChainedScopeCallback)(void *, void *, void *, void *);

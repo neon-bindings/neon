@@ -20,9 +20,14 @@ pub struct JsBuffer(raw::Local);
 
 impl JsBuffer {
 
-    /// Constructs a new `Buffer` object.
+    /// Constructs a new `Buffer` object, safely zero-filled.
     pub fn new<'a, C: Context<'a>>(_: &mut C, size: u32) -> JsResult<'a, JsBuffer> {
         build(|out| { unsafe { neon_runtime::buffer::new(out, size) } })
+    }
+
+    /// Constructs a new `Buffer` object, safely zero-filled.
+    pub unsafe fn uninitialized<'a, C: Context<'a>>(_: &mut C, size: u32) -> JsResult<'a, JsBuffer> {
+        build(|out| { neon_runtime::buffer::uninitialized(out, size) })
     }
 
 }
