@@ -7,9 +7,10 @@ use std::slice;
 use context::{Context, Lock};
 use borrow::{Borrow, BorrowMut, Ref, RefMut, LoanError};
 use borrow::internal::Pointer;
-use value::{JsResult, Value, Object, build};
 use handle::Managed;
+use value::{Value, Object, build};
 use value::internal::ValueInternal;
+use result::JsResult;
 use neon_runtime;
 use neon_runtime::raw;
 

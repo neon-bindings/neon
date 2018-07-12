@@ -4,7 +4,8 @@ use std::marker::{Send, Sized};
 use std::mem;
 use std::os::raw::c_void;
 
-use value::{JsResult, Value, JsFunction};
+use value::{Value, JsFunction};
+use result::JsResult;
 use handle::{Handle, Managed};
 use context::TaskContext;
 use neon_runtime;

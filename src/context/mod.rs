@@ -12,12 +12,12 @@ use neon_runtime::raw;
 use borrow::{Ref, RefMut, Borrow, BorrowMut};
 use borrow::internal::Ledger;
 use handle::{Managed, Handle};
-use value::{JsResult, JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
+use value::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
 use value::binary::{JsArrayBuffer, JsBuffer};
 use value::error::JsError;
 use object::{Object, This};
 use object::class::Class;
-use result::{NeonResult, Throw};
+use result::{NeonResult, JsResult, Throw};
 use self::internal::{ContextInternal, Scope, ScopeMetadata};
 
 #[repr(C)]

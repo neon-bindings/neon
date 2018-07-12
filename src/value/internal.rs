@@ -5,8 +5,9 @@ use neon_runtime::raw;
 use context::{CallbackInfo, FunctionContext};
 use value::error::convert_panics;
 use value::{JsObject, Handle, Managed};
+use result::JsResult;
 use object::class::Callback;
-use super::{JsResult, Value};
+use super::Value;
 
 pub trait ValueInternal: Managed + 'static {
     fn name() -> String;

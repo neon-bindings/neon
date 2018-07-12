@@ -5,10 +5,10 @@ use neon_runtime;
 use neon_runtime::raw;
 use super::{Class, ClassInternal, Callback};
 use handle::{Handle, Managed};
-use value::{JsResult, JsValue, JsObject, JsFunction, JsUndefined, build};
+use value::{JsValue, JsObject, JsFunction, JsUndefined, build};
 use context::{CallbackInfo, CallContext, Context};
 use context::internal::ContextInternal;
-use result::{NeonResult, Throw};
+use result::{NeonResult, JsResult, Throw};
 use value::error::convert_panics;
 
 #[repr(C)]

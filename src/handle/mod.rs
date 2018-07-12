@@ -8,9 +8,9 @@ use std::error::Error;
 use std::fmt::{self, Debug, Display};
 use neon_runtime;
 use neon_runtime::raw;
-use value::{JsResult, Value};
+use value::Value;
 use context::Context;
-use result::NeonResultExt;
+use result::{JsResult, NeonResultExt};
 use self::internal::SuperType;
 
 /// The trait of data that is managed by the JS garbage collector and can only be accessed via handles.

@@ -14,7 +14,7 @@ use neon_runtime;
 use neon_runtime::raw;
 use context::{Context, FunctionContext};
 use context::internal::Isolate;
-use result::{NeonResult, Throw, NeonResultExt};
+use result::{NeonResult, JsResult, Throw, NeonResultExt};
 use object::{Object, This};
 use object::class::Callback;
 use handle::{Handle, Managed};
@@ -24,9 +24,6 @@ use self::utf8::Utf8;
 
 pub use self::binary::{JsBuffer, JsArrayBuffer, BinaryData, BinaryViewType};
 pub use self::error::JsError;
-
-/// The result of a computation that produces a JS value and might send the JS engine into a throwing state.
-pub type JsResult<'b, T> = NeonResult<Handle<'b, T>>;
 
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(init: F) -> JsResult<'a, T> {
     unsafe {
