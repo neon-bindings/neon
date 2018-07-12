@@ -179,6 +179,17 @@ extern "C" bool Neon_Convert_ToObject(v8::Local<v8::Object> *out, v8::Local<v8::
 
 extern "C" bool Neon_Buffer_New(v8::Local<v8::Object> *out, uint32_t size) {
   Nan::MaybeLocal<v8::Object> maybe = Nan::NewBuffer(size);
+  if (!maybe.ToLocal(out)) {
+    return false;
+  }
+
+  void *data = node::Buffer::Data(*out);
+  memset(data, 0, size);
+  return true;
+}
+
+extern "C" bool Neon_Buffer_Uninitialized(v8::Local<v8::Object> *out, uint32_t size) {
+  Nan::MaybeLocal<v8::Object> maybe = Nan::NewBuffer(size);
   return maybe.ToLocal(out);
 }
 
