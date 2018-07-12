@@ -118,12 +118,22 @@ impl<'a, T: Value> Handle<'a, T> {
         U::is_typeof(self.value)
     }
 
-    /// Attempts to downcast a handle to another type, which may fail.
+    /// Attempts to downcast a handle to another type, which may fail. A failure
+    /// to downcast **does not** throw a JavaScript exception, so it's OK to
+    /// continue interacting with the JS engine if this method produces an `Err`
+    /// result.
     pub fn downcast<U: Value>(&self) -> DowncastResult<'a, T, U> {
         match U::downcast(self.value) {
             Some(v) => Ok(Handle::new_internal(v)),
             None => Err(DowncastError::new())
         }
+    }
+
+    /// Attempts to downcast a handle to another type, raising a JavaScript `TypeError`
+    /// exception on failure. This method is a convenient shorthand, equivalent to
+    /// `self.downcast::<U>().or_throw::<C>(cx)`.
+    pub fn downcast_or_throw<'b, U: Value, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'a, U> {
+        self.downcast().unwrap_or_throw(cx)
     }
 
 }
