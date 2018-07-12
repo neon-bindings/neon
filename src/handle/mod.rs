@@ -1,5 +1,7 @@
 //! Types encapsulating _handles_ to managed JavaScript memory.
 
+pub(crate) mod internal;
+
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::error::Error;
@@ -7,9 +9,9 @@ use std::fmt::{self, Debug, Display};
 use neon_runtime;
 use neon_runtime::raw;
 use value::{JsResult, Value};
-use value::internal::SuperType;
 use context::Context;
 use result::NeonResultExt;
+use self::internal::SuperType;
 
 /// The trait of data that is managed by the JS garbage collector and can only be accessed via handles.
 pub trait Managed: Copy {

@@ -2,7 +2,6 @@
 
 pub(crate) mod binary;
 pub(crate) mod error;
-pub(crate) mod mem;
 
 pub(crate) mod internal;
 pub(crate) mod utf8;
@@ -18,12 +17,13 @@ use context::internal::Isolate;
 use result::{NeonResult, Throw, NeonResultExt};
 use object::{Object, This};
 use object::class::Callback;
-use self::internal::{ValueInternal, SuperType, FunctionCallback};
+use handle::{Handle, Managed};
+use handle::internal::SuperType;
+use self::internal::{ValueInternal, FunctionCallback};
 use self::utf8::Utf8;
 
 pub use self::binary::{JsBuffer, JsArrayBuffer, BinaryData, BinaryViewType};
 pub use self::error::JsError;
-pub use self::mem::{Handle, Managed, DowncastError, DowncastResult};
 
 /// The result of a computation that produces a JS value and might send the JS engine into a throwing state.
 pub type JsResult<'b, T> = NeonResult<Handle<'b, T>>;

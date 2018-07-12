@@ -5,7 +5,7 @@ use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::scope::Root;
 use value::JsObject;
-use value::mem::Handle;
+use handle::Handle;
 use object::class::ClassMap;
 use result::NeonResult;
 use super::ModuleContext;

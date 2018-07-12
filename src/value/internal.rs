@@ -26,10 +26,6 @@ pub trait ValueInternal: Managed + 'static {
     }
 }
 
-pub trait SuperType<T: Value> {
-    fn upcast_internal(T) -> Self;
-}
-
 #[repr(C)]
 pub struct FunctionCallback<T: Value>(pub fn(FunctionContext) -> JsResult<T>);
 

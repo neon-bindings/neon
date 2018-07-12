@@ -12,6 +12,7 @@ extern crate rustc_version;
 extern crate lazy_static;
 
 pub mod context;
+pub mod handle;
 pub mod value;
 pub mod object;
 pub mod borrow;
