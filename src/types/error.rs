@@ -7,9 +7,9 @@ use neon_runtime::raw;
 
 use context::Context;
 use result::{NeonResult, Throw};
-use value::{Value, Object, Handle, Managed, build};
-use value::internal::ValueInternal;
-use value::utf8::Utf8;
+use types::{Value, Object, Handle, Managed, build};
+use types::internal::ValueInternal;
+use types::utf8::Utf8;
 
 /// A JS `Error` object.
 #[repr(C)]

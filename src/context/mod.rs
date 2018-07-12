@@ -1,4 +1,4 @@
-//! Types and traits that represent _execution contexts_, which manage access to the JavaScript engine.
+//! Node _execution contexts_, which manage access to the JavaScript engine at various points in the Node.js runtime lifecycle.
 
 pub(crate) mod internal;
 
@@ -12,9 +12,9 @@ use neon_runtime::raw;
 use borrow::{Ref, RefMut, Borrow, BorrowMut};
 use borrow::internal::Ledger;
 use handle::{Managed, Handle};
-use value::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
-use value::binary::{JsArrayBuffer, JsBuffer};
-use value::error::JsError;
+use types::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
+use types::binary::{JsArrayBuffer, JsBuffer};
+use types::error::JsError;
 use object::{Object, This};
 use object::class::Class;
 use result::{NeonResult, JsResult, Throw};

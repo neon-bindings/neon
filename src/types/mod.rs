@@ -1,4 +1,4 @@
-//! Types and traits for working with JavaScript values.
+//! Representations of JavaScript's core builtin types.
 
 pub(crate) mod binary;
 pub(crate) mod error;
@@ -14,7 +14,7 @@ use neon_runtime;
 use neon_runtime::raw;
 use context::{Context, FunctionContext};
 use context::internal::Isolate;
-use result::{NeonResult, JsResult, Throw, NeonResultExt};
+use result::{NeonResult, JsResult, Throw, JsResultExt};
 use object::{Object, This};
 use object::class::Callback;
 use handle::{Handle, Managed};
@@ -231,7 +231,7 @@ impl fmt::Display for StringOverflow {
 /// The result of constructing a new `JsString`.
 pub type StringResult<'a> = Result<Handle<'a, JsString>, StringOverflow>;
 
-impl<'a> NeonResultExt<'a, JsString> for StringResult<'a> {
+impl<'a> JsResultExt<'a, JsString> for StringResult<'a> {
     fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, JsString> {
         match self {
             Ok(v) => Ok(v),

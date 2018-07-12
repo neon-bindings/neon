@@ -5,8 +5,8 @@ pub(crate) mod class;
 use neon_runtime;
 use neon_runtime::raw;
 use handle::{Handle, Managed};
-use value::{Value, JsValue, JsArray, build};
-use value::utf8::Utf8;
+use types::{Value, JsValue, JsArray, build};
+use types::utf8::Utf8;
 use context::Context;
 use result::{NeonResult, JsResult, Throw};
 

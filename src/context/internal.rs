@@ -4,7 +4,7 @@ use std::os::raw::c_void;
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::scope::Root;
-use value::JsObject;
+use types::JsObject;
 use handle::Handle;
 use object::class::ClassMap;
 use result::NeonResult;

@@ -15,8 +15,8 @@ use context::internal::Isolate;
 use result::{NeonResult, JsResult, Throw};
 use borrow::{Borrow, BorrowMut, Ref, RefMut, LoanError};
 use handle::{Handle, Managed};
-use value::{Value, JsFunction, JsValue, build};
-use value::internal::ValueInternal;
+use types::{Value, JsFunction, JsValue, build};
+use types::internal::ValueInternal;
 use object::{Object, This};
 use self::internal::{ClassMetadata, MethodCallback, ConstructorCallCallback, AllocateCallback, ConstructCallback};
 

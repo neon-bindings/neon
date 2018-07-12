@@ -5,11 +5,11 @@ use neon_runtime;
 use neon_runtime::raw;
 use super::{Class, ClassInternal, Callback};
 use handle::{Handle, Managed};
-use value::{JsValue, JsObject, JsFunction, JsUndefined, build};
 use context::{CallbackInfo, CallContext, Context};
 use context::internal::ContextInternal;
 use result::{NeonResult, JsResult, Throw};
-use value::error::convert_panics;
+use types::{JsValue, JsObject, JsFunction, JsUndefined, build};
+use types::error::convert_panics;
 
 #[repr(C)]
 pub struct MethodCallback<T: Class>(pub fn(CallContext<T>) -> JsResult<JsValue>);

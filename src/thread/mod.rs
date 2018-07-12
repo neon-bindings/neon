@@ -1,10 +1,10 @@
-//! Types and traits for implementing multithreaded computation in a Node plugin.
+//! Asynchronous access to multithreaded computation in a Node plugin.
 
 use std::marker::{Send, Sized};
 use std::mem;
 use std::os::raw::c_void;
 
-use value::{Value, JsFunction};
+use types::{Value, JsFunction};
 use result::JsResult;
 use handle::{Handle, Managed};
 use context::TaskContext;

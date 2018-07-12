@@ -1,4 +1,4 @@
-//! Types encapsulating _handles_ to managed JavaScript memory.
+//! Safe _handles_ to managed JavaScript memory.
 
 pub(crate) mod internal;
 
@@ -8,9 +8,9 @@ use std::error::Error;
 use std::fmt::{self, Debug, Display};
 use neon_runtime;
 use neon_runtime::raw;
-use value::Value;
+use types::Value;
 use context::Context;
-use result::{JsResult, NeonResultExt};
+use result::{JsResult, JsResultExt};
 use self::internal::SuperType;
 
 /// The trait of data that is managed by the JS garbage collector and can only be accessed via handles.
@@ -84,7 +84,7 @@ impl<F: Value, T: Value> Error for DowncastError<F, T> {
 /// The result of a call to `Handle::downcast()`.
 pub type DowncastResult<'a, F, T> = Result<Handle<'a, T>, DowncastError<F, T>>;
 
-impl<'a, F: Value, T: Value> NeonResultExt<'a, T> for DowncastResult<'a, F, T> {
+impl<'a, F: Value, T: Value> JsResultExt<'a, T> for DowncastResult<'a, F, T> {
     fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, T> {
         match self {
             Ok(v) => Ok(v),
