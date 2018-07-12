@@ -235,7 +235,7 @@ impl fmt::Display for StringOverflow {
 pub type StringResult<'a> = Result<Handle<'a, JsString>, StringOverflow>;
 
 impl<'a> NeonResultExt<'a, JsString> for StringResult<'a> {
-    fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, JsString> {
+    fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, JsString> {
         match self {
             Ok(v) => Ok(v),
             Err(e) => cx.throw_range_error(&e.to_string())

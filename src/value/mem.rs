@@ -83,7 +83,7 @@ impl<F: Value, T: Value> Error for DowncastError<F, T> {
 pub type DowncastResult<'a, F, T> = Result<Handle<'a, T>, DowncastError<F, T>>;
 
 impl<'a, F: Value, T: Value> NeonResultExt<'a, T> for DowncastResult<'a, F, T> {
-    fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, T> {
+    fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, T> {
         match self {
             Ok(v) => Ok(v),
             Err(e) => cx.throw_type_error(&e.description)
@@ -133,7 +133,7 @@ impl<'a, T: Value> Handle<'a, T> {
     /// exception on failure. This method is a convenient shorthand, equivalent to
     /// `self.downcast::<U>().or_throw::<C>(cx)`.
     pub fn downcast_or_throw<'b, U: Value, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'a, U> {
-        self.downcast().unwrap_or_throw(cx)
+        self.downcast().or_throw(cx)
     }
 
 }

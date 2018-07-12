@@ -17,7 +17,7 @@ use value::binary::{JsArrayBuffer, JsBuffer};
 use value::error::JsError;
 use object::{Object, This};
 use object::class::Class;
-use result::{NeonResult, Throw, NeonResultExt};
+use result::{NeonResult, Throw};
 use self::internal::{ContextInternal, Scope, ScopeMetadata};
 
 #[repr(C)]
@@ -468,7 +468,7 @@ impl<'a, T: This> CallContext<'a, T> {
     /// Produces the `i`th argument and casts it to the type `V`, or throws an exception if `i` is greater than or equal to `self.len()` or cannot be cast to `V`.
     pub fn argument<V: Value>(&mut self, i: i32) -> JsResult<'a, V> {
         let a = self.info.require(self, i)?;
-        a.downcast().unwrap_or_throw(self)
+        a.downcast_or_throw(self)
     }
 
     /// Produces a handle to the `this`-binding.
