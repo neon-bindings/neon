@@ -9,7 +9,7 @@ use neon_runtime::raw;
 use value::{JsResult, Value};
 use value::internal::SuperType;
 use context::Context;
-use result::ResultExt;
+use result::NeonResultExt;
 
 /// The trait of data that is managed by the JS garbage collector and can only be accessed via handles.
 pub trait Managed: Copy {
@@ -82,7 +82,7 @@ impl<F: Value, T: Value> Error for DowncastError<F, T> {
 /// The result of a call to `Handle::downcast()`.
 pub type DowncastResult<'a, F, T> = Result<Handle<'a, T>, DowncastError<F, T>>;
 
-impl<'a, F: Value, T: Value> ResultExt<'a, T> for DowncastResult<'a, F, T> {
+impl<'a, F: Value, T: Value> NeonResultExt<'a, T> for DowncastResult<'a, F, T> {
     fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, T> {
         match self {
             Ok(v) => Ok(v),

@@ -15,7 +15,7 @@ use neon_runtime;
 use neon_runtime::raw;
 use context::{Context, FunctionContext};
 use context::internal::Isolate;
-use result::{NeonResult, Throw, ResultExt};
+use result::{NeonResult, Throw, NeonResultExt};
 use object::{Object, This};
 use object::class::Callback;
 use self::internal::{ValueInternal, SuperType, FunctionCallback};
@@ -234,7 +234,7 @@ impl fmt::Display for StringOverflow {
 /// The result of constructing a new `JsString`.
 pub type StringResult<'a> = Result<Handle<'a, JsString>, StringOverflow>;
 
-impl<'a> ResultExt<'a, JsString> for StringResult<'a> {
+impl<'a> NeonResultExt<'a, JsString> for StringResult<'a> {
     fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, JsString> {
         match self {
             Ok(v) => Ok(v),

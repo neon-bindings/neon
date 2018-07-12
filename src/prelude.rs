@@ -4,5 +4,5 @@ pub use value::{Handle, JsResult, JsBuffer, JsArrayBuffer, BinaryData, JsError, 
 pub use object::{Object, Class};
 pub use borrow::{Borrow, BorrowMut};
 pub use context::{CallKind, Context, ModuleContext, ExecuteContext, ComputeContext, CallContext, FunctionContext, MethodContext, TaskContext};
-pub use result::{NeonResult, ResultExt};
+pub use result::{NeonResult, NeonResultExt};
 pub use thread::Task;

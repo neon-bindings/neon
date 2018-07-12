@@ -17,7 +17,7 @@ use value::binary::{JsArrayBuffer, JsBuffer};
 use value::error::JsError;
 use object::{Object, This};
 use object::class::Class;
-use result::{NeonResult, Throw, ResultExt};
+use result::{NeonResult, Throw, NeonResultExt};
 use self::internal::{ContextInternal, Scope, ScopeMetadata};
 
 #[repr(C)]

@@ -26,6 +26,6 @@ pub type NeonResult<T> = Result<T, Throw>;
 
 /// An extension trait for `Result` values that can be converted into `JsResult` values by throwing a JavaScript
 /// exception in the error case.
-pub trait ResultExt<'a, V: Value> {
+pub trait NeonResultExt<'a, V: Value> {
     fn unwrap_or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, V>;
 }
