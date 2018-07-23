@@ -8,6 +8,7 @@ authors = ["{{project.author}}{{#if project.email}} <{{project.email}}>{{/if}}"]
 license = "{{project.license}}"
 {{/if}}
 build = "build.rs"
+exclude = ["artifacts.json", "index.node"]
 
 [lib]
 name = "{{project.name.cargo.internal}}"
