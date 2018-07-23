@@ -1,7 +1,15 @@
 import BuildSettings from './build-settings';
-import { writeFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import Dict from 'ts-dict';
 import * as JSON from 'ts-typed-json';
+
+function readFileSafeSync(file: string): string {
+  try {
+    return readFileSync(file).toString();
+  } catch (_e) {}
+
+  return '';
+}
 
 /**
  * The current state of build artifacts, for all targets.
@@ -86,7 +94,12 @@ export default class Artifacts {
   }
 
   save(file: string) {
-    writeFileSync(file, JSON.stringify(this.toJSON()));
+    const existing = readFileSafeSync(file);
+    const contents = JSON.stringify(this.toJSON());
+
+    if (existing !== contents) {
+      writeFileSync(file, contents);
+    }
   }
 
   lookup(path: string) {
