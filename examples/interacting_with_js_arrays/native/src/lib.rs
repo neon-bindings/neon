@@ -4,14 +4,6 @@ extern crate neon;
 use neon::vm::{Call, JsResult};
 use neon::js::{Variant, JsNumber, JsArray};
 
-// https://github.com/dfrankland/node-eyeliner/blob/master/native/src/js_object_utils.rs
-pub fn js_value_to_float(js_number: Variant) -> f64 {
-  match js_number {
-    Variant::Number(number) => number.value(),
-    _ => panic!("heck"),
-  }
-}
-
 fn accepts_js_arrays(call: Call) -> JsResult<JsNumber> {
   let js_arr_handle = call.arguments.get(call.scope, 0)?;
   let vec: Vec<_> = js_arr_handle.check::<JsArray>()?.to_vec(call.scope)?;
