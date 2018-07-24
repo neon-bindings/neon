@@ -15,11 +15,6 @@ use neon::js::{
   JsString,
   JsUndefined};
 
-/*
-	// If you need to inspect the value of an expression:
-	let () = JsBoolean::new();
-*/
-
 // Use _ to squelch warnings, or any name starting with _
 fn get_null_sync(_: Call) -> JsResult<JsNull> {
   Ok(JsNull::new())
@@ -50,9 +45,9 @@ fn get_array_sync(call: Call) -> JsResult<JsArray> {
   let scope = call.scope;
   let array = JsArray::new(scope, 3);
 
-  try!(array.set(0, JsInteger::new(scope, 1)));
-  try!(array.set(1, JsInteger::new(scope, 2)));
-  try!(array.set(2, JsInteger::new(scope, 3)));
+  array.set(0, JsInteger::new(scope, 1))?;
+  array.set(1, JsInteger::new(scope, 2))?;
+  array.set(2, JsInteger::new(scope, 3))?;
 
   Ok(array)
 }
@@ -61,9 +56,9 @@ fn get_object_sync(call: Call) -> JsResult<JsObject> {
   let scope = call.scope;
   let object = JsObject::new(scope);
 
-  try!(object.set("prop1", JsInteger::new(scope, 1)));
-  try!(object.set("prop2", JsInteger::new(scope, 2)));
-  try!(object.set("prop3", JsInteger::new(scope, 3)));
+  object.set("prop1", JsInteger::new(scope, 1))?;
+  object.set("prop2", JsInteger::new(scope, 2))?;
+  object.set("prop3", JsInteger::new(scope, 3))?;
 
   Ok(object)
 }
@@ -72,19 +67,19 @@ fn get_function_sync(call: Call) -> JsResult<JsFunction> {
   fn func(call: Call) -> JsResult<JsInteger> {
     Ok(JsInteger::new(call.scope, 5))
   }
-  Ok(JsFunction::new(call.scope, func).unwrap())
+  JsFunction::new(call.scope, func)
 }
 
 register_module!(m, {
-	try!(m.export("getNullSync", get_null_sync));
-	try!(m.export("getUndefinedSync", get_undefined_sync));
-	try!(m.export("getNumberSync", get_number_sync));
-	try!(m.export("getIntegerSync", get_integer_sync));
-	try!(m.export("getStringSync", get_string_sync));
-	try!(m.export("getBooleanSync", get_boolean_sync));
-	try!(m.export("getArraySync", get_array_sync));
-	try!(m.export("getObjectSync", get_object_sync));
-	try!(m.export("getFunctionSync", get_function_sync));
+	m.export("getNullSync", get_null_sync)?;
+	m.export("getUndefinedSync", get_undefined_sync)?;
+	m.export("getNumberSync", get_number_sync)?;
+	m.export("getIntegerSync", get_integer_sync)?;
+	m.export("getStringSync", get_string_sync)?;
+	m.export("getBooleanSync", get_boolean_sync)?;
+	m.export("getArraySync", get_array_sync)?;
+	m.export("getObjectSync", get_object_sync)?;
+	m.export("getFunctionSync", get_function_sync)?;
 	Ok(())
 });
 
