@@ -26,7 +26,3 @@ register_module!(m, {
   try!(m.export("accepts_js_objs", accepts_js_objs));
 	Ok(())
 });
-
-// in lib/index.js
-// const addon = require('../native');
-// console.log(addon.accepts_js_objs({myProp: 'waddup neon'}));

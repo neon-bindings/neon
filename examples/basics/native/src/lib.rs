@@ -82,18 +82,3 @@ register_module!(m, {
 	m.export("getFunctionSync", get_function_sync)?;
 	Ok(())
 });
-
-// in lib/index.js
-//const addon = require('../native');
-//
-//console.log(`this is null: ${addon.getNullSync()}`);
-//console.log(`this is undefined: ${addon.getUndefinedSync()}`);
-//console.log(`this is pi: ${addon.getNumberSync()}`);
-//console.log(`this is a 5: ${addon.getIntegerSync()}`);
-//console.log(`this is a string: ${addon.getStringSync()}`);
-//console.log(`this is false: ${addon.getBooleanSync()}`);
-//console.log(`this is an array: ${addon.getArraySync()}`);
-//console.log(`this is an object: ${JSON.stringify(addon.getObjectSync())}`);
-//const returnFive = addon.getFunctionSync()
-//console.log(returnFive(), returnFive(), returnFive())
-
