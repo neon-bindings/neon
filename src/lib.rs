@@ -17,7 +17,7 @@ pub mod types;
 pub mod object;
 pub mod borrow;
 pub mod result;
-pub mod thread;
+pub mod task;
 pub mod meta;
 pub mod prelude;
 

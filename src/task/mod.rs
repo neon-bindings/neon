@@ -1,4 +1,4 @@
-//! Asynchronous access to multithreaded computation in a Node plugin.
+//! Asynchronous background _tasks_ that run in the Node thread pool.
 
 use std::marker::{Send, Sized};
 use std::mem;

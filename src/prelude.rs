@@ -6,4 +6,4 @@ pub use object::{Object, Class};
 pub use borrow::{Borrow, BorrowMut};
 pub use context::{CallKind, Context, ModuleContext, ExecuteContext, ComputeContext, CallContext, FunctionContext, MethodContext, TaskContext};
 pub use result::{NeonResult, JsResult, JsResultExt};
-pub use thread::Task;
+pub use task::Task;
