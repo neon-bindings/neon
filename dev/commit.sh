@@ -6,9 +6,7 @@ VERSION=$($DEV/version.sh)
 
 cd $NEON
 
-# ISSUE(#319): this script is not yet tested on the production repo
-
-git commit -m "v$VERSION" || exit $?
+git commit -a -m "v$VERSION" || exit $?
 
 git push
 
