@@ -50,7 +50,7 @@ fn make_an_array(mut cx: FunctionContext) -> JsResult<JsArray> {
     let b = cx.boolean(true);
 
     // Create a new array:
-    let array: Handle<JsArray> = cx.empty_array()?;
+    let array: Handle<JsArray> = cx.empty_array();
 
     // Push the values into the array:
     array.set(&mut cx, 0, n)?;
@@ -62,7 +62,7 @@ fn make_an_array(mut cx: FunctionContext) -> JsResult<JsArray> {
 }
 
 register_module!(mut cx, {
-    cx.export_function("makeAnArray", make_an_array)?;
+    cx.export_function("makeAnArray", make_an_array)
 })
 ```
 
