@@ -2,14 +2,14 @@
 extern crate neon;
 
 use neon::vm::{Call, JsResult};
-use neon::js::{Variant, JsNumber, JsArray};
+use neon::js::{JsNumber, JsArray};
 
 fn accepts_js_arrays(call: Call) -> JsResult<JsNumber> {
   let js_arr_handle = call.arguments.get(call.scope, 0)?;
   let vec: Vec<_> = js_arr_handle.check::<JsArray>()?.to_vec(call.scope)?;
 
   let vec_of_numbers: Vec<_> = vec.iter().map(|js_value| {
-    let js_number = js_value::check::<JsNumber>()?;
+    let js_number = js_value.check::<JsNumber>()?;
     Ok(js_number.value())
   }).collect()?;
   let sum = vec_of_numbers.iter().sum();
