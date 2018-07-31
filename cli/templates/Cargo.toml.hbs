@@ -8,13 +8,14 @@ authors = ["{{project.author}}{{#if project.email}} <{{project.email}}>{{/if}}"]
 license = "{{project.license}}"
 {{/if}}
 build = "build.rs"
+exclude = ["artifacts.json", "index.node"]
 
 [lib]
 name = "{{project.name.cargo.internal}}"
 crate-type = ["dylib"]
 
 [build-dependencies]
-neon-build = "0.1.23"
+neon-build = "0.2.0"
 
 [dependencies]
-neon = "0.1.23"
+neon = "0.2.0"

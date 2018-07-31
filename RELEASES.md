@@ -1,3 +1,23 @@
+# Version ✨0.2✨ 🎉
+
+See the [Neon 0.2 Migration Guide](https://github.com/neon-bindings/neon/wiki/Neon-0.2-Migration-Guide) for documentation on migrating your projects from the Neon 0.1.x series to Neon 0.2, and please [let us know](https://github.com/neon-bindings/neon#get-involved) if you need help!
+
+* Release automation (#318)
+* New `ArrayBuffer` views API -- see [RFC 5](https://github.com/neon-bindings/rfcs/blob/master/text/0005-array-buffer-views.md) (#306)
+* VM 2.0 -- see [RFC 14](https://github.com/neon-bindings/rfcs/blob/master/text/0014-vm-2.0.md) (#306)
+* New `JsString` constructor -- see [RFC 21](https://github.com/neon-bindings/rfcs/blob/master/text/0021-string-constructor.md) (#322)
+* Eliminated `JsInteger`, `JsVariant`, `callee()` -- see [RFC 22](https://github.com/neon-bindings/rfcs/blob/master/text/0022-zero-dot-two.md) (#323)
+* Renamed `Key` to `PropertyKey` and its method names -- see [RFC 22](https://github.com/neon-bindings/rfcs/blob/master/text/0022-zero-dot-two.md) (#323)
+* Module reorganization -- see [RFC 20](https://github.com/neon-bindings/rfcs/blob/master/text/0020-module-reorg.md) (#324)
+* New `JsError` API -- see [RFC 23](https://github.com/neon-bindings/rfcs/blob/master/text/0023-error-subtyping.md) (#325)
+* Eliminated `ToJsString` API -- see [RFC 22](https://github.com/neon-bindings/rfcs/blob/master/text/0022-zero-dot-two.md) (#326)
+* Eliminated `NEON_NODE_ABI` env var -- see [RFC 22](https://github.com/neon-bindings/rfcs/blob/master/text/0022-zero-dot-two.md) (#327)
+* Default to release builds -- see [RFC 22](https://github.com/neon-bindings/rfcs/blob/master/text/0022-zero-dot-two.md) (#328)
+* Made `Buffer` construction safe by default (#329, #331)
+* Made `Throw` not implement `std::error::Error` to avoid accidental suppression, thanks to [@kjvalencik](https://github.com/kjvalencik) (#334)
+* Fixed a bug causing unnecessary rebuilds, thanks to [@kjvalencik](https://github.com/kjvalencik) (#343)
+* Fixed a soundness bug in the `Task` API, thanks to [@kjvalencik](https://github.com/kjvalencik) (#335)
+
 # Version 0.1.23
 
 * Optimization in `Scope` structures, thanks to [@maciejhirsz](https://github.com/maciejhirsz) (#282)

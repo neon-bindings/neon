@@ -1,4 +1,4 @@
-//! Asynchronous access to multithreaded computation in a Node plugin.
+//! Asynchronous background _tasks_ that run in the Node thread pool.
 
 use std::marker::{Send, Sized};
 use std::mem;
@@ -12,12 +12,12 @@ use neon_runtime;
 use neon_runtime::raw;
 
 /// A Rust task that can be executed in a background thread.
-pub trait Task: Send + Sized {
+pub trait Task: Send + Sized + 'static {
     /// The task's result type, which is sent back to the main thread to communicate a successful result back to JavaScript.
-    type Output: Send;
+    type Output: Send + 'static;
 
     /// The task's error type, which is sent back to the main thread to communicate a task failure back to JavaScript.
-    type Error: Send;
+    type Error: Send + 'static;
 
     /// The type of JavaScript value that gets produced to the asynchronous callback on the main thread after the task is completed.
     type JsEvent: Value;
