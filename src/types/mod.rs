@@ -8,6 +8,7 @@ pub(crate) mod utf8;
 
 use std;
 use std::fmt;
+use std::mem;
 use std::os::raw::c_void;
 use std::marker::PhantomData;
 use neon_runtime;
@@ -98,6 +99,14 @@ impl JsValue {
 pub struct JsUndefined(raw::Local);
 
 impl JsUndefined {
+    pub fn new_thin<'a, C: Context<'a>>(cx: &mut C) -> &'a JsUndefined {
+        unsafe {
+            let local = cx.alloc();
+            neon_runtime::primitive::undefined(mem::transmute(local));
+            mem::transmute(local)
+        }
+    }
+
     pub fn new<'a>() -> Handle<'a, JsUndefined> {
         JsUndefined::new_internal()
     }

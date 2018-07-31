@@ -18,7 +18,7 @@ use types::error::JsError;
 use object::{Object, This};
 use object::class::Class;
 use result::{NeonResult, JsResult, Throw};
-use self::internal::{ContextInternal, Scope, ScopeMetadata};
+use self::internal::{ContextInternal, Scope, ScopeMetadata, HandleArena};
 
 #[repr(C)]
 pub(crate) struct CallbackInfo {
@@ -259,6 +259,11 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsUndefined::new()
     }
 
+    /// Convenience method for creating a `JsUndefined` value.
+    fn undefined_thin(&mut self) -> &'a JsUndefined {
+        JsUndefined::new_thin(self)
+    }
+
     /// Convenience method for creating an empty `JsObject` value.
     fn empty_object(&mut self) -> Handle<'a, JsObject> {
         JsObject::new(self)
@@ -380,6 +385,10 @@ impl<'a> ContextInternal<'a> for ModuleContext<'a> {
     fn scope_metadata(&self) -> &ScopeMetadata {
         &self.scope.metadata
     }
+
+    fn handle_arena(&mut self) -> &mut HandleArena<'a> {
+        &mut self.scope.handle_arena
+    }
 }
 
 impl<'a> Context<'a> for ModuleContext<'a> { }
@@ -400,6 +409,10 @@ impl<'a> ExecuteContext<'a> {
 impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
     fn scope_metadata(&self) -> &ScopeMetadata {
         &self.scope.metadata
+    }
+
+    fn handle_arena(&mut self) -> &mut HandleArena<'a> {
+        &mut self.scope.handle_arena
     }
 }
 
@@ -427,6 +440,10 @@ impl<'a, 'b> ComputeContext<'a, 'b> {
 impl<'a, 'b> ContextInternal<'a> for ComputeContext<'a, 'b> {
     fn scope_metadata(&self) -> &ScopeMetadata {
         &self.scope.metadata
+    }
+
+    fn handle_arena(&mut self) -> &mut HandleArena<'a> {
+        &mut self.scope.handle_arena
     }
 }
 
@@ -481,6 +498,10 @@ impl<'a, T: This> ContextInternal<'a> for CallContext<'a, T> {
     fn scope_metadata(&self) -> &ScopeMetadata {
         &self.scope.metadata
     }
+
+    fn handle_arena(&mut self) -> &mut HandleArena<'a> {
+        &mut self.scope.handle_arena
+    }
 }
 
 impl<'a, T: This> Context<'a> for CallContext<'a, T> { }
@@ -509,6 +530,10 @@ impl<'a> TaskContext<'a> {
 impl<'a> ContextInternal<'a> for TaskContext<'a> {
     fn scope_metadata(&self) -> &ScopeMetadata {
         &self.scope.metadata
+    }
+
+    fn handle_arena(&mut self) -> &mut HandleArena<'a> {
+        &mut self.scope.handle_arena
     }
 }
 
