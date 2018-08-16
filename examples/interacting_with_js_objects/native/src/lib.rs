@@ -1,20 +1,25 @@
 #[macro_use]
 extern crate neon;
 
-use neon::vm::{Call, JsResult};
-use neon::js::{JsString, JsObject};
+use neon::prelude::*;
 
-fn accepts_js_objs(call: Call) -> JsResult<JsString> {
-  let js_obj_handle = call.arguments.get(call.scope, 0)?;
-  let js_obj = js_obj_handle.check::<JsObject>()?;
 
-  let prop_js = js_obj.get(call.scope, "myProp")?;
-  let prop_text: String = prop_js.check::<JsString>()?.value();
+fn accepts_js_objs(mut ctx: FunctionContext) -> JsResult<JsString> {
+  let js_object_handle: Handle<JsObject> = ctx.argument(0)?;
 
-  JsString::new(call.scope, prop_text.as_str())
+  let js_object = match js_object_handle.downcast::<JsObject>() {
+    Ok(x) => x,
+    _ => JsObject::new(&mut ctx)
+  };
+
+  let rust_string: String = match js_object.get(&mut ctx, "myProp")?.downcast::<JsString>() {
+    Ok(x) => x.value(),
+    _ => String::new()
+  };
+
+  Ok(JsString::new(&mut ctx, rust_string))
 }
 
-register_module!(m, {
-  m.export("accepts_js_objs", accepts_js_objs)?;
-	Ok(())
+register_module!(mut ctx, {
+    cx.export_function("acceptsJsObjs", accepts_js_objs)
 });

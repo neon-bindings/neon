@@ -1,22 +1,22 @@
 #[macro_use]
 extern crate neon;
 
-use neon::vm::{Call, JsResult};
-use neon::js::{JsNumber, JsArray};
+use neon::prelude::*;
 
-fn accepts_js_arrays(call: Call) -> JsResult<JsNumber> {
-  let js_arr_handle = call.arguments.get(call.scope, 0)?;
-  let vec: Vec<_> = js_arr_handle.check::<JsArray>()?.to_vec(call.scope)?;
+fn accepts_js_arrays(mut ctx: FunctionContext) -> JsResult<JsNumber> {
+  let js_arr_handle: Handle<JsArray> = ctx.argument(0)?;
 
-  let vec_of_numbers: Vec<_> = vec.iter().map(|js_value| {
-    let js_number = js_value.check::<JsNumber>()?;
-    Ok(js_number.value())
-  }).collect()?;
-  let sum = vec_of_numbers.iter().sum();
-  Ok(JsNumber::new(call.scope, sum))
+  let vec: Vec<Handle<JsValue>> = js_arr_handle.to_vec(&mut ctx)?;
+  let vec_of_numbers: Vec<f64> = vec.iter().map(|&js_value: &Handle<JsValue>| {
+    match js_value.downcast::<JsNumber>() {
+      Ok(x) => x.value(),
+      _ => 0f64
+    }
+  }).collect();
+  let sum: f64 = vec_of_numbers.iter().sum();
+  Ok(JsNumber::new(&mut ctx, sum))
 }
 
-register_module!(m, {
-  m.export("accepts_js_arrays", accepts_js_arrays)?;
-	Ok(())
+register_module!(mut ctx, {
+    ctx.export_function("acceptsJsArrays", accepts_js_arrays)
 });
