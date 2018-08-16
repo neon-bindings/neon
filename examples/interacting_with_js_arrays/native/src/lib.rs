@@ -7,11 +7,8 @@ fn accepts_js_arrays(mut ctx: FunctionContext) -> JsResult<JsNumber> {
   let js_arr_handle: Handle<JsArray> = ctx.argument(0)?;
 
   let vec: Vec<Handle<JsValue>> = js_arr_handle.to_vec(&mut ctx)?;
-  let vec_of_numbers: Vec<f64> = vec.iter().map(|&js_value: &Handle<JsValue>| {
-    match js_value.downcast::<JsNumber>() {
-      Ok(x) => x.value(),
-      _ => 0f64
-    }
+  let vec_of_numbers: Vec<f64> = vec.iter().map(|js_value| {
+    js_value.downcast::<JsNumber>().unwrap_or(ctx.number(0)).value()
   }).collect();
   let sum: f64 = vec_of_numbers.iter().sum();
   Ok(JsNumber::new(&mut ctx, sum))
