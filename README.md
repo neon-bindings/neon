@@ -66,8 +66,6 @@ register_module!(mut cx, {
 })
 ```
 
-To learn more, check out the [Neon guides](https://guides.neon-bindings.com).
-
 # Get Involved
 
 The Neon community is just getting started and there's tons of fun to be had. Come play! :)
