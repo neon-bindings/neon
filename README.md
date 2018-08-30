@@ -66,6 +66,8 @@ register_module!(mut cx, {
 })
 ```
 
+A more complete set of examples can be found in the integration [tests](/test/dynamic).
+
 # Get Involved
 
 The Neon community is just getting started and there's tons of fun to be had. Come play! :)
