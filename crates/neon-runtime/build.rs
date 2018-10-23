@@ -1,4 +1,4 @@
-extern crate gcc;
+extern crate cc;
 extern crate regex;
 
 use std::process::Command;
@@ -115,7 +115,7 @@ fn link_library() {
         format!("build\\{}\\obj\\neon\\neon.obj", configuration)
     };
 
-    gcc::Build::new().object(object_path).compile("libneon.a");
+    cc::Build::new().object(object_path).compile("libneon.a");
 }
 
 fn debug() -> bool {
