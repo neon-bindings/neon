@@ -15,3 +15,4 @@ pub mod fun;
 pub mod convert;
 pub mod class;
 pub mod task;
+pub mod threadsafecb;
