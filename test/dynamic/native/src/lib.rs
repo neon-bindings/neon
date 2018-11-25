@@ -9,6 +9,7 @@ mod js {
     pub mod functions;
     pub mod classes;
     pub mod tasks;
+    pub mod threadsafecb;
 }
 
 use js::strings::return_js_string;
@@ -18,6 +19,7 @@ use js::objects::*;
 use js::functions::*;
 use js::classes::*;
 use js::tasks::*;
+use js::threadsafecb::*;
 
 register_module!(mut cx, {
     cx.export_function("return_js_string", return_js_string)?;
@@ -70,6 +72,8 @@ register_module!(mut cx, {
     cx.export_function("panic", panic)?;
     cx.export_function("panic_after_throw", panic_after_throw)?;
 
+    cx.export_class::<JsEmitter>("Emitter")?;
+    cx.export_class::<JsTestEmitter>("TestEmitter")?;
     cx.export_class::<JsUser>("User")?;
     cx.export_class::<JsPanickyAllocator>("PanickyAllocator")?;
     cx.export_class::<JsPanickyConstructor>("PanickyConstructor")?;
