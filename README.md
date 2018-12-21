@@ -70,7 +70,7 @@ register_module!(mut cx, {
 })
 ```
 
-To learn more, check out the [Neon guides](https://guides.neon-bindings.com).
+For more examples, see our [examples repo](https://github.com/neon-bindings/examples).
 
 # Get Involved
 
