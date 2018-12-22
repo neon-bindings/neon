@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1931px" height="607px" viewBox="0 0 1931 607" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 50.2 (55047) - http://www.bohemiancoding.com/sketch -->
+    <title>neon-banner</title>
+    <desc>Created with Sketch.</desc>
+    <defs></defs>
+    <g id="neon-banner" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect id="Rectangle" fill="#021C4B" x="-40" y="-45" width="2011" height="696"></rect>
+        <text id="NEON" stroke="#FF6A8E" font-family="Neoneon" font-size="385.299988" font-weight="normal" letter-spacing="3.65021181" fill="#FF6A8E">
+            <tspan x="506" y="475">NEON</tspan>
+        </text>
+    </g>
+</svg>

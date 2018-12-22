@@ -1,6 +1,4 @@
-<div width="100%" style="background: #030c1c; padding: 20px; text-align: center">
-    <img src="neon.svg" alt="neon" width="300px" />
-</div>
+<img src="neon-banner.svg" alt="neon" width="100%" />
 
 [![Travis Build Status](https://travis-ci.org/neon-bindings/neon.svg?branch=master)](https://travis-ci.org/neon-bindings/neon)
 [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/github/neon-bindings/neon?branch=master&svg=true)](https://ci.appveyor.com/project/dherman/neon)
