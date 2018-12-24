@@ -1,4 +1,4 @@
-<img src="neon-banner.svg" alt="neon" width="100%" />
+<img src="neon.png" alt="neon" width="100%" />
 
 [![Travis Build Status](https://travis-ci.org/neon-bindings/neon.svg?branch=master)](https://travis-ci.org/neon-bindings/neon)
 [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/github/neon-bindings/neon?branch=master&svg=true)](https://ci.appveyor.com/project/dherman/neon)
