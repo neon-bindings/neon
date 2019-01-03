@@ -35,3 +35,4 @@ Neon owes its existence to the contributions of these fine people.
 * [K.J. Valencik](https://github.com/kjvalencik)
 * [Daijiro Wachi](https://github.com/watilde)
 * [wangcong](https://github.com/king6cong)
+* [Amila Welihinda](https://github.com/amilajack)
