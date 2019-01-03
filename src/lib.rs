@@ -215,7 +215,10 @@ macro_rules! impl_managed {
 ///
 /// Example:
 ///
-/// ```rust,ignore
+/// ```rust
+/// # #[macro_use] extern crate neon;
+/// # use neon::prelude::*;
+/// # fn main() {}
 /// pub struct Greeter {
 ///     greeting: String
 /// }
@@ -225,21 +228,21 @@ macro_rules! impl_managed {
 ///     /// A class for generating greeting strings.
 ///     pub class JsGreeter for Greeter {
 ///         init(mut cx) {
-///             let greeting = cx.argument(0)?.to_string(&mut cx)?.value();
+///             let greeting = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
 ///             Ok(Greeter {
 ///                 greeting: greeting
 ///             })
 ///         }
 ///
 ///         method hello(mut cx) {
-///             let name = cx.argument(0)?.to_string(&mut cx)?.value();
+///             let name = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
 ///             let this = cx.this();
 ///             let msg = {
 ///                 let guard = cx.lock();
 ///                 let greeter = this.borrow(&guard);
 ///                 format!("{}, {}!", greeter.greeting, name)
 ///             };
-///             Ok(cx.string(&msg[..])?.upcast())
+///             Ok(cx.string(&msg[..]).upcast())
 ///         }
 ///     }
 ///
