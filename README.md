@@ -1,6 +1,4 @@
-# Neon
-
-<img align="right" src="neon.jpg" alt="neon"/>
+<img src="neon.png" alt="neon" width="100%" />
 
 [![Travis Build Status](https://travis-ci.org/neon-bindings/neon.svg?branch=master)](https://travis-ci.org/neon-bindings/neon)
 [![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/github/neon-bindings/neon?branch=master&svg=true)](https://ci.appveyor.com/project/dherman/neon)
