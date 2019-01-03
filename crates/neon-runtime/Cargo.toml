@@ -13,5 +13,5 @@ links = "neon"
 build = "build.rs"
 
 [build-dependencies]
-gcc = "0.3.52"
-regex = "0.2"
+cc = "1.0.0"
+regex = "1.0.0"
