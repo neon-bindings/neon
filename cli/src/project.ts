@@ -21,11 +21,11 @@ export default class Project {
     this.crate = new Crate(this, { subdirectory: crate });
   }
 
-  async build(toolchain: rust.Toolchain | null,
+  async build(toolchain: rust.Toolchain,
               release: boolean)
   {
     let target = new Target(this.crate, { release: release });
-    let settings = BuildSettings.current(toolchain || 'default');
+    let settings = BuildSettings.current(toolchain);
 
     // 1. Force a rebuild if build settings have changed.
     if (!target.inState(settings)) {

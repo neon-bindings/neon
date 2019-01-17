@@ -70,7 +70,7 @@ export default class Target {
     this.crate.saveArtifacts();
   }
 
-  async build(toolchain: rust.Toolchain | null,
+  async build(toolchain: rust.Toolchain,
               settings: BuildSettings)
   {
     let macos = process.platform === 'darwin';
