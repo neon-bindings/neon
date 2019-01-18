@@ -31,6 +31,9 @@ before_install:
   - nvm use ${TRAVIS_NODE_VERSION}
   - node -v
   - npm -v
+  - npm install --prefix cli
+  - npm install --prefix test/cli
+  - npm install --prefix test/dynamic
 
 addons:
   apt:
@@ -39,8 +42,12 @@ addons:
     packages:
     - g++-4.8
 
-script: |
-  cargo test --release -- --nocapture
+script:
+  - cargo test --release -- --nocapture
+  - npm test --prefix cli
+  - npm test --prefix test/cli
+  - npm test --prefix test/dynamic
+  - cargo test --manifest-path=test/static/Cargo.toml
 
 jobs:
   include:
