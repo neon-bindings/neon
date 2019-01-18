@@ -1,10 +1,10 @@
 import * as async from './async/child_process';
 import * as child_process from 'child_process';
 
-export type Toolchain = string | null;
+export type Toolchain = 'default' | 'stable' | 'nightly' | 'beta';
 
 function toolchainPrefix(toolchain: Toolchain = 'default') {
-  return toolchain ? ["+" + toolchain] : [];
+  return toolchain === 'default' ? [] : ["+" + toolchain];
 }
 
 export function spawnSync(tool: string,

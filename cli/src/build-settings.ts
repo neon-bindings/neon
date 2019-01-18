@@ -1,6 +1,7 @@
 import * as rust from './rust';
 import Dict from 'ts-dict';
 import * as JSON from 'ts-typed-json';
+import * as child_process from 'child_process';
 
 function isStringDict(x: JSON.Object): x is Dict<string | null> {
   for (let key of Object.keys(x)) {
@@ -13,10 +14,10 @@ function isStringDict(x: JSON.Object): x is Dict<string | null> {
 
 export default class BuildSettings {
   private rustc: string;
-  private nodeVersion: string;
+  private nodeVersion: string | null;
   private env: Dict<string | null>;
 
-  constructor(rustc: string, nodeVersion: string, env: Dict<string | null>) {
+  constructor(rustc: string, nodeVersion: string | null, env: Dict<string | null>) {
     this.rustc = rustc;
     this.nodeVersion = nodeVersion
     this.env = env;
@@ -30,8 +31,8 @@ export default class BuildSettings {
     });
   }
 
-  static getNodeVersion(toolchain: rust.Toolchain = 'default'): string {
-    const nodeVersionResult = rust.spawnSync("node", ["--version"], toolchain);
+  static getNodeVersion(): string {
+    const nodeVersionResult = child_process.spawnSync("node", ["--version"]);
     return nodeVersionResult.stdout
       .toString()
       .trim();
@@ -39,7 +40,7 @@ export default class BuildSettings {
 
   static current(toolchain: rust.Toolchain = 'default') {
     const rustcVersionResult = rust.spawnSync("rustc", ["--version"], toolchain);
-    const nodeVersion = BuildSettings.getNodeVersion(toolchain);
+    const nodeVersion = BuildSettings.getNodeVersion();
 
     if (rustcVersionResult.error) {
       if (rustcVersionResult.error.message.includes("ENOENT")) {
@@ -71,12 +72,12 @@ export default class BuildSettings {
     if (typeof rustc !== 'string') {
       throw new TypeError("value.rustc must be a string");
     }
-    if (!('nodeVersion' in value)) {
-      nodeVersion = BuildSettings.getNodeVersion(null);
-    } else {
-      if (typeof nodeVersion !== 'string') {
-        throw new TypeError("value.nodeVersion must be a string");
+    if ('nodeVersion' in value) {
+      if (typeof nodeVersion !== 'string' && nodeVersion !== null) {
+        throw new TypeError("value.nodeVersion must be a string or null");
       }
+    } else {
+      nodeVersion = null;
     }
     if (!JSON.isObject(env)) {
       throw new TypeError("value.env must be an object");
