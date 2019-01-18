@@ -32,6 +32,7 @@ before_install:
   - node -v
   - npm -v
   - npm install --prefix cli
+  - npm run transpile --prefix cli
   - npm install --prefix test/cli
   - npm install --prefix test/dynamic
 
