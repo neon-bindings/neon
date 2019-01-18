@@ -44,7 +44,7 @@ addons:
 
 script:
   - cargo test --release -- --nocapture
-  - npm test --prefix cli
+  - npm run transpile --prefix cli
   - npm test --prefix test/cli
   - npm test --prefix test/dynamic
   - cargo test --manifest-path=test/static/Cargo.toml
