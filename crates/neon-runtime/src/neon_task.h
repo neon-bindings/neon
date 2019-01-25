@@ -13,7 +13,7 @@ public:
        void *rust_task,
        Neon_TaskPerformCallback perform,
        Neon_TaskCompleteCallback complete,
-       v8::Local<v8::Function> callback)
+       v8::Persistent<v8::Function> *callback)
     : isolate_(isolate),
       rust_task_(rust_task),
       perform_(perform),
@@ -22,7 +22,7 @@ public:
     request_.data = this;
     result_ = nullptr;
     // Save the callback to be invoked when the task completes.
-    callback_.Reset(isolate, callback);
+    callback_.Reset(isolate, *callback);
     // Save the context (aka realm) to be used when invoking the callback.
     context_.Reset(isolate, isolate->GetCurrentContext());
   }

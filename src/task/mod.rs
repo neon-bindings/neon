@@ -4,7 +4,7 @@ use std::marker::{Send, Sized};
 use std::mem;
 use std::os::raw::c_void;
 
-use types::{Value, JsFunction};
+use types::{Value, Managed, JsFunction};
 use result::NeonResult;
 use context::TaskContext;
 use neon_runtime;
@@ -35,8 +35,6 @@ pub trait Task: Send + Sized + 'static {
     /// function callback(err, value) {}
     /// ```
     fn schedule(self, callback: &JsFunction) {
-        // FIXME: implement
-/*
         let boxed_self = Box::new(self);
         let self_raw = Box::into_raw(boxed_self);
         let callback_raw = callback.to_raw();
@@ -46,7 +44,6 @@ pub trait Task: Send + Sized + 'static {
                                          complete_task::<Self>,
                                          callback_raw);
         }
-*/
     }
 }
 
@@ -57,16 +54,12 @@ unsafe extern "C" fn perform_task<T: Task>(task: *mut c_void) -> *mut c_void {
     mem::transmute(Box::into_raw(Box::new(result)))
 }
 
-// FIXME: thinify this:
-
-/*
 unsafe extern "C" fn complete_task<T: Task>(task: *mut c_void, result: *mut c_void, out: &mut raw::Local) {
     let result: Result<T::Output, T::Error> = *Box::from_raw(mem::transmute(result));
     let task: Box<T> = Box::from_raw(mem::transmute(task));
     TaskContext::with(|cx| {
         if let Ok(result) = task.complete(cx, result) {
-            *out = result.to_raw();
+            neon_runtime::mem::read_persistent(out, result.to_raw());
         }
     })
 }
-*/

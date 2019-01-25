@@ -771,12 +771,16 @@ extern "C" void Neon_Mem_DropPersistent(v8::Persistent<v8::Value> *p) {
   p->Persistent::~Persistent();
 }
 
+extern "C" void Neon_Mem_ReadPersistent(v8::Local<v8::Value> *out, v8::Persistent<v8::Value> *p) {
+  *out = Nan::New(*p);
+}
+
 extern "C" void Neon_Mem_ResetPersistent(v8::Persistent<v8::Value> *p, v8::Local<v8::Value> h) {
   v8::Isolate *isolate = v8::Isolate::GetCurrent();
   p->Reset(isolate, h);
 }
 
-extern "C" void Neon_Task_Schedule(void *task, Neon_TaskPerformCallback perform, Neon_TaskCompleteCallback complete, v8::Local<v8::Function> callback) {
+extern "C" void Neon_Task_Schedule(void *task, Neon_TaskPerformCallback perform, Neon_TaskCompleteCallback complete, v8::Persistent<v8::Function> *callback) {
   v8::Isolate *isolate = v8::Isolate::GetCurrent();
   neon::Task *internal_task = new neon::Task(isolate, task, perform, complete, callback);
   neon::queue_task(internal_task);

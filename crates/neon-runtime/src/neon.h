@@ -157,7 +157,7 @@ extern "C" {
   typedef void* (*Neon_TaskPerformCallback)(void *);
   typedef void (*Neon_TaskCompleteCallback)(void *, void *, v8::Local<v8::Value> *out);
 
-  void Neon_Task_Schedule(void *task, Neon_TaskPerformCallback perform, Neon_TaskCompleteCallback complete, v8::Local<v8::Function> callback);
+  void Neon_Task_Schedule(void *task, Neon_TaskPerformCallback perform, Neon_TaskCompleteCallback complete, v8::Persistent<v8::Function> *callback);
 }
 
 #endif
