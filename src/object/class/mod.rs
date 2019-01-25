@@ -12,10 +12,9 @@ use neon_runtime::raw;
 use neon_runtime::call::CCallback;
 use context::{Context, Lock, CallbackInfo};
 use context::internal::Isolate;
-use result::{NeonResult, JsResult, Throw};
+use result::{NeonResult, Throw};
 use borrow::{Borrow, BorrowMut, Ref, RefMut, LoanError};
-use handle::{Handle, Managed};
-use types::{Value, JsFunction, JsValue, build};
+use types::{JsFunction, JsValue, Managed, Value};
 use types::internal::ValueInternal;
 use object::{Object, This};
 use self::internal::{ClassMetadata, MethodCallback, ConstructorCallCallback, AllocateCallback, ConstructCallback};
@@ -98,18 +97,26 @@ pub trait Class: Managed + Any {
     fn setup<'a, C: Context<'a>>(_: &mut C) -> NeonResult<ClassDescriptor<'a, Self>>;
 
     /// Produces a handle to the constructor function for this class.
-    fn constructor<'a, C: Context<'a>>(cx: &mut C) -> JsResult<'a, JsFunction<Self>> {
+    fn constructor<'a, C: Context<'a>>(cx: &mut C) -> NeonResult<&'a JsFunction<Self>> {
+        // FIXME: implement this
+/*
         let metadata = Self::metadata(cx)?;
         unsafe { metadata.constructor(cx) }
+*/
+        unimplemented!()
     }
 
     /// Convenience method for constructing new instances of this class without having to extract the constructor function.
-    fn new<'a, 'b, C: Context<'a>, A, AS>(cx: &mut C, args: AS) -> JsResult<'a, Self>
+    fn new<'a, 'b, C: Context<'a>, A, AS>(cx: &mut C, args: AS) -> NeonResult<&'a Self>
         where A: Value + 'b,
-              AS: IntoIterator<Item=Handle<'b, A>>
+              AS: IntoIterator<Item=&'b A>
     {
+        // FIXME: implement this
+/*
         let constructor = Self::constructor(cx)?;
         constructor.construct(cx, args)
+*/
+        unimplemented!()
     }
 
     #[doc(hidden)]
@@ -118,11 +125,7 @@ pub trait Class: Managed + Any {
     }
 }
 
-unsafe impl<T: Class> This for T {
-    fn as_this(h: raw::Local) -> Self {
-        Self::from_raw(h)
-    }
-}
+unsafe impl<T: Class> This for T { }
 
 impl<T: Class> Object for T { }
 
@@ -169,6 +172,8 @@ pub(crate) trait ClassInternal: Class {
             }
 
             for (name, method) in descriptor.methods {
+                // FIXME: implement this with JsValue
+                /*
                 let method: Handle<JsValue> = build(|out| {
                     let callback = method.into_c_callback();
                     neon_runtime::fun::new_template(out, isolate, callback)
@@ -176,6 +181,7 @@ pub(crate) trait ClassInternal: Class {
                 if !neon_runtime::class::add_method(isolate, metadata_pointer, name.as_ptr(), name.len() as u32, method.to_raw()) {
                     return Err(Throw);
                 }
+                */
             }
 
             let metadata = ClassMetadata {
@@ -193,6 +199,8 @@ impl<T: Class> ClassInternal for T { }
 
 impl<T: Class> ValueInternal for T {
     fn name() -> String {
+        // FIXME: implement this
+        /*
         let mut isolate: Isolate = unsafe {
             mem::transmute(neon_runtime::call::current_isolate())
         };
@@ -207,9 +215,13 @@ impl<T: Class> ValueInternal for T {
                 String::from_utf8_lossy(slice::from_raw_parts_mut(chars, len)).to_string()
             }
         }
+        */
+        unimplemented!()
     }
 
-    fn is_typeof<Other: Value>(value: Other) -> bool {
+    fn is_typeof<Other: Value>(value: &Other) -> bool {
+        // FIXME: implement this
+        /*
         let mut isolate: Isolate = unsafe {
             mem::transmute(neon_runtime::call::current_isolate())
         };
@@ -220,6 +232,8 @@ impl<T: Class> ValueInternal for T {
                 metadata.has_instance(value.to_raw())
             }
         }
+        */
+        unimplemented!()
     }
 }
 
@@ -229,10 +243,14 @@ impl<'a, T: Class> Borrow for &'a T {
     type Target = &'a mut T::Internals;
 
     fn try_borrow<'b>(self, lock: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
+        // FIXME: implement this
+        /*
         unsafe {
             let ptr: *mut c_void = neon_runtime::class::get_instance_internals(self.to_raw());
             Ref::new(lock, mem::transmute(ptr))
         }
+        */
+        unimplemented!()
     }
 }
 
@@ -246,10 +264,14 @@ impl<'a, T: Class> Borrow for &'a mut T {
 
 impl<'a, T: Class> BorrowMut for &'a mut T {
     fn try_borrow_mut<'b>(self, lock: &'b Lock<'b>) -> Result<RefMut<'b, Self::Target>, LoanError> {
+        // FIXME: implement this
+        /*
         unsafe {
             let ptr: *mut c_void = neon_runtime::class::get_instance_internals(self.to_raw());
             RefMut::new(lock, mem::transmute(ptr))
         }
+        */
+        unimplemented!()
     }
 }
 
@@ -275,4 +297,5 @@ pub(crate) trait Callback<T: Clone + Copy + Sized>: Sized {
             dynamic_callback: self.as_ptr()
         }
     }
+
 }

@@ -7,25 +7,19 @@ use neon_runtime::raw;
 
 use context::Context;
 use result::{NeonResult, Throw};
-use types::{Value, Object, Handle, Managed, build};
-use types::internal::ValueInternal;
+use types::{Object, Value, ValueInternal, Managed, build};
 use types::utf8::Utf8;
 
 /// A JS `Error` object.
 #[repr(C)]
-#[derive(Clone, Copy)]
-pub struct JsError(raw::Local);
+pub struct JsError(raw::Persistent);
 
-impl Managed for JsError {
-    fn to_raw(self) -> raw::Local { self.0 }
-
-    fn from_raw(h: raw::Local) -> Self { JsError(h) }
-}
+impl Managed for JsError { }
 
 impl ValueInternal for JsError {
     fn name() -> String { "Error".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
+    fn is_typeof<Other: Value>(other: &Other) -> bool {
         unsafe { neon_runtime::tag::is_error(other.to_raw()) }
     }
 }
@@ -35,32 +29,37 @@ impl Value for JsError { }
 impl Object for JsError { }
 
 impl JsError {
+
     /// Creates a direct instance of the [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error) class.
-    pub fn error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<Handle<'a, JsError>> {
-        let msg = cx.string(msg.as_ref());
-        build(|out| unsafe {
-            neon_runtime::error::new_error(out, msg.to_raw());
+    pub fn error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<&'a JsError> {
+        let msg = { cx.string(msg.as_ref()).to_raw() };
+        let isolate = { cx.isolate().to_raw() };
+        build(cx, |out| unsafe {
+            neon_runtime::error::init_error(out, isolate, msg);
             true
         })
     }
 
     /// Creates an instance of the [`TypeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypeError) class.
-    pub fn type_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<Handle<'a, JsError>> {
-        let msg = cx.string(msg.as_ref());
-        build(|out| unsafe {
-            neon_runtime::error::new_type_error(out, msg.to_raw());
+    pub fn type_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<&'a JsError> {
+        let msg = { cx.string(msg.as_ref()).to_raw() };
+        let isolate = { cx.isolate().to_raw() };
+        build(cx, |out| unsafe {
+            neon_runtime::error::init_type_error(out, isolate, msg);
             true
         })
     }
 
     /// Creates an instance of the [`RangeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RangeError) class.
-    pub fn range_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<Handle<'a, JsError>> {
-        let msg = cx.string(msg.as_ref());
-        build(|out| unsafe {
-            neon_runtime::error::new_range_error(out, msg.to_raw());
+    pub fn range_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<&'a JsError> {
+        let msg = { cx.string(msg.as_ref()).to_raw() };
+        let isolate = { cx.isolate().to_raw() };
+        build(cx, |out| unsafe {
+            neon_runtime::error::init_range_error(out, isolate, msg);
             true
         })
     }
+
 }
 
 pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> NeonResult<T>>(f: F) -> NeonResult<T> {

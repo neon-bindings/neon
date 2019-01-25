@@ -1,7 +1,6 @@
 //! Types and traits for working with JavaScript exceptions.
 
 use std::fmt::{Display, Formatter, Result as FmtResult};
-use handle::Handle;
 use types::Value;
 use context::Context;
 
@@ -23,11 +22,8 @@ impl Display for Throw {
 /// The result of a computation that might send the JS engine into a throwing state.
 pub type NeonResult<T> = Result<T, Throw>;
 
-/// The result of a computation that produces a JavaScript value and might send the JS engine into a throwing state.
-pub type JsResult<'b, T> = NeonResult<Handle<'b, T>>;
-
-/// An extension trait for `Result` values that can be converted into `JsResult` values by throwing a JavaScript
-/// exception in the error case.
-pub trait JsResultExt<'a, V: Value> {
-    fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, V>;
+/// An extension trait for `Result` values that can be converted into `NeonResult` values by
+/// throwsing a JavaScript exception in the error case.
+pub trait NeonResultExt<'a, V: Value> {
+    fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> NeonResult<&'a V>;
 }

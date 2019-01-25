@@ -7,42 +7,42 @@ use std::slice;
 use context::{Context, Lock};
 use borrow::{Borrow, BorrowMut, Ref, RefMut, LoanError};
 use borrow::internal::Pointer;
-use handle::Managed;
-use types::{Value, Object, build};
+use types::{Object, Managed, Value, build};
 use types::internal::ValueInternal;
-use result::JsResult;
+use result::NeonResult;
 use neon_runtime;
 use neon_runtime::raw;
 
 /// The Node [`Buffer`](https://nodejs.org/api/buffer.html) type.
 #[repr(C)]
-#[derive(Clone, Copy)]
-pub struct JsBuffer(raw::Local);
+pub struct JsBuffer(raw::Persistent);
 
 impl JsBuffer {
 
     /// Constructs a new `Buffer` object, safely zero-filled.
-    pub fn new<'a, C: Context<'a>>(_: &mut C, size: u32) -> JsResult<'a, JsBuffer> {
-        build(|out| { unsafe { neon_runtime::buffer::new(out, size) } })
+    pub fn new<'a, C: Context<'a>>(cx: &mut C, size: u32) -> NeonResult<&'a JsBuffer> {
+        let isolate = cx.isolate().to_raw();
+        build(cx, |out| {
+            unsafe { neon_runtime::buffer::init_safe(out, isolate, size) }
+        })
     }
 
-    /// Constructs a new `Buffer` object, safely zero-filled.
-    pub unsafe fn uninitialized<'a, C: Context<'a>>(_: &mut C, size: u32) -> JsResult<'a, JsBuffer> {
-        build(|out| { neon_runtime::buffer::uninitialized(out, size) })
+    /// Constructs a new `Buffer` object, unsafely filled with uninitialized data.
+    pub unsafe fn uninitialized<'a, C: Context<'a>>(cx: &mut C, size: u32) -> NeonResult<&'a JsBuffer> {
+        let isolate = cx.isolate().to_raw();
+        build(cx, |out| {
+            unsafe { neon_runtime::buffer::init_unsafe(out, isolate, size) }
+        })
     }
 
 }
 
-impl Managed for JsBuffer {
-    fn to_raw(self) -> raw::Local { self.0 }
-
-    fn from_raw(h: raw::Local) -> Self { JsBuffer(h) }
-}
+impl Managed for JsBuffer { }
 
 impl ValueInternal for JsBuffer {
     fn name() -> String { "Buffer".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
+    fn is_typeof<Other: Value>(other: &Other) -> bool {
         unsafe { neon_runtime::tag::is_buffer(other.to_raw()) }
     }
 }
@@ -53,28 +53,26 @@ impl Object for JsBuffer { }
 
 /// The standard JS [`ArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) type.
 #[repr(C)]
-#[derive(Clone, Copy)]
-pub struct JsArrayBuffer(raw::Local);
+pub struct JsArrayBuffer(raw::Persistent);
 
 impl JsArrayBuffer {
 
     /// Constructs a new `ArrayBuffer` object with the given size, in bytes.
-    pub fn new<'a, C: Context<'a>>(cx: &mut C, size: u32) -> JsResult<'a, JsArrayBuffer> {
-        build(|out| { unsafe { neon_runtime::arraybuffer::new(out, mem::transmute(cx.isolate()), size) } })
+    pub fn new<'a, C: Context<'a>>(cx: &mut C, size: u32) -> NeonResult<&'a JsArrayBuffer> {
+        let isolate = { cx.isolate().to_raw() };
+        build(cx, |out| {
+            unsafe { neon_runtime::arraybuffer::init(out, isolate, size) }
+        })
     }
 
 }
 
-impl Managed for JsArrayBuffer {
-    fn to_raw(self) -> raw::Local { self.0 }
-
-    fn from_raw(h: raw::Local) -> Self { JsArrayBuffer(h) }
-}
+impl Managed for JsArrayBuffer { }
 
 impl ValueInternal for JsArrayBuffer {
     fn name() -> String { "ArrayBuffer".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
+    fn is_typeof<Other: Value>(other: &Other) -> bool {
         unsafe { neon_runtime::tag::is_arraybuffer(other.to_raw()) }
     }
 }
@@ -180,15 +178,7 @@ impl<'a> Borrow for &'a JsBuffer {
     }
 }
 
-impl<'a> Borrow for &'a mut JsBuffer {
-    type Target = BinaryData<'a>;
-
-    fn try_borrow<'b>(self, guard: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
-        (self as &'a JsBuffer).try_borrow(guard)
-    }
-}
-
-impl<'a> BorrowMut for &'a mut JsBuffer {
+impl<'a> BorrowMut for &'a JsBuffer {
     fn try_borrow_mut<'b>(self, guard: &'b Lock<'b>) -> Result<RefMut<'b, Self::Target>, LoanError> {
         let mut pointer: BinaryData = unsafe { mem::uninitialized() };
         unsafe {
@@ -210,15 +200,7 @@ impl<'a> Borrow for &'a JsArrayBuffer {
     }
 }
 
-impl<'a> Borrow for &'a mut JsArrayBuffer {
-    type Target = BinaryData<'a>;
-
-    fn try_borrow<'b>(self, guard: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
-        (self as &'a JsArrayBuffer).try_borrow(guard)
-    }
-}
-
-impl<'a> BorrowMut for &'a mut JsArrayBuffer {
+impl<'a> BorrowMut for &'a JsArrayBuffer {
     fn try_borrow_mut<'b>(self, guard: &'b Lock<'b>) -> Result<RefMut<'b, Self::Target>, LoanError> {
         let mut pointer: BinaryData = unsafe { mem::uninitialized() };
         unsafe {

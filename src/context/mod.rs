@@ -2,6 +2,7 @@
 
 pub(crate) mod internal;
 
+use std::ffi::c_void;
 use std;
 use std::cell::RefCell;
 use std::convert::Into;
@@ -11,14 +12,13 @@ use neon_runtime;
 use neon_runtime::raw;
 use borrow::{Ref, RefMut, Borrow, BorrowMut};
 use borrow::internal::Ledger;
-use handle::{Managed, Handle};
-use types::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
+use types::{Value, JsValue, JsObject, /*JsArray,*/ JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined, build_infallible};
 use types::binary::{JsArrayBuffer, JsBuffer};
 use types::error::JsError;
 use object::{Object, This};
 use object::class::Class;
-use result::{NeonResult, JsResult, Throw};
-use self::internal::{ContextInternal, Scope, ScopeMetadata, HandleArena};
+use result::{NeonResult, Throw};
+use self::internal::{ContextInternal, Scope, ScopeMetadata, HandleArena, PersistentArena};
 
 #[repr(C)]
 pub(crate) struct CallbackInfo {
@@ -26,21 +26,22 @@ pub(crate) struct CallbackInfo {
 }
 
 impl CallbackInfo {
-    pub fn data<'a>(&self) -> Handle<'a, JsValue> {
-        unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::data(&self.info, &mut local);
-            Handle::new_internal(JsValue::from_raw(local))
-        }
+
+    pub fn data<'a, C: Context<'a>>(&self, cx: &mut C) -> &'a JsValue {
+        let isolate = { cx.isolate().to_raw() };
+        build_infallible(cx, |out| unsafe {
+            neon_runtime::call::init_data(&self.info, isolate, out)
+        })
     }
 
     pub unsafe fn with_cx<T: This, U, F: for<'a> FnOnce(CallContext<'a, T>) -> U>(&self, f: F) -> U {
         CallContext::<T>::with(self, f)
     }
 
-    pub fn set_return<'a, 'b, T: Value>(&'a self, value: Handle<'b, T>) {
+    pub fn set_return<'a, 'b, T: Value>(&'a self, value: &'b T) {
         unsafe {
-            neon_runtime::call::set_return(&self.info, value.to_raw())
+            // FIXME: Value should have a conversion function like to_raw()
+            neon_runtime::call::set_return_thin(&self.info, value.to_raw());
         }
     }
 
@@ -58,25 +59,27 @@ impl CallbackInfo {
         }
     }
 
-    pub fn get<'b, C: Context<'b>>(&self, _: &mut C, i: i32) -> Option<Handle<'b, JsValue>> {
+    pub fn get<'b, C: Context<'b>>(&self, cx: &mut C, i: i32) -> Option<&'b JsValue> {
         if i < 0 || i >= self.len() {
             return None;
         }
+        let isolate = { cx.isolate().to_raw() };
         unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::get(&self.info, i, &mut local);
-            Some(Handle::new_internal(JsValue::from_raw(local)))
+            Some(build_infallible(cx, |out| {
+                neon_runtime::call::init_get(&self.info, isolate, i, out)
+            }))
         }
     }
 
-    pub fn require<'b, C: Context<'b>>(&self, cx: &mut C, i: i32) -> JsResult<'b, JsValue> {
+    pub fn require<'b, C: Context<'b>>(&self, cx: &mut C, i: i32) -> NeonResult<&'b JsValue> {
         if i < 0 || i >= self.len() {
             return cx.throw_type_error("not enough arguments");
         }
+        let isolate = { cx.isolate().to_raw() };
         unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::get(&self.info, i, &mut local);
-            Ok(Handle::new_internal(JsValue::from_raw(local)))
+            Ok(build_infallible(cx, |out| {
+                neon_runtime::call::init_get(&self.info, isolate, i, out)
+            }))
         }
     }
 
@@ -132,20 +135,14 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// 
     /// ```no_run
     /// # use neon::prelude::*;
-    /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
-    /// let b: Handle<JsArrayBuffer> = cx.argument(0)?;
-    /// let x: u32 = cx.borrow(&b, |data| { data.as_slice()[0] });
-    /// let n: Handle<JsNumber> = cx.number(x);
+    /// # fn my_neon_function(mut cx: FunctionContext) -> NeonResult<&JsNumber> {
+    /// let b: &JsArrayBuffer = cx.argument(0)?;
+    /// let x: u32 = cx.borrow(b, |data| { data.as_slice()[0] });
+    /// let n: &JsNumber = cx.number(x);
     /// # Ok(n)
     /// # }
     /// ```
-    /// 
-    /// Note: the borrowed value is required to be a reference to a handle instead of a handle
-    /// as a workaround for a [Rust compiler bug](https://github.com/rust-lang/rust/issues/29997).
-    /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
-    /// but while the extra `&` is a small ergonomics regression, this API is still a nice
-    /// convenience.
-    fn borrow<'c, V, T, F>(&self, v: &'c Handle<V>, f: F) -> T
+    fn borrow<'c, V, T, F>(&self, v: &'c V, f: F) -> T
         where V: Value,
               &'c V: Borrow,
               F: for<'b> FnOnce(Ref<'b, <&'c V as Borrow>::Target>) -> T
@@ -162,30 +159,25 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// ```no_run
     /// # use neon::prelude::*;
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    /// let mut b: Handle<JsArrayBuffer> = cx.argument(0)?;
-    /// cx.borrow_mut(&mut b, |data| {
+    /// let mut b: &JsArrayBuffer = cx.argument(0)?;
+    /// cx.borrow_mut(&b, |data| {
     ///     let slice = data.as_mut_slice::<u32>();
     ///     slice[0] += 1;
     /// });
     /// # Ok(cx.undefined())
     /// # }
     /// ```
-    /// 
-    /// Note: the borrowed value is required to be a reference to a handle instead of a handle
-    /// as a workaround for a [Rust compiler bug](https://github.com/rust-lang/rust/issues/29997).
-    /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
-    /// but while the extra `&mut` is a small ergonomics regression, this API is still a nice
-    /// convenience.
-    fn borrow_mut<'c, V, T, F>(&self, v: &'c mut Handle<V>, f: F) -> T
+    fn borrow_mut<'c, V, T, F>(&self, v: &'c V, f: F) -> T
         where V: Value,
-              &'c mut V: BorrowMut,
-              F: for<'b> FnOnce(RefMut<'b, <&'c mut V as Borrow>::Target>) -> T
+              &'c V: BorrowMut,
+              F: for<'b> FnOnce(RefMut<'b, <&'c V as Borrow>::Target>) -> T
     {
         let lock = self.lock();
         let contents = v.borrow_mut(&lock);
         f(contents)
     }
 
+/*
     /// Executes a computation in a new memory management scope.
     /// 
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape.
@@ -224,21 +216,22 @@ pub trait Context<'a>: ContextInternal<'a> {
         self.activate();
         result
     }
+*/
 
     /// Convenience method for creating a `JsBoolean` value.
-    fn boolean(&mut self, b: bool) -> Handle<'a, JsBoolean> {
+    fn boolean(&mut self, b: bool) -> &'a JsBoolean {
         JsBoolean::new(self, b)
     }
 
     /// Convenience method for creating a `JsNumber` value.
-    fn number<T: Into<f64>>(&mut self, x: T) -> Handle<'a, JsNumber> {
-        JsNumber::new(self, x.into())
+    fn number<T: Into<f64>>(&mut self, x: T) -> &'a JsNumber {
+        JsNumber::new(self, x)
     }
 
     /// Convenience method for creating a `JsString` value.
     /// 
     /// If the string exceeds the limits of the JS engine, this method panics.
-    fn string<S: AsRef<str>>(&mut self, s: S) -> Handle<'a, JsString> {
+    fn string<S: AsRef<str>>(&mut self, s: S) -> &'a JsString {
         JsString::new(self, s)
     }
 
@@ -250,51 +243,49 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Convenience method for creating a `JsNull` value.
-    fn null(&mut self) -> Handle<'a, JsNull> {
-        JsNull::new()
+    fn null(&mut self) -> &'a JsNull {
+        JsNull::new(self)
     }
 
     /// Convenience method for creating a `JsUndefined` value.
-    fn undefined(&mut self) -> Handle<'a, JsUndefined> {
-        JsUndefined::new()
-    }
-
-    /// Convenience method for creating a `JsUndefined` value.
-    fn undefined_thin(&mut self) -> &'a JsUndefined {
-        JsUndefined::new_thin(self)
+    fn undefined(&mut self) -> &'a JsUndefined {
+        JsUndefined::new(self)
     }
 
     /// Convenience method for creating an empty `JsObject` value.
-    fn empty_object(&mut self) -> Handle<'a, JsObject> {
+    fn empty_object(&mut self) -> &'a JsObject {
         JsObject::new(self)
     }
 
+/*
     /// Convenience method for creating an empty `JsArray` value.
-    fn empty_array(&mut self) -> Handle<'a, JsArray> {
+    fn empty_array(&mut self) -> &'a JsArray {
         JsArray::new(self, 0)
     }
+*/
 
     /// Convenience method for creating an empty `JsArrayBuffer` value.
-    fn array_buffer(&mut self, size: u32) -> JsResult<'a, JsArrayBuffer> {
+    fn array_buffer(&mut self, size: u32) -> NeonResult<&'a JsArrayBuffer> {
         JsArrayBuffer::new(self, size)
     }
 
     /// Convenience method for creating an empty `JsBuffer` value.
-    fn buffer(&mut self, size: u32) -> JsResult<'a, JsBuffer> {
+    fn buffer(&mut self, size: u32) -> NeonResult<&'a JsBuffer> {
         JsBuffer::new(self, size)
     }
 
     /// Produces a handle to the JavaScript global object.
-    fn global(&mut self) -> Handle<'a, JsObject> {
-        JsObject::build(|out| {
+    fn global(&mut self) -> &'a JsObject {
+        let isolate = self.isolate().to_raw();
+        JsObject::build(self, |out| {
             unsafe {
-                neon_runtime::scope::get_global(self.isolate().to_raw(), out);
+                neon_runtime::scope::get_global(isolate, out);
             }
         })
     }
 
     /// Throws a JS value.
-    fn throw<'b, T: Value, U>(&mut self, v: Handle<'b, T>) -> NeonResult<U> {
+    fn throw<'b, T: Value, U>(&mut self, v: &'b T) -> NeonResult<U> {
         unsafe {
             neon_runtime::error::throw(v.to_raw());
         }
@@ -302,17 +293,17 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Creates a direct instance of the [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error) class.
-    fn error<S: AsRef<str>>(&mut self, msg: S) -> JsResult<'a, JsError> {
+    fn error<S: AsRef<str>>(&mut self, msg: S) -> NeonResult<&'a JsError> {
         JsError::error(self, msg)
     }
 
     /// Creates an instance of the [`TypeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypeError) class.
-    fn type_error<S: AsRef<str>>(&mut self, msg: S) -> JsResult<'a, JsError> {
+    fn type_error<S: AsRef<str>>(&mut self, msg: S) -> NeonResult<&'a JsError> {
         JsError::type_error(self, msg)
     }
 
     /// Creates an instance of the [`RangeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RangeError) class.
-    fn range_error<S: AsRef<str>>(&mut self, msg: S) -> JsResult<'a, JsError> {
+    fn range_error<S: AsRef<str>>(&mut self, msg: S) -> NeonResult<&'a JsError> {
         JsError::range_error(self, msg)
     }
 
@@ -338,13 +329,13 @@ pub trait Context<'a>: ContextInternal<'a> {
 /// A view of the JS engine in the context of top-level initialization of a Neon module.
 pub struct ModuleContext<'a> {
     scope: Scope<'a, raw::HandleScope>,
-    exports: Handle<'a, JsObject>
+    exports: &'a JsObject,
 }
 
 impl<'a> UnwindSafe for ModuleContext<'a> { }
 
 impl<'a> ModuleContext<'a> {
-    pub(crate) fn with<T, F: for<'b> FnOnce(ModuleContext<'b>) -> T>(exports: Handle<'a, JsObject>, f: F) -> T {
+    pub(crate) fn with<T, F: for<'b> FnOnce(ModuleContext<'b>) -> T>(exports: &'a JsObject, f: F) -> T {
         debug_assert!(unsafe { neon_runtime::scope::size() } <= std::mem::size_of::<raw::HandleScope>());
         debug_assert!(unsafe { neon_runtime::scope::alignment() } <= std::mem::align_of::<raw::HandleScope>());
         Scope::with(|scope| {
@@ -356,27 +347,31 @@ impl<'a> ModuleContext<'a> {
     }
 
     /// Convenience method for exporting a Neon function from a module.
-    pub fn export_function<T: Value>(&mut self, key: &str, f: fn(FunctionContext) -> JsResult<T>) -> NeonResult<()> {
-        let value = JsFunction::new(self, f)?.upcast::<JsValue>();
+    pub fn export_function<T: Value>(&mut self, key: &str, f: fn(FunctionContext) -> NeonResult<&T>) -> NeonResult<()> {
+        let value = JsFunction::new(self, f)?;
         self.exports.set(self, key, value)?;
         Ok(())
     }
 
     /// Convenience method for exporting a Neon class constructor from a module.
     pub fn export_class<T: Class>(&mut self, key: &str) -> NeonResult<()> {
+        // FIXME: implement this
+        /*
         let constructor = T::constructor(self)?;
         self.exports.set(self, key, constructor)?;
         Ok(())
+        */
+        unimplemented!()
     }
 
     /// Exports a JavaScript value from a Neon module.
-    pub fn export_value<T: Value>(&mut self, key: &str, val: Handle<T>) -> NeonResult<()> {
+    pub fn export_value<T: Value>(&mut self, key: &str, val: &T) -> NeonResult<()> {
         self.exports.set(self, key, val)?;
         Ok(())
     }
 
     /// Produces a handle to a module's exports object.
-    pub fn exports_object(&mut self) -> JsResult<'a, JsObject> {
+    pub fn exports_object(&mut self) -> NeonResult<&'a JsObject> {
         Ok(self.exports)
     }
 }
@@ -389,10 +384,15 @@ impl<'a> ContextInternal<'a> for ModuleContext<'a> {
     fn handle_arena(&mut self) -> &mut HandleArena<'a> {
         &mut self.scope.handle_arena
     }
+
+    fn persistent_arena(&self) -> &'a PersistentArena {
+        self.scope.persistent_arena
+    }
 }
 
 impl<'a> Context<'a> for ModuleContext<'a> { }
 
+/*
 /// A view of the JS engine in the context of a scoped computation started by `Context::execute_scoped()`.
 pub struct ExecuteContext<'a> {
     scope: Scope<'a, raw::HandleScope>
@@ -413,6 +413,10 @@ impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
 
     fn handle_arena(&mut self) -> &mut HandleArena<'a> {
         &mut self.scope.handle_arena
+    }
+
+    fn persistent_arena(&self) -> &'a PersistentArena {
+        self.scope.persistent_arena
     }
 }
 
@@ -445,9 +449,14 @@ impl<'a, 'b> ContextInternal<'a> for ComputeContext<'a, 'b> {
     fn handle_arena(&mut self) -> &mut HandleArena<'a> {
         &mut self.scope.handle_arena
     }
+
+    fn persistent_arena(&self) -> &'a PersistentArena {
+        self.scope.persistent_arena
+    }
 }
 
 impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> { }
+*/
 
 /// A view of the JS engine in the context of a function call.
 /// 
@@ -478,20 +487,22 @@ impl<'a, T: This> CallContext<'a, T> {
     pub fn len(&self) -> i32 { self.info.len() }
 
     /// Produces the `i`th argument, or `None` if `i` is greater than or equal to `self.len()`.
-    pub fn argument_opt(&mut self, i: i32) -> Option<Handle<'a, JsValue>> {
+    pub fn argument_opt(&mut self, i: i32) -> Option<&'a JsValue> {
         self.info.get(self, i)
     }
 
     /// Produces the `i`th argument and casts it to the type `V`, or throws an exception if `i` is greater than or equal to `self.len()` or cannot be cast to `V`.
-    pub fn argument<V: Value>(&mut self, i: i32) -> JsResult<'a, V> {
+    pub fn argument<V: Value>(&mut self, i: i32) -> NeonResult<&'a V> {
         let a = self.info.require(self, i)?;
         a.downcast_or_throw(self)
     }
 
+/*
     /// Produces a handle to the `this`-binding.
     pub fn this(&mut self) -> Handle<'a, T> {
         Handle::new_internal(T::as_this(self.info.this(self)))
     }
+*/
 }
 
 impl<'a, T: This> ContextInternal<'a> for CallContext<'a, T> {
@@ -501,6 +512,10 @@ impl<'a, T: This> ContextInternal<'a> for CallContext<'a, T> {
 
     fn handle_arena(&mut self) -> &mut HandleArena<'a> {
         &mut self.scope.handle_arena
+    }
+
+    fn persistent_arena(&self) -> &'a PersistentArena {
+        self.scope.persistent_arena
     }
 }
 
@@ -534,6 +549,10 @@ impl<'a> ContextInternal<'a> for TaskContext<'a> {
 
     fn handle_arena(&mut self) -> &mut HandleArena<'a> {
         &mut self.scope.handle_arena
+    }
+
+    fn persistent_arena(&self) -> &'a PersistentArena {
+        self.scope.persistent_arena
     }
 }
 

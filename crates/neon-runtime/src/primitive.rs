@@ -1,6 +1,6 @@
 //! Facilities for working with primitive values.
 
-use raw::{Local, Isolate};
+use raw::{Local, Isolate, Persistent};
 
 extern "C" {
 
@@ -8,17 +8,21 @@ extern "C" {
     #[link_name = "Neon_Primitive_Undefined"]
     pub fn undefined(out: &mut Local);
 
-    /// Mutates the `out` argument provided to refer to the `v8::Null` object.
-    #[link_name = "Neon_Primitive_Null"]
-    pub fn null(out: &mut Local);
+    /// Initializes the `out` argument with a newly created `v8::Undefined` object.
+    #[link_name = "Neon_Primitive_InitUndefined"]
+    pub fn init_undefined(out: &Persistent, isolate: *mut Isolate);
 
-    /// Mutates the `out` argument provided to refer to the `v8::Boolean` object.
-    #[link_name = "Neon_Primitive_Boolean"]
-    pub fn boolean(out: &mut Local, b: bool);
+    /// Mutates the `out` argument provided to refer to the `v8::Null` object.
+    #[link_name = "Neon_Primitive_InitNull"]
+    pub fn init_null(out: &Persistent, isolate: *mut Isolate);
+
+    /// Initializes the `out` argument with a newly created `v8::Boolean` object.
+    #[link_name = "Neon_Primitive_InitBoolean"]
+    pub fn init_boolean(out: &Persistent, isolate: *mut Isolate, b: bool);
 
     /// Gets the underlying value of a `v8::Boolean` object.
     #[link_name = "Neon_Primitive_BooleanValue"]
-    pub fn boolean_value(p: Local) -> bool;
+    pub fn boolean_value(p: &Persistent) -> bool;
 
     // DEPRECATE(0.2)
     /// Mutates the `out` argument provided to refer to a newly created `v8::Integer` object.
@@ -38,11 +42,11 @@ extern "C" {
     #[link_name = "Neon_Primitive_IntegerValue"]
     pub fn integer_value(p: Local) -> i64;
 
-    /// Mutates the `out` argument provided to refer to a newly created `v8::Number` object.
-    #[link_name = "Neon_Primitive_Number"]
-    pub fn number(out: &mut Local, isolate: *mut Isolate, v: f64);
+    /// Initializes the `out` argument with a newly created `v8::Number` object.
+    #[link_name = "Neon_Primitive_InitNumber"]
+    pub fn init_number(out: &Persistent, isolate: *mut Isolate, v: f64);
 
     /// Gets the underlying value of a `v8::Number` object.
     #[link_name = "Neon_Primitive_NumberValue"]
-    pub fn number_value(p: Local) -> f64;
+    pub fn number_value(p: &Persistent) -> f64;
 }

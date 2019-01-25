@@ -1,6 +1,6 @@
 use std::os::raw::c_void;
 use call::CCallback;
-use raw::{Isolate, Local};
+use raw::{Isolate, Local, Persistent};
 
 extern "C" {
 
@@ -38,13 +38,13 @@ extern "C" {
     // FIXME: get rid of all the "kernel" nomenclature
 
     #[link_name = "Neon_Class_GetAllocateKernel"]
-    pub fn get_allocate_kernel(obj: Local) -> *mut c_void;
+    pub fn get_allocate_kernel(obj: &Persistent) -> *mut c_void;
 
     #[link_name = "Neon_Class_GetConstructKernel"]
-    pub fn get_construct_kernel(obj: Local) -> *mut c_void;
+    pub fn get_construct_kernel(obj: &Persistent) -> *mut c_void;
 
     #[link_name = "Neon_Class_GetCallKernel"]
-    pub fn get_call_kernel(obj: Local) -> *mut c_void;
+    pub fn get_call_kernel(obj: &Persistent) -> *mut c_void;
 
     #[link_name = "Neon_Class_Constructor"]
     pub fn constructor(out: &mut Local, ft: Local) -> bool;

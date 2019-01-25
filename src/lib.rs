@@ -3,6 +3,7 @@
 extern crate neon_runtime;
 extern crate cslice;
 extern crate semver;
+extern crate typed_arena;
 
 #[cfg(test)]
 extern crate rustc_version;
@@ -12,7 +13,6 @@ extern crate rustc_version;
 extern crate lazy_static;
 
 pub mod context;
-pub mod handle;
 pub mod types;
 pub mod object;
 pub mod borrow;
@@ -61,9 +61,9 @@ macro_rules! register_module {
                     dso_handle: *mut u8,
                     filename: *const u8,
                     register_func: Option<extern "C" fn(
-                        $crate::handle::Handle<$crate::types::JsObject>, *mut u8, *mut u8)>,
+                        $crate::macro_internal::runtime::raw::Local, *mut u8, *mut u8)>,
                     context_register_func: Option<extern "C" fn(
-                        $crate::handle::Handle<$crate::types::JsObject>, *mut u8, *mut u8, *mut u8)>,
+                        $crate::macro_internal::runtime::raw::Local, *mut u8, *mut u8, *mut u8)>,
                     modname: *const u8,
                     priv_data: *mut u8,
                     link: *mut __NodeModule
@@ -82,7 +82,7 @@ macro_rules! register_module {
                 };
 
                 extern "C" fn __register_neon_module(
-                        m: $crate::handle::Handle<$crate::types::JsObject>, _: *mut u8, _: *mut u8) {
+                        m: $crate::macro_internal::runtime::raw::Local, _: *mut u8, _: *mut u8) {
                     $crate::macro_internal::initialize_module(m, __init_neon_module);
                 }
 
@@ -135,7 +135,7 @@ macro_rules! class_definition {
                           $new_ctor ;
                           ($($mname)* $name) ;
                           ($($mdef)* {
-                              fn _______method_rust_y_u_no_hygienic_items_______($cx: $crate::context::CallContext<$cls>) -> $crate::result::JsResult<$crate::types::JsValue> {
+                              fn _______method_rust_y_u_no_hygienic_items_______($cx: $crate::context::CallContext<$cls>) -> $crate::result::NeonResult<&$crate::types::JsValue> {
                                   $body
                               }
 
@@ -151,7 +151,7 @@ macro_rules! class_definition {
                           $allocator ;
                           $call_ctor ;
                           ({
-                              fn _______constructor_rust_y_u_no_hygienic_items_______($cx: $crate::context::CallContext<$cls>) -> $crate::result::NeonResult<Option<$crate::handle::Handle<$crate::types::JsObject>>> {
+                              fn _______constructor_rust_y_u_no_hygienic_items_______($cx: $crate::context::CallContext<$cls>) -> $crate::result::NeonResult<Option<&$crate::types::JsObject>> {
                                   $body
                               }
 
@@ -168,7 +168,7 @@ macro_rules! class_definition {
                           $typ ;
                           $allocator ;
                           ({
-                              fn _______call_rust_y_u_no_hygienic_items_______($cx: $crate::context::CallContext<$crate::types::JsValue>) -> $crate::result::JsResult<$crate::types::JsValue> {
+                              fn _______call_rust_y_u_no_hygienic_items_______($cx: $crate::context::CallContext<$crate::types::JsValue>) -> $crate::result::NeonResult<&$crate::types::JsValue> {
                                   $body
                               }
 
@@ -198,16 +198,7 @@ macro_rules! class_definition {
 #[macro_export]
 macro_rules! impl_managed {
     ($cls:ident) => {
-        impl $crate::handle::Managed for $cls {
-            fn to_raw(self) -> $crate::macro_internal::runtime::raw::Local {
-                let $cls(raw) = self;
-                raw
-            }
-
-            fn from_raw(raw: $crate::macro_internal::runtime::raw::Local) -> Self {
-                $cls(raw)
-            }
-        }
+        impl $crate::types::Managed for $cls { }
     }
 }
 

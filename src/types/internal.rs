@@ -4,38 +4,34 @@ use neon_runtime;
 use neon_runtime::raw;
 use context::{CallbackInfo, FunctionContext};
 use types::error::convert_panics;
-use types::{JsObject, Handle, Managed};
-use result::JsResult;
+use types::{JsObject, Managed};
+use result::NeonResult;
 use object::class::Callback;
 use super::Value;
 
 pub trait ValueInternal: Managed + 'static {
     fn name() -> String;
 
-    fn is_typeof<Other: Value>(other: Other) -> bool;
+    fn is_typeof<Other: Value>(other: &Other) -> bool;
 
-    fn downcast<Other: Value>(other: Other) -> Option<Self> {
+    fn downcast<Other: Value>(other: &Other) -> Option<&Self> {
         if Self::is_typeof(other) {
             Some(Self::from_raw(other.to_raw()))
         } else {
             None
         }
     }
-
-    fn cast<'a, T: Value, F: FnOnce(raw::Local) -> T>(self, f: F) -> Handle<'a, T> {
-        Handle::new_internal(f(self.to_raw()))
-    }
 }
 
 #[repr(C)]
-pub struct FunctionCallback<T: Value>(pub fn(FunctionContext) -> JsResult<T>);
+pub struct FunctionCallback<T: Value>(pub fn(FunctionContext) -> NeonResult<&T>);
 
 impl<T: Value> Callback<()> for FunctionCallback<T> {
     extern "C" fn invoke(info: &CallbackInfo) {
         unsafe {
-            info.with_cx::<JsObject, _, _>(|cx| {
-                let data = info.data();
-                let dynamic_callback: fn(FunctionContext) -> JsResult<T> =
+            info.with_cx::<JsObject, _, _>(|mut cx| {
+                let data = info.data(&mut cx);
+                let dynamic_callback: fn(FunctionContext) -> NeonResult<&T> =
                     mem::transmute(neon_runtime::fun::get_dynamic_callback(data.to_raw()));
                 if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
                     info.set_return(value);

@@ -1,14 +1,14 @@
 use std;
 use std::cell::{Cell, RefCell};
-use std::collections::VecDeque;
+use std::collections::LinkedList;
 use std::marker::PhantomData;
 use std::mem;
 use std::os::raw::c_void;
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::scope::Root;
-use types::JsObject;
-use handle::Handle;
+use typed_arena::Arena;
+use types::{JsObject, Managed};
 use object::class::ClassMap;
 use result::NeonResult;
 use super::ModuleContext;
@@ -56,7 +56,30 @@ pub struct ScopeMetadata {
 pub struct Scope<'a, R: Root + 'static> {
     pub metadata: ScopeMetadata,
     pub handle_scope: &'a mut R,
-    pub handle_arena: HandleArena<'a>
+    pub handle_arena: HandleArena<'a>,
+    pub persistent_arena: &'a PersistentArena,
+}
+
+pub struct PersistentArena {
+    handles: Arena<raw::Persistent>,
+}
+
+impl PersistentArena {
+    fn new() -> Self {
+        PersistentArena {
+            handles: Arena::with_capacity(16),
+        }
+    }
+
+    pub fn alloc(&self) -> &raw::Persistent {
+        unsafe {
+            let ptr = self.handles.alloc_uninitialized(1);
+            let ptr = ptr as *mut raw::Persistent;
+            raw::Persistent::placement_new(ptr);
+            let ptr = ptr as *const raw::Persistent;
+            mem::transmute(ptr)
+        }
+    }
 }
 
 const CHUNK_SIZE: usize = 16;
@@ -64,16 +87,16 @@ const CHUNK_SIZE: usize = 16;
 type Chunk = [raw::Local; CHUNK_SIZE];
 
 pub struct HandleArena<'a> {
-    chunks: VecDeque<Box<Chunk>>,
-    chunk_allocated: usize,
+    chunks: Vec<Box<Chunk>>,
+    pub(crate) chunk_allocated: usize,
     phantom: PhantomData<&'a ()>
 }
 
 impl<'a> HandleArena<'a> {
     fn new() -> Self {
-        let mut chunks = VecDeque::with_capacity(16);
+        let mut chunks = Vec::with_capacity(16);
 
-        chunks.push_back(Box::new(unsafe { mem::uninitialized() }));
+        chunks.push(Box::new(unsafe { mem::uninitialized() }));
 
         HandleArena {
             chunks,
@@ -86,11 +109,11 @@ impl<'a> HandleArena<'a> {
         if self.chunk_allocated >= CHUNK_SIZE {
             let mut chunk: Box<Chunk> = Box::new(mem::uninitialized());
             let p: *mut raw::Local = &mut chunk[0];
-            self.chunks.push_back(chunk);
+            self.chunks.push(chunk);
             self.chunk_allocated = 1;
             p
         } else {
-            let chunk: &mut Box<Chunk> = self.chunks.back_mut().unwrap();
+            let chunk: &mut Box<Chunk> = self.chunks.last_mut().unwrap();
             let p: *mut raw::Local = &mut chunk[self.chunk_allocated];
             self.chunk_allocated += 1;
             p
@@ -122,6 +145,7 @@ impl<'a> HandleArena<'a> {
 impl<'a, R: Root + 'static> Scope<'a, R> {
     pub fn with<T, F: for<'b> FnOnce(Scope<'b, R>) -> T>(f: F) -> T {
         let mut handle_scope: R = unsafe { R::allocate() };
+        let persistent_arena = PersistentArena::new();
         let isolate = Isolate::current();
         unsafe {
             handle_scope.enter(isolate.to_raw());
@@ -133,7 +157,8 @@ impl<'a, R: Root + 'static> Scope<'a, R> {
                     active: Cell::new(true)
                 },
                 handle_scope: &mut handle_scope,
-                handle_arena: HandleArena::new()
+                handle_arena: HandleArena::new(),
+                persistent_arena: &persistent_arena,
             };
             f(scope)
         };
@@ -147,6 +172,7 @@ impl<'a, R: Root + 'static> Scope<'a, R> {
 pub trait ContextInternal<'a>: Sized {
     fn scope_metadata(&self) -> &ScopeMetadata; 
     fn handle_arena(&mut self) -> &mut HandleArena<'a>;
+    fn persistent_arena(&self) -> &'a PersistentArena;
 
     fn isolate(&self) -> Isolate {
         self.scope_metadata().isolate
@@ -168,10 +194,15 @@ pub trait ContextInternal<'a>: Sized {
     unsafe fn alloc(&mut self) -> *mut raw::Local {
         self.handle_arena().alloc()
     }
+
+    unsafe fn alloc_persistent(&mut self) -> &'a raw::Persistent {
+        self.persistent_arena().alloc()
+    }
 }
 
-pub fn initialize_module(exports: Handle<JsObject>, init: fn(ModuleContext) -> NeonResult<()>) {
-    ModuleContext::with(exports, |cx| {
+pub fn initialize_module(exports: raw::Local, init: fn(ModuleContext) -> NeonResult<()>) {
+    let persistent = raw::Persistent::from_local(exports);
+    ModuleContext::with(JsObject::from_raw(&persistent), |cx| {
         let _ = init(cx);
     });
 }

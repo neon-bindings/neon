@@ -5,8 +5,7 @@ use std::mem;
 use std::os::raw::c_void;
 
 use types::{Value, JsFunction};
-use result::JsResult;
-use handle::{Handle, Managed};
+use result::NeonResult;
 use context::TaskContext;
 use neon_runtime;
 use neon_runtime::raw;
@@ -26,7 +25,7 @@ pub trait Task: Send + Sized + 'static {
     fn perform(&self) -> Result<Self::Output, Self::Error>;
 
     /// Convert the result of the task to a JavaScript value to be passed to the asynchronous callback. This method is executed on the main thread at some point after the background task is completed.
-    fn complete<'a>(self, cx: TaskContext<'a>, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent>;
+    fn complete<'a>(self, cx: TaskContext<'a>, result: Result<Self::Output, Self::Error>) -> NeonResult<&'a Self::JsEvent>;
 
     /// Schedule a task to be executed on a background thread.
     ///
@@ -35,7 +34,9 @@ pub trait Task: Send + Sized + 'static {
     /// ```js
     /// function callback(err, value) {}
     /// ```
-    fn schedule(self, callback: Handle<JsFunction>) {
+    fn schedule(self, callback: &JsFunction) {
+        // FIXME: implement
+/*
         let boxed_self = Box::new(self);
         let self_raw = Box::into_raw(boxed_self);
         let callback_raw = callback.to_raw();
@@ -45,6 +46,7 @@ pub trait Task: Send + Sized + 'static {
                                          complete_task::<Self>,
                                          callback_raw);
         }
+*/
     }
 }
 
@@ -55,6 +57,9 @@ unsafe extern "C" fn perform_task<T: Task>(task: *mut c_void) -> *mut c_void {
     mem::transmute(Box::into_raw(Box::new(result)))
 }
 
+// FIXME: thinify this:
+
+/*
 unsafe extern "C" fn complete_task<T: Task>(task: *mut c_void, result: *mut c_void, out: &mut raw::Local) {
     let result: Result<T::Output, T::Error> = *Box::from_raw(mem::transmute(result));
     let task: Box<T> = Box::from_raw(mem::transmute(task));
@@ -64,3 +69,4 @@ unsafe extern "C" fn complete_task<T: Task>(task: *mut c_void, result: *mut c_vo
         }
     })
 }
+*/

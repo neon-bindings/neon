@@ -14,47 +14,60 @@ typedef struct {
 extern "C" {
 
   void Neon_Call_SetReturn(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> value);
+  void Neon_Call_SetReturnThin(v8::FunctionCallbackInfo<v8::Value> *info, v8::Persistent<v8::Value> *value);
   void *Neon_Call_GetIsolate(v8::FunctionCallbackInfo<v8::Value> *info);
   void *Neon_Call_CurrentIsolate();
   bool Neon_Call_IsConstruct(v8::FunctionCallbackInfo<v8::Value> *info);
   void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out);
   void Neon_Call_Data(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> *out);
+  void Neon_Call_InitData(v8::FunctionCallbackInfo<v8::Value> *info, v8::Isolate *isolate, v8::Persistent<v8::Value> *out);
   int32_t Neon_Call_Length(v8::FunctionCallbackInfo<v8::Value> *info);
   void Neon_Call_Get(v8::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out);
+  void Neon_Call_InitGet(v8::FunctionCallbackInfo<v8::Value> *info, v8::Isolate *isolate, int32_t i, v8::Persistent<v8::Value> *out);
 
-  void Neon_Primitive_Number(v8::Local<v8::Number> *out, v8::Isolate *isolate, double value);
+  void Neon_Primitive_InitNumber(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, double value);
   void Neon_Primitive_Undefined(v8::Local<v8::Primitive> *out);
-  void Neon_Primitive_Null(v8::Local<v8::Primitive> *out);
-  void Neon_Primitive_Boolean(v8::Local<v8::Boolean> *out, bool b);
+  void Neon_Primitive_InitUndefinedThin(v8::Persistent<v8::Value> *out, v8::Isolate *isolate);
+  void Neon_Primitive_Init_Null(v8::Persistent<v8::Value> *out, v8::Isolate *isolate);
+  void Neon_Primitive_InitBoolean(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, bool b);
   bool Neon_Primitive_IsUint32(v8::Local<v8::Primitive> p);
   bool Neon_Primitive_IsInt32(v8::Local<v8::Primitive> p);
 
   void Neon_Object_New(v8::Local<v8::Object> *out);
-  bool Neon_Object_GetOwnPropertyNames(v8::Local<v8::Array> *out, v8::Local<v8::Object> obj);
+  void Neon_Object_Init(v8::Persistent<v8::Value> *out, v8::Isolate *isolate);
+  bool Neon_Object_GetOwnPropertyNames(v8::Persistent<v8::Array> *out, v8::Isolate *isolate, v8::Persistent<v8::Object> *obj);
   void *Neon_Object_GetIsolate(v8::Local<v8::Object> obj);
   bool Neon_Object_Get_Index(v8::Local<v8::Value> *out, v8::Local<v8::Object> object, uint32_t index);
   bool Neon_Object_Set_Index(bool *out, v8::Local<v8::Object> object, uint32_t index, v8::Local<v8::Value> val);
   bool Neon_Object_Get_String(v8::Local<v8::Value> *out, v8::Local<v8::Object> object, const uint8_t *key, int32_t len);
+  bool Neon_Object_Get_StringThin(v8::Persistent<v8::Value> *out, v8::Persistent<v8::Object> *object, const uint8_t *key, int32_t len);
   bool Neon_Object_Set_String(bool *out, v8::Local<v8::Object> object, const uint8_t *key, int32_t len, v8::Local<v8::Value> val);
+  bool Neon_Object_Set_StringThin(bool *out, v8::Persistent<v8::Object> *object, const uint8_t *key, int32_t len, v8::Persistent<v8::Value> *val);
   bool Neon_Object_Get(v8::Local<v8::Value> *out, v8::Local<v8::Object> object, v8::Local<v8::Value> key);
+  bool Neon_Object_GetThin(v8::Persistent<v8::Value> *out, v8::Persistent<v8::Object> *object, v8::Persistent<v8::Value> *key);
   bool Neon_Object_Set(bool *out, v8::Local<v8::Object> obj, v8::Local<v8::Value> key, v8::Local<v8::Value> val);
+  bool Neon_Object_SetThin(bool *out, v8::Persistent<v8::Object> *obj, v8::Persistent<v8::Value> *key, v8::Persistent<v8::Value> *val);
 
   void Neon_Array_New(v8::Local<v8::Array> *out, v8::Isolate *isolate, uint32_t length);
-  uint32_t Neon_Array_Length(v8::Local<v8::Array> array);
+  void Neon_Array_Init(v8::Persistent<v8::Array> *out, v8::Isolate *isolate, uint32_t length);
+  uint32_t Neon_Array_Length(v8::Persistent<v8::Array> *array);
 
-  bool Neon_String_New(v8::Local<v8::String> *out, v8::Isolate *isolate, const uint8_t *data, int32_t len);
-  int32_t Neon_String_Utf8Length(v8::Local<v8::String> str);
-  size_t Neon_String_Data(char *out, size_t len, v8::Local<v8::Value> str);
+  bool Neon_String_New(v8::Persistent<v8::String> *out, v8::Isolate *isolate, const uint8_t *data, int32_t len);
+  int32_t Neon_String_Utf8Length(v8::Persistent<v8::String> *str);
+  size_t Neon_String_Data(char *out, size_t len, v8::Persistent<v8::String> *str);
 
   bool Neon_Convert_ToString(v8::Local<v8::String> *out, v8::Local<v8::Value> value);
   bool Neon_Convert_ToObject(v8::Local<v8::Object> *out, v8::Local<v8::Value> *value);
 
   bool Neon_Buffer_New(v8::Local<v8::Object> *out, uint32_t size);
-  void Neon_Buffer_Data(void **base_out, size_t *len_out, v8::Local<v8::Object> obj);
+  void Neon_Buffer_Data(void **base_out, size_t *len_out, v8::Persistent<v8::Object> *obj);
+  bool Neon_Buffer_Init_Safe(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, uint32_t len);
+  bool Neon_Buffer_Init_Unsafe(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, uint32_t len);
 
   bool Neon_ArrayBuffer_New(v8::Local<v8::ArrayBuffer> *out, v8::Isolate *isolate, uint32_t size);
+  bool Neon_ArrayBuffer_Init(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, uint32_t len);
   bool Neon_ArrayBuffer_Uninitialized(v8::Local<v8::ArrayBuffer> *out, v8::Isolate *isolate, uint32_t size);
-  void Neon_ArrayBuffer_Data(void **base_out, size_t *len_out, v8::Local<v8::ArrayBuffer> buffer);
+  void Neon_ArrayBuffer_Data(void **base_out, size_t *len_out, v8::Persistent<v8::ArrayBuffer> *buffer);
 
   typedef void(*Neon_ChainedScopeCallback)(void *, void *, void *, void *);
   typedef void(*Neon_NestedScopeCallback)(void *, void *, void *);
@@ -74,10 +87,13 @@ extern "C" {
   void Neon_Scope_GetGlobal(v8::Isolate *isolate, v8::Local<v8::Value> *out);
 
   bool Neon_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, callback_t callback);
+  bool Neon_Fun_Init(v8::Persistent<v8::Function> *out, v8::Isolate *isolate, callback_t callback);
   bool Neon_Fun_Template_New(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, callback_t callback);
-  void *Neon_Fun_GetDynamicCallback(v8::Local<v8::External> obj);
+  void *Neon_Fun_GetDynamicCallback(v8::Persistent<v8::External> *obj);
   bool Neon_Fun_Call(v8::Local<v8::Value> *out, v8::Isolate *isolate, v8::Local<v8::Function> fun, v8::Local<v8::Value> self, int32_t argc, v8::Local<v8::Value> argv[]);
+  bool Neon_Fun_CallThin(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, v8::Persistent<v8::Function> *fun, v8::Persistent<v8::Value> *self, int32_t argc, v8::Persistent<v8::Value> *argv[]);
   bool Neon_Fun_Construct(v8::Local<v8::Object> *out, v8::Isolate *isolate, v8::Local<v8::Function> fun, int32_t argc, v8::Local<v8::Value> argv[]);
+  bool Neon_Fun_ConstructThin(v8::Persistent<v8::Object> *out, v8::Isolate *isolate, v8::Persistent<v8::Function> *fun, int32_t argc, v8::Persistent<v8::Value> *argv[]);
 
   typedef void *(*Neon_AllocateCallback)(const v8::FunctionCallbackInfo<v8::Value> *info);
   typedef bool (*Neon_ConstructCallback)(const v8::FunctionCallbackInfo<v8::Value> *info);
@@ -95,9 +111,9 @@ extern "C" {
                               callback_t call,
                               Neon_DropCallback drop);
   // FIXME: get rid of all the "kernel" nomenclature
-  void *Neon_Class_GetCallKernel(v8::Local<v8::External> wrapper);
-  void *Neon_Class_GetConstructKernel(v8::Local<v8::External> wrapper);
-  void *Neon_Class_GetAllocateKernel(v8::Local<v8::External> wrapper);
+  void *Neon_Class_GetCallKernel(v8::Persistent<v8::External> *wrapper);
+  void *Neon_Class_GetConstructKernel(v8::Persistent<v8::External> *wrapper);
+  void *Neon_Class_GetAllocateKernel(v8::Persistent<v8::External> *wrapper);
   bool Neon_Class_Constructor(v8::Local<v8::Function> *out, v8::Local<v8::FunctionTemplate> ft);
   bool Neon_Class_HasInstance(void *metadata, v8::Local<v8::Value> v);
   bool Neon_Class_SetName(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length);
@@ -110,24 +126,33 @@ extern "C" {
   uint32_t Neon_Module_GetVersion();
 
   bool Neon_Tag_IsUndefined(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsNull(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsBoolean(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsNumber(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsString(v8::Local<v8::Value> val);
+  bool Neon_Tag_IsUndefinedThin(v8::Persistent<v8::Value> *val);
+  bool Neon_Tag_IsNull(v8::Persistent<v8::Value> *val);
+  bool Neon_Tag_IsBoolean(v8::Persistent<v8::Value> *val);
+  bool Neon_Tag_IsNumber(v8::Persistent<v8::Value> *val);
+  bool Neon_Tag_IsString(v8::Persistent<v8::Value> *val);
   bool Neon_Tag_IsObject(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsArray(v8::Local<v8::Value> val);
+  bool Neon_Tag_IsObjectThin(v8::Persistent<v8::Value> *val);
+  bool Neon_Tag_IsArray(v8::Persistent<v8::Value> *val);
   bool Neon_Tag_IsFunction(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsBuffer(v8::Local<v8::Value> obj);
-  bool Neon_Tag_IsArrayBuffer(v8::Local<v8::Value> obj);
-  bool Neon_Tag_IsError(v8::Local<v8::Value> val);
+  bool Neon_Tag_IsFunctionThin(v8::Persistent<v8::Value> *val);
+  bool Neon_Tag_IsBuffer(v8::Persistent<v8::Value> *val);
+  bool Neon_Tag_IsArrayBuffer(v8::Persistent<v8::Value> *val);
+  bool Neon_Tag_IsError(v8::Persistent<v8::Value> *val);
 
-  void Neon_Error_NewError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);
-  void Neon_Error_NewTypeError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);
-  void Neon_Error_NewRangeError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);
-  void Neon_Error_Throw(v8::Local<v8::Value> val);
+  void Neon_Error_InitError(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, v8::Persistent<v8::String> *msg);
+  void Neon_Error_InitTypeError(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, v8::Persistent<v8::String> *msg);
+  void Neon_Error_InitRangeError(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, v8::Persistent<v8::String> *msg);
+  void Neon_Error_NewError(v8::Local<v8::Value> *out, v8::Persistent<v8::String> *msg);
+  void Neon_Error_NewTypeError(v8::Local<v8::Value> *out, v8::Persistent<v8::String> *msg);
+  void Neon_Error_NewRangeError(v8::Local<v8::Value> *out, v8::Persistent<v8::String> *msg);
+  void Neon_Error_Throw(v8::Persistent<v8::Value> *val);
   void Neon_Error_ThrowErrorFromUtf8(const uint8_t *data, int32_t len);
 
   bool Neon_Mem_SameHandle(v8::Local<v8::Value> v1, v8::Local<v8::Value> v2);
+  void Neon_Mem_NewPersistent(v8::Persistent<v8::Value> *out);
+  void Neon_Mem_DropPersistent(v8::Persistent<v8::Value> *p);
+  void Neon_Mem_ResetPersistent(v8::Persistent<v8::Value> *p, v8::Local<v8::Value> h);
 
   typedef void* (*Neon_TaskPerformCallback)(void *);
   typedef void (*Neon_TaskCompleteCallback)(void *, void *, v8::Local<v8::Value> *out);

@@ -7,6 +7,7 @@ pub(crate) mod internal;
 pub(crate) mod utf8;
 
 use std;
+use std::error::Error;
 use std::fmt;
 use std::mem;
 use std::os::raw::c_void;
@@ -15,191 +16,240 @@ use neon_runtime;
 use neon_runtime::raw;
 use context::{Context, FunctionContext};
 use context::internal::Isolate;
-use result::{NeonResult, JsResult, Throw, JsResultExt};
+use result::{NeonResult, Throw, NeonResultExt};
 use object::{Object, This};
 use object::class::Callback;
-use handle::{Handle, Managed};
-use handle::internal::SuperType;
 use self::internal::{ValueInternal, FunctionCallback};
 use self::utf8::Utf8;
 
 pub use self::binary::{JsBuffer, JsArrayBuffer, BinaryData, BinaryViewType};
 pub use self::error::JsError;
 
-pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(init: F) -> JsResult<'a, T> {
+pub(crate) fn build<'a, C: Context<'a>, T: Managed, F: FnOnce(&raw::Persistent) -> bool>(cx: &mut C, init: F) -> NeonResult<&'a T> {
     unsafe {
-        let mut local: raw::Local = std::mem::zeroed();
-        if init(&mut local) {
-            Ok(Handle::new_internal(T::from_raw(local)))
+        let h = cx.alloc_persistent();
+        if init(h) {
+            Ok(T::from_raw(h))
         } else {
             Err(Throw)
         }
     }
 }
 
-impl<T: Value> SuperType<T> for JsValue {
-    fn upcast_internal(v: T) -> JsValue {
-        JsValue(v.to_raw())
+pub(crate) fn build_infallible<'a, C: Context<'a>, T: Managed, F: FnOnce(&raw::Persistent)>(cx: &mut C, init: F) -> &'a T {
+    unsafe {
+        let h = cx.alloc_persistent();
+        init(h);
+        T::from_raw(h)
     }
 }
 
-impl<T: Object> SuperType<T> for JsObject {
-    fn upcast_internal(v: T) -> JsObject {
-        JsObject(v.to_raw())
+pub unsafe trait SuperType<T: Value> { }
+
+unsafe impl<T: Value> SuperType<T> for JsValue { }
+
+unsafe impl<T: Object> SuperType<T> for JsObject { }
+
+/// The trait of data that is managed by the JS garbage collector and can only be accessed via handles.
+pub trait Managed: Sized {
+    fn to_raw(&self) -> &raw::Persistent {
+        unsafe {
+            std::mem::transmute(self)
+        }
+    }
+
+    fn from_raw(h: &raw::Persistent) -> &Self {
+        unsafe {
+            std::mem::transmute(h)
+        }
     }
 }
 
-/// The trait shared by all JavaScript values.
 pub trait Value: ValueInternal {
-    fn to_string<'a, C: Context<'a>>(self, _: &mut C) -> JsResult<'a, JsString> {
-        build(|out| { unsafe { neon_runtime::convert::to_string(out, self.to_raw()) } })
+
+    /// Safely upcast a JS value to a supertype.
+    /// 
+    /// This method does not require an execution context because it only reinterprets a pointer.
+    fn upcast<U: Value + SuperType<Self>>(&self) -> &U {
+        unsafe {
+            mem::transmute(self)
+        }
     }
 
-    fn as_value<'a, C: Context<'a>>(self, _: &mut C) -> Handle<'a, JsValue> {
-        JsValue::new_internal(self.to_raw())
+
+    /// Tests whether this value is an instance of the given type.
+    /// 
+    /// # Example:
+    /// 
+    /// ```no_run
+    /// # use neon::prelude::*;
+    /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    /// let v: Handle<JsValue> = cx.number(17).upcast();
+    /// v.is_a::<JsString>(); // false
+    /// v.is_a::<JsNumber>(); // true
+    /// v.is_a::<JsValue>();  // true
+    /// # Ok(cx.undefined())
+    /// # }
+    /// ```
+    fn is_a<U: Value>(&self) -> bool {
+        U::is_typeof(self)
+    }
+
+    /// Attempts to downcast a handle to another type, which may fail. A failure
+    /// to downcast **does not** throw a JavaScript exception, so it's OK to
+    /// continue interacting with the JS engine if this method produces an `Err`
+    /// result.
+    fn downcast<U: Value>(&self) -> DowncastResult<Self, U> {
+        if U::is_typeof(self) {
+            Ok(unsafe { mem::transmute(self) })
+        } else {
+            Err(DowncastError::new())
+        }
+    }
+
+    /// Attempts to downcast a handle to another type, raising a JavaScript `TypeError`
+    /// exception on failure. This method is a convenient shorthand, equivalent to
+    /// `self.downcast::<U>().or_throw::<C>(cx)`.
+    fn downcast_or_throw<'b, U: Value, C: Context<'b>>(&self, cx: &mut C) -> NeonResult<&U> {
+        self.downcast().or_throw(cx)
+    }
+
+}
+
+/// An error representing a failed downcast.
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone)]
+pub struct DowncastError<F: Value, T: Value> {
+    phantom_from: PhantomData<F>,
+    phantom_to: PhantomData<T>,
+    description: String
+}
+
+impl<F: Value, T: Value> fmt::Debug for DowncastError<F, T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "DowncastError")
+    }
+}
+
+impl<F: Value, T: Value> DowncastError<F, T> {
+    fn new() -> Self {
+        DowncastError {
+            phantom_from: PhantomData,
+            phantom_to: PhantomData,
+            description: format!("failed downcast to {}", T::name())
+        }
+    }
+}
+
+impl<F: Value, T: Value> fmt::Display for DowncastError<F, T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self.description())
+    }
+}
+
+impl<F: Value, T: Value> Error for DowncastError<F, T> {
+    fn description(&self) -> &str {
+        &self.description
+    }
+}
+
+/// The result of a call to `Handle::downcast()`.
+pub type DowncastResult<'a, F, T> = Result<&'a T, DowncastError<F, T>>;
+
+impl<'a, F: Value, T: Value> NeonResultExt<'a, T> for DowncastResult<'a, F, T> {
+    fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> NeonResult<&'a T> {
+        match self {
+            Ok(v) => Ok(v),
+            Err(e) => cx.throw_type_error(&e.description)
+        }
     }
 }
 
 /// A JavaScript value of any type.
 #[repr(C)]
-#[derive(Clone, Copy)]
-pub struct JsValue(raw::Local);
+pub struct JsValue(raw::Persistent);
 
 impl Value for JsValue { }
 
-impl Managed for JsValue {
-    fn to_raw(self) -> raw::Local { self.0 }
-
-    fn from_raw(h: raw::Local) -> Self { JsValue(h) }
-}
+impl Managed for JsValue { }
 
 impl ValueInternal for JsValue {
     fn name() -> String { "any".to_string() }
 
-    fn is_typeof<Other: Value>(_: Other) -> bool {
+    fn is_typeof<Other: Value>(_: &Other) -> bool {
         true
     }
 }
 
-unsafe impl This for JsValue {
-    fn as_this(h: raw::Local) -> Self {
-        JsValue(h)
-    }
-}
-
-impl JsValue {
-    pub(crate) fn new_internal<'a>(value: raw::Local) -> Handle<'a, JsValue> {
-        Handle::new_internal(JsValue(value))
-    }
-}
+unsafe impl This for JsValue { }
 
 /// The JavaScript `undefined` value.
 #[repr(C)]
-#[derive(Clone, Copy)]
-pub struct JsUndefined(raw::Local);
+pub struct JsUndefined(raw::Persistent);
 
 impl JsUndefined {
-    pub fn new_thin<'a, C: Context<'a>>(cx: &mut C) -> &'a JsUndefined {
+    pub fn new<'a, C: Context<'a>>(cx: &mut C) -> &'a JsUndefined {
         unsafe {
-            let local = cx.alloc();
-            neon_runtime::primitive::undefined(mem::transmute(local));
-            mem::transmute(local)
+            let h = cx.alloc_persistent();
+            neon_runtime::primitive::init_undefined(h, cx.isolate().to_raw());
+            JsUndefined::from_raw(h)
         }
     }
+}
 
-    pub fn new<'a>() -> Handle<'a, JsUndefined> {
-        JsUndefined::new_internal()
-    }
+impl Managed for JsUndefined { }
 
-    pub(crate) fn new_internal<'a>() -> Handle<'a, JsUndefined> {
-        unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::undefined(&mut local);
-            Handle::new_internal(JsUndefined(local))
-        }
+impl ValueInternal for JsUndefined {
+    fn name() -> String { "undefined".to_string() }
+
+    fn is_typeof<Other: Value>(other: &Other) -> bool {
+        unsafe { neon_runtime::tag::is_undefined_thin(other.to_raw()) }
     }
 }
 
 impl Value for JsUndefined { }
 
-impl Managed for JsUndefined {
-    fn to_raw(self) -> raw::Local { self.0 }
-
-    fn from_raw(h: raw::Local) -> Self { JsUndefined(h) }
-}
-
-unsafe impl This for JsUndefined {
-    fn as_this(_: raw::Local) -> Self {
-        unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::undefined(&mut local);
-            JsUndefined(local)
-        }
-    }
-}
-
-impl ValueInternal for JsUndefined {
-    fn name() -> String { "undefined".to_string() }
-
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_undefined(other.to_raw()) }
-    }
-}
+unsafe impl This for JsUndefined { }
 
 /// The JavaScript `null` value.
 #[repr(C)]
-#[derive(Clone, Copy)]
-pub struct JsNull(raw::Local);
+pub struct JsNull(raw::Persistent);
 
 impl JsNull {
-    pub fn new<'a>() -> Handle<'a, JsNull> {
-        JsNull::new_internal()
-    }
-
-    pub(crate) fn new_internal<'a>() -> Handle<'a, JsNull> {
+    pub fn new<'a, C: Context<'a>>(cx: &mut C) -> &'a JsNull {
         unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::null(&mut local);
-            Handle::new_internal(JsNull(local))
+            let h = cx.alloc_persistent();
+            neon_runtime::primitive::init_null(h, cx.isolate().to_raw());
+            JsNull::from_raw(h)
         }
+    }
+}
+
+impl Managed for JsNull { }
+
+impl ValueInternal for JsNull {
+    fn name() -> String { "null".to_string() }
+
+    fn is_typeof<Other: Value>(other: &Other) -> bool {
+        unsafe { neon_runtime::tag::is_null(other.to_raw()) }
     }
 }
 
 impl Value for JsNull { }
 
-impl Managed for JsNull {
-    fn to_raw(self) -> raw::Local { self.0 }
-
-    fn from_raw(h: raw::Local) -> Self { JsNull(h) }
-}
-
-impl ValueInternal for JsNull {
-    fn name() -> String { "null".to_string() }
-
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_null(other.to_raw()) }
-    }
-}
-
 /// A JavaScript boolean primitive value.
 #[repr(C)]
-#[derive(Clone, Copy)]
-pub struct JsBoolean(raw::Local);
+pub struct JsBoolean(raw::Persistent);
 
 impl JsBoolean {
-    pub fn new<'a, C: Context<'a>>(_: &mut C, b: bool) -> Handle<'a, JsBoolean> {
-        JsBoolean::new_internal(b)
-    }
-
-    pub(crate) fn new_internal<'a>(b: bool) -> Handle<'a, JsBoolean> {
+    pub fn new<'a, C: Context<'a>>(cx: &mut C, b: bool) -> &'a JsBoolean {
         unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::boolean(&mut local, b);
-            Handle::new_internal(JsBoolean(local))
+            let h = cx.alloc_persistent();
+            neon_runtime::primitive::init_boolean(h, cx.isolate().to_raw(), b);
+            JsBoolean::from_raw(h)
         }
     }
 
-    pub fn value(self) -> bool {
+    pub fn value(&self) -> bool {
         unsafe {
             neon_runtime::primitive::boolean_value(self.to_raw())
         }
@@ -208,24 +258,19 @@ impl JsBoolean {
 
 impl Value for JsBoolean { }
 
-impl Managed for JsBoolean {
-    fn to_raw(self) -> raw::Local { self.0 }
-
-    fn from_raw(h: raw::Local) -> Self { JsBoolean(h) }
-}
+impl Managed for JsBoolean { }
 
 impl ValueInternal for JsBoolean {
     fn name() -> String { "boolean".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
+    fn is_typeof<Other: Value>(other: &Other) -> bool {
         unsafe { neon_runtime::tag::is_boolean(other.to_raw()) }
     }
 }
 
 /// A JavaScript string primitive value.
 #[repr(C)]
-#[derive(Clone, Copy)]
-pub struct JsString(raw::Local);
+pub struct JsString(raw::Persistent);
 
 /// An error produced when constructing a string that exceeds the JS engine's maximum string size.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
@@ -238,10 +283,10 @@ impl fmt::Display for StringOverflow {
 }
 
 /// The result of constructing a new `JsString`.
-pub type StringResult<'a> = Result<Handle<'a, JsString>, StringOverflow>;
+pub type StringResult<'a> = Result<&'a JsString, StringOverflow>;
 
-impl<'a> JsResultExt<'a, JsString> for StringResult<'a> {
-    fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, JsString> {
+impl<'a> NeonResultExt<'a, JsString> for StringResult<'a> {
+    fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> NeonResult<&'a JsString> {
         match self {
             Ok(v) => Ok(v),
             Err(e) => cx.throw_range_error(&e.to_string())
@@ -251,16 +296,12 @@ impl<'a> JsResultExt<'a, JsString> for StringResult<'a> {
 
 impl Value for JsString { }
 
-impl Managed for JsString {
-    fn to_raw(self) -> raw::Local { self.0 }
-
-    fn from_raw(h: raw::Local) -> Self { JsString(h) }
-}
+impl Managed for JsString { }
 
 impl ValueInternal for JsString {
     fn name() -> String { "string".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
+    fn is_typeof<Other: Value>(other: &Other) -> bool {
         unsafe { neon_runtime::tag::is_string(other.to_raw()) }
     }
 }
@@ -283,19 +324,19 @@ impl JsString {
         }
     }
 
-    pub fn new<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, val: S) -> Handle<'a, JsString> {
+    pub fn new<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, val: S) -> &'a JsString {
         JsString::try_new(cx, val).unwrap()
     }
 
     pub fn try_new<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, val: S) -> StringResult<'a> {
         let val = val.as_ref();
-        match JsString::new_internal(cx.isolate(), val) {
+        match JsString::new_internal(cx, val) {
             Some(s) => Ok(s),
             None => Err(StringOverflow(val.len()))
         }
     }
 
-    pub(crate) fn new_internal<'a>(isolate: Isolate, val: &str) -> Option<Handle<'a, JsString>> {
+    fn new_internal<'a, C: Context<'a>>(cx: &mut C, val: &str) -> Option<&'a JsString> {
         let (ptr, len) = if let Some(small) = Utf8::from(val).into_small() {
             small.lower()
         } else {
@@ -303,9 +344,9 @@ impl JsString {
         };
 
         unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            if neon_runtime::string::new(&mut local, isolate.to_raw(), ptr, len) {
-                Some(Handle::new_internal(JsString(local)))
+            let h = cx.alloc_persistent();
+            if neon_runtime::string::new(h, cx.isolate().to_raw(), ptr, len) {
+                Some(JsString::from_raw(h))
             } else {
                 None
             }
@@ -315,86 +356,69 @@ impl JsString {
 
 /// A JavaScript number value.
 #[repr(C)]
-#[derive(Clone, Copy)]
-pub struct JsNumber(raw::Local);
+pub struct JsNumber(raw::Persistent);
 
 impl JsNumber {
-    pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, x: T) -> Handle<'a, JsNumber> {
-        JsNumber::new_internal(cx.isolate(), x.into())
-    }
-
-    pub(crate) fn new_internal<'a>(isolate: Isolate, v: f64) -> Handle<'a, JsNumber> {
+    pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, x: T) -> &'a JsNumber {
         unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::number(&mut local, isolate.to_raw(), v);
-            Handle::new_internal(JsNumber(local))
+            let h = cx.alloc_persistent();
+            neon_runtime::primitive::init_number(h, cx.isolate().to_raw(), x.into());
+            JsNumber::from_raw(h)
         }
     }
 
-    pub fn value(self) -> f64 {
+    pub fn value(&self) -> f64 {
         unsafe {
             neon_runtime::primitive::number_value(self.to_raw())
         }
     }
 }
 
-impl Value for JsNumber { }
-
-impl Managed for JsNumber {
-    fn to_raw(self) -> raw::Local { self.0 }
-
-    fn from_raw(h: raw::Local) -> Self { JsNumber(h) }
-}
+impl Managed for JsNumber { }
 
 impl ValueInternal for JsNumber {
     fn name() -> String { "number".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
+    fn is_typeof<Other: Value>(other: &Other) -> bool {
         unsafe { neon_runtime::tag::is_number(other.to_raw()) }
     }
 }
 
-/// A JavaScript object.
+impl Value for JsNumber { }
+
 #[repr(C)]
-#[derive(Clone, Copy)]
-pub struct JsObject(raw::Local);
+pub struct JsObject(raw::Persistent);
 
-impl Value for JsObject { }
-
-impl Managed for JsObject {
-    fn to_raw(self) -> raw::Local { self.0 }
-
-    fn from_raw(h: raw::Local) -> Self { JsObject(h) }
-}
-
-unsafe impl This for JsObject {
-    fn as_this(h: raw::Local) -> Self { JsObject(h) }
-}
+impl Managed for JsObject { }
 
 impl ValueInternal for JsObject {
     fn name() -> String { "object".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_object(other.to_raw()) }
+    fn is_typeof<Other: Value>(other: &Other) -> bool {
+        unsafe { neon_runtime::tag::is_object_thin(other.to_raw()) }
     }
 }
 
+impl Value for JsObject { }
+
 impl Object for JsObject { }
 
+unsafe impl This for JsObject { }
+
 impl JsObject {
-    pub fn new<'a, C: Context<'a>>(_: &mut C) -> Handle<'a, JsObject> {
-        JsObject::new_internal()
-    }
-
-    pub(crate) fn new_internal<'a>() -> Handle<'a, JsObject> {
-        JsObject::build(|out| { unsafe { neon_runtime::object::new(out) } })
-    }
-
-    pub(crate) fn build<'a, F: FnOnce(&mut raw::Local)>(init: F) -> Handle<'a, JsObject> {
+    pub fn new<'a, C: Context<'a>>(cx: &mut C) -> &'a JsObject {
         unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            init(&mut local);
-            Handle::new_internal(JsObject(local))
+            let h = cx.alloc_persistent();
+            neon_runtime::object::init(h, cx.isolate().to_raw());
+            JsObject::from_raw(h)
+        }
+    }
+
+    pub(crate) fn build<'a, C: Context<'a>, F: FnOnce(&mut raw::Local)>(cx: &mut C, init: F) -> &'a JsObject {
+        unsafe {
+            let local = cx.alloc();
+            init(mem::transmute(local));
+            mem::transmute(local)
         }
     }
 }
@@ -402,23 +426,18 @@ impl JsObject {
 /// A JavaScript array object, i.e. a value for which `Array.isArray`
 /// would return `true`.
 #[repr(C)]
-#[derive(Clone, Copy)]
-pub struct JsArray(raw::Local);
+pub struct JsArray(raw::Persistent);
 
 impl JsArray {
-    pub fn new<'a, C: Context<'a>>(cx: &mut C, len: u32) -> Handle<'a, JsArray> {
-        JsArray::new_internal(cx.isolate(), len)
+
+    pub fn new<'a, C: Context<'a>>(cx: &mut C, len: u32) -> &'a JsArray {
+        let isolate = { cx.isolate().to_raw() };
+        build_infallible(cx, |out| unsafe {
+            neon_runtime::array::init(out, isolate, len)
+        })
     }
 
-    pub(crate) fn new_internal<'a>(isolate: Isolate, len: u32) -> Handle<'a, JsArray> {
-        unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::array::new(&mut local, isolate.to_raw(), len);
-            Handle::new_internal(JsArray(local))
-        }
-    }
-
-    pub fn to_vec<'a, C: Context<'a>>(self, cx: &mut C) -> NeonResult<Vec<Handle<'a, JsValue>>> {
+    pub fn to_vec<'a, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<Vec<&'a JsValue>> {
         let mut result = Vec::with_capacity(self.len() as usize);
         let mut i = 0;
         loop {
@@ -432,25 +451,22 @@ impl JsArray {
         }
     }
 
-    pub fn len(self) -> u32 {
+    pub fn len(&self) -> u32 {
         unsafe {
             neon_runtime::array::len(self.to_raw())
         }
     }
+
 }
 
 impl Value for JsArray { }
 
-impl Managed for JsArray {
-    fn to_raw(self) -> raw::Local { self.0 }
-
-    fn from_raw(h: raw::Local) -> Self { JsArray(h) }
-}
+impl Managed for JsArray { }
 
 impl ValueInternal for JsArray {
     fn name() -> String { "Array".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
+    fn is_typeof<Other: Value>(other: &Other) -> bool {
         unsafe { neon_runtime::tag::is_array(other.to_raw()) }
     }
 }
@@ -459,18 +475,30 @@ impl Object for JsArray { }
 
 /// A JavaScript function object.
 #[repr(C)]
-#[derive(Clone, Copy)]
 pub struct JsFunction<T: Object=JsObject> {
-    raw: raw::Local,
-    marker: PhantomData<T>
+    raw: raw::Persistent,
+    marker: PhantomData<T>,
 }
 
 impl<T: Object> Object for JsFunction<T> { }
 
-// Maximum number of function arguments in V8.
-const V8_ARGC_LIMIT: usize = 65535;
+impl JsFunction {
+    pub fn new<'a, C, U>(cx: &mut C, f: fn(FunctionContext) -> NeonResult<&U>) -> NeonResult<&'a JsFunction>
+        where C: Context<'a>,
+              U: Value
+    {
+        let isolate = cx.isolate().to_raw();
+        build(cx, |out| {
+            unsafe {
+                let isolate: *mut c_void = std::mem::transmute(isolate);
+                let callback = FunctionCallback(f).into_c_callback();
+                neon_runtime::fun::init(out, isolate, callback)
+            }
+        })
+    }
+}
 
-unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [Handle<'b, A>]) -> NeonResult<(*mut c_void, i32, *mut c_void)>
+unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [&'b A]) -> NeonResult<(*mut c_void, i32, *mut c_void)>
     where A: Value + 'b
 {
     let argv = args.as_mut_ptr();
@@ -482,67 +510,46 @@ unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [Handle
     Ok((isolate, argc as i32, argv as *mut c_void))
 }
 
-impl JsFunction {
-    pub fn new<'a, C, U>(cx: &mut C, f: fn(FunctionContext) -> JsResult<U>) -> JsResult<'a, JsFunction>
-        where C: Context<'a>,
-              U: Value
+impl<CL: Object> JsFunction<CL> {
+    pub fn call<'a, 'b, C: Context<'a>, T, A, AS>(&self, cx: &mut C, this: &'b T, args: AS) -> NeonResult<&'a JsValue>
+        where T: Value,
+              A: Value + 'b,
+              AS: IntoIterator<Item=&'b A>
     {
-        build(|out| {
+        let mut args = args.into_iter().collect::<Vec<_>>();
+        let (isolate, argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
+        build(cx, |out| {
             unsafe {
-                let isolate: *mut c_void = std::mem::transmute(cx.isolate().to_raw());
-                let callback = FunctionCallback(f).into_c_callback();
-                neon_runtime::fun::new(out, isolate, callback)
+                neon_runtime::fun::call_thin(out, isolate, self.to_raw(), this.to_raw(), argc, argv)
+            }
+        })
+    }
+
+    pub fn construct<'a, 'b, C: Context<'a>, A, AS>(self, cx: &mut C, args: AS) -> NeonResult<&'a CL>
+        where A: Value + 'b,
+              AS: IntoIterator<Item=&'b A>
+    {
+        let mut args = args.into_iter().collect::<Vec<_>>();
+        let (isolate, argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
+        build(cx, |out| {
+            unsafe {
+                neon_runtime::fun::construct_thin(out, isolate, self.to_raw(), argc, argv)
             }
         })
     }
 }
 
-impl<CL: Object> JsFunction<CL> {
-    pub fn call<'a, 'b, C: Context<'a>, T, A, AS>(self, cx: &mut C, this: Handle<'b, T>, args: AS) -> JsResult<'a, JsValue>
-        where T: Value,
-              A: Value + 'b,
-              AS: IntoIterator<Item=Handle<'b, A>>
-    {
-        let mut args = args.into_iter().collect::<Vec<_>>();
-        let (isolate, argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
-        build(|out| {
-            unsafe {
-                neon_runtime::fun::call(out, isolate, self.to_raw(), this.to_raw(), argc, argv)
-            }
-        })
-    }
+impl<T: Object> Managed for JsFunction<T> { }
 
-    pub fn construct<'a, 'b, C: Context<'a>, A, AS>(self, cx: &mut C, args: AS) -> JsResult<'a, CL>
-        where A: Value + 'b,
-              AS: IntoIterator<Item=Handle<'b, A>>
-    {
-        let mut args = args.into_iter().collect::<Vec<_>>();
-        let (isolate, argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
-        build(|out| {
-            unsafe {
-                neon_runtime::fun::construct(out, isolate, self.to_raw(), argc, argv)
-            }
-        })
+impl<T: Object> ValueInternal for JsFunction<T> {
+    fn name() -> String { "function".to_string() }
+
+    fn is_typeof<Other: Value>(other: &Other) -> bool {
+        unsafe { neon_runtime::tag::is_function_thin(other.to_raw()) }
     }
 }
 
 impl<T: Object> Value for JsFunction<T> { }
 
-impl<T: Object> Managed for JsFunction<T> {
-    fn to_raw(self) -> raw::Local { self.raw }
-
-    fn from_raw(h: raw::Local) -> Self {
-        JsFunction {
-            raw: h,
-            marker: PhantomData
-        }
-    }
-}
-
-impl<T: Object> ValueInternal for JsFunction<T> {
-    fn name() -> String { "function".to_string() }
-
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_function(other.to_raw()) }
-    }
-}
+// Maximum number of function arguments in V8.
+const V8_ARGC_LIMIT: usize = 65535;
