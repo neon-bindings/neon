@@ -4,7 +4,7 @@ pub(crate) mod class;
 
 use neon_runtime;
 use neon_runtime::raw;
-use types::{JsValue, JsArray, Managed, Value, build};
+use types::{JsValue, JsArray, Managed, Value};
 use types::utf8::Utf8;
 use context::Context;
 use result::{NeonResult, Throw};
@@ -19,15 +19,11 @@ pub trait PropertyKey {
 
 impl PropertyKey for u32 {
     unsafe fn get_from(self, out: &raw::Persistent, obj: &raw::Persistent) -> bool {
-        // FIXME: implement this
-        // was: neon_runtime::object::get_index(out, obj, self)
-        unimplemented!()
+        neon_runtime::object::get_index(out, obj, self)
     }
 
     unsafe fn set_from(self, out: &mut bool, obj: &raw::Persistent, val: &raw::Persistent) -> bool {
-        // FIXME: implement this
-        // was: neon_runtime::object::set_index(out, obj, self, val)
-        unimplemented!()
+        neon_runtime::object::set_index(out, obj, self, val)
     }
 }
 
@@ -55,12 +51,12 @@ impl<'a, T: Value> PropertyKey for &'a T {
 
 pub trait Object: Value {
     fn get<'a, C: Context<'a>, K: PropertyKey>(&self, cx: &mut C, key: K) -> NeonResult<&'a JsValue> {
-        build(cx, |out| { unsafe { key.get_from(out, self.to_raw()) } })
+        cx.new(|out| { unsafe { key.get_from(out, self.to_raw()) } })
     }
 
     fn get_own_property_names<'a, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<&'a JsArray> {
         let isolate = { cx.isolate().to_raw() };
-        build(cx, |out| unsafe {
+        cx.new(|out| unsafe {
             neon_runtime::object::get_own_property_names(out, isolate, self.to_raw())
         })
     }

@@ -30,10 +30,10 @@ extern "C" {
     pub fn throw_this_error(isolate: *mut Isolate, metadata: *mut c_void);
 
     #[link_name = "Neon_Class_AddMethod"]
-    pub fn add_method(isolate: *mut Isolate, metadata: *mut c_void, name: *const u8, byte_length: u32, method: Local) -> bool;
+    pub fn add_method(isolate: *mut Isolate, metadata: *mut c_void, name: *const u8, byte_length: u32, method: &Persistent) -> bool;
 
     #[link_name = "Neon_Class_MetadataToConstructor"]
-    pub fn metadata_to_constructor(out: &mut Local, isolate: *mut Isolate, metadata: *mut c_void) -> bool;
+    pub fn metadata_to_constructor(out: &Persistent, isolate: *mut Isolate, metadata: *mut c_void) -> bool;
 
     // FIXME: get rid of all the "kernel" nomenclature
 
@@ -50,9 +50,9 @@ extern "C" {
     pub fn constructor(out: &mut Local, ft: Local) -> bool;
 
     #[link_name = "Neon_Class_HasInstance"]
-    pub fn has_instance(metadata: *mut c_void, v: Local) -> bool;
+    pub fn has_instance(metadata: *mut c_void, v: &Persistent) -> bool;
 
     #[link_name = "Neon_Class_GetInstanceInternals"]
-    pub fn get_instance_internals(obj: Local) -> *mut c_void;
+    pub fn get_instance_internals(obj: &Persistent) -> *mut c_void;
 
 }

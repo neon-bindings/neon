@@ -29,8 +29,9 @@ extern "C" bool Neon_Call_IsConstruct(v8::FunctionCallbackInfo<v8::Value> *info)
   return info->IsConstructCall();
 }
 
-extern "C" void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out) {
-  *out = info->This();
+extern "C" void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Persistent<v8::Object> *out, v8::Isolate *isolate) {
+  Nan::HandleScope scope;
+  out->Reset(isolate, info->This());
 }
 
 extern "C" void Neon_Call_Data(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> *out) {
@@ -134,13 +135,23 @@ extern "C" bool Neon_Primitive_IsInt32(v8::Local<v8::Primitive> p) {
   return p->IsInt32();
 }
 
-extern "C" bool Neon_Object_Get_Index(v8::Local<v8::Value> *out, v8::Local<v8::Object> obj, uint32_t index) {
-  Nan::MaybeLocal<v8::Value> maybe = Nan::Get(obj, index);
-  return maybe.ToLocal(out);
+extern "C" bool Neon_Object_Get_Index(v8::Persistent<v8::Value> *out, v8::Persistent<v8::Object> *obj, uint32_t index) {
+  Nan::HandleScope scope;
+  v8::Local<v8::Object> lobj = Nan::New(*obj);
+  Nan::MaybeLocal<v8::Value> maybe = Nan::Get(lobj, index);
+  v8::Local<v8::Value> local;
+  if (!maybe.ToLocal(&local)) {
+    return false;
+  }
+  out->Reset(v8::Isolate::GetCurrent(), local);
+  return true;
 }
 
-extern "C" bool Neon_Object_Set_Index(bool *out, v8::Local<v8::Object> object, uint32_t index, v8::Local<v8::Value> val) {
-  Nan::Maybe<bool> maybe = Nan::Set(object, index, val);
+extern "C" bool Neon_Object_Set_Index(bool *out, v8::Persistent<v8::Object> *object, uint32_t index, v8::Persistent<v8::Value> *val) {
+  Nan::HandleScope scope;
+  v8::Local<v8::Object> lobject = Nan::New(*object);
+  v8::Local<v8::Value> lval = Nan::New(*val);
+  Nan::Maybe<bool> maybe = Nan::Set(lobject, index, lval);
   return maybe.IsJust() && (*out = maybe.FromJust(), true);
 }
 
@@ -502,9 +513,11 @@ extern "C" bool Neon_Class_Constructor(v8::Local<v8::Function> *out, v8::Local<v
   return maybe.ToLocal(out);
 }
 
-extern "C" bool Neon_Class_HasInstance(void *metadata_pointer, v8::Local<v8::Value> v) {
+extern "C" bool Neon_Class_HasInstance(void *metadata_pointer, v8::Persistent<v8::Value> *v) {
+  Nan::HandleScope scope;
+  v8::Local<v8::Value> local = Nan::New(*v);
   neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(metadata_pointer);
-  return metadata->GetTemplate(v8::Isolate::GetCurrent())->HasInstance(v);
+  return metadata->GetTemplate(v8::Isolate::GetCurrent())->HasInstance(local);
 }
 
 extern "C" bool Neon_Class_SetName(v8::Isolate *isolate, void *metadata_pointer, const char *name, uint32_t byte_length) {
@@ -538,31 +551,41 @@ extern "C" void Neon_Class_ThrowThisError(v8::Isolate *isolate, void *metadata_p
   Nan::ThrowTypeError(metadata->GetThisError().ToJsString(isolate, "this is not an object of the expected type."));
 }
 
-extern "C" bool Neon_Class_AddMethod(v8::Isolate *isolate, void *metadata_pointer, const char *name, uint32_t byte_length, v8::Local<v8::FunctionTemplate> method) {
+extern "C" bool Neon_Class_AddMethod(v8::Isolate *isolate, void *metadata_pointer, const char *name, uint32_t byte_length, v8::Persistent<v8::FunctionTemplate> *method) {
+  Nan::HandleScope scope;
   neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(metadata_pointer);
   v8::Local<v8::FunctionTemplate> ft = metadata->GetTemplate(isolate);
   v8::Local<v8::ObjectTemplate> pt = ft->PrototypeTemplate();
-  Nan::HandleScope scope;
   v8::MaybeLocal<v8::String> maybe_key = v8::String::NewFromUtf8(isolate, name, v8::NewStringType::kNormal, byte_length);
   v8::Local<v8::String> key;
   if (!maybe_key.ToLocal(&key)) {
     return false;
   }
-  pt->Set(key, method);
+  v8::Local<v8::FunctionTemplate> lmethod = Nan::New(*method);
+  pt->Set(key, lmethod);
   return true;
 }
 
-extern "C" bool Neon_Class_MetadataToConstructor(v8::Local<v8::Function> *out, v8::Isolate *isolate, void *metadata) {
+extern "C" bool Neon_Class_MetadataToConstructor(v8::Persistent<v8::Function> *out, v8::Isolate *isolate, void *metadata) {
+  Nan::HandleScope scope;
   v8::Local<v8::FunctionTemplate> ft = static_cast<neon::ClassMetadata *>(metadata)->GetTemplate(isolate);
   v8::MaybeLocal<v8::Function> maybe = ft->GetFunction();
-  return maybe.ToLocal(out);
+  v8::Local<v8::Function> local;
+  if (!maybe.ToLocal(&local)) {
+    return false;
+  }
+  out->Reset(isolate, local);
+  return true;
 }
 
-extern "C" void *Neon_Class_GetInstanceInternals(v8::Local<v8::Object> obj) {
-  return static_cast<neon::BaseClassInstanceMetadata *>(obj->GetAlignedPointerFromInternalField(0))->GetInternals();
+extern "C" void *Neon_Class_GetInstanceInternals(v8::Persistent<v8::Object> *obj) {
+  Nan::HandleScope scope;
+  v8::Local<v8::Object> local = Nan::New(*obj);
+  return static_cast<neon::BaseClassInstanceMetadata *>(local->GetAlignedPointerFromInternalField(0))->GetInternals();
 }
 
-extern "C" bool Neon_Fun_Template_New(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, callback_t callback) {
+extern "C" bool Neon_Fun_Template_New(v8::Persistent<v8::FunctionTemplate> *out, v8::Isolate *isolate, callback_t callback) {
+  Nan::HandleScope scope;
   v8::Local<v8::External> wrapper = v8::External::New(isolate, callback.dynamic_callback);
   if (wrapper.IsEmpty()) {
     return false;
@@ -570,7 +593,12 @@ extern "C" bool Neon_Fun_Template_New(v8::Local<v8::FunctionTemplate> *out, v8::
 
   v8::FunctionCallback static_callback = reinterpret_cast<v8::FunctionCallback>(callback.static_callback);
   v8::MaybeLocal<v8::FunctionTemplate> maybe_result = v8::FunctionTemplate::New(isolate, static_callback, wrapper);
-  return maybe_result.ToLocal(out);
+  v8::Local<v8::FunctionTemplate> local;
+  if (!maybe_result.ToLocal(&local)) {
+    return false;
+  }
+  out->Reset(isolate, local);
+  return true;
 }
 
 extern "C" bool Neon_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, callback_t callback) {

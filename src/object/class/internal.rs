@@ -7,7 +7,7 @@ use super::{Class, ClassInternal, Callback};
 use context::{CallbackInfo, CallContext, Context};
 use context::internal::ContextInternal;
 use result::{NeonResult, Throw};
-use types::{JsFunction, JsValue, JsObject, JsUndefined, Managed};
+use types::{JsFunction, JsValue, JsObject, JsUndefined, Managed, Value};
 use types::error::convert_panics;
 
 #[repr(C)]
@@ -15,27 +15,24 @@ pub struct MethodCallback<T: Class>(pub fn(CallContext<T>) -> NeonResult<&JsValu
 
 impl<T: Class> Callback<()> for MethodCallback<T> {
     extern "C" fn invoke(info: &CallbackInfo) {
-        // FIXME: implement this
-        /*
         unsafe {
             info.with_cx::<T, _, _>(|mut cx| {
-                let data = info.data();
-                let this: Handle<JsValue> = Handle::new_internal(JsValue::from_raw(info.this(&mut cx)));
+                let data = info.data(&mut cx);
+                let this = info.this(&mut cx);
                 if !this.is_a::<T>() {
+                    let isolate = { cx.isolate().to_raw() };
                     if let Ok(metadata) = T::metadata(&mut cx) {
-                        neon_runtime::class::throw_this_error(mem::transmute(cx.isolate()), metadata.pointer);
+                        neon_runtime::class::throw_this_error(isolate, metadata.pointer);
                     }
                     return;
-                };
-                let dynamic_callback: fn(CallContext<T>) -> JsResult<JsValue> =
+                }
+                let dynamic_callback: fn(CallContext<T>) -> NeonResult<&JsValue> =
                     mem::transmute(neon_runtime::fun::get_dynamic_callback(data.to_raw()));
                 if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
                     info.set_return(value);
                 }
             })
         }
-        */
-        unimplemented!()
     }
 
     fn as_ptr(self) -> *mut c_void {
@@ -140,16 +137,13 @@ pub struct ClassMetadata {
 
 impl ClassMetadata {
     pub unsafe fn constructor<'a, T: Class, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<&'a JsFunction<T>> {
-        // FIXME: implement this
-        unimplemented!()
-    /*
-        build(|out| {
-            neon_runtime::class::metadata_to_constructor(out, mem::transmute(cx.isolate()), self.pointer)
+        let isolate = { cx.isolate().to_raw() };
+        cx.new(|out| {
+            neon_runtime::class::metadata_to_constructor(out, isolate, self.pointer)
         })
-    */
     }
 
-    pub unsafe fn has_instance(&self, value: raw::Local) -> bool {
+    pub unsafe fn has_instance(&self, value: &raw::Persistent) -> bool {
         neon_runtime::class::has_instance(self.pointer, value)
     }
 }

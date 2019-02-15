@@ -12,7 +12,7 @@ use neon_runtime;
 use neon_runtime::raw;
 use borrow::{Ref, RefMut, Borrow, BorrowMut};
 use borrow::internal::Ledger;
-use types::{Value, JsValue, JsObject, /*JsArray,*/ JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined, build_infallible};
+use types::{Value, JsValue, JsObject, /*JsArray,*/ JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
 use types::binary::{JsArrayBuffer, JsBuffer};
 use types::error::JsError;
 use object::{Object, This};
@@ -29,7 +29,7 @@ impl CallbackInfo {
 
     pub fn data<'a, C: Context<'a>>(&self, cx: &mut C) -> &'a JsValue {
         let isolate = { cx.isolate().to_raw() };
-        build_infallible(cx, |out| unsafe {
+        cx.new_infallible(|out| unsafe {
             neon_runtime::call::init_data(&self.info, isolate, out)
         })
     }
@@ -40,7 +40,6 @@ impl CallbackInfo {
 
     pub fn set_return<'a, 'b, T: Value>(&'a self, value: &'b T) {
         unsafe {
-            // FIXME: Value should have a conversion function like to_raw()
             neon_runtime::call::set_return_thin(&self.info, value.to_raw());
         }
     }
@@ -65,7 +64,7 @@ impl CallbackInfo {
         }
         let isolate = { cx.isolate().to_raw() };
         unsafe {
-            Some(build_infallible(cx, |out| {
+            Some(cx.new_infallible(|out| {
                 neon_runtime::call::init_get(&self.info, isolate, i, out)
             }))
         }
@@ -77,18 +76,17 @@ impl CallbackInfo {
         }
         let isolate = { cx.isolate().to_raw() };
         unsafe {
-            Ok(build_infallible(cx, |out| {
+            Ok(cx.new_infallible(|out| {
                 neon_runtime::call::init_get(&self.info, isolate, i, out)
             }))
         }
     }
 
-    pub fn this<'b, V: Context<'b>>(&self, _: &mut V) -> raw::Local {
-        unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::this(std::mem::transmute(&self.info), &mut local);
-            local
-        }
+    pub fn this<'b, C: Context<'b>>(&self, cx: &mut C) -> &'b JsValue {
+        let isolate = { cx.isolate().to_raw() };
+        cx.new_infallible(|out| unsafe {
+            neon_runtime::call::this(&self.info, out, isolate)
+        })
     }
 }
 
@@ -355,13 +353,9 @@ impl<'a> ModuleContext<'a> {
 
     /// Convenience method for exporting a Neon class constructor from a module.
     pub fn export_class<T: Class>(&mut self, key: &str) -> NeonResult<()> {
-        // FIXME: implement this
-        /*
         let constructor = T::constructor(self)?;
         self.exports.set(self, key, constructor)?;
         Ok(())
-        */
-        unimplemented!()
     }
 
     /// Exports a JavaScript value from a Neon module.

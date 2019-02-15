@@ -10,7 +10,7 @@ use neon_runtime::scope::Root;
 use typed_arena::Arena;
 use types::{JsObject, Managed};
 use object::class::ClassMap;
-use result::NeonResult;
+use result::{NeonResult, Throw};
 use super::ModuleContext;
 
 #[repr(C)]
@@ -197,6 +197,25 @@ pub trait ContextInternal<'a>: Sized {
 
     unsafe fn alloc_persistent(&mut self) -> &'a raw::Persistent {
         self.persistent_arena().alloc()
+    }
+
+    fn new<T: Managed, F: FnOnce(&raw::Persistent) -> bool>(&mut self, init: F) -> NeonResult<&'a T> {
+        unsafe {
+            let h = self.alloc_persistent();
+            if init(h) {
+                Ok(T::from_raw(h))
+            } else {
+                Err(Throw)
+            }
+        }
+    }
+
+    fn new_infallible<T: Managed, F: FnOnce(&raw::Persistent)>(&mut self, init: F) -> &'a T {
+        unsafe {
+            let h = self.alloc_persistent();
+            init(h);
+            T::from_raw(h)
+        }
     }
 }
 

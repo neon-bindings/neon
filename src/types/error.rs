@@ -7,7 +7,7 @@ use neon_runtime::raw;
 
 use context::Context;
 use result::{NeonResult, Throw};
-use types::{Object, Value, ValueInternal, Managed, build};
+use types::{Object, Value, ValueInternal, Managed};
 use types::utf8::Utf8;
 
 /// A JS `Error` object.
@@ -34,7 +34,7 @@ impl JsError {
     pub fn error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<&'a JsError> {
         let msg = { cx.string(msg.as_ref()).to_raw() };
         let isolate = { cx.isolate().to_raw() };
-        build(cx, |out| unsafe {
+        cx.new(|out| unsafe {
             neon_runtime::error::init_error(out, isolate, msg);
             true
         })
@@ -44,7 +44,7 @@ impl JsError {
     pub fn type_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<&'a JsError> {
         let msg = { cx.string(msg.as_ref()).to_raw() };
         let isolate = { cx.isolate().to_raw() };
-        build(cx, |out| unsafe {
+        cx.new(|out| unsafe {
             neon_runtime::error::init_type_error(out, isolate, msg);
             true
         })
@@ -54,7 +54,7 @@ impl JsError {
     pub fn range_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<&'a JsError> {
         let msg = { cx.string(msg.as_ref()).to_raw() };
         let isolate = { cx.isolate().to_raw() };
-        build(cx, |out| unsafe {
+        cx.new(|out| unsafe {
             neon_runtime::error::init_range_error(out, isolate, msg);
             true
         })

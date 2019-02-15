@@ -18,7 +18,7 @@ extern "C" {
   void *Neon_Call_GetIsolate(v8::FunctionCallbackInfo<v8::Value> *info);
   void *Neon_Call_CurrentIsolate();
   bool Neon_Call_IsConstruct(v8::FunctionCallbackInfo<v8::Value> *info);
-  void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out);
+  void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Persistent<v8::Value> *out, v8::Isolate *isolae);
   void Neon_Call_Data(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> *out);
   void Neon_Call_InitData(v8::FunctionCallbackInfo<v8::Value> *info, v8::Isolate *isolate, v8::Persistent<v8::Value> *out);
   int32_t Neon_Call_Length(v8::FunctionCallbackInfo<v8::Value> *info);
@@ -37,8 +37,8 @@ extern "C" {
   void Neon_Object_Init(v8::Persistent<v8::Value> *out, v8::Isolate *isolate);
   bool Neon_Object_GetOwnPropertyNames(v8::Persistent<v8::Array> *out, v8::Isolate *isolate, v8::Persistent<v8::Object> *obj);
   void *Neon_Object_GetIsolate(v8::Local<v8::Object> obj);
-  bool Neon_Object_Get_Index(v8::Local<v8::Value> *out, v8::Local<v8::Object> object, uint32_t index);
-  bool Neon_Object_Set_Index(bool *out, v8::Local<v8::Object> object, uint32_t index, v8::Local<v8::Value> val);
+  bool Neon_Object_Get_Index(v8::Persistent<v8::Value> *out, v8::Persistent<v8::Object> *object, uint32_t index);
+  bool Neon_Object_Set_Index(bool *out, v8::Persistent<v8::Object> *object, uint32_t index, v8::Persistent<v8::Value> *val);
   bool Neon_Object_Get_String(v8::Local<v8::Value> *out, v8::Local<v8::Object> object, const uint8_t *key, int32_t len);
   bool Neon_Object_Get_StringThin(v8::Persistent<v8::Value> *out, v8::Persistent<v8::Object> *object, const uint8_t *key, int32_t len);
   bool Neon_Object_Set_String(bool *out, v8::Local<v8::Object> object, const uint8_t *key, int32_t len, v8::Local<v8::Value> val);
@@ -88,7 +88,7 @@ extern "C" {
 
   bool Neon_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, callback_t callback);
   bool Neon_Fun_Init(v8::Persistent<v8::Function> *out, v8::Isolate *isolate, callback_t callback);
-  bool Neon_Fun_Template_New(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, callback_t callback);
+  bool Neon_Fun_Template_New(v8::Persistent<v8::FunctionTemplate> *out, v8::Isolate *isolate, callback_t callback);
   void *Neon_Fun_GetDynamicCallback(v8::Persistent<v8::External> *obj);
   bool Neon_Fun_Call(v8::Local<v8::Value> *out, v8::Isolate *isolate, v8::Local<v8::Function> fun, v8::Local<v8::Value> self, int32_t argc, v8::Local<v8::Value> argv[]);
   bool Neon_Fun_CallThin(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, v8::Persistent<v8::Function> *fun, v8::Persistent<v8::Value> *self, int32_t argc, v8::Persistent<v8::Value> *argv[]);
@@ -115,13 +115,13 @@ extern "C" {
   void *Neon_Class_GetConstructKernel(v8::Persistent<v8::External> *wrapper);
   void *Neon_Class_GetAllocateKernel(v8::Persistent<v8::External> *wrapper);
   bool Neon_Class_Constructor(v8::Local<v8::Function> *out, v8::Local<v8::FunctionTemplate> ft);
-  bool Neon_Class_HasInstance(void *metadata, v8::Local<v8::Value> v);
+  bool Neon_Class_HasInstance(void *metadata, v8::Persistent<v8::Value> *v);
   bool Neon_Class_SetName(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length);
   void Neon_Class_GetName(const char **chars_out, size_t *len_out, v8::Isolate *isolate, void *metadata);
   void Neon_Class_ThrowThisError(v8::Isolate *isolate, void *metadata_pointer);
-  bool Neon_Class_AddMethod(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length, v8::Local<v8::FunctionTemplate> method);
-  bool Neon_Class_MetadataToConstructor(v8::Local<v8::Function> *out, v8::Isolate *isolate, void *metadata);
-  void *Neon_Class_GetInstanceInternals(v8::Local<v8::Object> obj);
+  bool Neon_Class_AddMethod(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length, v8::Persistent<v8::FunctionTemplate> *method);
+  bool Neon_Class_MetadataToConstructor(v8::Persistent<v8::Function> *out, v8::Isolate *isolate, void *metadata);
+  void *Neon_Class_GetInstanceInternals(v8::Persistent<v8::Object> *obj);
 
   uint32_t Neon_Module_GetVersion();
 

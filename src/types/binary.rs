@@ -7,7 +7,7 @@ use std::slice;
 use context::{Context, Lock};
 use borrow::{Borrow, BorrowMut, Ref, RefMut, LoanError};
 use borrow::internal::Pointer;
-use types::{Object, Managed, Value, build};
+use types::{Object, Managed, Value};
 use types::internal::ValueInternal;
 use result::NeonResult;
 use neon_runtime;
@@ -22,16 +22,16 @@ impl JsBuffer {
     /// Constructs a new `Buffer` object, safely zero-filled.
     pub fn new<'a, C: Context<'a>>(cx: &mut C, size: u32) -> NeonResult<&'a JsBuffer> {
         let isolate = cx.isolate().to_raw();
-        build(cx, |out| {
-            unsafe { neon_runtime::buffer::init_safe(out, isolate, size) }
+        cx.new(|out| unsafe {
+            neon_runtime::buffer::init_safe(out, isolate, size)
         })
     }
 
     /// Constructs a new `Buffer` object, unsafely filled with uninitialized data.
     pub unsafe fn uninitialized<'a, C: Context<'a>>(cx: &mut C, size: u32) -> NeonResult<&'a JsBuffer> {
         let isolate = cx.isolate().to_raw();
-        build(cx, |out| {
-            unsafe { neon_runtime::buffer::init_unsafe(out, isolate, size) }
+        cx.new(|out| unsafe {
+            neon_runtime::buffer::init_unsafe(out, isolate, size)
         })
     }
 
@@ -60,8 +60,8 @@ impl JsArrayBuffer {
     /// Constructs a new `ArrayBuffer` object with the given size, in bytes.
     pub fn new<'a, C: Context<'a>>(cx: &mut C, size: u32) -> NeonResult<&'a JsArrayBuffer> {
         let isolate = { cx.isolate().to_raw() };
-        build(cx, |out| {
-            unsafe { neon_runtime::arraybuffer::init(out, isolate, size) }
+        cx.new(|out| unsafe {
+            neon_runtime::arraybuffer::init(out, isolate, size)
         })
     }
 

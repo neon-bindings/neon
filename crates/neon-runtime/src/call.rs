@@ -44,7 +44,7 @@ extern "C" {
     /// Mutates the `out` argument provided to refer to the `v8::Local` handle value of the object
     /// the function is bound to.
     #[link_name = "Neon_Call_This"]
-    pub fn this(info: &FunctionCallbackInfo, out: &mut Local);
+    pub fn this(info: &FunctionCallbackInfo, out: &Persistent, isolate: *mut Isolate);
 
     /// Mutates the `out` argument provided to refer to the `v8::Local` handle value of the
     /// `v8::FunctionCallbackInfo` `Data`.

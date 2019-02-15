@@ -25,25 +25,6 @@ use self::utf8::Utf8;
 pub use self::binary::{JsBuffer, JsArrayBuffer, BinaryData, BinaryViewType};
 pub use self::error::JsError;
 
-pub(crate) fn build<'a, C: Context<'a>, T: Managed, F: FnOnce(&raw::Persistent) -> bool>(cx: &mut C, init: F) -> NeonResult<&'a T> {
-    unsafe {
-        let h = cx.alloc_persistent();
-        if init(h) {
-            Ok(T::from_raw(h))
-        } else {
-            Err(Throw)
-        }
-    }
-}
-
-pub(crate) fn build_infallible<'a, C: Context<'a>, T: Managed, F: FnOnce(&raw::Persistent)>(cx: &mut C, init: F) -> &'a T {
-    unsafe {
-        let h = cx.alloc_persistent();
-        init(h);
-        T::from_raw(h)
-    }
-}
-
 pub unsafe trait SuperType<T: Value> { }
 
 unsafe impl<T: Value> SuperType<T> for JsValue { }
@@ -432,7 +413,7 @@ impl JsArray {
 
     pub fn new<'a, C: Context<'a>>(cx: &mut C, len: u32) -> &'a JsArray {
         let isolate = { cx.isolate().to_raw() };
-        build_infallible(cx, |out| unsafe {
+        cx.new_infallible(|out| unsafe {
             neon_runtime::array::init(out, isolate, len)
         })
     }
@@ -488,12 +469,10 @@ impl JsFunction {
               U: Value
     {
         let isolate = cx.isolate().to_raw();
-        build(cx, |out| {
-            unsafe {
-                let isolate: *mut c_void = std::mem::transmute(isolate);
-                let callback = FunctionCallback(f).into_c_callback();
-                neon_runtime::fun::init(out, isolate, callback)
-            }
+        cx.new(|out| unsafe {
+            let isolate: *mut c_void = std::mem::transmute(isolate);
+            let callback = FunctionCallback(f).into_c_callback();
+            neon_runtime::fun::init(out, isolate, callback)
         })
     }
 }
@@ -518,23 +497,19 @@ impl<CL: Object> JsFunction<CL> {
     {
         let mut args = args.into_iter().collect::<Vec<_>>();
         let (isolate, argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
-        build(cx, |out| {
-            unsafe {
-                neon_runtime::fun::call_thin(out, isolate, self.to_raw(), this.to_raw(), argc, argv)
-            }
+        cx.new(|out| unsafe {
+            neon_runtime::fun::call_thin(out, isolate, self.to_raw(), this.to_raw(), argc, argv)
         })
     }
 
-    pub fn construct<'a, 'b, C: Context<'a>, A, AS>(self, cx: &mut C, args: AS) -> NeonResult<&'a CL>
+    pub fn construct<'a, 'b, C: Context<'a>, A, AS>(&self, cx: &mut C, args: AS) -> NeonResult<&'a CL>
         where A: Value + 'b,
               AS: IntoIterator<Item=&'b A>
     {
         let mut args = args.into_iter().collect::<Vec<_>>();
         let (isolate, argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
-        build(cx, |out| {
-            unsafe {
-                neon_runtime::fun::construct_thin(out, isolate, self.to_raw(), argc, argv)
-            }
+        cx.new(|out| unsafe {
+            neon_runtime::fun::construct_thin(out, isolate, self.to_raw(), argc, argv)
         })
     }
 }

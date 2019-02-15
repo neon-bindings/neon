@@ -24,13 +24,13 @@ extern "C" {
     /// Mutates the `out` argument provided to refer to the `v8::Local` value at the `index`
     /// provided of the `v8::Object`. Returns `false` if the result couldn't be retrieved.
     #[link_name = "Neon_Object_Get_Index"]
-    pub fn get_index(out: &mut Local, object: Local, index: u32) -> bool;
+    pub fn get_index(out: &Persistent, object: &Persistent, index: u32) -> bool;
 
     /// Sets the key value of a `v8::Object` at the `index` provided. Also mutates the `out`
     /// argument provided to refer to a `v8::Local` boolean value, `true` if the set was
     /// successful.
     #[link_name = "Neon_Object_Set_Index"]
-    pub fn set_index(out: &mut bool, object: Local, index: u32, val: Local) -> bool;
+    pub fn set_index(out: &mut bool, object: &Persistent, index: u32, val: &Persistent) -> bool;
 
     /// Mutates the `out` argument provided to refer to the `v8::Local` value of the `v8::String`'s
     /// underlying content.  Returns `false` if the value couldn't be retrieved.
