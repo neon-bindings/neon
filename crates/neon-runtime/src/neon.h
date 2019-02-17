@@ -20,7 +20,7 @@ extern "C" {
   bool Neon_Call_IsConstruct(v8::FunctionCallbackInfo<v8::Value> *info);
   void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Persistent<v8::Value> *out, v8::Isolate *isolae);
   void Neon_Call_Data(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> *out);
-  void Neon_Call_InitData(v8::FunctionCallbackInfo<v8::Value> *info, v8::Isolate *isolate, v8::Persistent<v8::Value> *out);
+  void Neon_Call_InitData(v8::FunctionCallbackInfo<v8::Value> *info, v8::Persistent<v8::Value> *out, v8::Isolate *isolate);
   int32_t Neon_Call_Length(v8::FunctionCallbackInfo<v8::Value> *info);
   void Neon_Call_Get(v8::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out);
   void Neon_Call_InitGet(v8::FunctionCallbackInfo<v8::Value> *info, v8::Isolate *isolate, int32_t i, v8::Persistent<v8::Value> *out);
@@ -37,16 +37,16 @@ extern "C" {
   void Neon_Object_Init(v8::Persistent<v8::Value> *out, v8::Isolate *isolate);
   bool Neon_Object_GetOwnPropertyNames(v8::Persistent<v8::Array> *out, v8::Isolate *isolate, v8::Persistent<v8::Object> *obj);
   void *Neon_Object_GetIsolate(v8::Local<v8::Object> obj);
-  bool Neon_Object_Get_Index(v8::Persistent<v8::Value> *out, v8::Persistent<v8::Object> *object, uint32_t index);
-  bool Neon_Object_Set_Index(bool *out, v8::Persistent<v8::Object> *object, uint32_t index, v8::Persistent<v8::Value> *val);
+  bool Neon_Object_Get_Index(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, v8::Persistent<v8::Object> *object, uint32_t index);
+  bool Neon_Object_Set_Index(bool *out, v8::Isolate *isolate, v8::Persistent<v8::Object> *object, uint32_t index, v8::Persistent<v8::Value> *val);
   bool Neon_Object_Get_String(v8::Local<v8::Value> *out, v8::Local<v8::Object> object, const uint8_t *key, int32_t len);
-  bool Neon_Object_Get_StringThin(v8::Persistent<v8::Value> *out, v8::Persistent<v8::Object> *object, const uint8_t *key, int32_t len);
+  bool Neon_Object_Get_StringThin(v8::Persistent<v8::Value> *out, v8::Isolate isolate, v8::Persistent<v8::Object> *object, const uint8_t *key, int32_t len);
   bool Neon_Object_Set_String(bool *out, v8::Local<v8::Object> object, const uint8_t *key, int32_t len, v8::Local<v8::Value> val);
-  bool Neon_Object_Set_StringThin(bool *out, v8::Persistent<v8::Object> *object, const uint8_t *key, int32_t len, v8::Persistent<v8::Value> *val);
+  bool Neon_Object_Set_StringThin(bool *out, v8::Isolate isolate, v8::Persistent<v8::Object> *object, const uint8_t *key, int32_t len, v8::Persistent<v8::Value> *val);
   bool Neon_Object_Get(v8::Local<v8::Value> *out, v8::Local<v8::Object> object, v8::Local<v8::Value> key);
-  bool Neon_Object_GetThin(v8::Persistent<v8::Value> *out, v8::Persistent<v8::Object> *object, v8::Persistent<v8::Value> *key);
+  bool Neon_Object_GetThin(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, v8::Persistent<v8::Object> *object, v8::Persistent<v8::Value> *key);
   bool Neon_Object_Set(bool *out, v8::Local<v8::Object> obj, v8::Local<v8::Value> key, v8::Local<v8::Value> val);
-  bool Neon_Object_SetThin(bool *out, v8::Persistent<v8::Object> *obj, v8::Persistent<v8::Value> *key, v8::Persistent<v8::Value> *val);
+  bool Neon_Object_SetThin(bool *out, v8::Isolate *isolate, v8::Persistent<v8::Object> *obj, v8::Persistent<v8::Value> *key, v8::Persistent<v8::Value> *val);
 
   void Neon_Array_New(v8::Local<v8::Array> *out, v8::Isolate *isolate, uint32_t length);
   void Neon_Array_Init(v8::Persistent<v8::Array> *out, v8::Isolate *isolate, uint32_t length);
@@ -84,7 +84,7 @@ extern "C" {
   size_t Neon_Scope_Alignof();
   size_t Neon_Scope_SizeofEscapable();
   size_t Neon_Scope_AlignofEscapable();
-  void Neon_Scope_GetGlobal(v8::Isolate *isolate, v8::Local<v8::Value> *out);
+  void Neon_Scope_GetGlobal(v8::Isolate *isolate, v8::Persistent<v8::Value> *out);
 
   bool Neon_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, callback_t callback);
   bool Neon_Fun_Init(v8::Persistent<v8::Function> *out, v8::Isolate *isolate, callback_t callback);

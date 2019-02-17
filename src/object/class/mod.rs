@@ -8,7 +8,6 @@ use std::os::raw::c_void;
 use std::slice;
 use std::collections::HashMap;
 use neon_runtime;
-use neon_runtime::raw;
 use neon_runtime::call::CCallback;
 use context::{Context, Lock, CallbackInfo};
 use context::internal::Isolate;
@@ -139,7 +138,7 @@ pub(crate) trait ClassInternal: Class {
     fn create<'a, C: Context<'a>>(cx: &mut C) -> NeonResult<ClassMetadata> {
         let descriptor = Self::setup(cx)?;
         unsafe {
-            let isolate: *mut c_void = mem::transmute(cx.isolate());
+            let isolate: *mut c_void = { cx.isolate().to_raw() };
 
             let allocate = descriptor.allocate.into_c_callback();
             let construct = descriptor.construct.map(|callback| callback.into_c_callback()).unwrap_or_default();
@@ -164,7 +163,7 @@ pub(crate) trait ClassInternal: Class {
             }
 
             for (name, method) in descriptor.methods {
-                let method: &JsValue = cx.new(|out| {
+                let method: &JsValue = cx.new(|out, isolate| {
                     let callback = method.into_c_callback();
                     neon_runtime::fun::new_template(out, isolate, callback)
                 })?;

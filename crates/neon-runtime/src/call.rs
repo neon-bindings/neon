@@ -54,7 +54,7 @@ extern "C" {
     /// Initializes the `out` argument provided to refer to the value of the
     /// `v8::FunctionCallbackInfo` `Data`.
     #[link_name = "Neon_Call_InitData"]
-    pub fn init_data(info: &FunctionCallbackInfo, isolate: *mut Isolate, out: &Persistent);
+    pub fn init_data(info: &FunctionCallbackInfo, out: &Persistent, isolate: *mut Isolate);
 
     /// Gets the number of arguments passed to the function.
     #[link_name = "Neon_Call_Length"]

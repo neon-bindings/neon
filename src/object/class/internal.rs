@@ -137,8 +137,7 @@ pub struct ClassMetadata {
 
 impl ClassMetadata {
     pub unsafe fn constructor<'a, T: Class, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<&'a JsFunction<T>> {
-        let isolate = { cx.isolate().to_raw() };
-        cx.new(|out| {
+        cx.new(|out, isolate| {
             neon_runtime::class::metadata_to_constructor(out, isolate, self.pointer)
         })
     }

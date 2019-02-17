@@ -33,8 +33,7 @@ impl JsError {
     /// Creates a direct instance of the [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error) class.
     pub fn error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<&'a JsError> {
         let msg = { cx.string(msg.as_ref()).to_raw() };
-        let isolate = { cx.isolate().to_raw() };
-        cx.new(|out| unsafe {
+        cx.new(|out, isolate| unsafe {
             neon_runtime::error::init_error(out, isolate, msg);
             true
         })
@@ -43,8 +42,7 @@ impl JsError {
     /// Creates an instance of the [`TypeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypeError) class.
     pub fn type_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<&'a JsError> {
         let msg = { cx.string(msg.as_ref()).to_raw() };
-        let isolate = { cx.isolate().to_raw() };
-        cx.new(|out| unsafe {
+        cx.new(|out, isolate| unsafe {
             neon_runtime::error::init_type_error(out, isolate, msg);
             true
         })
@@ -53,8 +51,7 @@ impl JsError {
     /// Creates an instance of the [`RangeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RangeError) class.
     pub fn range_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<&'a JsError> {
         let msg = { cx.string(msg.as_ref()).to_raw() };
-        let isolate = { cx.isolate().to_raw() };
-        cx.new(|out| unsafe {
+        cx.new(|out, isolate| unsafe {
             neon_runtime::error::init_range_error(out, isolate, msg);
             true
         })

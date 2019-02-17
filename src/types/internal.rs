@@ -1,7 +1,6 @@
 use std::mem;
 use std::os::raw::c_void;
 use neon_runtime;
-use neon_runtime::raw;
 use context::{CallbackInfo, FunctionContext};
 use types::error::convert_panics;
 use types::{JsObject, Managed};

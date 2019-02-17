@@ -15,8 +15,7 @@ use std::marker::PhantomData;
 use neon_runtime;
 use neon_runtime::raw;
 use context::{Context, FunctionContext};
-use context::internal::Isolate;
-use result::{NeonResult, Throw, NeonResultExt};
+use result::{NeonResult, NeonResultExt};
 use object::{Object, This};
 use object::class::Callback;
 use self::internal::{ValueInternal, FunctionCallback};
@@ -169,11 +168,9 @@ pub struct JsUndefined(raw::Persistent);
 
 impl JsUndefined {
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> &'a JsUndefined {
-        unsafe {
-            let h = cx.alloc_persistent();
-            neon_runtime::primitive::init_undefined(h, cx.isolate().to_raw());
-            JsUndefined::from_raw(h)
-        }
+        cx.new_infallible(|out, isolate| unsafe {
+            neon_runtime::primitive::init_undefined(out, isolate)
+        })
     }
 }
 
@@ -197,11 +194,9 @@ pub struct JsNull(raw::Persistent);
 
 impl JsNull {
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> &'a JsNull {
-        unsafe {
-            let h = cx.alloc_persistent();
-            neon_runtime::primitive::init_null(h, cx.isolate().to_raw());
-            JsNull::from_raw(h)
-        }
+        cx.new_infallible(|out, isolate| unsafe {
+            neon_runtime::primitive::init_null(out, isolate)
+        })
     }
 }
 
@@ -223,11 +218,9 @@ pub struct JsBoolean(raw::Persistent);
 
 impl JsBoolean {
     pub fn new<'a, C: Context<'a>>(cx: &mut C, b: bool) -> &'a JsBoolean {
-        unsafe {
-            let h = cx.alloc_persistent();
-            neon_runtime::primitive::init_boolean(h, cx.isolate().to_raw(), b);
-            JsBoolean::from_raw(h)
-        }
+        cx.new_infallible(|out, isolate| unsafe {
+            neon_runtime::primitive::init_boolean(out, isolate, b)
+        })
     }
 
     pub fn value(&self) -> bool {
@@ -318,20 +311,14 @@ impl JsString {
     }
 
     fn new_internal<'a, C: Context<'a>>(cx: &mut C, val: &str) -> Option<&'a JsString> {
-        let (ptr, len) = if let Some(small) = Utf8::from(val).into_small() {
-            small.lower()
-        } else {
-            return None;
-        };
-
-        unsafe {
-            let h = cx.alloc_persistent();
-            if neon_runtime::string::new(h, cx.isolate().to_raw(), ptr, len) {
-                Some(JsString::from_raw(h))
-            } else {
-                None
-            }
-        }
+        Utf8::from(val)
+            .into_small()
+            .and_then(|small| {
+                let (ptr, len) = small.lower();
+                cx.new_opt(|out, isolate| unsafe {
+                    neon_runtime::string::new(out, isolate, ptr, len)
+                })
+            })
     }
 }
 
@@ -341,11 +328,9 @@ pub struct JsNumber(raw::Persistent);
 
 impl JsNumber {
     pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, x: T) -> &'a JsNumber {
-        unsafe {
-            let h = cx.alloc_persistent();
-            neon_runtime::primitive::init_number(h, cx.isolate().to_raw(), x.into());
-            JsNumber::from_raw(h)
-        }
+        cx.new_infallible(|out, isolate| unsafe {
+            neon_runtime::primitive::init_number(out, isolate, x.into())
+        })
     }
 
     pub fn value(&self) -> f64 {
@@ -388,19 +373,9 @@ unsafe impl This for JsObject { }
 
 impl JsObject {
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> &'a JsObject {
-        unsafe {
-            let h = cx.alloc_persistent();
-            neon_runtime::object::init(h, cx.isolate().to_raw());
-            JsObject::from_raw(h)
-        }
-    }
-
-    pub(crate) fn build<'a, C: Context<'a>, F: FnOnce(&mut raw::Local)>(cx: &mut C, init: F) -> &'a JsObject {
-        unsafe {
-            let local = cx.alloc();
-            init(mem::transmute(local));
-            mem::transmute(local)
-        }
+        cx.new_infallible(|out, isolate| unsafe {
+            neon_runtime::object::init(out, isolate)
+        })
     }
 }
 
@@ -412,8 +387,7 @@ pub struct JsArray(raw::Persistent);
 impl JsArray {
 
     pub fn new<'a, C: Context<'a>>(cx: &mut C, len: u32) -> &'a JsArray {
-        let isolate = { cx.isolate().to_raw() };
-        cx.new_infallible(|out| unsafe {
+        cx.new_infallible(|out, isolate| unsafe {
             neon_runtime::array::init(out, isolate, len)
         })
     }
@@ -468,8 +442,7 @@ impl JsFunction {
         where C: Context<'a>,
               U: Value
     {
-        let isolate = cx.isolate().to_raw();
-        cx.new(|out| unsafe {
+        cx.new(|out, isolate| unsafe {
             let isolate: *mut c_void = std::mem::transmute(isolate);
             let callback = FunctionCallback(f).into_c_callback();
             neon_runtime::fun::init(out, isolate, callback)
@@ -477,7 +450,7 @@ impl JsFunction {
     }
 }
 
-unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [&'b A]) -> NeonResult<(*mut c_void, i32, *mut c_void)>
+unsafe fn prepare_args<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [&'b A]) -> NeonResult<(i32, *mut c_void)>
     where A: Value + 'b
 {
     let argv = args.as_mut_ptr();
@@ -485,8 +458,7 @@ unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [&'b A]
     if argc > V8_ARGC_LIMIT {
         return cx.throw_range_error("too many arguments");
     }
-    let isolate: *mut c_void = std::mem::transmute(cx.isolate().to_raw());
-    Ok((isolate, argc as i32, argv as *mut c_void))
+    Ok((argc as i32, argv as *mut c_void))
 }
 
 impl<CL: Object> JsFunction<CL> {
@@ -496,8 +468,8 @@ impl<CL: Object> JsFunction<CL> {
               AS: IntoIterator<Item=&'b A>
     {
         let mut args = args.into_iter().collect::<Vec<_>>();
-        let (isolate, argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
-        cx.new(|out| unsafe {
+        let (argc, argv) = unsafe { prepare_args(cx, &mut args) }?;
+        cx.new(|out, isolate| unsafe {
             neon_runtime::fun::call_thin(out, isolate, self.to_raw(), this.to_raw(), argc, argv)
         })
     }
@@ -507,8 +479,8 @@ impl<CL: Object> JsFunction<CL> {
               AS: IntoIterator<Item=&'b A>
     {
         let mut args = args.into_iter().collect::<Vec<_>>();
-        let (isolate, argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
-        cx.new(|out| unsafe {
+        let (argc, argv) = unsafe { prepare_args(cx, &mut args) }?;
+        cx.new(|out, isolate| unsafe {
             neon_runtime::fun::construct_thin(out, isolate, self.to_raw(), argc, argv)
         })
     }

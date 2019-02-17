@@ -1,7 +1,5 @@
 use std;
-use std::cell::{Cell, RefCell};
-use std::collections::LinkedList;
-use std::marker::PhantomData;
+use std::cell::Cell;
 use std::mem;
 use std::os::raw::c_void;
 use neon_runtime;
@@ -55,9 +53,9 @@ pub struct ScopeMetadata {
 
 pub struct Scope<'a, R: Root + 'static> {
     pub metadata: ScopeMetadata,
+    // FIXME: can we ultimately get rid of this?
     pub handle_scope: &'a mut R,
-    pub handle_arena: HandleArena<'a>,
-    pub persistent_arena: &'a PersistentArena,
+    pub handles: &'a PersistentArena,
 }
 
 pub struct PersistentArena {
@@ -82,70 +80,11 @@ impl PersistentArena {
     }
 }
 
-const CHUNK_SIZE: usize = 16;
-
-type Chunk = [raw::Local; CHUNK_SIZE];
-
-pub struct HandleArena<'a> {
-    chunks: Vec<Box<Chunk>>,
-    pub(crate) chunk_allocated: usize,
-    phantom: PhantomData<&'a ()>
-}
-
-impl<'a> HandleArena<'a> {
-    fn new() -> Self {
-        let mut chunks = Vec::with_capacity(16);
-
-        chunks.push(Box::new(unsafe { mem::uninitialized() }));
-
-        HandleArena {
-            chunks,
-            chunk_allocated: 0,
-            phantom: PhantomData
-        }
-    }
-
-    pub unsafe fn alloc(&mut self) -> *mut raw::Local {
-        if self.chunk_allocated >= CHUNK_SIZE {
-            let mut chunk: Box<Chunk> = Box::new(mem::uninitialized());
-            let p: *mut raw::Local = &mut chunk[0];
-            self.chunks.push(chunk);
-            self.chunk_allocated = 1;
-            p
-        } else {
-            let chunk: &mut Box<Chunk> = self.chunks.last_mut().unwrap();
-            let p: *mut raw::Local = &mut chunk[self.chunk_allocated];
-            self.chunk_allocated += 1;
-            p
-        }
-    }
-/*
-    fn alloc(&mut self, init: raw::Local) -> &'a raw::Local {
-        let p = if self.chunk_allocated >= CHUNK_SIZE {
-            let mut chunk: Box<Chunk> = Box::new(unsafe { mem::uninitialized() });
-            chunk[0] = init;
-            let p: *const raw::Local = &chunk[0];
-            self.chunks.push_back(chunk);
-            self.chunk_allocated = 1;
-            p
-        } else {
-            let chunk: &mut Box<Chunk> = self.chunks.back_mut().unwrap();
-            chunk[self.chunk_allocated] = init;
-            let p: *const raw::Local = &chunk[self.chunk_allocated];
-            self.chunk_allocated += 1;
-            p
-        };
-
-        unsafe { mem::transmute(p) }
-    }
-*/
-
-}
-
 impl<'a, R: Root + 'static> Scope<'a, R> {
+    // FIXME: do we no longer need to ensure there's a HandleScope?
     pub fn with<T, F: for<'b> FnOnce(Scope<'b, R>) -> T>(f: F) -> T {
         let mut handle_scope: R = unsafe { R::allocate() };
-        let persistent_arena = PersistentArena::new();
+        let handles = PersistentArena::new();
         let isolate = Isolate::current();
         unsafe {
             handle_scope.enter(isolate.to_raw());
@@ -157,8 +96,7 @@ impl<'a, R: Root + 'static> Scope<'a, R> {
                     active: Cell::new(true)
                 },
                 handle_scope: &mut handle_scope,
-                handle_arena: HandleArena::new(),
-                persistent_arena: &persistent_arena,
+                handles: &handles,
             };
             f(scope)
         };
@@ -171,8 +109,7 @@ impl<'a, R: Root + 'static> Scope<'a, R> {
 
 pub trait ContextInternal<'a>: Sized {
     fn scope_metadata(&self) -> &ScopeMetadata; 
-    fn handle_arena(&mut self) -> &mut HandleArena<'a>;
-    fn persistent_arena(&self) -> &'a PersistentArena;
+    fn handles(&self) -> &'a PersistentArena;
 
     fn isolate(&self) -> Isolate {
         self.scope_metadata().isolate
@@ -191,30 +128,24 @@ pub trait ContextInternal<'a>: Sized {
     fn activate(&self) { self.scope_metadata().active.set(true); }
     fn deactivate(&self) { self.scope_metadata().active.set(false); }
 
-    unsafe fn alloc(&mut self) -> *mut raw::Local {
-        self.handle_arena().alloc()
+    fn new<T: Managed, F: FnOnce(&raw::Persistent, *mut raw::Isolate) -> bool>(&mut self, init: F) -> NeonResult<&'a T> {
+        self.new_opt(init).ok_or(Throw)
     }
 
-    unsafe fn alloc_persistent(&mut self) -> &'a raw::Persistent {
-        self.persistent_arena().alloc()
+    fn new_infallible<T: Managed, F: FnOnce(&raw::Persistent, *mut raw::Isolate)>(&mut self, init: F) -> &'a T {
+        let isolate = { self.isolate().to_raw() };
+        let h = self.handles().alloc();
+        init(h, isolate);
+        T::from_raw(h)
     }
 
-    fn new<T: Managed, F: FnOnce(&raw::Persistent) -> bool>(&mut self, init: F) -> NeonResult<&'a T> {
-        unsafe {
-            let h = self.alloc_persistent();
-            if init(h) {
-                Ok(T::from_raw(h))
-            } else {
-                Err(Throw)
-            }
-        }
-    }
-
-    fn new_infallible<T: Managed, F: FnOnce(&raw::Persistent)>(&mut self, init: F) -> &'a T {
-        unsafe {
-            let h = self.alloc_persistent();
-            init(h);
-            T::from_raw(h)
+    fn new_opt<T: Managed, F: FnOnce(&raw::Persistent, *mut raw::Isolate) -> bool>(&mut self, init: F) -> Option<&'a T> {
+        let isolate = { self.isolate().to_raw() };
+        let h = self.handles().alloc();
+        if init(h, isolate) {
+            Some(T::from_raw(h))
+        } else {
+            None
         }
     }
 }

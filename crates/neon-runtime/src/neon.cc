@@ -44,7 +44,7 @@ extern "C" void Neon_Call_Data(v8::FunctionCallbackInfo<v8::Value> *info, v8::Lo
   *out = info->Data();
 }
 
-extern "C" void Neon_Call_InitData(v8::FunctionCallbackInfo<v8::Value> *info, v8::Isolate *isolate, v8::Persistent<v8::Value> *out) {
+extern "C" void Neon_Call_InitData(v8::FunctionCallbackInfo<v8::Value> *info, v8::Persistent<v8::Value> *out, v8::Isolate *isolate) {
   Nan::HandleScope scope;
   v8::Local<v8::Value> data = info->Data();
   out->Reset(isolate, data);
@@ -135,7 +135,7 @@ extern "C" bool Neon_Primitive_IsInt32(v8::Local<v8::Primitive> p) {
   return p->IsInt32();
 }
 
-extern "C" bool Neon_Object_Get_Index(v8::Persistent<v8::Value> *out, v8::Persistent<v8::Object> *obj, uint32_t index) {
+extern "C" bool Neon_Object_Get_Index(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, v8::Persistent<v8::Object> *obj, uint32_t index) {
   Nan::HandleScope scope;
   v8::Local<v8::Object> lobj = Nan::New(*obj);
   Nan::MaybeLocal<v8::Value> maybe = Nan::Get(lobj, index);
@@ -143,11 +143,11 @@ extern "C" bool Neon_Object_Get_Index(v8::Persistent<v8::Value> *out, v8::Persis
   if (!maybe.ToLocal(&local)) {
     return false;
   }
-  out->Reset(v8::Isolate::GetCurrent(), local);
+  out->Reset(isolate, local);
   return true;
 }
 
-extern "C" bool Neon_Object_Set_Index(bool *out, v8::Persistent<v8::Object> *object, uint32_t index, v8::Persistent<v8::Value> *val) {
+extern "C" bool Neon_Object_Set_Index(bool *out, v8::Isolate *isolate, v8::Persistent<v8::Object> *object, uint32_t index, v8::Persistent<v8::Value> *val) {
   Nan::HandleScope scope;
   v8::Local<v8::Object> lobject = Nan::New(*object);
   v8::Local<v8::Value> lval = Nan::New(*val);
@@ -175,7 +175,7 @@ extern "C" bool Neon_Object_Get_String(v8::Local<v8::Value> *out, v8::Local<v8::
   return true;
 }
 
-extern "C" bool Neon_Object_Get_StringThin(v8::Persistent<v8::Value> *p_out, v8::Persistent<v8::Object> *p_obj, const uint8_t *data, int32_t len) {
+extern "C" bool Neon_Object_Get_StringThin(v8::Persistent<v8::Value> *p_out, v8::Isolate *isolate, v8::Persistent<v8::Object> *p_obj, const uint8_t *data, int32_t len) {
   Nan::HandleScope scope;
   v8::Local<v8::String> key;
   if (!Neon_ASCII_Key(&key, data, len)) {
@@ -187,7 +187,7 @@ extern "C" bool Neon_Object_Get_StringThin(v8::Persistent<v8::Value> *p_out, v8:
   if (!maybe.ToLocal(&result)) {
     return false;
   }
-  p_out->Reset(v8::Isolate::GetCurrent(), result);
+  p_out->Reset(isolate, result);
   return true;
 }
 
@@ -201,7 +201,7 @@ extern "C" bool Neon_Object_Set_String(bool *out, v8::Local<v8::Object> obj, con
   return maybe.IsJust() && (*out = maybe.FromJust(), true);
 }
 
-extern "C" bool Neon_Object_Set_StringThin(bool *out, v8::Persistent<v8::Object> *p_obj, const uint8_t *data, int32_t len, v8::Persistent<v8::Value> *p_val) {
+extern "C" bool Neon_Object_Set_StringThin(bool *out, v8::Isolate *isolate, v8::Persistent<v8::Object> *p_obj, const uint8_t *data, int32_t len, v8::Persistent<v8::Value> *p_val) {
   Nan::HandleScope scope;
   v8::Local<v8::String> key;
   if (!Neon_ASCII_Key(&key, data, len)) {
@@ -218,10 +218,8 @@ extern "C" bool Neon_Object_Get(v8::Local<v8::Value> *out, v8::Local<v8::Object>
   return maybe.ToLocal(out);
 }
 
-extern "C" bool Neon_Object_GetThin(v8::Persistent<v8::Value> *p_out, v8::Persistent<v8::Object> *p_obj, v8::Persistent<v8::Value> *p_key) {
+extern "C" bool Neon_Object_GetThin(v8::Persistent<v8::Value> *p_out, v8::Isolate *isolate, v8::Persistent<v8::Object> *p_obj, v8::Persistent<v8::Value> *p_key) {
   Nan::HandleScope scope;
-  // FIXME: pass in the isolate
-  v8::Isolate *isolate = v8::Isolate::GetCurrent();
   v8::Local<v8::Object> object = Nan::New(*p_obj);
   v8::Local<v8::Value> key = Nan::New(*p_key);
   Nan::MaybeLocal<v8::Value> maybe = Nan::Get(object, key);
@@ -242,7 +240,7 @@ extern "C" bool Neon_Object_Set(bool *out, v8::Local<v8::Object> obj, v8::Local<
   return false;
 }
 
-extern "C" bool Neon_Object_SetThin(bool *out, v8::Persistent<v8::Object> *p_obj, v8::Persistent<v8::Value> *p_key, v8::Persistent<v8::Value> *p_val) {
+extern "C" bool Neon_Object_SetThin(bool *out, v8::Isolate *isolate, v8::Persistent<v8::Object> *p_obj, v8::Persistent<v8::Value> *p_key, v8::Persistent<v8::Value> *p_val) {
   Nan::HandleScope scope;
   v8::Local<v8::Object> object = Nan::New(*p_obj);
   v8::Local<v8::Value> key = Nan::New(*p_key);
@@ -430,9 +428,10 @@ extern "C" size_t Neon_Scope_AlignofEscapable() {
   return alignof(v8::EscapableHandleScope);
 }
 
-extern "C" void Neon_Scope_GetGlobal(v8::Isolate *isolate, v8::Local<v8::Value> *out) {
+extern "C" void Neon_Scope_GetGlobal(v8::Isolate *isolate, v8::Persistent<v8::Value> *out) {
+  Nan::HandleScope scope;
   auto ctx = isolate->GetCurrentContext();
-  *out = ctx->Global();
+  out->Reset(isolate, ctx->Global());
 }
 
 extern "C" uint32_t Neon_Module_GetVersion() {

@@ -2,7 +2,6 @@
 
 pub(crate) mod internal;
 
-use std::ffi::c_void;
 use std;
 use std::cell::RefCell;
 use std::convert::Into;
@@ -12,13 +11,13 @@ use neon_runtime;
 use neon_runtime::raw;
 use borrow::{Ref, RefMut, Borrow, BorrowMut};
 use borrow::internal::Ledger;
-use types::{Value, JsValue, JsObject, /*JsArray,*/ JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
+use types::{Value, JsValue, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
 use types::binary::{JsArrayBuffer, JsBuffer};
 use types::error::JsError;
 use object::{Object, This};
 use object::class::Class;
 use result::{NeonResult, Throw};
-use self::internal::{ContextInternal, Scope, ScopeMetadata, HandleArena, PersistentArena};
+use self::internal::{ContextInternal, Scope, ScopeMetadata, PersistentArena};
 
 #[repr(C)]
 pub(crate) struct CallbackInfo {
@@ -28,9 +27,8 @@ pub(crate) struct CallbackInfo {
 impl CallbackInfo {
 
     pub fn data<'a, C: Context<'a>>(&self, cx: &mut C) -> &'a JsValue {
-        let isolate = { cx.isolate().to_raw() };
-        cx.new_infallible(|out| unsafe {
-            neon_runtime::call::init_data(&self.info, isolate, out)
+        cx.new_infallible(|out, isolate| unsafe {
+            neon_runtime::call::init_data(&self.info, out, isolate)
         })
     }
 
@@ -62,9 +60,8 @@ impl CallbackInfo {
         if i < 0 || i >= self.len() {
             return None;
         }
-        let isolate = { cx.isolate().to_raw() };
         unsafe {
-            Some(cx.new_infallible(|out| {
+            Some(cx.new_infallible(|out, isolate| {
                 neon_runtime::call::init_get(&self.info, isolate, i, out)
             }))
         }
@@ -74,17 +71,13 @@ impl CallbackInfo {
         if i < 0 || i >= self.len() {
             return cx.throw_type_error("not enough arguments");
         }
-        let isolate = { cx.isolate().to_raw() };
-        unsafe {
-            Ok(cx.new_infallible(|out| {
-                neon_runtime::call::init_get(&self.info, isolate, i, out)
-            }))
-        }
+        Ok(cx.new_infallible(|out, isolate| unsafe {
+            neon_runtime::call::init_get(&self.info, isolate, i, out)
+        }))
     }
 
     pub fn this<'b, C: Context<'b>>(&self, cx: &mut C) -> &'b JsValue {
-        let isolate = { cx.isolate().to_raw() };
-        cx.new_infallible(|out| unsafe {
+        cx.new_infallible(|out, isolate| unsafe {
             neon_runtime::call::this(&self.info, out, isolate)
         })
     }
@@ -175,7 +168,6 @@ pub trait Context<'a>: ContextInternal<'a> {
         f(contents)
     }
 
-/*
     /// Executes a computation in a new memory management scope.
     /// 
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape.
@@ -191,14 +183,15 @@ pub trait Context<'a>: ContextInternal<'a> {
         result
     }
 
+/*
     /// Executes a computation in a new memory management scope and computes a single result value that outlives the computation.
     /// 
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape, with the exception of the result value, which is rooted in the outer context.
     /// 
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
-    fn compute_scoped<V, F>(&self, f: F) -> JsResult<'a, V>
+    fn compute_scoped<V, F>(&self, f: F) -> NeonResult<&'a V>
         where V: Value,
-              F: for<'b, 'c> FnOnce(ComputeContext<'b, 'c>) -> JsResult<'b, V>
+              F: for<'b, 'c> FnOnce(ComputeContext<'b, 'c>) -> NeonResult<&'b V>
     {
         self.check_active();
         self.deactivate();
@@ -255,12 +248,10 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsObject::new(self)
     }
 
-/*
     /// Convenience method for creating an empty `JsArray` value.
     fn empty_array(&mut self) -> &'a JsArray {
         JsArray::new(self, 0)
     }
-*/
 
     /// Convenience method for creating an empty `JsArrayBuffer` value.
     fn array_buffer(&mut self, size: u32) -> NeonResult<&'a JsArrayBuffer> {
@@ -274,11 +265,8 @@ pub trait Context<'a>: ContextInternal<'a> {
 
     /// Produces a handle to the JavaScript global object.
     fn global(&mut self) -> &'a JsObject {
-        let isolate = self.isolate().to_raw();
-        JsObject::build(self, |out| {
-            unsafe {
-                neon_runtime::scope::get_global(isolate, out);
-            }
+        self.new_infallible(|out, isolate| unsafe {
+            neon_runtime::scope::get_global(isolate, out)
         })
     }
 
@@ -375,18 +363,13 @@ impl<'a> ContextInternal<'a> for ModuleContext<'a> {
         &self.scope.metadata
     }
 
-    fn handle_arena(&mut self) -> &mut HandleArena<'a> {
-        &mut self.scope.handle_arena
-    }
-
-    fn persistent_arena(&self) -> &'a PersistentArena {
-        self.scope.persistent_arena
+    fn handles(&self) -> &'a PersistentArena {
+        self.scope.handles
     }
 }
 
 impl<'a> Context<'a> for ModuleContext<'a> { }
 
-/*
 /// A view of the JS engine in the context of a scoped computation started by `Context::execute_scoped()`.
 pub struct ExecuteContext<'a> {
     scope: Scope<'a, raw::HandleScope>
@@ -405,17 +388,14 @@ impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
         &self.scope.metadata
     }
 
-    fn handle_arena(&mut self) -> &mut HandleArena<'a> {
-        &mut self.scope.handle_arena
-    }
-
-    fn persistent_arena(&self) -> &'a PersistentArena {
-        self.scope.persistent_arena
+    fn handles(&self) -> &'a PersistentArena {
+        self.scope.handles
     }
 }
 
 impl<'a> Context<'a> for ExecuteContext<'a> { }
 
+/*
 /// A view of the JS engine in the context of a scoped computation started by `Context::compute_scoped()`.
 pub struct ComputeContext<'a, 'outer> {
     scope: Scope<'a, raw::EscapableHandleScope>,
@@ -440,12 +420,8 @@ impl<'a, 'b> ContextInternal<'a> for ComputeContext<'a, 'b> {
         &self.scope.metadata
     }
 
-    fn handle_arena(&mut self) -> &mut HandleArena<'a> {
-        &mut self.scope.handle_arena
-    }
-
-    fn persistent_arena(&self) -> &'a PersistentArena {
-        self.scope.persistent_arena
+    fn handles(&self) -> &'a PersistentArena {
+        self.scope.handles
     }
 }
 
@@ -504,12 +480,8 @@ impl<'a, T: This> ContextInternal<'a> for CallContext<'a, T> {
         &self.scope.metadata
     }
 
-    fn handle_arena(&mut self) -> &mut HandleArena<'a> {
-        &mut self.scope.handle_arena
-    }
-
-    fn persistent_arena(&self) -> &'a PersistentArena {
-        self.scope.persistent_arena
+    fn handles(&self) -> &'a PersistentArena {
+        self.scope.handles
     }
 }
 
@@ -541,12 +513,8 @@ impl<'a> ContextInternal<'a> for TaskContext<'a> {
         &self.scope.metadata
     }
 
-    fn handle_arena(&mut self) -> &mut HandleArena<'a> {
-        &mut self.scope.handle_arena
-    }
-
-    fn persistent_arena(&self) -> &'a PersistentArena {
-        self.scope.persistent_arena
+    fn handles(&self) -> &'a PersistentArena {
+        self.scope.handles
     }
 }
 

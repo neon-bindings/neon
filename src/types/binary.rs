@@ -21,16 +21,14 @@ impl JsBuffer {
 
     /// Constructs a new `Buffer` object, safely zero-filled.
     pub fn new<'a, C: Context<'a>>(cx: &mut C, size: u32) -> NeonResult<&'a JsBuffer> {
-        let isolate = cx.isolate().to_raw();
-        cx.new(|out| unsafe {
+        cx.new(|out, isolate| unsafe {
             neon_runtime::buffer::init_safe(out, isolate, size)
         })
     }
 
     /// Constructs a new `Buffer` object, unsafely filled with uninitialized data.
     pub unsafe fn uninitialized<'a, C: Context<'a>>(cx: &mut C, size: u32) -> NeonResult<&'a JsBuffer> {
-        let isolate = cx.isolate().to_raw();
-        cx.new(|out| unsafe {
+        cx.new(|out, isolate| {
             neon_runtime::buffer::init_unsafe(out, isolate, size)
         })
     }
@@ -59,8 +57,7 @@ impl JsArrayBuffer {
 
     /// Constructs a new `ArrayBuffer` object with the given size, in bytes.
     pub fn new<'a, C: Context<'a>>(cx: &mut C, size: u32) -> NeonResult<&'a JsArrayBuffer> {
-        let isolate = { cx.isolate().to_raw() };
-        cx.new(|out| unsafe {
+        cx.new(|out, isolate| unsafe {
             neon_runtime::arraybuffer::init(out, isolate, size)
         })
     }

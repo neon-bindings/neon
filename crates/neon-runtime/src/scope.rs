@@ -1,7 +1,7 @@
 //! Facilities for working with `v8::HandleScope`s and `v8::EscapableHandleScope`s.
 
 use std::os::raw::c_void;
-use raw::{HandleScope, EscapableHandleScope, InheritedHandleScope, Local, Isolate};
+use raw::{HandleScope, EscapableHandleScope, InheritedHandleScope, Local, Isolate, Persistent};
 
 pub trait Root {
     unsafe fn allocate() -> Self;
@@ -86,6 +86,6 @@ extern "C" {
     /// Mutates the `out` argument provided to refer to the `v8::Local` value of the `global`
     /// object
     #[link_name = "Neon_Scope_GetGlobal"]
-    pub fn get_global(isolate: *mut c_void, out: &mut Local);
+    pub fn get_global(isolate: *mut c_void, out: &Persistent);
 
 }
