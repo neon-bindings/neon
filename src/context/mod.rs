@@ -17,7 +17,7 @@ use types::error::JsError;
 use object::{Object, This};
 use object::class::Class;
 use result::{NeonResult, Throw};
-use self::internal::{ContextInternal, Scope, ScopeMetadata, PersistentArena};
+use self::internal::{ContextInternal, HandleArena, Scope, ScopeMetadata};
 
 #[repr(C)]
 pub(crate) struct CallbackInfo {
@@ -354,7 +354,7 @@ impl<'a> ContextInternal<'a> for ModuleContext<'a> {
         &self.scope.metadata
     }
 
-    fn handles(&self) -> &'a PersistentArena {
+    fn handles(&self) -> &'a HandleArena {
         self.scope.handles
     }
 }
@@ -379,7 +379,7 @@ impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
         &self.scope.metadata
     }
 
-    fn handles(&self) -> &'a PersistentArena {
+    fn handles(&self) -> &'a HandleArena {
         self.scope.handles
     }
 }
@@ -410,7 +410,7 @@ impl<'a, 'b> ContextInternal<'a> for ComputeContext<'a, 'b> {
         &self.scope.metadata
     }
 
-    fn handles(&self) -> &'a PersistentArena {
+    fn handles(&self) -> &'a HandleArena {
         self.scope.handles
     }
 }
@@ -467,7 +467,7 @@ impl<'a, T: This> ContextInternal<'a> for CallContext<'a, T> {
         &self.scope.metadata
     }
 
-    fn handles(&self) -> &'a PersistentArena {
+    fn handles(&self) -> &'a HandleArena {
         self.scope.handles
     }
 }
@@ -500,7 +500,7 @@ impl<'a> ContextInternal<'a> for TaskContext<'a> {
         &self.scope.metadata
     }
 
-    fn handles(&self) -> &'a PersistentArena {
+    fn handles(&self) -> &'a HandleArena {
         self.scope.handles
     }
 }

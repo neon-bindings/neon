@@ -52,17 +52,16 @@ pub struct ScopeMetadata {
 
 pub struct Scope<'a> {
     pub metadata: ScopeMetadata,
-    pub handles: &'a PersistentArena,
+    pub handles: &'a HandleArena,
 }
 
-// FIXME: rename to HandleArena
-pub struct PersistentArena {
+pub struct HandleArena {
     handles: Arena<raw::Persistent>,
 }
 
-impl PersistentArena {
+impl HandleArena {
     fn new() -> Self {
-        PersistentArena {
+        HandleArena {
             handles: Arena::with_capacity(16),
         }
     }
@@ -88,7 +87,7 @@ impl PersistentArena {
 
 impl<'a> Scope<'a> {
     pub fn with<T, F: for<'b> FnOnce(Scope<'b>) -> T>(f: F) -> T {
-        let handles = PersistentArena::new();
+        let handles = HandleArena::new();
         let isolate = Isolate::current();
         let scope = Scope {
             metadata: ScopeMetadata {
@@ -103,7 +102,7 @@ impl<'a> Scope<'a> {
 
 pub trait ContextInternal<'a>: Sized {
     fn scope_metadata(&self) -> &ScopeMetadata; 
-    fn handles(&self) -> &'a PersistentArena;
+    fn handles(&self) -> &'a HandleArena;
 
     fn isolate(&self) -> Isolate {
         self.scope_metadata().isolate
