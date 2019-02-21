@@ -4,7 +4,6 @@ use std::mem;
 use std::os::raw::c_void;
 use neon_runtime;
 use neon_runtime::raw;
-use neon_runtime::scope::Root;
 use typed_arena::Arena;
 use types::{JsObject, Managed};
 use object::class::ClassMap;
@@ -51,13 +50,12 @@ pub struct ScopeMetadata {
     active: Cell<bool>
 }
 
-pub struct Scope<'a, R: Root + 'static> {
+pub struct Scope<'a> {
     pub metadata: ScopeMetadata,
-    // FIXME: can we ultimately get rid of this?
-    pub handle_scope: &'a mut R,
     pub handles: &'a PersistentArena,
 }
 
+// FIXME: rename to HandleArena
 pub struct PersistentArena {
     handles: Arena<raw::Persistent>,
 }
@@ -78,32 +76,28 @@ impl PersistentArena {
             mem::transmute(ptr)
         }
     }
+
+    pub(crate) fn clone<'a, 'b>(&'a self, isolate: *mut raw::Isolate, handle: &'b raw::Persistent) -> &'a raw::Persistent {
+        let new_ptr = self.alloc();
+        unsafe {
+            neon_runtime::scope::clone_persistent(isolate, new_ptr, handle);
+        }
+        new_ptr
+    }
 }
 
-impl<'a, R: Root + 'static> Scope<'a, R> {
-    // FIXME: do we no longer need to ensure there's a HandleScope?
-    pub fn with<T, F: for<'b> FnOnce(Scope<'b, R>) -> T>(f: F) -> T {
-        let mut handle_scope: R = unsafe { R::allocate() };
+impl<'a> Scope<'a> {
+    pub fn with<T, F: for<'b> FnOnce(Scope<'b>) -> T>(f: F) -> T {
         let handles = PersistentArena::new();
         let isolate = Isolate::current();
-        unsafe {
-            handle_scope.enter(isolate.to_raw());
-        }
-        let result = {
-            let scope = Scope {
-                metadata: ScopeMetadata {
-                    isolate,
-                    active: Cell::new(true)
-                },
-                handle_scope: &mut handle_scope,
-                handles: &handles,
-            };
-            f(scope)
+        let scope = Scope {
+            metadata: ScopeMetadata {
+                isolate,
+                active: Cell::new(true)
+            },
+            handles: &handles,
         };
-        unsafe {
-            handle_scope.exit();
-        }
-        result
+        f(scope)
     }
 }
 
@@ -151,6 +145,7 @@ pub trait ContextInternal<'a>: Sized {
 }
 
 pub fn initialize_module(exports: raw::Local, init: fn(ModuleContext) -> NeonResult<()>) {
+    // FIXME: this leaks if the module initialization panics
     let persistent = raw::Persistent::from_local(exports);
     ModuleContext::with(JsObject::from_raw(&persistent), |cx| {
         let _ = init(cx);

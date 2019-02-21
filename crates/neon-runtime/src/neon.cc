@@ -29,7 +29,7 @@ extern "C" bool Neon_Call_IsConstruct(v8::FunctionCallbackInfo<v8::Value> *info)
   return info->IsConstructCall();
 }
 
-extern "C" void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Persistent<v8::Object> *out, v8::Isolate *isolate) {
+extern "C" void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Persistent<v8::Value> *out, v8::Isolate *isolate) {
   Nan::HandleScope scope;
   out->Reset(isolate, info->This());
 }
@@ -381,51 +381,15 @@ extern "C" bool Neon_Tag_IsArrayBuffer(v8::Persistent<v8::Value> *val) {
   return local->IsArrayBuffer();
 }
 
-extern "C" void Neon_Scope_Escape(v8::Local<v8::Value> *out, Nan::EscapableHandleScope *scope, v8::Local<v8::Value> value) {
-  *out = scope->Escape(value);
-}
-
-extern "C" void Neon_Scope_Chained(void *out, void *closure, Neon_ChainedScopeCallback callback, void *parent_scope) {
-  Nan::EscapableHandleScope v8_scope;
-  callback(out, parent_scope, &v8_scope, closure);
+extern "C" void Neon_Scope_ClonePersistent(v8::Isolate *isolate, v8::Persistent<v8::Value> *to, v8::Persistent<v8::Value> *from) {
+  Nan::HandleScope scope;
+  v8::Local<v8::Value> local = Nan::New(*from);
+  to->Reset(isolate, local);
 }
 
 extern "C" void Neon_Scope_Nested(void *out, void *closure, Neon_NestedScopeCallback callback, void *realm) {
   Nan::HandleScope v8_scope;
   callback(out, realm, closure);
-}
-
-extern "C" void Neon_Scope_Enter(v8::HandleScope *scope, v8::Isolate *isolate) {
-  void *p = scope;
-  ::new (p) v8::HandleScope(isolate);
-}
-
-extern "C" void Neon_Scope_Exit(v8::HandleScope *scope) {
-  scope->HandleScope::~HandleScope();
-}
-extern "C" void Neon_Scope_Enter_Escapable(v8::EscapableHandleScope *scope, v8::Isolate *isolate) {
-  void *p = scope;
-  ::new (p) v8::EscapableHandleScope(isolate);
-}
-
-extern "C" void Neon_Scope_Exit_Escapable(v8::EscapableHandleScope *scope) {
-  scope->EscapableHandleScope::~EscapableHandleScope();
-}
-
-extern "C" size_t Neon_Scope_Sizeof() {
-  return sizeof(v8::HandleScope);
-}
-
-extern "C" size_t Neon_Scope_Alignof() {
-  return alignof(v8::HandleScope);
-}
-
-extern "C" size_t Neon_Scope_SizeofEscapable() {
-  return sizeof(v8::EscapableHandleScope);
-}
-
-extern "C" size_t Neon_Scope_AlignofEscapable() {
-  return alignof(v8::EscapableHandleScope);
 }
 
 extern "C" void Neon_Scope_GetGlobal(v8::Isolate *isolate, v8::Persistent<v8::Value> *out) {

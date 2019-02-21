@@ -183,7 +183,6 @@ pub trait Context<'a>: ContextInternal<'a> {
         result
     }
 
-/*
     /// Executes a computation in a new memory management scope and computes a single result value that outlives the computation.
     /// 
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape, with the exception of the result value, which is rooted in the outer context.
@@ -196,18 +195,12 @@ pub trait Context<'a>: ContextInternal<'a> {
         self.check_active();
         self.deactivate();
         let result = ComputeContext::with(|cx| {
-            unsafe {
-                let escapable_handle_scope = cx.scope.handle_scope as *mut raw::EscapableHandleScope;
-                let escapee = f(cx)?;
-                let mut result_local: raw::Local = std::mem::zeroed();
-                neon_runtime::scope::escape(&mut result_local, escapable_handle_scope, escapee.to_raw());
-                Ok(Handle::new_internal(V::from_raw(result_local)))
-            }
+            let escapee = f(cx)?;
+            Ok(V::from_raw(self.handles().clone(self.isolate().to_raw(), escapee.to_raw())))
         });
         self.activate();
         result
     }
-*/
 
     /// Convenience method for creating a `JsBoolean` value.
     fn boolean(&mut self, b: bool) -> &'a JsBoolean {
@@ -314,7 +307,7 @@ pub trait Context<'a>: ContextInternal<'a> {
 
 /// A view of the JS engine in the context of top-level initialization of a Neon module.
 pub struct ModuleContext<'a> {
-    scope: Scope<'a, raw::HandleScope>,
+    scope: Scope<'a>,
     exports: &'a JsObject,
 }
 
@@ -322,8 +315,6 @@ impl<'a> UnwindSafe for ModuleContext<'a> { }
 
 impl<'a> ModuleContext<'a> {
     pub(crate) fn with<T, F: for<'b> FnOnce(ModuleContext<'b>) -> T>(exports: &'a JsObject, f: F) -> T {
-        debug_assert!(unsafe { neon_runtime::scope::size() } <= std::mem::size_of::<raw::HandleScope>());
-        debug_assert!(unsafe { neon_runtime::scope::alignment() } <= std::mem::align_of::<raw::HandleScope>());
         Scope::with(|scope| {
             f(ModuleContext {
                 scope,
@@ -372,7 +363,7 @@ impl<'a> Context<'a> for ModuleContext<'a> { }
 
 /// A view of the JS engine in the context of a scoped computation started by `Context::execute_scoped()`.
 pub struct ExecuteContext<'a> {
-    scope: Scope<'a, raw::HandleScope>
+    scope: Scope<'a>
 }
 
 impl<'a> ExecuteContext<'a> {
@@ -395,10 +386,9 @@ impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
 
 impl<'a> Context<'a> for ExecuteContext<'a> { }
 
-/*
 /// A view of the JS engine in the context of a scoped computation started by `Context::compute_scoped()`.
 pub struct ComputeContext<'a, 'outer> {
-    scope: Scope<'a, raw::EscapableHandleScope>,
+    scope: Scope<'a>,
     phantom_inner: PhantomData<&'a ()>,
     phantom_outer: PhantomData<&'outer ()>
 }
@@ -426,13 +416,12 @@ impl<'a, 'b> ContextInternal<'a> for ComputeContext<'a, 'b> {
 }
 
 impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> { }
-*/
 
 /// A view of the JS engine in the context of a function call.
 /// 
 /// The type parameter `T` is the type of the `this`-binding.
 pub struct CallContext<'a, T: This> {
-    scope: Scope<'a, raw::HandleScope>,
+    scope: Scope<'a>,
     info: &'a CallbackInfo,
     phantom_type: PhantomData<T>
 }
@@ -497,7 +486,7 @@ pub type MethodContext<'a, T> = CallContext<'a, T>;
 pub struct TaskContext<'a> {
     /// We use an "inherited HandleScope" here because the C++ `neon::Task::complete`
     /// method sets up and tears down a `HandleScope` for us.
-    scope: Scope<'a, raw::InheritedHandleScope>
+    scope: Scope<'a>
 }
 
 impl<'a> TaskContext<'a> {

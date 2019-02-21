@@ -18,7 +18,7 @@ extern "C" {
   void *Neon_Call_GetIsolate(v8::FunctionCallbackInfo<v8::Value> *info);
   void *Neon_Call_CurrentIsolate();
   bool Neon_Call_IsConstruct(v8::FunctionCallbackInfo<v8::Value> *info);
-  void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Persistent<v8::Value> *out, v8::Isolate *isolae);
+  void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Persistent<v8::Value> *out, v8::Isolate *isolate);
   void Neon_Call_Data(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> *out);
   void Neon_Call_InitData(v8::FunctionCallbackInfo<v8::Value> *info, v8::Persistent<v8::Value> *out, v8::Isolate *isolate);
   int32_t Neon_Call_Length(v8::FunctionCallbackInfo<v8::Value> *info);
@@ -40,9 +40,9 @@ extern "C" {
   bool Neon_Object_Get_Index(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, v8::Persistent<v8::Object> *object, uint32_t index);
   bool Neon_Object_Set_Index(bool *out, v8::Isolate *isolate, v8::Persistent<v8::Object> *object, uint32_t index, v8::Persistent<v8::Value> *val);
   bool Neon_Object_Get_String(v8::Local<v8::Value> *out, v8::Local<v8::Object> object, const uint8_t *key, int32_t len);
-  bool Neon_Object_Get_StringThin(v8::Persistent<v8::Value> *out, v8::Isolate isolate, v8::Persistent<v8::Object> *object, const uint8_t *key, int32_t len);
+  bool Neon_Object_Get_StringThin(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, v8::Persistent<v8::Object> *object, const uint8_t *key, int32_t len);
   bool Neon_Object_Set_String(bool *out, v8::Local<v8::Object> object, const uint8_t *key, int32_t len, v8::Local<v8::Value> val);
-  bool Neon_Object_Set_StringThin(bool *out, v8::Isolate isolate, v8::Persistent<v8::Object> *object, const uint8_t *key, int32_t len, v8::Persistent<v8::Value> *val);
+  bool Neon_Object_Set_StringThin(bool *out, v8::Isolate *isolate, v8::Persistent<v8::Object> *object, const uint8_t *key, int32_t len, v8::Persistent<v8::Value> *val);
   bool Neon_Object_Get(v8::Local<v8::Value> *out, v8::Local<v8::Object> object, v8::Local<v8::Value> key);
   bool Neon_Object_GetThin(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, v8::Persistent<v8::Object> *object, v8::Persistent<v8::Value> *key);
   bool Neon_Object_Set(bool *out, v8::Local<v8::Object> obj, v8::Local<v8::Value> key, v8::Local<v8::Value> val);
@@ -73,17 +73,8 @@ extern "C" {
   typedef void(*Neon_NestedScopeCallback)(void *, void *, void *);
   typedef void(*Neon_RootScopeCallback)(void *, void *, void *);
 
-  void Neon_Scope_Escape(v8::Local<v8::Value> *out, Nan::EscapableHandleScope *scope, v8::Local<v8::Value> value);
+  void Neon_Scope_ClonePersistent(v8::Isolate *isolate, v8::Persistent<v8::Value> *to, v8::Persistent<v8::Value> *from);
   void Neon_Scope_Nested(void *out, void *closure, Neon_NestedScopeCallback callback, void *realm);
-  void Neon_Scope_Chained(void *out, void *closure, Neon_ChainedScopeCallback callback, void *parent_scope);
-  void Neon_Scope_Enter(v8::HandleScope *scope, v8::Isolate *isolate);
-  void Neon_Scope_Exit(v8::HandleScope *scope);
-  void Neon_Scope_Enter_Escapable(v8::EscapableHandleScope *scope, v8::Isolate *isolate);
-  void Neon_Scope_Exit_Escapable(v8::EscapableHandleScope *scope);
-  size_t Neon_Scope_Sizeof();
-  size_t Neon_Scope_Alignof();
-  size_t Neon_Scope_SizeofEscapable();
-  size_t Neon_Scope_AlignofEscapable();
   void Neon_Scope_GetGlobal(v8::Isolate *isolate, v8::Persistent<v8::Value> *out);
 
   bool Neon_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, callback_t callback);

@@ -250,10 +250,9 @@ macro_rules! declare_types {
     };
 
     { $(#[$attr:meta])* pub class $cls:ident as $cname:ident for $typ:ty { $($body:tt)* } $($rest:tt)* } => {
-        #[derive(Copy, Clone)]
         #[repr(C)]
         $(#[$attr])*
-        pub struct $cls($crate::macro_internal::runtime::raw::Local);
+        pub struct $cls($crate::macro_internal::runtime::raw::Persistent);
 
         impl_managed!($cls);
 
@@ -266,7 +265,7 @@ macro_rules! declare_types {
         #[derive(Copy, Clone)]
         #[repr(C)]
         $(#[$attr])*
-        struct $cls($crate::macro_internal::runtime::raw::Local);
+        struct $cls($crate::macro_internal::runtime::raw::Persistent);
 
         impl_managed!($cls);
 
