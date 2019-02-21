@@ -11,7 +11,7 @@ use neon_runtime;
 use neon_runtime::raw;
 use borrow::{Ref, RefMut, Borrow, BorrowMut};
 use borrow::internal::Ledger;
-use types::{Value, JsValue, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
+use types::{Managed, Value, JsValue, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
 use types::binary::{JsArrayBuffer, JsBuffer};
 use types::error::JsError;
 use object::{Object, This};
@@ -456,12 +456,10 @@ impl<'a, T: This> CallContext<'a, T> {
         a.downcast_or_throw(self)
     }
 
-/*
-    /// Produces a handle to the `this`-binding.
-    pub fn this(&mut self) -> Handle<'a, T> {
-        Handle::new_internal(T::as_this(self.info.this(self)))
+    /// Produces a handle to the called function's `this`-binding.
+    pub fn this(&mut self) -> &'a T {
+        T::as_this(self.info.this(self).to_raw())
     }
-*/
 }
 
 impl<'a, T: This> ContextInternal<'a> for CallContext<'a, T> {
