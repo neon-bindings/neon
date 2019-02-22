@@ -2,7 +2,7 @@
 
 use std::os::raw::c_void;
 use std::ptr::null_mut;
-use raw::{FunctionCallbackInfo, Isolate, Local, Persistent};
+use raw::{FunctionCallbackInfo, Isolate, Persistent};
 
 #[repr(C)]
 pub struct CCallback {
@@ -23,11 +23,7 @@ extern "C" {
 
     /// Sets the return value of the function call.
     #[link_name = "Neon_Call_SetReturn"]
-    pub fn set_return(info: &FunctionCallbackInfo, value: Local);
-
-    /// Sets the return value of the function call.
-    #[link_name = "Neon_Call_SetReturnThin"]
-    pub fn set_return_thin(info: &FunctionCallbackInfo, value: &Persistent);
+    pub fn set_return(info: &FunctionCallbackInfo, value: &Persistent);
 
     /// Gets the isolate of the function call.
     #[link_name = "Neon_Call_GetIsolate"]
@@ -46,27 +42,17 @@ extern "C" {
     #[link_name = "Neon_Call_This"]
     pub fn this(info: &FunctionCallbackInfo, out: &Persistent, isolate: *mut Isolate);
 
-    /// Mutates the `out` argument provided to refer to the `v8::Local` handle value of the
-    /// `v8::FunctionCallbackInfo` `Data`.
-    #[link_name = "Neon_Call_Data"]
-    pub fn data(info: &FunctionCallbackInfo, out: &mut Local);
-
     /// Initializes the `out` argument provided to refer to the value of the
     /// `v8::FunctionCallbackInfo` `Data`.
-    #[link_name = "Neon_Call_InitData"]
-    pub fn init_data(info: &FunctionCallbackInfo, out: &Persistent, isolate: *mut Isolate);
+    #[link_name = "Neon_Call_Data"]
+    pub fn data(info: &FunctionCallbackInfo, out: &Persistent, isolate: *mut Isolate);
 
     /// Gets the number of arguments passed to the function.
     #[link_name = "Neon_Call_Length"]
     pub fn len(info: &FunctionCallbackInfo) -> i32;
 
-    /// Mutates the `out` argument provided to refer to the `v8::Local` handle value of the `i`th
-    /// argument passed to the function.
-    #[link_name = "Neon_Call_Get"]
-    pub fn get(info: &FunctionCallbackInfo, i: i32, out: &mut Local);
-
     /// Initializes the `out` argument provided to refer to the `i`th argument passed to the function.
-    #[link_name = "Neon_Call_InitGet"]
-    pub fn init_get(info: &FunctionCallbackInfo, isolate: *mut Isolate, i: i32, out: &Persistent);
+    #[link_name = "Neon_Call_Get"]
+    pub fn get(info: &FunctionCallbackInfo, isolate: *mut Isolate, i: i32, out: &Persistent);
 
 }

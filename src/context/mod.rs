@@ -28,7 +28,7 @@ impl CallbackInfo {
 
     pub fn data<'a, C: Context<'a>>(&self, cx: &mut C) -> &'a JsValue {
         cx.new_infallible(|out, isolate| unsafe {
-            neon_runtime::call::init_data(&self.info, out, isolate)
+            neon_runtime::call::data(&self.info, out, isolate)
         })
     }
 
@@ -38,7 +38,7 @@ impl CallbackInfo {
 
     pub fn set_return<'a, 'b, T: Value>(&'a self, value: &'b T) {
         unsafe {
-            neon_runtime::call::set_return_thin(&self.info, value.to_raw());
+            neon_runtime::call::set_return(&self.info, value.to_raw());
         }
     }
 
@@ -62,7 +62,7 @@ impl CallbackInfo {
         }
         unsafe {
             Some(cx.new_infallible(|out, isolate| {
-                neon_runtime::call::init_get(&self.info, isolate, i, out)
+                neon_runtime::call::get(&self.info, isolate, i, out)
             }))
         }
     }
@@ -72,7 +72,7 @@ impl CallbackInfo {
             return cx.throw_type_error("not enough arguments");
         }
         Ok(cx.new_infallible(|out, isolate| unsafe {
-            neon_runtime::call::init_get(&self.info, isolate, i, out)
+            neon_runtime::call::get(&self.info, isolate, i, out)
         }))
     }
 

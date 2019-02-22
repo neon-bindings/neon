@@ -2,19 +2,14 @@
 
 use std::os::raw::c_void;
 use call::CCallback;
-use raw::{Local, Persistent};
+use raw::Persistent;
 
 extern "C" {
 
-    /// Mutates the `out` argument provided to refer to a newly created `v8::Function`. Returns
-    /// `false` if the value couldn't be created.
-    #[link_name = "Neon_Fun_New"]
-    pub fn new(out: &mut Local, isolate: *mut c_void, callback: CCallback) -> bool;
-
     /// Initializes the `out` argument provided to refer to a newly created `v8::Function`. Returns
     /// `false` if the value couldn't be created.
-    #[link_name = "Neon_Fun_Init"]
-    pub fn init(out: &Persistent, isolate: *mut c_void, callback: CCallback) -> bool;
+    #[link_name = "Neon_Fun_New"]
+    pub fn new(out: &Persistent, isolate: *mut c_void, callback: CCallback) -> bool;
 
     /// Mutates the `out` argument provided to refer to a newly created `v8::FunctionTemplate`.
     /// Returns `false` if the value couldn't be created.
@@ -28,23 +23,12 @@ extern "C" {
     /// Calls the function provided (`fun`) and mutates the `out` argument provided to refer to the
     /// result of the function call. Returns `false` if the result of the call was empty.
     #[link_name = "Neon_Fun_Call"]
-    pub fn call(out: &mut Local, isolate: *mut c_void, fun: Local, this: Local, argc: i32, argv: *mut c_void) -> bool;
-
-    /// Calls the function provided (`fun`) and mutates the `out` argument provided to refer to the
-    /// result of the function call. Returns `false` if the result of the call was empty.
-    #[link_name = "Neon_Fun_CallThin"]
-    pub fn call_thin(out: &Persistent, isolate: *mut c_void, fun: &Persistent, this: &Persistent, argc: i32, argv: *mut c_void) -> bool;
+    pub fn call(out: &Persistent, isolate: *mut c_void, fun: &Persistent, this: &Persistent, argc: i32, argv: *mut c_void) -> bool;
 
     /// Makes a constructor call to with the function provided (`fun`) and mutates the `out`
     /// argument provided to refer to the result of the constructor call. Returns `false` if the
     /// result of the call was empty.
     #[link_name = "Neon_Fun_Construct"]
-    pub fn construct(out: &mut Local, isolate: *mut c_void, fun: Local, argc: i32, argv: *mut c_void) -> bool;
-
-    /// Makes a constructor call to with the function provided (`fun`) and mutates the `out`
-    /// argument provided to refer to the result of the constructor call. Returns `false` if the
-    /// result of the call was empty.
-    #[link_name = "Neon_Fun_ConstructThin"]
-    pub fn construct_thin(out: &Persistent, isolate: *mut c_void, fun: &Persistent, argc: i32, argv: *mut c_void) -> bool;
+    pub fn construct(out: &Persistent, isolate: *mut c_void, fun: &Persistent, argc: i32, argv: *mut c_void) -> bool;
 
 }

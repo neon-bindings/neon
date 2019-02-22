@@ -1,6 +1,6 @@
 use std::os::raw::c_void;
 use call::CCallback;
-use raw::{Isolate, Local, Persistent};
+use raw::{Isolate, Persistent};
 
 extern "C" {
 
@@ -45,9 +45,6 @@ extern "C" {
 
     #[link_name = "Neon_Class_GetCallKernel"]
     pub fn get_call_kernel(obj: &Persistent) -> *mut c_void;
-
-    #[link_name = "Neon_Class_Constructor"]
-    pub fn constructor(out: &mut Local, ft: Local) -> bool;
 
     #[link_name = "Neon_Class_HasInstance"]
     pub fn has_instance(metadata: *mut c_void, v: &Persistent) -> bool;

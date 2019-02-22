@@ -12,6 +12,5 @@ pub mod tag;
 pub mod module;
 pub mod mem;
 pub mod fun;
-pub mod convert;
 pub mod class;
 pub mod task;

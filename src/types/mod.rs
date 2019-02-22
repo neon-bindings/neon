@@ -169,7 +169,7 @@ pub struct JsUndefined(raw::Persistent);
 impl JsUndefined {
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> &'a JsUndefined {
         cx.new_infallible(|out, isolate| unsafe {
-            neon_runtime::primitive::init_undefined(out, isolate)
+            neon_runtime::primitive::undefined(out, isolate)
         })
     }
 }
@@ -180,7 +180,7 @@ impl ValueInternal for JsUndefined {
     fn name() -> String { "undefined".to_string() }
 
     fn is_typeof<Other: Value>(other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_undefined_thin(other.to_raw()) }
+        unsafe { neon_runtime::tag::is_undefined(other.to_raw()) }
     }
 }
 
@@ -195,7 +195,7 @@ pub struct JsNull(raw::Persistent);
 impl JsNull {
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> &'a JsNull {
         cx.new_infallible(|out, isolate| unsafe {
-            neon_runtime::primitive::init_null(out, isolate)
+            neon_runtime::primitive::null(out, isolate)
         })
     }
 }
@@ -219,7 +219,7 @@ pub struct JsBoolean(raw::Persistent);
 impl JsBoolean {
     pub fn new<'a, C: Context<'a>>(cx: &mut C, b: bool) -> &'a JsBoolean {
         cx.new_infallible(|out, isolate| unsafe {
-            neon_runtime::primitive::init_boolean(out, isolate, b)
+            neon_runtime::primitive::boolean(out, isolate, b)
         })
     }
 
@@ -329,7 +329,7 @@ pub struct JsNumber(raw::Persistent);
 impl JsNumber {
     pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, x: T) -> &'a JsNumber {
         cx.new_infallible(|out, isolate| unsafe {
-            neon_runtime::primitive::init_number(out, isolate, x.into())
+            neon_runtime::primitive::number(out, isolate, x.into())
         })
     }
 
@@ -361,7 +361,7 @@ impl ValueInternal for JsObject {
     fn name() -> String { "object".to_string() }
 
     fn is_typeof<Other: Value>(other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_object_thin(other.to_raw()) }
+        unsafe { neon_runtime::tag::is_object(other.to_raw()) }
     }
 }
 
@@ -374,7 +374,7 @@ unsafe impl This for JsObject { }
 impl JsObject {
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> &'a JsObject {
         cx.new_infallible(|out, isolate| unsafe {
-            neon_runtime::object::init(out, isolate)
+            neon_runtime::object::new(out, isolate)
         })
     }
 }
@@ -388,7 +388,7 @@ impl JsArray {
 
     pub fn new<'a, C: Context<'a>>(cx: &mut C, len: u32) -> &'a JsArray {
         cx.new_infallible(|out, isolate| unsafe {
-            neon_runtime::array::init(out, isolate, len)
+            neon_runtime::array::new(out, isolate, len)
         })
     }
 
@@ -445,7 +445,7 @@ impl JsFunction {
         cx.new(|out, isolate| unsafe {
             let isolate: *mut c_void = std::mem::transmute(isolate);
             let callback = FunctionCallback(f).into_c_callback();
-            neon_runtime::fun::init(out, isolate, callback)
+            neon_runtime::fun::new(out, isolate, callback)
         })
     }
 }
@@ -470,7 +470,7 @@ impl<CL: Object> JsFunction<CL> {
         let mut args = args.into_iter().collect::<Vec<_>>();
         let (argc, argv) = unsafe { prepare_args(cx, &mut args) }?;
         cx.new(|out, isolate| unsafe {
-            neon_runtime::fun::call_thin(out, isolate, self.to_raw(), this.to_raw(), argc, argv)
+            neon_runtime::fun::call(out, isolate, self.to_raw(), this.to_raw(), argc, argv)
         })
     }
 
@@ -481,7 +481,7 @@ impl<CL: Object> JsFunction<CL> {
         let mut args = args.into_iter().collect::<Vec<_>>();
         let (argc, argv) = unsafe { prepare_args(cx, &mut args) }?;
         cx.new(|out, isolate| unsafe {
-            neon_runtime::fun::construct_thin(out, isolate, self.to_raw(), argc, argv)
+            neon_runtime::fun::construct(out, isolate, self.to_raw(), argc, argv)
         })
     }
 }
@@ -492,7 +492,7 @@ impl<T: Object> ValueInternal for JsFunction<T> {
     fn name() -> String { "function".to_string() }
 
     fn is_typeof<Other: Value>(other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_function_thin(other.to_raw()) }
+        unsafe { neon_runtime::tag::is_function(other.to_raw()) }
     }
 }
 

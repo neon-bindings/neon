@@ -34,7 +34,7 @@ impl JsError {
     pub fn error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<&'a JsError> {
         let msg = { cx.string(msg.as_ref()).to_raw() };
         cx.new(|out, isolate| unsafe {
-            neon_runtime::error::init_error(out, isolate, msg);
+            neon_runtime::error::new_error(out, isolate, msg);
             true
         })
     }
@@ -43,7 +43,7 @@ impl JsError {
     pub fn type_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<&'a JsError> {
         let msg = { cx.string(msg.as_ref()).to_raw() };
         cx.new(|out, isolate| unsafe {
-            neon_runtime::error::init_type_error(out, isolate, msg);
+            neon_runtime::error::new_type_error(out, isolate, msg);
             true
         })
     }
@@ -52,7 +52,7 @@ impl JsError {
     pub fn range_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<&'a JsError> {
         let msg = { cx.string(msg.as_ref()).to_raw() };
         cx.new(|out, isolate| unsafe {
-            neon_runtime::error::init_range_error(out, isolate, msg);
+            neon_runtime::error::new_range_error(out, isolate, msg);
             true
         })
     }

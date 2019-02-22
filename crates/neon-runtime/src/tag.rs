@@ -1,16 +1,12 @@
 //! Facilities for identifying the type of a `v8::Local` handle.
 
-use raw::{Local, Persistent};
+use raw::Persistent;
 
 extern "C" {
 
     /// Indicates if the value type is `Undefined`.
     #[link_name = "Neon_Tag_IsUndefined"]
-    pub fn is_undefined(val: Local) -> bool;
-
-    /// Indicates if the value type is `Undefined`.
-    #[link_name = "Neon_Tag_IsUndefinedThin"]
-    pub fn is_undefined_thin(val: &Persistent) -> bool;
+    pub fn is_undefined(val: &Persistent) -> bool;
 
     /// Indicates if the value type is `Null`.
     #[link_name = "Neon_Tag_IsNull"]
@@ -30,11 +26,7 @@ extern "C" {
 
     /// Indicates if the value type is `Object`.
     #[link_name = "Neon_Tag_IsObject"]
-    pub fn is_object(val: Local) -> bool;
-
-    /// Indicates if the value type is `Object`.
-    #[link_name = "Neon_Tag_IsObjectThin"]
-    pub fn is_object_thin(val: &Persistent) -> bool;
+    pub fn is_object(val: &Persistent) -> bool;
 
     /// Indicates if the value type is `Array`.
     #[link_name = "Neon_Tag_IsArray"]
@@ -42,11 +34,7 @@ extern "C" {
 
     /// Indicates if the value type is `Function`.
     #[link_name = "Neon_Tag_IsFunction"]
-    pub fn is_function(val: Local) -> bool;
-
-    /// Indicates if the value type is `Function`.
-    #[link_name = "Neon_Tag_IsFunctionThin"]
-    pub fn is_function_thin(val: &Persistent) -> bool;
+    pub fn is_function(val: &Persistent) -> bool;
 
     /// Indicates if the value type is `Error`.
     #[link_name = "Neon_Tag_IsError"]

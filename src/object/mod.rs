@@ -30,26 +30,22 @@ impl PropertyKey for u32 {
 impl<'a> PropertyKey for &'a str {
     unsafe fn get_from(self, out: &raw::Persistent, isolate: *mut raw::Isolate, obj: &raw::Persistent) -> bool {
         let (ptr, len) = Utf8::from(self).into_small_unwrap().lower();
-        // FIXME: rename the `_thin` back to normal
-        neon_runtime::object::get_string_thin(out, isolate, obj, ptr, len)
+        neon_runtime::object::get_string(out, isolate, obj, ptr, len)
     }
 
     unsafe fn set_from(self, out: &mut bool, isolate: *mut raw::Isolate, obj: &raw::Persistent, val: &raw::Persistent) -> bool {
         let (ptr, len) = Utf8::from(self).into_small_unwrap().lower();
-        // FIXME: rename the `_thin` back to normal
-        neon_runtime::object::set_string_thin(out, isolate, obj, ptr, len, val)
+        neon_runtime::object::set_string(out, isolate, obj, ptr, len, val)
     }
 }
 
 impl<'a, T: Value> PropertyKey for &'a T {
     unsafe fn get_from(self, out: &raw::Persistent, isolate: *mut raw::Isolate, obj: &raw::Persistent) -> bool {
-        // FIXME: rename the `_thin` back to normal
-        neon_runtime::object::get_thin(out, isolate, obj, self.to_raw())
+        neon_runtime::object::get(out, isolate, obj, self.to_raw())
     }
 
     unsafe fn set_from(self, out: &mut bool, isolate: *mut raw::Isolate, obj: &raw::Persistent, val: &raw::Persistent) -> bool {
-        // FIXME: rename the `_thin` back to normal
-        neon_runtime::object::set_thin(out, isolate, obj, self.to_raw(), val)
+        neon_runtime::object::set(out, isolate, obj, self.to_raw(), val)
     }
 }
 
