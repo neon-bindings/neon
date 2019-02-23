@@ -219,14 +219,16 @@ extern "C" size_t Neon_String_Data(char *out, size_t len, v8::Persistent<v8::Str
   return Nan::DecodeWrite(out, len, local, Nan::UTF8);
 }
 
-extern "C" bool Neon_Convert_ToString(v8::Local<v8::String> *out, v8::Local<v8::Value> value) {
-  Nan::MaybeLocal<v8::String> maybe = Nan::To<v8::String>(value);
-  return maybe.ToLocal(out);
-}
-
-extern "C" bool Neon_Convert_ToObject(v8::Local<v8::Object> *out, v8::Local<v8::Value> *value) {
-  Nan::MaybeLocal<v8::Object> maybe = Nan::To<v8::Object>(*value);
-  return maybe.ToLocal(out);
+extern "C" bool Neon_String_ToString(v8::Persistent<v8::String> *out, v8::Isolate *isolate, v8::Persistent<v8::Value> *value) {
+  Nan::HandleScope scope;
+  v8::Local<v8::Value> lvalue = Nan::New(*value);
+  Nan::MaybeLocal<v8::String> maybe = Nan::To<v8::String>(lvalue);
+  v8::Local<v8::String> lout;
+  if (!maybe.ToLocal(&lout)) {
+    return false;
+  }
+  out->Reset(isolate, lout);
+  return true;
 }
 
 extern "C" bool Neon_Buffer_New(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, uint32_t len) {

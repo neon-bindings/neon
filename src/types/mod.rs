@@ -94,6 +94,11 @@ pub trait Value: ValueInternal {
         self.downcast().or_throw(cx)
     }
 
+    fn to_string<'a, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<&'a JsString> {
+        cx.new(|out, isolate| unsafe {
+            neon_runtime::string::to_string(out, isolate, self.to_raw())
+        })
+    }
 }
 
 /// An error representing a failed downcast.

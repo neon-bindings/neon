@@ -44,9 +44,7 @@ extern "C" {
   bool Neon_String_New(v8::Persistent<v8::String> *out, v8::Isolate *isolate, const uint8_t *data, int32_t len);
   int32_t Neon_String_Utf8Length(v8::Persistent<v8::String> *str);
   size_t Neon_String_Data(char *out, size_t len, v8::Persistent<v8::String> *str);
-
-  bool Neon_Convert_ToString(v8::Local<v8::String> *out, v8::Local<v8::Value> value);
-  bool Neon_Convert_ToObject(v8::Local<v8::Object> *out, v8::Local<v8::Value> *value);
+  bool Neon_String_ToString(v8::Persistent<v8::String> *out, v8::Isolate *isolate, v8::Persistent<v8::Value> *value);
 
   bool Neon_Buffer_New(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, uint32_t len);
   bool Neon_Buffer_Uninitialized(v8::Persistent<v8::Value> *out, v8::Isolate *isolate, uint32_t len);

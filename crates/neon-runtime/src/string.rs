@@ -17,4 +17,9 @@ extern "C" {
     #[link_name = "Neon_String_Data"]
     pub fn data(out: *mut u8, len: isize, str: &Persistent) -> isize;
 
+    /// Mutates the `out` argument to the result of applying the standard JS string conversion
+    /// operation on the `from` argument.
+    #[link_name = "Neon_String_ToString"]
+    pub fn to_string(out: &Persistent, isolate: *mut Isolate, from: &Persistent) -> bool;
+
 }
