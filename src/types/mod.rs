@@ -63,8 +63,8 @@ pub trait Value: ValueInternal {
     /// 
     /// ```no_run
     /// # use neon::prelude::*;
-    /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    /// let v: Handle<JsValue> = cx.number(17).upcast();
+    /// # fn my_neon_function(mut cx: FunctionContext) -> NeonResult<&JsUndefined> {
+    /// let v: &JsValue = cx.number(17).upcast();
     /// v.is_a::<JsString>(); // false
     /// v.is_a::<JsNumber>(); // true
     /// v.is_a::<JsValue>();  // true
@@ -287,7 +287,7 @@ impl JsString {
         }
     }
 
-    pub fn value(self) -> String {
+    pub fn value(&self) -> String {
         unsafe {
             let capacity = neon_runtime::string::utf8_len(self.to_raw());
             let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);

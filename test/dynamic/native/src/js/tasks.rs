@@ -11,12 +11,12 @@ impl Task for SuccessTask {
         Ok(17)
     }
 
-    fn complete(self, mut cx: TaskContext, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent> {
+    fn complete(self, mut cx: TaskContext, result: Result<Self::Output, Self::Error>) -> NeonResult<&Self::JsEvent> {
         Ok(cx.number(result.unwrap()))
     }
 }
 
-pub fn perform_async_task(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+pub fn perform_async_task(mut cx: FunctionContext) -> NeonResult<&JsUndefined> {
     let f = cx.argument::<JsFunction>(0)?;
     SuccessTask.schedule(f);
     Ok(cx.undefined())
@@ -33,12 +33,12 @@ impl Task for FailureTask {
         Err(format!("I am a failing task"))
     }
 
-    fn complete(self, mut cx: TaskContext, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent> {
+    fn complete(self, mut cx: TaskContext, result: Result<Self::Output, Self::Error>) -> NeonResult<&Self::JsEvent> {
         cx.throw_error(&result.unwrap_err())
     }
 }
 
-pub fn perform_failing_task(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+pub fn perform_failing_task(mut cx: FunctionContext) -> NeonResult<&JsUndefined> {
     let f = cx.argument::<JsFunction>(0)?;
     FailureTask.schedule(f);
     Ok(cx.undefined())

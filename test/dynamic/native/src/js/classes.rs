@@ -33,9 +33,9 @@ declare_types! {
   pub class JsUser for User {
     init(mut cx) {
       let id = cx.argument::<JsNumber>(0)?;
-      let first_name: Handle<JsString> = cx.argument::<JsString>(1)?;
-      let last_name: Handle<JsString> = cx.argument::<JsString>(2)?;
-      let email: Handle<JsString> = cx.argument::<JsString>(3)?;
+      let first_name: &JsString = cx.argument::<JsString>(1)?;
+      let last_name: &JsString = cx.argument::<JsString>(2)?;
+      let email: &JsString = cx.argument::<JsString>(3)?;
 
       Ok(User {
         id: id.value() as i32,

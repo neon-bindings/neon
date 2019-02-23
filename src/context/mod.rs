@@ -149,9 +149,9 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// 
     /// ```no_run
     /// # use neon::prelude::*;
-    /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    /// let mut b: &JsArrayBuffer = cx.argument(0)?;
-    /// cx.borrow_mut(&b, |data| {
+    /// # fn my_neon_function(mut cx: FunctionContext) -> NeonResult<&JsUndefined> {
+    /// let b: &JsArrayBuffer = cx.argument(0)?;
+    /// cx.borrow_mut(b, |data| {
     ///     let slice = data.as_mut_slice::<u32>();
     ///     slice[0] += 1;
     /// });
