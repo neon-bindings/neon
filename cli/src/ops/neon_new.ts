@@ -29,6 +29,7 @@ const INDEXJS_TEMPLATE   = compile('index.js.hbs');
 const LIBRS_TEMPLATE     = compile('lib.rs.hbs');
 const README_TEMPLATE    = compile('README.md.hbs');
 const BUILDRS_TEMPLATE   = compile('build.rs.hbs');
+const CONFIG_TEMPLATE   = compile('config.hbs');
 
 async function guessAuthor() {
   let author = {
@@ -129,9 +130,11 @@ export default async function wizard(pwd: string, name: string) {
   let lib = path.resolve(root, path.dirname(answers.node));
   let native_ = path.resolve(root, 'native');
   let src = path.resolve(native_, 'src');
+  let cargo = path.resolve(native_, '.cargo');
 
   await mkdirs(lib);
   await mkdirs(src);
+  await mkdirs(cargo);
 
   await writeFile(path.resolve(root,    '.gitignore'),   (await GITIGNORE_TEMPLATE)(ctx), { flag: 'wx' });
   await writeFile(path.resolve(root,    'package.json'), (await NPM_TEMPLATE)(ctx),       { flag: 'wx' });
@@ -140,7 +143,8 @@ export default async function wizard(pwd: string, name: string) {
   await writeFile(path.resolve(root,    answers.node),   (await INDEXJS_TEMPLATE)(ctx),   { flag: 'wx' });
   await writeFile(path.resolve(src,     'lib.rs'),       (await LIBRS_TEMPLATE)(ctx),     { flag: 'wx' });
   await writeFile(path.resolve(native_, 'build.rs'),     (await BUILDRS_TEMPLATE)(ctx),   { flag: 'wx' });
-
+  await writeFile(path.resolve(cargo,   'config'),       (await CONFIG_TEMPLATE)(ctx),    { flag: 'wx' });  
+  
   let relativeRoot = path.relative(pwd, root);
   let relativeNode = path.relative(pwd, path.resolve(root, answers.node));
   let relativeRust = path.relative(pwd, path.resolve(src, 'lib.rs'));

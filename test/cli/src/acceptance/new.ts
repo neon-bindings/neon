@@ -41,6 +41,9 @@ describe('neon new', function() {
           let librs = readFile(this.cwd, 'my-app/native/src/lib.rs');
           assert.include(librs, `extern crate neon;`);
 
+          let config = readFile(this.cwd, 'my-app/native/.cargo/config');
+          assert.include(config, `[target.'cfg(windows)']`);
+
           done();
         });
   });

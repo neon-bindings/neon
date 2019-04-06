@@ -1,0 +1,2 @@
+[target.'cfg(windows)']
+rustflags = ["-C", "link-args=/DELAYLOAD:node.exe /INCLUDE:load_exe_hook /INCLUDE:__pfnDliNotifyHook2 delayimp.lib"]

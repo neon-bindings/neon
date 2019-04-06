@@ -16,7 +16,7 @@ The hook used is the same as node-gyp uses. It is build with the neon runtime. T
 rustflags = ["-C", "link-args=/DELAYLOAD:node.exe /INCLUDE:load_exe_hook /INCLUDE:__pfnDliNotifyHook2 delayimp.lib"]
 ```
 
-**neon cli should be patched to do this**
+**cli has been patched to do this**
 
 A few far from obvious (to me) things happen here. The (patched) neon-runtime library contains the hook, but for the linker to find the symbols and use them for creating the hook they must be included. The library with the hook `delayimp.lib` must be included as well, but it must be included AFTER the library with the hook. Thus we simply add it to the linker flags, adding it sooner, eg with `cargo:rustc-link-lib=delayimp` makes it add a default hook that does nothing and results in a duplicate symbol warning for our `_pfnDliNotifyHook2`.
 
