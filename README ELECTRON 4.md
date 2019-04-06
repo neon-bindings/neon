@@ -1,6 +1,10 @@
 Electron 4 and windows
 ======================
 
+
+*** only tested with hello world, not yet with a real life project ***
+----------------------------------------------------------------------
+
 Electron 4 uses delayed loading to circumvent the need to name the exectutable node.exe. See https://electronjs.org/docs/tutorial/using-native-node-modules#a-note-about-win_delay_load_hook
 
 The library build with neon therefore must be build with delayed loading. This slightly complicates the build process.
