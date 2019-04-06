@@ -36,4 +36,12 @@ fn main() {
 
 Add the file [crates/neon-runtime/src/win_delay_load_hook.cc](https://github.com/jrd-rocks/neon/blob/electron_delay_hook/crates/neon-runtime/src/win_delay_load_hook.cc) to your project's `native/src`
 
+Finally add the cc crate to your build dependencies in `native/Cargo.toml` as follows:
+
+```
+[build-dependencies]
+neon-build = "0.2.0"
+cc = "1.0"
+```
+
 Have fun using neon with electron 4 (and hopefully up) in electron!
