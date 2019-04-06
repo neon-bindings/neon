@@ -2,17 +2,17 @@ Electron 4 and windows
 ======================
 
 
-*** only tested with hello world, not yet with a real life project ***
+*** only tested with hello world, not yet with a real life project, though it should be no different, it's just a hook ***
 ----------------------------------------------------------------------
 
-Electron 4 uses delayed loading to circumvent the need to name the exectutable node.exe. See https://electronjs.org/docs/tutorial/using-native-node-modules#a-note-about-win_delay_load_hook
+Electron 4 uses delayed loading to circumvent the need to name the executable node.exe. See https://electronjs.org/docs/tutorial/using-native-node-modules#a-note-about-win_delay_load_hook
 
 The library build with neon therefore must be build with delayed loading. This slightly complicates the build process.
 
 The hook used is the same as node-gyp uses. It is build with the neon runtime. To add the hook to the resulting dynamic library a `.cargo/config` file must be made with the following contents to make the linker jump through the right hoops.
 
 ```
-[build]
+[target.'cfg(windows)']
 rustflags = ["-C", "link-args=/DELAYLOAD:node.exe /INCLUDE:load_exe_hook /INCLUDE:__pfnDliNotifyHook2 delayimp.lib"]
 ```
 
@@ -48,4 +48,4 @@ neon-build = "0.2.0"
 cc = "1.0"
 ```
 
-Have fun using neon with electron 4 (and hopefully up) in electron!
+Have fun using neon with electron 4 (and hopefully up) in windows!
