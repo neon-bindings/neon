@@ -13,15 +13,14 @@
 #include <delayimp.h>
 #include <string.h>
 
-extern "C" FARPROC WINAPI load_exe_hook(unsigned int, DelayLoadInfo*);
+extern "C" FARPROC WINAPI __load_exe_hook(unsigned int, DelayLoadInfo*);
 
-FARPROC WINAPI load_exe_hook(unsigned int event, DelayLoadInfo* info) {
+FARPROC WINAPI __load_exe_hook(unsigned int event, DelayLoadInfo* info) {
   HMODULE m;
   if (event != dliNotePreLoadLibrary)
     return NULL;
 
-  if (_stricmp(info->szDll, "iojs.exe") != 0 &&
-      _stricmp(info->szDll, "node.exe") != 0)
+  if (_stricmp(info->szDll, "node.exe") != 0)
     return NULL;
 
 	
@@ -29,4 +28,4 @@ FARPROC WINAPI load_exe_hook(unsigned int event, DelayLoadInfo* info) {
   return (FARPROC) m;
 }
 
-decltype(__pfnDliNotifyHook2) __pfnDliNotifyHook2 = load_exe_hook;
+decltype(__pfnDliNotifyHook2) __pfnDliNotifyHook2 = __load_exe_hook;
