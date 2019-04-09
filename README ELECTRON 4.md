@@ -2,7 +2,7 @@ Electron 4 and windows
 ======================
 
 
-*** only tested with hello world, not yet with a real life project, though it should be no different, it's just a hook ***
+*** Only tested with hello world, not yet with a real life project, though it should be no different, it's just a hook ***
 ----------------------------------------------------------------------
 
 Electron 4 uses delayed loading to circumvent the need to name the executable node.exe. See https://electronjs.org/docs/tutorial/using-native-node-modules#a-note-about-win_delay_load_hook
@@ -13,12 +13,12 @@ The hook used is the same as node-gyp uses. It is build with the neon runtime. T
 
 ```
 [target.'cfg(windows)']
-rustflags = ["-C", "link-args=/DELAYLOAD:node.exe /INCLUDE:__load_exe_hook /INCLUDE:__pfnDliNotifyHook2 delayimp.lib"]
+rustflags = ["-C", "link-args=/DELAYLOAD:node.exe /INCLUDE:__pfnDliNotifyHook2 delayimp.lib"]
 ```
 
 **the cli has been patched to do this**
 
-A few far from obvious (to me) things happen here. The (patched) neon-runtime library contains the hook. For the linker to find the related symbols and use those in creating the hook they must be explicitly included. The windows library with the helpers, `delayimp.lib`, must be included as well, but it must be included AFTER the library with the hook. Thus we simply add it to the linker flags, adding it sooner, eg with `cargo:rustc-link-lib=delayimp` makes it add a default hook that does nothing and results in a duplicate symbol warning for our `_pfnDliNotifyHook2`.
+A few far from obvious (to me) things happen here. The (patched) neon-runtime library contains the hook. For the linker to find the related symbol and use it in creating the hook it must be explicitly included. The windows library with the helpers, `delayimp.lib`, must be included as well, but it must be included AFTER the library with the hook. Thus we simply add it to the linker flags, adding it sooner, eg with `cargo:rustc-link-lib=delayimp` makes it add a default hook that does nothing and results in a duplicate symbol warning for our `_pfnDliNotifyHook2`.
 
 If you're using version 0.2.0 of neon that doesn't have this patch, it is possible to build the hook in your own project (first create the .cargo/config file as mentioned above):
 
