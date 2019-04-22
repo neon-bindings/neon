@@ -1,7 +1,7 @@
 //! The [Neon](https://www.neon-bindings.com/) crate provides bindings for writing Node.js plugins with a safe and fast Rust API.
 
-extern crate neon_runtime;
 extern crate cslice;
+extern crate neon_runtime;
 extern crate semver;
 
 #[cfg(test)]
@@ -11,15 +11,15 @@ extern crate rustc_version;
 #[macro_use]
 extern crate lazy_static;
 
+pub mod borrow;
 pub mod context;
 pub mod handle;
-pub mod types;
+pub mod meta;
 pub mod object;
-pub mod borrow;
+pub mod prelude;
 pub mod result;
 pub mod task;
-pub mod meta;
-pub mod prelude;
+pub mod types;
 
 #[doc(hidden)]
 pub mod macro_internal;
@@ -209,7 +209,7 @@ macro_rules! impl_managed {
                 $cls(raw)
             }
         }
-    }
+    };
 }
 
 /// Declare custom native JavaScript types with Rust implementations.
@@ -322,11 +322,11 @@ mod tests {
         };
 
         assert!(Command::new(&shell)
-                        .current_dir(dir)
-                        .args(&[&command_flag, cmd])
-                        .status()
-                        .expect("failed to execute test command")
-                        .success());
+            .current_dir(dir)
+            .args(&[&command_flag, cmd])
+            .status()
+            .expect("failed to execute test command")
+            .success());
     }
 
     fn cli_setup() {
@@ -361,7 +361,10 @@ mod tests {
             return;
         }
 
-        run("cargo test --release", &project_root().join("test").join("static"));
+        run(
+            "cargo test --release",
+            &project_root().join("test").join("static"),
+        );
     }
 
     #[test]

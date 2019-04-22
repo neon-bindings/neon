@@ -1,6 +1,6 @@
 //! Facilities for working with primitive values.
 
-use raw::{Local, Isolate};
+use raw::{Isolate, Local};
 
 extern "C" {
 

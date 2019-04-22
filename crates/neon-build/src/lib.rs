@@ -12,8 +12,17 @@ pub fn setup() {
         let node_lib_file_path = Path::new(&node_lib_file);
         let mut node_lib_path = Path::new(&node_root_dir).to_path_buf();
         node_lib_path.push(&node_arch);
-        println!("cargo:rustc-link-search={}\\{}", node_root_dir, configuration);
-        println!("cargo:rustc-link-search=native={}", &node_lib_path.display());
-        println!("cargo:rustc-link-lib={}", &node_lib_file_path.file_stem().unwrap().to_str().unwrap());
+        println!(
+            "cargo:rustc-link-search={}\\{}",
+            node_root_dir, configuration
+        );
+        println!(
+            "cargo:rustc-link-search=native={}",
+            &node_lib_path.display()
+        );
+        println!(
+            "cargo:rustc-link-lib={}",
+            &node_lib_file_path.file_stem().unwrap().to_str().unwrap()
+        );
     }
 }

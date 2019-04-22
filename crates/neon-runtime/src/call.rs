@@ -1,20 +1,20 @@
 //! Facilities for working with `v8::FunctionCallbackInfo` and getting the current `v8::Isolate`.
 
+use raw::{FunctionCallbackInfo, Isolate, Local};
 use std::os::raw::c_void;
 use std::ptr::null_mut;
-use raw::{FunctionCallbackInfo, Isolate, Local};
 
 #[repr(C)]
 pub struct CCallback {
     pub static_callback: *mut c_void,
-    pub dynamic_callback: *mut c_void
+    pub dynamic_callback: *mut c_void,
 }
 
 impl Default for CCallback {
     fn default() -> Self {
         CCallback {
             static_callback: null_mut(),
-            dynamic_callback: null_mut()
+            dynamic_callback: null_mut(),
         }
     }
 }

@@ -1,13 +1,13 @@
 //! Types and traits for working with JavaScript exceptions.
 
-use std::fmt::{Display, Formatter, Result as FmtResult};
-use handle::Handle;
-use types::Value;
 use context::Context;
+use handle::Handle;
+use std::fmt::{Display, Formatter, Result as FmtResult};
+use types::Value;
 
 /// An error sentinel type used by `NeonResult` (and `JsResult`) to indicate that the JavaScript engine
 /// has entered into a throwing state.
-/// 
+///
 /// `Throw` deliberately does not implement `std::error::Error`, because it's generally not a good idea
 /// to chain JavaScript exceptions with other kinds of Rust errors, since entering into the throwing
 /// state means that the JavaScript engine is unavailable until the exception is handled.

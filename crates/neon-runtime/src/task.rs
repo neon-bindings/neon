@@ -7,9 +7,11 @@ extern "C" {
 
     /// Schedules a background task.
     #[link_name = "Neon_Task_Schedule"]
-    pub fn schedule(task: *mut c_void,
-                    perform: unsafe extern fn(*mut c_void) -> *mut c_void,
-                    complete: unsafe extern fn(*mut c_void, *mut c_void, &mut Local),
-                    callback: Local);
+    pub fn schedule(
+        task: *mut c_void,
+        perform: unsafe extern "C" fn(*mut c_void) -> *mut c_void,
+        complete: unsafe extern "C" fn(*mut c_void, *mut c_void, &mut Local),
+        callback: Local,
+    );
 
 }

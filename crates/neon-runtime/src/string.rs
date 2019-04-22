@@ -1,6 +1,6 @@
 //! Facilities for working with `v8::String`s.
 
-use raw::{Local, Isolate};
+use raw::{Isolate, Local};
 
 extern "C" {
 

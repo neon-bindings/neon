@@ -1,14 +1,14 @@
-use std;
-use std::cell::Cell;
-use std::os::raw::c_void;
+use super::ModuleContext;
+use handle::Handle;
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::scope::Root;
-use types::JsObject;
-use handle::Handle;
 use object::class::ClassMap;
 use result::NeonResult;
-use super::ModuleContext;
+use std;
+use std::cell::Cell;
+use std::os::raw::c_void;
+use types::JsObject;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -39,20 +39,18 @@ impl Isolate {
     }
 
     pub(crate) fn current() -> Isolate {
-        unsafe {
-            std::mem::transmute(neon_runtime::call::current_isolate())
-        }
+        unsafe { std::mem::transmute(neon_runtime::call::current_isolate()) }
     }
 }
 
 pub struct ScopeMetadata {
     isolate: Isolate,
-    active: Cell<bool>
+    active: Cell<bool>,
 }
 
 pub struct Scope<'a, R: Root + 'static> {
     pub metadata: ScopeMetadata,
-    pub handle_scope: &'a mut R
+    pub handle_scope: &'a mut R,
 }
 
 impl<'a, R: Root + 'static> Scope<'a, R> {
@@ -66,9 +64,9 @@ impl<'a, R: Root + 'static> Scope<'a, R> {
             let scope = Scope {
                 metadata: ScopeMetadata {
                     isolate,
-                    active: Cell::new(true)
+                    active: Cell::new(true),
                 },
-                handle_scope: &mut handle_scope
+                handle_scope: &mut handle_scope,
             };
             f(scope)
         };
@@ -96,8 +94,12 @@ pub trait ContextInternal<'a>: Sized {
         }
     }
 
-    fn activate(&self) { self.scope_metadata().active.set(true); }
-    fn deactivate(&self) { self.scope_metadata().active.set(false); }
+    fn activate(&self) {
+        self.scope_metadata().active.set(true);
+    }
+    fn deactivate(&self) {
+        self.scope_metadata().active.set(false);
+    }
 }
 
 pub fn initialize_module(exports: Handle<JsObject>, init: fn(ModuleContext) -> NeonResult<()>) {

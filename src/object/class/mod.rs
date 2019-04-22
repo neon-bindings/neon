@@ -2,32 +2,34 @@
 
 pub(crate) mod internal;
 
+use self::internal::{
+    AllocateCallback, ClassMetadata, ConstructCallback, ConstructorCallCallback, MethodCallback,
+};
+use borrow::{Borrow, BorrowMut, LoanError, Ref, RefMut};
+use context::internal::Isolate;
+use context::{CallbackInfo, Context, Lock};
+use handle::{Handle, Managed};
+use neon_runtime;
+use neon_runtime::call::CCallback;
+use neon_runtime::raw;
+use object::{Object, This};
+use result::{JsResult, NeonResult, Throw};
 use std::any::{Any, TypeId};
+use std::collections::HashMap;
 use std::mem;
 use std::os::raw::c_void;
 use std::slice;
-use std::collections::HashMap;
-use neon_runtime;
-use neon_runtime::raw;
-use neon_runtime::call::CCallback;
-use context::{Context, Lock, CallbackInfo};
-use context::internal::Isolate;
-use result::{NeonResult, JsResult, Throw};
-use borrow::{Borrow, BorrowMut, Ref, RefMut, LoanError};
-use handle::{Handle, Managed};
-use types::{Value, JsFunction, JsValue, build};
 use types::internal::ValueInternal;
-use object::{Object, This};
-use self::internal::{ClassMetadata, MethodCallback, ConstructorCallCallback, AllocateCallback, ConstructCallback};
+use types::{build, JsFunction, JsValue, Value};
 
 pub(crate) struct ClassMap {
-    map: HashMap<TypeId, ClassMetadata>
+    map: HashMap<TypeId, ClassMetadata>,
 }
 
 impl ClassMap {
     pub(crate) fn new() -> ClassMap {
         ClassMap {
-            map: HashMap::new()
+            map: HashMap::new(),
         }
     }
 
@@ -46,19 +48,21 @@ pub struct ClassDescriptor<'a, T: Class> {
     allocate: AllocateCallback<T>,
     call: Option<ConstructorCallCallback>,
     construct: Option<ConstructCallback<T>>,
-    methods: Vec<(&'a str, MethodCallback<T>)>
+    methods: Vec<(&'a str, MethodCallback<T>)>,
 }
 
 impl<'a, T: Class> ClassDescriptor<'a, T> {
-
     /// Constructs a new minimal `ClassDescriptor` with a name and allocator.
-    pub fn new<'b, U: Class>(name: &'b str, allocate: AllocateCallback<U>) -> ClassDescriptor<'b, U> {
+    pub fn new<'b, U: Class>(
+        name: &'b str,
+        allocate: AllocateCallback<U>,
+    ) -> ClassDescriptor<'b, U> {
         ClassDescriptor {
             name: name,
             allocate: allocate,
             call: None,
             construct: None,
-            methods: Vec::new()
+            methods: Vec::new(),
         }
     }
 
@@ -79,7 +83,6 @@ impl<'a, T: Class> ClassDescriptor<'a, T> {
         self.methods.push((name, callback));
         self
     }
-
 }
 
 extern "C" fn drop_internals<T>(internals: *mut c_void) {
@@ -88,7 +91,7 @@ extern "C" fn drop_internals<T>(internals: *mut c_void) {
 }
 
 /// The trait implemented by Neon classes.
-/// 
+///
 /// This trait is not intended to be implemented manually; it is implemented automatically by
 /// creating a class with the `class` syntax of the `declare_types!` macro.
 pub trait Class: Managed + Any {
@@ -105,8 +108,9 @@ pub trait Class: Managed + Any {
 
     /// Convenience method for constructing new instances of this class without having to extract the constructor function.
     fn new<'a, 'b, C: Context<'a>, A, AS>(cx: &mut C, args: AS) -> JsResult<'a, Self>
-        where A: Value + 'b,
-              AS: IntoIterator<Item=Handle<'b, A>>
+    where
+        A: Value + 'b,
+        AS: IntoIterator<Item = Handle<'b, A>>,
     {
         let constructor = Self::constructor(cx)?;
         constructor.construct(cx, args)
@@ -124,20 +128,20 @@ unsafe impl<T: Class> This for T {
     }
 }
 
-impl<T: Class> Object for T { }
+impl<T: Class> Object for T {}
 
 pub(crate) trait ClassInternal: Class {
     fn metadata_opt<'a, C: Context<'a>>(cx: &mut C) -> Option<ClassMetadata> {
         cx.isolate()
-          .class_map()
-          .get(&TypeId::of::<Self>())
-          .map(|m| m.clone())
+            .class_map()
+            .get(&TypeId::of::<Self>())
+            .map(|m| m.clone())
     }
 
     fn metadata<'a, C: Context<'a>>(cx: &mut C) -> NeonResult<ClassMetadata> {
         match Self::metadata_opt(cx) {
             Some(metadata) => Ok(metadata),
-            None => Self::create(cx)
+            None => Self::create(cx),
         }
     }
 
@@ -147,14 +151,22 @@ pub(crate) trait ClassInternal: Class {
             let isolate: *mut c_void = mem::transmute(cx.isolate());
 
             let allocate = descriptor.allocate.into_c_callback();
-            let construct = descriptor.construct.map(|callback| callback.into_c_callback()).unwrap_or_default();
-            let call = descriptor.call.unwrap_or_else(ConstructorCallCallback::default::<Self>).into_c_callback();
+            let construct = descriptor
+                .construct
+                .map(|callback| callback.into_c_callback())
+                .unwrap_or_default();
+            let call = descriptor
+                .call
+                .unwrap_or_else(ConstructorCallCallback::default::<Self>)
+                .into_c_callback();
 
-            let metadata_pointer = neon_runtime::class::create_base(isolate,
-                                                                    allocate,
-                                                                    construct,
-                                                                    call,
-                                                                    drop_internals::<Self::Internals>);
+            let metadata_pointer = neon_runtime::class::create_base(
+                isolate,
+                allocate,
+                construct,
+                call,
+                drop_internals::<Self::Internals>,
+            );
 
             if metadata_pointer.is_null() {
                 return Err(Throw);
@@ -164,7 +176,12 @@ pub(crate) trait ClassInternal: Class {
             //       v8::FunctionTemplate has a finalizer that will delete it.
 
             let class_name = descriptor.name;
-            if !neon_runtime::class::set_name(isolate, metadata_pointer, class_name.as_ptr(), class_name.len() as u32) {
+            if !neon_runtime::class::set_name(
+                isolate,
+                metadata_pointer,
+                class_name.as_ptr(),
+                class_name.len() as u32,
+            ) {
                 return Err(Throw);
             }
 
@@ -173,13 +190,19 @@ pub(crate) trait ClassInternal: Class {
                     let callback = method.into_c_callback();
                     neon_runtime::fun::new_template(out, isolate, callback)
                 })?;
-                if !neon_runtime::class::add_method(isolate, metadata_pointer, name.as_ptr(), name.len() as u32, method.to_raw()) {
+                if !neon_runtime::class::add_method(
+                    isolate,
+                    metadata_pointer,
+                    name.as_ptr(),
+                    name.len() as u32,
+                    method.to_raw(),
+                ) {
                     return Err(Throw);
                 }
             }
 
             let metadata = ClassMetadata {
-                pointer: metadata_pointer
+                pointer: metadata_pointer,
             };
 
             cx.isolate().class_map().set(TypeId::of::<Self>(), metadata);
@@ -189,13 +212,11 @@ pub(crate) trait ClassInternal: Class {
     }
 }
 
-impl<T: Class> ClassInternal for T { }
+impl<T: Class> ClassInternal for T {}
 
 impl<T: Class> ValueInternal for T {
     fn name() -> String {
-        let mut isolate: Isolate = unsafe {
-            mem::transmute(neon_runtime::call::current_isolate())
-        };
+        let mut isolate: Isolate = unsafe { mem::transmute(neon_runtime::call::current_isolate()) };
         let raw_isolate = unsafe { mem::transmute(isolate) };
         let map = isolate.class_map();
         match map.get(&TypeId::of::<T>()) {
@@ -205,25 +226,21 @@ impl<T: Class> ValueInternal for T {
                 let mut len: usize = mem::uninitialized();
                 neon_runtime::class::get_name(&mut chars, &mut len, raw_isolate, metadata.pointer);
                 String::from_utf8_lossy(slice::from_raw_parts_mut(chars, len)).to_string()
-            }
+            },
         }
     }
 
     fn is_typeof<Other: Value>(value: Other) -> bool {
-        let mut isolate: Isolate = unsafe {
-            mem::transmute(neon_runtime::call::current_isolate())
-        };
+        let mut isolate: Isolate = unsafe { mem::transmute(neon_runtime::call::current_isolate()) };
         let map = isolate.class_map();
         match map.get(&TypeId::of::<T>()) {
             None => false,
-            Some(ref metadata) => unsafe {
-                metadata.has_instance(value.to_raw())
-            }
+            Some(ref metadata) => unsafe { metadata.has_instance(value.to_raw()) },
         }
     }
 }
 
-impl<T: Class> Value for T { }
+impl<T: Class> Value for T {}
 
 impl<'a, T: Class> Borrow for &'a T {
     type Target = &'a mut T::Internals;
@@ -258,7 +275,6 @@ impl<'a, T: Class> BorrowMut for &'a mut T {
 /// as a pair of 1) a raw pointer to the dynamically computed function, and 2)
 /// a static function that knows how to transmute that raw pointer and call it.
 pub(crate) trait Callback<T: Clone + Copy + Sized>: Sized {
-
     /// Extracts the computed Rust function and invokes it. The Neon runtime
     /// ensures that the computed function is provided as the extra data field,
     /// wrapped as a V8 External, in the `CallbackInfo` argument.
@@ -272,7 +288,7 @@ pub(crate) trait Callback<T: Clone + Copy + Sized>: Sized {
     fn into_c_callback(self) -> CCallback {
         CCallback {
             static_callback: unsafe { mem::transmute(Self::invoke as usize) },
-            dynamic_callback: self.as_ptr()
+            dynamic_callback: self.as_ptr(),
         }
     }
 }

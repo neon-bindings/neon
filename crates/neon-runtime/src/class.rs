@@ -1,6 +1,6 @@
-use std::os::raw::c_void;
 use call::CCallback;
 use raw::{Isolate, Local};
+use std::os::raw::c_void;
 
 extern "C" {
 
@@ -11,17 +11,29 @@ extern "C" {
     pub fn set_class_map(isolate: *mut Isolate, map: *mut c_void, free_map: *mut c_void);
 
     #[link_name = "Neon_Class_CreateBase"]
-    pub fn create_base(isolate: *mut Isolate,
-                       allocate: CCallback,
-                       construct: CCallback,
-                       call: CCallback,
-                       drop: extern "C" fn(*mut c_void)) -> *mut c_void;
+    pub fn create_base(
+        isolate: *mut Isolate,
+        allocate: CCallback,
+        construct: CCallback,
+        call: CCallback,
+        drop: extern "C" fn(*mut c_void),
+    ) -> *mut c_void;
 
     #[link_name = "Neon_Class_GetName"]
-    pub fn get_name<'a>(base_out: &'a mut *mut u8, size_out: &'a mut usize, isolate: *mut Isolate, metadata: *const c_void);
+    pub fn get_name<'a>(
+        base_out: &'a mut *mut u8,
+        size_out: &'a mut usize,
+        isolate: *mut Isolate,
+        metadata: *const c_void,
+    );
 
     #[link_name = "Neon_Class_SetName"]
-    pub fn set_name(isolate: *mut Isolate, metadata: *mut c_void, name: *const u8, byte_length: u32) -> bool;
+    pub fn set_name(
+        isolate: *mut Isolate,
+        metadata: *mut c_void,
+        name: *const u8,
+        byte_length: u32,
+    ) -> bool;
 
     #[link_name = "Neon_Class_ThrowCallError"]
     pub fn throw_call_error(isolate: *mut Isolate, metadata: *mut c_void);
@@ -30,10 +42,20 @@ extern "C" {
     pub fn throw_this_error(isolate: *mut Isolate, metadata: *mut c_void);
 
     #[link_name = "Neon_Class_AddMethod"]
-    pub fn add_method(isolate: *mut Isolate, metadata: *mut c_void, name: *const u8, byte_length: u32, method: Local) -> bool;
+    pub fn add_method(
+        isolate: *mut Isolate,
+        metadata: *mut c_void,
+        name: *const u8,
+        byte_length: u32,
+        method: Local,
+    ) -> bool;
 
     #[link_name = "Neon_Class_MetadataToConstructor"]
-    pub fn metadata_to_constructor(out: &mut Local, isolate: *mut Isolate, metadata: *mut c_void) -> bool;
+    pub fn metadata_to_constructor(
+        out: &mut Local,
+        isolate: *mut Isolate,
+        metadata: *mut c_void,
+    ) -> bool;
 
     // FIXME: get rid of all the "kernel" nomenclature
 

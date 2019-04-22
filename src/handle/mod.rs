@@ -2,16 +2,16 @@
 
 pub(crate) mod internal;
 
-use std::marker::PhantomData;
-use std::ops::{Deref, DerefMut};
-use std::error::Error;
-use std::fmt::{self, Debug, Display};
+use self::internal::SuperType;
+use context::Context;
 use neon_runtime;
 use neon_runtime::raw;
-use types::Value;
-use context::Context;
 use result::{JsResult, JsResultExt};
-use self::internal::SuperType;
+use std::error::Error;
+use std::fmt::{self, Debug, Display};
+use std::marker::PhantomData;
+use std::ops::{Deref, DerefMut};
+use types::Value;
 
 /// The trait of data that is managed by the JS garbage collector and can only be accessed via handles.
 pub trait Managed: Copy {
@@ -25,7 +25,7 @@ pub trait Managed: Copy {
 #[derive(Clone, Copy)]
 pub struct Handle<'a, T: Managed + 'a> {
     value: T,
-    phantom: PhantomData<&'a T>
+    phantom: PhantomData<&'a T>,
 }
 
 impl<'a, T: Managed + 'a> PartialEq for Handle<'a, T> {
@@ -34,13 +34,13 @@ impl<'a, T: Managed + 'a> PartialEq for Handle<'a, T> {
     }
 }
 
-impl<'a, T: Managed + 'a> Eq for Handle<'a, T> { }
+impl<'a, T: Managed + 'a> Eq for Handle<'a, T> {}
 
 impl<'a, T: Managed + 'a> Handle<'a, T> {
     pub(crate) fn new_internal(value: T) -> Handle<'a, T> {
         Handle {
             value: value,
-            phantom: PhantomData
+            phantom: PhantomData,
         }
     }
 }
@@ -50,7 +50,7 @@ impl<'a, T: Managed + 'a> Handle<'a, T> {
 pub struct DowncastError<F: Value, T: Value> {
     phantom_from: PhantomData<F>,
     phantom_to: PhantomData<T>,
-    description: String
+    description: String,
 }
 
 impl<F: Value, T: Value> Debug for DowncastError<F, T> {
@@ -64,7 +64,7 @@ impl<F: Value, T: Value> DowncastError<F, T> {
         DowncastError {
             phantom_from: PhantomData,
             phantom_to: PhantomData,
-            description: format!("failed downcast to {}", T::name())
+            description: format!("failed downcast to {}", T::name()),
         }
     }
 }
@@ -88,24 +88,23 @@ impl<'a, F: Value, T: Value> JsResultExt<'a, T> for DowncastResult<'a, F, T> {
     fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, T> {
         match self {
             Ok(v) => Ok(v),
-            Err(e) => cx.throw_type_error(&e.description)
+            Err(e) => cx.throw_type_error(&e.description),
         }
     }
 }
 
 impl<'a, T: Value> Handle<'a, T> {
-
     /// Safely upcast a handle to a supertype.
-    /// 
+    ///
     /// This method does not require an execution context because it only copies a handle.
     pub fn upcast<U: Value + SuperType<T>>(&self) -> Handle<'a, U> {
         Handle::new_internal(SuperType::upcast_internal(self.value))
     }
 
     /// Tests whether this value is an instance of the given type.
-    /// 
+    ///
     /// # Example:
-    /// 
+    ///
     /// ```no_run
     /// # use neon::prelude::*;
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -127,7 +126,7 @@ impl<'a, T: Value> Handle<'a, T> {
     pub fn downcast<U: Value>(&self) -> DowncastResult<'a, T, U> {
         match U::downcast(self.value) {
             Some(v) => Ok(Handle::new_internal(v)),
-            None => Err(DowncastError::new())
+            None => Err(DowncastError::new()),
         }
     }
 
@@ -137,7 +136,6 @@ impl<'a, T: Value> Handle<'a, T> {
     pub fn downcast_or_throw<'b, U: Value, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'a, U> {
         self.downcast().or_throw(cx)
     }
-
 }
 
 impl<'a, T: Managed> Deref for Handle<'a, T> {
