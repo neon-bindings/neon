@@ -160,7 +160,11 @@ extern "C" bool Neon_String_New(v8::Local<v8::String> *out, v8::Isolate *isolate
 }
 
 extern "C" int32_t Neon_String_Utf8Length(v8::Local<v8::String> str) {
-  return str->Utf8Length();
+  #if NODE_MODULE_VERSION >= NODE_11_0_MODULE_VERSION
+    return str->Utf8Length(v8::Isolate::GetCurrent());
+  #else
+    return str->Utf8Length();
+  #endif
 }
 
 extern "C" size_t Neon_String_Data(char *out, size_t len, v8::Local<v8::Value> str) {
@@ -338,7 +342,7 @@ extern "C" void *Neon_Class_GetAllocateKernel(v8::Local<v8::External> wrapper) {
 }
 
 extern "C" bool Neon_Class_Constructor(v8::Local<v8::Function> *out, v8::Local<v8::FunctionTemplate> ft) {
-  v8::MaybeLocal<v8::Function> maybe = ft->GetFunction();
+  v8::MaybeLocal<v8::Function> maybe = Nan::GetFunction(ft);
   return maybe.ToLocal(out);
 }
 
@@ -394,7 +398,7 @@ extern "C" bool Neon_Class_AddMethod(v8::Isolate *isolate, void *metadata_pointe
 
 extern "C" bool Neon_Class_MetadataToConstructor(v8::Local<v8::Function> *out, v8::Isolate *isolate, void *metadata) {
   v8::Local<v8::FunctionTemplate> ft = static_cast<neon::ClassMetadata *>(metadata)->GetTemplate(isolate);
-  v8::MaybeLocal<v8::Function> maybe = ft->GetFunction();
+  v8::MaybeLocal<v8::Function> maybe = Nan::GetFunction(ft);
   return maybe.ToLocal(out);
 }
 
