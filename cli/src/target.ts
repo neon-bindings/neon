@@ -48,6 +48,10 @@ export default class Target {
       this.triple = '';
     }
 
+    if (process.env.CARGO_BUILD_TARGET) {
+      this.triple = process.env.CARGO_BUILD_TARGET;
+    }
+
     this.subdirectory = path.join(this.triple, release ? 'release' : 'debug');
     this.root = path.resolve(crate.root, 'target', this.subdirectory);
 
