@@ -1,7 +1,7 @@
+use crate::borrow::LoanError;
 use std;
-use std::os::raw::c_void;
 use std::collections::HashSet;
-use borrow::LoanError;
+use std::os::raw::c_void;
 
 pub unsafe trait Pointer {
     unsafe fn as_ptr(&self) -> *const c_void;
@@ -31,14 +31,14 @@ unsafe impl<'a, T> Pointer for &'a mut T {
 
 pub struct Ledger {
     immutable_loans: HashSet<*const c_void>,
-    mutable_loans: HashSet<*const c_void>
+    mutable_loans: HashSet<*const c_void>,
 }
 
 impl Ledger {
     pub fn new() -> Self {
         Ledger {
             immutable_loans: HashSet::new(),
-            mutable_loans: HashSet::new()
+            mutable_loans: HashSet::new(),
         }
     }
 

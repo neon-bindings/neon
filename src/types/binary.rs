@@ -1,18 +1,18 @@
 //! Types and traits representing binary JavaScript data.
 
+use crate::borrow::internal::Pointer;
+use crate::borrow::{Borrow, BorrowMut, LoanError, Ref, RefMut};
+use crate::context::{Context, Lock};
+use crate::handle::Managed;
+use crate::result::JsResult;
+use crate::types::internal::ValueInternal;
+use crate::types::{build, Object, Value};
+use neon_runtime;
+use neon_runtime::raw;
 use std::marker::PhantomData;
 use std::mem;
 use std::os::raw::c_void;
 use std::slice;
-use context::{Context, Lock};
-use borrow::{Borrow, BorrowMut, Ref, RefMut, LoanError};
-use borrow::internal::Pointer;
-use handle::Managed;
-use types::{Value, Object, build};
-use types::internal::ValueInternal;
-use result::JsResult;
-use neon_runtime;
-use neon_runtime::raw;
 
 /// The Node [`Buffer`](https://nodejs.org/api/buffer.html) type.
 #[repr(C)]
@@ -20,36 +20,43 @@ use neon_runtime::raw;
 pub struct JsBuffer(raw::Local);
 
 impl JsBuffer {
-
     /// Constructs a new `Buffer` object, safely zero-filled.
     pub fn new<'a, C: Context<'a>>(_: &mut C, size: u32) -> JsResult<'a, JsBuffer> {
-        build(|out| { unsafe { neon_runtime::buffer::new(out, size) } })
+        build(|out| unsafe { neon_runtime::buffer::new(out, size) })
     }
 
     /// Constructs a new `Buffer` object, safely zero-filled.
-    pub unsafe fn uninitialized<'a, C: Context<'a>>(_: &mut C, size: u32) -> JsResult<'a, JsBuffer> {
-        build(|out| { neon_runtime::buffer::uninitialized(out, size) })
+    pub unsafe fn uninitialized<'a, C: Context<'a>>(
+        _: &mut C,
+        size: u32,
+    ) -> JsResult<'a, JsBuffer> {
+        build(|out| neon_runtime::buffer::uninitialized(out, size))
     }
-
 }
 
 impl Managed for JsBuffer {
-    fn to_raw(self) -> raw::Local { self.0 }
+    fn to_raw(self) -> raw::Local {
+        self.0
+    }
 
-    fn from_raw(h: raw::Local) -> Self { JsBuffer(h) }
+    fn from_raw(h: raw::Local) -> Self {
+        JsBuffer(h)
+    }
 }
 
 impl ValueInternal for JsBuffer {
-    fn name() -> String { "Buffer".to_string() }
+    fn name() -> String {
+        "Buffer".to_string()
+    }
 
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_buffer(other.to_raw()) }
     }
 }
 
-impl Value for JsBuffer { }
+impl Value for JsBuffer {}
 
-impl Object for JsBuffer { }
+impl Object for JsBuffer {}
 
 /// The standard JS [`ArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) type.
 #[repr(C)]
@@ -57,31 +64,37 @@ impl Object for JsBuffer { }
 pub struct JsArrayBuffer(raw::Local);
 
 impl JsArrayBuffer {
-
     /// Constructs a new `ArrayBuffer` object with the given size, in bytes.
     pub fn new<'a, C: Context<'a>>(cx: &mut C, size: u32) -> JsResult<'a, JsArrayBuffer> {
-        build(|out| { unsafe { neon_runtime::arraybuffer::new(out, mem::transmute(cx.isolate()), size) } })
+        build(|out| unsafe {
+            neon_runtime::arraybuffer::new(out, mem::transmute(cx.isolate()), size)
+        })
     }
-
 }
 
 impl Managed for JsArrayBuffer {
-    fn to_raw(self) -> raw::Local { self.0 }
+    fn to_raw(self) -> raw::Local {
+        self.0
+    }
 
-    fn from_raw(h: raw::Local) -> Self { JsArrayBuffer(h) }
+    fn from_raw(h: raw::Local) -> Self {
+        JsArrayBuffer(h)
+    }
 }
 
 impl ValueInternal for JsArrayBuffer {
-    fn name() -> String { "ArrayBuffer".to_string() }
+    fn name() -> String {
+        "ArrayBuffer".to_string()
+    }
 
     fn is_typeof<Other: Value>(other: Other) -> bool {
         unsafe { neon_runtime::tag::is_arraybuffer(other.to_raw()) }
     }
 }
 
-impl Value for JsArrayBuffer { }
+impl Value for JsArrayBuffer {}
 
-impl Object for JsArrayBuffer { }
+impl Object for JsArrayBuffer {}
 
 /// A reference to the internal backing buffer data of a `Buffer` or `ArrayBuffer` object, which can be accessed via the `Borrow` and `BorrowMut` traits.
 #[derive(Clone, Copy)]
@@ -89,7 +102,7 @@ impl Object for JsArrayBuffer { }
 pub struct BinaryData<'a> {
     base: *mut c_void,
     size: usize,
-    phantom: PhantomData<&'a ()>
+    phantom: PhantomData<&'a ()>,
 }
 
 unsafe impl<'a> Pointer for BinaryData<'a> {
@@ -103,25 +116,24 @@ unsafe impl<'a> Pointer for BinaryData<'a> {
 }
 
 /// The trait for element types by which a buffer's binary data can be indexed.
-pub trait BinaryViewType: Sized { }
+pub trait BinaryViewType: Sized {}
 
-impl BinaryViewType for u8 { }
-impl BinaryViewType for i8 { }
-impl BinaryViewType for u16 { }
-impl BinaryViewType for i16 { }
-impl BinaryViewType for u32 { }
-impl BinaryViewType for i32 { }
-impl BinaryViewType for u64 { }
-impl BinaryViewType for i64 { }
-impl BinaryViewType for f32 { }
-impl BinaryViewType for f64 { }
+impl BinaryViewType for u8 {}
+impl BinaryViewType for i8 {}
+impl BinaryViewType for u16 {}
+impl BinaryViewType for i16 {}
+impl BinaryViewType for u32 {}
+impl BinaryViewType for i32 {}
+impl BinaryViewType for u64 {}
+impl BinaryViewType for i64 {}
+impl BinaryViewType for f32 {}
+impl BinaryViewType for f64 {}
 
 impl<'a> BinaryData<'a> {
-
     /// Produces an immutable slice as a view into the contents of this buffer.
-    /// 
+    ///
     /// # Example:
-    /// 
+    ///
     /// ```no_run
     /// # use neon::prelude::*;
     /// # fn get_x_and_y(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -141,9 +153,9 @@ impl<'a> BinaryData<'a> {
     }
 
     /// Produces a mutable slice as a view into the contents of this buffer.
-    /// 
+    ///
     /// # Example:
-    /// 
+    ///
     /// ```no_run
     /// # use neon::prelude::*;
     /// # fn modify_buffer(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -172,7 +184,7 @@ impl<'a> Borrow for &'a JsBuffer {
     type Target = BinaryData<'a>;
 
     fn try_borrow<'b>(self, guard: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
-        let mut pointer: BinaryData = unsafe { mem::uninitialized() };
+        let mut pointer: BinaryData<'_> = unsafe { mem::uninitialized() };
         unsafe {
             neon_runtime::buffer::data(&mut pointer.base, &mut pointer.size, self.to_raw());
             Ref::new(guard, pointer)
@@ -189,8 +201,11 @@ impl<'a> Borrow for &'a mut JsBuffer {
 }
 
 impl<'a> BorrowMut for &'a mut JsBuffer {
-    fn try_borrow_mut<'b>(self, guard: &'b Lock<'b>) -> Result<RefMut<'b, Self::Target>, LoanError> {
-        let mut pointer: BinaryData = unsafe { mem::uninitialized() };
+    fn try_borrow_mut<'b>(
+        self,
+        guard: &'b Lock<'b>,
+    ) -> Result<RefMut<'b, Self::Target>, LoanError> {
+        let mut pointer: BinaryData<'_> = unsafe { mem::uninitialized() };
         unsafe {
             neon_runtime::buffer::data(&mut pointer.base, &mut pointer.size, self.to_raw());
             RefMut::new(guard, pointer)
@@ -202,7 +217,7 @@ impl<'a> Borrow for &'a JsArrayBuffer {
     type Target = BinaryData<'a>;
 
     fn try_borrow<'b>(self, guard: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
-        let mut pointer: BinaryData = unsafe { mem::uninitialized() };
+        let mut pointer: BinaryData<'_> = unsafe { mem::uninitialized() };
         unsafe {
             neon_runtime::arraybuffer::data(&mut pointer.base, &mut pointer.size, self.to_raw());
             Ref::new(guard, pointer)
@@ -219,8 +234,11 @@ impl<'a> Borrow for &'a mut JsArrayBuffer {
 }
 
 impl<'a> BorrowMut for &'a mut JsArrayBuffer {
-    fn try_borrow_mut<'b>(self, guard: &'b Lock<'b>) -> Result<RefMut<'b, Self::Target>, LoanError> {
-        let mut pointer: BinaryData = unsafe { mem::uninitialized() };
+    fn try_borrow_mut<'b>(
+        self,
+        guard: &'b Lock<'b>,
+    ) -> Result<RefMut<'b, Self::Target>, LoanError> {
+        let mut pointer: BinaryData<'_> = unsafe { mem::uninitialized() };
         unsafe {
             neon_runtime::arraybuffer::data(&mut pointer.base, &mut pointer.size, self.to_raw());
             RefMut::new(guard, pointer)

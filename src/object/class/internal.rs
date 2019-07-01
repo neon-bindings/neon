@@ -1,39 +1,43 @@
+use super::{Callback, Class, ClassInternal};
+use crate::context::internal::ContextInternal;
+use crate::context::{CallContext, CallbackInfo, Context};
+use crate::handle::{Handle, Managed};
+use crate::result::{JsResult, NeonResult, Throw};
+use crate::types::error::convert_panics;
+use crate::types::{build, JsFunction, JsObject, JsUndefined, JsValue};
+use neon_runtime;
+use neon_runtime::raw;
 use std::mem;
 use std::os::raw::c_void;
 use std::ptr::null_mut;
-use neon_runtime;
-use neon_runtime::raw;
-use super::{Class, ClassInternal, Callback};
-use handle::{Handle, Managed};
-use context::{CallbackInfo, CallContext, Context};
-use context::internal::ContextInternal;
-use result::{NeonResult, JsResult, Throw};
-use types::{JsValue, JsObject, JsFunction, JsUndefined, build};
-use types::error::convert_panics;
 
 #[repr(C)]
-pub struct MethodCallback<T: Class>(pub fn(CallContext<T>) -> JsResult<JsValue>);
+pub struct MethodCallback<T: Class>(pub fn(CallContext<'_, T>) -> JsResult<'_, JsValue>);
 
 impl<T: Class> Callback<()> for MethodCallback<T> {
     extern "C" fn invoke(info: &CallbackInfo) {
         unsafe {
             info.with_cx::<T, _, _>(|mut cx| {
                 let data = info.data();
-                let this: Handle<JsValue> = Handle::new_internal(JsValue::from_raw(info.this(&mut cx)));
+                let this: Handle<'_, JsValue> =
+                    Handle::new_internal(JsValue::from_raw(info.this(&mut cx)));
                 if !this.is_a::<T>() {
                     if let Ok(metadata) = T::metadata(&mut cx) {
-                        neon_runtime::class::throw_this_error(mem::transmute(cx.isolate()), metadata.pointer);
+                        neon_runtime::class::throw_this_error(
+                            mem::transmute(cx.isolate()),
+                            metadata.pointer,
+                        );
                     }
                     return;
                 };
-                let dynamic_callback: fn(CallContext<T>) -> JsResult<JsValue> =
+                let dynamic_callback: fn(CallContext<'_, T>) -> JsResult<'_, JsValue> =
                     mem::transmute(neon_runtime::fun::get_dynamic_callback(data.to_raw()));
-                if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
+                if let Ok(value) = convert_panics(|| dynamic_callback(cx)) {
                     info.set_return(value);
                 }
             })
         }
-        }
+    }
 
     fn as_ptr(self) -> *mut c_void {
         self.0 as *mut c_void
@@ -41,14 +45,17 @@ impl<T: Class> Callback<()> for MethodCallback<T> {
 }
 
 #[repr(C)]
-pub struct ConstructorCallCallback(pub fn(CallContext<JsValue>) -> JsResult<JsValue>);
+pub struct ConstructorCallCallback(pub fn(CallContext<'_, JsValue>) -> JsResult<'_, JsValue>);
 
 impl ConstructorCallCallback {
     pub(crate) fn default<T: Class>() -> Self {
-        fn callback<T: Class>(mut cx: CallContext<JsValue>) -> JsResult<JsValue> {
+        fn callback<T: Class>(mut cx: CallContext<'_, JsValue>) -> JsResult<'_, JsValue> {
             unsafe {
                 if let Ok(metadata) = T::metadata(&mut cx) {
-                    neon_runtime::class::throw_call_error(mem::transmute(cx.isolate()), metadata.pointer);
+                    neon_runtime::class::throw_call_error(
+                        mem::transmute(cx.isolate()),
+                        metadata.pointer,
+                    );
                 }
             }
             Err(Throw)
@@ -63,9 +70,9 @@ impl Callback<()> for ConstructorCallCallback {
         unsafe {
             info.with_cx(|cx| {
                 let data = info.data();
-                let kernel: fn(CallContext<JsValue>) -> JsResult<JsValue> =
+                let kernel: fn(CallContext<'_, JsValue>) -> JsResult<'_, JsValue> =
                     mem::transmute(neon_runtime::class::get_call_kernel(data.to_raw()));
-                if let Ok(value) = convert_panics(|| { kernel(cx) }) {
+                if let Ok(value) = convert_panics(|| kernel(cx)) {
                     info.set_return(value);
                 }
             })
@@ -78,16 +85,18 @@ impl Callback<()> for ConstructorCallCallback {
 }
 
 #[repr(C)]
-pub struct AllocateCallback<T: Class>(pub fn(CallContext<JsUndefined>) -> NeonResult<T::Internals>);
+pub struct AllocateCallback<T: Class>(
+    pub fn(CallContext<'_, JsUndefined>) -> NeonResult<T::Internals>,
+);
 
 impl<T: Class> Callback<*mut c_void> for AllocateCallback<T> {
     extern "C" fn invoke(info: &CallbackInfo) -> *mut c_void {
         unsafe {
             info.with_cx(|cx| {
                 let data = info.data();
-                let kernel: fn(CallContext<JsUndefined>) -> NeonResult<T::Internals> =
+                let kernel: fn(CallContext<'_, JsUndefined>) -> NeonResult<T::Internals> =
                     mem::transmute(neon_runtime::class::get_allocate_kernel(data.to_raw()));
-                if let Ok(value) = convert_panics(|| { kernel(cx) }) {
+                if let Ok(value) = convert_panics(|| kernel(cx)) {
                     let p = Box::into_raw(Box::new(value));
                     mem::transmute(p)
                 } else {
@@ -103,22 +112,24 @@ impl<T: Class> Callback<*mut c_void> for AllocateCallback<T> {
 }
 
 #[repr(C)]
-pub struct ConstructCallback<T: Class>(pub fn(CallContext<T>) -> NeonResult<Option<Handle<JsObject>>>);
+pub struct ConstructCallback<T: Class>(
+    pub fn(CallContext<'_, T>) -> NeonResult<Option<Handle<'_, JsObject>>>,
+);
 
 impl<T: Class> Callback<bool> for ConstructCallback<T> {
     extern "C" fn invoke(info: &CallbackInfo) -> bool {
         unsafe {
             info.with_cx(|cx| {
                 let data = info.data();
-                let kernel: fn(CallContext<T>) -> NeonResult<Option<Handle<JsObject>>> =
+                let kernel: fn(CallContext<'_, T>) -> NeonResult<Option<Handle<'_, JsObject>>> =
                     mem::transmute(neon_runtime::class::get_construct_kernel(data.to_raw()));
-                match convert_panics(|| { kernel(cx) }) {
+                match convert_panics(|| kernel(cx)) {
                     Ok(None) => true,
                     Ok(Some(obj)) => {
                         info.set_return(obj);
                         true
                     }
-                    _ => false
+                    _ => false,
                 }
             })
         }
@@ -132,13 +143,20 @@ impl<T: Class> Callback<bool> for ConstructCallback<T> {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct ClassMetadata {
-    pub(crate) pointer: *mut c_void
+    pub(crate) pointer: *mut c_void,
 }
 
 impl ClassMetadata {
-    pub unsafe fn constructor<'a, T: Class, C: Context<'a>>(&self, cx: &mut C) -> JsResult<'a, JsFunction<T>> {
+    pub unsafe fn constructor<'a, T: Class, C: Context<'a>>(
+        &self,
+        cx: &mut C,
+    ) -> JsResult<'a, JsFunction<T>> {
         build(|out| {
-            neon_runtime::class::metadata_to_constructor(out, mem::transmute(cx.isolate()), self.pointer)
+            neon_runtime::class::metadata_to_constructor(
+                out,
+                mem::transmute(cx.isolate()),
+                self.pointer,
+            )
         })
     }
 

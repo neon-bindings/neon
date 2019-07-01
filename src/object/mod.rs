@@ -2,13 +2,13 @@
 
 pub(crate) mod class;
 
+use crate::context::Context;
+use crate::handle::{Handle, Managed};
+use crate::result::{JsResult, NeonResult, Throw};
+use crate::types::utf8::Utf8;
+use crate::types::{build, JsArray, JsValue, Value};
 use neon_runtime;
 use neon_runtime::raw;
-use handle::{Handle, Managed};
-use types::{Value, JsValue, JsArray, build};
-use types::utf8::Utf8;
-use context::Context;
-use result::{NeonResult, JsResult, Throw};
 
 pub use self::class::{Class, ClassDescriptor};
 
@@ -52,15 +52,24 @@ impl<'a> PropertyKey for &'a str {
 
 /// The trait of all object types.
 pub trait Object: Value {
-    fn get<'a, C: Context<'a>, K: PropertyKey>(self, _: &mut C, key: K) -> NeonResult<Handle<'a, JsValue>> {
-        build(|out| { unsafe { key.get_from(out, self.to_raw()) } })
+    fn get<'a, C: Context<'a>, K: PropertyKey>(
+        self,
+        _: &mut C,
+        key: K,
+    ) -> NeonResult<Handle<'a, JsValue>> {
+        build(|out| unsafe { key.get_from(out, self.to_raw()) })
     }
 
     fn get_own_property_names<'a, C: Context<'a>>(self, _: &mut C) -> JsResult<'a, JsArray> {
-        build(|out| { unsafe { neon_runtime::object::get_own_property_names(out, self.to_raw()) } })
+        build(|out| unsafe { neon_runtime::object::get_own_property_names(out, self.to_raw()) })
     }
 
-    fn set<'a, C: Context<'a>, K: PropertyKey, W: Value>(self, _: &mut C, key: K, val: Handle<W>) -> NeonResult<bool> {
+    fn set<'a, C: Context<'a>, K: PropertyKey, W: Value>(
+        self,
+        _: &mut C,
+        key: K,
+        val: Handle<'_, W>,
+    ) -> NeonResult<bool> {
         let mut result = false;
         if unsafe { key.set_from(&mut result, self.to_raw(), val.to_raw()) } {
             Ok(result)

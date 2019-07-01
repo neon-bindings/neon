@@ -1,7 +1,7 @@
 //! Facilities for working with `v8::HandleScope`s and `v8::EscapableHandleScope`s.
 
+use raw::{EscapableHandleScope, HandleScope, InheritedHandleScope, Isolate, Local};
 use std::os::raw::c_void;
-use raw::{HandleScope, EscapableHandleScope, InheritedHandleScope, Local, Isolate};
 
 pub trait Root {
     unsafe fn allocate() -> Self;
@@ -10,7 +10,9 @@ pub trait Root {
 }
 
 impl Root for HandleScope {
-    unsafe fn allocate() -> Self { HandleScope::new() }
+    unsafe fn allocate() -> Self {
+        HandleScope::new()
+    }
     unsafe fn enter(&mut self, isolate: *mut Isolate) {
         enter(self, isolate)
     }
@@ -20,7 +22,9 @@ impl Root for HandleScope {
 }
 
 impl Root for EscapableHandleScope {
-    unsafe fn allocate() -> Self { EscapableHandleScope::new() }
+    unsafe fn allocate() -> Self {
+        EscapableHandleScope::new()
+    }
     unsafe fn enter(&mut self, isolate: *mut Isolate) {
         enter_escapable(self, isolate)
     }
@@ -30,9 +34,11 @@ impl Root for EscapableHandleScope {
 }
 
 impl Root for InheritedHandleScope {
-    unsafe fn allocate() -> Self { InheritedHandleScope }
-    unsafe fn enter(&mut self, _: *mut Isolate) { }
-    unsafe fn exit(&mut self) { }
+    unsafe fn allocate() -> Self {
+        InheritedHandleScope
+    }
+    unsafe fn enter(&mut self, _: *mut Isolate) {}
+    unsafe fn exit(&mut self) {}
 }
 
 extern "C" {
@@ -44,12 +50,22 @@ extern "C" {
     /// Creates a `v8::EscapableHandleScope` and calls the `callback` provided with the argument
     /// signature `(out, parent_scope, &v8_scope, closure)`.
     #[link_name = "Neon_Scope_Chained"]
-    pub fn chained(out: *mut c_void, closure: *mut c_void, callback: extern fn(&mut c_void, *mut c_void, *mut c_void, *mut c_void), parent_scope: *mut c_void);
+    pub fn chained(
+        out: *mut c_void,
+        closure: *mut c_void,
+        callback: extern "C" fn(&mut c_void, *mut c_void, *mut c_void, *mut c_void),
+        parent_scope: *mut c_void,
+    );
 
     /// Creates a `v8::HandleScope` and calls the `callback` provided with the argument signature
     /// `(out, realm, closure)`.
     #[link_name = "Neon_Scope_Nested"]
-    pub fn nested(out: *mut c_void, closure: *mut c_void, callback: extern fn(&mut c_void, *mut c_void, *mut c_void), realm: *mut c_void);
+    pub fn nested(
+        out: *mut c_void,
+        closure: *mut c_void,
+        callback: extern "C" fn(&mut c_void, *mut c_void, *mut c_void),
+        realm: *mut c_void,
+    );
 
     /// Instantiates a new `v8::HandleScope`.
     #[link_name = "Neon_Scope_Enter"]

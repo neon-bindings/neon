@@ -7,7 +7,7 @@ const SMALL_MAX: usize = std::i32::MAX as usize;
 /// signed integers. This type represents a UTF-8 string that contains no
 /// more than `i32::MAX` bytes of code units.
 pub struct SmallUtf8<'a> {
-    contents: Cow<'a, str>
+    contents: Cow<'a, str>,
 }
 
 impl<'a> SmallUtf8<'a> {
@@ -19,13 +19,13 @@ impl<'a> SmallUtf8<'a> {
 /// A UTF-8 string that can be lowered to a representation usable for V8
 /// APIs.
 pub struct Utf8<'a> {
-    contents: Cow<'a, str>
+    contents: Cow<'a, str>,
 }
 
 impl<'a> From<&'a str> for Utf8<'a> {
     fn from(s: &'a str) -> Self {
         Utf8 {
-            contents: Cow::from(s)
+            contents: Cow::from(s),
         }
     }
 }
@@ -38,7 +38,7 @@ impl<'a> Utf8<'a> {
     pub fn into_small(self) -> Option<SmallUtf8<'a>> {
         if self.size() < SMALL_MAX {
             Some(SmallUtf8 {
-                contents: self.contents
+                contents: self.contents,
             })
         } else {
             None
@@ -62,8 +62,6 @@ impl<'a> Utf8<'a> {
             s.push_str("...");
         }
 
-        SmallUtf8 {
-            contents: contents
-        }
+        SmallUtf8 { contents: contents }
     }
 }

@@ -1,13 +1,13 @@
-use std::mem;
-use std::os::raw::c_void;
+use super::Value;
+use crate::context::{CallbackInfo, FunctionContext};
+use crate::object::class::Callback;
+use crate::result::JsResult;
+use crate::types::error::convert_panics;
+use crate::types::{Handle, JsObject, Managed};
 use neon_runtime;
 use neon_runtime::raw;
-use context::{CallbackInfo, FunctionContext};
-use types::error::convert_panics;
-use types::{JsObject, Handle, Managed};
-use result::JsResult;
-use object::class::Callback;
-use super::Value;
+use std::mem;
+use std::os::raw::c_void;
 
 pub trait ValueInternal: Managed + 'static {
     fn name() -> String;
@@ -28,16 +28,16 @@ pub trait ValueInternal: Managed + 'static {
 }
 
 #[repr(C)]
-pub struct FunctionCallback<T: Value>(pub fn(FunctionContext) -> JsResult<T>);
+pub struct FunctionCallback<T: Value>(pub fn(FunctionContext<'_>) -> JsResult<'_, T>);
 
 impl<T: Value> Callback<()> for FunctionCallback<T> {
     extern "C" fn invoke(info: &CallbackInfo) {
         unsafe {
             info.with_cx::<JsObject, _, _>(|cx| {
                 let data = info.data();
-                let dynamic_callback: fn(FunctionContext) -> JsResult<T> =
+                let dynamic_callback: fn(FunctionContext<'_>) -> JsResult<'_, T> =
                     mem::transmute(neon_runtime::fun::get_dynamic_callback(data.to_raw()));
-                if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
+                if let Ok(value) = convert_panics(|| dynamic_callback(cx)) {
                     info.set_return(value);
                 }
             })

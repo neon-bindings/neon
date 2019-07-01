@@ -2,27 +2,30 @@
 
 pub(crate) mod internal;
 
+use self::internal::{ContextInternal, Scope, ScopeMetadata};
+use crate::borrow::internal::Ledger;
+use crate::borrow::{Borrow, BorrowMut, Ref, RefMut};
+use crate::handle::{Handle, Managed};
+use crate::object::class::Class;
+use crate::object::{Object, This};
+use crate::result::{JsResult, NeonResult, Throw};
+use crate::types::binary::{JsArrayBuffer, JsBuffer};
+use crate::types::error::JsError;
+use crate::types::{
+    JsArray, JsBoolean, JsFunction, JsNull, JsNumber, JsObject, JsString, JsUndefined, JsValue,
+    StringResult, Value,
+};
+use neon_runtime;
+use neon_runtime::raw;
 use std;
 use std::cell::RefCell;
 use std::convert::Into;
 use std::marker::PhantomData;
 use std::panic::UnwindSafe;
-use neon_runtime;
-use neon_runtime::raw;
-use borrow::{Ref, RefMut, Borrow, BorrowMut};
-use borrow::internal::Ledger;
-use handle::{Managed, Handle};
-use types::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
-use types::binary::{JsArrayBuffer, JsBuffer};
-use types::error::JsError;
-use object::{Object, This};
-use object::class::Class;
-use result::{NeonResult, JsResult, Throw};
-use self::internal::{ContextInternal, Scope, ScopeMetadata};
 
 #[repr(C)]
 pub(crate) struct CallbackInfo {
-    info: raw::FunctionCallbackInfo
+    info: raw::FunctionCallbackInfo,
 }
 
 impl CallbackInfo {
@@ -34,14 +37,15 @@ impl CallbackInfo {
         }
     }
 
-    pub unsafe fn with_cx<T: This, U, F: for<'a> FnOnce(CallContext<'a, T>) -> U>(&self, f: F) -> U {
+    pub unsafe fn with_cx<T: This, U, F: for<'a> FnOnce(CallContext<'a, T>) -> U>(
+        &self,
+        f: F,
+    ) -> U {
         CallContext::<T>::with(self, f)
     }
 
     pub fn set_return<'a, 'b, T: Value>(&'a self, value: Handle<'b, T>) {
-        unsafe {
-            neon_runtime::call::set_return(&self.info, value.to_raw())
-        }
+        unsafe { neon_runtime::call::set_return(&self.info, value.to_raw()) }
     }
 
     fn kind(&self) -> CallKind {
@@ -53,9 +57,7 @@ impl CallbackInfo {
     }
 
     pub fn len(&self) -> i32 {
-        unsafe {
-            neon_runtime::call::len(&self.info)
-        }
+        unsafe { neon_runtime::call::len(&self.info) }
     }
 
     pub fn get<'b, C: Context<'b>>(&self, _: &mut C, i: i32) -> Option<Handle<'b, JsValue>> {
@@ -93,7 +95,7 @@ impl CallbackInfo {
 #[derive(Clone, Copy, Debug)]
 pub enum CallKind {
     Construct,
-    Call
+    Call,
 }
 
 /// An RAII implementation of a "scoped lock" of the JS engine. When this structure is dropped (falls out of scope), the engine will be unlocked.
@@ -101,35 +103,34 @@ pub enum CallKind {
 /// Types of JS values that support the `Borrow` and `BorrowMut` traits can be inspected while the engine is locked by passing a reference to a `Lock` to their methods.
 pub struct Lock<'a> {
     pub(crate) ledger: RefCell<Ledger>,
-    phantom: PhantomData<&'a ()>
+    phantom: PhantomData<&'a ()>,
 }
 
 impl<'a> Lock<'a> {
     fn new() -> Self {
         Lock {
             ledger: RefCell::new(Ledger::new()),
-            phantom: PhantomData
+            phantom: PhantomData,
         }
     }
 }
 
 /// An _execution context_, which provides context-sensitive access to the JavaScript engine. Most operations that interact with the engine require passing a reference to a context.
-/// 
+///
 /// A context has a lifetime `'a`, which ensures the safety of handles managed by the JS garbage collector. All handles created during the lifetime of a context are kept alive for that duration and cannot outlive the context.
 pub trait Context<'a>: ContextInternal<'a> {
-
     /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
-    /// 
+    ///
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
-    fn lock(&self) -> Lock {
+    fn lock(&self) -> Lock<'_> {
         self.check_active();
         Lock::new()
     }
 
     /// Convenience method for locking the JavaScript engine and borrowing a single JS value's internals.
-    /// 
+    ///
     /// # Example:
-    /// 
+    ///
     /// ```no_run
     /// # use neon::prelude::*;
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
@@ -139,16 +140,17 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// # Ok(n)
     /// # }
     /// ```
-    /// 
+    ///
     /// Note: the borrowed value is required to be a reference to a handle instead of a handle
     /// as a workaround for a [Rust compiler bug](https://github.com/rust-lang/rust/issues/29997).
     /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
     /// but while the extra `&` is a small ergonomics regression, this API is still a nice
     /// convenience.
-    fn borrow<'c, V, T, F>(&self, v: &'c Handle<V>, f: F) -> T
-        where V: Value,
-              &'c V: Borrow,
-              F: for<'b> FnOnce(Ref<'b, <&'c V as Borrow>::Target>) -> T
+    fn borrow<'c, V, T, F>(&self, v: &'c Handle<'_, V>, f: F) -> T
+    where
+        V: Value,
+        &'c V: Borrow,
+        F: for<'b> FnOnce(Ref<'b, <&'c V as Borrow>::Target>) -> T,
     {
         let lock = self.lock();
         let contents = v.borrow(&lock);
@@ -156,9 +158,9 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Convenience method for locking the JavaScript engine and mutably borrowing a single JS value's internals.
-    /// 
+    ///
     /// # Example:
-    /// 
+    ///
     /// ```no_run
     /// # use neon::prelude::*;
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -170,16 +172,17 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// # Ok(cx.undefined())
     /// # }
     /// ```
-    /// 
+    ///
     /// Note: the borrowed value is required to be a reference to a handle instead of a handle
     /// as a workaround for a [Rust compiler bug](https://github.com/rust-lang/rust/issues/29997).
     /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
     /// but while the extra `&mut` is a small ergonomics regression, this API is still a nice
     /// convenience.
-    fn borrow_mut<'c, V, T, F>(&self, v: &'c mut Handle<V>, f: F) -> T
-        where V: Value,
-              &'c mut V: BorrowMut,
-              F: for<'b> FnOnce(RefMut<'b, <&'c mut V as Borrow>::Target>) -> T
+    fn borrow_mut<'c, V, T, F>(&self, v: &'c mut Handle<'_, V>, f: F) -> T
+    where
+        V: Value,
+        &'c mut V: BorrowMut,
+        F: for<'b> FnOnce(RefMut<'b, <&'c mut V as Borrow>::Target>) -> T,
     {
         let lock = self.lock();
         let contents = v.borrow_mut(&lock);
@@ -187,12 +190,13 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Executes a computation in a new memory management scope.
-    /// 
+    ///
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape.
-    /// 
+    ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
     fn execute_scoped<T, F>(&self, f: F) -> T
-        where F: for<'b> FnOnce(ExecuteContext<'b>) -> T
+    where
+        F: for<'b> FnOnce(ExecuteContext<'b>) -> T,
     {
         self.check_active();
         self.deactivate();
@@ -202,24 +206,27 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Executes a computation in a new memory management scope and computes a single result value that outlives the computation.
-    /// 
+    ///
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape, with the exception of the result value, which is rooted in the outer context.
-    /// 
+    ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
     fn compute_scoped<V, F>(&self, f: F) -> JsResult<'a, V>
-        where V: Value,
-              F: for<'b, 'c> FnOnce(ComputeContext<'b, 'c>) -> JsResult<'b, V>
+    where
+        V: Value,
+        F: for<'b, 'c> FnOnce(ComputeContext<'b, 'c>) -> JsResult<'b, V>,
     {
         self.check_active();
         self.deactivate();
-        let result = ComputeContext::with(|cx| {
-            unsafe {
-                let escapable_handle_scope = cx.scope.handle_scope as *mut raw::EscapableHandleScope;
-                let escapee = f(cx)?;
-                let mut result_local: raw::Local = std::mem::zeroed();
-                neon_runtime::scope::escape(&mut result_local, escapable_handle_scope, escapee.to_raw());
-                Ok(Handle::new_internal(V::from_raw(result_local)))
-            }
+        let result = ComputeContext::with(|cx| unsafe {
+            let escapable_handle_scope = cx.scope.handle_scope as *mut raw::EscapableHandleScope;
+            let escapee = f(cx)?;
+            let mut result_local: raw::Local = std::mem::zeroed();
+            neon_runtime::scope::escape(
+                &mut result_local,
+                escapable_handle_scope,
+                escapee.to_raw(),
+            );
+            Ok(Handle::new_internal(V::from_raw(result_local)))
         });
         self.activate();
         result
@@ -236,14 +243,14 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Convenience method for creating a `JsString` value.
-    /// 
+    ///
     /// If the string exceeds the limits of the JS engine, this method panics.
     fn string<S: AsRef<str>>(&mut self, s: S) -> Handle<'a, JsString> {
         JsString::new(self, s)
     }
 
     /// Convenience method for creating a `JsString` value.
-    /// 
+    ///
     /// If the string exceeds the limits of the JS engine, this method returns an `Err` value.
     fn try_string<S: AsRef<str>>(&mut self, s: S) -> StringResult<'a> {
         JsString::try_new(self, s)
@@ -281,10 +288,8 @@ pub trait Context<'a>: ContextInternal<'a> {
 
     /// Produces a handle to the JavaScript global object.
     fn global(&mut self) -> Handle<'a, JsObject> {
-        JsObject::build(|out| {
-            unsafe {
-                neon_runtime::scope::get_global(self.isolate().to_raw(), out);
-            }
+        JsObject::build(|out| unsafe {
+            neon_runtime::scope::get_global(self.isolate().to_raw(), out);
         })
     }
 
@@ -333,25 +338,31 @@ pub trait Context<'a>: ContextInternal<'a> {
 /// A view of the JS engine in the context of top-level initialization of a Neon module.
 pub struct ModuleContext<'a> {
     scope: Scope<'a, raw::HandleScope>,
-    exports: Handle<'a, JsObject>
+    exports: Handle<'a, JsObject>,
 }
 
-impl<'a> UnwindSafe for ModuleContext<'a> { }
+impl<'a> UnwindSafe for ModuleContext<'a> {}
 
 impl<'a> ModuleContext<'a> {
-    pub(crate) fn with<T, F: for<'b> FnOnce(ModuleContext<'b>) -> T>(exports: Handle<'a, JsObject>, f: F) -> T {
-        debug_assert!(unsafe { neon_runtime::scope::size() } <= std::mem::size_of::<raw::HandleScope>());
-        debug_assert!(unsafe { neon_runtime::scope::alignment() } <= std::mem::align_of::<raw::HandleScope>());
-        Scope::with(|scope| {
-            f(ModuleContext {
-                scope,
-                exports
-            })
-        })
+    pub(crate) fn with<T, F: for<'b> FnOnce(ModuleContext<'b>) -> T>(
+        exports: Handle<'a, JsObject>,
+        f: F,
+    ) -> T {
+        debug_assert!(
+            unsafe { neon_runtime::scope::size() } <= std::mem::size_of::<raw::HandleScope>()
+        );
+        debug_assert!(
+            unsafe { neon_runtime::scope::alignment() } <= std::mem::align_of::<raw::HandleScope>()
+        );
+        Scope::with(|scope| f(ModuleContext { scope, exports }))
     }
 
     /// Convenience method for exporting a Neon function from a module.
-    pub fn export_function<T: Value>(&mut self, key: &str, f: fn(FunctionContext) -> JsResult<T>) -> NeonResult<()> {
+    pub fn export_function<T: Value>(
+        &mut self,
+        key: &str,
+        f: fn(FunctionContext<'_>) -> JsResult<'_, T>,
+    ) -> NeonResult<()> {
         let value = JsFunction::new(self, f)?.upcast::<JsValue>();
         self.exports.set(self, key, value)?;
         Ok(())
@@ -365,7 +376,7 @@ impl<'a> ModuleContext<'a> {
     }
 
     /// Exports a JavaScript value from a Neon module.
-    pub fn export_value<T: Value>(&mut self, key: &str, val: Handle<T>) -> NeonResult<()> {
+    pub fn export_value<T: Value>(&mut self, key: &str, val: Handle<'_, T>) -> NeonResult<()> {
         self.exports.set(self, key, val)?;
         Ok(())
     }
@@ -382,18 +393,16 @@ impl<'a> ContextInternal<'a> for ModuleContext<'a> {
     }
 }
 
-impl<'a> Context<'a> for ModuleContext<'a> { }
+impl<'a> Context<'a> for ModuleContext<'a> {}
 
 /// A view of the JS engine in the context of a scoped computation started by `Context::execute_scoped()`.
 pub struct ExecuteContext<'a> {
-    scope: Scope<'a, raw::HandleScope>
+    scope: Scope<'a, raw::HandleScope>,
 }
 
 impl<'a> ExecuteContext<'a> {
     pub(crate) fn with<T, F: for<'b> FnOnce(ExecuteContext<'b>) -> T>(f: F) -> T {
-        Scope::with(|scope| {
-            f(ExecuteContext { scope })
-        })
+        Scope::with(|scope| f(ExecuteContext { scope }))
     }
 }
 
@@ -403,13 +412,13 @@ impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
     }
 }
 
-impl<'a> Context<'a> for ExecuteContext<'a> { }
+impl<'a> Context<'a> for ExecuteContext<'a> {}
 
 /// A view of the JS engine in the context of a scoped computation started by `Context::compute_scoped()`.
 pub struct ComputeContext<'a, 'outer> {
     scope: Scope<'a, raw::EscapableHandleScope>,
     phantom_inner: PhantomData<&'a ()>,
-    phantom_outer: PhantomData<&'outer ()>
+    phantom_outer: PhantomData<&'outer ()>,
 }
 
 impl<'a, 'b> ComputeContext<'a, 'b> {
@@ -418,7 +427,7 @@ impl<'a, 'b> ComputeContext<'a, 'b> {
             f(ComputeContext {
                 scope,
                 phantom_inner: PhantomData,
-                phantom_outer: PhantomData
+                phantom_outer: PhantomData,
             })
         })
     }
@@ -430,35 +439,42 @@ impl<'a, 'b> ContextInternal<'a> for ComputeContext<'a, 'b> {
     }
 }
 
-impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> { }
+impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> {}
 
 /// A view of the JS engine in the context of a function call.
-/// 
+///
 /// The type parameter `T` is the type of the `this`-binding.
 pub struct CallContext<'a, T: This> {
     scope: Scope<'a, raw::HandleScope>,
     info: &'a CallbackInfo,
-    phantom_type: PhantomData<T>
+    phantom_type: PhantomData<T>,
 }
 
-impl<'a, T: This> UnwindSafe for CallContext<'a, T> { }
+impl<'a, T: This> UnwindSafe for CallContext<'a, T> {}
 
 impl<'a, T: This> CallContext<'a, T> {
     /// Indicates whether the function was called via the JavaScript `[[Call]]` or `[[Construct]]` semantics.
-    pub fn kind(&self) -> CallKind { self.info.kind() }
+    pub fn kind(&self) -> CallKind {
+        self.info.kind()
+    }
 
-    pub(crate) fn with<U, F: for<'b> FnOnce(CallContext<'b, T>) -> U>(info: &'a CallbackInfo, f: F) -> U {
+    pub(crate) fn with<U, F: for<'b> FnOnce(CallContext<'b, T>) -> U>(
+        info: &'a CallbackInfo,
+        f: F,
+    ) -> U {
         Scope::with(|scope| {
             f(CallContext {
                 scope,
                 info,
-                phantom_type: PhantomData
+                phantom_type: PhantomData,
             })
         })
     }
 
     /// Indicates the number of arguments that were passed to the function.
-    pub fn len(&self) -> i32 { self.info.len() }
+    pub fn len(&self) -> i32 {
+        self.info.len()
+    }
 
     /// Produces the `i`th argument, or `None` if `i` is greater than or equal to `self.len()`.
     pub fn argument_opt(&mut self, i: i32) -> Option<Handle<'a, JsValue>> {
@@ -483,7 +499,7 @@ impl<'a, T: This> ContextInternal<'a> for CallContext<'a, T> {
     }
 }
 
-impl<'a, T: This> Context<'a> for CallContext<'a, T> { }
+impl<'a, T: This> Context<'a> for CallContext<'a, T> {}
 
 /// A shorthand for a `CallContext` with `this`-type `JsObject`.
 pub type FunctionContext<'a> = CallContext<'a, JsObject>;
@@ -495,14 +511,12 @@ pub type MethodContext<'a, T> = CallContext<'a, T>;
 pub struct TaskContext<'a> {
     /// We use an "inherited HandleScope" here because the C++ `neon::Task::complete`
     /// method sets up and tears down a `HandleScope` for us.
-    scope: Scope<'a, raw::InheritedHandleScope>
+    scope: Scope<'a, raw::InheritedHandleScope>,
 }
 
 impl<'a> TaskContext<'a> {
     pub(crate) fn with<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(f: F) -> T {
-        Scope::with(|scope| {
-            f(TaskContext { scope })
-        })
+        Scope::with(|scope| f(TaskContext { scope }))
     }
 }
 
@@ -512,4 +526,4 @@ impl<'a> ContextInternal<'a> for TaskContext<'a> {
     }
 }
 
-impl<'a> Context<'a> for TaskContext<'a> { }
+impl<'a> Context<'a> for TaskContext<'a> {}
