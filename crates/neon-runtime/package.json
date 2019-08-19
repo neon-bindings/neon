@@ -10,6 +10,6 @@
   "dependencies": {
     "bindings": "1.2.1",
     "node-gyp": "^3.5.0",
-    "nan": "^2.10.0"
+    "nan": "^2.14.0"
   }
 }
