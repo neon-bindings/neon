@@ -18,6 +18,15 @@ environment:
     - PLATFORM: x64
       NODEJS_VERSION: "10"
       RUST_TOOLCHAIN: nightly-x86_64-pc-windows-msvc
+    - PLATFORM: x64
+      NODEJS_VERSION: "12"
+      RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
+    - PLATFORM: x64
+      NODEJS_VERSION: "12"
+      RUST_TOOLCHAIN: beta-x86_64-pc-windows-msvc
+    - PLATFORM: x64
+      NODEJS_VERSION: "12"
+      RUST_TOOLCHAIN: nightly-x86_64-pc-windows-msvc
 
 install:
   - ps: Install-Product node $env:NODEJS_VERSION $env:PLATFORM
