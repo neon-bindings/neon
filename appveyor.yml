@@ -4,9 +4,6 @@ environment:
   RUST_BACKTRACE: 1
   matrix:
     - PLATFORM: x64
-      NODEJS_VERSION: "6"
-      RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
-    - PLATFORM: x64
       NODEJS_VERSION: "8"
       RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
     - PLATFORM: x64
