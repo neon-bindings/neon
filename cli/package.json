@@ -60,5 +60,8 @@
   "bugs": {
     "url": "https://github.com/neon-bindings/neon/issues"
   },
-  "homepage": "https://www.neon-bindings.com"
+  "homepage": "https://www.neon-bindings.com",
+  "engines": {
+    "node": ">=8"
+  }
 }
