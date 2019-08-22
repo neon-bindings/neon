@@ -91,6 +91,14 @@ fn build_object_file() {
         .output()
         .expect("Failed to run \"node-gyp configure\" for neon-runtime!");
 
+    if !output.status.success() {
+        panic!(format!(
+            "Failed to run \"node-gyp configure\" for neon-runtime!\n Out: {}\n Err: {}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+
     if cfg!(windows) {
         let node_gyp_output = String::from_utf8_lossy(&output.stderr);
         println!("cargo:node_arch={}", parse_node_arch(&node_gyp_output));
