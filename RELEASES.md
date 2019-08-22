@@ -1,3 +1,21 @@
+# Version 0.3
+
+## Breaking Changes
+
+* [Removed support for Node 6](https://github.com/neon-bindings/neon/pull/420)
+
+## Bug Fixes
+
+* Correctly fail the build if [custom build command fails](https://github.com/neon-bindings/neon/pull/421)
+* Fix breaking changes with v8 [`GetFunction`](https://github.com/neon-bindings/neon/pull/410)
+* Moved `nan` from `devDependencies` to `dependencies` in [`neon-runtime`](https://github.com/neon-bindings/neon/pull/367)
+* Changed neon [crate type](https://github.com/neon-bindings/neon/pull/358) from `dylib` to `cdylib`
+* Ensure that neon module loading is [not optimized away](https://github.com/neon-bindings/neon/pull/392)
+
+## Improvements
+
+* Added support for [`CARGO_BUILD_TARGET` environment variable](https://github.com/neon-bindings/neon/pull/411)
+
 # Version ✨0.2✨ 🎉
 
 See the [Neon 0.2 Migration Guide](https://github.com/neon-bindings/neon/wiki/Neon-0.2-Migration-Guide) for documentation on migrating your projects from the Neon 0.1.x series to Neon 0.2, and please [let us know](https://github.com/neon-bindings/neon#get-involved) if you need help!
