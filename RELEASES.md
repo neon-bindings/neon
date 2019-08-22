@@ -1,3 +1,7 @@
+# Version 0.3.1
+
+* Build v0.3 project templates by default in the CLI
+
 # Version 0.3
 
 ## Breaking Changes
