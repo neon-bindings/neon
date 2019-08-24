@@ -3,25 +3,69 @@ extern crate regex;
 
 use std::process::Command;
 use std::env;
+use std::fs;
+use std::path::Path;
 use regex::Regex;
 
 fn main() {
-    // 1. Build the object file from source using node-gyp.
-    build_object_file();
+    let out_dir = env::var("OUT_DIR").unwrap();
+    let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
 
-    // 2. Link the library from the object file using gcc.
-    link_library();
+    let native_from = Path::new(&crate_dir).join("native");
+    let native_to = Path::new(&out_dir).join("native");
+
+    // 1. Copy the native runtime library into the build directory.
+    copy_native_library(&native_from, &native_to);
+
+    // 2. Build the object file from source using node-gyp.
+    build_object_file(&native_to);
+
+    // 3. Link the library from the object file using gcc.
+    link_library(&native_to);
+}
+
+fn copy_files(dir_from: impl AsRef<Path>, dir_to: impl AsRef<Path>) {
+    for entry in fs::read_dir(dir_from.as_ref()).unwrap() {
+        let entry = entry.unwrap();
+
+        if entry.file_type().unwrap().is_dir() {
+            continue;
+        }
+
+        let file_name = entry.file_name();
+
+        let from = dir_from.as_ref().join(&file_name);
+        let to = dir_to.as_ref().join(&file_name);
+
+        fs::copy(from, to).unwrap();
+    }
+}
+
+fn copy_native_library(native_from: impl AsRef<Path>, native_to: impl AsRef<Path>) {
+    let native_from = native_from.as_ref();
+    let native_to = native_to.as_ref();
+
+    let src_from = native_from.join("src");
+    let src_to = native_to.join("src");
+
+    fs::create_dir_all(&src_to).unwrap();
+
+    copy_files(&native_from, &native_to);
+    copy_files(&src_from, &src_to);
 }
 
 #[cfg(unix)]
-fn npm() -> Command {
-    Command::new("npm")
+fn npm(cwd: &Path) -> Command {
+    let mut cmd = Command::new("npm");
+    cmd.current_dir(cwd);
+    cmd
 }
 
 #[cfg(windows)]
-fn npm() -> Command {
+fn npm(cwd: &Path) -> Command {
     let mut cmd = Command::new("cmd.exe");
     cmd.args(&["/C", "npm"]);
+    cmd.current_dir(cwd);
     cmd
 }
 
@@ -71,7 +115,7 @@ fn parse_node_lib_file(node_gyp_output: &str) -> &str {
     &node_gyp_output[node_lib_file_start_index..node_lib_file_end_index]
 }
 
-fn build_object_file() {
+fn build_object_file(native_dir: &Path) {
     if cfg!(windows) {
         // Downcase all the npm environment variables to ensure they are read by node-gyp.
         for (key, value) in env::vars() {
@@ -83,10 +127,10 @@ fn build_object_file() {
     }
 
     // Ensure that all package.json dependencies and dev dependencies are installed.
-    npm().args(&["install", "--silent"]).status().ok().expect("Failed to run \"npm install\" for neon-runtime!");
+    npm(native_dir).args(&["install", "--silent"]).status().ok().expect("Failed to run \"npm install\" for neon-runtime!");
 
     // Run `node-gyp configure` in verbose mode to read node_root_dir on Windows.
-    let output = npm()
+    let output = npm(native_dir)
         .args(&["run", if debug() { "configure-debug" } else { "configure-release" }])
         .output()
         .expect("Failed to run \"node-gyp configure\" for neon-runtime!");
@@ -107,7 +151,7 @@ fn build_object_file() {
     }
 
     // Run `node-gyp build`.
-    npm()
+    npm(native_dir)
         .args(&["run", if debug() { "build-debug" } else { "build-release" }])
         .status()
         .ok()
@@ -115,12 +159,24 @@ fn build_object_file() {
 }
 
 // Link the built object file into a static library.
-fn link_library() {
+fn link_library(native_dir: &Path) {
     let configuration = if debug() { "Debug" } else { "Release" };
+
     let object_path = if cfg!(unix) {
-        format!("build/{}/obj.target/neon/src/neon.o", configuration)
+        native_dir
+            .join("build")
+            .join(configuration)
+            .join("obj.target")
+            .join("neon")
+            .join("src")
+            .join("neon.o")
     } else {
-        format!("build\\{}\\obj\\neon\\neon.obj", configuration)
+        native_dir
+            .join("build")
+            .join(configuration)
+            .join("obj")
+            .join("neon")
+            .join("neon.obj")
     };
 
     cc::Build::new().object(object_path).compile("libneon.a");
