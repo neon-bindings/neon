@@ -376,4 +376,14 @@ mod tests {
         run("npm install", &test_dynamic);
         run("npm test", &test_dynamic);
     }
+
+    #[test]
+    fn package_test() {
+        let _guard = TEST_MUTEX.lock();
+
+        log("package_test");
+
+        let test_package = project_root().join("crates").join("neon-runtime");
+        run("cargo package", &test_package);
+    }
 }
