@@ -10,35 +10,35 @@ use neon_runtime;
 use neon_runtime::raw;
 use std::sync::Arc;
 
-struct ThreadSafeCallbackInner(*mut c_void);
+struct EventHandlerInner(*mut c_void);
 
-unsafe impl Send for ThreadSafeCallbackInner {}
-unsafe impl Sync for ThreadSafeCallbackInner {}
+unsafe impl Send for EventHandlerInner {}
+unsafe impl Sync for EventHandlerInner {}
 
-impl Drop for ThreadSafeCallbackInner {
+impl Drop for EventHandlerInner {
     fn drop(&mut self) {
         unsafe {
-            neon_runtime::threadsafecb::delete(self.0);
+            neon_runtime::eventhandler::delete(self.0);
         }
     }
 }
 
 #[derive(Clone)]
-pub struct ThreadSafeCallback(Arc<ThreadSafeCallbackInner>);
+pub struct EventHandler(Arc<EventHandlerInner>);
 
-impl ThreadSafeCallback {
+impl EventHandler {
     pub fn new<T: Value>(this: Handle<T>, callback: Handle<JsFunction>) -> Self {
         let cb = unsafe {
-            neon_runtime::threadsafecb::new(this.to_raw(), callback.to_raw())
+            neon_runtime::eventhandler::new(this.to_raw(), callback.to_raw())
         };
-        ThreadSafeCallback(Arc::new(ThreadSafeCallbackInner(cb)))
+        EventHandler(Arc::new(EventHandlerInner(cb)))
     }
 
-    pub fn call<F>(&self, arg_cb: F)
+    pub fn schedule<F>(&self, arg_cb: F)
         where F: FnOnce(&mut TaskContext, Handle<JsValue>, Handle<JsFunction>), F: Send + 'static {
         let callback = Box::into_raw(Box::new(arg_cb)) as *mut c_void;
         unsafe {
-            neon_runtime::threadsafecb::call((*self.0).0, callback, handle_callback::<F>);
+            neon_runtime::eventhandler::call((*self.0).0, callback, handle_callback::<F>);
         }
     }
 }

@@ -5,7 +5,7 @@ var util = require('util');
 
 util.inherits(addon.Emitter, events.EventEmitter);
 
-describe('ThreadSafeCallback', function() {
+describe('EventHandler', function() {
   it('event emitter', function (done) {
     var e = new addon.Emitter();
 

@@ -9,7 +9,7 @@ mod js {
     pub mod functions;
     pub mod classes;
     pub mod tasks;
-    pub mod threadsafecb;
+    pub mod eventhandler;
 }
 
 use js::strings::return_js_string;
@@ -19,7 +19,7 @@ use js::objects::*;
 use js::functions::*;
 use js::classes::*;
 use js::tasks::*;
-use js::threadsafecb::*;
+use js::eventhandler::*;
 
 register_module!(mut cx, {
     cx.export_function("return_js_string", return_js_string)?;

@@ -5,7 +5,7 @@ use std::sync::mpsc;
 use std::time::Duration;
 
 pub struct Emitter {
-  cb: Option<ThreadSafeCallback>,
+  cb: Option<EventHandler>,
 }
 
 declare_types! {
@@ -19,7 +19,7 @@ declare_types! {
     constructor(mut cx) {
       let mut this = cx.this();
       let f = this.get(&mut cx, "emit")?.downcast::<JsFunction>().or_throw(&mut cx)?;
-      let cb = ThreadSafeCallback::new(this, f);
+      let cb = EventHandler::new(this, f);
       {
         let guard = cx.lock();
         let mut callback = this.borrow_mut(&guard);
@@ -43,7 +43,7 @@ declare_types! {
               thread::spawn(move || {
                 // do some work ....
                 thread::sleep(Duration::from_millis(40));
-                cb.call(move |cx, this, callback| {
+                cb.schedule(move |cx, this, callback| {
                   let args : Vec<Handle<JsValue>> = vec![cx.string("progress").upcast(), cx.number(i).upcast()];
                   let _result = callback.call(cx, this, args);
                 });
@@ -56,7 +56,7 @@ declare_types! {
               for _i in 0..10 {
                 sum += receiver.recv().unwrap_or(0);
               }
-              cb.call(move |cx, this, callback| {
+              cb.schedule(move |cx, this, callback| {
                 let args : Vec<Handle<JsValue>> = vec![cx.string("end").upcast(), cx.number(sum).upcast()];
                 let _result = callback.call(cx, this, args);
               });
@@ -78,7 +78,7 @@ declare_types! {
 }
 
 pub struct TestEmitter {
-  cb: Option<ThreadSafeCallback>,
+  cb: Option<EventHandler>,
 }
 
 declare_types! {
@@ -92,7 +92,7 @@ declare_types! {
     constructor(mut cx) {
       let mut this = cx.this();
       let f = cx.argument::<JsFunction>(0)?;
-      let cb = ThreadSafeCallback::new(this, f);
+      let cb = EventHandler::new(this, f);
       {
         let guard = cx.lock();
         let mut callback = this.borrow_mut(&guard);
@@ -110,7 +110,7 @@ declare_types! {
       };
       if let Some(cb) = cb {
         thread::spawn(move || {
-          cb.call(move |cx, this, callback| {
+          cb.schedule(move |cx, this, callback| {
             let args : Vec<Handle<JsValue>> = vec![cx.string("number").upcast()];
             let result = callback.call(cx, this, args);
             let cmd = match result {

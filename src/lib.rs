@@ -18,7 +18,7 @@ pub mod object;
 pub mod borrow;
 pub mod result;
 pub mod task;
-pub mod threadsafecb;
+pub mod eventhandler;
 pub mod meta;
 pub mod prelude;
 
