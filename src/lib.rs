@@ -70,6 +70,8 @@ macro_rules! register_module {
                     link: *mut __NodeModule
                 }
 
+                // Mark as used during tests to suppress warnings
+                #[cfg_attr(test, used)]
                 static mut __NODE_MODULE: __NodeModule = __NodeModule {
                     version: 0,
                     flags: 0,
@@ -94,6 +96,8 @@ macro_rules! register_module {
                 // Suppress the default Rust panic hook, which prints diagnostics to stderr.
                 ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
 
+                // During tests, node is not available. Skip module registration.
+                #[cfg(not(test))]
                 unsafe {
                     // Set the ABI version based on the NODE_MODULE_VERSION constant provided by the current node headers.
                     __NODE_MODULE.version = $crate::macro_internal::runtime::module::get_version();
