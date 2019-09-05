@@ -200,11 +200,16 @@ impl<T: Class> ValueInternal for T {
         let map = isolate.class_map();
         match map.get(&TypeId::of::<T>()) {
             None => "unknown".to_string(),
-            Some(ref metadata) => unsafe {
-                let mut chars: *mut u8 = mem::uninitialized();
-                let mut len: usize = mem::uninitialized();
-                neon_runtime::class::get_name(&mut chars, &mut len, raw_isolate, metadata.pointer);
-                String::from_utf8_lossy(slice::from_raw_parts_mut(chars, len)).to_string()
+            Some(ref metadata) => {
+                let mut chars = std::ptr::null_mut();
+
+                let buf = unsafe {
+                    let len = neon_runtime::class::get_name(&mut chars, raw_isolate, metadata.pointer);
+
+                    slice::from_raw_parts_mut(chars, len)
+                };
+
+                String::from_utf8_lossy(buf).to_string()
             }
         }
     }

@@ -12,5 +12,5 @@ extern "C" {
 
     /// Mutates the `base_out` and `size_out` arguments to access the data of a `v8::ArrayBuffer` object.
     #[link_name = "Neon_ArrayBuffer_Data"]
-    pub fn data<'a, 'b>(base_out: &'a mut *mut c_void, size_out: &'a mut usize, obj: Local);
+    pub fn data<'a, 'b>(base_out: &'a mut *mut c_void, obj: Local) -> usize;
 }

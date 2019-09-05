@@ -197,9 +197,10 @@ extern "C" bool Neon_Buffer_Uninitialized(v8::Local<v8::Object> *out, uint32_t s
   return maybe.ToLocal(out);
 }
 
-extern "C" void Neon_Buffer_Data(void **base_out, size_t *len_out, v8::Local<v8::Object> obj) {
+extern "C" size_t Neon_Buffer_Data(void **base_out, v8::Local<v8::Object> obj) {
   *base_out = node::Buffer::Data(obj);
-  *len_out = node::Buffer::Length(obj);
+
+  return node::Buffer::Length(obj);
 }
 
 extern "C" bool Neon_Tag_IsBuffer(v8::Local<v8::Value> obj) {
@@ -211,10 +212,11 @@ extern "C" bool Neon_ArrayBuffer_New(v8::Local<v8::ArrayBuffer> *out, v8::Isolat
   return true;
 }
 
-extern "C" void Neon_ArrayBuffer_Data(void **base_out, size_t *len_out, v8::Local<v8::ArrayBuffer> buffer) {
+extern "C" size_t Neon_ArrayBuffer_Data(void **base_out, v8::Local<v8::ArrayBuffer> buffer) {
   v8::ArrayBuffer::Contents contents = buffer->GetContents();
   *base_out = contents.Data();
-  *len_out = contents.ByteLength();
+
+  return contents.ByteLength();
 }
 
 
@@ -364,11 +366,12 @@ extern "C" bool Neon_Class_SetName(v8::Isolate *isolate, void *metadata_pointer,
   return true;
 }
 
-extern "C" void Neon_Class_GetName(const char **chars_out, size_t *len_out, v8::Isolate *isolate, void *metadata_pointer) {
+extern "C" size_t Neon_Class_GetName(const char **chars_out, v8::Isolate *isolate, void *metadata_pointer) {
   neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(metadata_pointer);
   neon::Slice name = metadata->GetName();
   *chars_out = name.GetBuffer();
-  *len_out = name.GetLength();
+
+  return name.GetLength();
 }
 
 extern "C" void Neon_Class_ThrowCallError(v8::Isolate *isolate, void *metadata_pointer) {
