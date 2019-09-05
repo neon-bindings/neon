@@ -37,6 +37,7 @@ addons:
 
 script: |
   cargo test --release -- --nocapture
+  (cd test/dynamic/native && cargo test --release)
 
 jobs:
   include:
