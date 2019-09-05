@@ -18,7 +18,7 @@ extern "C" {
                        drop: extern "C" fn(*mut c_void)) -> *mut c_void;
 
     #[link_name = "Neon_Class_GetName"]
-    pub fn get_name<'a>(base_out: &'a mut *mut u8, size_out: &'a mut usize, isolate: *mut Isolate, metadata: *const c_void);
+    pub fn get_name<'a>(base_out: &'a mut *mut u8, isolate: *mut Isolate, metadata: *const c_void) -> usize;
 
     #[link_name = "Neon_Class_SetName"]
     pub fn set_name(isolate: *mut Isolate, metadata: *mut c_void, name: *const u8, byte_length: u32) -> bool;

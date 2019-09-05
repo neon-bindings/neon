@@ -23,7 +23,7 @@ neon-build = { version = "=0.3.1", path = "crates/neon-build" }
 
 [dev-dependencies]
 rustc_version = "0.2"
-lazy_static = "0.2.8"
+lazy_static = "1.4.0"
 
 [dependencies]
 cslice = "0.2"

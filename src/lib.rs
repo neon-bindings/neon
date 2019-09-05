@@ -388,6 +388,12 @@ mod tests {
         log("package_test");
 
         let test_package = project_root().join("crates").join("neon-runtime");
-        run("cargo package", &test_package);
+
+        // Allow uncommitted changes outside of CI
+        if std::env::var("CI") == Ok("true".to_string()) {
+            run("cargo package", &test_package);
+        } else {
+            run("cargo package --allow-dirty", &test_package);            
+        }
     }
 }

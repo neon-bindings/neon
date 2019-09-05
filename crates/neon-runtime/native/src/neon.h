@@ -50,11 +50,11 @@ extern "C" {
   bool Neon_Convert_ToObject(v8::Local<v8::Object> *out, v8::Local<v8::Value> *value);
 
   bool Neon_Buffer_New(v8::Local<v8::Object> *out, uint32_t size);
-  void Neon_Buffer_Data(void **base_out, size_t *len_out, v8::Local<v8::Object> obj);
+  size_t Neon_Buffer_Data(void **base_out, v8::Local<v8::Object> obj);
 
   bool Neon_ArrayBuffer_New(v8::Local<v8::ArrayBuffer> *out, v8::Isolate *isolate, uint32_t size);
   bool Neon_ArrayBuffer_Uninitialized(v8::Local<v8::ArrayBuffer> *out, v8::Isolate *isolate, uint32_t size);
-  void Neon_ArrayBuffer_Data(void **base_out, size_t *len_out, v8::Local<v8::ArrayBuffer> buffer);
+  size_t Neon_ArrayBuffer_Data(void **base_out, v8::Local<v8::ArrayBuffer> buffer);
 
   typedef void(*Neon_ChainedScopeCallback)(void *, void *, void *, void *);
   typedef void(*Neon_NestedScopeCallback)(void *, void *, void *);
@@ -101,7 +101,7 @@ extern "C" {
   bool Neon_Class_Constructor(v8::Local<v8::Function> *out, v8::Local<v8::FunctionTemplate> ft);
   bool Neon_Class_HasInstance(void *metadata, v8::Local<v8::Value> v);
   bool Neon_Class_SetName(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length);
-  void Neon_Class_GetName(const char **chars_out, size_t *len_out, v8::Isolate *isolate, void *metadata);
+  size_t Neon_Class_GetName(const char **chars_out, v8::Isolate *isolate, void *metadata);
   void Neon_Class_ThrowThisError(v8::Isolate *isolate, void *metadata_pointer);
   bool Neon_Class_AddMethod(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length, v8::Local<v8::FunctionTemplate> method);
   bool Neon_Class_MetadataToConstructor(v8::Local<v8::Function> *out, v8::Isolate *isolate, void *metadata);
