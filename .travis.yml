@@ -36,8 +36,7 @@ addons:
     - g++-4.8
 
 script: |
-  cargo test --release -- --nocapture
-  (cd test/dynamic/native && cargo test --release)
+  cargo test --release -- --nocapture --skip electron_test
 
 jobs:
   include:

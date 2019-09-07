@@ -39,9 +39,7 @@ install:
 build: false
 
 test_script:
-  - cargo test --release
-  - cd test/dynamic/native
-  - cargo test --release
+  - cargo test --release -- --skip electron_test
 
 cache:
   - target
