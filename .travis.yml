@@ -28,6 +28,12 @@ before_install:
   - node -v
   - npm -v
 
+# Required for electron tests
+before_script:
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - sleep 3 # give xvfb some time to start
+
 addons:
   apt:
     sources:
@@ -36,7 +42,7 @@ addons:
     - g++-4.8
 
 script: |
-  cargo test --release -- --nocapture --skip electron_test
+  cargo test --release -- --nocapture
 
 jobs:
   include:
