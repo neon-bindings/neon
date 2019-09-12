@@ -26,9 +26,14 @@ rustc_version = "0.2"
 lazy_static = "1.4.0"
 
 [dependencies]
+cfg-if = "0.1.9"
 cslice = "0.2"
 semver = "0.9.0"
 neon-runtime = { version = "=0.3.1", path = "crates/neon-runtime" }
+
+[features]
+default = []
+n-api = ["neon-runtime/n-api", "neon-build/n-api"]
 
 [workspace]
 members = ["crates/neon-build", "crates/neon-runtime"]

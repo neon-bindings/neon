@@ -1,19 +1,29 @@
 extern crate cc;
+extern crate cfg_if;
 extern crate regex;
 
 use std::process::Command;
 use std::env;
 use std::fs;
 use std::path::Path;
+use cfg_if::cfg_if;
 use regex::Regex;
+
+cfg_if! {
+    if #[cfg(feature = "n-api")] {
+        const NATIVE_DIR: &'static str = "native-napi";
+    } else {
+        const NATIVE_DIR: &'static str = "native";
+    }
+}
 
 fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
 
     let out_dir = Path::new(&out_dir);
-    let native_from = Path::new(&crate_dir).join("native");
-    let native_to = out_dir.join("native");
+    let native_from = Path::new(&crate_dir).join(NATIVE_DIR);
+    let native_to = Path::new(&out_dir).join(NATIVE_DIR);
 
     // 1. Copy the native runtime library into the build directory.
     copy_native_library(&native_from, &native_to);

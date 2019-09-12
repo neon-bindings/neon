@@ -12,6 +12,14 @@ links = "neon"
 # this script builds libneon.a
 build = "build.rs"
 
+[dependencies]
+cfg-if = "0.1.9"
+
 [build-dependencies]
+cfg-if = "0.1.9"
 cc = "1.0.0"
 regex = "1.0.0"
+
+[features]
+default = []
+n-api = []

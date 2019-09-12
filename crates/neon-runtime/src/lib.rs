@@ -1,17 +1,13 @@
-pub mod raw;
-pub mod call;
-pub mod scope;
-pub mod object;
-pub mod array;
-pub mod string;
-pub mod primitive;
-pub mod error;
-pub mod arraybuffer;
-pub mod buffer;
-pub mod tag;
-pub mod module;
-pub mod mem;
-pub mod fun;
-pub mod convert;
-pub mod class;
-pub mod task;
+extern crate cfg_if;
+
+use cfg_if::cfg_if;
+
+cfg_if! {
+    if #[cfg(feature =  "n-api")] {
+        mod napi;
+        pub use napi::*;
+    } else {
+        mod nan;
+        pub use nan::*;
+    }
+}
