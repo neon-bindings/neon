@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdirs } from '../async/fs';
+import { readFile, writeFile, mkdirs, stat } from '../async/fs';
 import { prompt } from 'inquirer';
 import gitconfig from '../async/git-config';
 import * as path from 'path';
@@ -49,7 +49,31 @@ async function guessAuthor() {
   }
 }
 
-export default async function wizard(pwd: string, name: string) {
+type NeonVersion = { type: "version" | "range" | "path", value: string };
+
+async function parseNeonVersion(flag: string | null) : Promise<NeonVersion> {
+  if (!flag) {
+    return { type: "version", value: NEON_CLI_VERSION };
+  }
+
+  if (semver.valid(flag)) {
+    return { type: "version", value: flag };
+  }
+
+  if (semver.validRange(flag)) {
+    return { type: "range", value: flag };
+  }
+
+  let stats = await stat(flag);
+
+  if (!stats.isDirectory()) {
+    throw new Error("Specified path to Neon is not a directory");
+  }
+
+  return { type: "path", value: flag };
+}
+
+export default async function wizard(pwd: string, name: string, neon: string | null) {
   let its = validateName(name);
   if (!its.validForNewPackages) {
     let errors = (its.errors || []).concat(its.warnings || []);
@@ -117,12 +141,19 @@ export default async function wizard(pwd: string, name: string) {
   answers.git = encodeURI(answers.git);
   answers.author = escapeQuotes(answers.author);
 
+  let neonVersion = await parseNeonVersion(neon);
+
   let ctx = {
     project: answers,
-    "neon-cli": {
-      major: semver.major(NEON_CLI_VERSION),
-      minor: semver.minor(NEON_CLI_VERSION),
-      patch: semver.patch(NEON_CLI_VERSION)
+    neon: {
+      javascript: neonVersion.type === 'version'
+        ? "^" + neonVersion.value
+        : neonVersion.type === 'path'
+        ? path.resolve(neonVersion.value, "cli")
+        : neonVersion.value,
+      rust: neonVersion.type !== 'path'
+        ? { simple: neonVersion.value }
+        : { path: path.resolve(neonVersion.value) }
     }
   };
 

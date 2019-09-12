@@ -15,7 +15,15 @@ name = "{{project.name.cargo.internal}}"
 crate-type = ["cdylib"]
 
 [build-dependencies]
-neon-build = "0.3.1"
+{{#if neon.rust.simple}}
+neon-build = "{{neon.rust.simple}}"
+{{else}}
+neon-build = { {{#if neon.rust.version}}version = "{{neon.rust.version}}"{{else}}path = "{{neon.rust.path}}"{{/if}} }
+{{/if}}
 
 [dependencies]
-neon = "0.3.1"
+{{#if neon.rust.simple}}
+neon = "{{neon.rust.simple}}"
+{{else}}
+neon = { {{#if neon.rust.version}}version = "{{neon.rust.version}}"{{else}}path = "{{neon.rust.path}}"{{/if}} }
+{{/if}}
