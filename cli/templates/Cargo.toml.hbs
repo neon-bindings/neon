@@ -18,12 +18,12 @@ crate-type = ["cdylib"]
 {{#if neon.rust.simple}}
 neon-build = "{{neon.rust.simple}}"
 {{else}}
-neon-build = { {{#if neon.rust.version}}version = "{{neon.rust.version}}"{{else}}path = "{{neon.rust.path}}"{{/if}} }
+neon-build = { {{#if neon.rust.version}}version = "{{neon.rust.version}}"{{else}}path = "{{neon.rust.path}}"{{/if}}{{#if neon.rust.features}}, features = [{{#each neon.rust.features as |feature index|}}{{#if index}}, {{/if}}"{{feature}}"{{/each}}]{{/if}} }
 {{/if}}
 
 [dependencies]
 {{#if neon.rust.simple}}
 neon = "{{neon.rust.simple}}"
 {{else}}
-neon = { {{#if neon.rust.version}}version = "{{neon.rust.version}}"{{else}}path = "{{neon.rust.path}}"{{/if}} }
+neon = { {{#if neon.rust.version}}version = "{{neon.rust.version}}"{{else}}path = "{{neon.rust.path}}"{{/if}}{{#if neon.rust.features}}, features = [{{#each neon.rust.features as |feature index|}}{{#if index}}, {{/if}}"{{feature}}"{{/each}}]{{/if}} }
 {{/if}}

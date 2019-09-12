@@ -73,7 +73,7 @@ async function parseNeonVersion(flag: string | null) : Promise<NeonVersion> {
   return { type: "path", value: flag };
 }
 
-export default async function wizard(pwd: string, name: string, neon: string | null) {
+export default async function wizard(pwd: string, name: string, neon: string | null, features: string | null) {
   let its = validateName(name);
   if (!its.validForNewPackages) {
     let errors = (its.errors || []).concat(its.warnings || []);
@@ -143,6 +143,24 @@ export default async function wizard(pwd: string, name: string, neon: string | n
 
   let neonVersion = await parseNeonVersion(neon);
 
+  let rustCtx: { simple?: string, path?: string, version?: string, features?: Array<string> } = {};
+
+  // In the common case, we can make the Cargo.toml manifest simple by just using
+  // the semver specifier string for the `neon` and `neon-build` dependencies.
+  if (neonVersion.type !== 'path' && !features) {
+    rustCtx.simple = neonVersion.value;
+  } else {
+    if (neonVersion.type === 'path') {
+      rustCtx.path = path.resolve(neonVersion.value);
+    } else {
+      rustCtx.version = neonVersion.value;
+    }
+
+    if (features) {
+      rustCtx.features = features.split(/\s+/);
+    }
+  }
+
   let ctx = {
     project: answers,
     neon: {
@@ -151,9 +169,7 @@ export default async function wizard(pwd: string, name: string, neon: string | n
         : neonVersion.type === 'path'
         ? path.resolve(neonVersion.value, "cli")
         : neonVersion.value,
-      rust: neonVersion.type !== 'path'
-        ? { simple: neonVersion.value }
-        : { path: path.resolve(neonVersion.value) }
+      rust: rustCtx
     }
   };
 
