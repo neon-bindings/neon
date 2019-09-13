@@ -10,7 +10,11 @@ fn run_mode(mode: &'static str) {
 
     let cfg_mode = mode.parse().expect("Invalid mode");
 
-    config.target_rustcflags = Some(format!("-L target/{}/ -L target/{}/deps/", BUILD_PROFILE, BUILD_PROFILE));
+    config.target_rustcflags = Some(format!(
+        "-L ../../target/{}/ -L ../../target/{}/deps/",
+        BUILD_PROFILE,
+        BUILD_PROFILE,
+    ));
     if let Ok(name) = var("TESTNAME") {
         let s : String = name.to_owned();
         config.filter = Some(s)

@@ -26,6 +26,11 @@ fn main() {
 
     // 4. Copy native build artifacts
     copy_build_artifacts(&native_to, &out_dir);
+
+    // Rebuild if any of these environment variables change
+    println!("cargo:rerun-if-env-changed=npm_config_target");
+    println!("cargo:rerun-if-env-changed=npm_config_arch");
+    println!("cargo:rerun-if-env-changed=npm_config_target_arch");
 }
 
 fn copy_files(dir_from: impl AsRef<Path>, dir_to: impl AsRef<Path>) {

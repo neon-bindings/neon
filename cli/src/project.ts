@@ -3,22 +3,39 @@ import Crate from './crate';
 import Target from './target';
 import BuildSettings from './build-settings';
 import log from './log';
-import { spawn } from './async/child_process';
+import { execFile, spawn } from './async/child_process';
 import * as rust from './rust';
 
 export type ProjectOptions = {
-  crate?: string
+  crate: string
+  targetDirectory: string
 };
 
 /** A Neon project and its directory tree. */
 export default class Project {
   readonly root: string;
+  readonly targetDirectory: string;
   readonly crate: Crate;
 
-  constructor(root: string, options: ProjectOptions = {}) {
-    let { crate = 'native' } = options;
+  private constructor(root: string, options: ProjectOptions) {
+    let { crate, targetDirectory } = options;
     this.root = root;
+    this.targetDirectory = targetDirectory;
     this.crate = new Crate(this, { subdirectory: crate });
+  }
+
+  static async create(root: string, options: Partial<ProjectOptions> = {}): Promise<Project> {
+    let { crate = 'native' } = options;
+    const { stdout } = await execFile("cargo", ["metadata", "--format-version=1"], {
+      cwd: path.join(root, crate)
+    });
+    const targetDirectory: string = JSON.parse(stdout).target_directory;
+
+    return new Project(root, {
+      targetDirectory,
+      crate,
+      ...options
+    });
   }
 
   async build(toolchain: rust.Toolchain | null,

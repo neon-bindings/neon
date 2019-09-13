@@ -1,3 +1,4 @@
+import { promisify } from 'util';
 import * as child from 'child_process';
 
 export function spawn(command: string, args?: string[], options?: child.SpawnOptions): Promise<number> {
@@ -7,3 +8,5 @@ export function spawn(command: string, args?: string[], options?: child.SpawnOpt
       ps.on('close', resolve);
   });
 }
+
+export const execFile = promisify(child.execFile);
