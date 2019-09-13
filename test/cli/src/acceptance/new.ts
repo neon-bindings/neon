@@ -61,7 +61,17 @@ function assertNormalNeonCli(pkg: any) {
 
 function assertLocalNeonCli(pkg: any) {
   assert.nestedProperty(pkg, 'dependencies.neon-cli');
-  assert.match(pkg.dependencies['neon-cli'], /cli$/);
+  assert.match(pkg.dependencies['neon-cli'], /^file:.*cli$/);
+}
+
+function assertRelativeNeonCli(pkg: any) {
+  assert.match(pkg.dependencies['neon-cli'], /^file:/);
+}
+
+function assertAbsoluteNeonCli(pkg: any) {
+  assert.match(pkg.dependencies['neon-cli'], /^file:/);
+  let local = pkg.dependencies['neon-cli'].substring(5).trim();
+  assert.isTrue(path.isAbsolute(local));
 }
 
 function assertLocalNeon(cargo: any) {
@@ -136,10 +146,21 @@ describe('neon new', function() {
     });
   });
 
-  it('supports paths to Neon source directories', function(done) {
+  it('supports relative paths to Neon source directories', function(done) {
     spawnNeonNew(this, 'my-app', {neon: '.'}, () => {
       let { pkg, cargo } = manifests(this.cwd, 'my-app');
       assertLocalNeonCli(pkg);
+      assertRelativeNeonCli(pkg);
+      assertLocalNeon(cargo);
+      done();
+    });
+  });
+
+  it('supports absolute paths to Neon source directories', function(done) {
+    spawnNeonNew(this, 'my-app', {neon: path.resolve('.')}, () => {
+      let { pkg, cargo } = manifests(this.cwd, 'my-app');
+      assertLocalNeonCli(pkg);
+      assertAbsoluteNeonCli(pkg);
       assertLocalNeon(cargo);
       done();
     });

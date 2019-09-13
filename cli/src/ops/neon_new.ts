@@ -49,7 +49,7 @@ async function guessAuthor() {
   }
 }
 
-type NeonVersion = { type: "version" | "range" | "path", value: string };
+type NeonVersion = { type: "version" | "range" | "relative" | "absolute", value: string };
 
 async function parseNeonVersion(flag: string | null) : Promise<NeonVersion> {
   if (!flag) {
@@ -70,7 +70,7 @@ async function parseNeonVersion(flag: string | null) : Promise<NeonVersion> {
     throw new Error("Specified path to Neon is not a directory");
   }
 
-  return { type: "path", value: flag };
+  return { type: path.isAbsolute(flag) ? "absolute" : "relative", value: flag };
 }
 
 export default async function wizard(pwd: string, name: string, neon: string | null, features: string | null) {
@@ -147,15 +147,18 @@ export default async function wizard(pwd: string, name: string, neon: string | n
     // In the common case, we can make the Cargo.toml manifest simple by just using
     // the semver specifier string for the `neon` and `neon-build` dependencies.
     simple: boolean,
-    paths?: { neon: string, "neon-build": string },
+    paths?: { neon: string, 'neon-build': string },
     version?: string,
     features?: Array<string>
-  } = { simple: neonVersion.type !== 'path' && !features };
+  } = { simple: (neonVersion.type === 'version' || neonVersion.type === 'range') && !features };
 
-  if (neonVersion.type === 'path') {
+  if (neonVersion.type === 'relative') {
+    let neon = path.relative(name, neonVersion.value);
+    libs.paths = { neon, 'neon-build': path.join(neon, 'crates', 'neon-build') };
+  } else if (neonVersion.type === 'absolute') {
     libs.paths = {
-      neon: path.resolve(neonVersion.value),
-      "neon-build": path.resolve(neonVersion.value, "crates", "neon-build")
+      neon: neonVersion.value,
+      'neon-build': path.resolve(neonVersion.value, 'crates', 'neon-build')
     };
   } else {
     libs.version = neonVersion.value;
@@ -167,8 +170,10 @@ export default async function wizard(pwd: string, name: string, neon: string | n
 
   let cli = neonVersion.type === 'version'
     ? "^" + neonVersion.value
-    : neonVersion.type === 'path'
-    ? path.resolve(neonVersion.value, "cli")
+    : neonVersion.type === 'relative'
+    ? "file:" + path.join(path.relative(name, neonVersion.value), 'cli')
+    : neonVersion.type === 'absolute'
+    ? "file:" + path.resolve(neonVersion.value, 'cli')
     : neonVersion.value;
 
   let ctx = {
