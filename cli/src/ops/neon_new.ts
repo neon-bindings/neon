@@ -154,27 +154,30 @@ export default async function wizard(pwd: string, name: string, neon: string | n
 
   if (neonVersion.type === 'relative') {
     let neon = path.relative(name, neonVersion.value);
-    libs.paths = { neon, 'neon-build': path.join(neon, 'crates', 'neon-build') };
+    libs.paths = {
+      neon: JSON.stringify(neon),
+      'neon-build': JSON.stringify(path.join(neon, 'crates', 'neon-build'))
+    };
   } else if (neonVersion.type === 'absolute') {
     libs.paths = {
-      neon: neonVersion.value,
-      'neon-build': path.resolve(neonVersion.value, 'crates', 'neon-build')
+      neon: JSON.stringify(neonVersion.value),
+      'neon-build': JSON.stringify(path.resolve(neonVersion.value, 'crates', 'neon-build'))
     };
   } else {
-    libs.version = neonVersion.value;
+    libs.version = JSON.stringify(neonVersion.value);
   }
 
   if (features) {
-    libs.features = features.split(/\s+/);
+    libs.features = features.split(/\s+/).map(JSON.stringify);
   }
 
-  let cli = neonVersion.type === 'version'
+  let cli = JSON.stringify(neonVersion.type === 'version'
     ? "^" + neonVersion.value
     : neonVersion.type === 'relative'
     ? "file:" + path.join(path.relative(name, neonVersion.value), 'cli')
     : neonVersion.type === 'absolute'
     ? "file:" + path.resolve(neonVersion.value, 'cli')
-    : neonVersion.value;
+    : neonVersion.value);
 
   let ctx = {
     project: answers,

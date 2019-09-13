@@ -16,14 +16,14 @@ crate-type = ["cdylib"]
 
 [build-dependencies]
 {{#if neon.libs.simple}}
-neon-build = "{{neon.libs.version}}"
+neon-build = {{neon.libs.version}}
 {{else}}
-neon-build = { {{#if neon.libs.version}}version = "{{neon.libs.version}}"{{else}}path = "{{neon.libs.paths.neon-build}}"{{/if}}{{#if neon.libs.features}}, features = [{{#each neon.libs.features as |feature index|}}{{#if index}}, {{/if}}"{{feature}}"{{/each}}]{{/if}} }
+neon-build = { {{#if neon.libs.version}}version = {{neon.libs.version}}{{else}}path = {{neon.libs.paths.neon-build}}{{/if}}{{#if neon.libs.features}}, features = [{{#each neon.libs.features as |feature index|}}{{#if index}}, {{/if}}{{feature}}{{/each}}]{{/if}} }
 {{/if}}
 
 [dependencies]
 {{#if neon.libs.simple}}
-neon = "{{neon.libs.version}}"
+neon = {{neon.libs.version}}
 {{else}}
-neon = { {{#if neon.libs.version}}version = "{{neon.libs.version}}"{{else}}path = "{{neon.libs.paths.neon}}"{{/if}}{{#if neon.libs.features}}, features = [{{#each neon.libs.features as |feature index|}}{{#if index}}, {{/if}}"{{feature}}"{{/each}}]{{/if}} }
+neon = { {{#if neon.libs.version}}version = {{neon.libs.version}}{{else}}path = {{neon.libs.paths.neon}}{{/if}}{{#if neon.libs.features}}, features = [{{#each neon.libs.features as |feature index|}}{{#if index}}, {{/if}}{{feature}}{{/each}}]{{/if}} }
 {{/if}}
