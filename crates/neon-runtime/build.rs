@@ -11,8 +11,9 @@ fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
 
+    let out_dir = Path::new(&out_dir);
     let native_from = Path::new(&crate_dir).join("native");
-    let native_to = Path::new(&out_dir).join("native");
+    let native_to = out_dir.join("native");
 
     // 1. Copy the native runtime library into the build directory.
     copy_native_library(&native_from, &native_to);
@@ -22,6 +23,9 @@ fn main() {
 
     // 3. Link the library from the object file using gcc.
     link_library(&native_to);
+
+    // 4. Copy native build artifacts
+    copy_build_artifacts(&native_to, &out_dir);
 }
 
 fn copy_files(dir_from: impl AsRef<Path>, dir_to: impl AsRef<Path>) {
@@ -179,7 +183,32 @@ fn link_library(native_dir: &Path) {
             .join("neon.obj")
     };
 
-    cc::Build::new().object(object_path).compile("libneon.a");
+    cc::Build::new().cpp(true).object(object_path).compile("libneon.a");
+}
+
+#[cfg(unix)]
+fn copy_build_artifacts(_native_dir: &Path, _out_dir: &Path) {}
+
+#[cfg(windows)]
+fn copy_build_artifacts(native_dir: &Path, out_dir: &Path) {
+    let configuration = if debug() { "Debug" } else { "Release" };
+    let win_delay_file = "win_delay_load_hook.obj";
+    let win_delay_dest = out_dir.join(win_delay_file);
+    let win_delay_source = native_dir
+        .join("build")
+        .join(configuration)
+        .join("obj")
+        .join("neon")
+        .join(win_delay_file);
+
+    // Win delay hook is only needed for electron, warn instead of crash if not found
+    if let Err(err) = fs::copy(win_delay_source, win_delay_dest) {
+        if err.kind() == std::io::ErrorKind::NotFound {
+            eprintln!("warning: {} could not be found", win_delay_file);
+        } else {
+            panic!("{:?}", err);
+        }
+    }
 }
 
 fn debug() -> bool {

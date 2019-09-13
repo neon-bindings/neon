@@ -382,6 +382,29 @@ mod tests {
     }
 
     #[test]
+    fn dynamic_cargo_test() {
+        let _guard = TEST_MUTEX.lock();
+
+        log("dynamic_cargo_test");
+
+        let test_dynamic_cargo = project_root().join("test").join("dynamic").join("native");
+        run("cargo test --release", &test_dynamic_cargo);
+    }
+
+    #[test]
+    fn electron_test() {
+        let _guard = TEST_MUTEX.lock();
+
+        log("electron_test");
+
+        cli_setup();
+
+        let test_electron = project_root().join("test").join("electron");
+        run("npm install", &test_electron);
+        run("npm test", &test_electron);
+    }
+
+    #[test]
     fn package_test() {
         let _guard = TEST_MUTEX.lock();
 

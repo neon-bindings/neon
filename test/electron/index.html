@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Neon Electron Test</title>
+  </head>
+  <body>
+    <script>
+      document.write(`<h1 id="header">${require('./native').hello()}</h1>`);  
+    </script>  
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>
