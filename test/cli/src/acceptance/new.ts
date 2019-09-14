@@ -21,7 +21,14 @@ function spawnNeonNew(cx: Mocha.ITestCallbackContext, name: string, opts: SpawnN
 
   if (opts.neon) {
     args.push("--neon");
-    args.push(opts.neon);
+
+    if (process.platform === 'win32') {
+      // If the semver has a "^" operator, it needs to be escaped in Windows.
+      args.push(opts.neon.replace(/\^/g, "^^"));
+    } else {
+      // If the semver has a ">" operator, it needs to be escaped in Unix.
+      args.push(opts.neon.replace(/>/, "\\>"));
+    }
   }
 
   if (opts.features) {
