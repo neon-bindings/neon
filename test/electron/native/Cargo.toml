@@ -7,7 +7,7 @@ license = "MIT/Apache-2.0"
 build = "build.rs"
 
 [lib]
-name = "tests"
+name = "electron_tests"
 crate-type = ["cdylib"]
 
 [build-dependencies]

@@ -7,7 +7,7 @@ build = "build.rs"
 
 [lib]
 name = "tests"
-crate-type = ["dylib"]
+crate-type = ["cdylib"]
 
 [build-dependencies]
 neon-build = {path = "../../../crates/neon-build"}
