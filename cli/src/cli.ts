@@ -106,13 +106,28 @@ const spec: Spec = {
 
   new: {
     args: [{ name: "name", type: String, defaultOption: true },
+           { name: "neon", alias: "n", type: String },
+           { name: "features", alias: "f", type: String },
            { name: "help", alias: "h", type: Boolean }],
     usage: [{
       header: "neon new",
       content: "Create a new Neon project."
     }, {
       header: "Synopsis",
-      content: "$ neon new [@<scope>/]<name>"
+      content: "$ neon new [options] [@<scope>/]<name>"
+    }, {
+      header: "Options",
+      optionList: [{
+        name: "neon",
+        alias: "n",
+        type: String,
+        description: "Specify a semver version of Neon or path to a local Neon repository."
+      }, {
+        name: "features",
+        alias: "f",
+        type: String,
+        description: "Space-separated list of experimental Neon features to enable."
+      }]
     }],
     action: function(options) {
       if (options.help) {
@@ -120,7 +135,10 @@ const spec: Spec = {
       } else if (!options.name) {
         console.error(cliUsage(spec.new.usage));
       } else {
-        return neon_new(this.cwd, options.name as string);
+        return neon_new(this.cwd,
+                        options.name as string,
+                        (options.neon || null) as (string | null),
+                        (options.features || null) as (string | null));
       }
       return;
     }
