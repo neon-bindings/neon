@@ -2,24 +2,13 @@
 name = "neon-runtime"
 version = "0.3.1"
 authors = ["Dave Herman <david.herman@gmail.com>"]
-description = "Exposes Node and V8 C++ API's for use by Neon."
+description = "Bindings to the Node.js native addon API, used by the Neon implementation."
 repository = "https://github.com/neon-bindings/neon"
 license = "MIT/Apache-2.0"
 
-# libneon.a gets linked in with this package
-links = "neon"
-
-# this script builds libneon.a
+links = "neon-sys"
 build = "build.rs"
 
 [dependencies]
 cfg-if = "0.1.9"
-
-[build-dependencies]
-cfg-if = "0.1.9"
-cc = "1.0.0"
-regex = "1.0.0"
-
-[features]
-default = []
-n-api = []
+neon-sys = { path = "../neon-sys", optional = true }

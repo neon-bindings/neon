@@ -30,7 +30,7 @@ use cfg_if::cfg_if;
 // FIXME: move doc comments above the cfg_if! and see if that works
 
 cfg_if! {
-    if #[cfg(feature = "n-api")] {
+    if #[cfg(not(feature = "legacy-runtime"))] {
 
         #[macro_export]
         macro_rules! register_module {
