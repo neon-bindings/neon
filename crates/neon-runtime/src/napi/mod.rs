@@ -1,3 +1,5 @@
+use std::ptr;
+
 pub mod array;
 pub mod arraybuffer;
 pub mod buffer;

@@ -1,9 +1,0 @@
-{
-    "main": "index.js",
-    "scripts": {
-        "configure-release": "node-gyp configure --verbose",
-        "configure-debug": "node-gyp configure --verbose --debug",
-        "build-release": "node-gyp build",
-        "build-debug": "node-gyp build --debug"
-    }
-}

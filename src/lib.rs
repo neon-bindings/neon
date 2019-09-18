@@ -31,15 +31,44 @@ use cfg_if::cfg_if;
 
 cfg_if! {
     if #[cfg(feature = "n-api")] {
+        #[doc(hidden)]
+        pub use neon_runtime::sys as sys;
 
         #[macro_export]
         macro_rules! register_module {
-            ($module:pat, $init:block) => {
-                #[no_mangle]
-                pub extern "C" fn neon_init_module() {
-                    println!("hello N-API, this is Neon");
-                }
-            }
+            (|$env:ident, $exports:ident| $body:block) => {
+                register_module!(env!("CARGO_PKG_NAME"), |$env, $exports| $body);
+            };
+
+            ($name:expr, |$env:ident, $exports:ident| $body:block) => {
+                extern "C" fn __neon_init_module(
+                    $env: neon::sys::napi_env,
+                    $exports: neon::sys::napi_value,
+                ) -> neon::sys::napi_value $body
+
+                #[cfg_attr(target_os = "linux", link_section = ".ctors")]
+                #[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
+                #[cfg_attr(target_os = "windows", link_section = ".CRT$XCU")]
+                pub static __register_neon_module: extern "C" fn() = {
+                    extern "C" fn register_module() {
+                        let mut module: neon::sys::napi_module = neon::sys::napi_module {
+                            nm_version: 1,
+                            nm_flags: 0,
+                            nm_filename: concat!(file!(), "\0").as_ptr() as *const _,
+                            nm_register_func: Some(__neon_init_module),
+                            nm_modname: concat!($name, "\0").as_ptr() as *const _,
+                            nm_priv: std::ptr::null_mut(),
+                            reserved: [0 as *mut _; 4],
+                        };
+
+                        unsafe {
+                            neon::sys::napi_module_register(&mut module as *mut _);
+                        }
+                    }
+
+                    register_module
+                };
+            };
         }
 
     } else {
