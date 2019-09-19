@@ -1,51 +1,34 @@
 //! Facilities for identifying the type of a `v8::Local` handle.
 
-use raw::Local;
+/// Indicates if the value type is `Undefined`.
+pub use neon_sys::Neon_Tag_IsUndefined as is_undefined;
 
-extern "C" {
+/// Indicates if the value type is `Null`.
+pub use neon_sys::Neon_Tag_IsNull as is_null;
 
-    /// Indicates if the value type is `Undefined`.
-    #[link_name = "Neon_Tag_IsUndefined"]
-    pub fn is_undefined(val: Local) -> bool;
+/// Indicates if the value type is `Number`.
+pub use neon_sys::Neon_Tag_IsNumber as is_number;
 
-    /// Indicates if the value type is `Null`.
-    #[link_name = "Neon_Tag_IsNull"]
-    pub fn is_null(val: Local) -> bool;
+/// Indicates if the value type is `Boolean`.
+pub use neon_sys::Neon_Tag_IsBoolean as is_boolean;
 
-    /// Indicates if the value type is `Number`.
-    #[link_name = "Neon_Tag_IsNumber"]
-    pub fn is_number(val: Local) -> bool;
+/// Indicates if the value type is `String`.
+pub use neon_sys::Neon_Tag_IsString as is_string;
 
-    /// Indicates if the value type is `Boolean`.
-    #[link_name = "Neon_Tag_IsBoolean"]
-    pub fn is_boolean(val: Local) -> bool;
+/// Indicates if the value type is `Object`.
+pub use neon_sys::Neon_Tag_IsObject as is_object;
 
-    /// Indicates if the value type is `String`.
-    #[link_name = "Neon_Tag_IsString"]
-    pub fn is_string(val: Local) -> bool;
+/// Indicates if the value type is `Array`.
+pub use neon_sys::Neon_Tag_IsArray as is_array;
 
-    /// Indicates if the value type is `Object`.
-    #[link_name = "Neon_Tag_IsObject"]
-    pub fn is_object(val: Local) -> bool;
+/// Indicates if the value type is `Function`.
+pub use neon_sys::Neon_Tag_IsFunction as is_function;
 
-    /// Indicates if the value type is `Array`.
-    #[link_name = "Neon_Tag_IsArray"]
-    pub fn is_array(val: Local) -> bool;
+/// Indicates if the value type is `Error`.
+pub use neon_sys::Neon_Tag_IsError as is_error;
 
-    /// Indicates if the value type is `Function`.
-    #[link_name = "Neon_Tag_IsFunction"]
-    pub fn is_function(val: Local) -> bool;
+/// Indicates if the value type is `Buffer`.
+pub use neon_sys::Neon_Tag_IsBuffer as is_buffer;
 
-    /// Indicates if the value type is `Error`.
-    #[link_name = "Neon_Tag_IsError"]
-    pub fn is_error(val: Local) -> bool;
-
-    /// Indicates if the value type is `Buffer`.
-    #[link_name = "Neon_Tag_IsBuffer"]
-    pub fn is_buffer(obj: Local) -> bool;
-
-    /// Indicates if the value type is `ArrayBuffer`.
-    #[link_name = "Neon_Tag_IsArrayBuffer"]
-    pub fn is_arraybuffer(obj: Local) -> bool;
-
-}
+/// Indicates if the value type is `ArrayBuffer`.
+pub use neon_sys::Neon_Tag_IsArrayBuffer as is_arraybuffer;

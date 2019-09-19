@@ -11,7 +11,7 @@ name = "electron_tests"
 crate-type = ["cdylib"]
 
 [build-dependencies]
-neon-build = {path = "../../../crates/neon-build"}
+neon-build = {version = "*", path = "../../../crates/neon-build"}
 
 [dependencies]
-neon = {path = "../../../"}
+neon = {version = "*", path = "../../../"}

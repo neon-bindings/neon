@@ -25,4 +25,9 @@ pub fn setup() {
             println!("cargo:rustc-cdylib-link-arg=/DELAYLOAD:node.exe");
         }
     }
+
+    if cfg!(target_os = "macos") {
+        println!("cargo:rustc-cdylib-link-arg=-undefined");
+        println!("cargo:rustc-cdylib-link-arg=dynamic_lookup");
+    }
 }

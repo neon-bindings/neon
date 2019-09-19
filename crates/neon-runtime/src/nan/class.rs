@@ -1,58 +1,31 @@
-use std::os::raw::c_void;
-use call::CCallback;
-use raw::{Isolate, Local};
+pub use neon_sys::Neon_Class_GetClassMap as get_class_map;
 
-extern "C" {
+pub use neon_sys::Neon_Class_SetClassMap as set_class_map;
 
-    #[link_name = "Neon_Class_GetClassMap"]
-    pub fn get_class_map(isolate: *mut Isolate) -> *mut c_void;
+pub use neon_sys::Neon_Class_CreateBase as create_base;
 
-    #[link_name = "Neon_Class_SetClassMap"]
-    pub fn set_class_map(isolate: *mut Isolate, map: *mut c_void, free_map: *mut c_void);
+pub use neon_sys::Neon_Class_GetName as get_name;
 
-    #[link_name = "Neon_Class_CreateBase"]
-    pub fn create_base(isolate: *mut Isolate,
-                       allocate: CCallback,
-                       construct: CCallback,
-                       call: CCallback,
-                       drop: extern "C" fn(*mut c_void)) -> *mut c_void;
+pub use neon_sys::Neon_Class_SetName as set_name;
 
-    #[link_name = "Neon_Class_GetName"]
-    pub fn get_name<'a>(base_out: &'a mut *mut u8, isolate: *mut Isolate, metadata: *const c_void) -> usize;
+pub use neon_sys::Neon_Class_ThrowCallError as throw_call_error;
 
-    #[link_name = "Neon_Class_SetName"]
-    pub fn set_name(isolate: *mut Isolate, metadata: *mut c_void, name: *const u8, byte_length: u32) -> bool;
+pub use neon_sys::Neon_Class_ThrowThisError as throw_this_error;
 
-    #[link_name = "Neon_Class_ThrowCallError"]
-    pub fn throw_call_error(isolate: *mut Isolate, metadata: *mut c_void);
+pub use neon_sys::Neon_Class_AddMethod as add_method;
 
-    #[link_name = "Neon_Class_ThrowThisError"]
-    pub fn throw_this_error(isolate: *mut Isolate, metadata: *mut c_void);
+pub use neon_sys::Neon_Class_MetadataToConstructor as metadata_to_constructor;
 
-    #[link_name = "Neon_Class_AddMethod"]
-    pub fn add_method(isolate: *mut Isolate, metadata: *mut c_void, name: *const u8, byte_length: u32, method: Local) -> bool;
+// FIXME: get rid of all the "kernel" nomenclature
 
-    #[link_name = "Neon_Class_MetadataToConstructor"]
-    pub fn metadata_to_constructor(out: &mut Local, isolate: *mut Isolate, metadata: *mut c_void) -> bool;
+pub use neon_sys::Neon_Class_GetAllocateKernel as get_allocate_kernel;
 
-    // FIXME: get rid of all the "kernel" nomenclature
+pub use neon_sys::Neon_Class_GetConstructKernel as get_construct_kernel;
 
-    #[link_name = "Neon_Class_GetAllocateKernel"]
-    pub fn get_allocate_kernel(obj: Local) -> *mut c_void;
+pub use neon_sys::Neon_Class_GetCallKernel as get_call_kernel;
 
-    #[link_name = "Neon_Class_GetConstructKernel"]
-    pub fn get_construct_kernel(obj: Local) -> *mut c_void;
+pub use neon_sys::Neon_Class_Constructor as constructor;
 
-    #[link_name = "Neon_Class_GetCallKernel"]
-    pub fn get_call_kernel(obj: Local) -> *mut c_void;
+pub use neon_sys::Neon_Class_HasInstance as has_instance;
 
-    #[link_name = "Neon_Class_Constructor"]
-    pub fn constructor(out: &mut Local, ft: Local) -> bool;
-
-    #[link_name = "Neon_Class_HasInstance"]
-    pub fn has_instance(metadata: *mut c_void, v: Local) -> bool;
-
-    #[link_name = "Neon_Class_GetInstanceInternals"]
-    pub fn get_instance_internals(obj: Local) -> *mut c_void;
-
-}
+pub use neon_sys::Neon_Class_GetInstanceInternals as get_instance_internals;

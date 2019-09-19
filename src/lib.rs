@@ -6,9 +6,6 @@ extern crate cslice;
 extern crate semver;
 
 #[cfg(test)]
-extern crate rustc_version;
-
-#[cfg(test)]
 #[macro_use]
 extern crate lazy_static;
 
@@ -330,8 +327,6 @@ mod tests {
     use std::process::Command;
     use std::sync::Mutex;
 
-    use rustc_version::{version_meta, Channel};
-
     // Create a mutex to enforce sequential running of the tests.
     lazy_static! {
         static ref TEST_MUTEX: Mutex<()> = Mutex::new(());
@@ -390,10 +385,6 @@ mod tests {
 
         log("static_test");
 
-        if version_meta().unwrap().channel != Channel::Nightly {
-            return;
-        }
-
         run("cargo test --release", &project_root().join("test").join("static"));
     }
 
@@ -433,7 +424,10 @@ mod tests {
         run("npm test", &test_electron);
     }
 
+    // Once we publish versions of neon-sys that match the versions of the other
+    // neon crates, `cargo package` can succeed again.
     #[test]
+    #[ignore]
     fn package_test() {
         let _guard = TEST_MUTEX.lock();
 

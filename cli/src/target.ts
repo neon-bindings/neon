@@ -77,14 +77,10 @@ export default class Target {
   async build(toolchain: rust.Toolchain | null,
               settings: BuildSettings)
   {
-    let macos = process.platform === 'darwin';
-
-    let command = macos ? 'rustc' : 'build';
     let releaseFlags = this.release ? ["--release"] : [];
-    let extraFlags = macos ? ["--", "-C", "link-args=-Wl,-undefined,dynamic_lookup"] : [];
     let targetFlags = this.triple ? ["--target=" + this.triple] : [];
 
-    let args = [command].concat(releaseFlags, extraFlags, targetFlags);
+    let args = ['build'].concat(releaseFlags, targetFlags);
 
     try {
       let result = await rust.spawn("cargo", args, toolchain, {

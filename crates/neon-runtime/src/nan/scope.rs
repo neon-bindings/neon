@@ -1,7 +1,6 @@
 //! Facilities for working with `v8::HandleScope`s and `v8::EscapableHandleScope`s.
 
-use std::os::raw::c_void;
-use raw::{HandleScope, EscapableHandleScope, InheritedHandleScope, Local, Isolate};
+use raw::{HandleScope, EscapableHandleScope, InheritedHandleScope, Isolate};
 
 pub trait Root {
     unsafe fn allocate() -> Self;
@@ -35,57 +34,41 @@ impl Root for InheritedHandleScope {
     unsafe fn exit(&mut self) { }
 }
 
-extern "C" {
+/// Mutates the `out` argument provided to refer to the newly escaped `v8::Local` value.
+pub use neon_sys::Neon_Scope_Escape as escape;
 
-    /// Mutates the `out` argument provided to refer to the newly escaped `v8::Local` value.
-    #[link_name = "Neon_Scope_Escape"]
-    pub fn escape(out: &mut Local, scope: *mut EscapableHandleScope, value: Local);
+/// Creates a `v8::EscapableHandleScope` and calls the `callback` provided with the argument
+/// signature `(out, parent_scope, &v8_scope, closure)`.
+pub use neon_sys::Neon_Scope_Chained as chained;
 
-    /// Creates a `v8::EscapableHandleScope` and calls the `callback` provided with the argument
-    /// signature `(out, parent_scope, &v8_scope, closure)`.
-    #[link_name = "Neon_Scope_Chained"]
-    pub fn chained(out: *mut c_void, closure: *mut c_void, callback: extern fn(&mut c_void, *mut c_void, *mut c_void, *mut c_void), parent_scope: *mut c_void);
+/// Creates a `v8::HandleScope` and calls the `callback` provided with the argument signature
+/// `(out, realm, closure)`.
+pub use neon_sys::Neon_Scope_Nested as nested;
 
-    /// Creates a `v8::HandleScope` and calls the `callback` provided with the argument signature
-    /// `(out, realm, closure)`.
-    #[link_name = "Neon_Scope_Nested"]
-    pub fn nested(out: *mut c_void, closure: *mut c_void, callback: extern fn(&mut c_void, *mut c_void, *mut c_void), realm: *mut c_void);
+/// Instantiates a new `v8::HandleScope`.
+pub use neon_sys::Neon_Scope_Enter as enter;
 
-    /// Instantiates a new `v8::HandleScope`.
-    #[link_name = "Neon_Scope_Enter"]
-    pub fn enter(scope: &mut HandleScope, isolate: *mut c_void);
+/// Destructs a `v8::HandleScope`.
+pub use neon_sys::Neon_Scope_Exit as exit;
 
-    /// Destructs a `v8::HandleScope`.
-    #[link_name = "Neon_Scope_Exit"]
-    pub fn exit(scope: &mut HandleScope);
+/// Instantiates a new `v8::HandleScope`.
+pub use neon_sys::Neon_Scope_Enter_Escapable as enter_escapable;
 
-    /// Instantiates a new `v8::HandleScope`.
-    #[link_name = "Neon_Scope_Enter_Escapable"]
-    pub fn enter_escapable(scope: &mut EscapableHandleScope, isolate: *mut c_void);
+/// Destructs a `v8::HandleScope`.
+pub use neon_sys::Neon_Scope_Exit_Escapable as exit_escapable;
 
-    /// Destructs a `v8::HandleScope`.
-    #[link_name = "Neon_Scope_Exit_Escapable"]
-    pub fn exit_escapable(scope: &mut EscapableHandleScope);
+/// Gets the size of a `v8::HandleScope`.
+pub use neon_sys::Neon_Scope_Sizeof as size;
 
-    /// Gets the size of a `v8::HandleScope`.
-    #[link_name = "Neon_Scope_Sizeof"]
-    pub fn size() -> usize;
+/// Gets the alignment requirement of a `v8::HandleScope`.
+pub use neon_sys::Neon_Scope_Alignof as alignment;
 
-    /// Gets the alignment requirement of a `v8::HandleScope`.
-    #[link_name = "Neon_Scope_Alignof"]
-    pub fn alignment() -> usize;
+/// Gets the size of a `v8::EscapableHandleScope`.
+pub use neon_sys::Neon_Scope_SizeofEscapable as escapable_size;
 
-    /// Gets the size of a `v8::EscapableHandleScope`.
-    #[link_name = "Neon_Scope_SizeofEscapable"]
-    pub fn escapable_size() -> usize;
+/// Gets the alignment requirement of a `v8::EscapableHandleScope`.
+pub use neon_sys::Neon_Scope_AlignofEscapable as escapable_alignment;
 
-    /// Gets the alignment requirement of a `v8::EscapableHandleScope`.
-    #[link_name = "Neon_Scope_AlignofEscapable"]
-    pub fn escapable_alignment() -> usize;
-
-    /// Mutates the `out` argument provided to refer to the `v8::Local` value of the `global`
-    /// object
-    #[link_name = "Neon_Scope_GetGlobal"]
-    pub fn get_global(isolate: *mut c_void, out: &mut Local);
-
-}
+/// Mutates the `out` argument provided to refer to the `v8::Local` value of the `global`
+/// object
+pub use neon_sys::Neon_Scope_GetGlobal as get_global;

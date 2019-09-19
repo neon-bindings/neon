@@ -1,5 +1,8 @@
 extern crate cfg_if;
 
+#[cfg(feature = "neon-sys")]
+extern crate neon_sys;
+
 use cfg_if::cfg_if;
 
 cfg_if! {
