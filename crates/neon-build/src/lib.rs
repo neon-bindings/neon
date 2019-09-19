@@ -6,9 +6,9 @@ pub fn setup() {
     if cfg!(windows) {
         let debug = env::var("DEBUG").ok().map_or(false, |s| s == "true");
         let configuration = if debug { "Debug" } else { "Release" };
-        let node_root_dir = env::var("DEP_NEON_SYS_NODE_ROOT_DIR").unwrap();
-        let node_lib_file = env::var("DEP_NEON_SYS_NODE_LIB_FILE").unwrap();
-        let node_arch = env::var("DEP_NEON_SYS_NODE_ARCH").unwrap();
+        let node_root_dir = env::var("DEP_NEON_RUNTIME_NODE_ROOT_DIR").unwrap();
+        let node_lib_file = env::var("DEP_NEON_RUNTIME_NODE_LIB_FILE").unwrap();
+        let node_arch = env::var("DEP_NEON_RUNTIME_NODE_ARCH").unwrap();
         let node_lib_file_path = Path::new(&node_lib_file);
         let mut node_lib_path = Path::new(&node_root_dir).to_path_buf();
         node_lib_path.push(&node_arch);
