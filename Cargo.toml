@@ -34,10 +34,10 @@ legacy-runtime = ["neon-runtime/neon-sys", "neon-build/neon-sys"]
 
 [workspace]
 members = [
-	"crates/neon-build",
-	"crates/neon-runtime",
+    "crates/neon-build",
+    "crates/neon-runtime",
     "crates/neon-sys",
-	"test/static",
-	"test/electron/native",
-	"test/dynamic/native",
+    "test/static",
+    "test/electron/native",
+    "test/dynamic/native",
 ]
