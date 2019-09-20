@@ -11,13 +11,6 @@ license = "MIT/Apache-2.0"
 exclude = ["neon.jpg"]
 build = "build.rs"
 
-# Sharing the name of the library produced by neon-runtime allows the
-# `build.rs` script for Neon projects to find the path to `node.lib`
-# in Windows.
-#
-# See also: http://doc.crates.io/build-script.html#the-links-manifest-key
-links = "neon-runtime"
-
 [build-dependencies]
 neon-build = { version = "=0.3.1", path = "crates/neon-build" }
 
@@ -37,7 +30,7 @@ default = ["legacy-runtime"]
 # enabled by default. Disabling the feature uses the experimental N-API runtime
 # instead. If the N-API works out, once it's complete we'll be able to turn this
 # flag off by default and eventually remove the legacy runtime entirely.
-legacy-runtime = ["neon-runtime/neon-sys"]
+legacy-runtime = ["neon-runtime/neon-sys", "neon-build/neon-sys"]
 
 [workspace]
 members = [

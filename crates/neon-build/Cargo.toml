@@ -5,8 +5,16 @@ authors = ["Dave Herman <david.herman@gmail.com>"]
 description = "Build logic required for Neon projects."
 repository = "https://github.com/neon-bindings/neon"
 license = "MIT/Apache-2.0"
+build = "build.rs"
 
 [dependencies]
+# When it's time to publish this, we'll add an explicit version, e.g.:
+# neon-sys = { version = "=0.3.1", path = "../neon-sys", optional = true }
+neon-sys = { path = "../neon-sys", optional = true }
+cfg-if = "0.1.9"
+
+[build-dependencies]
+cfg-if = "0.1.9"
 
 [features]
 default = []
