@@ -33,26 +33,26 @@ impl Root for InheritedHandleScope {
     unsafe fn exit(&mut self) { }
 }
 
-pub extern "C" fn escape(out: &mut Local, scope: *mut EscapableHandleScope, value: Local) { unimplemented!() }
+pub unsafe extern "C" fn escape(_out: &mut Local, _scope: *mut EscapableHandleScope, _value: Local) { unimplemented!() }
 
-pub extern "C" fn chained(out: *mut c_void, closure: *mut c_void, callback: extern fn(&mut c_void, *mut c_void, *mut c_void, *mut c_void), parent_scope: *mut c_void) { unimplemented!() }
+pub unsafe extern "C" fn chained(_out: *mut c_void, _closure: *mut c_void, _callback: extern fn(&mut c_void, *mut c_void, *mut c_void, *mut c_void), _parent_scope: *mut c_void) { unimplemented!() }
 
-pub extern "C" fn nested(out: *mut c_void, closure: *mut c_void, callback: extern fn(&mut c_void, *mut c_void, *mut c_void), realm: *mut c_void) { unimplemented!() }
+pub unsafe extern "C" fn nested(_out: *mut c_void, _closure: *mut c_void, _callback: extern fn(&mut c_void, *mut c_void, *mut c_void), _realm: *mut c_void) { unimplemented!() }
 
-pub extern "C" fn enter(scope: &mut HandleScope, isolate: *mut c_void) { unimplemented!() }
+pub unsafe extern "C" fn enter(_scope: &mut HandleScope, _isolate: *mut c_void) { unimplemented!() }
 
-pub extern "C" fn exit(scope: &mut HandleScope) { unimplemented!() }
+pub unsafe extern "C" fn exit(_scope: &mut HandleScope) { unimplemented!() }
 
-pub extern "C" fn enter_escapable(scope: &mut EscapableHandleScope, isolate: *mut c_void) { unimplemented!() }
+pub unsafe extern "C" fn enter_escapable(_scope: &mut EscapableHandleScope, _isolate: *mut c_void) { unimplemented!() }
 
-pub extern "C" fn exit_escapable(scope: &mut EscapableHandleScope) { unimplemented!() }
+pub unsafe extern "C" fn exit_escapable(_scope: &mut EscapableHandleScope) { unimplemented!() }
 
-pub extern "C" fn size() -> usize { unimplemented!() }
+pub unsafe extern "C" fn size() -> usize { unimplemented!() }
 
-pub extern "C" fn alignment() -> usize { unimplemented!() }
+pub unsafe extern "C" fn alignment() -> usize { unimplemented!() }
 
-pub extern "C" fn escapable_size() -> usize { unimplemented!() }
+pub unsafe extern "C" fn escapable_size() -> usize { unimplemented!() }
 
-pub extern "C" fn escapable_alignment() -> usize { unimplemented!() }
+pub unsafe extern "C" fn escapable_alignment() -> usize { unimplemented!() }
 
-pub extern "C" fn get_global(isolate: *mut c_void, out: &mut Local) { unimplemented!() }
+pub unsafe extern "C" fn get_global(_isolate: *mut c_void, _out: &mut Local) { unimplemented!() }

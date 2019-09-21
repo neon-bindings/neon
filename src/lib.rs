@@ -22,20 +22,58 @@ pub mod prelude;
 #[doc(hidden)]
 pub mod macro_internal;
 
+#[cfg(all(feature = "legacy-runtime", feature = "napi-runtime"))]
+compile_error!("Cannot enable both `legacy-runtime` and `napi-runtime` features.\n\nTo use `napi-runtime`, disable `legacy-runtime` by setting `default-features` to `false` in Cargo.toml\nor with cargo's --no-default-features flag.");
+
 use cfg_if::cfg_if;
 
 // FIXME: move doc comments above the cfg_if! and see if that works
 
 cfg_if! {
-    if #[cfg(not(feature = "legacy-runtime"))] {
+    if #[cfg(feature = "napi-runtime")] {
 
         #[macro_export]
         macro_rules! register_module {
             ($module:pat, $init:block) => {
-                #[no_mangle]
-                pub extern "C" fn neon_init_module() {
-                    println!("hello N-API, this is Neon");
-                }
+                register_module!(env!("CARGO_PKG_NAME"), $module, $init);
+            };
+
+            ($name:expr, $module:pat, $init:block) => {
+                #[cfg_attr(target_os = "linux", link_section = ".ctors")]
+                #[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
+                #[cfg_attr(target_os = "windows", link_section = ".CRT$XCU")]
+                pub static __register_neon_module: extern "C" fn() = {
+                    unsafe extern "C" fn __init_neon_module(
+                        _env: $crate::macro_internal::runtime::nodejs_sys::napi_env,
+                        exports: $crate::macro_internal::runtime::nodejs_sys::napi_value
+                    ) -> $crate::macro_internal::runtime::nodejs_sys::napi_value
+                    {
+                        $init
+                        exports
+                    }
+
+                    static mut __neon_module: $crate::macro_internal::runtime::nodejs_sys::napi_module
+                        = $crate::macro_internal::runtime::nodejs_sys::napi_module {
+                            nm_version: 1,
+                            nm_flags: 0,
+                            nm_filename: concat!(file!(), "\0").as_ptr() as *const _,
+                            nm_register_func: Some(__init_neon_module),
+                            nm_modname: concat!($name, "\0").as_ptr() as *const _,
+                            nm_priv: ::std::ptr::null_mut(),
+                            reserved: [0 as *mut _; 4],
+                        };
+
+                    extern "C" fn register_module() {
+                        // Suppress the default Rust panic hook, which prints diagnostics to stderr.
+                        ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
+
+                        unsafe {
+                            $crate::macro_internal::runtime::nodejs_sys::napi_module_register(&mut __neon_module as *mut _);
+                        }
+                    }
+
+                    register_module
+                };
             }
         }
 

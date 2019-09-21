@@ -1,23 +1,23 @@
 use raw::Local;
 
-pub extern "C" fn is_undefined(val: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn is_undefined(_val: Local) -> bool { unimplemented!() }
 
-pub extern "C" fn is_null(val: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn is_null(_val: Local) -> bool { unimplemented!() }
 
-pub extern "C" fn is_number(val: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn is_number(_val: Local) -> bool { unimplemented!() }
 
-pub extern "C" fn is_boolean(val: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn is_boolean(_val: Local) -> bool { unimplemented!() }
 
-pub extern "C" fn is_string(val: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn is_string(_val: Local) -> bool { unimplemented!() }
 
-pub extern "C" fn is_object(val: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn is_object(_val: Local) -> bool { unimplemented!() }
 
-pub extern "C" fn is_array(val: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn is_array(_val: Local) -> bool { unimplemented!() }
 
-pub extern "C" fn is_function(val: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn is_function(_val: Local) -> bool { unimplemented!() }
 
-pub extern "C" fn is_error(val: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn is_error(_val: Local) -> bool { unimplemented!() }
 
-pub extern "C" fn is_buffer(obj: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn is_buffer(_obj: Local) -> bool { unimplemented!() }
 
-pub extern "C" fn is_arraybuffer(obj: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn is_arraybuffer(_obj: Local) -> bool { unimplemented!() }

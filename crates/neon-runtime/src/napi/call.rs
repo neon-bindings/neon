@@ -17,18 +17,18 @@ impl Default for CCallback {
     }
 }
 
-pub extern "C" fn set_return(info: &FunctionCallbackInfo, value: Local) { unimplemented!() }
+pub unsafe extern "C" fn set_return(_info: &FunctionCallbackInfo, _value: Local) { unimplemented!() }
 
-pub extern "C" fn get_isolate(info: &FunctionCallbackInfo) -> *mut Isolate { unimplemented!() }
+pub unsafe extern "C" fn get_isolate(_info: &FunctionCallbackInfo) -> *mut Isolate { unimplemented!() }
 
-pub extern "C" fn current_isolate() -> *mut Isolate { unimplemented!() }
+pub unsafe extern "C" fn current_isolate() -> *mut Isolate { unimplemented!() }
 
-pub extern "C" fn is_construct(info: &FunctionCallbackInfo) -> bool { unimplemented!() }
+pub unsafe extern "C" fn is_construct(_info: &FunctionCallbackInfo) -> bool { unimplemented!() }
 
-pub extern "C" fn this(info: &FunctionCallbackInfo, out: &mut Local) { unimplemented!() }
+pub unsafe extern "C" fn this(_info: &FunctionCallbackInfo, _out: &mut Local) { unimplemented!() }
 
-pub extern "C" fn data(info: &FunctionCallbackInfo, out: &mut Local) { unimplemented!() }
+pub unsafe extern "C" fn data(_info: &FunctionCallbackInfo, _out: &mut Local) { unimplemented!() }
 
-pub extern "C" fn len(info: &FunctionCallbackInfo) -> i32 { unimplemented!() }
+pub unsafe extern "C" fn len(_info: &FunctionCallbackInfo) -> i32 { unimplemented!() }
 
-pub extern "C" fn get(info: &FunctionCallbackInfo, i: i32, out: &mut Local) { unimplemented!() }
+pub unsafe extern "C" fn get(_info: &FunctionCallbackInfo, _i: i32, _out: &mut Local) { unimplemented!() }

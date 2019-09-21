@@ -7,7 +7,6 @@ pub mod convert;
 pub mod error;
 pub mod fun;
 pub mod mem;
-mod napi;
 pub mod object;
 pub mod primitive;
 pub mod raw;

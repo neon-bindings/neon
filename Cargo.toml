@@ -27,10 +27,12 @@ neon-runtime = { version = "=0.3.1", path = "crates/neon-runtime" }
 default = ["legacy-runtime"]
 
 # Feature flag to enable the legacy V8/NAN runtime. For now, this feature is
-# enabled by default. Disabling the feature uses the experimental N-API runtime
-# instead. If the N-API works out, once it's complete we'll be able to turn this
-# flag off by default and eventually remove the legacy runtime entirely.
+# enabled by default.
 legacy-runtime = ["neon-runtime/neon-sys", "neon-build/neon-sys"]
+
+# Feature flag to enable the experimental N-API runtime. For now, this feature
+# is disabled by default.
+napi-runtime = ["neon-runtime/nodejs-sys"]
 
 [workspace]
 members = [

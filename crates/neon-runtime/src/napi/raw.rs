@@ -1,5 +1,4 @@
 use std::os::raw::c_void;
-use std::mem;
 use std::ptr;
 
 #[repr(C)]
