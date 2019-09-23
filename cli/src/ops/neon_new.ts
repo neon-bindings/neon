@@ -73,7 +73,7 @@ async function parseNeonVersion(flag: string | null) : Promise<NeonVersion> {
   return { type: path.isAbsolute(flag) ? "absolute" : "relative", value: flag };
 }
 
-export default async function wizard(pwd: string, name: string, neon: string | null, features: string | null) {
+export default async function wizard(pwd: string, name: string, neon: string | null, features: string | null, noDefaultFeatures: boolean) {
   let its = validateName(name);
   if (!its.validForNewPackages) {
     let errors = (its.errors || []).concat(its.warnings || []);
@@ -143,14 +143,19 @@ export default async function wizard(pwd: string, name: string, neon: string | n
 
   let neonVersion = await parseNeonVersion(neon);
 
+  let simple = (neonVersion.type === 'version' || neonVersion.type === 'range')
+    && !features
+    && !noDefaultFeatures;
+
   let libs: {
     // In the common case, we can make the Cargo.toml manifest simple by just using
     // the semver specifier string for the `neon` and `neon-build` dependencies.
     simple: boolean,
     paths?: { neon: string, 'neon-build': string },
     version?: string,
-    features?: Array<string>
-  } = { simple: (neonVersion.type === 'version' || neonVersion.type === 'range') && !features };
+    features?: Array<string>,
+    noDefaultFeatures: boolean
+  } = { simple, noDefaultFeatures };
 
   if (neonVersion.type === 'relative') {
     let neon = path.relative(name, neonVersion.value);
