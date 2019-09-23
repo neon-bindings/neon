@@ -158,7 +158,7 @@ export default async function wizard(pwd: string, name: string, neon: string | n
   } = { simple, noDefaultFeatures };
 
   if (neonVersion.type === 'relative') {
-    let neon = path.relative(name, neonVersion.value);
+    let neon = path.relative(path.join(name, 'native'), neonVersion.value);
     libs.paths = {
       neon: JSON.stringify(neon),
       'neon-build': JSON.stringify(path.join(neon, 'crates', 'neon-build'))
