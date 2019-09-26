@@ -111,7 +111,7 @@ macro_rules! register_module {
 }
 
 #[doc(hidden)]
-#[macro_export]
+#[macro_export(local_inner_macros)]
 macro_rules! class_definition {
     ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; init($cx:pat) $body:block $($rest:tt)* ) => {
         class_definition!($cls ;
@@ -190,17 +190,17 @@ macro_rules! class_definition {
             type Internals = $typ;
 
             fn setup<'a, C: $crate::context::Context<'a>>(_: &mut C) -> $crate::result::NeonResult<$crate::object::ClassDescriptor<'a, Self>> {
-                ::std::result::Result::Ok(Self::describe(stringify!($cname), $allocator)
+                ::std::result::Result::Ok(Self::describe(neon_stringify!($cname), $allocator)
                                              $(.construct($new_ctor))*
                                              $(.call($call_ctor))*
-                                             $(.method(stringify!($mname), $mdef))*)
+                                             $(.method(neon_stringify!($mname), $mdef))*)
             }
         }
     };
 }
 
 #[doc(hidden)]
-#[macro_export]
+#[macro_export(local_inner_macros)]
 macro_rules! impl_managed {
     ($cls:ident) => {
         impl $crate::handle::Managed for $cls {
@@ -253,7 +253,7 @@ macro_rules! impl_managed {
 ///
 /// }
 /// ```
-#[macro_export]
+#[macro_export(local_inner_macros)]
 macro_rules! declare_types {
     { $(#[$attr:meta])* pub class $cls:ident for $typ:ident { $($body:tt)* } $($rest:tt)* } => {
         declare_types! { $(#[$attr])* pub class $cls as $typ for $typ { $($body)* } $($rest)* }
@@ -290,6 +290,14 @@ macro_rules! declare_types {
     };
 
     { } => { };
+}
+
+#[doc(hidden)]
+#[macro_export]
+macro_rules! neon_stringify {
+    ($($inner:tt)*) => {
+        stringify! { $($inner)* }
+    }
 }
 
 #[cfg(all(windows, not(neon_profile = "release")))]

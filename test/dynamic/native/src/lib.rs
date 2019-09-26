@@ -1,5 +1,4 @@
-#[macro_use]
-extern crate neon;
+use neon::prelude::*;
 
 mod js {
     pub mod strings;
