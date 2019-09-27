@@ -49,10 +49,6 @@ cfg_if! {
         #[macro_export]
         macro_rules! register_module {
             ($module:pat, $init:block) => {
-                register_module!(env!("CARGO_PKG_NAME"), $module, $init);
-            };
-
-            ($name:expr, $module:pat, $init:block) => {
                 #[no_mangle]
                 pub unsafe extern "C" fn napi_register_module_v1(
                     _env: $crate::macro_internal::runtime::nodejs_sys::napi_env,
