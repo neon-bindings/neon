@@ -42,7 +42,7 @@ addons:
     - g++-4.8
 
 script: |
-  cargo test --release -- --nocapture
+  cargo test --release --features=ci -- --nocapture
 
 jobs:
   include:

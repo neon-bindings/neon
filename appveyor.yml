@@ -40,7 +40,7 @@ install:
 build: false
 
 test_script:
-  - cargo test --release
+  - cargo test --release --features=ci
 
 cache:
   - target

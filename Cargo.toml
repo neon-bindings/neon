@@ -16,6 +16,7 @@ neon-build = { version = "=0.3.1", path = "crates/neon-build" }
 
 [dev-dependencies]
 lazy_static = "1.4.0"
+rustversion = "0.1.4"
 
 [dependencies]
 cslice = "0.2"
@@ -32,6 +33,9 @@ legacy-runtime = ["neon-runtime/neon-sys", "neon-build/neon-sys"]
 # Feature flag to enable the experimental N-API runtime. For now, this feature
 # is disabled by default.
 napi-runtime = ["neon-runtime/nodejs-sys"]
+
+# Enabled by CI configs to allow selective enabling/disabling of tests in CI.
+ci = []
 
 [workspace]
 members = [

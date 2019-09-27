@@ -343,6 +343,7 @@ compile_error!("Neon only builds with --release. For tests, try `cargo test --re
 
 #[cfg(test)]
 mod tests {
+    extern crate rustversion;
     use std::path::{Path, PathBuf};
     use std::process::Command;
     use std::sync::Mutex;
@@ -398,15 +399,25 @@ mod tests {
         run("npm test", &test_cli);
     }
 
-    #[cfg(not(windows))]
-    #[test]
-    fn static_test() {
+    fn static_test_impl() {
         let _guard = TEST_MUTEX.lock();
 
         log("static_test");
 
         run("cargo test --release", &project_root().join("test").join("static"));
     }
+
+    // In CI, we'll only run the static tests in Beta. This will catch changes to
+    // error reporting and any associated usability regressions before a new Rust
+    // version is released, but will have more stable results than Nightly.
+    #[cfg(features = "ci")]
+    #[rustversion::beta]
+    #[test]
+    fn static_test() { static_test_impl() }
+
+    #[cfg(not(features = "ci"))]
+    #[test]
+    fn static_test() { static_test_impl() }
 
     #[test]
     fn dynamic_test() {

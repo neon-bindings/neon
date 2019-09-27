@@ -6,7 +6,6 @@ license = "MIT/Apache-2.0"
 
 [dependencies]
 neon = { path = "../../" }
-rustversion = "0.1.4"
 
 [dev-dependencies]
 trybuild = "1.0"
