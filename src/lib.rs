@@ -1,7 +1,6 @@
 //! The [Neon](https://www.neon-bindings.com/) crate provides bindings for writing Node.js plugins with a safe and fast Rust API.
 
 extern crate neon_runtime;
-extern crate cfg_if;
 extern crate cslice;
 extern crate semver;
 
@@ -25,131 +24,127 @@ pub mod macro_internal;
 #[cfg(all(feature = "legacy-runtime", feature = "napi-runtime"))]
 compile_error!("Cannot enable both `legacy-runtime` and `napi-runtime` features.\n\nTo use `napi-runtime`, disable `legacy-runtime` by setting `default-features` to `false` in Cargo.toml\nor with cargo's --no-default-features flag.");
 
-use cfg_if::cfg_if;
+#[cfg(feature = "napi-runtime")]
+/// Register the current crate as a Node module, providing startup
+/// logic for initializing the module object at runtime.
+///
+/// The first argument is a pattern bound to a `neon::context::ModuleContext`. This
+/// is usually bound to a mutable variable `mut cx`, which can then be used to
+/// pass to Neon APIs that require mutable access to an execution context.
+///
+/// Example:
+///
+/// ```rust,ignore
+/// register_module!(mut cx, {
+///     cx.export_function("foo", foo)?;
+///     cx.export_function("bar", bar)?;
+///     cx.export_function("baz", baz)?;
+///     Ok(())
+/// });
+/// ```
+#[macro_export]
+macro_rules! register_module {
+    ($module:pat, $init:block) => {
+        #[no_mangle]
+        pub unsafe extern "C" fn napi_register_module_v1(
+            _env: $crate::macro_internal::runtime::nodejs_sys::napi_env,
+            exports: $crate::macro_internal::runtime::nodejs_sys::napi_value
+        ) -> $crate::macro_internal::runtime::nodejs_sys::napi_value
+        {
+            // Suppress the default Rust panic hook, which prints diagnostics to stderr.
+            ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
 
-cfg_if! {
-    if #[cfg(feature = "napi-runtime")] {
-        /// Register the current crate as a Node module, providing startup
-        /// logic for initializing the module object at runtime.
-        ///
-        /// The first argument is a pattern bound to a `neon::context::ModuleContext`. This
-        /// is usually bound to a mutable variable `mut cx`, which can then be used to
-        /// pass to Neon APIs that require mutable access to an execution context.
-        ///
-        /// Example:
-        ///
-        /// ```rust,ignore
-        /// register_module!(mut cx, {
-        ///     cx.export_function("foo", foo)?;
-        ///     cx.export_function("bar", bar)?;
-        ///     cx.export_function("baz", baz)?;
-        ///     Ok(())
-        /// });
-        /// ```
-        #[macro_export]
-        macro_rules! register_module {
-            ($module:pat, $init:block) => {
-                #[no_mangle]
-                pub unsafe extern "C" fn napi_register_module_v1(
-                    _env: $crate::macro_internal::runtime::nodejs_sys::napi_env,
-                    exports: $crate::macro_internal::runtime::nodejs_sys::napi_value
-                ) -> $crate::macro_internal::runtime::nodejs_sys::napi_value
-                {
-                    // Suppress the default Rust panic hook, which prints diagnostics to stderr.
-                    ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
+            $init
 
-                    $init
+            exports
+        }
+    }
+}
 
-                    exports
+#[cfg(feature = "legacy-runtime")]
+/// Register the current crate as a Node module, providing startup
+/// logic for initializing the module object at runtime.
+///
+/// The first argument is a pattern bound to a `neon::context::ModuleContext`. This
+/// is usually bound to a mutable variable `mut cx`, which can then be used to
+/// pass to Neon APIs that require mutable access to an execution context.
+///
+/// Example:
+///
+/// ```rust,ignore
+/// register_module!(mut cx, {
+///     cx.export_function("foo", foo)?;
+///     cx.export_function("bar", bar)?;
+///     cx.export_function("baz", baz)?;
+///     Ok(())
+/// });
+/// ```
+#[macro_export]
+macro_rules! register_module {
+    ($module:pat, $init:block) => {
+        // Mark this function as a global constructor (like C++).
+        #[allow(improper_ctypes)]
+        #[cfg_attr(target_os = "linux", link_section = ".ctors")]
+        #[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
+        #[cfg_attr(target_os = "windows", link_section = ".CRT$XCU")]
+        #[used]
+        pub static __LOAD_NEON_MODULE: extern "C" fn() = {
+            fn __init_neon_module($module: $crate::context::ModuleContext) -> $crate::result::NeonResult<()> $init
+
+            extern "C" fn __load_neon_module() {
+                // Put everything else in the ctor fn so the user fn can't see it.
+                #[repr(C)]
+                struct __NodeModule {
+                    version: i32,
+                    flags: u32,
+                    dso_handle: *mut u8,
+                    filename: *const u8,
+                    register_func: Option<extern "C" fn(
+                        $crate::handle::Handle<$crate::types::JsObject>, *mut u8, *mut u8)>,
+                    context_register_func: Option<extern "C" fn(
+                        $crate::handle::Handle<$crate::types::JsObject>, *mut u8, *mut u8, *mut u8)>,
+                    modname: *const u8,
+                    priv_data: *mut u8,
+                    link: *mut __NodeModule
+                }
+
+                // Mark as used during tests to suppress warnings
+                #[cfg_attr(test, used)]
+                static mut __NODE_MODULE: __NodeModule = __NodeModule {
+                    version: 0,
+                    flags: 0,
+                    dso_handle: 0 as *mut _,
+                    filename: b"neon_source.rs\0" as *const u8,
+                    register_func: Some(__register_neon_module),
+                    context_register_func: None,
+                    modname: b"neon_module\0" as *const u8,
+                    priv_data: 0 as *mut _,
+                    link: 0 as *mut _
+                };
+
+                extern "C" fn __register_neon_module(
+                        m: $crate::handle::Handle<$crate::types::JsObject>, _: *mut u8, _: *mut u8) {
+                    $crate::macro_internal::initialize_module(m, __init_neon_module);
+                }
+
+                extern "C" {
+                    fn node_module_register(module: *mut __NodeModule);
+                }
+
+                // Suppress the default Rust panic hook, which prints diagnostics to stderr.
+                ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
+
+                // During tests, node is not available. Skip module registration.
+                #[cfg(not(test))]
+                unsafe {
+                    // Set the ABI version based on the NODE_MODULE_VERSION constant provided by the current node headers.
+                    __NODE_MODULE.version = $crate::macro_internal::runtime::module::get_version();
+                    node_module_register(&mut __NODE_MODULE);
                 }
             }
-        }
-    } else {
-        /// Register the current crate as a Node module, providing startup
-        /// logic for initializing the module object at runtime.
-        ///
-        /// The first argument is a pattern bound to a `neon::context::ModuleContext`. This
-        /// is usually bound to a mutable variable `mut cx`, which can then be used to
-        /// pass to Neon APIs that require mutable access to an execution context.
-        ///
-        /// Example:
-        ///
-        /// ```rust,ignore
-        /// register_module!(mut cx, {
-        ///     cx.export_function("foo", foo)?;
-        ///     cx.export_function("bar", bar)?;
-        ///     cx.export_function("baz", baz)?;
-        ///     Ok(())
-        /// });
-        /// ```
-        #[macro_export]
-        macro_rules! register_module {
-            ($module:pat, $init:block) => {
-                // Mark this function as a global constructor (like C++).
-                #[allow(improper_ctypes)]
-                #[cfg_attr(target_os = "linux", link_section = ".ctors")]
-                #[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
-                #[cfg_attr(target_os = "windows", link_section = ".CRT$XCU")]
-                #[used]
-                pub static __LOAD_NEON_MODULE: extern "C" fn() = {
-                    fn __init_neon_module($module: $crate::context::ModuleContext) -> $crate::result::NeonResult<()> $init
 
-                    extern "C" fn __load_neon_module() {
-                        // Put everything else in the ctor fn so the user fn can't see it.
-                        #[repr(C)]
-                        struct __NodeModule {
-                            version: i32,
-                            flags: u32,
-                            dso_handle: *mut u8,
-                            filename: *const u8,
-                            register_func: Option<extern "C" fn(
-                                $crate::handle::Handle<$crate::types::JsObject>, *mut u8, *mut u8)>,
-                            context_register_func: Option<extern "C" fn(
-                                $crate::handle::Handle<$crate::types::JsObject>, *mut u8, *mut u8, *mut u8)>,
-                            modname: *const u8,
-                            priv_data: *mut u8,
-                            link: *mut __NodeModule
-                        }
-
-                        // Mark as used during tests to suppress warnings
-                        #[cfg_attr(test, used)]
-                        static mut __NODE_MODULE: __NodeModule = __NodeModule {
-                            version: 0,
-                            flags: 0,
-                            dso_handle: 0 as *mut _,
-                            filename: b"neon_source.rs\0" as *const u8,
-                            register_func: Some(__register_neon_module),
-                            context_register_func: None,
-                            modname: b"neon_module\0" as *const u8,
-                            priv_data: 0 as *mut _,
-                            link: 0 as *mut _
-                        };
-
-                        extern "C" fn __register_neon_module(
-                                m: $crate::handle::Handle<$crate::types::JsObject>, _: *mut u8, _: *mut u8) {
-                            $crate::macro_internal::initialize_module(m, __init_neon_module);
-                        }
-
-                        extern "C" {
-                            fn node_module_register(module: *mut __NodeModule);
-                        }
-
-                        // Suppress the default Rust panic hook, which prints diagnostics to stderr.
-                        ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
-
-                        // During tests, node is not available. Skip module registration.
-                        #[cfg(not(test))]
-                        unsafe {
-                            // Set the ABI version based on the NODE_MODULE_VERSION constant provided by the current node headers.
-                            __NODE_MODULE.version = $crate::macro_internal::runtime::module::get_version();
-                            node_module_register(&mut __NODE_MODULE);
-                        }
-                    }
-
-                    __load_neon_module
-                };
-            }
-        }
+            __load_neon_module
+        };
     }
 }
 
