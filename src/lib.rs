@@ -410,12 +410,12 @@ mod tests {
     // In CI, we'll only run the static tests in Beta. This will catch changes to
     // error reporting and any associated usability regressions before a new Rust
     // version is released, but will have more stable results than Nightly.
-    #[cfg(features = "ci")]
+    #[cfg(feature = "ci")]
     #[rustversion::beta]
     #[test]
     fn static_test() { static_test_impl() }
 
-    #[cfg(not(features = "ci"))]
+    #[cfg(not(feature = "ci"))]
     #[test]
     fn static_test() { static_test_impl() }
 
