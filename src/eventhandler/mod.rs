@@ -29,10 +29,7 @@ pub struct EventHandler(Arc<EventHandlerInner>);
 impl EventHandler {
     pub fn new(callback: Handle<JsFunction>) -> Self {
         TaskContext::with(|mut cx: TaskContext| {
-            let cb = unsafe {
-                neon_runtime::threadsafecb::new(cx.global().to_raw(), callback.to_raw())
-            };
-            EventHandler(Arc::new(EventHandlerInner(cb)))
+            EventHandler::bind(cx.global(), callback)
         })
     }
 
@@ -47,10 +44,10 @@ impl EventHandler {
         where T: Value,
               F: for<'a> FnOnce(&mut TaskContext<'a>) -> Vec<Handle<'a, T>>,
               F: Send + 'static {
-        let callback = Box::into_raw(Box::new(arg_cb)) as *mut c_void;
-        unsafe {
-            neon_runtime::threadsafecb::call((*self.0).0, callback, handle_callback::<T, F>);
-        }
+        self.schedule_with(move |cx, this, callback| {
+            let args = arg_cb(cx);
+            let _result = callback.call(cx, this, args);
+        })
     }
 
     pub fn schedule_with<F>(&self, arg_cb: F)
@@ -58,23 +55,12 @@ impl EventHandler {
               F: Send + 'static {
         let callback = Box::into_raw(Box::new(arg_cb)) as *mut c_void;
         unsafe {
-            neon_runtime::threadsafecb::call((*self.0).0, callback, handle_callback_with::<F>);
+            neon_runtime::threadsafecb::call((*self.0).0, callback, handle_callback::<F>);
         }
     }
 }
 
-unsafe extern "C" fn handle_callback<T, F>(this: raw::Local, func: raw::Local, callback: *mut c_void)
-    where T: Value, F: for<'a> FnOnce(&mut TaskContext<'a>) -> Vec<Handle<'a, T>>, F: Send + 'static {
-    TaskContext::with(|mut cx: TaskContext| {
-        let this = JsValue::new_internal(this);
-        let func: Handle<JsFunction> = Handle::new_internal(JsFunction::from_raw(func));
-        let callback: Box<F> = Box::from_raw(mem::transmute(callback));
-        let args = callback(&mut cx);
-        let _result = func.call(&mut cx, this, args);
-    })
-}
-
-unsafe extern "C" fn handle_callback_with<F>(this: raw::Local, func: raw::Local, callback: *mut c_void)
+unsafe extern "C" fn handle_callback<F>(this: raw::Local, func: raw::Local, callback: *mut c_void)
     where F: FnOnce(&mut TaskContext, Handle<JsValue>, Handle<JsFunction>), F: Send + 'static {
     TaskContext::with(|mut cx: TaskContext| {
         let this = JsValue::new_internal(this);
