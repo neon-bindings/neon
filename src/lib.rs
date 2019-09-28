@@ -370,11 +370,13 @@ mod tests {
             ("sh", "-c")
         };
 
+        eprintln!("Running Neon test: {} {} {}", shell, command_flag, cmd);
+    
         assert!(Command::new(&shell)
                         .current_dir(dir)
                         .args(&[&command_flag, cmd])
                         .status()
-                        .expect("failed to execute test command")
+                        .expect(&format!("failed to execute test command: {} {} {}", shell, command_flag, cmd))
                         .success());
     }
 
