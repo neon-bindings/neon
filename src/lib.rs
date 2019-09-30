@@ -406,6 +406,8 @@ mod tests {
 
         log("static_test");
 
+        // Temporarily disabled in Windows; blocked on https://github.com/dtolnay/trybuild/issues/30
+        #[cfg(not(windows))]
         run("cargo test --release", &project_root().join("test").join("static"));
     }
 
