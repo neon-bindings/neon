@@ -13,7 +13,8 @@ type SpawnNeonNewOptions = {
   email?: string,
   license?: string,
   neon?: string,
-  features?: string
+  features?: string,
+  'no-default-features'?: boolean
 };
 
 function spawnNeonNew(cx: Mocha.ITestCallbackContext, name: string, opts: SpawnNeonNewOptions = {}, cb: () => void) {
@@ -34,6 +35,10 @@ function spawnNeonNew(cx: Mocha.ITestCallbackContext, name: string, opts: SpawnN
   if (opts.features) {
     args.push('--features');
     args.push(opts.features);
+  }
+
+  if (opts['no-default-features']) {
+    args.push('--no-default-features');
   }
 
   args.push(name);
@@ -88,8 +93,7 @@ function assertLocalNeon(cargo: any) {
 }
 
 function assertNeonFeatureFlags(cargo: any) {
-  assert.deepEqual(cargo['build-dependencies']['neon-build'].features, ["n-api"]);
-  assert.deepEqual(cargo.dependencies.neon.features, ["n-api"]);
+  assert.deepEqual(cargo.dependencies.neon.features, ["napi-runtime"]);
 }
 
 describe('neon new', function() {
@@ -174,7 +178,7 @@ describe('neon new', function() {
   });
 
   it('supports paths to Neon source directories and feature flags', function(done) {
-    spawnNeonNew(this, 'my-app', {neon: '.', features: 'n-api'}, () => {
+    spawnNeonNew(this, 'my-app', {neon: '.', features: 'napi-runtime'}, () => {
       let { pkg, cargo } = manifests(this.cwd, 'my-app');
       assertLocalNeonCli(pkg);
       assertLocalNeon(cargo);
@@ -184,10 +188,20 @@ describe('neon new', function() {
   });
 
   it('supports Neon feature flags', function(done) {
-    spawnNeonNew(this, 'my-app', {features: 'n-api'}, () => {
+    spawnNeonNew(this, 'my-app', {features: 'napi-runtime'}, () => {
       let { pkg, cargo } = manifests(this.cwd, 'my-app');
       assertNormalNeonCli(pkg);
       assertNeonFeatureFlags(cargo);
+      done();
+    });
+  });
+
+  it('supports Neon feature flags with defaults disabled', function(done) {
+    spawnNeonNew(this, 'my-app', {features: 'napi-runtime', 'no-default-features': true}, () => {
+      let { pkg, cargo } = manifests(this.cwd, 'my-app');
+      assertNormalNeonCli(pkg);
+      assertNeonFeatureFlags(cargo);
+      assert.nestedPropertyVal(cargo, 'dependencies.neon.default-features', false);
       done();
     });
   });
@@ -203,13 +217,12 @@ describe('neon new', function() {
   });
 
   it('supports semver ranges of Neon with feature flags', function(done) {
-    spawnNeonNew(this, 'my-app', {neon: '^0.2', features: 'n-api'}, () => {
+    spawnNeonNew(this, 'my-app', {neon: '^0.2', features: 'napi-runtime'}, () => {
       let { pkg, cargo } = manifests(this.cwd, 'my-app');
       assert.nestedPropertyVal(pkg, 'dependencies.neon-cli', '^0.2');
       assert.nestedPropertyVal(cargo, 'dependencies.neon.version', '^0.2');
-      assert.deepEqual(cargo.dependencies.neon.features, ['n-api']);
-      assert.nestedPropertyVal(cargo, 'build-dependencies.neon-build.version', '^0.2');
-      assert.deepEqual(cargo['build-dependencies']['neon-build'].features, ['n-api']);
+      assert.deepEqual(cargo.dependencies.neon.features, ['napi-runtime']);
+      assert.nestedPropertyVal(cargo, 'build-dependencies.neon-build', '^0.2');
       done();
     });
   });
@@ -225,13 +238,12 @@ describe('neon new', function() {
   });
 
   it('supports specific semver versions of Neon with feature flags', function(done) {
-    spawnNeonNew(this, 'my-app', {neon: '0.2.2', features: 'n-api'}, () => {
+    spawnNeonNew(this, 'my-app', {neon: '0.2.2', features: 'napi-runtime'}, () => {
       let { pkg, cargo } = manifests(this.cwd, 'my-app');
       assert.nestedPropertyVal(pkg, 'dependencies.neon-cli', '^0.2.2');
       assert.nestedPropertyVal(cargo, 'dependencies.neon.version', '0.2.2');
-      assert.deepEqual(cargo.dependencies.neon.features, ['n-api']);
-      assert.nestedPropertyVal(cargo, 'build-dependencies.neon-build.version', '0.2.2');
-      assert.deepEqual(cargo['build-dependencies']['neon-build'].features, ['n-api']);
+      assert.deepEqual(cargo.dependencies.neon.features, ['napi-runtime']);
+      assert.nestedPropertyVal(cargo, 'build-dependencies.neon-build', '0.2.2');
       done();
     });
   });

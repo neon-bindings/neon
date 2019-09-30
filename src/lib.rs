@@ -5,9 +5,6 @@ extern crate cslice;
 extern crate semver;
 
 #[cfg(test)]
-extern crate rustc_version;
-
-#[cfg(test)]
 #[macro_use]
 extern crate lazy_static;
 
@@ -24,6 +21,47 @@ pub mod prelude;
 #[doc(hidden)]
 pub mod macro_internal;
 
+#[cfg(all(feature = "legacy-runtime", feature = "napi-runtime"))]
+compile_error!("Cannot enable both `legacy-runtime` and `napi-runtime` features.\n\nTo use `napi-runtime`, disable `legacy-runtime` by setting `default-features` to `false` in Cargo.toml\nor with cargo's --no-default-features flag.");
+
+#[cfg(feature = "napi-runtime")]
+/// Register the current crate as a Node module, providing startup
+/// logic for initializing the module object at runtime.
+///
+/// The first argument is a pattern bound to a `neon::context::ModuleContext`. This
+/// is usually bound to a mutable variable `mut cx`, which can then be used to
+/// pass to Neon APIs that require mutable access to an execution context.
+///
+/// Example:
+///
+/// ```rust,ignore
+/// register_module!(mut cx, {
+///     cx.export_function("foo", foo)?;
+///     cx.export_function("bar", bar)?;
+///     cx.export_function("baz", baz)?;
+///     Ok(())
+/// });
+/// ```
+#[macro_export]
+macro_rules! register_module {
+    ($module:pat, $init:block) => {
+        #[no_mangle]
+        pub unsafe extern "C" fn napi_register_module_v1(
+            _env: $crate::macro_internal::runtime::nodejs_sys::napi_env,
+            exports: $crate::macro_internal::runtime::nodejs_sys::napi_value
+        ) -> $crate::macro_internal::runtime::nodejs_sys::napi_value
+        {
+            // Suppress the default Rust panic hook, which prints diagnostics to stderr.
+            ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
+
+            $init
+
+            exports
+        }
+    }
+}
+
+#[cfg(feature = "legacy-runtime")]
 /// Register the current crate as a Node module, providing startup
 /// logic for initializing the module object at runtime.
 ///
@@ -305,11 +343,10 @@ compile_error!("Neon only builds with --release. For tests, try `cargo test --re
 
 #[cfg(test)]
 mod tests {
+    extern crate rustversion;
     use std::path::{Path, PathBuf};
     use std::process::Command;
     use std::sync::Mutex;
-
-    use rustc_version::{version_meta, Channel};
 
     // Create a mutex to enforce sequential running of the tests.
     lazy_static! {
@@ -333,11 +370,13 @@ mod tests {
             ("sh", "-c")
         };
 
+        eprintln!("Running Neon test: {} {} {}", shell, command_flag, cmd);
+    
         assert!(Command::new(&shell)
                         .current_dir(dir)
                         .args(&[&command_flag, cmd])
                         .status()
-                        .expect("failed to execute test command")
+                        .expect(&format!("failed to execute test command: {} {} {}", shell, command_flag, cmd))
                         .success());
     }
 
@@ -362,19 +401,27 @@ mod tests {
         run("npm test", &test_cli);
     }
 
-    #[cfg(not(windows))]
-    #[test]
-    fn static_test() {
+    fn static_test_impl() {
         let _guard = TEST_MUTEX.lock();
 
         log("static_test");
 
-        if version_meta().unwrap().channel != Channel::Nightly {
-            return;
-        }
-
+        // Temporarily disabled in Windows; blocked on https://github.com/dtolnay/trybuild/issues/30
+        #[cfg(not(windows))]
         run("cargo test --release", &project_root().join("test").join("static"));
     }
+
+    // Only run the static tests in Beta. This will catch changes to error reporting
+    // and any associated usability regressions before a new Rust version is shipped
+    // but will have more stable results than Nightly.
+    #[rustversion::beta]
+    #[test]
+    fn static_test() { static_test_impl() }
+
+    #[rustversion::not(beta)]
+    #[test]
+    #[ignore]
+    fn static_test() { static_test_impl() }
 
     #[test]
     fn dynamic_test() {
@@ -412,7 +459,10 @@ mod tests {
         run("npm test", &test_electron);
     }
 
+    // Once we publish versions of neon-sys that match the versions of the other
+    // neon crates, `cargo package` can succeed again.
     #[test]
+    #[ignore]
     fn package_test() {
         let _guard = TEST_MUTEX.lock();
 

@@ -13,7 +13,7 @@ fn main() {
 
     let out_dir = Path::new(&out_dir);
     let native_from = Path::new(&crate_dir).join("native");
-    let native_to = out_dir.join("native");
+    let native_to = Path::new(&out_dir).join("native");
 
     // 1. Copy the native runtime library into the build directory.
     copy_native_library(&native_from, &native_to);
@@ -136,17 +136,17 @@ fn build_object_file(native_dir: &Path) {
     }
 
     // Ensure that all package.json dependencies and dev dependencies are installed.
-    npm(native_dir).args(&["install", "--silent"]).status().ok().expect("Failed to run \"npm install\" for neon-runtime!");
+    npm(native_dir).args(&["install", "--silent"]).status().ok().expect("Failed to run \"npm install\" for neon-sys!");
 
     // Run `node-gyp configure` in verbose mode to read node_root_dir on Windows.
     let output = npm(native_dir)
         .args(&["run", if debug() { "configure-debug" } else { "configure-release" }])
         .output()
-        .expect("Failed to run \"node-gyp configure\" for neon-runtime!");
+        .expect("Failed to run \"node-gyp configure\" for neon-sys!");
 
     if !output.status.success() {
         panic!(format!(
-            "Failed to run \"node-gyp configure\" for neon-runtime!\n Out: {}\n Err: {}",
+            "Failed to run \"node-gyp configure\" for neon-sys!\n Out: {}\n Err: {}",
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         ));
@@ -164,7 +164,7 @@ fn build_object_file(native_dir: &Path) {
         .args(&["run", if debug() { "build-debug" } else { "build-release" }])
         .status()
         .ok()
-        .expect("Failed to run \"node-gyp build\" for neon-runtime!");
+        .expect("Failed to run \"node-gyp build\" for neon-sys!");
 }
 
 // Link the built object file into a static library.

@@ -108,6 +108,7 @@ const spec: Spec = {
     args: [{ name: "name", type: String, defaultOption: true },
            { name: "neon", alias: "n", type: String },
            { name: "features", alias: "f", type: String },
+           { name: "no-default-features", type: Boolean },
            { name: "help", alias: "h", type: Boolean }],
     usage: [{
       header: "neon new",
@@ -127,6 +128,10 @@ const spec: Spec = {
         alias: "f",
         type: String,
         description: "Space-separated list of experimental Neon features to enable."
+      }, {
+        name: "no-default-features",
+        type: Boolean,
+        description: "Do not activate the `default` Neon feature."
       }]
     }],
     action: function(options) {
@@ -138,7 +143,8 @@ const spec: Spec = {
         return neon_new(this.cwd,
                         options.name as string,
                         (options.neon || null) as (string | null),
-                        (options.features || null) as (string | null));
+                        (options.features || null) as (string | null),
+                        !!options['no-default-features']);
       }
       return;
     }
