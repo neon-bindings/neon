@@ -34,9 +34,6 @@ legacy-runtime = ["neon-runtime/neon-sys", "neon-build/neon-sys"]
 # is disabled by default.
 napi-runtime = ["neon-runtime/nodejs-sys"]
 
-# Enabled by CI configs to allow selective enabling/disabling of tests in CI.
-ci = []
-
 [workspace]
 members = [
     "crates/neon-build",

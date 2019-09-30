@@ -411,16 +411,16 @@ mod tests {
         run("cargo test --release", &project_root().join("test").join("static"));
     }
 
-    // In CI, we'll only run the static tests in Beta. This will catch changes to
-    // error reporting and any associated usability regressions before a new Rust
-    // version is released, but will have more stable results than Nightly.
-    #[cfg(feature = "ci")]
+    // Only run the static tests in Beta. This will catch changes to error reporting
+    // and any associated usability regressions before a new Rust version is shipped
+    // but will have more stable results than Nightly.
     #[rustversion::beta]
     #[test]
     fn static_test() { static_test_impl() }
 
-    #[cfg(not(feature = "ci"))]
+    #[rustversion::not(beta)]
     #[test]
+    #[ignore]
     fn static_test() { static_test_impl() }
 
     #[test]
