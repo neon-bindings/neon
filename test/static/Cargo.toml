@@ -8,4 +8,4 @@ license = "MIT/Apache-2.0"
 neon = { path = "../../" }
 
 [dev-dependencies]
-trybuild = "1.0.14"
+trybuild = "1.0.15"
