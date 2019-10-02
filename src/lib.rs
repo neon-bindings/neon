@@ -477,4 +477,17 @@ mod tests {
             run("cargo package --allow-dirty", &test_package);            
         }
     }
+
+    #[test]
+    fn napi_test() {
+        let _guard = TEST_MUTEX.lock();
+
+        log("napi_test");
+
+        cli_setup();
+
+        let test_napi = project_root().join("test").join("napi");
+        run("npm install", &test_napi);
+        run("npm test", &test_napi);
+    }
 }
