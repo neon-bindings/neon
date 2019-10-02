@@ -42,4 +42,5 @@ members = [
     "test/static",
     "test/electron/native",
     "test/dynamic/native",
+    "test/napi/native"
 ]
