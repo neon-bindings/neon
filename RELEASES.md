@@ -1,3 +1,30 @@
+# Version 0.3.2
+
+## Bug fixes and Small Features
+
+* Disable node module registration on test build, allowing `cargo test` to be used on neon modules
+* Added support for alternate `CARGO_TARGET_DIR` locations (e.g., workspaces)
+* Added macros to `neon::prelude` to improve ergonomics in Rust 2018
+* Link `win_delay_hook` when building with `electron-build-env`, fixing Windows Electron
+* Fixed missing `__cxa_pure_virtual` on Linux
+* Copy native files into `OUT_DIR` and build there to fix `cargo publish` and follow best practices
+* Eliminated `mem::uniitialized()` usage, reducing warnings and fixing an instance of undefined behavior
+
+## Potentially Breaking
+
+The macOS link arguments were moved from `neon-cli` to `neon-build`. This is more idiomatic, but makes `neon-build` _required_ for macOS builds where it was unnecessary before.
+
+Since `neon-build` has been included in the project template since `0.1` this change was not deemed significant enough to warrant a major revision.
+
+## N-API
+
+Neon 0.3.2 lays the groundwork for the next major revision. Development of Neon against an ABI stable Node API (N-API) will occur on master.
+
+* Added `legacy-runtime` and `n-api` feature flags for toggling neon runtime
+* Moved the legacy runtime to `nodejs-sys` crate
+* Stubbed required `n-api` implementation
+* Added `feature` flag to `neon-cli` to help configuring `n-api` projects
+
 # Version 0.3.1
 
 * Build v0.3 project templates by default in the CLI
