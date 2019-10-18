@@ -7,5 +7,5 @@ pub use borrow::{Borrow, BorrowMut};
 pub use context::{CallKind, Context, ModuleContext, ExecuteContext, ComputeContext, CallContext, FunctionContext, MethodContext, TaskContext};
 pub use result::{NeonResult, JsResult, JsResultExt};
 pub use task::Task;
-pub use eventhandler::EventHandler;
+pub use event::EventHandler;
 pub use crate::{register_module, declare_types};

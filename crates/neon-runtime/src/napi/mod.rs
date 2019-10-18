@@ -14,3 +14,4 @@ pub mod scope;
 pub mod string;
 pub mod tag;
 pub mod task;
+pub mod handler;

@@ -1,5 +1,5 @@
-#ifndef NEON_THREADSAFE_CALLBACK_H_
-#define NEON_THREADSAFE_CALLBACK_H_
+#ifndef NEON_EVENTHANDLER_H_
+#define NEON_EVENTHANDLER_H_
 
 #include <uv.h>
 #include "neon.h"
@@ -8,14 +8,16 @@
 
 namespace neon {
 
-    class ThreadSafeCallback {
+    // THe implementation of this class was adapted from
+    // https://github.com/mika-fischer/napi-thread-safe-callback
+    class EventHandler {
     public:
-        ThreadSafeCallback(v8::Isolate *isolate,
+        EventHandler(v8::Isolate *isolate,
                            v8::Local<v8::Value> self,
                            v8::Local<v8::Function> callback): isolate_(isolate), close_(false)
         {
             async_.data = this;
-            uv_async_init(uv_default_loop(), &async_, async_callback);
+            uv_async_init(uv_default_loop(), &async_, async_complete);
             // Save the this argument and the callback to be invoked.
             self_.Reset(isolate, self);
             callback_.Reset(isolate, callback);
@@ -23,7 +25,7 @@ namespace neon {
             context_.Reset(isolate, isolate->GetCurrentContext());
         }
 
-        void call(void *rust_callback, Neon_ThreadSafeCallbackHandler handler) {
+        void schedule(void *rust_callback, Neon_EventHandler handler) {
             {
                 std::lock_guard<std::mutex> lock(mutex_);
                 handlers_.push_back({ rust_callback, handler });
@@ -39,7 +41,7 @@ namespace neon {
             uv_async_send(&async_);
         }
 
-        void async_call() {
+        void complete() {
             // Ensure that we have all the proper scopes installed on the C++ stack before
             // invoking the callback, and use the context (i.e. realm) we saved with the task.
             v8::Isolate::Scope isolate_scope(isolate_);
@@ -67,15 +69,15 @@ namespace neon {
 
             if (close_) {
                 uv_close(reinterpret_cast<uv_handle_t*>(&async_), [](uv_handle_t* handle) {
-                    delete static_cast<ThreadSafeCallback*>(handle->data);
+                    delete static_cast<EventHandler*>(handle->data);
                 });
             }
         }
 
     private:
-        static void async_callback(uv_async_t* handle) {
-            ThreadSafeCallback* cb = static_cast<ThreadSafeCallback*>(handle->data);
-            cb->async_call();
+        static void async_complete(uv_async_t* handle) {
+            EventHandler* cb = static_cast<EventHandler*>(handle->data);
+            cb->complete();
         }
 
         uv_async_t async_;
@@ -86,7 +88,7 @@ namespace neon {
 
         struct HandlerData {
             void *rust_callback;
-            Neon_ThreadSafeCallbackHandler handler;
+            Neon_EventHandler handler;
         };
 
         std::mutex mutex_;
