@@ -26,9 +26,8 @@ export default class Project {
 
   static async create(root: string, options: Partial<ProjectOptions> = {}): Promise<Project> {
     let { crate = 'native' } = options;
-    const { stdout } = await execFile("cargo", ["metadata", "--format-version=1"], {
-      cwd: path.join(root, crate),
-      maxBuffer: 1024 * 1024
+    const { stdout } = await execFile("cargo", ["metadata", "--format-version=1", "--no-deps"], {
+      cwd: path.join(root, crate)
     });
     const targetDirectory: string = JSON.parse(stdout).target_directory;
 
