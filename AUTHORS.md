@@ -4,6 +4,7 @@ Neon owes its existence to the contributions of these fine people.
 
 * [Reza Akhavan](https://github.com/jedireza)
 * [Nerijus Arlauskas](https://github.com/Nercury)
+* [Igor Artamonov](https://github.com/splix)
 * [Tim Blair](https://github.com/tblair)
 * [Max Brunsfeld](https://github.com/maxbrunsfeld)
 * [Dale Bustad](https://github.com/divmain)

@@ -1,3 +1,7 @@
+# Version 0.3.3
+
+Hot fix for `neon build` in projects with many dependencies.
+
 # Version 0.3.2
 
 ## Bug fixes and Small Features
