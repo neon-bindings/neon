@@ -257,12 +257,23 @@ impl ValueInternal for JsString {
 }
 
 impl JsString {
+    #[cfg(feature = "legacy-runtime")]
     pub fn size(self) -> isize {
         unsafe {
             neon_runtime::string::utf8_len(self.to_raw())
         }
     }
 
+    #[cfg(feature = "napi-runtime")]
+    pub fn size<'a, C: Context<'a>>(self, cx: &mut C) -> isize {
+        let env = cx.env().to_raw();
+
+        unsafe {
+            neon_runtime::string::utf8_len(env, self.to_raw())
+        }
+    }
+
+    #[cfg(feature = "legacy-runtime")]
     pub fn value(self) -> String {
         unsafe {
             let capacity = neon_runtime::string::utf8_len(self.to_raw());
@@ -270,6 +281,20 @@ impl JsString {
             let p = buffer.as_mut_ptr();
             std::mem::forget(buffer);
             let len = neon_runtime::string::data(p, capacity, self.to_raw());
+            String::from_raw_parts(p, len as usize, capacity as usize)
+        }
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> String {
+        let env = cx.env().to_raw();
+
+        unsafe {
+            let capacity = neon_runtime::string::utf8_len(env, self.to_raw());
+            let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
+            let p = buffer.as_mut_ptr();
+            std::mem::forget(buffer);
+            let len = neon_runtime::string::data(env, p, capacity, self.to_raw());
             String::from_raw_parts(p, len as usize, capacity as usize)
         }
     }
