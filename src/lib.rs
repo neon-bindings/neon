@@ -47,16 +47,24 @@ macro_rules! register_module {
     ($module:pat, $init:block) => {
         #[no_mangle]
         pub unsafe extern "C" fn napi_register_module_v1(
-            _env: $crate::macro_internal::runtime::nodejs_sys::napi_env,
-            exports: $crate::macro_internal::runtime::nodejs_sys::napi_value
+            env: $crate::macro_internal::runtime::nodejs_sys::napi_env,
+            m: $crate::macro_internal::runtime::nodejs_sys::napi_value
         ) -> $crate::macro_internal::runtime::nodejs_sys::napi_value
         {
             // Suppress the default Rust panic hook, which prints diagnostics to stderr.
-            ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
+            // FIXME: Need this for debugging unimplemented panics
+            // ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
 
-            $init
+            fn __init_neon_module($module: $crate::context::ModuleContext) -> $crate::result::NeonResult<()> $init
 
-            exports
+            $crate::macro_internal::initialize_module(
+                // FIXME: Can we do without these?
+                std::mem::transmute(env),
+                std::mem::transmute(m),
+                __init_neon_module,
+            );
+
+            m
         }
     }
 }

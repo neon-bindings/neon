@@ -53,7 +53,7 @@ impl Env {
 
     #[cfg(feature = "napi-runtime")]
     pub(crate) fn current() -> Env {
-        unimplemented!()
+        panic!("Context::current() will not implemented with n-api")
     }
 
     #[cfg(feature = "legacy-runtime")]
@@ -75,9 +75,8 @@ pub struct Scope<'a, R: Root + 'static> {
 }
 
 impl<'a, R: Root + 'static> Scope<'a, R> {
-    pub fn with<T, F: for<'b> FnOnce(Scope<'b, R>) -> T>(f: F) -> T {
+    pub fn with<T, F: for<'b> FnOnce(Scope<'b, R>) -> T>(env: Env, f: F) -> T {
         let mut handle_scope: R = unsafe { R::allocate() };
-        let env = Env::current();
         unsafe {
             handle_scope.enter(env.to_raw());
         }
@@ -119,8 +118,18 @@ pub trait ContextInternal<'a>: Sized {
     fn deactivate(&self) { self.scope_metadata().active.set(false); }
 }
 
+#[cfg(feature = "legacy-runtime")]
 pub fn initialize_module(exports: Handle<JsObject>, init: fn(ModuleContext) -> NeonResult<()>) {
-    ModuleContext::with(exports, |cx| {
+    let env = Env::current();
+
+    ModuleContext::with(env, exports, |cx| {
+        let _ = init(cx);
+    });
+}
+
+#[cfg(feature = "napi-runtime")]
+pub fn initialize_module(env: Env, exports: Handle<JsObject>, init: fn(ModuleContext) -> NeonResult<()>) {
+    ModuleContext::with(env, exports, |cx| {
         let _ = init(cx);
     });
 }
