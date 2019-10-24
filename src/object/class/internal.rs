@@ -22,7 +22,7 @@ impl<T: Class> Callback<()> for MethodCallback<T> {
                 let this: Handle<JsValue> = Handle::new_internal(JsValue::from_raw(info.this(&mut cx)));
                 if !this.is_a::<T>() {
                     if let Ok(metadata) = T::metadata(&mut cx) {
-                        neon_runtime::class::throw_this_error(mem::transmute(cx.isolate()), metadata.pointer);
+                        neon_runtime::class::throw_this_error(mem::transmute(cx.env()), metadata.pointer);
                     }
                     return;
                 };
@@ -48,7 +48,7 @@ impl ConstructorCallCallback {
         fn callback<T: Class>(mut cx: CallContext<JsValue>) -> JsResult<JsValue> {
             unsafe {
                 if let Ok(metadata) = T::metadata(&mut cx) {
-                    neon_runtime::class::throw_call_error(mem::transmute(cx.isolate()), metadata.pointer);
+                    neon_runtime::class::throw_call_error(mem::transmute(cx.env()), metadata.pointer);
                 }
             }
             Err(Throw)
@@ -138,7 +138,7 @@ pub struct ClassMetadata {
 impl ClassMetadata {
     pub unsafe fn constructor<'a, T: Class, C: Context<'a>>(&self, cx: &mut C) -> JsResult<'a, JsFunction<T>> {
         build(|out| {
-            neon_runtime::class::metadata_to_constructor(out, mem::transmute(cx.isolate()), self.pointer)
+            neon_runtime::class::metadata_to_constructor(out, mem::transmute(cx.env()), self.pointer)
         })
     }
 

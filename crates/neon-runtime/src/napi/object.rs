@@ -1,10 +1,10 @@
-use raw::{Isolate, Local};
+use raw::{Env, Local};
 
 pub unsafe extern "C" fn new(_out: &mut Local) { unimplemented!() }
 
 pub unsafe extern "C" fn get_own_property_names(_out: &mut Local, _object: Local) -> bool { unimplemented!() }
 
-pub unsafe extern "C" fn get_isolate(_obj: Local) -> *mut Isolate { unimplemented!() }
+pub unsafe extern "C" fn get_isolate(_obj: Local) -> Env { unimplemented!() }
 
 pub unsafe extern "C" fn get_index(_out: &mut Local, _object: Local, _index: u32) -> bool { unimplemented!() }
 

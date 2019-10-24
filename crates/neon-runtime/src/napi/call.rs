@@ -1,6 +1,6 @@
 use std::os::raw::c_void;
 use std::ptr::null_mut;
-use raw::{FunctionCallbackInfo, Isolate, Local};
+use raw::{FunctionCallbackInfo, Env, Local};
 
 #[repr(C)]
 pub struct CCallback {
@@ -19,9 +19,9 @@ impl Default for CCallback {
 
 pub unsafe extern "C" fn set_return(_info: &FunctionCallbackInfo, _value: Local) { unimplemented!() }
 
-pub unsafe extern "C" fn get_isolate(_info: &FunctionCallbackInfo) -> *mut Isolate { unimplemented!() }
+pub unsafe extern "C" fn get_isolate(_info: &FunctionCallbackInfo) -> Env { unimplemented!() }
 
-pub unsafe extern "C" fn current_isolate() -> *mut Isolate { unimplemented!() }
+pub unsafe extern "C" fn current_isolate() -> Env { unimplemented!() }
 
 pub unsafe extern "C" fn is_construct(_info: &FunctionCallbackInfo) -> bool { unimplemented!() }
 

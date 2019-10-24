@@ -283,7 +283,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     fn global(&mut self) -> Handle<'a, JsObject> {
         JsObject::build(|out| {
             unsafe {
-                neon_runtime::scope::get_global(self.isolate().to_raw(), out);
+                neon_runtime::scope::get_global(self.env().to_raw(), out);
             }
         })
     }

@@ -13,7 +13,7 @@ use std::marker::PhantomData;
 use neon_runtime;
 use neon_runtime::raw;
 use context::{Context, FunctionContext};
-use context::internal::Isolate;
+use context::internal::Env;
 use result::{NeonResult, JsResult, Throw, JsResultExt};
 use object::{Object, This};
 use object::class::Callback;
@@ -280,13 +280,13 @@ impl JsString {
 
     pub fn try_new<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, val: S) -> StringResult<'a> {
         let val = val.as_ref();
-        match JsString::new_internal(cx.isolate(), val) {
+        match JsString::new_internal(cx.env(), val) {
             Some(s) => Ok(s),
             None => Err(StringOverflow(val.len()))
         }
     }
 
-    pub(crate) fn new_internal<'a>(isolate: Isolate, val: &str) -> Option<Handle<'a, JsString>> {
+    pub(crate) fn new_internal<'a>(env: Env, val: &str) -> Option<Handle<'a, JsString>> {
         let (ptr, len) = if let Some(small) = Utf8::from(val).into_small() {
             small.lower()
         } else {
@@ -295,7 +295,7 @@ impl JsString {
 
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            if neon_runtime::string::new(&mut local, isolate.to_raw(), ptr, len) {
+            if neon_runtime::string::new(&mut local, env.to_raw(), ptr, len) {
                 Some(Handle::new_internal(JsString(local)))
             } else {
                 None
@@ -311,13 +311,13 @@ pub struct JsNumber(raw::Local);
 
 impl JsNumber {
     pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, x: T) -> Handle<'a, JsNumber> {
-        JsNumber::new_internal(cx.isolate(), x.into())
+        JsNumber::new_internal(cx.env(), x.into())
     }
 
-    pub(crate) fn new_internal<'a>(isolate: Isolate, v: f64) -> Handle<'a, JsNumber> {
+    pub(crate) fn new_internal<'a>(env: Env, v: f64) -> Handle<'a, JsNumber> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::number(&mut local, isolate.to_raw(), v);
+            neon_runtime::primitive::number(&mut local, env.to_raw(), v);
             Handle::new_internal(JsNumber(local))
         }
     }
@@ -398,13 +398,13 @@ pub struct JsArray(raw::Local);
 
 impl JsArray {
     pub fn new<'a, C: Context<'a>>(cx: &mut C, len: u32) -> Handle<'a, JsArray> {
-        JsArray::new_internal(cx.isolate(), len)
+        JsArray::new_internal(cx.env(), len)
     }
 
-    pub(crate) fn new_internal<'a>(isolate: Isolate, len: u32) -> Handle<'a, JsArray> {
+    pub(crate) fn new_internal<'a>(env: Env, len: u32) -> Handle<'a, JsArray> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::array::new(&mut local, isolate.to_raw(), len);
+            neon_runtime::array::new(&mut local, env.to_raw(), len);
             Handle::new_internal(JsArray(local))
         }
     }
@@ -461,7 +461,7 @@ impl<T: Object> Object for JsFunction<T> { }
 // Maximum number of function arguments in V8.
 const V8_ARGC_LIMIT: usize = 65535;
 
-unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [Handle<'b, A>]) -> NeonResult<(*mut c_void, i32, *mut c_void)>
+unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [Handle<'b, A>]) -> NeonResult<(i32, *mut c_void)>
     where A: Value + 'b
 {
     let argv = args.as_mut_ptr();
@@ -469,8 +469,7 @@ unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [Handle
     if argc > V8_ARGC_LIMIT {
         return cx.throw_range_error("too many arguments");
     }
-    let isolate: *mut c_void = std::mem::transmute(cx.isolate().to_raw());
-    Ok((isolate, argc as i32, argv as *mut c_void))
+    Ok((argc as i32, argv as *mut c_void))
 }
 
 impl JsFunction {
@@ -480,9 +479,9 @@ impl JsFunction {
     {
         build(|out| {
             unsafe {
-                let isolate: *mut c_void = std::mem::transmute(cx.isolate().to_raw());
+                let env = std::mem::transmute(cx.env().to_raw());
                 let callback = FunctionCallback(f).into_c_callback();
-                neon_runtime::fun::new(out, isolate, callback)
+                neon_runtime::fun::new(out, env, callback)
             }
         })
     }
@@ -495,10 +494,11 @@ impl<CL: Object> JsFunction<CL> {
               AS: IntoIterator<Item=Handle<'b, A>>
     {
         let mut args = args.into_iter().collect::<Vec<_>>();
-        let (isolate, argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
+        let (argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
+        let env = cx.env().to_raw();
         build(|out| {
             unsafe {
-                neon_runtime::fun::call(out, isolate, self.to_raw(), this.to_raw(), argc, argv)
+                neon_runtime::fun::call(out, env, self.to_raw(), this.to_raw(), argc, argv)
             }
         })
     }
@@ -508,10 +508,11 @@ impl<CL: Object> JsFunction<CL> {
               AS: IntoIterator<Item=Handle<'b, A>>
     {
         let mut args = args.into_iter().collect::<Vec<_>>();
-        let (isolate, argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
+        let (argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
+        let env = cx.env().to_raw();
         build(|out| {
             unsafe {
-                neon_runtime::fun::construct(out, isolate, self.to_raw(), argc, argv)
+                neon_runtime::fun::construct(out, env, self.to_raw(), argc, argv)
             }
         })
     }

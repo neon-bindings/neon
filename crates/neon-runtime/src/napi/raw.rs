@@ -1,6 +1,8 @@
 use std::os::raw::c_void;
 use std::ptr;
 
+use nodejs_sys as napi;
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct Local {
@@ -9,7 +11,7 @@ pub struct Local {
 
 pub type FunctionCallbackInfo = c_void;
 
-pub type Isolate = c_void;
+pub type Env = napi::napi_env;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
