@@ -3,11 +3,7 @@ use std::ptr;
 
 use nodejs_sys as napi;
 
-#[repr(C)]
-#[derive(Clone, Copy)]
-pub struct Local {
-    pub handle: *mut c_void
-}
+pub type  Local = napi::napi_value;
 
 pub type FunctionCallbackInfo = c_void;
 
@@ -16,7 +12,7 @@ pub type Env = napi::napi_env;
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct HandleScope {
-    pub word: *mut c_void
+    pub word: napi::napi_handle_scope
 }
 
 impl HandleScope {
@@ -26,7 +22,7 @@ impl HandleScope {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct EscapableHandleScope {
-    pub word: *mut c_void
+    pub word: napi::napi_escapable_handle_scope
 }
 
 impl EscapableHandleScope {

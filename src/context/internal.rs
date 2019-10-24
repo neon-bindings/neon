@@ -91,7 +91,7 @@ impl<'a, R: Root + 'static> Scope<'a, R> {
             f(scope)
         };
         unsafe {
-            handle_scope.exit();
+            handle_scope.exit(env.to_raw());
         }
         result
     }
