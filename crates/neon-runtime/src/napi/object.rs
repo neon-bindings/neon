@@ -12,7 +12,10 @@ pub unsafe extern "C" fn set_index(_out: &mut bool, _object: Local, _index: u32,
 
 pub unsafe extern "C" fn get_string(_out: &mut Local, _object: Local, _key: *const u8, _len: i32) -> bool { unimplemented!() }
 
-pub unsafe extern "C" fn set_string(_out: &mut bool, _object: Local, _key: *const u8, _len: i32, _val: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn set_string(out: &mut bool, object: Local, key: *const u8, len: i32, val: Local) -> bool {
+    // napi_set_named_property
+    unimplemented!()
+}
 
 pub unsafe extern "C" fn get(_out: &mut Local, _object: Local, _key: Local) -> bool { unimplemented!() }
 
