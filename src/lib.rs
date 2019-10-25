@@ -24,7 +24,7 @@ pub mod macro_internal;
 #[cfg(all(feature = "legacy-runtime", feature = "napi-runtime"))]
 compile_error!("Cannot enable both `legacy-runtime` and `napi-runtime` features.\n\nTo use `napi-runtime`, disable `legacy-runtime` by setting `default-features` to `false` in Cargo.toml\nor with cargo's --no-default-features flag.");
 
-#[cfg(feature = "napi-runtime")]
+#[cfg(all(feature = "napi-runtime", not(feature = "legacy-runtime")))]
 /// Register the current crate as a Node module, providing startup
 /// logic for initializing the module object at runtime.
 ///
