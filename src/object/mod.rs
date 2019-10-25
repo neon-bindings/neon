@@ -85,13 +85,15 @@ impl<'a> PropertyKey for &'a str {
 
     unsafe fn set_from<'c, C: Context<'c>>(
         self,
-        _cx: &mut C,
+        cx: &mut C,
         out: &mut bool,
         obj: raw::Local,
         val: raw::Local,
     ) -> bool {
         let (ptr, len) = Utf8::from(self).into_small_unwrap().lower();
-        neon_runtime::object::set_string(out, obj, ptr, len, val)
+        let env = cx.env().to_raw();
+
+        neon_runtime::object::set_string(env, out, obj, ptr, len, val)
     }
 }
 

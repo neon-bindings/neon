@@ -1,5 +1,7 @@
 //! Facilities for working with `v8::Object`s.
 
+use raw::{Isolate, Local};
+
 /// Mutates the `out` argument provided to refer to a newly created `v8::Object`.
 pub use neon_sys::Neon_Object_New as new;
 
@@ -25,7 +27,16 @@ pub use neon_sys::Neon_Object_Get_String as get_string;
 
 /// Sets the underlying content of a `v8::String` object. Also mutates the `out` argument
 /// provided to refer to a `v8::Local` boolean value, `true` if the set was successful.
-pub use neon_sys::Neon_Object_Set_String as set_string;
+pub unsafe extern "C" fn set_string(
+    _: Isolate,
+    out: &mut bool,
+    object: Local,
+    key: *const u8,
+    len: i32,
+    val: Local,
+) -> bool {
+    neon_sys::Neon_Object_Set_String(out, object, key, len, val)
+}
 
 /// Mutates the `out` argument provided to refer to the `v8::Local` value at the `key`
 /// provided. Returns `false` if the result couldn't be retrieved.
