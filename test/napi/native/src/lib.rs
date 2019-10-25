@@ -2,9 +2,9 @@ use neon::prelude::*;
 
 register_module!(mut cx, {
     let s = cx.string("Hello, World!");
-    let s = s.value(&mut cx);
 
-    println!("{}", s);
+    println!("{}", s.value(&mut cx));
+    cx.export_value("greeting", s)?;
 
     Ok(())
 });
