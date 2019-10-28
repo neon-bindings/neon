@@ -51,9 +51,20 @@ macro_rules! register_module {
             m: $crate::macro_internal::runtime::nodejs_sys::napi_value
         ) -> $crate::macro_internal::runtime::nodejs_sys::napi_value
         {
+            // Uses the same environment variables and patterns as `std::backtrace`
+            // https://github.com/rust-lang/rust/blob/03a50ae9b87021d4a166c70d2c932f1cb0aa8f28/src/libstd/backtrace.rs#L165-L184
+            let backtrace_enabled = match ::std::env::var("RUST_LIB_BACKTRACE") {
+                Ok(s) => s != "0",
+                Err(_) => match ::std::env::var("RUST_BACKTRACE") {
+                    Ok(s) => s != "0",
+                    Err(_) => false,
+                },
+            };
+
             // Suppress the default Rust panic hook, which prints diagnostics to stderr.
-            // FIXME: Need this for debugging unimplemented panics
-            // ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
+            if !backtrace_enabled {
+                ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
+            }
 
             fn __init_neon_module($module: $crate::context::ModuleContext) -> $crate::result::NeonResult<()> $init
 
