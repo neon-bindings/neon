@@ -496,6 +496,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(windows))]
     #[test]
     fn napi_test() {
         let _guard = TEST_MUTEX.lock();
