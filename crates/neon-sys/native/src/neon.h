@@ -136,8 +136,7 @@ extern "C" {
 
   typedef void (*Neon_EventHandler)(v8::Local<v8::Value> self, v8::Local<v8::Value> callback, void* arg_cb);
 
-  void* Neon_EventHandler_New(v8::Local<v8::Function> callback);
-  void* Neon_EventHandler_Bind(v8::Local<v8::Value> self, v8::Local<v8::Function> callback);
+  void* Neon_EventHandler_New(v8::Isolate *isolate, v8::Local<v8::Value> self, v8::Local<v8::Function> callback);
   void Neon_EventHandler_Schedule(void* thread_safe_cb, void* rust_callback, Neon_EventHandler handler);
   void Neon_EventHandler_Delete(void* thread_safe_cb);
 }

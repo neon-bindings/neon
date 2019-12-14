@@ -8,6 +8,7 @@ use handle::{Handle, Managed};
 use neon_runtime;
 use neon_runtime::raw;
 use std::sync::Arc;
+use context::Context;
 
 type EventContext<'a> = crate::context::TaskContext<'a>;
 
@@ -28,16 +29,9 @@ impl Drop for EventHandlerInner {
 pub struct EventHandler(Arc<EventHandlerInner>);
 
 impl EventHandler {
-    pub fn new(callback: Handle<JsFunction>) -> Self {
+    pub fn new<'a, C: Context<'a>, T: Value>(cx: &C, this: Handle<T>, callback: Handle<JsFunction>) -> Self {
         let cb = unsafe {
-            neon_runtime::handler::new(callback.to_raw())
-        };
-        EventHandler(Arc::new(EventHandlerInner(cb)))
-    }
-
-    pub fn bind<T: Value>(this: Handle<T>, callback: Handle<JsFunction>) -> Self {
-        let cb = unsafe {
-            neon_runtime::handler::bind(this.to_raw(), callback.to_raw())
+            neon_runtime::handler::new(cx.isolate().to_raw(), this.to_raw(), callback.to_raw())
         };
         EventHandler(Arc::new(EventHandlerInner(cb)))
     }

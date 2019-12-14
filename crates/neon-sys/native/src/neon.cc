@@ -522,14 +522,7 @@ extern "C" void Neon_Task_Schedule(void *task, Neon_TaskPerformCallback perform,
   neon::queue_task(internal_task);
 }
 
-extern "C" void* Neon_EventHandler_New(v8::Local<v8::Function> callback) {
-  v8::Isolate *isolate = v8::Isolate::GetCurrent();
-  v8::Local<v8::Object> global = isolate->GetCurrentContext()->Global();
-  return new neon::EventHandler(isolate, global, callback);
-}
-
-extern "C" void* Neon_EventHandler_Bind(v8::Local<v8::Value> self, v8::Local<v8::Function> callback) {
-  v8::Isolate *isolate = v8::Isolate::GetCurrent();
+extern "C" void* Neon_EventHandler_New(v8::Isolate *isolate, v8::Local<v8::Value> self, v8::Local<v8::Function> callback) {
   return new neon::EventHandler(isolate, self, callback);
 }
 
