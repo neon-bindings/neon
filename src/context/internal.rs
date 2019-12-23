@@ -128,8 +128,8 @@ pub fn initialize_module(exports: Handle<JsObject>, init: fn(ModuleContext) -> N
 }
 
 #[cfg(feature = "napi-runtime")]
-pub fn initialize_module(env: Env, exports: Handle<JsObject>, init: fn(ModuleContext) -> NeonResult<()>) {
-    ModuleContext::with(env, exports, |cx| {
+pub fn initialize_module(env: raw::Env, exports: Handle<JsObject>, init: fn(ModuleContext) -> NeonResult<()>) {
+    ModuleContext::with(Env(env), exports, |cx| {
         let _ = init(cx);
     });
 }

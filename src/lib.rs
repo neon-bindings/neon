@@ -45,32 +45,24 @@ compile_error!("Cannot enable both `legacy-runtime` and `napi-runtime` features.
 #[macro_export]
 macro_rules! register_module {
     ($module:pat, $init:block) => {
+        register_module!(|$module| $init);
+    };
+
+    (|$module:pat| $init:block) => {
         #[no_mangle]
         pub unsafe extern "C" fn napi_register_module_v1(
             env: $crate::macro_internal::runtime::nodejs_sys::napi_env,
             m: $crate::macro_internal::runtime::nodejs_sys::napi_value
         ) -> $crate::macro_internal::runtime::nodejs_sys::napi_value
         {
-            // Uses the same environment variables and patterns as `std::backtrace`
-            // https://github.com/rust-lang/rust/blob/03a50ae9b87021d4a166c70d2c932f1cb0aa8f28/src/libstd/backtrace.rs#L165-L184
-            let backtrace_enabled = match ::std::env::var("RUST_LIB_BACKTRACE") {
-                Ok(s) => s != "0",
-                Err(_) => match ::std::env::var("RUST_BACKTRACE") {
-                    Ok(s) => s != "0",
-                    Err(_) => false,
-                },
-            };
-
             // Suppress the default Rust panic hook, which prints diagnostics to stderr.
-            if !backtrace_enabled {
-                ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
-            }
+            #[cfg(not(feature = "default-panic-hook"))]
+            ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
 
             fn __init_neon_module($module: $crate::context::ModuleContext) -> $crate::result::NeonResult<()> $init
 
             $crate::macro_internal::initialize_module(
-                // FIXME: Can we do without these?
-                std::mem::transmute(env),
+                env,
                 std::mem::transmute(m),
                 __init_neon_module,
             );
@@ -151,6 +143,7 @@ macro_rules! register_module {
                 }
 
                 // Suppress the default Rust panic hook, which prints diagnostics to stderr.
+                #[cfg(not(feature = "default-panic-hook"))]
                 ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
 
                 // During tests, node is not available. Skip module registration.

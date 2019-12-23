@@ -6,10 +6,10 @@ use neon_runtime::raw;
 use handle::Managed;
 
 pub use self::class::{Class, ClassDescriptor};
-pub use self::internal::*;
+pub use self::traits::*;
 
 #[cfg(feature = "legacy-runtime")]
-mod internal {
+mod traits {
     use neon_runtime::raw;
     use handle::Handle;
     use types::{Value, JsValue, JsArray, build};
@@ -77,7 +77,7 @@ mod internal {
 }
 
 #[cfg(feature = "napi-runtime")]
-mod internal {
+mod traits {
     use neon_runtime::raw;
     use handle::Handle;
     use types::{Value, JsValue, JsArray, build};
