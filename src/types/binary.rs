@@ -60,7 +60,7 @@ impl JsArrayBuffer {
 
     /// Constructs a new `ArrayBuffer` object with the given size, in bytes.
     pub fn new<'a, C: Context<'a>>(cx: &mut C, size: u32) -> JsResult<'a, JsArrayBuffer> {
-        build(|out| { unsafe { neon_runtime::arraybuffer::new(out, mem::transmute(cx.isolate()), size) } })
+        build(|out| { unsafe { neon_runtime::arraybuffer::new(out, mem::transmute(cx.env()), size) } })
     }
 
 }

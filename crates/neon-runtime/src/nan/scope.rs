@@ -4,34 +4,34 @@ use raw::{HandleScope, EscapableHandleScope, InheritedHandleScope, Isolate};
 
 pub trait Root {
     unsafe fn allocate() -> Self;
-    unsafe fn enter(&mut self, *mut Isolate);
-    unsafe fn exit(&mut self);
+    unsafe fn enter(&mut self, Isolate);
+    unsafe fn exit(&mut self, Isolate);
 }
 
 impl Root for HandleScope {
     unsafe fn allocate() -> Self { HandleScope::new() }
-    unsafe fn enter(&mut self, isolate: *mut Isolate) {
+    unsafe fn enter(&mut self, isolate: Isolate) {
         enter(self, isolate)
     }
-    unsafe fn exit(&mut self) {
+    unsafe fn exit(&mut self, _: Isolate) {
         exit(self)
     }
 }
 
 impl Root for EscapableHandleScope {
     unsafe fn allocate() -> Self { EscapableHandleScope::new() }
-    unsafe fn enter(&mut self, isolate: *mut Isolate) {
+    unsafe fn enter(&mut self, isolate: Isolate) {
         enter_escapable(self, isolate)
     }
-    unsafe fn exit(&mut self) {
+    unsafe fn exit(&mut self, _: Isolate) {
         exit_escapable(self)
     }
 }
 
 impl Root for InheritedHandleScope {
     unsafe fn allocate() -> Self { InheritedHandleScope }
-    unsafe fn enter(&mut self, _: *mut Isolate) { }
-    unsafe fn exit(&mut self) { }
+    unsafe fn enter(&mut self, _: Isolate) { }
+    unsafe fn exit(&mut self, _: Isolate) { }
 }
 
 /// Mutates the `out` argument provided to refer to the newly escaped `v8::Local` value.

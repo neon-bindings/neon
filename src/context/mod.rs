@@ -11,6 +11,7 @@ use neon_runtime;
 use neon_runtime::raw;
 use borrow::{Ref, RefMut, Borrow, BorrowMut};
 use borrow::internal::Ledger;
+use context::internal::Env;
 use handle::{Managed, Handle};
 use types::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
 use types::binary::{JsArrayBuffer, JsBuffer};
@@ -283,7 +284,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     fn global(&mut self) -> Handle<'a, JsObject> {
         JsObject::build(|out| {
             unsafe {
-                neon_runtime::scope::get_global(self.isolate().to_raw(), out);
+                neon_runtime::scope::get_global(self.env().to_raw(), out);
             }
         })
     }
@@ -339,10 +340,10 @@ pub struct ModuleContext<'a> {
 impl<'a> UnwindSafe for ModuleContext<'a> { }
 
 impl<'a> ModuleContext<'a> {
-    pub(crate) fn with<T, F: for<'b> FnOnce(ModuleContext<'b>) -> T>(exports: Handle<'a, JsObject>, f: F) -> T {
+    pub(crate) fn with<T, F: for<'b> FnOnce(ModuleContext<'b>) -> T>(env: Env, exports: Handle<'a, JsObject>, f: F) -> T {
         debug_assert!(unsafe { neon_runtime::scope::size() } <= std::mem::size_of::<raw::HandleScope>());
         debug_assert!(unsafe { neon_runtime::scope::alignment() } <= std::mem::align_of::<raw::HandleScope>());
-        Scope::with(|scope| {
+        Scope::with(env, |scope| {
             f(ModuleContext {
                 scope,
                 exports
@@ -391,7 +392,8 @@ pub struct ExecuteContext<'a> {
 
 impl<'a> ExecuteContext<'a> {
     pub(crate) fn with<T, F: for<'b> FnOnce(ExecuteContext<'b>) -> T>(f: F) -> T {
-        Scope::with(|scope| {
+        let env = Env::current();
+        Scope::with(env, |scope| {
             f(ExecuteContext { scope })
         })
     }
@@ -414,7 +416,8 @@ pub struct ComputeContext<'a, 'outer> {
 
 impl<'a, 'b> ComputeContext<'a, 'b> {
     pub(crate) fn with<T, F: for<'c, 'd> FnOnce(ComputeContext<'c, 'd>) -> T>(f: F) -> T {
-        Scope::with(|scope| {
+        let env = Env::current();
+        Scope::with(env, |scope| {
             f(ComputeContext {
                 scope,
                 phantom_inner: PhantomData,
@@ -448,7 +451,8 @@ impl<'a, T: This> CallContext<'a, T> {
     pub fn kind(&self) -> CallKind { self.info.kind() }
 
     pub(crate) fn with<U, F: for<'b> FnOnce(CallContext<'b, T>) -> U>(info: &'a CallbackInfo, f: F) -> U {
-        Scope::with(|scope| {
+        let env = Env::current();
+        Scope::with(env, |scope| {
             f(CallContext {
                 scope,
                 info,
@@ -500,7 +504,8 @@ pub struct TaskContext<'a> {
 
 impl<'a> TaskContext<'a> {
     pub(crate) fn with<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(f: F) -> T {
-        Scope::with(|scope| {
+        let env = Env::current();
+        Scope::with(env, |scope| {
             f(TaskContext { scope })
         })
     }

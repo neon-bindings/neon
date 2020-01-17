@@ -27,6 +27,9 @@ neon-runtime = { version = "=0.3.3", path = "crates/neon-runtime" }
 [features]
 default = ["legacy-runtime"]
 
+# Enable the default panic hook. Useful for debugging neon itself.
+default-panic-hook = []
+
 # Feature flag to enable the legacy V8/NAN runtime. For now, this feature is
 # enabled by default.
 legacy-runtime = ["neon-runtime/neon-sys", "neon-build/neon-sys"]

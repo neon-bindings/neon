@@ -45,18 +45,29 @@ compile_error!("Cannot enable both `legacy-runtime` and `napi-runtime` features.
 #[macro_export]
 macro_rules! register_module {
     ($module:pat, $init:block) => {
+        register_module!(|$module| $init);
+    };
+
+    (|$module:pat| $init:block) => {
         #[no_mangle]
         pub unsafe extern "C" fn napi_register_module_v1(
-            _env: $crate::macro_internal::runtime::nodejs_sys::napi_env,
-            exports: $crate::macro_internal::runtime::nodejs_sys::napi_value
+            env: $crate::macro_internal::runtime::nodejs_sys::napi_env,
+            m: $crate::macro_internal::runtime::nodejs_sys::napi_value
         ) -> $crate::macro_internal::runtime::nodejs_sys::napi_value
         {
             // Suppress the default Rust panic hook, which prints diagnostics to stderr.
+            #[cfg(not(feature = "default-panic-hook"))]
             ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
 
-            $init
+            fn __init_neon_module($module: $crate::context::ModuleContext) -> $crate::result::NeonResult<()> $init
 
-            exports
+            $crate::macro_internal::initialize_module(
+                env,
+                std::mem::transmute(m),
+                __init_neon_module,
+            );
+
+            m
         }
     }
 }
@@ -132,6 +143,7 @@ macro_rules! register_module {
                 }
 
                 // Suppress the default Rust panic hook, which prints diagnostics to stderr.
+                #[cfg(not(feature = "default-panic-hook"))]
                 ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
 
                 // During tests, node is not available. Skip module registration.
@@ -477,6 +489,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(windows))]
     #[test]
     fn napi_test() {
         let _guard = TEST_MUTEX.lock();

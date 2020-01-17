@@ -10,17 +10,30 @@ use object::class::ClassMap;
 use result::NeonResult;
 use super::ModuleContext;
 
+#[cfg(feature = "legacy-runtime")]
 #[repr(C)]
 #[derive(Clone, Copy)]
-pub struct Isolate(*mut raw::Isolate);
+pub struct Env(raw::Isolate);
+
+#[cfg(feature = "napi-runtime")]
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct Env(raw::Env);
 
 extern "C" fn drop_class_map(map: Box<ClassMap>) {
     std::mem::drop(map);
 }
 
-impl Isolate {
-    pub(crate) fn to_raw(self) -> *mut raw::Isolate {
-        let Isolate(ptr) = self;
+impl Env {
+    #[cfg(feature = "legacy-runtime")]
+    pub(crate) fn to_raw(self) -> raw::Isolate {
+        let Self(ptr) = self;
+        ptr
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    pub(crate) fn to_raw(self) -> raw::Env {
+        let Self(ptr) = self;
         ptr
     }
 
@@ -38,7 +51,13 @@ impl Isolate {
         unsafe { std::mem::transmute(ptr) }
     }
 
-    pub(crate) fn current() -> Isolate {
+    #[cfg(feature = "napi-runtime")]
+    pub(crate) fn current() -> Env {
+        panic!("Context::current() will not implemented with n-api")
+    }
+
+    #[cfg(feature = "legacy-runtime")]
+    pub(crate) fn current() -> Env {
         unsafe {
             std::mem::transmute(neon_runtime::call::current_isolate())
         }
@@ -46,7 +65,7 @@ impl Isolate {
 }
 
 pub struct ScopeMetadata {
-    isolate: Isolate,
+    env: Env,
     active: Cell<bool>
 }
 
@@ -56,16 +75,15 @@ pub struct Scope<'a, R: Root + 'static> {
 }
 
 impl<'a, R: Root + 'static> Scope<'a, R> {
-    pub fn with<T, F: for<'b> FnOnce(Scope<'b, R>) -> T>(f: F) -> T {
+    pub fn with<T, F: for<'b> FnOnce(Scope<'b, R>) -> T>(env: Env, f: F) -> T {
         let mut handle_scope: R = unsafe { R::allocate() };
-        let isolate = Isolate::current();
         unsafe {
-            handle_scope.enter(isolate.to_raw());
+            handle_scope.enter(env.to_raw());
         }
         let result = {
             let scope = Scope {
                 metadata: ScopeMetadata {
-                    isolate,
+                    env,
                     active: Cell::new(true)
                 },
                 handle_scope: &mut handle_scope
@@ -73,7 +91,7 @@ impl<'a, R: Root + 'static> Scope<'a, R> {
             f(scope)
         };
         unsafe {
-            handle_scope.exit();
+            handle_scope.exit(env.to_raw());
         }
         result
     }
@@ -82,8 +100,8 @@ impl<'a, R: Root + 'static> Scope<'a, R> {
 pub trait ContextInternal<'a>: Sized {
     fn scope_metadata(&self) -> &ScopeMetadata;
 
-    fn isolate(&self) -> Isolate {
-        self.scope_metadata().isolate
+    fn env(&self) -> Env {
+        self.scope_metadata().env
     }
 
     fn is_active(&self) -> bool {
@@ -100,8 +118,18 @@ pub trait ContextInternal<'a>: Sized {
     fn deactivate(&self) { self.scope_metadata().active.set(false); }
 }
 
+#[cfg(feature = "legacy-runtime")]
 pub fn initialize_module(exports: Handle<JsObject>, init: fn(ModuleContext) -> NeonResult<()>) {
-    ModuleContext::with(exports, |cx| {
+    let env = Env::current();
+
+    ModuleContext::with(env, exports, |cx| {
+        let _ = init(cx);
+    });
+}
+
+#[cfg(feature = "napi-runtime")]
+pub fn initialize_module(env: raw::Env, exports: Handle<JsObject>, init: fn(ModuleContext) -> NeonResult<()>) {
+    ModuleContext::with(Env(env), exports, |cx| {
         let _ = init(cx);
     });
 }

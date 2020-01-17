@@ -10,9 +10,9 @@ error[E0277]: the trait bound `f64: std::convert::From<&str>` is not satisfied
 6   |     JsNumber::new(cx, "9000")
     |     ^^^^^^^^^^^^^ the trait `std::convert::From<&str>` is not implemented for `f64`
     | 
-   ::: $WORKSPACE/src/types/mod.rs:313:39
+   ::: $WORKSPACE/src/types/mod.rs:338:39
     |
-313 |     pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, x: T) -> Handle<'a, JsNumber> {
+338 |     pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, x: T) -> Handle<'a, JsNumber> {
     |                                       --------- required by this bound in `neon::types::JsNumber::new`
     |
     = help: the following implementations were found:
@@ -35,6 +35,3 @@ error[E0308]: mismatched types
   |
   = note: expected type `()`
              found type `neon::handle::Handle<'_, neon::types::JsNumber>`
-
-Some errors have detailed explanations: E0277, E0308, E0425.
-For more information about an error, try `rustc --explain E0277`.
