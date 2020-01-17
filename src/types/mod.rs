@@ -290,7 +290,7 @@ impl JsString {
         let env = cx.env().to_raw();
 
         unsafe {
-            let capacity = neon_runtime::string::utf8_len(env, self.to_raw());
+            let capacity = neon_runtime::string::utf8_len(env, self.to_raw()) + 1;
             let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
             let p = buffer.as_mut_ptr();
             std::mem::forget(buffer);
