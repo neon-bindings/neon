@@ -2,16 +2,13 @@
 
 pub(crate) mod class;
 
-use neon_runtime::raw;
-use handle::Managed;
-
 pub use self::class::{Class, ClassDescriptor};
 pub use self::traits::*;
 
 #[cfg(feature = "legacy-runtime")]
 mod traits {
     use neon_runtime::raw;
-    use handle::Handle;
+    use handle::{Handle, Managed};
     use types::{Value, JsValue, JsArray, build};
     use types::utf8::Utf8;
     use context::Context;
@@ -74,15 +71,21 @@ mod traits {
             }
         }
     }
+
+    /// The trait of types that can be a function's `this` binding.
+    pub unsafe trait This: Managed {
+        fn as_this(h: raw::Local) -> Self;
+    }
 }
 
 #[cfg(feature = "napi-runtime")]
 mod traits {
     use neon_runtime::raw;
-    use handle::Handle;
+    use handle::{Handle, Managed};
     use types::{Value, JsValue, JsArray, build};
     use types::utf8::Utf8;
     use context::Context;
+    use context::internal::Env;
     use result::{NeonResult, JsResult, Throw};
 
     /// A property key in a JavaScript object.
@@ -189,9 +192,9 @@ mod traits {
             }
         }
     }
-}
 
-/// The trait of types that can be a function's `this` binding.
-pub unsafe trait This: Managed {
-    fn as_this(h: raw::Local) -> Self;
+    /// The trait of types that can be a function's `this` binding.
+    pub unsafe trait This: Managed {
+        fn as_this(env: Env, h: raw::Local) -> Self;
+    }
 }

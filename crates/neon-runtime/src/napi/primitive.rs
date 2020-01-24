@@ -1,8 +1,16 @@
 use raw::{Local, Env};
 
-pub unsafe extern "C" fn undefined(_out: &mut Local) { unimplemented!() }
+use nodejs_sys as napi;
 
-pub unsafe extern "C" fn null(_out: &mut Local) { unimplemented!() }
+/// Mutates the `out` argument provided to refer to the global `undefined` object.
+pub unsafe extern "C" fn undefined(out: &mut Local, env: Env) {
+    napi::napi_get_undefined(env, out as *mut Local);
+}
+
+/// Mutates the `out` argument provided to refer to the global `null` object.
+pub unsafe extern "C" fn null(out: &mut Local, env: Env) {
+    napi::napi_get_null(env, out as *mut Local);
+}
 
 pub unsafe extern "C" fn boolean(_out: &mut Local, _b: bool) { unimplemented!() }
 

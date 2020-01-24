@@ -8,5 +8,11 @@ register_module!(|mut cx| {
     cx.export_value("greeting", greeting)?;
     cx.export_value("greetingCopy", greeting_copy)?;
 
+    // Global singletons.
+    let undefined = cx.undefined();
+    let null = cx.null();
+    cx.export_value("undefined", undefined)?;
+    cx.export_value("null", null)?;
+
     Ok(())
 });

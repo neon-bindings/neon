@@ -119,7 +119,13 @@ pub trait Class: Managed + Any {
 }
 
 unsafe impl<T: Class> This for T {
+    #[cfg(feature = "legacy-runtime")]
     fn as_this(h: raw::Local) -> Self {
+        Self::from_raw(h)
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    fn as_this(_env: Env, h: raw::Local) -> Self {
         Self::from_raw(h)
     }
 }
