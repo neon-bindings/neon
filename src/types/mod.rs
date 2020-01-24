@@ -539,8 +539,8 @@ impl JsFunction {
               U: Value
     {
         build(|out| {
+            let env = cx.env().to_raw();
             unsafe {
-                let env = std::mem::transmute(cx.env().to_raw());
                 let callback = FunctionCallback(f).into_c_callback();
                 neon_runtime::fun::new(out, env, callback)
             }
