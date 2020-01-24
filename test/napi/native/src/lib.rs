@@ -11,8 +11,12 @@ register_module!(|mut cx| {
     // Global singletons.
     let undefined = cx.undefined();
     let null = cx.null();
+    let b_true = cx.boolean(true);
+    let b_false = cx.boolean(false);
     cx.export_value("undefined", undefined)?;
     cx.export_value("null", null)?;
+    cx.export_value("true", b_true)?;
+    cx.export_value("false", b_false)?;
 
     Ok(())
 });

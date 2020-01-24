@@ -155,7 +155,7 @@ extern "C" {
 
     pub fn Neon_Primitive_Undefined(out: &mut Local, isolate: Isolate);
     pub fn Neon_Primitive_Null(out: &mut Local, isolate: Isolate);
-    pub fn Neon_Primitive_Boolean(out: &mut Local, b: bool);
+    pub fn Neon_Primitive_Boolean(out: &mut Local, isolate: Isolate, b: bool);
     pub fn Neon_Primitive_BooleanValue(p: Local) -> bool;
     pub fn Neon_Primitive_Integer(out: &mut Local, isolate: Isolate, x: i32);
     pub fn Neon_Primitive_IsUint32(p: Local) -> bool;

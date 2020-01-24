@@ -206,14 +206,14 @@ impl ValueInternal for JsNull {
 pub struct JsBoolean(raw::Local);
 
 impl JsBoolean {
-    pub fn new<'a, C: Context<'a>>(_: &mut C, b: bool) -> Handle<'a, JsBoolean> {
-        JsBoolean::new_internal(b)
+    pub fn new<'a, C: Context<'a>>(cx: &mut C, b: bool) -> Handle<'a, JsBoolean> {
+        JsBoolean::new_internal(cx.env(), b)
     }
 
-    pub(crate) fn new_internal<'a>(b: bool) -> Handle<'a, JsBoolean> {
+    pub(crate) fn new_internal<'a>(env: Env, b: bool) -> Handle<'a, JsBoolean> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::boolean(&mut local, b);
+            neon_runtime::primitive::boolean(&mut local, env.to_raw(), b);
             Handle::new_internal(JsBoolean(local))
         }
     }

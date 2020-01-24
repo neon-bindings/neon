@@ -12,7 +12,10 @@ pub unsafe extern "C" fn null(out: &mut Local, env: Env) {
     napi::napi_get_null(env, out as *mut Local);
 }
 
-pub unsafe extern "C" fn boolean(_out: &mut Local, _b: bool) { unimplemented!() }
+/// Mutates the `out` argument provided to refer to one of the global `true` or `false` objects.
+pub unsafe extern "C" fn boolean(out: &mut Local, env: Env, b: bool) {
+    napi::napi_get_boolean(env, b, out as *mut Local);
+}
 
 pub unsafe extern "C" fn boolean_value(_p: Local) -> bool { unimplemented!() }
 

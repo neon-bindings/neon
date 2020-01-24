@@ -10,5 +10,7 @@ describe('hello', function() {
   it('should export global singletons for JS primitives', function () {
     assert.equal(addon.undefined, undefined);
     assert.equal(addon.null, null);
+    assert.equal(addon.true, true);
+    assert.equal(addon.false, false);
   });
 });
