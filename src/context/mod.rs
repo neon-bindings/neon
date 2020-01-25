@@ -251,27 +251,19 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Convenience method for creating a `JsNull` value.
-    #[cfg(feature = "legacy-runtime")]
     fn null(&mut self) -> Handle<'a, JsNull> {
-        JsNull::new()
-    }
-
-    /// Convenience method for creating a `JsNull` value.
-    #[cfg(feature = "napi-runtime")]
-    fn null(&mut self) -> Handle<'a, JsNull> {
-        JsNull::new(self)
+        #[cfg(feature = "legacy-runtime")]
+        return JsNull::new();
+        #[cfg(feature = "napi-runtime")]
+        return JsNull::new(self);
     }
 
     /// Convenience method for creating a `JsUndefined` value.
-    #[cfg(feature = "legacy-runtime")]
     fn undefined(&mut self) -> Handle<'a, JsUndefined> {
-        JsUndefined::new()
-    }
-
-    /// Convenience method for creating a `JsUndefined` value.
-    #[cfg(feature = "napi-runtime")]
-    fn undefined(&mut self) -> Handle<'a, JsUndefined> {
-        JsUndefined::new(self)
+        #[cfg(feature = "legacy-runtime")]
+        return JsUndefined::new();
+        #[cfg(feature = "napi-runtime")]
+        return JsUndefined::new(self);
     }
 
     /// Convenience method for creating an empty `JsObject` value.
