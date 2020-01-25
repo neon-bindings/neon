@@ -490,15 +490,13 @@ impl<'a, T: This> CallContext<'a, T> {
     }
 
     /// Produces a handle to the `this`-binding.
-    #[cfg(feature = "legacy-runtime")]
     pub fn this(&mut self) -> Handle<'a, T> {
-        Handle::new_internal(T::as_this(self.info.this(self)))
-    }
+        #[cfg(feature = "legacy-runtime")]
+        let this = T::as_this(self.info.this(self));
+        #[cfg(feature = "napi-runtime")]
+        let this = T::as_this(self.env(), self.info.this(self));
 
-    /// Produces a handle to the `this`-binding.
-    #[cfg(feature = "napi-runtime")]
-    pub fn this(&mut self, env: Env) -> Handle<'a, T> {
-        Handle::new_internal(T::as_this(env, self.info.this(self)))
+        Handle::new_internal(this)
     }
 }
 
