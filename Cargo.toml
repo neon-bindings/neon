@@ -27,6 +27,10 @@ neon-runtime = { version = "=0.3.3", path = "crates/neon-runtime" }
 [features]
 default = ["legacy-runtime"]
 
+# Enable static tests. These can be fragile because of variations in Rust compiler
+# error message formatting from version to version, so they're disabled by default.
+enable-static-tests = []
+
 # Enable the default panic hook. Useful for debugging neon itself.
 default-panic-hook = []
 

@@ -28,6 +28,8 @@ environment:
 
 install:
   - ps: Install-Product node $env:NODEJS_VERSION $env:PLATFORM
+  # Workaround until https://github.com/nodejs/node-gyp/issues/1933 is fixed.
+  - npm install -g npm@6.11.3
   - npm config set msvs_version 2015
   - node -e "console.log(process.argv[0], process.arch, process.versions)"
   - curl -sSf -o rustup-init.exe https://win.rustup.rs

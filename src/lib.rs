@@ -426,8 +426,19 @@ mod tests {
     // and any associated usability regressions before a new Rust version is shipped
     // but will have more stable results than Nightly.
     #[rustversion::beta]
+    #[cfg(feature = "enable-static-tests")]
     #[test]
     fn static_test() { static_test_impl() }
+
+    #[rustversion::beta]
+    #[cfg(not(feature = "enable-static-tests"))]
+    #[test]
+    #[ignore]
+    fn static_test() { static_test_impl() }
+
+    #[rustversion::not(beta)]
+    #[cfg(feature = "enable-static-tests")]
+    compile_error!("The `enable-static-tests` feature can only be enabled with the Rust beta toolchain.");
 
     #[rustversion::not(beta)]
     #[test]
