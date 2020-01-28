@@ -437,6 +437,10 @@ mod tests {
     fn static_test() { static_test_impl() }
 
     #[rustversion::not(beta)]
+    #[cfg(feature = "enable-static-tests")]
+    compile_error!("The `enable-static-tests` feature can only be enabled with the Rust beta toolchain.");
+
+    #[rustversion::not(beta)]
     #[test]
     #[ignore]
     fn static_test() { static_test_impl() }
