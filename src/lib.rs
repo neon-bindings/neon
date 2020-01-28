@@ -431,7 +431,7 @@ mod tests {
     fn static_test() { static_test_impl() }
 
     #[rustversion::beta]
-    #[not(cfg(feature = "enable-static-tests"))]
+    #[cfg(not(feature = "enable-static-tests"))]
     #[test]
     #[ignore]
     fn static_test() { static_test_impl() }
