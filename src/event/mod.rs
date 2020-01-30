@@ -29,6 +29,12 @@ impl Drop for EventHandlerInner {
 pub struct EventHandler(Arc<EventHandlerInner>);
 
 impl EventHandler {
+    #[cfg(feature = "napi-runtime")]
+    pub fn new<'a, C: Context<'a>, T: Value>(cx: &C, this: Handle<T>, callback: Handle<JsFunction>) -> Self {
+        unimplemented!()
+    }
+
+    #[cfg(feature = "legacy-runtime")]
     pub fn new<'a, C: Context<'a>, T: Value>(cx: &C, this: Handle<T>, callback: Handle<JsFunction>) -> Self {
         let cb = unsafe {
             neon_runtime::handler::new(cx.env().to_raw(), this.to_raw(), callback.to_raw())
