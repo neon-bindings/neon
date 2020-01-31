@@ -15,6 +15,8 @@ pub mod object;
 pub mod borrow;
 pub mod result;
 pub mod task;
+#[cfg(feature = "event-handler-api")]
+pub mod event;
 pub mod meta;
 pub mod prelude;
 

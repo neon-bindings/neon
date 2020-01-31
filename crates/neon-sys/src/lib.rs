@@ -198,4 +198,8 @@ extern "C" {
                               complete: unsafe extern fn(*mut c_void, *mut c_void, &mut Local),
                               callback: Local);
 
+    pub fn Neon_EventHandler_New(isolate: Isolate, this: Local, callback: Local) -> *mut c_void;
+    pub fn Neon_EventHandler_Schedule(thread_safe_cb: *mut c_void, rust_callback: *mut c_void,
+                                        complete: unsafe extern fn(Local, Local, *mut c_void));
+    pub fn Neon_EventHandler_Delete(thread_safe_cb: *mut c_void);
 }

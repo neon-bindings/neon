@@ -8,6 +8,7 @@
 #include "neon_string.h"
 #include "neon_class_metadata.h"
 #include "neon_task.h"
+#include "neon_event.h"
 
 extern "C" void Neon_Call_SetReturn(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> value) {
   info->GetReturnValue().Set(value);
@@ -519,4 +520,18 @@ extern "C" void Neon_Task_Schedule(void *task, Neon_TaskPerformCallback perform,
   v8::Isolate *isolate = v8::Isolate::GetCurrent();
   neon::Task *internal_task = new neon::Task(isolate, task, perform, complete, callback);
   neon::queue_task(internal_task);
+}
+
+extern "C" void* Neon_EventHandler_New(v8::Isolate *isolate, v8::Local<v8::Value> self, v8::Local<v8::Function> callback) {
+  return new neon::EventHandler(isolate, self, callback);
+}
+
+extern "C" void Neon_EventHandler_Schedule(void *thread_safe_cb, void *rust_callback, Neon_EventHandler handler) {
+    neon::EventHandler *cb = static_cast<neon::EventHandler*>(thread_safe_cb);
+    cb->schedule(rust_callback, handler);
+}
+
+extern "C" void Neon_EventHandler_Delete(void * thread_safe_cb) {
+    neon::EventHandler *cb = static_cast<neon::EventHandler*>(thread_safe_cb);
+    cb->close();
 }
