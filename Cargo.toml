@@ -31,6 +31,9 @@ default = ["legacy-runtime"]
 # error message formatting from version to version, so they're disabled by default.
 enable-static-tests = []
 
+# Enable the EventHandler API of RFC 25.
+event-handler-api = []
+
 # Enable the default panic hook. Useful for debugging neon itself.
 default-panic-hook = []
 
