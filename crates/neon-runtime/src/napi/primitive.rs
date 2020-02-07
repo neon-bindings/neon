@@ -43,7 +43,7 @@ pub unsafe extern "C" fn number(out: &mut Local, env: Env, v: f64) {
 
 /// Gets the underlying value of an `Local` object containing a JavaScript number. Panics if
 /// the given `Local` is not a number.
-pub unsafe extern "C" fn number_value(p: Local, env: Env) -> f64 {
+pub unsafe extern "C" fn number_value(env: Env, p: Local) -> f64 {
     let mut value = 0.0;
     assert_eq!(napi::napi_get_value_double(env, p, &mut value as *mut f64), napi::napi_status::napi_ok);
     return value;
