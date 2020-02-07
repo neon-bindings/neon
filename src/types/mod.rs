@@ -218,9 +218,18 @@ impl JsBoolean {
         }
     }
 
+    #[cfg(feature = "legacy-runtime")]
     pub fn value(self) -> bool {
         unsafe {
             neon_runtime::primitive::boolean_value(self.to_raw())
+        }
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> bool {
+        let env = cx.env().to_raw();
+        unsafe {
+            neon_runtime::primitive::boolean_value(env, self.to_raw())
         }
     }
 }

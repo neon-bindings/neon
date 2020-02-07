@@ -17,7 +17,13 @@ pub unsafe extern "C" fn boolean(out: &mut Local, env: Env, b: bool) {
     napi::napi_get_boolean(env, b, out as *mut Local);
 }
 
-pub unsafe extern "C" fn boolean_value(_p: Local) -> bool { unimplemented!() }
+/// Get the boolean value out of a `Local` object. If the `Local` object does not contain a
+/// boolean, this function panics.
+pub unsafe extern "C" fn boolean_value(env: Env, p: Local) -> bool {
+    let mut value = false;
+    assert_eq!(napi::napi_get_value_bool(env, p, &mut value as *mut bool), napi::napi_status::napi_ok);
+    value
+}
 
 // DEPRECATE(0.2)
 pub unsafe extern "C" fn integer(_out: &mut Local, _isolate: Env, _x: i32) { unimplemented!() }
