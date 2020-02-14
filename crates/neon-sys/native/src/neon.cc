@@ -61,15 +61,15 @@ extern "C" void *Neon_Object_GetIsolate(v8::Local<v8::Object> obj) {
   return obj->GetIsolate();
 }
 
-extern "C" void Neon_Primitive_Undefined(v8::Local<v8::Primitive> *out) {
+extern "C" void Neon_Primitive_Undefined(v8::Local<v8::Primitive> *out, v8::Isolate *isolate) {
   *out = Nan::Undefined();
 }
 
-extern "C" void Neon_Primitive_Null(v8::Local<v8::Primitive> *out) {
+extern "C" void Neon_Primitive_Null(v8::Local<v8::Primitive> *out, v8::Isolate *isolate) {
   *out = Nan::Null();
 }
 
-extern "C" void Neon_Primitive_Boolean(v8::Local<v8::Boolean> *out, bool b) {
+extern "C" void Neon_Primitive_Boolean(v8::Local<v8::Boolean> *out, v8::Isolate *isolate, bool b) {
   *out = b ? Nan::True() : Nan::False();
 }
 

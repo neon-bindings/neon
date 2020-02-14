@@ -81,7 +81,13 @@ impl ValueInternal for JsValue {
 }
 
 unsafe impl This for JsValue {
+    #[cfg(feature = "legacy-runtime")]
     fn as_this(h: raw::Local) -> Self {
+        JsValue(h)
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    fn as_this(_env: Env, h: raw::Local) -> Self {
         JsValue(h)
     }
 }
@@ -98,15 +104,29 @@ impl JsValue {
 pub struct JsUndefined(raw::Local);
 
 impl JsUndefined {
+    #[cfg(feature = "legacy-runtime")]
     pub fn new<'a>() -> Handle<'a, JsUndefined> {
-        JsUndefined::new_internal()
+        JsUndefined::new_internal(Env::current())
     }
 
-    pub(crate) fn new_internal<'a>() -> Handle<'a, JsUndefined> {
+    #[cfg(feature = "napi-runtime")]
+    pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsUndefined> {
+        JsUndefined::new_internal(cx.env())
+    }
+
+    pub(crate) fn new_internal<'a>(env: Env) -> Handle<'a, JsUndefined> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::undefined(&mut local);
+            neon_runtime::primitive::undefined(&mut local, env.to_raw());
             Handle::new_internal(JsUndefined(local))
+        }
+    }
+
+    fn as_this_compat(env: Env, _: raw::Local) -> Self {
+        unsafe {
+            let mut local: raw::Local = std::mem::zeroed();
+            neon_runtime::primitive::undefined(&mut local, env.to_raw());
+            JsUndefined(local)
         }
     }
 }
@@ -120,12 +140,14 @@ impl Managed for JsUndefined {
 }
 
 unsafe impl This for JsUndefined {
-    fn as_this(_: raw::Local) -> Self {
-        unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::undefined(&mut local);
-            JsUndefined(local)
-        }
+    #[cfg(feature = "legacy-runtime")]
+    fn as_this(h: raw::Local) -> Self {
+        JsUndefined::as_this_compat(Env::current(), h)
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    fn as_this(env: Env, h: raw::Local) -> Self {
+        JsUndefined::as_this_compat(env, h)
     }
 }
 
@@ -143,14 +165,20 @@ impl ValueInternal for JsUndefined {
 pub struct JsNull(raw::Local);
 
 impl JsNull {
+    #[cfg(feature = "legacy-runtime")]
     pub fn new<'a>() -> Handle<'a, JsNull> {
-        JsNull::new_internal()
+        JsNull::new_internal(Env::current())
     }
 
-    pub(crate) fn new_internal<'a>() -> Handle<'a, JsNull> {
+    #[cfg(feature = "napi-runtime")]
+    pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsNull> {
+        JsNull::new_internal(cx.env())
+    }
+
+    pub(crate) fn new_internal<'a>(env: Env) -> Handle<'a, JsNull> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::null(&mut local);
+            neon_runtime::primitive::null(&mut local, env.to_raw());
             Handle::new_internal(JsNull(local))
         }
     }
@@ -178,21 +206,30 @@ impl ValueInternal for JsNull {
 pub struct JsBoolean(raw::Local);
 
 impl JsBoolean {
-    pub fn new<'a, C: Context<'a>>(_: &mut C, b: bool) -> Handle<'a, JsBoolean> {
-        JsBoolean::new_internal(b)
+    pub fn new<'a, C: Context<'a>>(cx: &mut C, b: bool) -> Handle<'a, JsBoolean> {
+        JsBoolean::new_internal(cx.env(), b)
     }
 
-    pub(crate) fn new_internal<'a>(b: bool) -> Handle<'a, JsBoolean> {
+    pub(crate) fn new_internal<'a>(env: Env, b: bool) -> Handle<'a, JsBoolean> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::boolean(&mut local, b);
+            neon_runtime::primitive::boolean(&mut local, env.to_raw(), b);
             Handle::new_internal(JsBoolean(local))
         }
     }
 
+    #[cfg(feature = "legacy-runtime")]
     pub fn value(self) -> bool {
         unsafe {
             neon_runtime::primitive::boolean_value(self.to_raw())
+        }
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> bool {
+        let env = cx.env().to_raw();
+        unsafe {
+            neon_runtime::primitive::boolean_value(env, self.to_raw())
         }
     }
 }
@@ -384,7 +421,15 @@ impl Managed for JsObject {
 }
 
 unsafe impl This for JsObject {
-    fn as_this(h: raw::Local) -> Self { JsObject(h) }
+    #[cfg(feature = "legacy-runtime")]
+    fn as_this(h: raw::Local) -> Self {
+        JsObject(h)
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    fn as_this(_env: Env, h: raw::Local) -> Self {
+        JsObject(h)
+    }
 }
 
 impl ValueInternal for JsObject {
@@ -503,8 +548,8 @@ impl JsFunction {
               U: Value
     {
         build(|out| {
+            let env = cx.env().to_raw();
             unsafe {
-                let env = std::mem::transmute(cx.env().to_raw());
                 let callback = FunctionCallback(f).into_c_callback();
                 neon_runtime::fun::new(out, env, callback)
             }

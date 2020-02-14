@@ -252,12 +252,18 @@ pub trait Context<'a>: ContextInternal<'a> {
 
     /// Convenience method for creating a `JsNull` value.
     fn null(&mut self) -> Handle<'a, JsNull> {
-        JsNull::new()
+        #[cfg(feature = "legacy-runtime")]
+        return JsNull::new();
+        #[cfg(feature = "napi-runtime")]
+        return JsNull::new(self);
     }
 
     /// Convenience method for creating a `JsUndefined` value.
     fn undefined(&mut self) -> Handle<'a, JsUndefined> {
-        JsUndefined::new()
+        #[cfg(feature = "legacy-runtime")]
+        return JsUndefined::new();
+        #[cfg(feature = "napi-runtime")]
+        return JsUndefined::new(self);
     }
 
     /// Convenience method for creating an empty `JsObject` value.
@@ -477,7 +483,12 @@ impl<'a, T: This> CallContext<'a, T> {
 
     /// Produces a handle to the `this`-binding.
     pub fn this(&mut self) -> Handle<'a, T> {
-        Handle::new_internal(T::as_this(self.info.this(self)))
+        #[cfg(feature = "legacy-runtime")]
+        let this = T::as_this(self.info.this(self));
+        #[cfg(feature = "napi-runtime")]
+        let this = T::as_this(self.env(), self.info.this(self));
+
+        Handle::new_internal(this)
     }
 }
 

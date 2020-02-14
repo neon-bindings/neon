@@ -23,9 +23,9 @@ extern "C" {
   void Neon_Call_Get(v8::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out);
 
   void Neon_Primitive_Number(v8::Local<v8::Number> *out, v8::Isolate *isolate, double value);
-  void Neon_Primitive_Undefined(v8::Local<v8::Primitive> *out);
-  void Neon_Primitive_Null(v8::Local<v8::Primitive> *out);
-  void Neon_Primitive_Boolean(v8::Local<v8::Boolean> *out, bool b);
+  void Neon_Primitive_Undefined(v8::Local<v8::Primitive> *out, v8::Isolate *isolate);
+  void Neon_Primitive_Null(v8::Local<v8::Primitive> *out, v8::Isolate *isolate);
+  void Neon_Primitive_Boolean(v8::Local<v8::Boolean> *out, v8::Isolate *isolate, bool b);
   bool Neon_Primitive_IsUint32(v8::Local<v8::Primitive> p);
   bool Neon_Primitive_IsInt32(v8::Local<v8::Primitive> p);
 
