@@ -45,6 +45,12 @@ legacy-runtime = ["neon-runtime/neon-sys", "neon-build/neon-sys"]
 # is disabled by default.
 napi-runtime = ["neon-runtime/nodejs-sys"]
 
+# Feature flag to disable  external dependencies on docs build
+docs-only = ["neon-runtime/docs-only"]
+
+[package.metadata.docs.rs]
+features = ["docs-only"]
+
 [workspace]
 members = [
     "crates/neon-build",

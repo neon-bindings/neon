@@ -13,3 +13,10 @@ build = "build.rs" # this script builds libneon.{a,obj}
 [build-dependencies]
 cc = "1.0.0"
 regex = "1.0.0"
+
+[features]
+default = []
+docs-only = []
+
+[package.metadata.docs.rs]
+features = ["docs-only"]
