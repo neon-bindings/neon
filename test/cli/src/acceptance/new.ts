@@ -117,9 +117,6 @@ describe('neon new', function() {
       let indexjs = readFile(this.cwd, 'my-app/lib/index.js');
       assert.include(indexjs, `require('../native')`);
 
-      let librs = readFile(this.cwd, 'my-app/native/src/lib.rs');
-      assert.include(librs, `extern crate neon;`);
-
       done();
     });
   });
