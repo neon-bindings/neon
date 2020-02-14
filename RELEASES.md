@@ -1,3 +1,28 @@
+# Version ✨0.4✨ 🎉
+
+## `EventHandler` API
+
+The [`EventHandler` API](https://github.com/neon-bindings/rfcs/blob/master/text/0025-event-handler.md) is a new feature for scheduling work on the javascript main thread from other threads. Big thanks to @geovie for the RFC and implementation.
+
+This feature is currently _unstable_ and gated by a `event-handler-api` feature flag.
+
+## Improvements
+
+* New project template updated for Rust 2018
+
+## Bug Fixes
+
+* Workaround for nodejs/node-gyp#1933
+* Docs build fixed
+* Temporarily disable static tests which keep breaking CI
+
+## N-API
+
+* Context/Isolate threading
+* Scopes
+* Strings
+* Primitive values (numbers, undefined, null, boolean)
+
 # Version 0.3.3
 
 Hot fix for `neon build` in projects with many dependencies.
