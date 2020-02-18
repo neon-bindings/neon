@@ -164,6 +164,7 @@ mod build {
         }
 
         if cfg!(windows) {
+            let node_gyp_output = String::from_utf8_lossy(&output.stderr);
             println!("cargo:node_root_dir={}", parse_node_root_dir(&node_gyp_output));
             println!("cargo:node_lib_file={}", parse_node_lib_file(&node_gyp_output));
         }
