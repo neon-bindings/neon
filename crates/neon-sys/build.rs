@@ -89,12 +89,12 @@ mod build {
         cmd
     }
 
-    // The node-gyp output includes platform information in a string
+    // The node-gyp build output includes platform information in a string
     // that looks like:
     //
-    //     gyp info using node@8.3.0 | win32 | x64
+    //     gyp verb architecture ia32
     fn parse_node_arch(node_gyp_output: &str) -> String {
-        let version_regex = Regex::new(r"node@(?P<version>\d+\.\d+\.\d+)\s+\|\s+(?P<platform>\w+)\s+\|\s(?P<arch>ia32|x64)").unwrap();
+        let version_regex = Regex::new(r"gyp verb architecture (?P<arch>ia32|x64)").unwrap();
         let captures = version_regex.captures(&node_gyp_output).unwrap();
         String::from(&captures["arch"])
     }
@@ -164,18 +164,19 @@ mod build {
         }
 
         if cfg!(windows) {
-            let node_gyp_output = String::from_utf8_lossy(&output.stderr);
-            println!("cargo:node_arch={}", parse_node_arch(&node_gyp_output));
             println!("cargo:node_root_dir={}", parse_node_root_dir(&node_gyp_output));
             println!("cargo:node_lib_file={}", parse_node_lib_file(&node_gyp_output));
         }
 
         // Run `node-gyp build`.
-        npm(native_dir)
+        let build_output = npm(native_dir)
             .args(&["run", if debug() { "build-debug" } else { "build-release" }])
-            .status()
+            .output()
             .ok()
             .expect("Failed to run \"node-gyp build\" for neon-sys!");
+
+        let node_gyp_build_output = String::from_utf8_lossy(&build_output.stderr);
+        println!("cargo:node_arch={}", parse_node_arch(&node_gyp_build_output));
     }
 
     // Link the built object file into a static library.
