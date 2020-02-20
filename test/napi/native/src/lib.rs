@@ -40,6 +40,15 @@ register_module!(|mut cx| {
         rust_created.set(&mut cx, "whatever", whatever)?;
     }
 
+    assert_eq!({
+        let v: Handle<JsNumber> = rust_created.get(&mut cx, "a")?.downcast_or_throw(&mut cx)?;
+        v.value(&mut cx)
+    }, 1.0f64);
+    assert_eq!({
+        let v: Handle<JsBoolean> = rust_created.get(&mut cx, "whatever")?.downcast_or_throw(&mut cx)?;
+        v.value(&mut cx)
+    }, true);
+
     cx.export_value("rustCreated", rust_created)?;
 
     Ok(())

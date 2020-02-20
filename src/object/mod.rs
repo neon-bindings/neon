@@ -130,11 +130,13 @@ mod traits {
     impl<'a, K: Value> PropertyKey for Handle<'a, K> {
         unsafe fn get_from<'c, C: Context<'c>>(
             self,
-            _cx: &mut C,
+            cx: &mut C,
             out: &mut raw::Local,
             obj: raw::Local
         ) -> bool {
-            neon_runtime::object::get(out, obj, self.to_raw())
+            let env = cx.env().to_raw();
+
+            neon_runtime::object::get(out, env, obj, self.to_raw())
         }
 
         unsafe fn set_from<'c, C: Context<'c>>(
@@ -144,19 +146,23 @@ mod traits {
             obj: raw::Local,
             val: raw::Local,
         ) -> bool {
-            neon_runtime::object::set(out, cx.env().to_raw(), obj, self.to_raw(), val)
+            let env = cx.env().to_raw();
+
+            neon_runtime::object::set(out, env, obj, self.to_raw(), val)
         }
     }
 
     impl<'a> PropertyKey for &'a str {
         unsafe fn get_from<'c, C: Context<'c>>(
             self,
-            _cx: &mut C,
+            cx: &mut C,
             out: &mut raw::Local,
             obj: raw::Local
         ) -> bool {
             let (ptr, len) = Utf8::from(self).into_small_unwrap().lower();
-            neon_runtime::object::get_string(out, obj, ptr, len)
+            let env = cx.env().to_raw();
+
+            neon_runtime::object::get_string(env, out, obj, ptr, len)
         }
 
         unsafe fn set_from<'c, C: Context<'c>>(
