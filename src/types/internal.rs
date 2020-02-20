@@ -3,6 +3,7 @@ use std::os::raw::c_void;
 use neon_runtime;
 use neon_runtime::raw;
 use context::{CallbackInfo, FunctionContext};
+use context::internal::Env;
 use types::error::convert_panics;
 use types::{JsObject, Handle, Managed};
 use result::JsResult;
@@ -12,10 +13,10 @@ use super::Value;
 pub trait ValueInternal: Managed + 'static {
     fn name() -> String;
 
-    fn is_typeof<Other: Value>(other: Other) -> bool;
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool;
 
-    fn downcast<Other: Value>(other: Other) -> Option<Self> {
-        if Self::is_typeof(other) {
+    fn downcast<Other: Value>(env: Env, other: Other) -> Option<Self> {
+        if Self::is_typeof(env, other) {
             Some(Self::from_raw(other.to_raw()))
         } else {
             None

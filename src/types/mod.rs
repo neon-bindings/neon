@@ -75,7 +75,7 @@ impl Managed for JsValue {
 impl ValueInternal for JsValue {
     fn name() -> String { "any".to_string() }
 
-    fn is_typeof<Other: Value>(_: Other) -> bool {
+    fn is_typeof<Other: Value>(_env: Env, _other: Other) -> bool {
         true
     }
 }
@@ -154,8 +154,8 @@ unsafe impl This for JsUndefined {
 impl ValueInternal for JsUndefined {
     fn name() -> String { "undefined".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_undefined(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_undefined(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -195,8 +195,8 @@ impl Managed for JsNull {
 impl ValueInternal for JsNull {
     fn name() -> String { "null".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_null(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_null(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -245,8 +245,8 @@ impl Managed for JsBoolean {
 impl ValueInternal for JsBoolean {
     fn name() -> String { "boolean".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_boolean(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_boolean(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -288,8 +288,8 @@ impl Managed for JsString {
 impl ValueInternal for JsString {
     fn name() -> String { "string".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_string(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_string(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -411,8 +411,8 @@ impl Managed for JsNumber {
 impl ValueInternal for JsNumber {
     fn name() -> String { "number".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_number(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_number(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -444,8 +444,8 @@ unsafe impl This for JsObject {
 impl ValueInternal for JsObject {
     fn name() -> String { "object".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_object(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_object(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -522,8 +522,8 @@ impl Managed for JsArray {
 impl ValueInternal for JsArray {
     fn name() -> String { "Array".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_array(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_array(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -615,7 +615,7 @@ impl<T: Object> Managed for JsFunction<T> {
 impl<T: Object> ValueInternal for JsFunction<T> {
     fn name() -> String { "function".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_function(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_function(env.to_raw(), other.to_raw()) }
     }
 }

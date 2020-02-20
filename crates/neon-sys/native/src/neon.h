@@ -109,17 +109,17 @@ extern "C" {
 
   uint32_t Neon_Module_GetVersion();
 
-  bool Neon_Tag_IsUndefined(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsNull(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsBoolean(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsNumber(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsString(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsObject(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsArray(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsFunction(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsBuffer(v8::Local<v8::Value> obj);
-  bool Neon_Tag_IsArrayBuffer(v8::Local<v8::Value> obj);
-  bool Neon_Tag_IsError(v8::Local<v8::Value> val);
+  bool Neon_Tag_IsUndefined(v8::Isolate *isolate, v8::Local<v8::Value> val);
+  bool Neon_Tag_IsNull(v8::Isolate *isolate, v8::Local<v8::Value> val);
+  bool Neon_Tag_IsBoolean(v8::Isolate *isolate, v8::Local<v8::Value> val);
+  bool Neon_Tag_IsNumber(v8::Isolate *isolate, v8::Local<v8::Value> val);
+  bool Neon_Tag_IsString(v8::Isolate *isolate, v8::Local<v8::Value> val);
+  bool Neon_Tag_IsObject(v8::Isolate *isolate, v8::Local<v8::Value> val);
+  bool Neon_Tag_IsArray(v8::Isolate *isolate, v8::Local<v8::Value> val);
+  bool Neon_Tag_IsFunction(v8::Isolate *isolate, v8::Local<v8::Value> val);
+  bool Neon_Tag_IsBuffer(v8::Isolate *isolate, v8::Local<v8::Value> obj);
+  bool Neon_Tag_IsArrayBuffer(v8::Isolate *isolate, v8::Local<v8::Value> obj);
+  bool Neon_Tag_IsError(v8::Isolate *isolate, v8::Local<v8::Value> val);
 
   void Neon_Error_NewError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);
   void Neon_Error_NewTypeError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);

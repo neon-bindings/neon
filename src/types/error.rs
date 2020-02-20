@@ -6,6 +6,7 @@ use neon_runtime;
 use neon_runtime::raw;
 
 use context::Context;
+use context::internal::Env;
 use result::{NeonResult, Throw};
 use types::{Value, Object, Handle, Managed, build};
 use types::internal::ValueInternal;
@@ -25,8 +26,8 @@ impl Managed for JsError {
 impl ValueInternal for JsError {
     fn name() -> String { "Error".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_error(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_error(env.to_raw(), other.to_raw()) }
     }
 }
 

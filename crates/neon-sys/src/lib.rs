@@ -181,17 +181,17 @@ extern "C" {
     pub fn Neon_String_Utf8Length(str: Local) -> isize;
     pub fn Neon_String_Data(out: *mut u8, len: isize, str: Local) -> isize;
 
-    pub fn Neon_Tag_IsUndefined(val: Local) -> bool;
-    pub fn Neon_Tag_IsNull(val: Local) -> bool;
-    pub fn Neon_Tag_IsNumber(val: Local) -> bool;
-    pub fn Neon_Tag_IsBoolean(val: Local) -> bool;
-    pub fn Neon_Tag_IsString(val: Local) -> bool;
-    pub fn Neon_Tag_IsObject(val: Local) -> bool;
-    pub fn Neon_Tag_IsArray(val: Local) -> bool;
-    pub fn Neon_Tag_IsFunction(val: Local) -> bool;
-    pub fn Neon_Tag_IsError(val: Local) -> bool;
-    pub fn Neon_Tag_IsBuffer(obj: Local) -> bool;
-    pub fn Neon_Tag_IsArrayBuffer(obj: Local) -> bool;
+    pub fn Neon_Tag_IsUndefined(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsNull(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsNumber(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsBoolean(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsString(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsObject(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsArray(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsFunction(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsError(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsBuffer(isolate: Isolate, obj: Local) -> bool;
+    pub fn Neon_Tag_IsArrayBuffer(isolate: Isolate, obj: Local) -> bool;
 
     pub fn Neon_Task_Schedule(task: *mut c_void,
                               perform: unsafe extern fn(*mut c_void) -> *mut c_void,
