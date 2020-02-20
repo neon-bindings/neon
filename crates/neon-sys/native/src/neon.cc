@@ -48,7 +48,7 @@ extern "C" void Neon_Call_Get(v8::FunctionCallbackInfo<v8::Value> *info, int32_t
   *out = (*info)[i];
 }
 
-extern "C" void Neon_Object_New(v8::Local<v8::Object> *out) {
+extern "C" void Neon_Object_New(v8::Local<v8::Object> *out, v8::Isolate *isolate) {
   *out = Nan::New<v8::Object>();
 }
 

@@ -452,12 +452,14 @@ impl ValueInternal for JsObject {
 impl Object for JsObject { }
 
 impl JsObject {
-    pub fn new<'a, C: Context<'a>>(_: &mut C) -> Handle<'a, JsObject> {
-        JsObject::new_internal()
+    pub fn new<'a, C: Context<'a>>(c: &mut C) -> Handle<'a, JsObject> {
+        JsObject::new_internal(c.env())
     }
 
-    pub(crate) fn new_internal<'a>() -> Handle<'a, JsObject> {
-        JsObject::build(|out| { unsafe { neon_runtime::object::new(out) } })
+    pub(crate) fn new_internal<'a>(env: Env) -> Handle<'a, JsObject> {
+        JsObject::build(|out| {
+            unsafe { neon_runtime::object::new(out, env.to_raw()) }
+        })
     }
 
     pub(crate) fn build<'a, F: FnOnce(&mut raw::Local)>(init: F) -> Handle<'a, JsObject> {

@@ -29,7 +29,7 @@ extern "C" {
   bool Neon_Primitive_IsUint32(v8::Local<v8::Primitive> p);
   bool Neon_Primitive_IsInt32(v8::Local<v8::Primitive> p);
 
-  void Neon_Object_New(v8::Local<v8::Object> *out);
+  void Neon_Object_New(v8::Local<v8::Object> *out, v8::Isolate *isolate);
   bool Neon_Object_GetOwnPropertyNames(v8::Local<v8::Array> *out, v8::Local<v8::Object> obj);
   void *Neon_Object_GetIsolate(v8::Local<v8::Object> obj);
   bool Neon_Object_Get_Index(v8::Local<v8::Value> *out, v8::Local<v8::Object> object, uint32_t index);

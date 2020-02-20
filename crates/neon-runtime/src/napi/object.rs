@@ -4,7 +4,9 @@ use nodejs_sys as napi;
 
 use raw::{Env, Local};
 
-pub unsafe extern "C" fn new(_out: &mut Local) { unimplemented!() }
+pub unsafe extern "C" fn new(out: &mut Local, env: Env) {
+    napi::napi_create_object(env, out as *mut Local);
+}
 
 pub unsafe extern "C" fn get_own_property_names(_out: &mut Local, _object: Local) -> bool { unimplemented!() }
 
