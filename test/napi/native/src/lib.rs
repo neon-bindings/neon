@@ -22,5 +22,12 @@ register_module!(|mut cx| {
     cx.export_value("true", b_true)?;
     cx.export_value("false", b_false)?;
 
+    let one = cx.number(1);
+    let two = cx.number(2.1);
+    assert_eq!(one.value(&mut cx), 1.0);
+    assert_eq!(two.value(&mut cx), 2.1);
+    cx.export_value("one", one)?;
+    cx.export_value("two", two)?;
+
     Ok(())
 });

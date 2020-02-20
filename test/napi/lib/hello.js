@@ -14,4 +14,9 @@ describe('hello', function() {
     assert.strictEqual(addon.true, true);
     assert.strictEqual(addon.false, false);
   });
+
+  it('should export numbers', function () {
+    assert.strictEqual(addon.one, 1);
+    assert.strictEqual(addon.two, 2.1);
+  });
 });

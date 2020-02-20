@@ -384,9 +384,18 @@ impl JsNumber {
         }
     }
 
+    #[cfg(feature = "legacy-runtime")]
     pub fn value(self) -> f64 {
         unsafe {
             neon_runtime::primitive::number_value(self.to_raw())
+        }
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> f64 {
+        let env = cx.env().to_raw();
+        unsafe {
+            neon_runtime::primitive::number_value(env, self.to_raw())
         }
     }
 }
