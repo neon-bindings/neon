@@ -139,6 +139,7 @@ extern "C" bool Neon_Object_Get(v8::Local<v8::Value> *out, v8::Local<v8::Object>
 }
 
 extern "C" bool Neon_Object_Set(bool *out, v8::Local<v8::Object> obj, v8::Local<v8::Value> key, v8::Local<v8::Value> val) {
+  // Only returns `Just(true)` or `Empty()`.
   Nan::Maybe<bool> maybe = Nan::Set(obj, key, val);
   if (maybe.IsJust()) {
     *out = maybe.FromJust();

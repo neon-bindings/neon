@@ -55,4 +55,8 @@ pub unsafe extern "C" fn set_string(
 
 pub unsafe extern "C" fn get(_out: &mut Local, _object: Local, _key: Local) -> bool { unimplemented!() }
 
-pub unsafe extern "C" fn set(_out: &mut bool, _object: Local, _key: Local, _val: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn set(out: &mut bool, env: Env, object: Local, key: Local, val: Local) -> bool {
+    let status = napi::napi_set_property(env, object, key, val);
+    *out = status == napi::napi_status::napi_ok;
+    return *out;
+}

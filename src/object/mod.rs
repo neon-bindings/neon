@@ -139,12 +139,12 @@ mod traits {
 
         unsafe fn set_from<'c, C: Context<'c>>(
             self,
-            _cx: &mut C,
+            cx: &mut C,
             out: &mut bool,
             obj: raw::Local,
             val: raw::Local,
         ) -> bool {
-            neon_runtime::object::set(out, obj, self.to_raw(), val)
+            neon_runtime::object::set(out, cx.env().to_raw(), obj, self.to_raw(), val)
         }
     }
 

@@ -30,17 +30,17 @@ register_module!(|mut cx| {
     cx.export_value("two", two)?;
 
     // Plain objects.
-    let mut rust_created = cx.empty_object();
+    let rust_created = cx.empty_object();
     {
         let a = cx.number(1);
-        rust_created.set(&mut cx, "a", a);
+        rust_created.set(&mut cx, "a", a)?;
     }
     {
         let whatever = cx.boolean(true);
-        rust_created.set(&mut cx, "whatever", whatever);
+        rust_created.set(&mut cx, "whatever", whatever)?;
     }
 
-    cx.export_value("rustCreated", rust_created);
+    cx.export_value("rustCreated", rust_created)?;
 
     Ok(())
 });
