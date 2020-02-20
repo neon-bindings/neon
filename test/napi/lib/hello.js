@@ -19,4 +19,11 @@ describe('hello', function() {
     assert.strictEqual(addon.one, 1);
     assert.strictEqual(addon.two, 2.1);
   });
+
+  it('should be able to create JS objects in rust', function () {
+    assert.deepEqual(addon.rustCreated, {
+      a: 1,
+      whatever: true
+    })
+  });
 });
