@@ -52,7 +52,7 @@ register_module!(|mut cx| {
     let property_names = rust_created.get_own_property_names(&mut cx)?
         .to_vec(&mut cx)?
         .into_iter()
-        .map(|value| value.to_string(&mut cx).unwrap().value(&mut cx))
+        .map(|value| value.downcast::<JsString, _>(&mut cx).unwrap().value(&mut cx))
         .collect::<Vec<_>>();
     assert_eq!(property_names, &["a", "whatever"]);
 
