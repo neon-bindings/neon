@@ -152,7 +152,7 @@ extern "C" void Neon_Array_New(v8::Local<v8::Array> *out, v8::Isolate *isolate, 
   *out = v8::Array::New(isolate, length);
 }
 
-extern "C" uint32_t Neon_Array_Length(v8::Local<v8::Array> array) {
+extern "C" uint32_t Neon_Array_Length(v8::Isolate *isolate, v8::Local<v8::Array> array) {
   return array->Length();
 }
 

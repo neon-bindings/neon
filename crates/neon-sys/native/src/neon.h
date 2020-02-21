@@ -40,7 +40,7 @@ extern "C" {
   bool Neon_Object_Set(bool *out, v8::Local<v8::Object> obj, v8::Local<v8::Value> key, v8::Local<v8::Value> val);
 
   void Neon_Array_New(v8::Local<v8::Array> *out, v8::Isolate *isolate, uint32_t length);
-  uint32_t Neon_Array_Length(v8::Local<v8::Array> array);
+  uint32_t Neon_Array_Length(v8::Isolate *isolate, v8::Local<v8::Array> array);
 
   bool Neon_String_New(v8::Local<v8::String> *out, v8::Isolate *isolate, const uint8_t *data, int32_t len);
   int32_t Neon_String_Utf8Length(v8::Local<v8::String> str);

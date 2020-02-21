@@ -491,12 +491,12 @@ impl JsArray {
     }
 
     pub fn to_vec<'a, C: Context<'a>>(self, cx: &mut C) -> NeonResult<Vec<Handle<'a, JsValue>>> {
-        let mut result = Vec::with_capacity(self.len() as usize);
+        let mut result = Vec::with_capacity(self.len_inner(cx.env()) as usize);
         let mut i = 0;
         loop {
             // Since getting a property can trigger arbitrary code,
             // we have to re-check the length on every iteration.
-            if i >= self.len() {
+            if i >= self.len_inner(cx.env()) {
                 return Ok(result);
             }
             result.push(self.get(cx, i)?);
@@ -504,10 +504,20 @@ impl JsArray {
         }
     }
 
-    pub fn len(self) -> u32 {
+    fn len_inner(self, env: Env) -> u32 {
         unsafe {
-            neon_runtime::array::len(self.to_raw())
+            neon_runtime::array::len(env.to_raw(), self.to_raw())
         }
+    }
+
+    #[cfg(feature = "legacy-runtime")]
+    pub fn len(self) -> u32 {
+        self.len_inner(Env::current())
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    pub fn len<'a, C: Context<'a>>(self, cx: &mut C) -> u32 {
+        self.len_inner(cx.env())
     }
 }
 
