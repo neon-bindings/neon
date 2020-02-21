@@ -5,11 +5,11 @@ use nodejs_sys as napi;
 use raw::{Env, Local};
 
 pub unsafe extern "C" fn new(out: &mut Local, env: Env) {
-    napi::napi_create_object(env, out as *mut Local);
+    napi::napi_create_object(env, out as *mut _);
 }
 
 pub unsafe extern "C" fn get_own_property_names(out: &mut Local, env: Env, object: Local) -> bool {
-    let status = napi::napi_get_property_names(env, object, out as *mut Local);
+    let status = napi::napi_get_property_names(env, object, out as *mut _);
 
     status == napi::napi_status::napi_ok
 }
@@ -17,7 +17,11 @@ pub unsafe extern "C" fn get_own_property_names(out: &mut Local, env: Env, objec
 // Unused.
 pub unsafe extern "C" fn get_isolate(_obj: Local) -> Env { unimplemented!() }
 
-pub unsafe extern "C" fn get_index(_out: &mut Local, _object: Local, _index: u32) -> bool { unimplemented!() }
+pub unsafe extern "C" fn get_index(out: &mut Local, env: Env, object: Local, index: u32) -> bool {
+    let status = napi::napi_get_element(env, object, index, out as *mut _);
+
+    status == napi::napi_status::napi_ok
+}
 
 pub unsafe extern "C" fn set_index(_out: &mut bool, _object: Local, _index: u32, _val: Local) -> bool { unimplemented!() }
 
@@ -40,7 +44,7 @@ pub unsafe extern "C" fn get_string(env: Env, out: &mut Local, object: Local, ke
         env,
         object,
         key_val.assume_init(),
-        out as *mut Local,
+        out as *mut _,
     ) != napi::napi_status::napi_ok {
         return false;
     }
@@ -84,7 +88,7 @@ pub unsafe extern "C" fn set_string(
 }
 
 pub unsafe extern "C" fn get(out: &mut Local, env: Env, object: Local, key: Local) -> bool {
-    let status = napi::napi_get_property(env, object, key, out as *mut Local);
+    let status = napi::napi_get_property(env, object, key, out as *mut _);
 
     status == napi::napi_status::napi_ok
 }

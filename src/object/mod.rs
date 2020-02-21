@@ -112,11 +112,11 @@ mod traits {
     impl PropertyKey for u32 {
         unsafe fn get_from<'c, C: Context<'c>>(
             self,
-            _cx: &mut C,
+            cx: &mut C,
             out: &mut raw::Local,
             obj: raw::Local
         ) -> bool {
-            neon_runtime::object::get_index(out, obj, self)
+            neon_runtime::object::get_index(out, cx.env().to_raw(), obj, self)
         }
 
         unsafe fn set_from<'c, C: Context<'c>>(
