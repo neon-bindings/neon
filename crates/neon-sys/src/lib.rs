@@ -144,7 +144,7 @@ extern "C" {
     pub fn Neon_Module_GetVersion() -> i32;
 
     pub fn Neon_Object_New(out: &mut Local, isolate: Isolate);
-    pub fn Neon_Object_GetOwnPropertyNames(out: &mut Local, object: Local) -> bool;
+    pub fn Neon_Object_GetOwnPropertyNames(out: &mut Local, isolate: Isolate, object: Local) -> bool;
     pub fn Neon_Object_GetIsolate(obj: Local) -> Isolate;
     pub fn Neon_Object_Get_Index(out: &mut Local, object: Local, index: u32) -> bool;
     pub fn Neon_Object_Set_Index(out: &mut bool, object: Local, index: u32, val: Local) -> bool;

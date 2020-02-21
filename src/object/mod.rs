@@ -58,8 +58,11 @@ mod traits {
             build(|out| { unsafe { key.get_from(out, self.to_raw()) } })
         }
 
-        fn get_own_property_names<'a, C: Context<'a>>(self, _: &mut C) -> JsResult<'a, JsArray> {
-            build(|out| { unsafe { neon_runtime::object::get_own_property_names(out, self.to_raw()) } })
+        fn get_own_property_names<'a, C: Context<'a>>(self, cx: &mut C) -> JsResult<'a, JsArray> {
+            let env = cx.env();
+            build(|out| {
+                unsafe { neon_runtime::object::get_own_property_names(out, env.to_raw(), self.to_raw()) }
+            })
         }
 
         fn set<'a, C: Context<'a>, K: PropertyKey, W: Value>(self, _: &mut C, key: K, val: Handle<W>) -> NeonResult<bool> {
@@ -185,8 +188,12 @@ mod traits {
             build(|out| { unsafe { key.get_from(cx, out, self.to_raw()) } })
         }
 
-        fn get_own_property_names<'a, C: Context<'a>>(self, _: &mut C) -> JsResult<'a, JsArray> {
-            build(|out| { unsafe { neon_runtime::object::get_own_property_names(out, self.to_raw()) } })
+        fn get_own_property_names<'a, C: Context<'a>>(self, cx: &mut C) -> JsResult<'a, JsArray> {
+            let env = cx.env();
+
+            build(|out| {
+                unsafe { neon_runtime::object::get_own_property_names(out, env.to_raw(), self.to_raw()) }
+            })
         }
 
         fn set<'a, C: Context<'a>, K: PropertyKey, W: Value>(self, cx: &mut C, key: K, val: Handle<W>) -> NeonResult<bool> {

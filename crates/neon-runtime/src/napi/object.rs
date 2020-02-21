@@ -8,8 +8,13 @@ pub unsafe extern "C" fn new(out: &mut Local, env: Env) {
     napi::napi_create_object(env, out as *mut Local);
 }
 
-pub unsafe extern "C" fn get_own_property_names(_out: &mut Local, _object: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn get_own_property_names(out: &mut Local, env: Env, object: Local) -> bool {
+    let status = napi::napi_get_property_names(env, object, out as *mut Local);
 
+    status == napi::napi_status::napi_ok
+}
+
+// Unused.
 pub unsafe extern "C" fn get_isolate(_obj: Local) -> Env { unimplemented!() }
 
 pub unsafe extern "C" fn get_index(_out: &mut Local, _object: Local, _index: u32) -> bool { unimplemented!() }

@@ -52,7 +52,7 @@ extern "C" void Neon_Object_New(v8::Local<v8::Object> *out, v8::Isolate *isolate
   *out = Nan::New<v8::Object>();
 }
 
-extern "C" bool Neon_Object_GetOwnPropertyNames(v8::Local<v8::Array> *out, v8::Local<v8::Object> obj) {
+extern "C" bool Neon_Object_GetOwnPropertyNames(v8::Local<v8::Array> *out, v8::Isolate *isolate, v8::Local<v8::Object> obj) {
   Nan::MaybeLocal<v8::Array> maybe = Nan::GetOwnPropertyNames(obj);
   return maybe.ToLocal(out);
 }
