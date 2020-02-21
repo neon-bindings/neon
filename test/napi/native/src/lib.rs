@@ -33,7 +33,10 @@ register_module!(|mut cx| {
     let rust_created = cx.empty_object();
     {
         let a = cx.number(1);
+        // set at name
         rust_created.set(&mut cx, "a", a)?;
+        // set at index
+        rust_created.set(&mut cx, 0, a)?;
     }
     {
         let whatever = cx.boolean(true);
@@ -42,6 +45,10 @@ register_module!(|mut cx| {
 
     assert_eq!({
         let v: Handle<JsNumber> = rust_created.get(&mut cx, "a")?.downcast_or_throw(&mut cx)?;
+        v.value(&mut cx)
+    }, 1.0f64);
+    assert_eq!({
+        let v: Handle<JsNumber> = rust_created.get(&mut cx, 0)?.downcast_or_throw(&mut cx)?;
         v.value(&mut cx)
     }, 1.0f64);
     assert_eq!({
@@ -54,7 +61,7 @@ register_module!(|mut cx| {
         .into_iter()
         .map(|value| value.downcast::<JsString, _>(&mut cx).unwrap().value(&mut cx))
         .collect::<Vec<_>>();
-    assert_eq!(property_names, &["a", "whatever"]);
+    assert_eq!(property_names, &["0", "a", "whatever"]);
 
     cx.export_value("rustCreated", rust_created)?;
 

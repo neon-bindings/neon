@@ -23,7 +23,12 @@ pub unsafe extern "C" fn get_index(out: &mut Local, env: Env, object: Local, ind
     status == napi::napi_status::napi_ok
 }
 
-pub unsafe extern "C" fn set_index(_out: &mut bool, _object: Local, _index: u32, _val: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn set_index(out: &mut bool, env: Env, object: Local, index: u32, val: Local) -> bool {
+    let status = napi::napi_set_element(env, object, index, val);
+    *out = status == napi::napi_status::napi_ok;
+
+    *out
+}
 
 pub unsafe extern "C" fn get_string(env: Env, out: &mut Local, object: Local, key: *const u8, len: i32) -> bool {
     let mut key_val = MaybeUninit::uninit();
