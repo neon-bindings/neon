@@ -141,17 +141,6 @@ impl<'a, T: Value> Handle<'a, T> {
         U::is_typeof(cx.env(), self.value)
     }
 
-    /// Tests whether this value is an instance of the given type.
-    ///
-    /// Works with both the legacy and the N-API runtime with the same signature. This allows other
-    /// parts of the codebase to care less about which version we're in.
-    pub(crate) fn is_a_compat<'b, U: Value, C: Context<'b>>(&self, cx: &mut C) -> bool {
-        #[cfg(feature = "legacy-runtime")]
-        return self.is_a::<U>();
-        #[cfg(feature = "napi-runtime")]
-        return self.is_a::<U, C>(cx);
-    }
-
     #[cfg(feature = "legacy-runtime")]
     /// Attempts to downcast a handle to another type, which may fail. A failure
     /// to downcast **does not** throw a JavaScript exception, so it's OK to
