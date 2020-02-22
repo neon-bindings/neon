@@ -1,0 +1,15 @@
+{
+  "main": "index.js",
+  "scripts": {
+    "preinstall": "echo 'Skipping node-gyp installation as part of npm install.'",
+    "configure-release": "node-gyp configure --verbose",
+    "configure-debug": "node-gyp configure --verbose --debug",
+    "build-release": "node-gyp build",
+    "build-debug": "node-gyp build --debug"
+  },
+  "dependencies": {
+    "bindings": "1.2.1",
+    "node-gyp": "^3.5.0",
+    "nan": "^2.14.0"
+  }
+}

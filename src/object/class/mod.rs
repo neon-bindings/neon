@@ -11,7 +11,7 @@ use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::call::CCallback;
 use context::{Context, Lock, CallbackInfo};
-use context::internal::Isolate;
+use context::internal::Env;
 use result::{NeonResult, JsResult, Throw};
 use borrow::{Borrow, BorrowMut, Ref, RefMut, LoanError};
 use handle::{Handle, Managed};
@@ -119,7 +119,13 @@ pub trait Class: Managed + Any {
 }
 
 unsafe impl<T: Class> This for T {
+    #[cfg(feature = "legacy-runtime")]
     fn as_this(h: raw::Local) -> Self {
+        Self::from_raw(h)
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    fn as_this(_env: Env, h: raw::Local) -> Self {
         Self::from_raw(h)
     }
 }
@@ -128,7 +134,7 @@ impl<T: Class> Object for T { }
 
 pub(crate) trait ClassInternal: Class {
     fn metadata_opt<'a, C: Context<'a>>(cx: &mut C) -> Option<ClassMetadata> {
-        cx.isolate()
+        cx.env()
           .class_map()
           .get(&TypeId::of::<Self>())
           .map(|m| m.clone())
@@ -144,13 +150,13 @@ pub(crate) trait ClassInternal: Class {
     fn create<'a, C: Context<'a>>(cx: &mut C) -> NeonResult<ClassMetadata> {
         let descriptor = Self::setup(cx)?;
         unsafe {
-            let isolate: *mut c_void = mem::transmute(cx.isolate());
+            let env = cx.env().to_raw();
 
             let allocate = descriptor.allocate.into_c_callback();
             let construct = descriptor.construct.map(|callback| callback.into_c_callback()).unwrap_or_default();
             let call = descriptor.call.unwrap_or_else(ConstructorCallCallback::default::<Self>).into_c_callback();
 
-            let metadata_pointer = neon_runtime::class::create_base(isolate,
+            let metadata_pointer = neon_runtime::class::create_base(env,
                                                                     allocate,
                                                                     construct,
                                                                     call,
@@ -164,16 +170,16 @@ pub(crate) trait ClassInternal: Class {
             //       v8::FunctionTemplate has a finalizer that will delete it.
 
             let class_name = descriptor.name;
-            if !neon_runtime::class::set_name(isolate, metadata_pointer, class_name.as_ptr(), class_name.len() as u32) {
+            if !neon_runtime::class::set_name(env, metadata_pointer, class_name.as_ptr(), class_name.len() as u32) {
                 return Err(Throw);
             }
 
             for (name, method) in descriptor.methods {
                 let method: Handle<JsValue> = build(|out| {
                     let callback = method.into_c_callback();
-                    neon_runtime::fun::new_template(out, isolate, callback)
+                    neon_runtime::fun::new_template(out, env, callback)
                 })?;
-                if !neon_runtime::class::add_method(isolate, metadata_pointer, name.as_ptr(), name.len() as u32, method.to_raw()) {
+                if !neon_runtime::class::add_method(env, metadata_pointer, name.as_ptr(), name.len() as u32, method.to_raw()) {
                     return Err(Throw);
                 }
             }
@@ -182,7 +188,7 @@ pub(crate) trait ClassInternal: Class {
                 pointer: metadata_pointer
             };
 
-            cx.isolate().class_map().set(TypeId::of::<Self>(), metadata);
+            cx.env().class_map().set(TypeId::of::<Self>(), metadata);
 
             Ok(metadata)
         }
@@ -193,24 +199,29 @@ impl<T: Class> ClassInternal for T { }
 
 impl<T: Class> ValueInternal for T {
     fn name() -> String {
-        let mut isolate: Isolate = unsafe {
+        let mut isolate: Env = unsafe {
             mem::transmute(neon_runtime::call::current_isolate())
         };
         let raw_isolate = unsafe { mem::transmute(isolate) };
         let map = isolate.class_map();
         match map.get(&TypeId::of::<T>()) {
             None => "unknown".to_string(),
-            Some(ref metadata) => unsafe {
-                let mut chars: *mut u8 = mem::uninitialized();
-                let mut len: usize = mem::uninitialized();
-                neon_runtime::class::get_name(&mut chars, &mut len, raw_isolate, metadata.pointer);
-                String::from_utf8_lossy(slice::from_raw_parts_mut(chars, len)).to_string()
+            Some(ref metadata) => {
+                let mut chars = std::ptr::null_mut();
+
+                let buf = unsafe {
+                    let len = neon_runtime::class::get_name(&mut chars, raw_isolate, metadata.pointer);
+
+                    slice::from_raw_parts_mut(chars, len)
+                };
+
+                String::from_utf8_lossy(buf).to_string()
             }
         }
     }
 
     fn is_typeof<Other: Value>(value: Other) -> bool {
-        let mut isolate: Isolate = unsafe {
+        let mut isolate: Env = unsafe {
             mem::transmute(neon_runtime::call::current_isolate())
         };
         let map = isolate.class_map();

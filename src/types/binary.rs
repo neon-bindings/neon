@@ -1,7 +1,7 @@
 //! Types and traits representing binary JavaScript data.
 
 use std::marker::PhantomData;
-use std::mem;
+use std::mem::{self, MaybeUninit};
 use std::os::raw::c_void;
 use std::slice;
 use context::{Context, Lock};
@@ -60,7 +60,7 @@ impl JsArrayBuffer {
 
     /// Constructs a new `ArrayBuffer` object with the given size, in bytes.
     pub fn new<'a, C: Context<'a>>(cx: &mut C, size: u32) -> JsResult<'a, JsArrayBuffer> {
-        build(|out| { unsafe { neon_runtime::arraybuffer::new(out, mem::transmute(cx.isolate()), size) } })
+        build(|out| { unsafe { neon_runtime::arraybuffer::new(out, mem::transmute(cx.env()), size) } })
     }
 
 }
@@ -172,10 +172,17 @@ impl<'a> Borrow for &'a JsBuffer {
     type Target = BinaryData<'a>;
 
     fn try_borrow<'b>(self, guard: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
-        let mut pointer: BinaryData = unsafe { mem::uninitialized() };
+        let mut data = MaybeUninit::<BinaryData>::uninit();
+
+        // Initialize pointer
         unsafe {
-            neon_runtime::buffer::data(&mut pointer.base, &mut pointer.size, self.to_raw());
-            Ref::new(guard, pointer)
+            let pointer = data.as_mut_ptr();
+            (*pointer).size = neon_runtime::buffer::data(&mut (*pointer).base, self.to_raw());
+        }
+
+        // UB if pointer is not initialized!
+        unsafe {
+            Ref::new(guard, data.assume_init())
         }
     }
 }
@@ -190,10 +197,17 @@ impl<'a> Borrow for &'a mut JsBuffer {
 
 impl<'a> BorrowMut for &'a mut JsBuffer {
     fn try_borrow_mut<'b>(self, guard: &'b Lock<'b>) -> Result<RefMut<'b, Self::Target>, LoanError> {
-        let mut pointer: BinaryData = unsafe { mem::uninitialized() };
+        let mut data = MaybeUninit::<BinaryData>::uninit();
+
+        // Initialize pointer
         unsafe {
-            neon_runtime::buffer::data(&mut pointer.base, &mut pointer.size, self.to_raw());
-            RefMut::new(guard, pointer)
+            let pointer = data.as_mut_ptr();
+            (*pointer).size = neon_runtime::buffer::data(&mut (*pointer).base, self.to_raw());
+        }
+
+        // UB if pointer is not initialized!
+        unsafe {
+            RefMut::new(guard, data.assume_init())
         }
     }
 }
@@ -202,10 +216,17 @@ impl<'a> Borrow for &'a JsArrayBuffer {
     type Target = BinaryData<'a>;
 
     fn try_borrow<'b>(self, guard: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
-        let mut pointer: BinaryData = unsafe { mem::uninitialized() };
+        let mut data = MaybeUninit::<BinaryData>::uninit();
+
+        // Initialize pointer
         unsafe {
-            neon_runtime::arraybuffer::data(&mut pointer.base, &mut pointer.size, self.to_raw());
-            Ref::new(guard, pointer)
+            let pointer = data.as_mut_ptr();
+            (*pointer).size = neon_runtime::arraybuffer::data(&mut (*pointer).base, self.to_raw());
+        }
+
+        // UB if pointer is not initialized!
+        unsafe {
+            Ref::new(guard, data.assume_init())
         }
     }
 }
@@ -220,10 +241,17 @@ impl<'a> Borrow for &'a mut JsArrayBuffer {
 
 impl<'a> BorrowMut for &'a mut JsArrayBuffer {
     fn try_borrow_mut<'b>(self, guard: &'b Lock<'b>) -> Result<RefMut<'b, Self::Target>, LoanError> {
-        let mut pointer: BinaryData = unsafe { mem::uninitialized() };
+        let mut data = MaybeUninit::<BinaryData>::uninit();
+
+        // Initialize pointer
         unsafe {
-            neon_runtime::arraybuffer::data(&mut pointer.base, &mut pointer.size, self.to_raw());
-            RefMut::new(guard, pointer)
+            let pointer = data.as_mut_ptr();
+            (*pointer).size = neon_runtime::arraybuffer::data(&mut (*pointer).base, self.to_raw());
+        }
+
+        // UB if pointer is not initialized!
+        unsafe {
+            RefMut::new(guard, data.assume_init())
         }
     }
 }

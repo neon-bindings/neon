@@ -1,0 +1,19 @@
+{
+  "name": "electron-tests",
+  "version": "0.1.0",
+  "description": "Electron acceptance test suite for Neon",
+  "main": "main.js",
+  "author": "The Neon Community",
+  "license": "MIT",
+  "scripts": {
+    "install": "electron-build-env node ../../cli/bin/cli.js build --release",
+    "start": "electron .",
+    "test": "node test"
+  },
+  "repository": "https://github.com/electron/electron-quick-start",
+  "devDependencies": {
+    "electron": "^6.0.7",
+    "electron-build-env": "^0.2.0",
+    "spectron": "^8.0.0"
+  }
+}

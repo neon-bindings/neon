@@ -8,14 +8,34 @@ authors = ["{{project.author}}{{#if project.email}} <{{project.email}}>{{/if}}"]
 license = "{{project.license}}"
 {{/if}}
 build = "build.rs"
+edition = "2018"
 exclude = ["artifacts.json", "index.node"]
 
 [lib]
 name = "{{project.name.cargo.internal}}"
-crate-type = ["dylib"]
+crate-type = ["cdylib"]
 
 [build-dependencies]
-neon-build = "0.2.0"
+{{#if neon.libs.paths}}
+neon-build = { path = {{neon.libs.paths.neon-build}} }
+{{else}}
+neon-build = {{neon.libs.version}}
+{{/if}}
 
+{{#if neon.libs.simple}}
 [dependencies]
-neon = "0.2.0"
+neon = {{neon.libs.version}}
+{{else}}
+[dependencies.neon]
+{{#if neon.libs.version}}
+version = {{neon.libs.version}}
+{{else}}
+path = {{neon.libs.paths.neon}}
+{{/if}}
+{{#if neon.libs.noDefaultFeatures}}
+default-features = false
+{{/if}}
+{{#if neon.libs.features}}
+features = [{{#each neon.libs.features as |feature index|}}{{#if index}}, {{/if}}{{feature}}{{/each}}]
+{{/if}}
+{{/if}}

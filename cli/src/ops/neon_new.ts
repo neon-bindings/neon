@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdirs } from '../async/fs';
+import { readFile, writeFile, mkdirs, stat } from '../async/fs';
 import { prompt } from 'inquirer';
 import gitconfig from '../async/git-config';
 import * as path from 'path';
@@ -49,7 +49,31 @@ async function guessAuthor() {
   }
 }
 
-export default async function wizard(pwd: string, name: string) {
+type NeonVersion = { type: "version" | "range" | "relative" | "absolute", value: string };
+
+async function parseNeonVersion(flag: string | null) : Promise<NeonVersion> {
+  if (!flag) {
+    return { type: "version", value: NEON_CLI_VERSION };
+  }
+
+  if (semver.valid(flag)) {
+    return { type: "version", value: flag };
+  }
+
+  if (semver.validRange(flag)) {
+    return { type: "range", value: flag };
+  }
+
+  let stats = await stat(flag);
+
+  if (!stats.isDirectory()) {
+    throw new Error("Specified path to Neon is not a directory");
+  }
+
+  return { type: path.isAbsolute(flag) ? "absolute" : "relative", value: flag };
+}
+
+export default async function wizard(pwd: string, name: string, neon: string | null, features: string | null, noDefaultFeatures: boolean) {
   let its = validateName(name);
   if (!its.validForNewPackages) {
     let errors = (its.errors || []).concat(its.warnings || []);
@@ -117,13 +141,52 @@ export default async function wizard(pwd: string, name: string) {
   answers.git = encodeURI(answers.git);
   answers.author = escapeQuotes(answers.author);
 
+  let neonVersion = await parseNeonVersion(neon);
+
+  let simple = (neonVersion.type === 'version' || neonVersion.type === 'range')
+    && !features
+    && !noDefaultFeatures;
+
+  let libs: {
+    // In the common case, we can make the Cargo.toml manifest simple by just using
+    // the semver specifier string for the `neon` and `neon-build` dependencies.
+    simple: boolean,
+    paths?: { neon: string, 'neon-build': string },
+    version?: string,
+    features?: Array<string>,
+    noDefaultFeatures: boolean
+  } = { simple, noDefaultFeatures };
+
+  if (neonVersion.type === 'relative') {
+    let neon = path.relative(path.join(name, 'native'), neonVersion.value);
+    libs.paths = {
+      neon: JSON.stringify(neon),
+      'neon-build': JSON.stringify(path.join(neon, 'crates', 'neon-build'))
+    };
+  } else if (neonVersion.type === 'absolute') {
+    libs.paths = {
+      neon: JSON.stringify(neonVersion.value),
+      'neon-build': JSON.stringify(path.resolve(neonVersion.value, 'crates', 'neon-build'))
+    };
+  } else {
+    libs.version = JSON.stringify(neonVersion.value);
+  }
+
+  if (features) {
+    libs.features = features.split(/\s+/).map(JSON.stringify);
+  }
+
+  let cli = JSON.stringify(neonVersion.type === 'version'
+    ? "^" + neonVersion.value
+    : neonVersion.type === 'relative'
+    ? "file:" + path.join(path.relative(name, neonVersion.value), 'cli')
+    : neonVersion.type === 'absolute'
+    ? "file:" + path.resolve(neonVersion.value, 'cli')
+    : neonVersion.value);
+
   let ctx = {
     project: answers,
-    "neon-cli": {
-      major: semver.major(NEON_CLI_VERSION),
-      minor: semver.minor(NEON_CLI_VERSION),
-      patch: semver.patch(NEON_CLI_VERSION)
-    }
+    neon: { cli, libs }
   };
 
   let lib = path.resolve(root, path.dirname(answers.node));

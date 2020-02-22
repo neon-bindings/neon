@@ -11,7 +11,7 @@ git commit -a -m "v$VERSION" || exit $?
 git push
 
 curl \
-    -u dherman \
+    -u $1 \
     --request POST \
     --data '{"tag_name":"'"$VERSION"'","target_commitish":"master","name":"'"v$VERSION"'","body":"","draft":false,"prerelease":true}' \
     https://api.github.com/repos/neon-bindings/neon/releases

@@ -1,11 +1,9 @@
-os: Visual Studio 2015
+os: unstable
+image: Visual Studio 2015
 
 environment:
   RUST_BACKTRACE: 1
   matrix:
-    - PLATFORM: x64
-      NODEJS_VERSION: "6"
-      RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
     - PLATFORM: x64
       NODEJS_VERSION: "8"
       RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
@@ -18,9 +16,20 @@ environment:
     - PLATFORM: x64
       NODEJS_VERSION: "10"
       RUST_TOOLCHAIN: nightly-x86_64-pc-windows-msvc
+    - PLATFORM: x64
+      NODEJS_VERSION: "12"
+      RUST_TOOLCHAIN: stable-x86_64-pc-windows-msvc
+    - PLATFORM: x64
+      NODEJS_VERSION: "12"
+      RUST_TOOLCHAIN: beta-x86_64-pc-windows-msvc
+    - PLATFORM: x64
+      NODEJS_VERSION: "12"
+      RUST_TOOLCHAIN: nightly-x86_64-pc-windows-msvc
 
 install:
   - ps: Install-Product node $env:NODEJS_VERSION $env:PLATFORM
+  # Workaround until https://github.com/nodejs/node-gyp/issues/1933 is fixed.
+  - npm install -g npm@6.11.3
   - npm config set msvs_version 2015
   - node -e "console.log(process.argv[0], process.arch, process.versions)"
   - curl -sSf -o rustup-init.exe https://win.rustup.rs

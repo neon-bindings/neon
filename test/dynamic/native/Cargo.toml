@@ -4,13 +4,14 @@ version = "0.1.0"
 authors = ["The Neon Community"]
 license = "MIT/Apache-2.0"
 build = "build.rs"
+edition = "2018"
 
 [lib]
 name = "tests"
-crate-type = ["dylib"]
+crate-type = ["cdylib"]
 
 [build-dependencies]
-neon-build = {path = "../../../crates/neon-build"}
+neon-build = {version = "*", path = "../../../crates/neon-build"}
 
 [dependencies]
-neon = {path = "../../../"}
+neon = {version = "*", path = "../../../", features = ["event-handler-api"]}

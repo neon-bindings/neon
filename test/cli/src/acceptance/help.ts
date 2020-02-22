@@ -81,7 +81,7 @@ function testHelpNew(proc: SpawnChain, done: () => void) {
     .wait("neon new")
     .wait("Create a new Neon project")
     .wait("Synopsis")
-    .wait("$ neon new [@<scope>/]<name>")
+    .wait("$ neon new [options] [@<scope>/]<name>")
     .run(err => {
       if (err) throw err;
       done();

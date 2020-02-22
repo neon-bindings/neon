@@ -12,16 +12,12 @@ matrix:
       rust: beta
     - env: TRAVIS_NODE_VERSION="8"
       rust: nightly
-    - env: TRAVIS_NODE_VERSION="6"
-      rust: beta
-    - env: TRAVIS_NODE_VERSION="6"
-      rust: nightly
 
 env:
   matrix:
+    - TRAVIS_NODE_VERSION="12"
     - TRAVIS_NODE_VERSION="10"
     - TRAVIS_NODE_VERSION="8"
-    - TRAVIS_NODE_VERSION="6"
   global:
   - secure: mO6uooJGRkDISBZbTq0zvjOfjQ6BeclkxVZN3XWaXrZ/4KjPi7/fRzkm9c8brPe7LWnD4bQ9Bhp7/I6+SVRlvw+uGXNhBiiIyl95jp9s9mOEN+8V7TyShIHEYjbVJf/EGiv5Rz7ni9cNG6iBHcxy5ehycodPtVdAn/VKw31Og/JNWFTu6OzaDZL6gsFIk7VEnHUHgGtl4/iPPdPgAN18oxWbf0CjaknFxXaQiwJXuevd+fuZU16HygBn2Kmj7gqbAKyG8T6wJ1LAQpTkIduXAcgW/PJnj+Stzu48GRVoWoqMQ9Ksk2oSX70fxksC3U3SH4tIQW1+68fXZz4Y0I6b7LkwxovRxkcE4rgoU15xxJuMjxXlQ/csupwhpnBdHhh+Fmjsr0n5KFFLCI7m04ZqAn7+xx9g2NhyuPmO7/ETW24XV9fRy7IywcqR8UgLmftI36r0nV5iO500t4o13DJ0hBTIUgX6KVenbr7v68WO+M/XSRU81RPGjQKsAFM60EpCtn36uCLAZbKyxQi1kYk6UFJLfb/bfrvSS6dzUQ7fEcNRekLMn8Fo4CKAmYCJ70tvhyx/EN0HrIpCfIYedMTLYf11ZQ/bKWcHE4GzU77cRgNwBYLsY6tFjchFukyK14F6jWgpqF81g0yzG0pRJRxZqrtwEI63Db/eLidGctmcEyQ=
 
@@ -35,6 +31,12 @@ before_install:
   - npm run transpile --prefix cli
   - npm install --prefix test/cli
   - npm install --prefix test/dynamic
+
+# Required for electron tests
+before_script:
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - sleep 3 # give xvfb some time to start
 
 addons:
   apt:

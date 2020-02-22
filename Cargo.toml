@@ -1,6 +1,6 @@
 [package]
 name = "neon"
-version = "0.2.0"
+version = "0.4.0"
 authors = ["Dave Herman <david.herman@gmail.com>"]
 description = "A safe abstraction layer for Node.js."
 readme = "README.md"
@@ -11,25 +11,53 @@ license = "MIT/Apache-2.0"
 exclude = ["neon.jpg"]
 build = "build.rs"
 
-# Sharing the name of the library produced by neon-runtime allows the
-# `build.rs` script for Neon projects to find the path to `node.lib`
-# in Windows.
-#
-# See also: http://doc.crates.io/build-script.html#the-links-manifest-key
-links = "neon-runtime"
-
 [build-dependencies]
-neon-build = { version = "=0.2.0", path = "crates/neon-build" }
+neon-build = { version = "=0.4.0", path = "crates/neon-build" }
 
 [dev-dependencies]
-rustc_version = "0.2"
-lazy_static = "0.2.8"
+lazy_static = "1.4.0"
+rustversion = "0.1.4"
+semver = "0.9"
 
 [dependencies]
 cslice = "0.2"
 semver = "0.9.0"
-neon-runtime = { version = "=0.2.0", path = "crates/neon-runtime" }
+neon-runtime = { version = "=0.4.0", path = "crates/neon-runtime" }
+
+[features]
+default = ["legacy-runtime"]
+
+# Enable static tests. These can be fragile because of variations in Rust compiler
+# error message formatting from version to version, so they're disabled by default.
+enable-static-tests = []
+
+# Enable the EventHandler API of RFC 25.
+event-handler-api = []
+
+# Enable the default panic hook. Useful for debugging neon itself.
+default-panic-hook = []
+
+# Feature flag to enable the legacy V8/NAN runtime. For now, this feature is
+# enabled by default.
+legacy-runtime = ["neon-runtime/neon-sys", "neon-build/neon-sys"]
+
+# Feature flag to enable the experimental N-API runtime. For now, this feature
+# is disabled by default.
+napi-runtime = ["neon-runtime/nodejs-sys"]
+
+# Feature flag to disable  external dependencies on docs build
+docs-only = ["neon-runtime/docs-only"]
+
+[package.metadata.docs.rs]
+features = ["docs-only"]
 
 [workspace]
-members = ["crates/neon-build", "crates/neon-runtime"]
-exclude = ["test"]
+members = [
+    "crates/neon-build",
+    "crates/neon-runtime",
+    "crates/neon-sys",
+    "test/static",
+    "test/electron/native",
+    "test/dynamic/native",
+    "test/napi/native"
+]

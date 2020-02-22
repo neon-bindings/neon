@@ -13,7 +13,7 @@ use std::marker::PhantomData;
 use neon_runtime;
 use neon_runtime::raw;
 use context::{Context, FunctionContext};
-use context::internal::Isolate;
+use context::internal::Env;
 use result::{NeonResult, JsResult, Throw, JsResultExt};
 use object::{Object, This};
 use object::class::Callback;
@@ -81,7 +81,13 @@ impl ValueInternal for JsValue {
 }
 
 unsafe impl This for JsValue {
+    #[cfg(feature = "legacy-runtime")]
     fn as_this(h: raw::Local) -> Self {
+        JsValue(h)
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    fn as_this(_env: Env, h: raw::Local) -> Self {
         JsValue(h)
     }
 }
@@ -98,15 +104,29 @@ impl JsValue {
 pub struct JsUndefined(raw::Local);
 
 impl JsUndefined {
+    #[cfg(feature = "legacy-runtime")]
     pub fn new<'a>() -> Handle<'a, JsUndefined> {
-        JsUndefined::new_internal()
+        JsUndefined::new_internal(Env::current())
     }
 
-    pub(crate) fn new_internal<'a>() -> Handle<'a, JsUndefined> {
+    #[cfg(feature = "napi-runtime")]
+    pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsUndefined> {
+        JsUndefined::new_internal(cx.env())
+    }
+
+    pub(crate) fn new_internal<'a>(env: Env) -> Handle<'a, JsUndefined> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::undefined(&mut local);
+            neon_runtime::primitive::undefined(&mut local, env.to_raw());
             Handle::new_internal(JsUndefined(local))
+        }
+    }
+
+    fn as_this_compat(env: Env, _: raw::Local) -> Self {
+        unsafe {
+            let mut local: raw::Local = std::mem::zeroed();
+            neon_runtime::primitive::undefined(&mut local, env.to_raw());
+            JsUndefined(local)
         }
     }
 }
@@ -120,12 +140,14 @@ impl Managed for JsUndefined {
 }
 
 unsafe impl This for JsUndefined {
-    fn as_this(_: raw::Local) -> Self {
-        unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::undefined(&mut local);
-            JsUndefined(local)
-        }
+    #[cfg(feature = "legacy-runtime")]
+    fn as_this(h: raw::Local) -> Self {
+        JsUndefined::as_this_compat(Env::current(), h)
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    fn as_this(env: Env, h: raw::Local) -> Self {
+        JsUndefined::as_this_compat(env, h)
     }
 }
 
@@ -143,14 +165,20 @@ impl ValueInternal for JsUndefined {
 pub struct JsNull(raw::Local);
 
 impl JsNull {
+    #[cfg(feature = "legacy-runtime")]
     pub fn new<'a>() -> Handle<'a, JsNull> {
-        JsNull::new_internal()
+        JsNull::new_internal(Env::current())
     }
 
-    pub(crate) fn new_internal<'a>() -> Handle<'a, JsNull> {
+    #[cfg(feature = "napi-runtime")]
+    pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsNull> {
+        JsNull::new_internal(cx.env())
+    }
+
+    pub(crate) fn new_internal<'a>(env: Env) -> Handle<'a, JsNull> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::null(&mut local);
+            neon_runtime::primitive::null(&mut local, env.to_raw());
             Handle::new_internal(JsNull(local))
         }
     }
@@ -178,21 +206,30 @@ impl ValueInternal for JsNull {
 pub struct JsBoolean(raw::Local);
 
 impl JsBoolean {
-    pub fn new<'a, C: Context<'a>>(_: &mut C, b: bool) -> Handle<'a, JsBoolean> {
-        JsBoolean::new_internal(b)
+    pub fn new<'a, C: Context<'a>>(cx: &mut C, b: bool) -> Handle<'a, JsBoolean> {
+        JsBoolean::new_internal(cx.env(), b)
     }
 
-    pub(crate) fn new_internal<'a>(b: bool) -> Handle<'a, JsBoolean> {
+    pub(crate) fn new_internal<'a>(env: Env, b: bool) -> Handle<'a, JsBoolean> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::boolean(&mut local, b);
+            neon_runtime::primitive::boolean(&mut local, env.to_raw(), b);
             Handle::new_internal(JsBoolean(local))
         }
     }
 
+    #[cfg(feature = "legacy-runtime")]
     pub fn value(self) -> bool {
         unsafe {
             neon_runtime::primitive::boolean_value(self.to_raw())
+        }
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> bool {
+        let env = cx.env().to_raw();
+        unsafe {
+            neon_runtime::primitive::boolean_value(env, self.to_raw())
         }
     }
 }
@@ -257,12 +294,23 @@ impl ValueInternal for JsString {
 }
 
 impl JsString {
+    #[cfg(feature = "legacy-runtime")]
     pub fn size(self) -> isize {
         unsafe {
             neon_runtime::string::utf8_len(self.to_raw())
         }
     }
 
+    #[cfg(feature = "napi-runtime")]
+    pub fn size<'a, C: Context<'a>>(self, cx: &mut C) -> isize {
+        let env = cx.env().to_raw();
+
+        unsafe {
+            neon_runtime::string::utf8_len(env, self.to_raw())
+        }
+    }
+
+    #[cfg(feature = "legacy-runtime")]
     pub fn value(self) -> String {
         unsafe {
             let capacity = neon_runtime::string::utf8_len(self.to_raw());
@@ -274,19 +322,33 @@ impl JsString {
         }
     }
 
+    #[cfg(feature = "napi-runtime")]
+    pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> String {
+        let env = cx.env().to_raw();
+
+        unsafe {
+            let capacity = neon_runtime::string::utf8_len(env, self.to_raw()) + 1;
+            let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
+            let p = buffer.as_mut_ptr();
+            std::mem::forget(buffer);
+            let len = neon_runtime::string::data(env, p, capacity, self.to_raw());
+            String::from_raw_parts(p, len as usize, capacity as usize)
+        }
+    }
+
     pub fn new<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, val: S) -> Handle<'a, JsString> {
         JsString::try_new(cx, val).unwrap()
     }
 
     pub fn try_new<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, val: S) -> StringResult<'a> {
         let val = val.as_ref();
-        match JsString::new_internal(cx.isolate(), val) {
+        match JsString::new_internal(cx.env(), val) {
             Some(s) => Ok(s),
             None => Err(StringOverflow(val.len()))
         }
     }
 
-    pub(crate) fn new_internal<'a>(isolate: Isolate, val: &str) -> Option<Handle<'a, JsString>> {
+    pub(crate) fn new_internal<'a>(env: Env, val: &str) -> Option<Handle<'a, JsString>> {
         let (ptr, len) = if let Some(small) = Utf8::from(val).into_small() {
             small.lower()
         } else {
@@ -295,7 +357,7 @@ impl JsString {
 
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            if neon_runtime::string::new(&mut local, isolate.to_raw(), ptr, len) {
+            if neon_runtime::string::new(&mut local, env.to_raw(), ptr, len) {
                 Some(Handle::new_internal(JsString(local)))
             } else {
                 None
@@ -311,20 +373,29 @@ pub struct JsNumber(raw::Local);
 
 impl JsNumber {
     pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, x: T) -> Handle<'a, JsNumber> {
-        JsNumber::new_internal(cx.isolate(), x.into())
+        JsNumber::new_internal(cx.env(), x.into())
     }
 
-    pub(crate) fn new_internal<'a>(isolate: Isolate, v: f64) -> Handle<'a, JsNumber> {
+    pub(crate) fn new_internal<'a>(env: Env, v: f64) -> Handle<'a, JsNumber> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::number(&mut local, isolate.to_raw(), v);
+            neon_runtime::primitive::number(&mut local, env.to_raw(), v);
             Handle::new_internal(JsNumber(local))
         }
     }
 
+    #[cfg(feature = "legacy-runtime")]
     pub fn value(self) -> f64 {
         unsafe {
             neon_runtime::primitive::number_value(self.to_raw())
+        }
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> f64 {
+        let env = cx.env().to_raw();
+        unsafe {
+            neon_runtime::primitive::number_value(env, self.to_raw())
         }
     }
 }
@@ -359,7 +430,15 @@ impl Managed for JsObject {
 }
 
 unsafe impl This for JsObject {
-    fn as_this(h: raw::Local) -> Self { JsObject(h) }
+    #[cfg(feature = "legacy-runtime")]
+    fn as_this(h: raw::Local) -> Self {
+        JsObject(h)
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    fn as_this(_env: Env, h: raw::Local) -> Self {
+        JsObject(h)
+    }
 }
 
 impl ValueInternal for JsObject {
@@ -398,13 +477,13 @@ pub struct JsArray(raw::Local);
 
 impl JsArray {
     pub fn new<'a, C: Context<'a>>(cx: &mut C, len: u32) -> Handle<'a, JsArray> {
-        JsArray::new_internal(cx.isolate(), len)
+        JsArray::new_internal(cx.env(), len)
     }
 
-    pub(crate) fn new_internal<'a>(isolate: Isolate, len: u32) -> Handle<'a, JsArray> {
+    pub(crate) fn new_internal<'a>(env: Env, len: u32) -> Handle<'a, JsArray> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::array::new(&mut local, isolate.to_raw(), len);
+            neon_runtime::array::new(&mut local, env.to_raw(), len);
             Handle::new_internal(JsArray(local))
         }
     }
@@ -461,7 +540,7 @@ impl<T: Object> Object for JsFunction<T> { }
 // Maximum number of function arguments in V8.
 const V8_ARGC_LIMIT: usize = 65535;
 
-unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [Handle<'b, A>]) -> NeonResult<(*mut c_void, i32, *mut c_void)>
+unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [Handle<'b, A>]) -> NeonResult<(i32, *mut c_void)>
     where A: Value + 'b
 {
     let argv = args.as_mut_ptr();
@@ -469,8 +548,7 @@ unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: &mut [Handle
     if argc > V8_ARGC_LIMIT {
         return cx.throw_range_error("too many arguments");
     }
-    let isolate: *mut c_void = std::mem::transmute(cx.isolate().to_raw());
-    Ok((isolate, argc as i32, argv as *mut c_void))
+    Ok((argc as i32, argv as *mut c_void))
 }
 
 impl JsFunction {
@@ -479,10 +557,10 @@ impl JsFunction {
               U: Value
     {
         build(|out| {
+            let env = cx.env().to_raw();
             unsafe {
-                let isolate: *mut c_void = std::mem::transmute(cx.isolate().to_raw());
                 let callback = FunctionCallback(f).into_c_callback();
-                neon_runtime::fun::new(out, isolate, callback)
+                neon_runtime::fun::new(out, env, callback)
             }
         })
     }
@@ -495,10 +573,11 @@ impl<CL: Object> JsFunction<CL> {
               AS: IntoIterator<Item=Handle<'b, A>>
     {
         let mut args = args.into_iter().collect::<Vec<_>>();
-        let (isolate, argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
+        let (argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
+        let env = cx.env().to_raw();
         build(|out| {
             unsafe {
-                neon_runtime::fun::call(out, isolate, self.to_raw(), this.to_raw(), argc, argv)
+                neon_runtime::fun::call(out, env, self.to_raw(), this.to_raw(), argc, argv)
             }
         })
     }
@@ -508,10 +587,11 @@ impl<CL: Object> JsFunction<CL> {
               AS: IntoIterator<Item=Handle<'b, A>>
     {
         let mut args = args.into_iter().collect::<Vec<_>>();
-        let (isolate, argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
+        let (argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
+        let env = cx.env().to_raw();
         build(|out| {
             unsafe {
-                neon_runtime::fun::construct(out, isolate, self.to_raw(), argc, argv)
+                neon_runtime::fun::construct(out, env, self.to_raw(), argc, argv)
             }
         })
     }

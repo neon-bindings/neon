@@ -5,9 +5,6 @@ extern crate cslice;
 extern crate semver;
 
 #[cfg(test)]
-extern crate rustc_version;
-
-#[cfg(test)]
 #[macro_use]
 extern crate lazy_static;
 
@@ -18,12 +15,66 @@ pub mod object;
 pub mod borrow;
 pub mod result;
 pub mod task;
+#[cfg(feature = "event-handler-api")]
+pub mod event;
 pub mod meta;
 pub mod prelude;
 
 #[doc(hidden)]
 pub mod macro_internal;
 
+#[cfg(all(feature = "legacy-runtime", feature = "napi-runtime"))]
+compile_error!("Cannot enable both `legacy-runtime` and `napi-runtime` features.\n\nTo use `napi-runtime`, disable `legacy-runtime` by setting `default-features` to `false` in Cargo.toml\nor with cargo's --no-default-features flag.");
+
+#[cfg(all(feature = "napi-runtime", not(feature = "legacy-runtime")))]
+/// Register the current crate as a Node module, providing startup
+/// logic for initializing the module object at runtime.
+///
+/// The first argument is a pattern bound to a `neon::context::ModuleContext`. This
+/// is usually bound to a mutable variable `mut cx`, which can then be used to
+/// pass to Neon APIs that require mutable access to an execution context.
+///
+/// Example:
+///
+/// ```rust,ignore
+/// register_module!(mut cx, {
+///     cx.export_function("foo", foo)?;
+///     cx.export_function("bar", bar)?;
+///     cx.export_function("baz", baz)?;
+///     Ok(())
+/// });
+/// ```
+#[macro_export]
+macro_rules! register_module {
+    ($module:pat, $init:block) => {
+        register_module!(|$module| $init);
+    };
+
+    (|$module:pat| $init:block) => {
+        #[no_mangle]
+        pub unsafe extern "C" fn napi_register_module_v1(
+            env: $crate::macro_internal::runtime::nodejs_sys::napi_env,
+            m: $crate::macro_internal::runtime::nodejs_sys::napi_value
+        ) -> $crate::macro_internal::runtime::nodejs_sys::napi_value
+        {
+            // Suppress the default Rust panic hook, which prints diagnostics to stderr.
+            #[cfg(not(feature = "default-panic-hook"))]
+            ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
+
+            fn __init_neon_module($module: $crate::context::ModuleContext) -> $crate::result::NeonResult<()> $init
+
+            $crate::macro_internal::initialize_module(
+                env,
+                std::mem::transmute(m),
+                __init_neon_module,
+            );
+
+            m
+        }
+    }
+}
+
+#[cfg(feature = "legacy-runtime")]
 /// Register the current crate as a Node module, providing startup
 /// logic for initializing the module object at runtime.
 ///
@@ -49,6 +100,7 @@ macro_rules! register_module {
         #[cfg_attr(target_os = "linux", link_section = ".ctors")]
         #[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
         #[cfg_attr(target_os = "windows", link_section = ".CRT$XCU")]
+        #[used]
         pub static __LOAD_NEON_MODULE: extern "C" fn() = {
             fn __init_neon_module($module: $crate::context::ModuleContext) -> $crate::result::NeonResult<()> $init
 
@@ -69,6 +121,8 @@ macro_rules! register_module {
                     link: *mut __NodeModule
                 }
 
+                // Mark as used during tests to suppress warnings
+                #[cfg_attr(test, used)]
                 static mut __NODE_MODULE: __NodeModule = __NodeModule {
                     version: 0,
                     flags: 0,
@@ -91,8 +145,11 @@ macro_rules! register_module {
                 }
 
                 // Suppress the default Rust panic hook, which prints diagnostics to stderr.
+                #[cfg(not(feature = "default-panic-hook"))]
                 ::std::panic::set_hook(::std::boxed::Box::new(|_| { }));
 
+                // During tests, node is not available. Skip module registration.
+                #[cfg(not(test))]
                 unsafe {
                     // Set the ABI version based on the NODE_MODULE_VERSION constant provided by the current node headers.
                     __NODE_MODULE.version = $crate::macro_internal::runtime::module::get_version();
@@ -106,7 +163,7 @@ macro_rules! register_module {
 }
 
 #[doc(hidden)]
-#[macro_export]
+#[macro_export(local_inner_macros)]
 macro_rules! class_definition {
     ( $cls:ident ; $cname:ident ; $typ:ty ; $allocator:tt ; $call_ctor:tt ; $new_ctor:tt ; $mnames:tt ; $mdefs:tt ; init($cx:pat) $body:block $($rest:tt)* ) => {
         class_definition!($cls ;
@@ -185,17 +242,17 @@ macro_rules! class_definition {
             type Internals = $typ;
 
             fn setup<'a, C: $crate::context::Context<'a>>(_: &mut C) -> $crate::result::NeonResult<$crate::object::ClassDescriptor<'a, Self>> {
-                ::std::result::Result::Ok(Self::describe(stringify!($cname), $allocator)
+                ::std::result::Result::Ok(Self::describe(neon_stringify!($cname), $allocator)
                                              $(.construct($new_ctor))*
                                              $(.call($call_ctor))*
-                                             $(.method(stringify!($mname), $mdef))*)
+                                             $(.method(neon_stringify!($mname), $mdef))*)
             }
         }
     };
 }
 
 #[doc(hidden)]
-#[macro_export]
+#[macro_export(local_inner_macros)]
 macro_rules! impl_managed {
     ($cls:ident) => {
         impl $crate::handle::Managed for $cls {
@@ -248,7 +305,7 @@ macro_rules! impl_managed {
 ///
 /// }
 /// ```
-#[macro_export]
+#[macro_export(local_inner_macros)]
 macro_rules! declare_types {
     { $(#[$attr:meta])* pub class $cls:ident for $typ:ident { $($body:tt)* } $($rest:tt)* } => {
         declare_types! { $(#[$attr])* pub class $cls as $typ for $typ { $($body)* } $($rest)* }
@@ -287,16 +344,24 @@ macro_rules! declare_types {
     { } => { };
 }
 
+#[doc(hidden)]
+#[macro_export]
+macro_rules! neon_stringify {
+    ($($inner:tt)*) => {
+        stringify! { $($inner)* }
+    }
+}
+
 #[cfg(all(windows, not(neon_profile = "release")))]
 compile_error!("Neon only builds with --release. For tests, try `cargo test --release`.");
 
 #[cfg(test)]
 mod tests {
+    extern crate rustversion;
     use std::path::{Path, PathBuf};
     use std::process::Command;
     use std::sync::Mutex;
-
-    use rustc_version::{version_meta, Channel};
+    use semver::Version;
 
     // Create a mutex to enforce sequential running of the tests.
     lazy_static! {
@@ -320,11 +385,13 @@ mod tests {
             ("sh", "-c")
         };
 
+        eprintln!("Running Neon test: {} {} {}", shell, command_flag, cmd);
+    
         assert!(Command::new(&shell)
                         .current_dir(dir)
                         .args(&[&command_flag, cmd])
                         .status()
-                        .expect("failed to execute test command")
+                        .expect(&format!("failed to execute test command: {} {} {}", shell, command_flag, cmd))
                         .success());
     }
 
@@ -349,19 +416,36 @@ mod tests {
         run("npm test", &test_cli);
     }
 
-    #[cfg(not(windows))]
-    #[test]
-    fn static_test() {
+    fn static_test_impl() {
         let _guard = TEST_MUTEX.lock();
 
         log("static_test");
 
-        if version_meta().unwrap().channel != Channel::Nightly {
-            return;
-        }
-
         run("cargo test --release", &project_root().join("test").join("static"));
     }
+
+    // Only run the static tests in Beta. This will catch changes to error reporting
+    // and any associated usability regressions before a new Rust version is shipped
+    // but will have more stable results than Nightly.
+    #[rustversion::beta]
+    #[cfg(feature = "enable-static-tests")]
+    #[test]
+    fn static_test() { static_test_impl() }
+
+    #[rustversion::beta]
+    #[cfg(not(feature = "enable-static-tests"))]
+    #[test]
+    #[ignore]
+    fn static_test() { static_test_impl() }
+
+    #[rustversion::not(beta)]
+    #[cfg(feature = "enable-static-tests")]
+    compile_error!("The `enable-static-tests` feature can only be enabled with the Rust beta toolchain.");
+
+    #[rustversion::not(beta)]
+    #[test]
+    #[ignore]
+    fn static_test() { static_test_impl() }
 
     #[test]
     fn dynamic_test() {
@@ -374,5 +458,79 @@ mod tests {
         let test_dynamic = project_root().join("test").join("dynamic");
         run("npm install", &test_dynamic);
         run("npm test", &test_dynamic);
+    }
+
+    #[test]
+    fn dynamic_cargo_test() {
+        let _guard = TEST_MUTEX.lock();
+
+        log("dynamic_cargo_test");
+
+        let test_dynamic_cargo = project_root().join("test").join("dynamic").join("native");
+        run("cargo test --release", &test_dynamic_cargo);
+    }
+
+    #[test]
+    fn electron_test() {
+        let _guard = TEST_MUTEX.lock();
+
+        log("electron_test");
+
+        cli_setup();
+
+        let test_electron = project_root().join("test").join("electron");
+        run("npm install", &test_electron);
+        run("npm test", &test_electron);
+    }
+
+    // Once we publish versions of neon-sys that match the versions of the other
+    // neon crates, `cargo package` can succeed again.
+    #[test]
+    #[ignore]
+    fn package_test() {
+        let _guard = TEST_MUTEX.lock();
+
+        log("package_test");
+
+        let test_package = project_root().join("crates").join("neon-runtime");
+
+        // Allow uncommitted changes outside of CI
+        if std::env::var("CI") == Ok("true".to_string()) {
+            run("cargo package", &test_package);
+        } else {
+            run("cargo package --allow-dirty", &test_package);            
+        }
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn napi_test() {
+        let _guard = TEST_MUTEX.lock();
+
+        log("napi_test");
+
+        cli_setup();
+
+        let node_version_output = Command::new("node")
+            .arg("--version")
+            .output()
+            .expect("failed to get Node version")
+            .stdout;
+
+        // Chop off the 'v' prefix.
+        let node_version_bytes = &node_version_output[1..];
+        let node_version_str = std::str::from_utf8(node_version_bytes).unwrap();
+        let node_version = Version::parse(node_version_str).unwrap();
+
+        let v10 = Version::parse("10.0.0").unwrap();
+
+        if node_version <= v10 {
+            eprintln!("N-API tests only run on Node 10 or later.");
+            return;
+        }
+
+        let test_napi = project_root().join("test").join("napi");
+        run("npm install", &test_napi);
+        run("npm test", &test_napi);
     }
 }

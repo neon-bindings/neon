@@ -1,3 +1,81 @@
+# Version ✨0.4✨ 🎉
+
+## `EventHandler` API
+
+The [`EventHandler` API](https://github.com/neon-bindings/rfcs/blob/master/text/0025-event-handler.md) is a new feature for scheduling work on the javascript main thread from other threads. Big thanks to @geovie for the RFC and implementation.
+
+This feature is currently _unstable_ and gated by a `event-handler-api` feature flag.
+
+## Improvements
+
+* New project template updated for Rust 2018
+
+## Bug Fixes
+
+* Workaround for nodejs/node-gyp#1933
+* Docs build fixed
+* Temporarily disable static tests which keep breaking CI
+
+## N-API
+
+* Context/Isolate threading
+* Scopes
+* Strings
+* Primitive values (numbers, undefined, null, boolean)
+
+# Version 0.3.3
+
+Hot fix for `neon build` in projects with many dependencies.
+
+# Version 0.3.2
+
+## Bug fixes and Small Features
+
+* Disable node module registration on test build, allowing `cargo test` to be used on neon modules
+* Added support for alternate `CARGO_TARGET_DIR` locations (e.g., workspaces)
+* Added macros to `neon::prelude` to improve ergonomics in Rust 2018
+* Link `win_delay_hook` when building with `electron-build-env`, fixing Windows Electron
+* Fixed missing `__cxa_pure_virtual` on Linux
+* Copy native files into `OUT_DIR` and build there to fix `cargo publish` and follow best practices
+* Eliminated `mem::uniitialized()` usage, reducing warnings and fixing an instance of undefined behavior
+
+## Potentially Breaking
+
+The macOS link arguments were moved from `neon-cli` to `neon-build`. This is more idiomatic, but makes `neon-build` _required_ for macOS builds where it was unnecessary before.
+
+Since `neon-build` has been included in the project template since `0.1` this change was not deemed significant enough to warrant a major revision.
+
+## N-API
+
+Neon 0.3.2 lays the groundwork for the next major revision. Development of Neon against an ABI stable Node API (N-API) will occur on master.
+
+* Added `legacy-runtime` and `n-api` feature flags for toggling neon runtime
+* Moved the legacy runtime to `nodejs-sys` crate
+* Stubbed required `n-api` implementation
+* Added `feature` flag to `neon-cli` to help configuring `n-api` projects
+
+# Version 0.3.1
+
+* Build v0.3 project templates by default in the CLI
+
+# Version 0.3
+
+## Breaking Changes
+
+* [Removed support for Node 6](https://github.com/neon-bindings/neon/pull/420)
+
+## Bug Fixes
+
+* Correctly fail the build if [custom build command fails](https://github.com/neon-bindings/neon/pull/421)
+* Fix breaking changes with v8 [`GetFunction`](https://github.com/neon-bindings/neon/pull/410)
+* Moved `nan` from `devDependencies` to `dependencies` in [`neon-runtime`](https://github.com/neon-bindings/neon/pull/367)
+* Changed neon [crate type](https://github.com/neon-bindings/neon/pull/358) from `dylib` to `cdylib`
+* Ensure that neon module loading is [not optimized away](https://github.com/neon-bindings/neon/pull/392)
+
+## Improvements
+
+* Added support for [`CARGO_BUILD_TARGET` environment variable](https://github.com/neon-bindings/neon/pull/411)
+
 # Version ✨0.2✨ 🎉
 
 See the [Neon 0.2 Migration Guide](https://github.com/neon-bindings/neon/wiki/Neon-0.2-Migration-Guide) for documentation on migrating your projects from the Neon 0.1.x series to Neon 0.2, and please [let us know](https://github.com/neon-bindings/neon#get-involved) if you need help!

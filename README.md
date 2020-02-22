@@ -1,7 +1,7 @@
 <img src="neon.png" alt="neon" width="100%" />
 
 [![Travis Build Status](https://travis-ci.org/neon-bindings/neon.svg?branch=master)](https://travis-ci.org/neon-bindings/neon)
-[![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/github/neon-bindings/neon?branch=master&svg=true)](https://ci.appveyor.com/project/dherman/neon)
+[![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/github/neon-bindings/neon?branch=master&svg=true)](https://ci.appveyor.com/project/dherman/neon/branch/master)
 [![](http://meritbadge.herokuapp.com/neon)](https://crates.io/crates/neon)
 [![npm](https://img.shields.io/npm/v/neon-cli.svg)](https://www.npmjs.com/package/neon-cli)
 
@@ -32,9 +32,9 @@ See our [Neon fundamentals docs](https://neon-bindings.com/docs/primitives) and 
 
 ### Node.js
 
-| Node 6 | Node 8 | Node 10 |
-| ------ | ------ | ------- |
-| ✓      | ✓      | ✓       |
+| Node 8 | Node 10 | Node 12 |
+| ------ | ------- | ------- |
+| ✓      | ✓       | ✓       |
 
 Support for [LTS versions of Node](https://github.com/nodejs/LTS#lts-schedule) and current are expected. If you're using a different version of Node and believe it should be supported, let us know.
 
