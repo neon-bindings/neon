@@ -33,10 +33,16 @@ describe('build settings', () => {
   });
 
   describe('serialize', () => {
-    it('should work when nodeVersion is null', () => {
+    it('should serialize when nodeVersion is not set', () => {
+      const settings = new BuildSettings('rustc-version', null, env);
+      expect(settings.toJSON()).to.have.property('nodeVersion', null);
+    });
 
-    })
-  })
+    it('should serialize when nodeVersion is set', () => {
+      const settings = new BuildSettings('rustc-version', '12.0.0', env);
+      expect(settings.toJSON()).to.have.property('nodeVersion').to.be.a('string');
+    });
+  });
 
   describe('current build settings', () => {
     it('should return values of expected types', () => {
