@@ -38,19 +38,11 @@ install:
   - rustup show
   - rustc -V
   - cargo -V
-  - npm install --prefix cli
-  - npm run transpile --prefix cli
-  - npm install --prefix test/cli
-  - npm install --prefix test/dynamic
 
 build: false
 
 test_script:
   - cargo test --release
-  - npm run transpile --prefix cli
-  - npm test --prefix test/cli
-  - npm test --prefix test/dynamic
-  - if [ "$RUST_TOOLCHAIN" == "nightly-x86_64-pc-windows-msvc" ]; then cargo test --manifest-path=test/static/Cargo.toml; fi
 
 cache:
   - target

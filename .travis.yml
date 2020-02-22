@@ -27,10 +27,6 @@ before_install:
   - nvm use ${TRAVIS_NODE_VERSION}
   - node -v
   - npm -v
-  - npm install --prefix cli
-  - npm run transpile --prefix cli
-  - npm install --prefix test/cli
-  - npm install --prefix test/dynamic
 
 # Required for electron tests
 before_script:
@@ -47,10 +43,6 @@ addons:
 
 script:
   - cargo test --release -- --nocapture
-  - npm run transpile --prefix cli
-  - npm test --prefix test/cli
-  - npm test --prefix test/dynamic
-  - cargo test --manifest-path=test/static/Cargo.toml
 
 jobs:
   include:
