@@ -19,8 +19,8 @@ extern "C" {
   bool Neon_Call_IsConstruct(v8::FunctionCallbackInfo<v8::Value> *info);
   void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out);
   void Neon_Call_Data(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info, void **out);
-  int32_t Neon_Call_Length(v8::FunctionCallbackInfo<v8::Value> *info);
-  void Neon_Call_Get(v8::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out);
+  int32_t Neon_Call_Length(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info);
+  void Neon_Call_Get(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out);
 
   void Neon_Primitive_Number(v8::Local<v8::Number> *out, v8::Isolate *isolate, double value);
   void Neon_Primitive_Undefined(v8::Local<v8::Primitive> *out, v8::Isolate *isolate);

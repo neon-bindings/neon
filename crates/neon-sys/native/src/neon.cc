@@ -43,11 +43,11 @@ extern "C" void Neon_Call_Data(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8
   }
 }
 
-extern "C" int32_t Neon_Call_Length(v8::FunctionCallbackInfo<v8::Value> *info) {
+extern "C" int32_t Neon_Call_Length(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info) {
   return info->Length();
 }
 
-extern "C" void Neon_Call_Get(v8::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out) {
+extern "C" void Neon_Call_Get(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out) {
   *out = (*info)[i];
 }
 

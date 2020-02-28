@@ -18,7 +18,7 @@ pub use neon_sys::Neon_Call_IsConstruct as is_construct;
 /// the function is bound to.
 pub use neon_sys::Neon_Call_This as this;
 
-/// Mutates the `out` argument provided to refer to the `v8::Local` handle value of the
+/// Mutates the `out` argument provided to refer to the pointer value of the
 /// `v8::FunctionCallbackInfo` `Data`.
 pub use neon_sys::Neon_Call_Data as data;
 

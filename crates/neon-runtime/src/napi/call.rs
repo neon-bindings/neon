@@ -32,6 +32,8 @@ pub unsafe extern "C" fn is_construct(_info: FunctionCallbackInfo) -> bool { uni
 
 pub unsafe extern "C" fn this(_info: FunctionCallbackInfo, _out: &mut Local) { unimplemented!() }
 
+/// Mutates the `out` argument provided to refer to the associated data value of the
+/// `napi_callback_info`.
 pub unsafe extern "C" fn data(env: Env, info: FunctionCallbackInfo, out: &mut *mut c_void) {
     let mut data = null_mut();
     let mut argc = 0usize;
@@ -49,6 +51,38 @@ pub unsafe extern "C" fn data(env: Env, info: FunctionCallbackInfo, out: &mut *m
     }
 }
 
-pub unsafe extern "C" fn len(_info: FunctionCallbackInfo) -> i32 { unimplemented!() }
+/// Gets the number of arguments passed to the function.
+pub unsafe extern "C" fn len(env: Env, info: FunctionCallbackInfo) -> i32 {
+    let mut argc = 0usize;
+    let status = napi::napi_get_cb_info(
+        env,
+        info,
+        &mut argc as *mut _,
+        null_mut(),
+        null_mut(),
+        null_mut(),
+    );
+    assert_eq!(status, napi::napi_status::napi_ok);
+    argc as i32
+}
 
-pub unsafe extern "C" fn get(_info: FunctionCallbackInfo, _i: i32, _out: &mut Local) { unimplemented!() }
+/// Mutates the `out` argument provided to refer to the `napi_value` of the `i`th argument
+/// passed to the function.
+pub unsafe extern "C" fn get(env: Env, info: FunctionCallbackInfo, i: i32, out: &mut Local) {
+    // TODO make this not allocate
+    // Instead, we can probably get all the arguments at once in `neon` itself?
+    let mut args = vec![null_mut(); (i + 1) as usize];
+    let mut num_args = args.len();
+
+    let status = napi::napi_get_cb_info(
+        env,
+        info,
+        &mut num_args as *mut _,
+        args.as_mut_ptr(),
+        null_mut(),
+        null_mut(),
+    );
+    assert_eq!(status, napi::napi_status::napi_ok);
+    assert!(num_args > i as usize);
+    *out = args[i as usize];
+}

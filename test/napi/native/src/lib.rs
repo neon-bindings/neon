@@ -73,11 +73,7 @@ register_module!(|mut cx| {
         Ok(cx.number(x + 1.0))
     }
 
-    fn return_js_function(mut cx: FunctionContext) -> JsResult<JsFunction> {
-        JsFunction::new(&mut cx, add1)
-    }
-
-    cx.export_function("return_js_function", return_js_function)?;
+    cx.export_function("add1", add1)?;
 
     Ok(())
 });

@@ -54,30 +54,30 @@ impl CallbackInfo {
         }
     }
 
-    pub fn len(&self) -> i32 {
+    pub fn len<'b, C: Context<'b>>(&self, cx: &C) -> i32 {
         unsafe {
-            neon_runtime::call::len(self.info)
+            neon_runtime::call::len(cx.env().to_raw(), self.info)
         }
     }
 
-    pub fn get<'b, C: Context<'b>>(&self, _: &mut C, i: i32) -> Option<Handle<'b, JsValue>> {
-        if i < 0 || i >= self.len() {
+    pub fn get<'b, C: Context<'b>>(&self, cx: &mut C, i: i32) -> Option<Handle<'b, JsValue>> {
+        if i < 0 || i >= self.len(cx) {
             return None;
         }
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::get(self.info, i, &mut local);
+            neon_runtime::call::get(cx.env().to_raw(), self.info, i, &mut local);
             Some(Handle::new_internal(JsValue::from_raw(local)))
         }
     }
 
     pub fn require<'b, C: Context<'b>>(&self, cx: &mut C, i: i32) -> JsResult<'b, JsValue> {
-        if i < 0 || i >= self.len() {
+        if i < 0 || i >= self.len(cx) {
             return cx.throw_type_error("not enough arguments");
         }
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::get(self.info, i, &mut local);
+            neon_runtime::call::get(cx.env().to_raw(), self.info, i, &mut local);
             Ok(Handle::new_internal(JsValue::from_raw(local)))
         }
     }
@@ -468,7 +468,7 @@ impl<'a, T: This> CallContext<'a, T> {
     }
 
     /// Indicates the number of arguments that were passed to the function.
-    pub fn len(&self) -> i32 { self.info.len() }
+    pub fn len(&self) -> i32 { self.info.len(self) }
 
     /// Produces the `i`th argument, or `None` if `i` is greater than or equal to `self.len()`.
     pub fn argument_opt(&mut self, i: i32) -> Option<Handle<'a, JsValue>> {
