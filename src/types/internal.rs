@@ -31,6 +31,7 @@ pub trait ValueInternal: Managed + 'static {
 #[repr(C)]
 pub struct FunctionCallback<T: Value>(pub fn(FunctionContext) -> JsResult<T>);
 
+#[cfg(feature = "legacy-runtime")]
 impl<T: Value> Callback<()> for FunctionCallback<T> {
     extern "C" fn invoke(env: Env, info: CallbackInfo) {
         unsafe {
@@ -40,6 +41,29 @@ impl<T: Value> Callback<()> for FunctionCallback<T> {
                     mem::transmute(neon_runtime::fun::get_dynamic_callback(env.to_raw(), data));
                 if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
                     info.set_return(value);
+                }
+            })
+        }
+    }
+
+    fn as_ptr(self) -> *mut c_void {
+        unsafe { mem::transmute(self.0) }
+    }
+}
+
+#[cfg(feature = "napi-runtime")]
+impl<T: Value> Callback<raw::Local> for FunctionCallback<T> {
+    extern "C" fn invoke(env: Env, info: CallbackInfo) -> raw::Local {
+        unsafe {
+            info.with_cx::<JsObject, _, _>(env, |cx| {
+                let data = info.data(env);
+                let dynamic_callback: fn(FunctionContext) -> JsResult<T> =
+                    mem::transmute(neon_runtime::fun::get_dynamic_callback(env.to_raw(), data));
+                if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
+                    value.to_raw()
+                } else {
+                    // TODO this should probably not be null
+                    std::ptr::null_mut()
                 }
             })
         }
