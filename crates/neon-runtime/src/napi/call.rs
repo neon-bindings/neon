@@ -32,7 +32,22 @@ pub unsafe extern "C" fn is_construct(_info: FunctionCallbackInfo) -> bool { uni
 
 pub unsafe extern "C" fn this(_info: FunctionCallbackInfo, _out: &mut Local) { unimplemented!() }
 
-pub unsafe extern "C" fn data(_env: Env, _info: FunctionCallbackInfo, _out: &mut *mut c_void) { unimplemented!() }
+pub unsafe extern "C" fn data(env: Env, info: FunctionCallbackInfo, out: &mut *mut c_void) {
+    let mut data = null_mut();
+    let mut argc = 0usize;
+    let status = napi::napi_get_cb_info(
+        env,
+        info,
+        &mut argc as *mut _,
+        null_mut(),
+        null_mut(),
+        &mut data as *mut _,
+    );
+    println!("data() status = {:?} argc = {}", status, argc);
+    if status == napi::napi_status::napi_ok {
+        *out = data;
+    }
+}
 
 pub unsafe extern "C" fn len(_info: FunctionCallbackInfo) -> i32 { unimplemented!() }
 

@@ -27,4 +27,8 @@ describe('hello', function() {
       whatever: true
     });
   });
+
+  it('should export a Rust function', function () {
+    assert.strictEqual(addon.return_js_function(2), 3.0);
+  })
 });

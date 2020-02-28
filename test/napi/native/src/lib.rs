@@ -68,5 +68,16 @@ register_module!(|mut cx| {
 
     cx.export_value("rustCreated", rust_created)?;
 
+    fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
+        let x = cx.argument::<JsNumber>(0)?.value(&mut cx);
+        Ok(cx.number(x + 1.0))
+    }
+
+    fn return_js_function(mut cx: FunctionContext) -> JsResult<JsFunction> {
+        JsFunction::new(&mut cx, add1)
+    }
+
+    cx.export_function("return_js_function", return_js_function)?;
+
     Ok(())
 });
