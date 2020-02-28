@@ -19,12 +19,14 @@ export default class BuildSettings {
 
   constructor(rustc: string, nodeVersion: string | null, env: Dict<string | null>) {
     this.rustc = rustc;
-    this.nodeVersion = nodeVersion
+    this.nodeVersion = nodeVersion;
     this.env = env;
   }
 
   match(other: BuildSettings) {
-    if (other.nodeVersion !== this.nodeVersion) return false;
+    if (other.nodeVersion !== this.nodeVersion) {
+      return false;
+    }
     return Object.keys(this.env).every(key => {
       return (!this.env[key] && !other.env[key]) ||
              (this.env[key] === other.env[key]);
@@ -32,15 +34,15 @@ export default class BuildSettings {
   }
 
   static getNodeVersion(): string {
-    const nodeVersionResult = child_process.spawnSync("node", ["--version"]);
+    let nodeVersionResult = child_process.spawnSync("node", ["--version"]);
     return nodeVersionResult.stdout
       .toString()
       .trim();
   }
 
   static current(toolchain: rust.Toolchain = 'default') {
-    const rustcVersionResult = rust.spawnSync("rustc", ["--version"], toolchain);
-    const nodeVersion = BuildSettings.getNodeVersion();
+    let rustcVersionResult = rust.spawnSync("rustc", ["--version"], toolchain);
+    let nodeVersion = BuildSettings.getNodeVersion();
 
     if (rustcVersionResult.error) {
       if (rustcVersionResult.error.message.includes("ENOENT")) {
