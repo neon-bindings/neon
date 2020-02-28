@@ -28,11 +28,11 @@ pub(crate) struct CallbackInfo {
 }
 
 impl CallbackInfo {
-    pub fn data<'a>(&self) -> Handle<'a, JsValue> {
+    pub fn data<'a>(&self, env: Env) -> *mut c_void {
         unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::data(self.info, &mut local);
-            Handle::new_internal(JsValue::from_raw(local))
+            let mut raw_data: *mut c_void = std::mem::zeroed();
+            neon_runtime::call::data(env.to_raw(), self.info, &mut raw_data);
+            raw_data
         }
     }
 

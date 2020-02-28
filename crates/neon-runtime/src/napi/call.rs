@@ -32,7 +32,7 @@ pub unsafe extern "C" fn is_construct(_info: FunctionCallbackInfo) -> bool { uni
 
 pub unsafe extern "C" fn this(_info: FunctionCallbackInfo, _out: &mut Local) { unimplemented!() }
 
-pub unsafe extern "C" fn data(_info: FunctionCallbackInfo, _out: &mut Local) { unimplemented!() }
+pub unsafe extern "C" fn data(_env: Env, _info: FunctionCallbackInfo, _out: &mut *mut c_void) { unimplemented!() }
 
 pub unsafe extern "C" fn len(_info: FunctionCallbackInfo) -> i32 { unimplemented!() }
 

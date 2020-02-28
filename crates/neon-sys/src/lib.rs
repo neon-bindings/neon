@@ -98,7 +98,7 @@ extern "C" {
     pub fn Neon_Call_CurrentIsolate() -> Isolate;
     pub fn Neon_Call_IsConstruct(info: FunctionCallbackInfo) -> bool;
     pub fn Neon_Call_This(info: FunctionCallbackInfo, out: &mut Local);
-    pub fn Neon_Call_Data(isolate: Isolate, info: FunctionCallbackInfo, out: &mut Local);
+    pub fn Neon_Call_Data(isolate: Isolate, info: FunctionCallbackInfo, out: &mut *mut c_void);
     pub fn Neon_Call_Length(info: FunctionCallbackInfo) -> i32;
     pub fn Neon_Call_Get(info: FunctionCallbackInfo, i: i32, out: &mut Local);
 
@@ -115,9 +115,9 @@ extern "C" {
     pub fn Neon_Class_ThrowThisError(isolate: Isolate, metadata: *mut c_void);
     pub fn Neon_Class_AddMethod(isolate: Isolate, metadata: *mut c_void, name: *const u8, byte_length: u32, method: Local) -> bool;
     pub fn Neon_Class_MetadataToConstructor(out: &mut Local, isolate: Isolate, metadata: *mut c_void) -> bool;
-    pub fn Neon_Class_GetAllocateKernel(obj: Local) -> *mut c_void;
-    pub fn Neon_Class_GetConstructKernel(obj: Local) -> *mut c_void;
-    pub fn Neon_Class_GetCallKernel(obj: Local) -> *mut c_void;
+    pub fn Neon_Class_GetAllocateKernel(data: *mut c_void) -> *mut c_void;
+    pub fn Neon_Class_GetConstructKernel(data: *mut c_void) -> *mut c_void;
+    pub fn Neon_Class_GetCallKernel(data: *mut c_void) -> *mut c_void;
     pub fn Neon_Class_Constructor(out: &mut Local, ft: Local) -> bool;
     pub fn Neon_Class_HasInstance(metadata: *mut c_void, v: Local) -> bool;
     pub fn Neon_Class_GetInstanceInternals(obj: Local) -> *mut c_void;
@@ -133,7 +133,7 @@ extern "C" {
 
     pub fn Neon_Fun_New(out: &mut Local, isolate: Isolate, callback: CCallback) -> bool;
     pub fn Neon_Fun_Template_New(out: &mut Local, isolate: Isolate, callback: CCallback) -> bool;
-    pub fn Neon_Fun_GetDynamicCallback(obj: Local) -> *mut c_void;
+    pub fn Neon_Fun_GetDynamicCallback(isolate: Isolate, data: *mut c_void) -> *mut c_void;
     pub fn Neon_Fun_Call(out: &mut Local, isolate: Isolate, fun: Local, this: Local, argc: i32, argv: *mut c_void) -> bool;
     pub fn Neon_Fun_Construct(out: &mut Local, isolate: Isolate, fun: Local, argc: i32, argv: *mut c_void) -> bool;
 

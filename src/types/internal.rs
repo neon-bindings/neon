@@ -35,9 +35,9 @@ impl<T: Value> Callback<()> for FunctionCallback<T> {
     extern "C" fn invoke(env: Env, info: CallbackInfo) {
         unsafe {
             info.with_cx::<JsObject, _, _>(env, |cx| {
-                let data = info.data();
+                let data = info.data(env);
                 let dynamic_callback: fn(FunctionContext) -> JsResult<T> =
-                    mem::transmute(neon_runtime::fun::get_dynamic_callback(data.to_raw()));
+                    mem::transmute(neon_runtime::fun::get_dynamic_callback(env.to_raw(), data));
                 if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
                     info.set_return(value);
                 }
