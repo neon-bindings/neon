@@ -16,7 +16,7 @@ pub struct Local {
 ///
 /// It contains the arguments used to invoke the function, the isolate reference, the `this` object
 /// the function is bound to and a mechanism to return a value to the caller.
-pub type FunctionCallbackInfo = c_void;
+pub type FunctionCallbackInfo = *const c_void;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -93,14 +93,14 @@ extern "C" {
     pub fn Neon_Buffer_Uninitialized(out: &mut Local, size: u32) -> bool;
     pub fn Neon_Buffer_Data<'a, 'b>(base_out: &'a mut *mut c_void, obj: Local) -> usize;
 
-    pub fn Neon_Call_SetReturn(info: &FunctionCallbackInfo, value: Local);
-    pub fn Neon_Call_GetIsolate(info: &FunctionCallbackInfo) -> Isolate;
+    pub fn Neon_Call_SetReturn(info: FunctionCallbackInfo, value: Local);
+    pub fn Neon_Call_GetIsolate(info: FunctionCallbackInfo) -> Isolate;
     pub fn Neon_Call_CurrentIsolate() -> Isolate;
-    pub fn Neon_Call_IsConstruct(info: &FunctionCallbackInfo) -> bool;
-    pub fn Neon_Call_This(info: &FunctionCallbackInfo, out: &mut Local);
-    pub fn Neon_Call_Data(info: &FunctionCallbackInfo, out: &mut Local);
-    pub fn Neon_Call_Length(info: &FunctionCallbackInfo) -> i32;
-    pub fn Neon_Call_Get(info: &FunctionCallbackInfo, i: i32, out: &mut Local);
+    pub fn Neon_Call_IsConstruct(info: FunctionCallbackInfo) -> bool;
+    pub fn Neon_Call_This(info: FunctionCallbackInfo, out: &mut Local);
+    pub fn Neon_Call_Data(isolate: Isolate, info: FunctionCallbackInfo, out: &mut Local);
+    pub fn Neon_Call_Length(info: FunctionCallbackInfo) -> i32;
+    pub fn Neon_Call_Get(info: FunctionCallbackInfo, i: i32, out: &mut Local);
 
     pub fn Neon_Class_GetClassMap(isolate: Isolate) -> *mut c_void;
     pub fn Neon_Class_SetClassMap(isolate: Isolate, map: *mut c_void, free_map: *mut c_void);

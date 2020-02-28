@@ -20,6 +20,7 @@ use object::{Object, This};
 use object::class::Class;
 use result::{NeonResult, JsResult, Throw};
 use self::internal::{ContextInternal, Scope, ScopeMetadata};
+use std::os::raw::c_void;
 
 #[repr(C)]
 pub(crate) struct CallbackInfo {
@@ -30,7 +31,7 @@ impl CallbackInfo {
     pub fn data<'a>(&self) -> Handle<'a, JsValue> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::data(&self.info, &mut local);
+            neon_runtime::call::data(self.info, &mut local);
             Handle::new_internal(JsValue::from_raw(local))
         }
     }
@@ -41,7 +42,7 @@ impl CallbackInfo {
 
     pub fn set_return<'a, 'b, T: Value>(&'a self, value: Handle<'b, T>) {
         unsafe {
-            neon_runtime::call::set_return(&self.info, value.to_raw())
+            neon_runtime::call::set_return(self.info, value.to_raw())
         }
     }
 
@@ -55,7 +56,7 @@ impl CallbackInfo {
 
     pub fn len(&self) -> i32 {
         unsafe {
-            neon_runtime::call::len(&self.info)
+            neon_runtime::call::len(self.info)
         }
     }
 
@@ -65,7 +66,7 @@ impl CallbackInfo {
         }
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::get(&self.info, i, &mut local);
+            neon_runtime::call::get(self.info, i, &mut local);
             Some(Handle::new_internal(JsValue::from_raw(local)))
         }
     }
@@ -76,7 +77,7 @@ impl CallbackInfo {
         }
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::get(&self.info, i, &mut local);
+            neon_runtime::call::get(self.info, i, &mut local);
             Ok(Handle::new_internal(JsValue::from_raw(local)))
         }
     }
@@ -84,7 +85,7 @@ impl CallbackInfo {
     pub fn this<'b, V: Context<'b>>(&self, _: &mut V) -> raw::Local {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::this(std::mem::transmute(&self.info), &mut local);
+            neon_runtime::call::this(std::mem::transmute(self.info), &mut local);
             local
         }
     }

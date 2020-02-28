@@ -1,4 +1,5 @@
-use std::os::raw::c_void;
+//! Facilities for working with JS functions.
+
 use call::CCallback;
 use raw::{Env, Local};
 

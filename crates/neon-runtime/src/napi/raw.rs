@@ -3,9 +3,9 @@ use std::ptr;
 
 use nodejs_sys as napi;
 
-pub type  Local = napi::napi_value;
+pub type Local = napi::napi_value;
 
-pub type FunctionCallbackInfo = c_void;
+pub type FunctionCallbackInfo = napi::napi_callback_info;
 
 pub type Env = napi::napi_env;
 
