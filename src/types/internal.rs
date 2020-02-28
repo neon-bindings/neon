@@ -32,9 +32,9 @@ pub trait ValueInternal: Managed + 'static {
 pub struct FunctionCallback<T: Value>(pub fn(FunctionContext) -> JsResult<T>);
 
 impl<T: Value> Callback<()> for FunctionCallback<T> {
-    extern "C" fn invoke(info: &CallbackInfo) {
+    extern "C" fn invoke(env: Env, info: &CallbackInfo) {
         unsafe {
-            info.with_cx::<JsObject, _, _>(|cx| {
+            info.with_cx::<JsObject, _, _>(env, |cx| {
                 let data = info.data();
                 let dynamic_callback: fn(FunctionContext) -> JsResult<T> =
                     mem::transmute(neon_runtime::fun::get_dynamic_callback(data.to_raw()));

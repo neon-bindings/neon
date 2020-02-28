@@ -266,11 +266,18 @@ impl<'a, T: Class> BorrowMut for &'a mut T {
 /// as a pair of 1) a raw pointer to the dynamically computed function, and 2)
 /// a static function that knows how to transmute that raw pointer and call it.
 pub(crate) trait Callback<T: Clone + Copy + Sized>: Sized {
-
     /// Extracts the computed Rust function and invokes it. The Neon runtime
     /// ensures that the computed function is provided as the extra data field,
     /// wrapped as a V8 External, in the `CallbackInfo` argument.
-    extern "C" fn invoke(info: &CallbackInfo) -> T;
+    extern "C" fn invoke(env: Env, info: &CallbackInfo) -> T;
+
+    /// See `invoke`. This is used by the non-n-api implementation, so that every impl for this
+    /// trait doesn't need to provide two versions of `invoke`.
+    #[cfg(feature = "legacy-runtime")]
+    #[doc(hidden)]
+    extern "C" fn invoke_compat(info: &CallbackInfo) -> T {
+        Self::invoke(Env::current(), info)
+    }
 
     /// Converts the callback to a raw void pointer.
     fn as_ptr(self) -> *mut c_void;
@@ -278,8 +285,12 @@ pub(crate) trait Callback<T: Clone + Copy + Sized>: Sized {
     /// Exports the callback as a pair consisting of the static `Self::invoke`
     /// method and the computed callback, both converted to raw void pointers.
     fn into_c_callback(self) -> CCallback {
+        #[cfg(feature = "napi-runtime")]
+        let invoke = Self::invoke;
+        #[cfg(feature = "legacy-runtime")]
+        let invoke = Self::invoke_compat;
         CCallback {
-            static_callback: unsafe { mem::transmute(Self::invoke as usize) },
+            static_callback: unsafe { mem::transmute(invoke as usize) },
             dynamic_callback: self.as_ptr()
         }
     }

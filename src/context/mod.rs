@@ -35,8 +35,8 @@ impl CallbackInfo {
         }
     }
 
-    pub unsafe fn with_cx<T: This, U, F: for<'a> FnOnce(CallContext<'a, T>) -> U>(&self, f: F) -> U {
-        CallContext::<T>::with(self, f)
+    pub unsafe fn with_cx<T: This, U, F: for<'a> FnOnce(CallContext<'a, T>) -> U>(&self, env: Env, f: F) -> U {
+        CallContext::<T>::with(env, self, f)
     }
 
     pub fn set_return<'a, 'b, T: Value>(&'a self, value: Handle<'b, T>) {
@@ -456,8 +456,7 @@ impl<'a, T: This> CallContext<'a, T> {
     /// Indicates whether the function was called via the JavaScript `[[Call]]` or `[[Construct]]` semantics.
     pub fn kind(&self) -> CallKind { self.info.kind() }
 
-    pub(crate) fn with<U, F: for<'b> FnOnce(CallContext<'b, T>) -> U>(info: &'a CallbackInfo, f: F) -> U {
-        let env = Env::current();
+    pub(crate) fn with<U, F: for<'b> FnOnce(CallContext<'b, T>) -> U>(env: Env, info: &'a CallbackInfo, f: F) -> U {
         Scope::with(env, |scope| {
             f(CallContext {
                 scope,

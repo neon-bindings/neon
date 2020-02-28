@@ -6,7 +6,7 @@ use neon_runtime::raw;
 use super::{Class, ClassInternal, Callback};
 use handle::{Handle, Managed};
 use context::{CallbackInfo, CallContext, Context};
-use context::internal::ContextInternal;
+use context::internal::{ContextInternal, Env};
 use result::{NeonResult, JsResult, Throw};
 use types::{JsValue, JsObject, JsFunction, JsUndefined, build};
 use types::error::convert_panics;
@@ -15,9 +15,9 @@ use types::error::convert_panics;
 pub struct MethodCallback<T: Class>(pub fn(CallContext<T>) -> JsResult<JsValue>);
 
 impl<T: Class> Callback<()> for MethodCallback<T> {
-    extern "C" fn invoke(info: &CallbackInfo) {
+    extern "C" fn invoke(env: Env, info: &CallbackInfo) {
         unsafe {
-            info.with_cx::<T, _, _>(|mut cx| {
+            info.with_cx::<T, _, _>(env, |mut cx| {
                 let data = info.data();
                 let this: Handle<JsValue> = Handle::new_internal(JsValue::from_raw(info.this(&mut cx)));
 
@@ -39,7 +39,7 @@ impl<T: Class> Callback<()> for MethodCallback<T> {
                 }
             })
         }
-        }
+    }
 
     fn as_ptr(self) -> *mut c_void {
         self.0 as *mut c_void
@@ -65,9 +65,9 @@ impl ConstructorCallCallback {
 }
 
 impl Callback<()> for ConstructorCallCallback {
-    extern "C" fn invoke(info: &CallbackInfo) {
+    extern "C" fn invoke(env: Env, info: &CallbackInfo) {
         unsafe {
-            info.with_cx(|cx| {
+            info.with_cx(env, |cx| {
                 let data = info.data();
                 let kernel: fn(CallContext<JsValue>) -> JsResult<JsValue> =
                     mem::transmute(neon_runtime::class::get_call_kernel(data.to_raw()));
@@ -87,9 +87,9 @@ impl Callback<()> for ConstructorCallCallback {
 pub struct AllocateCallback<T: Class>(pub fn(CallContext<JsUndefined>) -> NeonResult<T::Internals>);
 
 impl<T: Class> Callback<*mut c_void> for AllocateCallback<T> {
-    extern "C" fn invoke(info: &CallbackInfo) -> *mut c_void {
+    extern "C" fn invoke(env: Env, info: &CallbackInfo) -> *mut c_void {
         unsafe {
-            info.with_cx(|cx| {
+            info.with_cx(env, |cx| {
                 let data = info.data();
                 let kernel: fn(CallContext<JsUndefined>) -> NeonResult<T::Internals> =
                     mem::transmute(neon_runtime::class::get_allocate_kernel(data.to_raw()));
@@ -112,9 +112,9 @@ impl<T: Class> Callback<*mut c_void> for AllocateCallback<T> {
 pub struct ConstructCallback<T: Class>(pub fn(CallContext<T>) -> NeonResult<Option<Handle<JsObject>>>);
 
 impl<T: Class> Callback<bool> for ConstructCallback<T> {
-    extern "C" fn invoke(info: &CallbackInfo) -> bool {
+    extern "C" fn invoke(env: Env, info: &CallbackInfo) -> bool {
         unsafe {
-            info.with_cx(|cx| {
+            info.with_cx(env, |cx| {
                 let data = info.data();
                 let kernel: fn(CallContext<T>) -> NeonResult<Option<Handle<JsObject>>> =
                     mem::transmute(neon_runtime::class::get_construct_kernel(data.to_raw()));
