@@ -10,6 +10,7 @@ use neon_runtime;
 use neon_runtime::raw;
 use types::Value;
 use context::Context;
+#[cfg(feature = "legacy-runtime")]
 use context::internal::Env;
 use result::{JsResult, JsResultExt};
 use self::internal::SuperType;
