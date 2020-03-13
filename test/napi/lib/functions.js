@@ -11,7 +11,7 @@ describe('JsFunction', function() {
   });
 
   // The n-api runtime cannot yet call JS functions.
-  it.skip('call a JsFunction built in JS that implements x => x + 1', function () {
+  it('call a JsFunction built in JS that implements x => x + 1', function () {
     assert.equal(addon.call_js_function(function(x) { return x + 1 }), 17);
   });
 

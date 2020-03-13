@@ -31,15 +31,10 @@ pub unsafe extern "C" fn get_dynamic_callback(env: Env, data: *mut c_void) -> *m
     data
 }
 
-pub unsafe extern "C" fn call(
-    _out: &mut Local,
-    _env: Env,
-    _fun: Local,
-    _this: Local,
-    _argc: i32,
-    _argv: *mut c_void,
-) -> bool {
-    unimplemented!()
+pub unsafe extern "C" fn call(out: &mut Local, env: Env, fun: Local, this: Local, argc: i32, argv: *mut c_void) -> bool {
+    let status = napi::napi_call_function(env, this, fun, argc as usize, argv as *const _, out as *mut _);
+
+    status == napi::napi_status::napi_ok
 }
 
 pub unsafe extern "C" fn construct(
