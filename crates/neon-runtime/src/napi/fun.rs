@@ -37,12 +37,8 @@ pub unsafe extern "C" fn call(out: &mut Local, env: Env, fun: Local, this: Local
     status == napi::napi_status::napi_ok
 }
 
-pub unsafe extern "C" fn construct(
-    _out: &mut Local,
-    _env: Env,
-    _fun: Local,
-    _argc: i32,
-    _argv: *mut c_void,
-) -> bool {
-    unimplemented!()
+pub unsafe extern "C" fn construct(out: &mut Local, env: Env, fun: Local, argc: i32, argv: *mut c_void) -> bool {
+    let status = napi::napi_new_instance(env, fun, argc as usize, argv as *const _, out as *mut _);
+
+    status == napi::napi_status::napi_ok
 }

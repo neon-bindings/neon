@@ -16,7 +16,7 @@ describe('JsFunction', function() {
   });
 
   // The n-api runtime cannot yet call JS functions.
-  it.skip('new a JsFunction', function () {
+  it('new a JsFunction', function () {
     assert.equal(addon.construct_js_function(Date), 1970);
   });
 
