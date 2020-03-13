@@ -1,7 +1,6 @@
 import * as rust from './rust';
 import Dict from 'ts-dict';
 import * as JSON from 'ts-typed-json';
-import * as child_process from 'child_process';
 
 function isStringDict(x: JSON.Object): x is Dict<string | null> {
   for (let key of Object.keys(x)) {
@@ -34,10 +33,7 @@ export default class BuildSettings {
   }
 
   static getNodeVersion(): string {
-    let nodeVersionResult = child_process.spawnSync("node", ["--version"]);
-    return nodeVersionResult.stdout
-      .toString()
-      .trim();
+    return process.version;
   }
 
   static current(toolchain: rust.Toolchain = 'default') {
