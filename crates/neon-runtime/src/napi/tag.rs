@@ -31,7 +31,9 @@ pub unsafe extern "C" fn is_string(env: Env, val: Local) -> bool {
     is_type(env, val, napi::napi_valuetype::napi_string)
 }
 
-pub unsafe extern "C" fn is_object(_env: Env, _val: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn is_object(env: Env, val: Local) -> bool {
+    is_type(env, val, napi::napi_valuetype::napi_object)
+}
 
 pub unsafe extern "C" fn is_array(_env: Env, _val: Local) -> bool { unimplemented!() }
 
