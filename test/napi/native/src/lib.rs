@@ -2,9 +2,11 @@ use neon::prelude::*;
 
 mod js {
     pub mod functions;
+    pub mod objects;
 }
 
 use js::functions::*;
+use js::objects::*;
 
 register_module!(|mut cx| {
     let greeting = cx.string("Hello, World!");
@@ -92,6 +94,12 @@ register_module!(|mut cx| {
     cx.export_function("check_string_and_number", check_string_and_number)?;
     cx.export_function("execute_scoped", execute_scoped)?;
     cx.export_function("compute_scoped", compute_scoped)?;
+
+    cx.export_function("return_js_global_object", return_js_global_object)?;
+    cx.export_function("return_js_object", return_js_object)?;
+    cx.export_function("return_js_object_with_number", return_js_object_with_number)?;
+    cx.export_function("return_js_object_with_string", return_js_object_with_string)?;
+    cx.export_function("return_js_object_with_mixed_content", return_js_object_with_mixed_content)?;
 
     cx.export_function("panic", panic)?;
     cx.export_function("panic_after_throw", panic_after_throw)?;

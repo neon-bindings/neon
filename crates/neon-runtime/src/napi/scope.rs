@@ -69,4 +69,6 @@ pub unsafe extern "C" fn escapable_size() -> usize { unimplemented!() }
 
 pub unsafe extern "C" fn escapable_alignment() -> usize { unimplemented!() }
 
-pub unsafe extern "C" fn get_global(_env: Env, _out: &mut Local) { unimplemented!() }
+pub unsafe extern "C" fn get_global(env: Env, out: &mut Local) {
+    assert_eq!(napi::napi_get_global(env, out as *mut _), napi::napi_status::napi_ok);
+}
