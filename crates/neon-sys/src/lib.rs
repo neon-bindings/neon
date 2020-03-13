@@ -97,7 +97,7 @@ extern "C" {
     pub fn Neon_Call_GetIsolate(info: FunctionCallbackInfo) -> Isolate;
     pub fn Neon_Call_CurrentIsolate() -> Isolate;
     pub fn Neon_Call_IsConstruct(info: FunctionCallbackInfo) -> bool;
-    pub fn Neon_Call_This(info: FunctionCallbackInfo, out: &mut Local);
+    pub fn Neon_Call_This(isolate: Isolate, info: FunctionCallbackInfo, out: &mut Local);
     pub fn Neon_Call_Data(isolate: Isolate, info: FunctionCallbackInfo, out: &mut *mut c_void);
     pub fn Neon_Call_Length(isolate: Isolate, info: FunctionCallbackInfo) -> i32;
     pub fn Neon_Call_Get(isolate: Isolate, info: FunctionCallbackInfo, i: i32, out: &mut Local);

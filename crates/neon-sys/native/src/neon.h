@@ -17,7 +17,7 @@ extern "C" {
   void *Neon_Call_GetIsolate(v8::FunctionCallbackInfo<v8::Value> *info);
   void *Neon_Call_CurrentIsolate();
   bool Neon_Call_IsConstruct(v8::FunctionCallbackInfo<v8::Value> *info);
-  void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out);
+  void Neon_Call_This(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out);
   void Neon_Call_Data(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info, void **out);
   int32_t Neon_Call_Length(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info);
   void Neon_Call_Get(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out);

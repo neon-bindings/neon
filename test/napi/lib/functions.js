@@ -55,7 +55,7 @@ describe('JsFunction', function() {
   });
 
   // The n-api runtime cannot yet access `this`.
-  it.skip('can manipulate an object `this` binding', function() {
+  it('can manipulate an object `this` binding', function() {
     var o = { modified: false };
     addon.require_object_this.call(o);
     assert.equal(o.modified, true);

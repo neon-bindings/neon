@@ -26,7 +26,7 @@ extern "C" bool Neon_Call_IsConstruct(v8::FunctionCallbackInfo<v8::Value> *info)
   return info->IsConstructCall();
 }
 
-extern "C" void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out) {
+extern "C" void Neon_Call_This(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out) {
   *out = info->This();
 }
 

@@ -82,10 +82,11 @@ impl CallbackInfo {
         }
     }
 
-    pub fn this<'b, V: Context<'b>>(&self, _: &mut V) -> raw::Local {
+    pub fn this<'b, C: Context<'b>>(&self, cx: &mut C) -> raw::Local {
+        let env = cx.env();
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::this(std::mem::transmute(self.info), &mut local);
+            neon_runtime::call::this(env.to_raw(), std::mem::transmute(self.info), &mut local);
             local
         }
     }

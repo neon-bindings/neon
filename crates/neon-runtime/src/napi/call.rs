@@ -30,7 +30,17 @@ pub unsafe extern "C" fn current_isolate() -> Env { panic!("current_isolate won'
 
 pub unsafe extern "C" fn is_construct(_info: FunctionCallbackInfo) -> bool { unimplemented!() }
 
-pub unsafe extern "C" fn this(_info: FunctionCallbackInfo, _out: &mut Local) { unimplemented!() }
+pub unsafe extern "C" fn this(env: Env, info: FunctionCallbackInfo, out: &mut Local) {
+    let status = napi::napi_get_cb_info(
+        env,
+        info,
+        null_mut(),
+        null_mut(),
+        out as *mut _,
+        null_mut(),
+    );
+    assert_eq!(status, napi::napi_status::napi_ok);
+}
 
 /// Mutates the `out` argument provided to refer to the associated data value of the
 /// `napi_callback_info`.
@@ -45,7 +55,6 @@ pub unsafe extern "C" fn data(env: Env, info: FunctionCallbackInfo, out: &mut *m
         null_mut(),
         &mut data as *mut _,
     );
-    println!("data() status = {:?} argc = {}", status, argc);
     if status == napi::napi_status::napi_ok {
         *out = data;
     }
