@@ -10,12 +10,10 @@ describe('JsFunction', function() {
     assert.equal(addon.return_js_function()(41), 42);
   });
 
-  // The n-api runtime cannot yet call JS functions.
   it('call a JsFunction built in JS that implements x => x + 1', function () {
     assert.equal(addon.call_js_function(function(x) { return x + 1 }), 17);
   });
 
-  // The n-api runtime cannot yet call JS functions.
   it('new a JsFunction', function () {
     assert.equal(addon.construct_js_function(Date), 1970);
   });
