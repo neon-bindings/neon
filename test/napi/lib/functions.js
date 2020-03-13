@@ -42,8 +42,7 @@ describe('JsFunction', function() {
     assert.equal(addon.num_arguments('a', 'b', 'c', 'd'), 4);
   });
 
-  // The n-api runtime cannot yet access `this`.
-  it.skip('gets the right `this`-value', function() {
+  it('gets the right `this`-value', function() {
     var o = { iamobject: 'i am object' };
     assert.equal(addon.return_this.call(o), o);
 
@@ -54,7 +53,6 @@ describe('JsFunction', function() {
     assert.notStrictEqual(addon.return_this.call(n), n);
   });
 
-  // The n-api runtime cannot yet access `this`.
   it('can manipulate an object `this` binding', function() {
     var o = { modified: false };
     addon.require_object_this.call(o);
@@ -63,8 +61,7 @@ describe('JsFunction', function() {
     addon.require_object_this.call(42);
   });
 
-  // The n-api runtime cannot yet access `this`.
-  it.skip('implicitly gets global', function() {
+  it('implicitly gets global', function() {
     var global = (new Function("return this"))();
     assert.equal(addon.return_this.call(undefined), global);
   });
