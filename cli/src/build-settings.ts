@@ -13,35 +13,45 @@ function isStringDict(x: JSON.Object): x is Dict<string | null> {
 
 export default class BuildSettings {
   private rustc: string;
+  private nodeVersion: string | null;
   private env: Dict<string | null>;
 
-  constructor(rustc: string, env: Dict<string | null>) {
+  constructor(rustc: string, nodeVersion: string | null, env: Dict<string | null>) {
     this.rustc = rustc;
+    this.nodeVersion = nodeVersion;
     this.env = env;
   }
 
   match(other: BuildSettings) {
+    if (other.nodeVersion !== this.nodeVersion) {
+      return false;
+    }
     return Object.keys(this.env).every(key => {
       return (!this.env[key] && !other.env[key]) ||
              (this.env[key] === other.env[key]);
     });
   }
 
-  static current(toolchain: rust.Toolchain) {
-    const spawnResult = rust.spawnSync("rustc", ["--version"], toolchain);
+  static getNodeVersion(): string {
+    return process.version;
+  }
 
-    if (spawnResult.error) {
-      if (spawnResult.error.message.includes("ENOENT")) {
+  static current(toolchain: rust.Toolchain = 'default') {
+    let rustcVersionResult = rust.spawnSync("rustc", ["--version"], toolchain);
+    let nodeVersion = BuildSettings.getNodeVersion();
+
+    if (rustcVersionResult.error) {
+      if (rustcVersionResult.error.message.includes("ENOENT")) {
         throw new Error('Rust is not installed or rustc is not in your path.');
       }
-      throw spawnResult.error;
+      throw rustcVersionResult.error;
     }
 
-    let rustc = spawnResult.stdout
-      .toString('utf8')
+    let rustc = rustcVersionResult.stdout
+      .toString()
       .trim();
 
-    return new BuildSettings(rustc, {
+    return new BuildSettings(rustc, nodeVersion, {
       npm_config_target:            process.env.npm_config_target || null,
       npm_config_arch:              process.env.npm_config_arch || null,
       npm_config_target_arch:       process.env.npm_config_target_arch || null,
@@ -54,25 +64,32 @@ export default class BuildSettings {
 
   static fromJSON(value: JSON.Value): BuildSettings {
     if (!JSON.isObject(value)) {
-      throw new TypeError("value is not an object");
+      throw new TypeError("value must be an object");
     }
-    let rustc = value.rustc;
-    let env = value.env;
+    let { rustc, env, nodeVersion } = value;
     if (typeof rustc !== 'string') {
-      throw new TypeError("value.rustc is not a string");
+      throw new TypeError("value.rustc must be a string");
+    }
+    if ('nodeVersion' in value) {
+      if (typeof nodeVersion !== 'string' && nodeVersion !== null) {
+        throw new TypeError("value.nodeVersion must be a string or null");
+      }
+    } else {
+      nodeVersion = null;
     }
     if (!JSON.isObject(env)) {
-      throw new TypeError("value.env is not an object");
+      throw new TypeError("value.env must be an object");
     }
     if (!isStringDict(env)) {
-      throw new TypeError("value.env is not a string dict");
+      throw new TypeError("value.env must be a string dict");
     }
-    return new BuildSettings(rustc, env);
+    return new BuildSettings(rustc, nodeVersion, env);
   }
 
   toJSON(): JSON.Object {
     return {
       "rustc": this.rustc,
+      "nodeVersion": this.nodeVersion,
       "env": this.env
     };
   }

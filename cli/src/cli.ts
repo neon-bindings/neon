@@ -254,17 +254,17 @@ const spec: Spec = {
 };
 
 export default class CLI {
-  readonly toolchain: Toolchain | null;
+  readonly toolchain: Toolchain;
   readonly argv: string[];
   readonly cwd: string;
 
   constructor(argv: string[], cwd: string) {
     // Check for a toolchain argument in the style of Rust tools (e.g., `neon +nightly build`).
     if (argv.length > 2 && argv[2].trim().startsWith('+')) {
-      this.toolchain = argv[2].substring(1).trim();
+      this.toolchain = argv[2].substring(1).trim() as Toolchain;
       this.argv = argv.slice(3);
     } else {
-      this.toolchain = null;
+      this.toolchain = 'default';
       this.argv = argv.slice(2);
     }
     this.cwd = cwd;

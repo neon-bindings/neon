@@ -38,11 +38,9 @@ export default class Project {
     });
   }
 
-  async build(toolchain: rust.Toolchain | null,
-              release: boolean)
-  {
+  async build(toolchain: rust.Toolchain, release: boolean) {
     let target = new Target(this.crate, { release: release });
-    let settings = BuildSettings.current(toolchain || 'default');
+    let settings = BuildSettings.current(toolchain);
 
     // 1. Force a rebuild if build settings have changed.
     if (!target.inState(settings)) {
