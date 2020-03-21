@@ -1,6 +1,7 @@
-import { readFile, writeFile, mkdirs, stat } from '../async/fs';
+import { promises as fsPromises } from 'fs';
+const { readFile, writeFile, mkdir, stat } = fsPromises;
 import { prompt } from 'inquirer';
-import gitconfig from '../async/git-config';
+const gitconfig = require('git-config');
 import * as path from 'path';
 import * as handlebars from 'handlebars';
 import * as semver from 'semver';
@@ -36,7 +37,7 @@ async function guessAuthor() {
     email: undefined
   };
   try {
-    let config = await gitconfig();
+    let config = gitconfig.sync();
     if (config.user.name) {
       author.name = config.user.name;
     }
@@ -92,7 +93,25 @@ export default async function wizard(pwd: string, name: string, neon: string | n
   let root = path.resolve(pwd, local);
   let guess = await guessAuthor();
 
-  let answers = await prompt([
+  interface Answers{
+    name: {
+      npm: {
+        full: string;
+        scope: string | null;
+        local: string;
+      };
+      cargo: {
+        external: string;
+        internal: string;
+      };
+    };
+    description: string;
+    git: string;
+    author: string;
+    node: string;
+  }
+
+  let answers: Answers = await prompt([
     {
       type: 'input',
       name: 'version',
@@ -193,8 +212,8 @@ export default async function wizard(pwd: string, name: string, neon: string | n
   let native_ = path.resolve(root, 'native');
   let src = path.resolve(native_, 'src');
 
-  await mkdirs(lib);
-  await mkdirs(src);
+  await mkdir(lib, { recursive: true });
+  await mkdir(src, { recursive: true });
 
   await writeFile(path.resolve(root,    '.gitignore'),   (await GITIGNORE_TEMPLATE)(ctx), { flag: 'wx' });
   await writeFile(path.resolve(root,    'package.json'), (await NPM_TEMPLATE)(ctx),       { flag: 'wx' });
