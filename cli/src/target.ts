@@ -1,4 +1,5 @@
-import { remove } from './async/fs';
+import { promises as fsPromises } from 'fs';
+const { unlink } = fsPromises;
 import * as rust from './rust';
 import * as path from 'path';
 import Dict from 'ts-dict';
@@ -62,7 +63,7 @@ export default class Target {
 
   async clean() {
     // Remove the directory associated with this target.
-    await remove(path.resolve(this.crate.root, 'target', this.subdirectory));
+    await unlink(path.resolve(this.crate.root, 'target', this.subdirectory));
 
     // If this target was the active target, remove the addon.
     if (this.crate.artifacts.haveActivated(this.subdirectory)) {
