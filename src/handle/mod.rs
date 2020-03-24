@@ -71,7 +71,7 @@ impl<F: Value, T: Value> DowncastError<F, T> {
 
 impl<F: Value, T: Value> Display for DowncastError<F, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.description())
+        write!(f, "{}", self.to_string())
     }
 }
 
