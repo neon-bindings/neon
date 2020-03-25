@@ -298,7 +298,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Throws a JS value.
     fn throw<'b, T: Value, U>(&mut self, v: Handle<'b, T>) -> NeonResult<U> {
         unsafe {
-            neon_runtime::error::throw(v.to_raw());
+            neon_runtime::error::throw(self.env().to_raw(), v.to_raw());
         }
         Err(Throw)
     }
@@ -347,8 +347,13 @@ impl<'a> UnwindSafe for ModuleContext<'a> { }
 
 impl<'a> ModuleContext<'a> {
     pub(crate) fn with<T, F: for<'b> FnOnce(ModuleContext<'b>) -> T>(env: Env, exports: Handle<'a, JsObject>, f: F) -> T {
-        debug_assert!(unsafe { neon_runtime::scope::size() } <= std::mem::size_of::<raw::HandleScope>());
-        debug_assert!(unsafe { neon_runtime::scope::alignment() } <= std::mem::align_of::<raw::HandleScope>());
+        // These assertions ensure the proper amount of space is reserved on the rust stack
+        // This is only necessary in the legacy runtime.
+        #[cfg(feature = "legacy-runtime")]
+        {
+            debug_assert!(unsafe { neon_runtime::scope::size() } <= std::mem::size_of::<raw::HandleScope>());
+            debug_assert!(unsafe { neon_runtime::scope::alignment() } <= std::mem::align_of::<raw::HandleScope>());
+        }
         Scope::with(env, |scope| {
             f(ModuleContext {
                 scope,

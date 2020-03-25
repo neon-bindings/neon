@@ -1,10 +1,12 @@
 use neon::prelude::*;
 
 mod js {
+    pub mod errors;
     pub mod functions;
     pub mod objects;
 }
 
+use js::errors::*;
 use js::functions::*;
 use js::objects::*;
 
@@ -100,6 +102,11 @@ register_module!(|mut cx| {
     cx.export_function("return_js_object_with_number", return_js_object_with_number)?;
     cx.export_function("return_js_object_with_string", return_js_object_with_string)?;
     cx.export_function("return_js_object_with_mixed_content", return_js_object_with_mixed_content)?;
+
+    cx.export_function("new_error", new_error)?;
+    cx.export_function("new_type_error", new_type_error)?;
+    cx.export_function("new_range_error", new_range_error)?;
+    cx.export_function("throw_error", throw_error)?;
 
     cx.export_function("panic", panic)?;
     cx.export_function("panic_after_throw", panic_after_throw)?;
