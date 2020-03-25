@@ -71,7 +71,7 @@ impl<F: Value, T: Value> DowncastError<F, T> {
 
 impl<F: Value, T: Value> Display for DowncastError<F, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.description())
+        write!(f, "{}", self.to_string())
     }
 }
 
@@ -96,16 +96,16 @@ impl<'a, F: Value, T: Value> JsResultExt<'a, T> for DowncastResult<'a, F, T> {
 impl<'a, T: Value> Handle<'a, T> {
 
     /// Safely upcast a handle to a supertype.
-    /// 
+    ///
     /// This method does not require an execution context because it only copies a handle.
     pub fn upcast<U: Value + SuperType<T>>(&self) -> Handle<'a, U> {
         Handle::new_internal(SuperType::upcast_internal(self.value))
     }
 
     /// Tests whether this value is an instance of the given type.
-    /// 
+    ///
     /// # Example:
-    /// 
+    ///
     /// ```no_run
     /// # use neon::prelude::*;
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
