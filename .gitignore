@@ -10,3 +10,5 @@ cli/lib
 test/cli/lib
 npm-debug.log
 rls*.log
+.idea
+Cargo.lock
