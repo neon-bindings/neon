@@ -32,8 +32,6 @@
   },
   "devDependencies": {
     "@types/chai": "^4.2.11",
-    "@types/chalk": "^2.2.0",
-    "@types/es6-promise": "3.3.0",
     "@types/inquirer": "6.5.0",
     "@types/mkdirp": "^1.0.0",
     "@types/mocha": "^7.0.2",
