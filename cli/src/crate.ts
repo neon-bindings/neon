@@ -43,12 +43,22 @@ export default class Crate {
   }
 
   async finish(dylib: string) {
-    await unlink(this.addon);
+    try {
+      await unlink(this.addon);
+    } catch(e) {
+      if (e.code !== 'ENOENT')
+        throw e;
+    }
     await copyFile(dylib, this.addon);
   }
 
   async removeAddon() {
-    await unlink(this.addon);
+    try {
+      await unlink(this.addon);
+    } catch(e) {
+      if (e.code !== 'ENOENT')
+        throw e;
+    }
   }
 
   resetArtifacts() {

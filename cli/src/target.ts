@@ -1,5 +1,5 @@
 import { promises as fsPromises } from 'fs';
-const { unlink } = fsPromises;
+const { rmdir } = fsPromises;
 import * as rust from './rust';
 import * as path from 'path';
 import Dict from 'ts-dict';
@@ -63,7 +63,7 @@ export default class Target {
 
   async clean() {
     // Remove the directory associated with this target.
-    await unlink(path.resolve(this.crate.root, 'target', this.subdirectory));
+    await rmdir(path.resolve(this.crate.root, 'target', this.subdirectory), { recursive: true });
 
     // If this target was the active target, remove the addon.
     if (this.crate.artifacts.haveActivated(this.subdirectory)) {
