@@ -22,7 +22,7 @@ cfg_if! {
             println!("cargo:rustc-link-search=native={}", &node_lib_path.display());
             println!("cargo:rustc-link-lib={}", &node_lib_file_path.file_stem().unwrap().to_str().unwrap());
 
-            if debug
+            if cfg!(target_env = "msvc") && debug
             {
                 println!("cargo:rustc-link-lib=msvcrtd");
             }
