@@ -11,6 +11,7 @@ use types::{Value, Object, Handle, Managed, build};
 use types::internal::ValueInternal;
 use types::utf8::Utf8;
 
+
 /// A JS `Error` object.
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -47,70 +48,76 @@ impl JsError {
 
     #[cfg(feature = "napi-runtime")]
     pub fn error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<Handle<'a, JsError>> {
+        #[cfg(feature = "legacy-runtime")]
+        let msg = cx.string(msg.as_ref());
+
+        #[cfg(feature = "napi-runtime")]
         let (ptr, len) = if let Some(small) = Utf8::from(msg.as_ref()).into_small() {
-            small.lower()
-        } else{
-            return Err(Throw)
-        };
-        build(|out| unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::string::new(&mut local, cx.env().to_raw(), ptr, len);
-            neon_runtime::error::new_error(out,cx.env().to_raw(),std::ptr::null_mut(),local);
-            true
+          small.lower()
+      } else{
+          return Err(Throw)
+      };
+         build(|out| unsafe {
+          #[cfg(feature = "napi-runtime")]
+          let mut local: raw::Local = std::mem::zeroed();
+          #[cfg(feature = "napi-runtime")]
+          neon_runtime::string::new(&mut local, cx.env().to_raw(), ptr, len);
+          #[cfg(feature = "napi-runtime")]
+          neon_runtime::error::new_error(out,cx.env().to_raw(),std::ptr::null_mut(),local);
+          #[cfg(feature = "legacy-runtime")]
+          neon_runtime::error::new_error(out, msg.to_raw());
+          true
         })
     }
 
     /// Creates an instance of the [`TypeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypeError) class.
-    #[cfg(feature = "legacy-runtime")]
     pub fn type_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<Handle<'a, JsError>> {
-        let msg = cx.string(msg.as_ref());
-        build(|out| unsafe {
-            neon_runtime::error::new_type_error(out, msg.to_raw());
-            true
-        })
-    }
+        #[cfg(feature = "legacy-runtime")]
+          let msg = cx.string(msg.as_ref());
 
-    #[cfg(feature = "napi-runtime")]
-    pub fn type_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<Handle<'a, JsError>> {
-        let (ptr, len) = if let Some(small) = Utf8::from(msg.as_ref()).into_small() {
+          #[cfg(feature = "napi-runtime")]
+          let (ptr, len) = if let Some(small) = Utf8::from(msg.as_ref()).into_small() {
             small.lower()
         } else{
             return Err(Throw)
         };
-        build(|out| unsafe {
+           build(|out| unsafe {
+            #[cfg(feature = "napi-runtime")]
             let mut local: raw::Local = std::mem::zeroed();
+            #[cfg(feature = "napi-runtime")]
             neon_runtime::string::new(&mut local, cx.env().to_raw(), ptr, len);
+            #[cfg(feature = "napi-runtime")]
             neon_runtime::error::new_type_error(out,cx.env().to_raw(),std::ptr::null_mut(),local);
+            #[cfg(feature = "legacy-runtime")]
+            neon_runtime::error::new_type_error(out, msg.to_raw());
             true
-        })
+          })
     }
 
     /// Creates an instance of the [`RangeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RangeError) class.
-    #[cfg(feature = "legacy-runtime")]
     pub fn range_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<Handle<'a, JsError>> {
+        #[cfg(feature = "legacy-runtime")]
         let msg = cx.string(msg.as_ref());
-        build(|out| unsafe {
-            neon_runtime::error::new_range_error(out, msg.to_raw());
-            true
-        })
-    }
 
-    #[cfg(feature = "napi-runtime")]
-    pub fn range_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<Handle<'a, JsError>> {
+        #[cfg(feature = "napi-runtime")]
         let (ptr, len) = if let Some(small) = Utf8::from(msg.as_ref()).into_small() {
-            small.lower()
-        } else{
-            return Err(Throw)
-        };
-        build(|out| unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::string::new(&mut local, cx.env().to_raw(), ptr, len);
-            neon_runtime::error::new_range_error(out,cx.env().to_raw(),std::ptr::null_mut(),local);
-            true
+          small.lower()
+      } else{
+          return Err(Throw)
+      };
+         build(|out| unsafe {
+          #[cfg(feature = "napi-runtime")]
+          let mut local: raw::Local = std::mem::zeroed();
+          #[cfg(feature = "napi-runtime")]
+          neon_runtime::string::new(&mut local, cx.env().to_raw(), ptr, len);
+          #[cfg(feature = "napi-runtime")]
+          neon_runtime::error::new_range_error(out,cx.env().to_raw(),std::ptr::null_mut(),local);
+          #[cfg(feature = "legacy-runtime")]
+          neon_runtime::error::new_range_error(out, msg.to_raw());
+          true
         })
     }
 }
-
 #[cfg(feature = "legacy-runtime")]
 pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> NeonResult<T>>(f: F) -> NeonResult<T> {
     match catch_unwind(|| { f() }) {
