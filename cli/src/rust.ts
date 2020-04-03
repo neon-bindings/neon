@@ -1,15 +1,15 @@
 import * as async from './async/child_process';
 import * as child_process from 'child_process';
 
-export type Toolchain = string;
+export type Toolchain = 'default' | 'stable' | 'nightly' | 'beta';
 
-function toolchainPrefix(toolchain: Toolchain | null) {
-  return toolchain ? ["+" + toolchain] : [];
+function toolchainPrefix(toolchain: Toolchain = 'default') {
+  return toolchain === 'default' ? [] : ["+" + toolchain];
 }
 
 export function spawnSync(tool: string,
                           args: string[],
-                          toolchain: Toolchain | null,
+                          toolchain: Toolchain = 'default',
                           options?: child_process.SpawnOptions)
 {
   return child_process.spawnSync(tool, toolchainPrefix(toolchain).concat(args), options);
@@ -17,7 +17,7 @@ export function spawnSync(tool: string,
 
 export function spawn(tool: string,
                       args: string[],
-                      toolchain: Toolchain | null,
+                      toolchain: Toolchain = 'default',
                       options?: child_process.SpawnOptions)
 {
   return async.spawn(tool, toolchainPrefix(toolchain).concat(args), options);

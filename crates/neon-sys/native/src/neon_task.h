@@ -2,6 +2,8 @@
 #define NEON_TASK_H_
 
 #include <uv.h>
+#include <nan_new.h>
+#include <node_version.h>
 #include "neon.h"
 #include "v8.h"
 
@@ -21,11 +23,22 @@ public:
   {
     request_.data = this;
     result_ = nullptr;
+
+#if NODE_MODULE_VERSION >= 59
+    async_context_ = node::EmitAsyncInit(isolate, Nan::New<v8::Object>(), "neon_task");
+#endif
+
     // Save the callback to be invoked when the task completes.
     callback_.Reset(isolate, callback);
     // Save the context (aka realm) to be used when invoking the callback.
     context_.Reset(isolate, isolate->GetCurrentContext());
   }
+
+#if NODE_MODULE_VERSION >= 59
+  ~Task() {
+    node::EmitAsyncDestroy(isolate_, async_context_);
+  }
+#endif
 
   void execute() {
     result_ = perform_(rust_task_);
@@ -59,7 +72,13 @@ public:
     }
 
     v8::Local<v8::Function> callback = v8::Local<v8::Function>::New(isolate_, callback_);
+
+#if NODE_MODULE_VERSION >= 59
+    node::MakeCallback(isolate_, context->Global(), callback, 2, argv, async_context_);
+#else
     node::MakeCallback(isolate_, context->Global(), callback, 2, argv);
+#endif
+
     callback_.Reset();
     context_.Reset();
   }
@@ -78,6 +97,9 @@ private:
   void *result_;
   v8::Persistent<v8::Function> callback_;
   v8::Persistent<v8::Context> context_;
+#if NODE_MODULE_VERSION >= 59
+  node::async_context async_context_;
+#endif
 };
 
 void execute_task(uv_work_t *request) {
