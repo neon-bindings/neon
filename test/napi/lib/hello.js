@@ -25,6 +25,6 @@ describe('hello', function() {
       0: 1,
       a: 1,
       whatever: true
-    })
+    });
   });
 });

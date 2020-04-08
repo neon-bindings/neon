@@ -32,7 +32,7 @@ pub unsafe extern "C" fn get_own_property_names(out: &mut Local, env: Env, objec
     }
 
     let raw_names = raw_names.assume_init();
-    let mut fixed_names = fixed_names.assume_init();
+    let fixed_names = fixed_names.assume_init();
 
     *out = fixed_names;
 
@@ -44,17 +44,6 @@ pub unsafe extern "C" fn get_own_property_names(out: &mut Local, env: Env, objec
         // In general, getters may cause arbitrary JS code to be run, but this is a newly created
         // Array from an official internal API so it doesn't do anything strange.
         if !get_index(&mut property_name, env, raw_names, index) {
-            continue;
-        }
-
-        let mut is_own_property = false;
-        // May return a non-OK status if `key` is not a string or a Symbol, but here it is always
-        // a string.
-        if napi::napi_has_own_property(env, object, property_name, &mut is_own_property as *mut _) != napi::napi_status::napi_ok {
-            return false;
-        }
-
-        if !is_own_property {
             continue;
         }
 
@@ -71,6 +60,17 @@ pub unsafe extern "C" fn get_own_property_names(out: &mut Local, env: Env, objec
         } else {
             property_name
         };
+
+        let mut is_own_property = false;
+        // May return a non-OK status if `key` is not a string or a Symbol, but here it is always
+        // a string.
+        if napi::napi_has_own_property(env, object, property_name, &mut is_own_property as *mut _) != napi::napi_status::napi_ok {
+            return false;
+        }
+
+        if !is_own_property {
+            continue;
+        }
 
         let mut dummy = false;
         // If we can't convert assign to this array, something went wrong.
