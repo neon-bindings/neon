@@ -140,7 +140,7 @@ describe('JsObject', function() {
     assert.equal(b.readUInt32LE(12), 66012);
   });
 
-  it('reads the names of own properties', function() {
+  it('returns only own properties from get_own_property_names', function() {
     var superObject = {
       a: 1
     };
@@ -152,5 +152,17 @@ describe('JsObject', function() {
       addon.get_own_property_names(childObject),
       Object.getOwnPropertyNames(childObject)
     );
+  });
+
+  it('does not return Symbols from get_own_property_names', function() {
+    var object = {};
+    object['this should be a thing'] = 0;
+    object[Symbol('this should not be a thing')] = 1;
+
+    assert.deepEqual(
+      addon.get_own_property_names(object),
+      Object.getOwnPropertyNames(object)
+    );
+    assert.equal(addon.get_own_property_names(object).length, 1);
   });
 });
