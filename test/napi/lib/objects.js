@@ -139,4 +139,18 @@ describe('JsObject', function() {
     addon.write_buffer_with_borrow_mut(b, 3, 66012);
     assert.equal(b.readUInt32LE(12), 66012);
   });
+
+  it('reads the names of own properties', function() {
+    var superObject = {
+      a: 1
+    };
+
+    var childObject = Object.create(superObject);
+    childObject.b = 2;
+
+    assert.deepEqual(
+      addon.get_own_property_names(childObject),
+      Object.getOwnPropertyNames(childObject)
+    );
+  });
 });

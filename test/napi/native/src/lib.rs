@@ -104,5 +104,12 @@ register_module!(|mut cx| {
     cx.export_function("panic", panic)?;
     cx.export_function("panic_after_throw", panic_after_throw)?;
 
+    fn call_get_own_property_names(mut cx: FunctionContext) -> JsResult<JsArray> {
+        let object = cx.argument::<JsObject>(0)?;
+        object.get_own_property_names(&mut cx)
+    }
+
+    cx.export_function("get_own_property_names", call_get_own_property_names)?;
+
     Ok(())
 });
