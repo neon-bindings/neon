@@ -173,7 +173,7 @@ extern "C" size_t Neon_String_Data(char *out, size_t len, v8::Local<v8::Value> s
   return Nan::DecodeWrite(out, len, str, Nan::UTF8);
 }
 
-extern "C" bool Neon_Convert_ToString(v8::Local<v8::String> *out, v8::Local<v8::Value> value) {
+extern "C" bool Neon_Convert_ToString(v8::Local<v8::String> *out, v8::Isolate *isolate, v8::Local<v8::Value> value) {
   Nan::MaybeLocal<v8::String> maybe = Nan::To<v8::String>(value);
   return maybe.ToLocal(out);
 }

@@ -2,6 +2,9 @@ use std::mem::MaybeUninit;
 
 use nodejs_sys as napi;
 
+use array;
+use convert;
+use tag;
 use raw::{Env, Local};
 
 /// Mutates the `out` argument to refer to a `napi_value` containing a newly created JavaScript Object.
@@ -14,7 +17,36 @@ pub unsafe extern "C" fn new(out: &mut Local, env: Env) {
 pub unsafe extern "C" fn get_own_property_names(out: &mut Local, env: Env, object: Local) -> bool {
     let status = napi::napi_get_property_names(env, object, out as *mut _);
 
-    status == napi::napi_status::napi_ok
+    if status != napi::napi_status::napi_ok {
+        return false;
+    }
+
+    // Before https://github.com/nodejs/node/pull/27524, `napi_get_property_names` would return
+    // numbers for numeric indices instead of strings.
+    let len = array::len(env, *out);
+    for index in 0..len {
+        let mut element: Local = std::mem::zeroed();
+        // In general, getters may cause arbitrary JS code to be run, but this is a newly created
+        // Array from an official internal API so it doesn't do anything strange.
+        if !get_index(&mut element, env, *out, index) {
+            continue;
+        }
+        if tag::is_string(env, element) {
+            continue;
+        }
+        let mut stringified: Local = std::mem::zeroed();
+        // If we can't convert to a string, something went wrong.
+        if !convert::to_string(&mut stringified, env, element) {
+            return false;
+        }
+        let mut dummy = false;
+        // If we can't convert assign to this array, something went wrong.
+        if !set_index(&mut dummy, env, *out, index, stringified) {
+            return false;
+        }
+    }
+
+    true
 }
 
 // Unused.

@@ -50,8 +50,11 @@ impl<T: Object> SuperType<T> for JsObject {
 
 /// The trait shared by all JavaScript values.
 pub trait Value: ValueInternal {
-    fn to_string<'a, C: Context<'a>>(self, _: &mut C) -> JsResult<'a, JsString> {
-        build(|out| { unsafe { neon_runtime::convert::to_string(out, self.to_raw()) } })
+    fn to_string<'a, C: Context<'a>>(self, cx: &mut C) -> JsResult<'a, JsString> {
+        let env = cx.env();
+        build(|out| {
+            unsafe { neon_runtime::convert::to_string(out, env.to_raw(), self.to_raw()) }
+        })
     }
 
     fn as_value<'a, C: Context<'a>>(self, _: &mut C) -> Handle<'a, JsValue> {

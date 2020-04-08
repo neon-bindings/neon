@@ -59,8 +59,11 @@ register_module!(|mut cx| {
     let property_names = rust_created.get_own_property_names(&mut cx)?
         .to_vec(&mut cx)?
         .into_iter()
-        .map(|value| value.downcast::<JsString, _>(&mut cx).unwrap().value(&mut cx))
-        .collect::<Vec<_>>();
+        .map(|value| {
+            let string: Handle<JsString> = value.downcast_or_throw(&mut cx)?;
+            Ok(string.value(&mut cx))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     assert_eq!(property_names, &["0", "a", "whatever"]);
 
     cx.export_value("rustCreated", rust_created)?;
