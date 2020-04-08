@@ -15,35 +15,69 @@ pub unsafe extern "C" fn new(out: &mut Local, env: Env) {
 /// Mutates the `out` argument to refer to a `napi_value` containing the own property names of the
 /// `object` as a JavaScript Array.
 pub unsafe extern "C" fn get_own_property_names(out: &mut Local, env: Env, object: Local) -> bool {
-    let status = napi::napi_get_property_names(env, object, out as *mut _);
-
-    if status != napi::napi_status::napi_ok {
+    // Node.js 13+ have `napi_get_all_property_names`, which does the conversion right and allows
+    // us to ask for only own properties or prototype properties or anything we like.
+    // Unfortunately, earlier versions do not support that method, so we have to implement it
+    // manually.
+    //
+    // So we use a temporary array for the raw names:
+    let mut raw_names = MaybeUninit::uninit();
+    if napi::napi_get_property_names(env, object, raw_names.as_mut_ptr()) != napi::napi_status::napi_ok {
+        return false;
+    }
+    // And a "fixed" array for the actual return value:
+    let mut fixed_names = MaybeUninit::uninit();
+    if napi::napi_create_array(env, fixed_names.as_mut_ptr()) != napi::napi_status::napi_ok {
         return false;
     }
 
-    // Before https://github.com/nodejs/node/pull/27524, `napi_get_property_names` would return
-    // numbers for numeric indices instead of strings.
-    let len = array::len(env, *out);
-    for index in 0..len {
-        let mut element: Local = std::mem::zeroed();
+    let raw_names = raw_names.assume_init();
+    let mut fixed_names = fixed_names.assume_init();
+
+    *out = fixed_names;
+
+    let raw_len = array::len(env, raw_names);
+    let mut fixed_len = 0;
+    for index in 0..raw_len {
+        let mut property_name: Local = std::mem::zeroed();
+
         // In general, getters may cause arbitrary JS code to be run, but this is a newly created
         // Array from an official internal API so it doesn't do anything strange.
-        if !get_index(&mut element, env, *out, index) {
+        if !get_index(&mut property_name, env, raw_names, index) {
             continue;
         }
-        if tag::is_string(env, element) {
-            continue;
-        }
-        let mut stringified: Local = std::mem::zeroed();
-        // If we can't convert to a string, something went wrong.
-        if !convert::to_string(&mut stringified, env, element) {
+
+        let mut is_own_property = false;
+        // May return a non-OK status if `key` is not a string or a Symbol, but here it is always
+        // a string.
+        if napi::napi_has_own_property(env, object, property_name, &mut is_own_property as *mut _) != napi::napi_status::napi_ok {
             return false;
         }
+
+        if !is_own_property {
+            continue;
+        }
+
+        // Before https://github.com/nodejs/node/pull/27524, `napi_get_property_names` would return
+        // numbers for numeric indices instead of strings.
+        // Make sure we always return strings.
+        let property_name = if !tag::is_string(env, property_name) {
+            let mut stringified: Local = std::mem::zeroed();
+            // If we can't convert to a string, something went wrong.
+            if !convert::to_string(&mut stringified, env, property_name) {
+                return false;
+            }
+            stringified
+        } else {
+            property_name
+        };
+
         let mut dummy = false;
         // If we can't convert assign to this array, something went wrong.
-        if !set_index(&mut dummy, env, *out, index, stringified) {
+        if !set_index(&mut dummy, env, fixed_names, fixed_len, property_name) {
             return false;
         }
+        fixed_len += 1;
     }
 
     true
