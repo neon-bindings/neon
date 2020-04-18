@@ -28,12 +28,14 @@ impl<T: Class> Callback<()> for MethodCallback<T> {
                 };
                 let dynamic_callback: fn(CallContext<T>) -> JsResult<JsValue> =
                     mem::transmute(neon_runtime::fun::get_dynamic_callback(data.to_raw()));
+
                 #[cfg(feature = "napi-runtime")]
-                if let Ok(value) = convert_panics(cx,|cx| { dynamic_callback(cx) }) {
-                    info.set_return(value);
-                }
+                let result=convert_panics(cx,|cx| { dynamic_callback(cx) });
+
                 #[cfg(feature = "legacy-runtime")]
-                if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
+                let result=convert_panics(|| { dynamic_callback(cx) });
+
+                if let Ok(value) = result {
                     info.set_return(value);
                 }
             })
@@ -71,14 +73,13 @@ impl Callback<()> for ConstructorCallCallback {
                 let kernel: fn(CallContext<JsValue>) -> JsResult<JsValue> =
                     mem::transmute(neon_runtime::class::get_call_kernel(data.to_raw()));
                 #[cfg(feature = "napi-runtime")]
-                if let Ok(value) = convert_panics(cx,|cx| { kernel(cx) }) {
-                    info.set_return(value);
-                }
+                let result= convert_panics(cx,|cx| { kernel(cx) });
+
                 #[cfg(feature = "legacy-runtime")]
-                if let Ok(value) = convert_panics(|| { kernel(cx) }) {
+                let result= convert_panics(|| { kernel(cx) });
+                if let Ok(value) =result {
                     info.set_return(value);
                 }
-                
             })
         }
     }
@@ -98,16 +99,14 @@ impl<T: Class> Callback<*mut c_void> for AllocateCallback<T> {
                 let data = info.data();
                 let kernel: fn(CallContext<JsUndefined>) -> NeonResult<T::Internals> =
                     mem::transmute(neon_runtime::class::get_allocate_kernel(data.to_raw()));
+                    
                 #[cfg(feature = "napi-runtime")]
-                if let Ok(value) = convert_panics(cx,|cx| { kernel(cx) }) {
-                    let p = Box::into_raw(Box::new(value));
-                    mem::transmute(p)
-                } else {
-                    null_mut()
-                }
+                let result=convert_panics(cx,|cx| { kernel(cx) });
 
                 #[cfg(feature = "legacy-runtime")]
-                if let Ok(value) = convert_panics(|| { kernel(cx) }) {
+                let result=convert_panics(|| { kernel(cx) });
+
+                if let Ok(value) =  result {
                     let p = Box::into_raw(Box::new(value));
                     mem::transmute(p)
                 } else {

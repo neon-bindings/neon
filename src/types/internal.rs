@@ -38,11 +38,12 @@ impl<T: Value> Callback<()> for FunctionCallback<T> {
                 let dynamic_callback: fn(FunctionContext) -> JsResult<T> =
                     mem::transmute(neon_runtime::fun::get_dynamic_callback(data.to_raw()));
                 #[cfg(feature = "napi-runtime")]
-                if let Ok(value) = convert_panics(cx,|cx| { dynamic_callback(cx) }) {
-                    info.set_return(value);
-                }
+                let result=convert_panics(cx,|cx| { dynamic_callback(cx) });
+
                 #[cfg(feature = "legacy-runtime")]
-                if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
+                let result=convert_panics(|| { dynamic_callback(cx) });
+
+                if let Ok(value) =  result{
                     info.set_return(value);
                 }
             })
