@@ -6,6 +6,7 @@ use std;
 use std::cell::RefCell;
 use std::convert::Into;
 use std::marker::PhantomData;
+use std::os::raw::c_void;
 use std::panic::UnwindSafe;
 use neon_runtime;
 use neon_runtime::raw;
@@ -20,15 +21,15 @@ use object::{Object, This};
 use object::class::Class;
 use result::{NeonResult, JsResult, Throw};
 use self::internal::{ContextInternal, Scope, ScopeMetadata};
-use std::os::raw::c_void;
 
 #[repr(C)]
-pub(crate) struct CallbackInfo {
-    info: raw::FunctionCallbackInfo
+pub(crate) struct CallbackInfo<'a> {
+    info: raw::FunctionCallbackInfo,
+    _lifetime: PhantomData<&'a raw::FunctionCallbackInfo>,
 }
 
-impl CallbackInfo {
-    pub fn data<'a>(&self, env: Env) -> *mut c_void {
+impl CallbackInfo<'_> {
+    pub fn data(&self, env: Env) -> *mut c_void {
         unsafe {
             let mut raw_data: *mut c_void = std::mem::zeroed();
             neon_runtime::call::data(env.to_raw(), self.info, &mut raw_data);
@@ -448,7 +449,7 @@ impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> { }
 /// The type parameter `T` is the type of the `this`-binding.
 pub struct CallContext<'a, T: This> {
     scope: Scope<'a, raw::HandleScope>,
-    info: &'a CallbackInfo,
+    info: &'a CallbackInfo<'a>,
     phantom_type: PhantomData<T>
 }
 
@@ -458,7 +459,7 @@ impl<'a, T: This> CallContext<'a, T> {
     /// Indicates whether the function was called via the JavaScript `[[Call]]` or `[[Construct]]` semantics.
     pub fn kind(&self) -> CallKind { self.info.kind() }
 
-    pub(crate) fn with<U, F: for<'b> FnOnce(CallContext<'b, T>) -> U>(env: Env, info: &'a CallbackInfo, f: F) -> U {
+    pub(crate) fn with<U, F: for<'b> FnOnce(CallContext<'b, T>) -> U>(env: Env, info: &'a CallbackInfo<'a>, f: F) -> U {
         Scope::with(env, |scope| {
             f(CallContext {
                 scope,

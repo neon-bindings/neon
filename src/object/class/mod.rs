@@ -269,13 +269,13 @@ pub(crate) trait Callback<T: Clone + Copy + Sized>: Sized {
     /// Extracts the computed Rust function and invokes it. The Neon runtime
     /// ensures that the computed function is provided as the extra data field,
     /// wrapped as a V8 External, in the `CallbackInfo` argument.
-    extern "C" fn invoke(env: Env, info: CallbackInfo) -> T;
+    extern "C" fn invoke(env: Env, info: CallbackInfo<'_>) -> T;
 
     /// See `invoke`. This is used by the non-n-api implementation, so that every impl for this
     /// trait doesn't need to provide two versions of `invoke`.
     #[cfg(feature = "legacy-runtime")]
     #[doc(hidden)]
-    extern "C" fn invoke_compat(info: CallbackInfo) -> T {
+    extern "C" fn invoke_compat(info: CallbackInfo<'_>) -> T {
         Self::invoke(Env::current(), info)
     }
 

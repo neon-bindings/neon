@@ -15,7 +15,7 @@ use types::error::convert_panics;
 pub struct MethodCallback<T: Class>(pub fn(CallContext<T>) -> JsResult<JsValue>);
 
 impl<T: Class> Callback<()> for MethodCallback<T> {
-    extern "C" fn invoke(env: Env, info: CallbackInfo) {
+    extern "C" fn invoke(env: Env, info: CallbackInfo<'_>) {
         unsafe {
             info.with_cx::<T, _, _>(env, |mut cx| {
                 let data = info.data(cx.env());
@@ -65,7 +65,7 @@ impl ConstructorCallCallback {
 }
 
 impl Callback<()> for ConstructorCallCallback {
-    extern "C" fn invoke(env: Env, info: CallbackInfo) {
+    extern "C" fn invoke(env: Env, info: CallbackInfo<'_>) {
         unsafe {
             info.with_cx(env, |cx| {
                 let data = info.data(cx.env());
@@ -87,7 +87,7 @@ impl Callback<()> for ConstructorCallCallback {
 pub struct AllocateCallback<T: Class>(pub fn(CallContext<JsUndefined>) -> NeonResult<T::Internals>);
 
 impl<T: Class> Callback<*mut c_void> for AllocateCallback<T> {
-    extern "C" fn invoke(env: Env, info: CallbackInfo) -> *mut c_void {
+    extern "C" fn invoke(env: Env, info: CallbackInfo<'_>) -> *mut c_void {
         unsafe {
             info.with_cx(env, |cx| {
                 let data = info.data(cx.env());
@@ -112,7 +112,7 @@ impl<T: Class> Callback<*mut c_void> for AllocateCallback<T> {
 pub struct ConstructCallback<T: Class>(pub fn(CallContext<T>) -> NeonResult<Option<Handle<JsObject>>>);
 
 impl<T: Class> Callback<bool> for ConstructCallback<T> {
-    extern "C" fn invoke(env: Env, info: CallbackInfo) -> bool {
+    extern "C" fn invoke(env: Env, info: CallbackInfo<'_>) -> bool {
         unsafe {
             info.with_cx(env, |cx| {
                 let data = info.data(cx.env());

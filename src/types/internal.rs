@@ -33,7 +33,7 @@ pub struct FunctionCallback<T: Value>(pub fn(FunctionContext) -> JsResult<T>);
 
 #[cfg(feature = "legacy-runtime")]
 impl<T: Value> Callback<()> for FunctionCallback<T> {
-    extern "C" fn invoke(env: Env, info: CallbackInfo) {
+    extern "C" fn invoke(env: Env, info: CallbackInfo<'_>) {
         unsafe {
             info.with_cx::<JsObject, _, _>(env, |cx| {
                 let data = info.data(env);
@@ -53,7 +53,7 @@ impl<T: Value> Callback<()> for FunctionCallback<T> {
 
 #[cfg(feature = "napi-runtime")]
 impl<T: Value> Callback<raw::Local> for FunctionCallback<T> {
-    extern "C" fn invoke(env: Env, info: CallbackInfo) -> raw::Local {
+    extern "C" fn invoke(env: Env, info: CallbackInfo<'_>) -> raw::Local {
         unsafe {
             info.with_cx::<JsObject, _, _>(env, |cx| {
                 let data = info.data(env);
