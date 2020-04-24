@@ -62,8 +62,13 @@ impl<T: Value> Callback<raw::Local> for FunctionCallback<T> {
                 if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
                     value.to_raw()
                 } else {
-                    // TODO this should probably not be null
-                    std::ptr::null_mut()
+                    // What should we return if the function panicked?
+                    //
+                    // `ptr::null_mut()` may work, but we should have a test to verify that, which
+                    // can be created after [#505][0]. For now, let's not guess!
+                    //
+                    // [0]: https://github.com/neon-bindings/neon/pull/505.
+                    unimplemented!("cannot return from function after a panic")
                 }
             })
         }
