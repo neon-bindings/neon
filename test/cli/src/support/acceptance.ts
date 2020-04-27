@@ -1,4 +1,4 @@
-import tmp = require('tmp');
+import * as tmp from 'tmp';
 import * as path from 'path';
 import { spawn, SpawnChain } from 'node-suspect';
 
@@ -8,6 +8,11 @@ const NEON = path.join(__dirname, '..', '..', '..', '..', 'cli', 'bin', 'cli.js'
 export interface Spawnable {
   cwd: string;
   spawn(args: string[]): SpawnChain;
+}
+
+function generateDirName(): string {
+  return Math.random().toString(36).substring(2, 15)
+    + Math.random().toString(36).substring(2, 15);
 }
 
 function isSpawnable<T>(x: T): x is T & Spawnable {
@@ -25,10 +30,10 @@ export function spawnable(obj: Mocha.ITestCallbackContext): Mocha.ITestCallbackC
 }
 
 export function setup(stream: string = 'stdout') {
-  let tmpobj: tmp.SynchrounousResult;
+  let tmpobj: tmp.DirResult;
 
   beforeEach(function() {
-    tmpobj = tmp.dirSync({ unsafeCleanup: true });
+    tmpobj = tmp.dirSync({ unsafeCleanup: true, name: generateDirName() } as any);
 
     this.cwd = tmpobj.name;
     this.spawn = (args: string[]) => spawn(`"${NODE}"`, [`"${NEON}"`].concat(args), { shell: true, cwd: this.cwd, stream });

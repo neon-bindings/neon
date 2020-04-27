@@ -136,6 +136,23 @@ describe('neon new', function() {
     });
   });
 
+  it('should create a new project in the current folder', function(done) {
+    spawnNeonNew(this, '.', {}, () => {
+      const libName = path.basename(this.cwd)
+      let { pkg, cargo } = manifests(this.cwd, '');
+
+      assert.propertyVal(pkg, 'name', libName);
+
+      let readme = readFile(this.cwd, 'README.md');
+      assert.match(readme, new RegExp(libName));
+
+      assert.nestedPropertyVal(cargo, 'package.name', libName);
+      assert.nestedPropertyVal(cargo, 'lib.name', libName);
+
+      done();
+    });
+  });
+
   it('should escape quotes in the generated package.json and Cargo.toml', function(done) {
     let opts = {
       desc: 'Foo "bar"',
