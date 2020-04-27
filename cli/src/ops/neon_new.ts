@@ -12,6 +12,8 @@ import * as JSON from 'ts-typed-json';
 const ROOT_DIR = path.resolve(__dirname, '..', '..');
 const TEMPLATES_DIR = path.resolve(ROOT_DIR, 'templates');
 
+const CURRENT_DIR_NAME = '.'
+
 const NEON_CLI_VERSION =
   JSON.asString(JSON.asObject(JSON.loadSync(path.resolve(ROOT_DIR, 'package.json'))).version);
 
@@ -74,6 +76,17 @@ async function parseNeonVersion(flag: string | null) : Promise<NeonVersion> {
 }
 
 export default async function wizard(pwd: string, name: string, neon: string | null, features: string | null, noDefaultFeatures: boolean) {
+  const createInCurrentDir = name === CURRENT_DIR_NAME;
+
+  if (createInCurrentDir) {
+    const newPwd = path.resolve(pwd, '..');
+    const newName = path.basename(pwd);
+
+    await wizard(newPwd, newName, neon, features, noDefaultFeatures);
+
+    return;
+  }
+
   let its = validateName(name);
   if (!its.validForNewPackages) {
     let errors = (its.errors || []).concat(its.warnings || []);
