@@ -22,6 +22,11 @@ cfg_if! {
             println!("cargo:rustc-link-search=native={}", &node_lib_path.display());
             println!("cargo:rustc-link-lib={}", &node_lib_file_path.file_stem().unwrap().to_str().unwrap());
 
+            if cfg!(target_env = "msvc") && debug
+            {
+                println!("cargo:rustc-link-lib=msvcrtd");
+            }
+
             // Link `win_delay_load_hook.obj` for windows electron
             let node_runtime_env = "npm_config_runtime";
             println!("cargo:rerun-if-env-changed={}", node_runtime_env);
