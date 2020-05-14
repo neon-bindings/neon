@@ -10,6 +10,8 @@ use neon_runtime;
 use neon_runtime::raw;
 use types::Value;
 use context::Context;
+#[cfg(feature = "legacy-runtime")]
+use context::internal::Env;
 use result::{JsResult, JsResultExt};
 use self::internal::SuperType;
 
@@ -102,6 +104,7 @@ impl<'a, T: Value> Handle<'a, T> {
         Handle::new_internal(SuperType::upcast_internal(self.value))
     }
 
+    #[cfg(feature = "legacy-runtime")]
     /// Tests whether this value is an instance of the given type.
     /// 
     /// # Example:
@@ -117,25 +120,66 @@ impl<'a, T: Value> Handle<'a, T> {
     /// # }
     /// ```
     pub fn is_a<U: Value>(&self) -> bool {
-        U::is_typeof(self.value)
+        U::is_typeof(Env::current(), self.value)
     }
 
+    #[cfg(feature = "napi-runtime")]
+    /// Tests whether this value is an instance of the given type.
+    /// 
+    /// # Example:
+    /// 
+    /// ```no_run
+    /// # use neon::prelude::*;
+    /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    /// let v: Handle<JsValue> = cx.number(17).upcast(&mut cx);
+    /// v.is_a::<JsString>(&mut cx); // false
+    /// v.is_a::<JsNumber>(&mut cx); // true
+    /// v.is_a::<JsValue>(&mut cx);  // true
+    /// # Ok(cx.undefined())
+    /// # }
+    /// ```
+    pub fn is_a<'b, U: Value, C: Context<'b>>(&self, cx: &mut C) -> bool {
+        U::is_typeof(cx.env(), self.value)
+    }
+
+    #[cfg(feature = "legacy-runtime")]
     /// Attempts to downcast a handle to another type, which may fail. A failure
     /// to downcast **does not** throw a JavaScript exception, so it's OK to
     /// continue interacting with the JS engine if this method produces an `Err`
     /// result.
     pub fn downcast<U: Value>(&self) -> DowncastResult<'a, T, U> {
-        match U::downcast(self.value) {
+        match U::downcast(Env::current(), self.value) {
             Some(v) => Ok(Handle::new_internal(v)),
             None => Err(DowncastError::new())
         }
     }
 
+    #[cfg(feature = "napi-runtime")]
+    /// Attempts to downcast a handle to another type, which may fail. A failure
+    /// to downcast **does not** throw a JavaScript exception, so it's OK to
+    /// continue interacting with the JS engine if this method produces an `Err`
+    /// result.
+    pub fn downcast<'b, U: Value, C: Context<'b>>(&self, cx: &mut C) -> DowncastResult<'a, T, U> {
+        match U::downcast(cx.env(), self.value) {
+            Some(v) => Ok(Handle::new_internal(v)),
+            None => Err(DowncastError::new())
+        }
+    }
+
+    #[cfg(feature = "legacy-runtime")]
     /// Attempts to downcast a handle to another type, raising a JavaScript `TypeError`
     /// exception on failure. This method is a convenient shorthand, equivalent to
     /// `self.downcast::<U>().or_throw::<C>(cx)`.
     pub fn downcast_or_throw<'b, U: Value, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'a, U> {
         self.downcast().or_throw(cx)
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    /// Attempts to downcast a handle to another type, raising a JavaScript `TypeError`
+    /// exception on failure. This method is a convenient shorthand, equivalent to
+    /// `self.downcast::<U>().or_throw::<C>(cx)`.
+    pub fn downcast_or_throw<'b, U: Value, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'a, U> {
+        self.downcast(cx).or_throw(cx)
     }
 
 }

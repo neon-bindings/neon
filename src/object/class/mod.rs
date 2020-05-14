@@ -220,11 +220,8 @@ impl<T: Class> ValueInternal for T {
         }
     }
 
-    fn is_typeof<Other: Value>(value: Other) -> bool {
-        let mut isolate: Env = unsafe {
-            mem::transmute(neon_runtime::call::current_isolate())
-        };
-        let map = isolate.class_map();
+    fn is_typeof<Other: Value>(mut env: Env, value: Other) -> bool {
+        let map = env.class_map();
         match map.get(&TypeId::of::<T>()) {
             None => false,
             Some(ref metadata) => unsafe {

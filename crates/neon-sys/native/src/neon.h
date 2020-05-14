@@ -29,8 +29,8 @@ extern "C" {
   bool Neon_Primitive_IsUint32(v8::Local<v8::Primitive> p);
   bool Neon_Primitive_IsInt32(v8::Local<v8::Primitive> p);
 
-  void Neon_Object_New(v8::Local<v8::Object> *out);
-  bool Neon_Object_GetOwnPropertyNames(v8::Local<v8::Array> *out, v8::Local<v8::Object> obj);
+  void Neon_Object_New(v8::Local<v8::Object> *out, v8::Isolate *isolate);
+  bool Neon_Object_GetOwnPropertyNames(v8::Local<v8::Array> *out, v8::Isolate *isolate, v8::Local<v8::Object> obj);
   void *Neon_Object_GetIsolate(v8::Local<v8::Object> obj);
   bool Neon_Object_Get_Index(v8::Local<v8::Value> *out, v8::Local<v8::Object> object, uint32_t index);
   bool Neon_Object_Set_Index(bool *out, v8::Local<v8::Object> object, uint32_t index, v8::Local<v8::Value> val);
@@ -40,13 +40,13 @@ extern "C" {
   bool Neon_Object_Set(bool *out, v8::Local<v8::Object> obj, v8::Local<v8::Value> key, v8::Local<v8::Value> val);
 
   void Neon_Array_New(v8::Local<v8::Array> *out, v8::Isolate *isolate, uint32_t length);
-  uint32_t Neon_Array_Length(v8::Local<v8::Array> array);
+  uint32_t Neon_Array_Length(v8::Isolate *isolate, v8::Local<v8::Array> array);
 
   bool Neon_String_New(v8::Local<v8::String> *out, v8::Isolate *isolate, const uint8_t *data, int32_t len);
   int32_t Neon_String_Utf8Length(v8::Local<v8::String> str);
   size_t Neon_String_Data(char *out, size_t len, v8::Local<v8::Value> str);
 
-  bool Neon_Convert_ToString(v8::Local<v8::String> *out, v8::Local<v8::Value> value);
+  bool Neon_Convert_ToString(v8::Local<v8::String> *out, v8::Isolate *isolate, v8::Local<v8::Value> value);
   bool Neon_Convert_ToObject(v8::Local<v8::Object> *out, v8::Local<v8::Value> *value);
 
   bool Neon_Buffer_New(v8::Local<v8::Object> *out, uint32_t size);
@@ -109,17 +109,17 @@ extern "C" {
 
   uint32_t Neon_Module_GetVersion();
 
-  bool Neon_Tag_IsUndefined(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsNull(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsBoolean(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsNumber(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsString(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsObject(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsArray(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsFunction(v8::Local<v8::Value> val);
-  bool Neon_Tag_IsBuffer(v8::Local<v8::Value> obj);
-  bool Neon_Tag_IsArrayBuffer(v8::Local<v8::Value> obj);
-  bool Neon_Tag_IsError(v8::Local<v8::Value> val);
+  bool Neon_Tag_IsUndefined(v8::Isolate *isolate, v8::Local<v8::Value> val);
+  bool Neon_Tag_IsNull(v8::Isolate *isolate, v8::Local<v8::Value> val);
+  bool Neon_Tag_IsBoolean(v8::Isolate *isolate, v8::Local<v8::Value> val);
+  bool Neon_Tag_IsNumber(v8::Isolate *isolate, v8::Local<v8::Value> val);
+  bool Neon_Tag_IsString(v8::Isolate *isolate, v8::Local<v8::Value> val);
+  bool Neon_Tag_IsObject(v8::Isolate *isolate, v8::Local<v8::Value> val);
+  bool Neon_Tag_IsArray(v8::Isolate *isolate, v8::Local<v8::Value> val);
+  bool Neon_Tag_IsFunction(v8::Isolate *isolate, v8::Local<v8::Value> val);
+  bool Neon_Tag_IsBuffer(v8::Isolate *isolate, v8::Local<v8::Value> obj);
+  bool Neon_Tag_IsArrayBuffer(v8::Isolate *isolate, v8::Local<v8::Value> obj);
+  bool Neon_Tag_IsError(v8::Isolate *isolate, v8::Local<v8::Value> val);
 
   void Neon_Error_NewError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);
   void Neon_Error_NewTypeError(v8::Local<v8::Value> *out, v8::Local<v8::String> msg);

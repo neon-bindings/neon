@@ -48,11 +48,11 @@ extern "C" void Neon_Call_Get(v8::FunctionCallbackInfo<v8::Value> *info, int32_t
   *out = (*info)[i];
 }
 
-extern "C" void Neon_Object_New(v8::Local<v8::Object> *out) {
+extern "C" void Neon_Object_New(v8::Local<v8::Object> *out, v8::Isolate *isolate) {
   *out = Nan::New<v8::Object>();
 }
 
-extern "C" bool Neon_Object_GetOwnPropertyNames(v8::Local<v8::Array> *out, v8::Local<v8::Object> obj) {
+extern "C" bool Neon_Object_GetOwnPropertyNames(v8::Local<v8::Array> *out, v8::Isolate *isolate, v8::Local<v8::Object> obj) {
   Nan::MaybeLocal<v8::Array> maybe = Nan::GetOwnPropertyNames(obj);
   return maybe.ToLocal(out);
 }
@@ -139,6 +139,7 @@ extern "C" bool Neon_Object_Get(v8::Local<v8::Value> *out, v8::Local<v8::Object>
 }
 
 extern "C" bool Neon_Object_Set(bool *out, v8::Local<v8::Object> obj, v8::Local<v8::Value> key, v8::Local<v8::Value> val) {
+  // Only returns `Just(true)` or `Empty()`.
   Nan::Maybe<bool> maybe = Nan::Set(obj, key, val);
   if (maybe.IsJust()) {
     *out = maybe.FromJust();
@@ -151,7 +152,7 @@ extern "C" void Neon_Array_New(v8::Local<v8::Array> *out, v8::Isolate *isolate, 
   *out = v8::Array::New(isolate, length);
 }
 
-extern "C" uint32_t Neon_Array_Length(v8::Local<v8::Array> array) {
+extern "C" uint32_t Neon_Array_Length(v8::Isolate *isolate, v8::Local<v8::Array> array) {
   return array->Length();
 }
 
@@ -172,7 +173,7 @@ extern "C" size_t Neon_String_Data(char *out, size_t len, v8::Local<v8::Value> s
   return Nan::DecodeWrite(out, len, str, Nan::UTF8);
 }
 
-extern "C" bool Neon_Convert_ToString(v8::Local<v8::String> *out, v8::Local<v8::Value> value) {
+extern "C" bool Neon_Convert_ToString(v8::Local<v8::String> *out, v8::Isolate *isolate, v8::Local<v8::Value> value) {
   Nan::MaybeLocal<v8::String> maybe = Nan::To<v8::String>(value);
   return maybe.ToLocal(out);
 }
@@ -204,7 +205,7 @@ extern "C" size_t Neon_Buffer_Data(void **base_out, v8::Local<v8::Object> obj) {
   return node::Buffer::Length(obj);
 }
 
-extern "C" bool Neon_Tag_IsBuffer(v8::Local<v8::Value> obj) {
+extern "C" bool Neon_Tag_IsBuffer(v8::Isolate *isolate, v8::Local<v8::Value> obj) {
   return node::Buffer::HasInstance(obj);
 }
 
@@ -221,7 +222,7 @@ extern "C" size_t Neon_ArrayBuffer_Data(void **base_out, v8::Local<v8::ArrayBuff
 }
 
 
-extern "C" bool Neon_Tag_IsArrayBuffer(v8::Local<v8::Value> value) {
+extern "C" bool Neon_Tag_IsArrayBuffer(v8::Isolate *isolate, v8::Local<v8::Value> value) {
   return value->IsArrayBuffer();
 }
 
@@ -446,39 +447,39 @@ extern "C" bool Neon_Fun_Construct(v8::Local<v8::Object> *out, v8::Isolate *isol
   return maybe_result.ToLocal(out);
 }
 
-extern "C" bool Neon_Tag_IsUndefined(v8::Local<v8::Value> val) {
+extern "C" bool Neon_Tag_IsUndefined(v8::Isolate *isolate, v8::Local<v8::Value> val) {
   return val->IsUndefined();
 }
 
-extern "C" bool Neon_Tag_IsNull(v8::Local<v8::Value> val) {
+extern "C" bool Neon_Tag_IsNull(v8::Isolate *isolate, v8::Local<v8::Value> val) {
   return val->IsNull();
 }
 
-extern "C" bool Neon_Tag_IsNumber(v8::Local<v8::Value> val) {
+extern "C" bool Neon_Tag_IsNumber(v8::Isolate *isolate, v8::Local<v8::Value> val) {
   return val->IsNumber();
 }
 
-extern "C" bool Neon_Tag_IsBoolean(v8::Local<v8::Value> val) {
+extern "C" bool Neon_Tag_IsBoolean(v8::Isolate *isolate, v8::Local<v8::Value> val) {
   return val->IsBoolean();
 }
 
-extern "C" bool Neon_Tag_IsString(v8::Local<v8::Value> val) {
+extern "C" bool Neon_Tag_IsString(v8::Isolate *isolate, v8::Local<v8::Value> val) {
   return val->IsString();
 }
 
-extern "C" bool Neon_Tag_IsObject(v8::Local<v8::Value> val) {
+extern "C" bool Neon_Tag_IsObject(v8::Isolate *isolate, v8::Local<v8::Value> val) {
   return val->IsObject();
 }
 
-extern "C" bool Neon_Tag_IsArray(v8::Local<v8::Value> val) {
+extern "C" bool Neon_Tag_IsArray(v8::Isolate *isolate, v8::Local<v8::Value> val) {
   return val->IsArray();
 }
 
-extern "C" bool Neon_Tag_IsFunction(v8::Local<v8::Value> val) {
+extern "C" bool Neon_Tag_IsFunction(v8::Isolate *isolate, v8::Local<v8::Value> val) {
   return val->IsFunction();
 }
 
-extern "C" bool Neon_Tag_IsError(v8::Local<v8::Value> val) {
+extern "C" bool Neon_Tag_IsError(v8::Isolate *isolate, v8::Local<v8::Value> val) {
   return val->IsNativeError();
 }
 

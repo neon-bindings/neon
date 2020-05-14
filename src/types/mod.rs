@@ -50,8 +50,11 @@ impl<T: Object> SuperType<T> for JsObject {
 
 /// The trait shared by all JavaScript values.
 pub trait Value: ValueInternal {
-    fn to_string<'a, C: Context<'a>>(self, _: &mut C) -> JsResult<'a, JsString> {
-        build(|out| { unsafe { neon_runtime::convert::to_string(out, self.to_raw()) } })
+    fn to_string<'a, C: Context<'a>>(self, cx: &mut C) -> JsResult<'a, JsString> {
+        let env = cx.env();
+        build(|out| {
+            unsafe { neon_runtime::convert::to_string(out, env.to_raw(), self.to_raw()) }
+        })
     }
 
     fn as_value<'a, C: Context<'a>>(self, _: &mut C) -> Handle<'a, JsValue> {
@@ -75,7 +78,7 @@ impl Managed for JsValue {
 impl ValueInternal for JsValue {
     fn name() -> String { "any".to_string() }
 
-    fn is_typeof<Other: Value>(_: Other) -> bool {
+    fn is_typeof<Other: Value>(_env: Env, _other: Other) -> bool {
         true
     }
 }
@@ -154,8 +157,8 @@ unsafe impl This for JsUndefined {
 impl ValueInternal for JsUndefined {
     fn name() -> String { "undefined".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_undefined(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_undefined(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -195,8 +198,8 @@ impl Managed for JsNull {
 impl ValueInternal for JsNull {
     fn name() -> String { "null".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_null(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_null(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -245,8 +248,8 @@ impl Managed for JsBoolean {
 impl ValueInternal for JsBoolean {
     fn name() -> String { "boolean".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_boolean(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_boolean(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -288,8 +291,8 @@ impl Managed for JsString {
 impl ValueInternal for JsString {
     fn name() -> String { "string".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_string(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_string(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -411,8 +414,8 @@ impl Managed for JsNumber {
 impl ValueInternal for JsNumber {
     fn name() -> String { "number".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_number(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_number(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -444,20 +447,22 @@ unsafe impl This for JsObject {
 impl ValueInternal for JsObject {
     fn name() -> String { "object".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_object(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_object(env.to_raw(), other.to_raw()) }
     }
 }
 
 impl Object for JsObject { }
 
 impl JsObject {
-    pub fn new<'a, C: Context<'a>>(_: &mut C) -> Handle<'a, JsObject> {
-        JsObject::new_internal()
+    pub fn new<'a, C: Context<'a>>(c: &mut C) -> Handle<'a, JsObject> {
+        JsObject::new_internal(c.env())
     }
 
-    pub(crate) fn new_internal<'a>() -> Handle<'a, JsObject> {
-        JsObject::build(|out| { unsafe { neon_runtime::object::new(out) } })
+    pub(crate) fn new_internal<'a>(env: Env) -> Handle<'a, JsObject> {
+        JsObject::build(|out| {
+            unsafe { neon_runtime::object::new(out, env.to_raw()) }
+        })
     }
 
     pub(crate) fn build<'a, F: FnOnce(&mut raw::Local)>(init: F) -> Handle<'a, JsObject> {
@@ -489,12 +494,12 @@ impl JsArray {
     }
 
     pub fn to_vec<'a, C: Context<'a>>(self, cx: &mut C) -> NeonResult<Vec<Handle<'a, JsValue>>> {
-        let mut result = Vec::with_capacity(self.len() as usize);
+        let mut result = Vec::with_capacity(self.len_inner(cx.env()) as usize);
         let mut i = 0;
         loop {
             // Since getting a property can trigger arbitrary code,
             // we have to re-check the length on every iteration.
-            if i >= self.len() {
+            if i >= self.len_inner(cx.env()) {
                 return Ok(result);
             }
             result.push(self.get(cx, i)?);
@@ -502,10 +507,20 @@ impl JsArray {
         }
     }
 
-    pub fn len(self) -> u32 {
+    fn len_inner(self, env: Env) -> u32 {
         unsafe {
-            neon_runtime::array::len(self.to_raw())
+            neon_runtime::array::len(env.to_raw(), self.to_raw())
         }
+    }
+
+    #[cfg(feature = "legacy-runtime")]
+    pub fn len(self) -> u32 {
+        self.len_inner(Env::current())
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    pub fn len<'a, C: Context<'a>>(self, cx: &mut C) -> u32 {
+        self.len_inner(cx.env())
     }
 }
 
@@ -520,8 +535,8 @@ impl Managed for JsArray {
 impl ValueInternal for JsArray {
     fn name() -> String { "Array".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_array(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_array(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -613,7 +628,7 @@ impl<T: Object> Managed for JsFunction<T> {
 impl<T: Object> ValueInternal for JsFunction<T> {
     fn name() -> String { "function".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_function(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_function(env.to_raw(), other.to_raw()) }
     }
 }
