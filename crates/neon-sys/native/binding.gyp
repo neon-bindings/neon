@@ -13,6 +13,15 @@
                         'LinkTimeCodeGeneration': 0
                     }
                 }
+            },
+            'Debug': {
+                'msvs_settings': {
+                    'VCCLCompilerTool': {
+                        'RuntimeLibrary': '0',
+                        'UndefinePreprocessorDefinitions': ['DEBUG', '_DEBUG'],
+                        'PreprocessorDefinitions': ['NDEBUG']
+                    },
+                }
             }
         }
     }]
