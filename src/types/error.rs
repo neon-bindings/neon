@@ -57,11 +57,11 @@ impl JsError {
         };
         build(|out| unsafe {
             #[cfg(feature = "napi-runtime")]
-            let mut local: raw::Local = std::mem::zeroed();
-            #[cfg(feature = "napi-runtime")]
-            neon_runtime::string::new(&mut local, cx.env().to_raw(), ptr, len);
-            #[cfg(feature = "napi-runtime")]
-            neon_runtime::error::new_error(out, cx.env().to_raw(), std::ptr::null_mut(), local);
+            {
+                let mut local: raw::Local = std::mem::zeroed();
+                neon_runtime::string::new(&mut local, cx.env().to_raw(), ptr, len);
+                neon_runtime::error::new_error(out, cx.env().to_raw(), std::ptr::null_mut(), local);
+            }
             #[cfg(feature = "legacy-runtime")]
             neon_runtime::error::new_error(out, msg.to_raw());
             true
@@ -84,16 +84,16 @@ impl JsError {
         };
         build(|out| unsafe {
             #[cfg(feature = "napi-runtime")]
-            let mut local: raw::Local = std::mem::zeroed();
-            #[cfg(feature = "napi-runtime")]
-            neon_runtime::string::new(&mut local, cx.env().to_raw(), ptr, len);
-            #[cfg(feature = "napi-runtime")]
-            neon_runtime::error::new_type_error(
-                out,
-                cx.env().to_raw(),
-                std::ptr::null_mut(),
-                local,
-            );
+            {
+                let mut local: raw::Local = std::mem::zeroed();
+                neon_runtime::string::new(&mut local, cx.env().to_raw(), ptr, len);
+                neon_runtime::error::new_type_error(
+                    out,
+                    cx.env().to_raw(),
+                    std::ptr::null_mut(),
+                    local,
+                );
+            }
             #[cfg(feature = "legacy-runtime")]
             neon_runtime::error::new_type_error(out, msg.to_raw());
             true
@@ -116,44 +116,23 @@ impl JsError {
         };
         build(|out| unsafe {
             #[cfg(feature = "napi-runtime")]
-            let mut local: raw::Local = std::mem::zeroed();
-            #[cfg(feature = "napi-runtime")]
-            neon_runtime::string::new(&mut local, cx.env().to_raw(), ptr, len);
-            #[cfg(feature = "napi-runtime")]
-            neon_runtime::error::new_range_error(
-                out,
-                cx.env().to_raw(),
-                std::ptr::null_mut(),
-                local,
-            );
+            {
+                let mut local: raw::Local = std::mem::zeroed();
+                neon_runtime::string::new(&mut local, cx.env().to_raw(), ptr, len);
+                neon_runtime::error::new_range_error(
+                    out,
+                    cx.env().to_raw(),
+                    std::ptr::null_mut(),
+                    local,
+                );
+            }
             #[cfg(feature = "legacy-runtime")]
             neon_runtime::error::new_range_error(out, msg.to_raw());
             true
         })
     }
 }
-#[cfg(feature = "legacy-runtime")]
-pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> NeonResult<T>>(f: F) -> NeonResult<T> {
-    match catch_unwind(|| f()) {
-        Ok(result) => result,
-        Err(panic) => {
-            let msg = if let Some(string) = panic.downcast_ref::<String>() {
-                format!("internal error in Neon module: {}", string)
-            } else if let Some(str) = panic.downcast_ref::<&str>() {
-                format!("internal error in Neon module: {}", str)
-            } else {
-                "internal error in Neon module".to_string()
-            };
-            let (data, len) = Utf8::from(&msg[..]).truncate().lower();
-            unsafe {
-                neon_runtime::error::throw_error_from_utf8(data, len);
-                Err(Throw)
-            }
-        }
-    }
-}
 
-#[cfg(feature = "napi-runtime")]
 pub(crate) fn convert_panics<
     'a,
     T,
@@ -163,6 +142,7 @@ pub(crate) fn convert_panics<
     cx: C,
     f: F,
 ) -> NeonResult<T> {
+    #[cfg(feature = "napi-runtime")]
     let env = cx.env().to_raw();
     match catch_unwind(move || f(cx)) {
         Ok(result) => result,
@@ -175,15 +155,26 @@ pub(crate) fn convert_panics<
                 "internal error in Neon module".to_string()
             };
             println!("{}", msg);
-            let (data, len) = Utf8::from(&msg[..]).truncate().lower();
-            unsafe {
-                let mut local: raw::Local = std::mem::zeroed();
-                let mut error: raw::Local = std::mem::zeroed();
-                neon_runtime::string::new(&mut local, env, data, len);
-                neon_runtime::error::new_error(&mut error, env, std::ptr::null_mut(), local);
-                neon_runtime::error::throw(env,error);
-            };
-            Err(Throw)
+            #[cfg(feature = "legacy-runtime")]
+            {
+                let (data, len) = Utf8::from(&msg[..]).truncate().lower();
+                unsafe {
+                    neon_runtime::error::throw_error_from_utf8(data, len);
+                    Err(Throw)
+                }
+            }
+            #[cfg(feature = "napi-runtime")]
+            {
+                let (data, len) = Utf8::from(&msg[..]).truncate().lower();
+                unsafe {
+                    let mut local: raw::Local = std::mem::zeroed();
+                    let mut error: raw::Local = std::mem::zeroed();
+                    neon_runtime::string::new(&mut local, env, data, len);
+                    neon_runtime::error::new_error(&mut error, env, std::ptr::null_mut(), local);
+                    neon_runtime::error::throw(env, error);
+                };
+                Err(Throw)
+            }
         }
     }
 }

@@ -1,13 +1,13 @@
-use std::mem;
-use std::os::raw::c_void;
+use super::Value;
+use context::{CallbackInfo, FunctionContext};
 use neon_runtime;
 use neon_runtime::raw;
-use context::{CallbackInfo, FunctionContext};
-use types::error::convert_panics;
-use types::{JsObject, Handle, Managed};
-use result::JsResult;
 use object::class::Callback;
-use super::Value;
+use result::JsResult;
+use std::mem;
+use std::os::raw::c_void;
+use types::error::convert_panics;
+use types::{Handle, JsObject, Managed};
 
 pub trait ValueInternal: Managed + 'static {
     fn name() -> String;
@@ -37,13 +37,8 @@ impl<T: Value> Callback<()> for FunctionCallback<T> {
                 let data = info.data();
                 let dynamic_callback: fn(FunctionContext) -> JsResult<T> =
                     mem::transmute(neon_runtime::fun::get_dynamic_callback(data.to_raw()));
-                #[cfg(feature = "napi-runtime")]
-                let result=convert_panics(cx,|cx| { dynamic_callback(cx) });
 
-                #[cfg(feature = "legacy-runtime")]
-                let result=convert_panics(|| { dynamic_callback(cx) });
-
-                if let Ok(value) =  result{
+                if let Ok(value) = convert_panics(cx, |cx| dynamic_callback(cx)) {
                     info.set_return(value);
                 }
             })
