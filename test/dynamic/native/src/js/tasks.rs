@@ -7,7 +7,7 @@ impl Task for SuccessTask {
     type Error = String;
     type JsEvent = JsNumber;
 
-    fn perform(&self) -> Result<Self::Output, Self::Error> {
+    fn perform(&mut self) -> Result<Self::Output, Self::Error> {
         Ok(17)
     }
 
@@ -29,7 +29,7 @@ impl Task for FailureTask {
     type Error = String;
     type JsEvent = JsNumber;
 
-    fn perform(&self) -> Result<Self::Output, Self::Error> {
+    fn perform(&mut self) -> Result<Self::Output, Self::Error> {
         Err(format!("I am a failing task"))
     }
 
