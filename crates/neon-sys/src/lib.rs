@@ -84,7 +84,7 @@ pub struct InheritedHandleScope;
 extern "C" {
 
     pub fn Neon_Array_New(out: &mut Local, isolate: Isolate, length: u32);
-    pub fn Neon_Array_Length(array: Local) -> u32;
+    pub fn Neon_Array_Length(isolate: Isolate, array: Local) -> u32;
 
     pub fn Neon_ArrayBuffer_New(out: &mut Local, isolate: Isolate, size: u32) -> bool;
     pub fn Neon_ArrayBuffer_Data<'a, 'b>(base_out: &'a mut *mut c_void, obj: Local) -> usize;
@@ -123,7 +123,7 @@ extern "C" {
     pub fn Neon_Class_GetInstanceInternals(obj: Local) -> *mut c_void;
 
     pub fn Neon_Convert_ToObject(out: &mut Local, value: &Local) -> bool;
-    pub fn Neon_Convert_ToString(out: &mut Local, value: Local) -> bool;
+    pub fn Neon_Convert_ToString(out: &mut Local, isolate: Isolate, value: Local) -> bool;
 
     pub fn Neon_Error_Throw(val: Local);
     pub fn Neon_Error_NewError(out: &mut Local, msg: Local);
@@ -143,8 +143,8 @@ extern "C" {
     pub fn Neon_Module_ExecCallback(callback: CCallback, exports: Local, vm: *mut c_void);
     pub fn Neon_Module_GetVersion() -> i32;
 
-    pub fn Neon_Object_New(out: &mut Local);
-    pub fn Neon_Object_GetOwnPropertyNames(out: &mut Local, object: Local) -> bool;
+    pub fn Neon_Object_New(out: &mut Local, isolate: Isolate);
+    pub fn Neon_Object_GetOwnPropertyNames(out: &mut Local, isolate: Isolate, object: Local) -> bool;
     pub fn Neon_Object_GetIsolate(obj: Local) -> Isolate;
     pub fn Neon_Object_Get_Index(out: &mut Local, object: Local, index: u32) -> bool;
     pub fn Neon_Object_Set_Index(out: &mut bool, object: Local, index: u32, val: Local) -> bool;
@@ -181,17 +181,17 @@ extern "C" {
     pub fn Neon_String_Utf8Length(str: Local) -> isize;
     pub fn Neon_String_Data(out: *mut u8, len: isize, str: Local) -> isize;
 
-    pub fn Neon_Tag_IsUndefined(val: Local) -> bool;
-    pub fn Neon_Tag_IsNull(val: Local) -> bool;
-    pub fn Neon_Tag_IsNumber(val: Local) -> bool;
-    pub fn Neon_Tag_IsBoolean(val: Local) -> bool;
-    pub fn Neon_Tag_IsString(val: Local) -> bool;
-    pub fn Neon_Tag_IsObject(val: Local) -> bool;
-    pub fn Neon_Tag_IsArray(val: Local) -> bool;
-    pub fn Neon_Tag_IsFunction(val: Local) -> bool;
-    pub fn Neon_Tag_IsError(val: Local) -> bool;
-    pub fn Neon_Tag_IsBuffer(obj: Local) -> bool;
-    pub fn Neon_Tag_IsArrayBuffer(obj: Local) -> bool;
+    pub fn Neon_Tag_IsUndefined(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsNull(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsNumber(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsBoolean(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsString(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsObject(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsArray(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsFunction(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsError(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsBuffer(isolate: Isolate, obj: Local) -> bool;
+    pub fn Neon_Tag_IsArrayBuffer(isolate: Isolate, obj: Local) -> bool;
 
     pub fn Neon_Task_Schedule(task: *mut c_void,
                               perform: unsafe extern fn(*mut c_void) -> *mut c_void,

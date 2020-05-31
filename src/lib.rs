@@ -352,9 +352,6 @@ macro_rules! neon_stringify {
     }
 }
 
-#[cfg(all(windows, not(neon_profile = "release")))]
-compile_error!("Neon only builds with --release. For tests, try `cargo test --release`.");
-
 #[cfg(test)]
 mod tests {
     extern crate rustversion;

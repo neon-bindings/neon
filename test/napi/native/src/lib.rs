@@ -29,5 +29,44 @@ register_module!(|mut cx| {
     cx.export_value("one", one)?;
     cx.export_value("two", two)?;
 
+    // Plain objects.
+    let rust_created = cx.empty_object();
+    {
+        let a = cx.number(1);
+        // set at name
+        rust_created.set(&mut cx, "a", a)?;
+        // set at index
+        rust_created.set(&mut cx, 0, a)?;
+    }
+    {
+        let whatever = cx.boolean(true);
+        rust_created.set(&mut cx, "whatever", whatever)?;
+    }
+
+    assert_eq!({
+        let v: Handle<JsNumber> = rust_created.get(&mut cx, "a")?.downcast_or_throw(&mut cx)?;
+        v.value(&mut cx)
+    }, 1.0f64);
+    assert_eq!({
+        let v: Handle<JsNumber> = rust_created.get(&mut cx, 0)?.downcast_or_throw(&mut cx)?;
+        v.value(&mut cx)
+    }, 1.0f64);
+    assert_eq!({
+        let v: Handle<JsBoolean> = rust_created.get(&mut cx, "whatever")?.downcast_or_throw(&mut cx)?;
+        v.value(&mut cx)
+    }, true);
+
+    let property_names = rust_created.get_own_property_names(&mut cx)?
+        .to_vec(&mut cx)?
+        .into_iter()
+        .map(|value| {
+            let string: Handle<JsString> = value.downcast_or_throw(&mut cx)?;
+            Ok(string.value(&mut cx))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    assert_eq!(property_names, &["0", "a", "whatever"]);
+
+    cx.export_value("rustCreated", rust_created)?;
+
     Ok(())
 });

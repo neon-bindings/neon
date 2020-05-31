@@ -1,6 +1,6 @@
 import tmp = require('tmp');
 import * as path from 'path';
-import { spawn, SpawnChain } from 'node-suspect';
+import { spawn, SpawnChain } from 'suspicion';
 
 const NODE = process.execPath;
 const NEON = path.join(__dirname, '..', '..', '..', '..', 'cli', 'bin', 'cli.js');

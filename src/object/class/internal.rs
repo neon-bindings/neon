@@ -19,9 +19,14 @@ impl<T: Class> Callback<()> for MethodCallback<T> {
         unsafe {
             info.with_cx::<T, _, _>(|mut cx| {
                 let data = info.data();
-                let this: Handle<JsValue> =
-                    Handle::new_internal(JsValue::from_raw(info.this(&mut cx)));
-                if !this.is_a::<T>() {
+                let this: Handle<JsValue> = Handle::new_internal(JsValue::from_raw(info.this(&mut cx)));
+
+                #[cfg(feature = "legacy-runtime")]
+                let is_a_t = this.is_a::<T>();
+                #[cfg(feature = "napi-runtime")]
+                let is_a_t = this.is_a::<T, _>(&mut cx);
+
+                if !is_a_t {
                     if let Ok(metadata) = T::metadata(&mut cx) {
                         neon_runtime::class::throw_this_error(
                             mem::transmute(cx.env()),

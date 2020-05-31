@@ -5,6 +5,7 @@ use std::mem::{self, MaybeUninit};
 use std::os::raw::c_void;
 use std::slice;
 use context::{Context, Lock};
+use context::internal::Env;
 use borrow::{Borrow, BorrowMut, Ref, RefMut, LoanError};
 use borrow::internal::Pointer;
 use handle::Managed;
@@ -42,8 +43,8 @@ impl Managed for JsBuffer {
 impl ValueInternal for JsBuffer {
     fn name() -> String { "Buffer".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_buffer(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_buffer(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -74,8 +75,8 @@ impl Managed for JsArrayBuffer {
 impl ValueInternal for JsArrayBuffer {
     fn name() -> String { "ArrayBuffer".to_string() }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_arraybuffer(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_arraybuffer(env.to_raw(), other.to_raw()) }
     }
 }
 

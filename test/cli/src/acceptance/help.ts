@@ -1,5 +1,5 @@
 import { setup, spawnable } from '../support/acceptance';
-import { SpawnChain } from 'node-suspect';
+import { SpawnChain } from 'suspicion';
 
 function describeHelp(cmd: string,
                       should: string,

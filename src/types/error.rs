@@ -6,6 +6,7 @@ use neon_runtime;
 use neon_runtime::raw;
 
 use context::Context;
+use context::internal::Env;
 use result::{NeonResult, Throw};
 use types::internal::ValueInternal;
 use types::utf8::Utf8;
@@ -31,8 +32,8 @@ impl ValueInternal for JsError {
         "Error".to_string()
     }
 
-    fn is_typeof<Other: Value>(other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_error(other.to_raw()) }
+    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+        unsafe { neon_runtime::tag::is_error(env.to_raw(), other.to_raw()) }
     }
 }
 
