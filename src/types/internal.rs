@@ -2,16 +2,12 @@ use super::Value;
 use context::{CallbackInfo, FunctionContext};
 use neon_runtime;
 use neon_runtime::raw;
-use context::{CallbackInfo, FunctionContext};
 use context::internal::Env;
 use types::error::convert_panics;
-use types::{JsObject, Handle, Managed};
-use result::JsResult;
 use object::class::Callback;
 use result::JsResult;
 use std::mem;
 use std::os::raw::c_void;
-use types::error::convert_panics;
 use types::{Handle, JsObject, Managed};
 
 pub trait ValueInternal: Managed + 'static {
