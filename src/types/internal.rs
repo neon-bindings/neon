@@ -44,7 +44,6 @@ impl<T: Value> Callback<()> for FunctionCallback<T> {
             })
         }
     }
-
     fn as_ptr(self) -> *mut c_void {
         unsafe { mem::transmute(self.0) }
     }
