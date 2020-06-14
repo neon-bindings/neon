@@ -1,13 +1,12 @@
 //! Asynchronous background _tasks_ that run in the Node thread pool.
 
 use std::marker::{Send, Sized};
-use std::mem;
 use std::os::raw::c_void;
 
-use types::{Value, JsFunction};
+use types::{Value, JsFunction, JsValue};
 use result::JsResult;
 use handle::{Handle, Managed};
-use context::TaskContext;
+use context::{Context, TaskContext};
 use neon_runtime;
 use neon_runtime::raw;
 
@@ -36,30 +35,86 @@ pub trait Task: Send + Sized + 'static {
     /// function callback(err, value) {}
     /// ```
     fn schedule(self, callback: Handle<JsFunction>) {
-        let boxed_self = Box::new(self);
-        let self_raw = Box::into_raw(boxed_self);
-        let callback_raw = callback.to_raw();
-        unsafe {
-            neon_runtime::task::schedule(mem::transmute(self_raw),
-                                         perform_task::<Self>,
-                                         complete_task::<Self>,
-                                         callback_raw);
-        }
+        schedule(move || {
+            let result = self.perform();
+
+            move |cx| self.complete(cx, result)
+        }, callback);
     }
 }
 
-unsafe extern "C" fn perform_task<T: Task>(task: *mut c_void) -> *mut c_void {
-    let task: Box<T> = Box::from_raw(mem::transmute(task));
-    let result = task.perform();
-    Box::into_raw(task);
-    mem::transmute(Box::into_raw(Box::new(result)))
+pub struct TaskBuilder<'c, C, Perform> {
+    context: &'c mut C,
+    perform: Perform,
 }
 
-unsafe extern "C" fn complete_task<T: Task>(task: *mut c_void, result: *mut c_void, out: &mut raw::Local) {
-    let result: Result<T::Output, T::Error> = *Box::from_raw(mem::transmute(result));
-    let task: Box<T> = Box::from_raw(mem::transmute(task));
+impl<'c, C, Perform> TaskBuilder<'c, C, Perform> {
+    pub(crate) fn new(context: &'c mut C, perform: Perform) -> Self {
+        TaskBuilder { context, perform }
+    }
+}
+
+impl<'a, 'c, C, Perform, Complete, Output> TaskBuilder<'c, C, Perform>
+where
+    C: Context<'a>,
+    Perform: FnOnce() -> Complete + Send + 'static,
+    Complete: FnOnce(TaskContext) -> JsResult<Output> + Send + 'static,
+    Output: Value,
+{
+    pub fn schedule(self, callback: Handle<JsFunction>) -> JsResult<'a, JsValue> {
+        let Self { perform, context } = self;
+
+        schedule(perform, callback);
+
+        Ok(context.undefined().upcast())
+    }
+}
+
+fn schedule<Perform, Complete, Output>(
+    perform: Perform,
+    callback: Handle<JsFunction>,
+)
+where
+    Perform: FnOnce() -> Complete + Send + 'static,
+    Complete: FnOnce(TaskContext) -> JsResult<Output> + Send + 'static,
+    Output: Value,
+{
+    let data = Box::into_raw(Box::new(perform));
+
+    unsafe {
+        neon_runtime::task::schedule(
+            data as *mut _,
+            perform_task::<Perform, Complete>,
+            complete_task::<Complete, Output>,
+            callback.to_raw(),
+        );
+    }
+}
+
+unsafe extern "C" fn perform_task<Perform, Output>(
+    perform: *mut c_void,
+) -> *mut c_void
+where
+    Perform: FnOnce() -> Output,
+{
+    let perform = Box::from_raw(perform as *mut Perform);
+    let result = perform();
+
+    Box::into_raw(Box::new(result)) as *mut _
+}
+
+unsafe extern "C" fn complete_task<Complete, Output>(
+    complete: *mut c_void,
+    out: &mut raw::Local,
+)
+where
+    Complete: FnOnce(TaskContext) -> JsResult<Output>,
+    Output: Value,
+{
+    let complete = *Box::from_raw(complete as *mut Complete);
+
     TaskContext::with(|cx| {
-        if let Ok(result) = task.complete(cx, result) {
+        if let Ok(result) = complete(cx) {
             *out = result.to_raw();
         }
     })

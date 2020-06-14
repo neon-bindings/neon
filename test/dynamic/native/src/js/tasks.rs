@@ -22,6 +22,18 @@ pub fn perform_async_task(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     Ok(cx.undefined())
 }
 
+pub fn perform_closure_task(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let n = cx.argument::<JsNumber>(0)?.value();
+    let cb = cx.argument::<JsFunction>(1)?;
+
+    cx.task(move || {
+            let result = n + 1.0;
+
+            move |mut cx| Ok(cx.number(result))
+        })
+        .schedule(cb)
+}
+
 struct FailureTask;
 
 impl Task for FailureTask {

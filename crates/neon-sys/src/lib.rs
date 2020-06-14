@@ -195,7 +195,7 @@ extern "C" {
 
     pub fn Neon_Task_Schedule(task: *mut c_void,
                               perform: unsafe extern fn(*mut c_void) -> *mut c_void,
-                              complete: unsafe extern fn(*mut c_void, *mut c_void, &mut Local),
+                              complete: unsafe extern fn(*mut c_void, &mut Local),
                               callback: Local);
 
     pub fn Neon_EventHandler_New(isolate: Isolate, this: Local, callback: Local) -> *mut c_void;

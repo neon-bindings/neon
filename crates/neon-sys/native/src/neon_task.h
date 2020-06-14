@@ -62,7 +62,7 @@ public:
 
       v8::Local<v8::Value> completion;
 
-      complete_(rust_task_, result_, &completion);
+      complete_(result_, &completion);
 
       if (trycatch.HasCaught()) {
         argv[0] = trycatch.Exception();

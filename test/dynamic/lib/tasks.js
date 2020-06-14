@@ -14,6 +14,18 @@ describe('Task', function() {
     });
   });
 
+  it('completes a successful closure task', function (done) {
+    addon.perform_closure_task(41, (err, n) => {
+      if (err) {
+        done(err);
+      } else if (n === 42) {
+        done();
+      } else {
+        done(new Error("not 42 but: " + n));
+      }
+    });
+  });
+
   it('completes a failing task', function (done) {
     addon.perform_failing_task((err, n) => {
       if (err) {

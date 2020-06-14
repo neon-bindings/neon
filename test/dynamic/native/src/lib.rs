@@ -66,6 +66,7 @@ register_module!(mut cx, {
     cx.export_function("check_string_and_number", check_string_and_number)?;
 
     cx.export_function("perform_async_task", perform_async_task)?;
+    cx.export_function("perform_closure_task", perform_closure_task)?;
     cx.export_function("perform_failing_task", perform_failing_task)?;
 
     cx.export_function("panic", panic)?;
