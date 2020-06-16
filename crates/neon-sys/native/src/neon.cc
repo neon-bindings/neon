@@ -37,6 +37,8 @@ extern "C" void Neon_Call_Data(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8
   printf("Call_Data: v8 info implicit:\n");
   dump_implicit((void *)info);
   */
+
+  // Call data is stored wrapped in a v8::External by Neon_Fun_New et al, so we need to unwrap it before handing it back to Rust.
   v8::Local<v8::Value> external = info->Data();
   if (external->IsExternal()) {
     *out = external.As<v8::External>()->Value();
