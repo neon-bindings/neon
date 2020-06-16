@@ -22,7 +22,7 @@ describe('JsObject', function() {
     assert.deepEqual({number: 9000, string: 'hello node'}, addon.return_js_object_with_mixed_content());
   });
 
-  // ArrayBuffers are not yet implemented in the n-api runtime.
+  // ArrayBuffers are not yet implemented in the N-API runtime.
   it.skip('gets a 16-byte, zeroed ArrayBuffer', function() {
     var b = addon.return_array_buffer();
     assert.equal(b.byteLength, 16);
@@ -32,7 +32,7 @@ describe('JsObject', function() {
     assert.equal((new Uint32Array(b))[3], 0);
   });
 
-  // ArrayBuffers are not yet implemented in the n-api runtime.
+  // ArrayBuffers are not yet implemented in the N-API runtime.
   it.skip('correctly reads an ArrayBuffer using the lock API', function() {
     var b = new ArrayBuffer(16);
     var a = new Uint32Array(b);
@@ -46,7 +46,7 @@ describe('JsObject', function() {
     assert.equal(addon.read_array_buffer_with_lock(b, 3), 88888888);
   });
 
-  // ArrayBuffers are not yet implemented in the n-api runtime.
+  // ArrayBuffers are not yet implemented in the N-API runtime.
   it.skip('correctly reads an ArrayBuffer using the borrow API', function() {
     var b = new ArrayBuffer(16);
     var a = new Uint32Array(b);
@@ -60,7 +60,7 @@ describe('JsObject', function() {
     assert.equal(addon.read_array_buffer_with_borrow(b, 3), 89898989);
   });
 
-  // ArrayBuffers are not yet implemented in the n-api runtime.
+  // ArrayBuffers are not yet implemented in the N-API runtime.
   it.skip('correctly writes to an ArrayBuffer using the lock API', function() {
     var b = new ArrayBuffer(16);
     addon.write_array_buffer_with_lock(b, 0, 999);
@@ -73,7 +73,7 @@ describe('JsObject', function() {
     assert.equal((new Uint32Array(b))[3], 99991111);
   });
 
-  // ArrayBuffers are not yet implemented in the n-api runtime.
+  // ArrayBuffers are not yet implemented in the N-API runtime.
   it.skip('correctly writes to an ArrayBuffer using the borrow_mut API', function() {
     var b = new ArrayBuffer(16);
     addon.write_array_buffer_with_borrow_mut(b, 0, 434);
@@ -86,7 +86,7 @@ describe('JsObject', function() {
     assert.equal((new Uint32Array(b))[3], 400100);
   });
 
-  // ArrayBuffers are not yet implemented in the n-api runtime.
+  // ArrayBuffers are not yet implemented in the N-API runtime.
   it.skip('correctly reads a Buffer using the lock API', function() {
     var b = Buffer.allocUnsafe(16);
     b.writeUInt32LE(147,    0);
@@ -99,7 +99,7 @@ describe('JsObject', function() {
     assert.equal(addon.read_buffer_with_lock(b, 3), 189189);
   });
 
-  // ArrayBuffers are not yet implemented in the n-api runtime.
+  // ArrayBuffers are not yet implemented in the N-API runtime.
   it.skip('correctly reads a Buffer using the borrow API', function() {
     var b = Buffer.allocUnsafe(16);
     b.writeUInt32LE(149,      0);
@@ -112,7 +112,7 @@ describe('JsObject', function() {
     assert.equal(addon.read_buffer_with_borrow(b, 3), 22914478);
   });
 
-  // ArrayBuffers are not yet implemented in the n-api runtime.
+  // ArrayBuffers are not yet implemented in the N-API runtime.
   it.skip('correctly writes to a Buffer using the lock API', function() {
     var b = Buffer.allocUnsafe(16);
     b.fill(0);
@@ -126,7 +126,7 @@ describe('JsObject', function() {
     assert.equal(b.readUInt32LE(12), 421600);
   });
 
-  // ArrayBuffers are not yet implemented in the n-api runtime.
+  // ArrayBuffers are not yet implemented in the N-API runtime.
   it.skip('correctly writes to a Buffer using the borrow_mut API', function() {
     var b = Buffer.allocUnsafe(16);
     b.fill(0);

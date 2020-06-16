@@ -22,12 +22,12 @@ describe('JsFunction', function() {
     addon.check_string_and_number("string", 42);
   });
 
-  // The n-api runtime doesn't yet handle panics.
+  // The N-API runtime doesn't yet handle panics.
   it.skip('converts a Rust panic to a throw in a function', function() {
     assert.throws(function() { addon.panic() }, Error, /^internal error in Neon module: zomg$/);
   });
 
-  // The n-api runtime doesn't yet handle panics.
+  // The N-API runtime doesn't yet handle panics.
   it.skip('lets panic override a throw', function() {
     assert.throws(function() { addon.panic_after_throw() }, Error, /^internal error in Neon module: this should override the RangeError$/);
   });
@@ -73,19 +73,19 @@ describe('JsFunction', function() {
     assert.equal(addon.is_argument_zero_some.call(null, ['a', 'b']), true);
   });
 
-  // The n-api runtime cannot yet throw errors.
+  // The N-API runtime cannot yet throw errors.
   it.skip('correctly casts an argument via cx.arguments', function() {
     assert.equal(addon.require_argument_zero_string('foobar'), 'foobar');
     assert.throws(function() { addon.require_argument_zero_string(new Date()) }, TypeError);
     assert.throws(function() { addon.require_argument_zero_string(17) }, TypeError);
   });
 
-  // The n-api runtime does not support scoped computation yet.
+  // The N-API runtime does not support scoped computation yet.
   it.skip('executes a scoped computation', function() {
     assert.equal(addon.execute_scoped(), 99);
   });
 
-  // The n-api runtime does not support scoped computation yet.
+  // The N-API runtime does not support scoped computation yet.
   it.skip('computes a value in a scoped computation', function() {
     assert.equal(addon.compute_scoped(), 99);
   });
