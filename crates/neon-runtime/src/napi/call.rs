@@ -46,11 +46,10 @@ pub unsafe extern "C" fn this(env: Env, info: FunctionCallbackInfo, out: &mut Lo
 /// `napi_callback_info`.
 pub unsafe extern "C" fn data(env: Env, info: FunctionCallbackInfo, out: &mut *mut c_void) {
     let mut data = null_mut();
-    let mut argc = 0usize;
     let status = napi::napi_get_cb_info(
         env,
         info,
-        &mut argc as *mut _,
+        null_mut(),
         null_mut(),
         null_mut(),
         &mut data as *mut _,
