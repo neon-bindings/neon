@@ -1,6 +1,7 @@
 {
   "main": "index.js",
   "scripts": {
+    "node": "node",
     "preinstall": "echo 'Skipping node-gyp installation as part of npm install.'",
     "configure-release": "node-gyp configure --verbose",
     "configure-debug": "node-gyp configure --verbose --debug",

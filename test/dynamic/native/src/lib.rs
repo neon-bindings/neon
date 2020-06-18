@@ -20,6 +20,14 @@ use js::classes::*;
 use js::tasks::*;
 use js::eventhandler::*;
 
+pub fn catch_exception(mut cx: FunctionContext) -> JsResult<JsValue> {
+    Ok(cx.try_catch(|cx| {
+        let _ = cx.throw_error("Something bad happened")?;
+
+        Ok(cx.string("Unreachable").upcast())
+    }).unwrap_or_else(|err| err))
+}
+
 register_module!(mut cx, {
     cx.export_function("return_js_string", return_js_string)?;
 
@@ -70,6 +78,7 @@ register_module!(mut cx, {
 
     cx.export_function("panic", panic)?;
     cx.export_function("panic_after_throw", panic_after_throw)?;
+    cx.export_function("catch_exception", catch_exception)?;
 
     cx.export_class::<JsEmitter>("Emitter")?;
     cx.export_class::<JsTestEmitter>("TestEmitter")?;

@@ -139,6 +139,11 @@ extern "C" {
   void* Neon_EventHandler_New(v8::Isolate *isolate, v8::Local<v8::Value> self, v8::Local<v8::Function> callback);
   void Neon_EventHandler_Schedule(void* thread_safe_cb, void* rust_callback, Neon_EventHandler handler);
   void Neon_EventHandler_Delete(void* thread_safe_cb);
+
+  void* Neon_TryCatch_New();
+  bool Neon_TryCatch_HasCaught(Nan::TryCatch *try_catch);
+  void* Neon_TryCatch_Exception(Nan::TryCatch *try_catch);
+  void Neon_TryCatch_Delete(Nan::TryCatch *try_catch);
 }
 
 #endif

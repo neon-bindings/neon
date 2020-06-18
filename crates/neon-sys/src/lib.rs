@@ -202,4 +202,9 @@ extern "C" {
     pub fn Neon_EventHandler_Schedule(thread_safe_cb: *mut c_void, rust_callback: *mut c_void,
                                         complete: unsafe extern fn(Local, Local, *mut c_void));
     pub fn Neon_EventHandler_Delete(thread_safe_cb: *mut c_void);
+
+    pub fn Neon_TryCatch_New() -> *mut c_void;
+    pub fn Neon_TryCatch_HasCaught(try_catch: *mut c_void) -> bool;
+    pub fn Neon_TryCatch_Exception(try_catch: *mut c_void) -> Local;
+    pub fn Neon_TryCatch_Delete(try_catch: *mut c_void);
 }

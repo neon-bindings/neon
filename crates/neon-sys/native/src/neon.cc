@@ -541,3 +541,19 @@ extern "C" void Neon_EventHandler_Delete(void * thread_safe_cb) {
     neon::EventHandler *cb = static_cast<neon::EventHandler*>(thread_safe_cb);
     cb->close();
 }
+
+extern "C" void* Neon_TryCatch_New() {
+  return new Nan::TryCatch();
+}
+
+extern "C" bool Neon_TryCatch_HasCaught(Nan::TryCatch *try_catch) {
+  return try_catch->HasCaught();
+}
+
+extern "C" void* Neon_TryCatch_Exception(Nan::TryCatch *try_catch) {
+  return *try_catch->Exception();
+}
+
+extern "C" void Neon_TryCatch_Delete(Nan::TryCatch *try_catch) {
+  try_catch->~TryCatch();
+}

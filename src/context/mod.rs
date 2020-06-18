@@ -338,6 +338,31 @@ pub trait Context<'a>: ContextInternal<'a> {
         let err = JsError::range_error(self, msg)?;
         self.throw(err)
     }
+
+    fn try_catch<T, F>(&mut self, f: F) -> Result<Handle<'a, T>, Handle<'a, JsValue>>
+    where
+        T: Value,
+        F: FnOnce(&mut Self) -> JsResult<'a, T>
+    {
+        let try_catch = unsafe { neon_runtime::try_catch::new() };
+        let result = match f(self) {
+            Ok(v) => Ok(v),
+            Err(Throw) => {
+                assert!(
+                    unsafe { neon_runtime::try_catch::has_caught(try_catch) },
+                    "Expected VM to be in a throwing state",
+                );
+
+                let err = unsafe { neon_runtime::try_catch::exception(try_catch) };
+
+                Err(Handle::new_internal(JsValue::from_raw(err)))
+            },
+        };
+
+        unsafe { neon_runtime::try_catch::delete(try_catch) };
+
+        result
+    }
 }
 
 /// A view of the JS engine in the context of top-level initialization of a Neon module.
