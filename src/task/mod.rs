@@ -3,7 +3,7 @@
 use std::marker::{Send, Sized};
 use std::os::raw::c_void;
 
-use types::{Value, JsFunction, JsValue};
+use types::{Value, JsFunction};
 use result::JsResult;
 use handle::{Handle, Managed};
 use context::{Context, TaskContext};
@@ -44,13 +44,17 @@ pub trait Task: Send + Sized + 'static {
 }
 
 pub struct TaskBuilder<'c, C, Perform> {
-    context: &'c mut C,
+    // Placeholder for future methods and N-API implementation
+    _context: &'c mut C,
     perform: Perform,
 }
 
 impl<'c, C, Perform> TaskBuilder<'c, C, Perform> {
     pub(crate) fn new(context: &'c mut C, perform: Perform) -> Self {
-        TaskBuilder { context, perform }
+        TaskBuilder {
+            _context: context,
+            perform,
+        }
     }
 }
 
@@ -61,12 +65,10 @@ where
     Complete: FnOnce(TaskContext) -> JsResult<Output> + Send + 'static,
     Output: Value,
 {
-    pub fn schedule(self, callback: Handle<JsFunction>) -> JsResult<'a, JsValue> {
-        let Self { perform, context } = self;
+    pub fn schedule(self, callback: Handle<JsFunction>) {
+        let Self { perform, .. } = self;
 
         schedule(perform, callback);
-
-        Ok(context.undefined().upcast())
     }
 }
 
