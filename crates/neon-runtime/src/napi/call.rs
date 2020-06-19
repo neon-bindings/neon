@@ -77,7 +77,7 @@ pub unsafe extern "C" fn len(env: Env, info: FunctionCallbackInfo) -> i32 {
 /// Mutates the `out` argument provided to refer to the `napi_value` of the `i`th argument
 /// passed to the function.
 pub unsafe extern "C" fn get(env: Env, info: FunctionCallbackInfo, i: i32, out: &mut Local) {
-    // TODO make this not allocate
+    // TODO make this not allocate: https://github.com/neon-bindings/neon/issues/530
     // Instead, we can probably get all the arguments at once in `neon` itself?
     let mut args = vec![null_mut(); (i + 1) as usize];
     let mut num_args = args.len();
