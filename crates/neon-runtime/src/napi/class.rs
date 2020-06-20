@@ -26,11 +26,11 @@ pub unsafe extern "C" fn metadata_to_constructor(_out: &mut Local, _isolate: Env
 
 // FIXME: get rid of all the "kernel" nomenclature
 
-pub unsafe extern "C" fn get_allocate_kernel(_obj: Local) -> *mut c_void { unimplemented!() }
+pub unsafe extern "C" fn get_allocate_kernel(_data: *mut c_void) -> *mut c_void { unimplemented!() }
 
-pub unsafe extern "C" fn get_construct_kernel(_obj: Local) -> *mut c_void { unimplemented!() }
+pub unsafe extern "C" fn get_construct_kernel(_data: *mut c_void) -> *mut c_void { unimplemented!() }
 
-pub unsafe extern "C" fn get_call_kernel(_obj: Local) -> *mut c_void { unimplemented!() }
+pub unsafe extern "C" fn get_call_kernel(_data: *mut c_void) -> *mut c_void { unimplemented!() }
 
 pub unsafe extern "C" fn constructor(_out: &mut Local, _ft: Local) -> bool { unimplemented!() }
 

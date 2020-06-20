@@ -31,15 +31,44 @@ pub trait ValueInternal: Managed + 'static {
 #[repr(C)]
 pub struct FunctionCallback<T: Value>(pub fn(FunctionContext) -> JsResult<T>);
 
+#[cfg(feature = "legacy-runtime")]
 impl<T: Value> Callback<()> for FunctionCallback<T> {
-    extern "C" fn invoke(info: &CallbackInfo) {
+    extern "C" fn invoke(env: Env, info: CallbackInfo<'_>) {
         unsafe {
-            info.with_cx::<JsObject, _, _>(|cx| {
-                let data = info.data();
+            info.with_cx::<JsObject, _, _>(env, |cx| {
+                let data = info.data(env);
                 let dynamic_callback: fn(FunctionContext) -> JsResult<T> =
-                    mem::transmute(neon_runtime::fun::get_dynamic_callback(data.to_raw()));
+                    mem::transmute(neon_runtime::fun::get_dynamic_callback(env.to_raw(), data));
                 if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
                     info.set_return(value);
+                }
+            })
+        }
+    }
+
+    fn as_ptr(self) -> *mut c_void {
+        unsafe { mem::transmute(self.0) }
+    }
+}
+
+#[cfg(feature = "napi-runtime")]
+impl<T: Value> Callback<raw::Local> for FunctionCallback<T> {
+    extern "C" fn invoke(env: Env, info: CallbackInfo<'_>) -> raw::Local {
+        unsafe {
+            info.with_cx::<JsObject, _, _>(env, |cx| {
+                let data = info.data(env);
+                let dynamic_callback: fn(FunctionContext) -> JsResult<T> =
+                    mem::transmute(neon_runtime::fun::get_dynamic_callback(env.to_raw(), data));
+                if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
+                    value.to_raw()
+                } else {
+                    // What should we return if the function panicked?
+                    //
+                    // `ptr::null_mut()` may work, but we should have a test to verify that, which
+                    // can be created after [#505][0]. For now, let's not guess!
+                    //
+                    // [0]: https://github.com/neon-bindings/neon/pull/505.
+                    unimplemented!("cannot return from function after a panic")
                 }
             })
         }

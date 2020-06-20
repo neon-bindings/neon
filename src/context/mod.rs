@@ -6,6 +6,7 @@ use std;
 use std::cell::RefCell;
 use std::convert::Into;
 use std::marker::PhantomData;
+use std::os::raw::c_void;
 use std::panic::UnwindSafe;
 use neon_runtime;
 use neon_runtime::raw;
@@ -22,26 +23,27 @@ use result::{NeonResult, JsResult, Throw};
 use self::internal::{ContextInternal, Scope, ScopeMetadata};
 
 #[repr(C)]
-pub(crate) struct CallbackInfo {
-    info: raw::FunctionCallbackInfo
+pub(crate) struct CallbackInfo<'a> {
+    info: raw::FunctionCallbackInfo,
+    _lifetime: PhantomData<&'a raw::FunctionCallbackInfo>,
 }
 
-impl CallbackInfo {
-    pub fn data<'a>(&self) -> Handle<'a, JsValue> {
+impl CallbackInfo<'_> {
+    pub fn data(&self, env: Env) -> *mut c_void {
         unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::data(&self.info, &mut local);
-            Handle::new_internal(JsValue::from_raw(local))
+            let mut raw_data: *mut c_void = std::mem::zeroed();
+            neon_runtime::call::data(env.to_raw(), self.info, &mut raw_data);
+            raw_data
         }
     }
 
-    pub unsafe fn with_cx<T: This, U, F: for<'a> FnOnce(CallContext<'a, T>) -> U>(&self, f: F) -> U {
-        CallContext::<T>::with(self, f)
+    pub unsafe fn with_cx<T: This, U, F: for<'a> FnOnce(CallContext<'a, T>) -> U>(&self, env: Env, f: F) -> U {
+        CallContext::<T>::with(env, self, f)
     }
 
     pub fn set_return<'a, 'b, T: Value>(&'a self, value: Handle<'b, T>) {
         unsafe {
-            neon_runtime::call::set_return(&self.info, value.to_raw())
+            neon_runtime::call::set_return(self.info, value.to_raw())
         }
     }
 
@@ -53,38 +55,39 @@ impl CallbackInfo {
         }
     }
 
-    pub fn len(&self) -> i32 {
+    pub fn len<'b, C: Context<'b>>(&self, cx: &C) -> i32 {
         unsafe {
-            neon_runtime::call::len(&self.info)
+            neon_runtime::call::len(cx.env().to_raw(), self.info)
         }
     }
 
-    pub fn get<'b, C: Context<'b>>(&self, _: &mut C, i: i32) -> Option<Handle<'b, JsValue>> {
-        if i < 0 || i >= self.len() {
+    pub fn get<'b, C: Context<'b>>(&self, cx: &mut C, i: i32) -> Option<Handle<'b, JsValue>> {
+        if i < 0 || i >= self.len(cx) {
             return None;
         }
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::get(&self.info, i, &mut local);
+            neon_runtime::call::get(cx.env().to_raw(), self.info, i, &mut local);
             Some(Handle::new_internal(JsValue::from_raw(local)))
         }
     }
 
     pub fn require<'b, C: Context<'b>>(&self, cx: &mut C, i: i32) -> JsResult<'b, JsValue> {
-        if i < 0 || i >= self.len() {
+        if i < 0 || i >= self.len(cx) {
             return cx.throw_type_error("not enough arguments");
         }
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::get(&self.info, i, &mut local);
+            neon_runtime::call::get(cx.env().to_raw(), self.info, i, &mut local);
             Ok(Handle::new_internal(JsValue::from_raw(local)))
         }
     }
 
-    pub fn this<'b, V: Context<'b>>(&self, _: &mut V) -> raw::Local {
+    pub fn this<'b, C: Context<'b>>(&self, cx: &mut C) -> raw::Local {
+        let env = cx.env();
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::this(std::mem::transmute(&self.info), &mut local);
+            neon_runtime::call::this(env.to_raw(), std::mem::transmute(self.info), &mut local);
             local
         }
     }
@@ -446,7 +449,7 @@ impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> { }
 /// The type parameter `T` is the type of the `this`-binding.
 pub struct CallContext<'a, T: This> {
     scope: Scope<'a, raw::HandleScope>,
-    info: &'a CallbackInfo,
+    info: &'a CallbackInfo<'a>,
     phantom_type: PhantomData<T>
 }
 
@@ -456,8 +459,7 @@ impl<'a, T: This> CallContext<'a, T> {
     /// Indicates whether the function was called via the JavaScript `[[Call]]` or `[[Construct]]` semantics.
     pub fn kind(&self) -> CallKind { self.info.kind() }
 
-    pub(crate) fn with<U, F: for<'b> FnOnce(CallContext<'b, T>) -> U>(info: &'a CallbackInfo, f: F) -> U {
-        let env = Env::current();
+    pub(crate) fn with<U, F: for<'b> FnOnce(CallContext<'b, T>) -> U>(env: Env, info: &'a CallbackInfo<'a>, f: F) -> U {
         Scope::with(env, |scope| {
             f(CallContext {
                 scope,
@@ -468,7 +470,7 @@ impl<'a, T: This> CallContext<'a, T> {
     }
 
     /// Indicates the number of arguments that were passed to the function.
-    pub fn len(&self) -> i32 { self.info.len() }
+    pub fn len(&self) -> i32 { self.info.len(self) }
 
     /// Produces the `i`th argument, or `None` if `i` is greater than or equal to `self.len()`.
     pub fn argument_opt(&mut self, i: i32) -> Option<Handle<'a, JsValue>> {

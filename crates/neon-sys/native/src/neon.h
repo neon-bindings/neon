@@ -17,10 +17,10 @@ extern "C" {
   void *Neon_Call_GetIsolate(v8::FunctionCallbackInfo<v8::Value> *info);
   void *Neon_Call_CurrentIsolate();
   bool Neon_Call_IsConstruct(v8::FunctionCallbackInfo<v8::Value> *info);
-  void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out);
-  void Neon_Call_Data(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> *out);
-  int32_t Neon_Call_Length(v8::FunctionCallbackInfo<v8::Value> *info);
-  void Neon_Call_Get(v8::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out);
+  void Neon_Call_This(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out);
+  void Neon_Call_Data(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info, void **out);
+  int32_t Neon_Call_Length(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info);
+  void Neon_Call_Get(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out);
 
   void Neon_Primitive_Number(v8::Local<v8::Number> *out, v8::Isolate *isolate, double value);
   void Neon_Primitive_Undefined(v8::Local<v8::Primitive> *out, v8::Isolate *isolate);
@@ -75,7 +75,7 @@ extern "C" {
 
   bool Neon_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate, callback_t callback);
   bool Neon_Fun_Template_New(v8::Local<v8::FunctionTemplate> *out, v8::Isolate *isolate, callback_t callback);
-  void *Neon_Fun_GetDynamicCallback(v8::Local<v8::External> obj);
+  void *Neon_Fun_GetDynamicCallback(v8::Isolate *isolate, void *obj);
   bool Neon_Fun_Call(v8::Local<v8::Value> *out, v8::Isolate *isolate, v8::Local<v8::Function> fun, v8::Local<v8::Value> self, int32_t argc, v8::Local<v8::Value> argv[]);
   bool Neon_Fun_Construct(v8::Local<v8::Object> *out, v8::Isolate *isolate, v8::Local<v8::Function> fun, int32_t argc, v8::Local<v8::Value> argv[]);
 
@@ -95,9 +95,9 @@ extern "C" {
                               callback_t call,
                               Neon_DropCallback drop);
   // FIXME: get rid of all the "kernel" nomenclature
-  void *Neon_Class_GetCallKernel(v8::Local<v8::External> wrapper);
-  void *Neon_Class_GetConstructKernel(v8::Local<v8::External> wrapper);
-  void *Neon_Class_GetAllocateKernel(v8::Local<v8::External> wrapper);
+  void *Neon_Class_GetCallKernel(void *wrapper);
+  void *Neon_Class_GetConstructKernel(void *wrapper);
+  void *Neon_Class_GetAllocateKernel(void *wrapper);
   bool Neon_Class_Constructor(v8::Local<v8::Function> *out, v8::Local<v8::FunctionTemplate> ft);
   bool Neon_Class_HasInstance(void *metadata, v8::Local<v8::Value> v);
   bool Neon_Class_SetName(v8::Isolate *isolate, void *metadata, const char *name, uint32_t byte_length);

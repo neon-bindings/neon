@@ -1,5 +1,13 @@
 use neon::prelude::*;
 
+mod js {
+    pub mod functions;
+    pub mod objects;
+}
+
+use js::functions::*;
+use js::objects::*;
+
 register_module!(|mut cx| {
     let greeting = cx.string("Hello, World!");
     let greeting_copy = greeting.value(&mut cx);
@@ -67,6 +75,41 @@ register_module!(|mut cx| {
     assert_eq!(property_names, &["0", "a", "whatever"]);
 
     cx.export_value("rustCreated", rust_created)?;
+
+    fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
+        let x = cx.argument::<JsNumber>(0)?.value(&mut cx);
+        Ok(cx.number(x + 1.0))
+    }
+
+    cx.export_function("add1", add1)?;
+
+    cx.export_function("return_js_function", return_js_function)?;
+    cx.export_function("call_js_function", call_js_function)?;
+    cx.export_function("construct_js_function", construct_js_function)?;
+    cx.export_function("num_arguments", num_arguments)?;
+    cx.export_function("return_this", return_this)?;
+    cx.export_function("require_object_this", require_object_this)?;
+    cx.export_function("is_argument_zero_some", is_argument_zero_some)?;
+    cx.export_function("require_argument_zero_string", require_argument_zero_string)?;
+    cx.export_function("check_string_and_number", check_string_and_number)?;
+    cx.export_function("execute_scoped", execute_scoped)?;
+    cx.export_function("compute_scoped", compute_scoped)?;
+
+    cx.export_function("return_js_global_object", return_js_global_object)?;
+    cx.export_function("return_js_object", return_js_object)?;
+    cx.export_function("return_js_object_with_number", return_js_object_with_number)?;
+    cx.export_function("return_js_object_with_string", return_js_object_with_string)?;
+    cx.export_function("return_js_object_with_mixed_content", return_js_object_with_mixed_content)?;
+
+    cx.export_function("panic", panic)?;
+    cx.export_function("panic_after_throw", panic_after_throw)?;
+
+    fn call_get_own_property_names(mut cx: FunctionContext) -> JsResult<JsArray> {
+        let object = cx.argument::<JsObject>(0)?;
+        object.get_own_property_names(&mut cx)
+    }
+
+    cx.export_function("get_own_property_names", call_get_own_property_names)?;
 
     Ok(())
 });

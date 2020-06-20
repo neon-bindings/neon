@@ -26,25 +26,30 @@ extern "C" bool Neon_Call_IsConstruct(v8::FunctionCallbackInfo<v8::Value> *info)
   return info->IsConstructCall();
 }
 
-extern "C" void Neon_Call_This(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out) {
+extern "C" void Neon_Call_This(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Object> *out) {
   *out = info->This();
 }
 
-extern "C" void Neon_Call_Data(v8::FunctionCallbackInfo<v8::Value> *info, v8::Local<v8::Value> *out) {
+extern "C" void Neon_Call_Data(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info, void **out) {
   /*
   printf("Call_Data: v8 info  = %p\n", *(void **)info);
   dump((void *)info, 3);
   printf("Call_Data: v8 info implicit:\n");
   dump_implicit((void *)info);
   */
-  *out = info->Data();
+
+  // Call data is stored wrapped in a v8::External by Neon_Fun_New et al, so we need to unwrap it before handing it back to Rust.
+  v8::Local<v8::Value> external = info->Data();
+  if (external->IsExternal()) {
+    *out = external.As<v8::External>()->Value();
+  }
 }
 
-extern "C" int32_t Neon_Call_Length(v8::FunctionCallbackInfo<v8::Value> *info) {
+extern "C" int32_t Neon_Call_Length(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info) {
   return info->Length();
 }
 
-extern "C" void Neon_Call_Get(v8::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out) {
+extern "C" void Neon_Call_Get(v8::Isolate *isolate, v8::FunctionCallbackInfo<v8::Value> *info, int32_t i, v8::Local<v8::Value> *out) {
   *out = (*info)[i];
 }
 
@@ -330,18 +335,18 @@ extern "C" void Neon_Class_SetClassMap(v8::Isolate *isolate, void *map, Neon_Dro
   node::AtExit(cleanup_class_map, holder);
 }
 
-extern "C" void *Neon_Class_GetCallKernel(v8::Local<v8::External> wrapper) {
-  neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(wrapper->Value());
+extern "C" void *Neon_Class_GetCallKernel(void *wrapper) {
+  neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(wrapper);
   return metadata->GetCallKernel();
 }
 
-extern "C" void *Neon_Class_GetConstructKernel(v8::Local<v8::External> wrapper) {
-  neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(wrapper->Value());
+extern "C" void *Neon_Class_GetConstructKernel(void *wrapper) {
+  neon::ClassMetadata *metadata = static_cast<neon::ClassMetadata *>(wrapper);
   return metadata->GetConstructKernel();
 }
 
-extern "C" void *Neon_Class_GetAllocateKernel(v8::Local<v8::External> wrapper) {
-  neon::BaseClassMetadata *metadata = static_cast<neon::BaseClassMetadata *>(wrapper->Value());
+extern "C" void *Neon_Class_GetAllocateKernel(void *wrapper) {
+  neon::BaseClassMetadata *metadata = static_cast<neon::BaseClassMetadata *>(wrapper);
   return metadata->GetAllocateKernel();
 }
 
@@ -433,8 +438,8 @@ extern "C" bool Neon_Fun_New(v8::Local<v8::Function> *out, v8::Isolate *isolate,
   return maybe_result.ToLocal(out);
 }
 
-extern "C" void *Neon_Fun_GetDynamicCallback(v8::Local<v8::External> data) {
-  return data->Value();
+extern "C" void *Neon_Fun_GetDynamicCallback(v8::Isolate *isolate, void *data) {
+  return data;
 }
 
 extern "C" bool Neon_Fun_Call(v8::Local<v8::Value> *out, v8::Isolate *isolate, v8::Local<v8::Function> fun, v8::Local<v8::Value> self, int32_t argc, v8::Local<v8::Value> argv[]) {

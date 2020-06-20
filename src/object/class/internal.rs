@@ -6,7 +6,7 @@ use neon_runtime::raw;
 use super::{Class, ClassInternal, Callback};
 use handle::{Handle, Managed};
 use context::{CallbackInfo, CallContext, Context};
-use context::internal::ContextInternal;
+use context::internal::{ContextInternal, Env};
 use result::{NeonResult, JsResult, Throw};
 use types::{JsValue, JsObject, JsFunction, JsUndefined, build};
 use types::error::convert_panics;
@@ -15,10 +15,10 @@ use types::error::convert_panics;
 pub struct MethodCallback<T: Class>(pub fn(CallContext<T>) -> JsResult<JsValue>);
 
 impl<T: Class> Callback<()> for MethodCallback<T> {
-    extern "C" fn invoke(info: &CallbackInfo) {
+    extern "C" fn invoke(env: Env, info: CallbackInfo<'_>) {
         unsafe {
-            info.with_cx::<T, _, _>(|mut cx| {
-                let data = info.data();
+            info.with_cx::<T, _, _>(env, |mut cx| {
+                let data = info.data(cx.env());
                 let this: Handle<JsValue> = Handle::new_internal(JsValue::from_raw(info.this(&mut cx)));
 
                 #[cfg(feature = "legacy-runtime")]
@@ -33,13 +33,13 @@ impl<T: Class> Callback<()> for MethodCallback<T> {
                     return;
                 };
                 let dynamic_callback: fn(CallContext<T>) -> JsResult<JsValue> =
-                    mem::transmute(neon_runtime::fun::get_dynamic_callback(data.to_raw()));
+                    mem::transmute(neon_runtime::fun::get_dynamic_callback(cx.env().to_raw(), data));
                 if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
                     info.set_return(value);
                 }
             })
         }
-        }
+    }
 
     fn as_ptr(self) -> *mut c_void {
         self.0 as *mut c_void
@@ -65,12 +65,12 @@ impl ConstructorCallCallback {
 }
 
 impl Callback<()> for ConstructorCallCallback {
-    extern "C" fn invoke(info: &CallbackInfo) {
+    extern "C" fn invoke(env: Env, info: CallbackInfo<'_>) {
         unsafe {
-            info.with_cx(|cx| {
-                let data = info.data();
+            info.with_cx(env, |cx| {
+                let data = info.data(cx.env());
                 let kernel: fn(CallContext<JsValue>) -> JsResult<JsValue> =
-                    mem::transmute(neon_runtime::class::get_call_kernel(data.to_raw()));
+                    mem::transmute(neon_runtime::class::get_call_kernel(data));
                 if let Ok(value) = convert_panics(|| { kernel(cx) }) {
                     info.set_return(value);
                 }
@@ -87,12 +87,12 @@ impl Callback<()> for ConstructorCallCallback {
 pub struct AllocateCallback<T: Class>(pub fn(CallContext<JsUndefined>) -> NeonResult<T::Internals>);
 
 impl<T: Class> Callback<*mut c_void> for AllocateCallback<T> {
-    extern "C" fn invoke(info: &CallbackInfo) -> *mut c_void {
+    extern "C" fn invoke(env: Env, info: CallbackInfo<'_>) -> *mut c_void {
         unsafe {
-            info.with_cx(|cx| {
-                let data = info.data();
+            info.with_cx(env, |cx| {
+                let data = info.data(cx.env());
                 let kernel: fn(CallContext<JsUndefined>) -> NeonResult<T::Internals> =
-                    mem::transmute(neon_runtime::class::get_allocate_kernel(data.to_raw()));
+                    mem::transmute(neon_runtime::class::get_allocate_kernel(data));
                 if let Ok(value) = convert_panics(|| { kernel(cx) }) {
                     let p = Box::into_raw(Box::new(value));
                     mem::transmute(p)
@@ -112,12 +112,12 @@ impl<T: Class> Callback<*mut c_void> for AllocateCallback<T> {
 pub struct ConstructCallback<T: Class>(pub fn(CallContext<T>) -> NeonResult<Option<Handle<JsObject>>>);
 
 impl<T: Class> Callback<bool> for ConstructCallback<T> {
-    extern "C" fn invoke(info: &CallbackInfo) -> bool {
+    extern "C" fn invoke(env: Env, info: CallbackInfo<'_>) -> bool {
         unsafe {
-            info.with_cx(|cx| {
-                let data = info.data();
+            info.with_cx(env, |cx| {
+                let data = info.data(cx.env());
                 let kernel: fn(CallContext<T>) -> NeonResult<Option<Handle<JsObject>>> =
-                    mem::transmute(neon_runtime::class::get_construct_kernel(data.to_raw()));
+                    mem::transmute(neon_runtime::class::get_construct_kernel(data));
                 match convert_panics(|| { kernel(cx) }) {
                     Ok(None) => true,
                     Ok(Some(obj)) => {
