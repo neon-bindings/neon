@@ -1,9 +1,6 @@
 name: Test on Linux
 
-on:
-  create:
-    tags:
-      - v*
+on: push
 
 jobs:
   build:
