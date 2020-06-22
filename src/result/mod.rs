@@ -31,3 +31,16 @@ pub type JsResult<'b, T> = NeonResult<Handle<'b, T>>;
 pub trait JsResultExt<'a, V: Value> {
     fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, V>;
 }
+
+impl <'a, V, E> JsResultExt<'a, V> for Result<Handle<'a, V>, Handle<'a, E>>
+where
+    V: Value,
+    E: Value,
+{
+    fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, V> {
+        match self {
+            Ok(v) => Ok(v),
+            Err(err) => cx.throw(err),
+        }
+    }
+}
