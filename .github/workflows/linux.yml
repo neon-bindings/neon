@@ -22,5 +22,11 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+    - name: install g++-4.8
+      run: sudo apt-get install -y g++-4.8
+    - name: set DISPLAY env
+      run: echo "::set-env DISPLAY=:99.0"
     - name: run cargo test
-      run: cargo test --release -- --nocapture
+      uses: GabrielBB/xvfb-action@v1.2
+      with:
+        run: cargo test --release -- --nocapture
