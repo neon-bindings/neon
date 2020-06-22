@@ -61,6 +61,7 @@ impl CallbackInfo<'_> {
         }
     }
 
+    #[cfg(feature = "legacy-runtime")]
     pub fn get<'b, C: Context<'b>>(&self, cx: &mut C, i: i32) -> Option<Handle<'b, JsValue>> {
         if i < 0 || i >= self.len(cx) {
             return None;
@@ -72,14 +73,10 @@ impl CallbackInfo<'_> {
         }
     }
 
-    pub fn require<'b, C: Context<'b>>(&self, cx: &mut C, i: i32) -> JsResult<'b, JsValue> {
-        if i < 0 || i >= self.len(cx) {
-            return cx.throw_type_error("not enough arguments");
-        }
+    #[cfg(feature = "napi-runtime")]
+    pub fn argv<'b, C: Context<'b>>(&self, cx: &mut C) -> Vec<raw::Local> {
         unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::get(cx.env().to_raw(), self.info, i, &mut local);
-            Ok(Handle::new_internal(JsValue::from_raw(local)))
+            neon_runtime::call::argv(cx.env().to_raw(), self.info)
         }
     }
 
@@ -450,6 +447,8 @@ impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> { }
 pub struct CallContext<'a, T: This> {
     scope: Scope<'a, raw::HandleScope>,
     info: &'a CallbackInfo<'a>,
+    #[cfg(feature = "napi-runtime")]
+    arguments: Option<Vec<raw::Local>>,
     phantom_type: PhantomData<T>
 }
 
@@ -464,6 +463,8 @@ impl<'a, T: This> CallContext<'a, T> {
             f(CallContext {
                 scope,
                 info,
+                #[cfg(feature = "napi-runtime")]
+                arguments: None,
                 phantom_type: PhantomData
             })
         })
@@ -474,13 +475,31 @@ impl<'a, T: This> CallContext<'a, T> {
 
     /// Produces the `i`th argument, or `None` if `i` is greater than or equal to `self.len()`.
     pub fn argument_opt(&mut self, i: i32) -> Option<Handle<'a, JsValue>> {
-        self.info.get(self, i)
+        #[cfg(feature = "legacy-runtime")]
+        { self.info.get(self, i) }
+
+        #[cfg(feature = "napi-runtime")]
+        {
+            let local = if let Some(arguments) = &self.arguments {
+                arguments.get(i as usize).cloned()
+            } else {
+                let arguments = self.info.argv(self);
+                let local = arguments.get(i as usize).cloned();
+
+                self.arguments = Some(arguments);
+                local
+            };
+
+            local.map(|local| Handle::new_internal(JsValue::from_raw(local)))
+        }
     }
 
     /// Produces the `i`th argument and casts it to the type `V`, or throws an exception if `i` is greater than or equal to `self.len()` or cannot be cast to `V`.
     pub fn argument<V: Value>(&mut self, i: i32) -> JsResult<'a, V> {
-        let a = self.info.require(self, i)?;
-        a.downcast_or_throw(self)
+        match self.argument_opt(i) {
+            Some(v) => v.downcast_or_throw(self),
+            None => self.throw_type_error("not enough arguments")
+        }
     }
 
     /// Produces a handle to the `this`-binding.
