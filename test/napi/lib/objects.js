@@ -23,7 +23,7 @@ describe('JsObject', function() {
   });
 
   // ArrayBuffers are not yet implemented in the N-API runtime.
-  it.skip('gets a 16-byte, zeroed ArrayBuffer', function() {
+  it('gets a 16-byte, zeroed ArrayBuffer', function() {
     var b = addon.return_array_buffer();
     assert.equal(b.byteLength, 16);
     assert.equal((new Uint32Array(b))[0], 0);

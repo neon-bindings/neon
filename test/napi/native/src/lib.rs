@@ -101,6 +101,8 @@ register_module!(|mut cx| {
     cx.export_function("return_js_object_with_string", return_js_object_with_string)?;
     cx.export_function("return_js_object_with_mixed_content", return_js_object_with_mixed_content)?;
 
+    cx.export_function("return_array_buffer", return_array_buffer)?;
+
     cx.export_function("panic", panic)?;
     cx.export_function("panic_after_throw", panic_after_throw)?;
 
