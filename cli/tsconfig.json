@@ -1,9 +1,10 @@
 {
     "compilerOptions": {
         "module": "commonjs",
-        "target": "es5",
+        "target": "es6",
         "lib": [
-            "es5", "es2015.core"
+            "es6",
+            "es7"
         ],
         "allowJs": false,
 

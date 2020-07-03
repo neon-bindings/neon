@@ -93,25 +93,25 @@ export default async function wizard(pwd: string, name: string, neon: string | n
   let root = path.resolve(pwd, local);
   let guess = await guessAuthor();
 
-  interface Answers{
-    name: {
-      npm: {
-        full: string;
-        scope: string | null;
-        local: string;
-      };
-      cargo: {
-        external: string;
-        internal: string;
-      };
-    };
-    description: string;
-    git: string;
-    author: string;
-    node: string;
-  }
+  // interface Answers{
+  //   name: {
+  //     npm: {
+  //       full: string;
+  //       scope: string | null;
+  //       local: string;
+  //     };
+  //     cargo: {
+  //       external: string;
+  //       internal: string;
+  //     };
+  //   };
+  //   description: string;
+  //   git: string;
+  //   author: string;
+  //   node: string;
+  // }
 
-  let answers: Answers = await prompt([
+  let answers = await prompt([
     {
       type: 'input',
       name: 'version',

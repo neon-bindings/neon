@@ -44,7 +44,6 @@ declare module 'command-line-commands' {
 
 declare module 'command-line-args' {
     import Dict from 'ts-dict';
-    import unknown from 'ts-unknown';
 
     namespace internal {
         export type CommandLineArgsOptions = {
