@@ -1,6 +1,6 @@
 import * as TOML from 'toml';
 import * as path from 'path';
-import { readFileSync, promises as fsPromises } from 'fs';
+import { existsSync, readFileSync, promises as fsPromises } from 'fs';
 const { unlink, copyFile } = fsPromises;
 import Artifacts from './artifacts';
 import Project from './project';
@@ -43,12 +43,16 @@ export default class Crate {
   }
 
   async finish(dylib: string) {
-    await unlink(this.addon);
+    if (existsSync(this.addon)) {
+      await unlink(this.addon);
+    }
     await copyFile(dylib, this.addon);
   }
 
   async removeAddon() {
-    await unlink(this.addon);
+    if (existsSync(this.addon)) {
+       await unlink(this.addon);
+    }
   }
 
   resetArtifacts() {

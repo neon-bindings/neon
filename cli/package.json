@@ -21,6 +21,7 @@
     "git-config": "0.0.7",
     "handlebars": "^4.1.0",
     "inquirer": "^3.0.6",
+    "make-promises-safe": "^5.1.0",
     "mkdirp": "^0.5.1",
     "quickly-copy-file": "^1.0.0",
     "rimraf": "^2.6.1",

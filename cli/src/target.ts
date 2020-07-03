@@ -1,4 +1,4 @@
-import { promises as fsPromises } from 'fs';
+import { existsSync, promises as fsPromises } from 'fs';
 const { unlink } = fsPromises;
 import * as rust from './rust';
 import * as path from 'path';
@@ -63,7 +63,10 @@ export default class Target {
 
   async clean() {
     // Remove the directory associated with this target.
-    await unlink(path.resolve(this.crate.root, 'target', this.subdirectory));
+    const absolutePathSubdir = path.resolve(this.crate.root, 'target', this.subdirectory);
+    if (existsSync(absolutePathSubdir)) {
+      await unlink(absolutePathSubdir);
+    }
 
     // If this target was the active target, remove the addon.
     if (this.crate.artifacts.haveActivated(this.subdirectory)) {
