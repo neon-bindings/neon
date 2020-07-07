@@ -1,13 +1,14 @@
 use std;
+use std::boxed::Box;
 use std::cell::Cell;
 use std::os::raw::c_void;
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::scope::Root;
-use types::JsObject;
-use handle::Handle;
+use types::{JsObject, JsValue};
+use handle::{Handle, Managed};
 use object::class::ClassMap;
-use result::NeonResult;
+use result::{JsResult, NeonResult};
 use super::ModuleContext;
 
 #[cfg(feature = "legacy-runtime")]
@@ -116,6 +117,37 @@ pub trait ContextInternal<'a>: Sized {
 
     fn activate(&self) { self.scope_metadata().active.set(true); }
     fn deactivate(&self) { self.scope_metadata().active.set(false); }
+
+    fn try_catch_internal<'b: 'a, F>(&mut self, f: F) -> Result<Handle<'a, JsValue>, Handle<'a, JsValue>>
+        where F: FnOnce(&mut Self) -> JsResult<'b, JsValue>
+    {
+        let p = Box::into_raw(Box::new(f)) as *mut c_void;
+        let mut local: raw::Local = unsafe { std::mem::zeroed() };
+        let threw = unsafe { neon_runtime::try_catch::with(try_catch_glue::<Self, F>, self as *mut Self as *mut c_void, p, &mut local) };
+        if threw {
+            Err(JsValue::new_internal(local))
+        } else {
+            Ok(JsValue::new_internal(local))
+        }
+    }
+}
+
+extern "C" fn try_catch_glue<'a, 'b: 'a, C: ContextInternal<'a>, F>(p: *mut c_void, cx: *mut c_void, ok: *mut bool, ok_value: *mut raw::Local)
+    where C: ContextInternal<'a>,
+          F: FnOnce(&mut C) -> JsResult<'b, JsValue>
+{
+    let f: F = *unsafe { Box::from_raw(p as *mut F) };
+
+    // FIXME: convert_panics(f)
+    match f(unsafe { std::mem::transmute(cx) }) {
+        Ok(result) => unsafe {
+            *ok = true;
+            *ok_value = result.to_raw();
+        }
+        Err(_) => unsafe {
+            *ok = false;
+        }
+    }
 }
 
 #[cfg(feature = "legacy-runtime")]

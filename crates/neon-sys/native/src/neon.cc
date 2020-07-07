@@ -541,3 +541,24 @@ extern "C" void Neon_EventHandler_Delete(void * thread_safe_cb) {
     neon::EventHandler *cb = static_cast<neon::EventHandler*>(thread_safe_cb);
     cb->close();
 }
+
+extern "C" bool Neon_TryCatch_With(Neon_TryCatchGlue glue_fn, void *cx, void *rust_thunk, v8::Local<v8::Value> *result) {
+  Nan::TryCatch try_catch;
+
+  bool ok;
+  v8::Local<v8::Value> ok_result;
+
+  glue_fn(rust_thunk, cx, &ok, &ok_result);
+
+  if (!try_catch.HasCaught()) {
+    if (ok) {
+      *result = ok_result;
+    } else {
+      *result = Nan::Undefined();
+    }
+    return false;
+  } else {
+    *result = try_catch.Exception();
+    return true;
+  }
+}

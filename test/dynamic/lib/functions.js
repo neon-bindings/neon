@@ -30,6 +30,13 @@ describe('JsFunction', function() {
     assert.throws(function() { addon.panic_after_throw() }, Error, /^internal error in Neon module: this should override the RangeError$/);
   });
 
+  it('catches an excption with cx.try_catch', function() {
+    var error = new Error('Something bad happened');
+    assert.equal(addon.throw_and_catch(error), error);
+    assert.equal(addon.throw_and_catch(42), 42);
+    assert.equal(addon.throw_and_catch('a string'), 'a string');
+  });
+
   it('computes the right number of arguments', function() {
     assert.equal(addon.num_arguments(), 0);
     assert.equal(addon.num_arguments('a'), 1);
