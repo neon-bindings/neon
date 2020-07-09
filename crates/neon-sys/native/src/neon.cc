@@ -554,6 +554,9 @@ extern "C" bool Neon_TryCatch_With(Neon_TryCatchGlue glue_fn, void *cx, void *ru
     if (ok) {
       *result = ok_result;
     } else {
+      // It's unlikely but possible that a Neon user might return `Err(Throw)` even
+      // though the VM is not actually in a throwing state. In this case we will
+      // simply produce the JS undefined value.
       *result = Nan::Undefined();
     }
     return false;
