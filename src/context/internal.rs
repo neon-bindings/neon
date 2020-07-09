@@ -1,6 +1,7 @@
 use std;
 use std::boxed::Box;
 use std::cell::Cell;
+use std::mem::MaybeUninit;
 use std::os::raw::c_void;
 use neon_runtime;
 use neon_runtime::raw;
@@ -122,8 +123,9 @@ pub trait ContextInternal<'a>: Sized {
         where F: FnOnce(&mut Self) -> JsResult<'b, JsValue>
     {
         let p = Box::into_raw(Box::new(f)) as *mut c_void;
-        let mut local: raw::Local = unsafe { std::mem::zeroed() };
-        let threw = unsafe { neon_runtime::try_catch::with(try_catch_glue::<Self, F>, self as *mut Self as *mut c_void, p, &mut local) };
+        let mut local: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
+        let threw = unsafe { neon_runtime::try_catch::with(try_catch_glue::<Self, F>, self as *mut Self as *mut c_void, p, &mut *local.as_mut_ptr()) };
+        let local = unsafe { local.assume_init() };
         if threw {
             Err(JsValue::new_internal(local))
         } else {
