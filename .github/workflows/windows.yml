@@ -1,0 +1,28 @@
+name: Test on Windows
+
+on: push
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    strategy:
+      matrix:
+        node-version: [8.x, 10.x, 12.x]
+        rust-toolchain: [stable, beta, nightly]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Rust ${{ matrix.rust-toolchain }}
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust-toolchain }}
+        target: x86_64-pc-windows-msvc
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: npm config set msvs_version 2015
+    - name: run cargo test
+      run: cargo test --release
