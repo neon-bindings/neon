@@ -107,3 +107,13 @@ pub fn throw_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
         Ok(cx.string("unreachable").upcast())
     }).unwrap_or_else(|err| err))
 }
+
+pub fn call_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let f: Handle<JsFunction> = cx.argument(0)?;
+    Ok(cx.try_catch(|cx| {
+        let global = cx.global();
+        let args: Vec<Handle<JsValue>> = vec![];
+        let _ = f.call(cx, global, args)?;
+        Ok(cx.undefined().upcast())
+    }).unwrap_or_else(|err| err))
+}

@@ -35,6 +35,14 @@ describe('JsFunction', function() {
     assert.equal(addon.throw_and_catch(error), error);
     assert.equal(addon.throw_and_catch(42), 42);
     assert.equal(addon.throw_and_catch('a string'), 'a string');
+    assert.equal(addon.call_and_catch(() => { throw 'shade' }), 'shade');
+    assert.equal(addon.call_and_catch(() => {
+      throw addon.call_and_catch(() => {
+        throw addon.call_and_catch(() => {
+          throw 'once';
+        }) + ' upon';
+      }) + ' a';
+    }) + ' time', 'once upon a time');
   });
 
   it('computes the right number of arguments', function() {
