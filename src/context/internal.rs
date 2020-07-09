@@ -122,6 +122,8 @@ pub trait ContextInternal<'a>: Sized {
     fn try_catch_internal<'b: 'a, F>(&mut self, f: F) -> Result<Handle<'a, JsValue>, Handle<'a, JsValue>>
         where F: FnOnce(&mut Self) -> JsResult<'b, JsValue>
     {
+        // A closure does not have a guaranteed layout, so we need to box it in order to pass
+        // a pointer to it across the boundary into C++.
         let p = Box::into_raw(Box::new(f)) as *mut c_void;
         let mut local: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
         let threw = unsafe { neon_runtime::try_catch::with(try_catch_glue::<Self, F>, self as *mut Self as *mut c_void, p, &mut *local.as_mut_ptr()) };
