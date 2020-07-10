@@ -204,7 +204,7 @@ extern "C" bool Neon_Buffer_Uninitialized(v8::Local<v8::Object> *out, uint32_t s
   return maybe.ToLocal(out);
 }
 
-extern "C" size_t Neon_Buffer_Data(void **base_out, v8::Local<v8::Object> obj) {
+extern "C" size_t Neon_Buffer_Data(v8::Isolate *isolate, void **base_out, v8::Local<v8::Object> obj) {
   *base_out = node::Buffer::Data(obj);
 
   return node::Buffer::Length(obj);
