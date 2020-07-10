@@ -102,6 +102,14 @@ register_module!(|mut cx| {
     cx.export_function("return_js_object_with_mixed_content", return_js_object_with_mixed_content)?;
 
     cx.export_function("return_array_buffer", return_array_buffer)?;
+    cx.export_function("read_array_buffer_with_lock", read_array_buffer_with_lock)?;
+    cx.export_function("read_array_buffer_with_borrow", read_array_buffer_with_borrow)?;
+    cx.export_function("write_array_buffer_with_lock", write_array_buffer_with_lock)?;
+    cx.export_function("write_array_buffer_with_borrow_mut", write_array_buffer_with_borrow_mut)?;
+    cx.export_function("read_buffer_with_lock", read_buffer_with_lock)?;
+    cx.export_function("read_buffer_with_borrow", read_buffer_with_borrow)?;
+    cx.export_function("write_buffer_with_lock", write_buffer_with_lock)?;
+    cx.export_function("write_buffer_with_borrow_mut", write_buffer_with_borrow_mut)?;
 
     cx.export_function("panic", panic)?;
     cx.export_function("panic_after_throw", panic_after_throw)?;

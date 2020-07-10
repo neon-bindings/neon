@@ -219,7 +219,7 @@ extern "C" bool Neon_ArrayBuffer_New(v8::Local<v8::ArrayBuffer> *out, v8::Isolat
   return true;
 }
 
-extern "C" size_t Neon_ArrayBuffer_Data(void **base_out, v8::Local<v8::ArrayBuffer> buffer) {
+extern "C" size_t Neon_ArrayBuffer_Data(v8::Isolate *isolate, void **base_out, v8::Local<v8::ArrayBuffer> buffer) {
   v8::ArrayBuffer::Contents contents = buffer->GetContents();
   *base_out = contents.Data();
 

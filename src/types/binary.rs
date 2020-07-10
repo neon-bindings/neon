@@ -222,7 +222,7 @@ impl<'a> Borrow for &'a JsArrayBuffer {
         // Initialize pointer
         unsafe {
             let pointer = data.as_mut_ptr();
-            (*pointer).size = neon_runtime::arraybuffer::data(&mut (*pointer).base, self.to_raw());
+            (*pointer).size = neon_runtime::arraybuffer::data(guard.env.to_raw(), &mut (*pointer).base, self.to_raw());
         }
 
         // UB if pointer is not initialized!
@@ -247,7 +247,7 @@ impl<'a> BorrowMut for &'a mut JsArrayBuffer {
         // Initialize pointer
         unsafe {
             let pointer = data.as_mut_ptr();
-            (*pointer).size = neon_runtime::arraybuffer::data(&mut (*pointer).base, self.to_raw());
+            (*pointer).size = neon_runtime::arraybuffer::data(guard.env.to_raw(), &mut (*pointer).base, self.to_raw());
         }
 
         // UB if pointer is not initialized!

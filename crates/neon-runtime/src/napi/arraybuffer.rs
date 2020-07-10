@@ -10,6 +10,11 @@ pub unsafe extern "C" fn new(out: &mut Local, env: Env, size: u32) -> bool {
     status == napi::napi_status::napi_ok
 }
 
-pub unsafe extern "C" fn data<'a, 'b>(_base_out: &'a mut *mut c_void, _obj: Local) -> usize {
-    unimplemented!()
+pub unsafe extern "C" fn data<'a, 'b>(env: Env, base_out: &'a mut *mut c_void, obj: Local) -> usize {
+    let mut size = 0;
+    assert_eq!(
+        napi::napi_get_arraybuffer_info(env, obj, base_out as *mut _, &mut size as *mut _),
+        napi::napi_status::napi_ok,
+    );
+    size
 }

@@ -54,7 +54,7 @@ extern "C" {
 
   bool Neon_ArrayBuffer_New(v8::Local<v8::ArrayBuffer> *out, v8::Isolate *isolate, uint32_t size);
   bool Neon_ArrayBuffer_Uninitialized(v8::Local<v8::ArrayBuffer> *out, v8::Isolate *isolate, uint32_t size);
-  size_t Neon_ArrayBuffer_Data(void **base_out, v8::Local<v8::ArrayBuffer> buffer);
+  size_t Neon_ArrayBuffer_Data(v8::Isolate *isolate, void **base_out, v8::Local<v8::ArrayBuffer> buffer);
 
   typedef void(*Neon_ChainedScopeCallback)(void *, void *, void *, void *);
   typedef void(*Neon_NestedScopeCallback)(void *, void *, void *);

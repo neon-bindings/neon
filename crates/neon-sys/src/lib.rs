@@ -87,7 +87,7 @@ extern "C" {
     pub fn Neon_Array_Length(isolate: Isolate, array: Local) -> u32;
 
     pub fn Neon_ArrayBuffer_New(out: &mut Local, isolate: Isolate, size: u32) -> bool;
-    pub fn Neon_ArrayBuffer_Data<'a, 'b>(base_out: &'a mut *mut c_void, obj: Local) -> usize;
+    pub fn Neon_ArrayBuffer_Data<'a, 'b>(isolate: Isolate, base_out: &'a mut *mut c_void, obj: Local) -> usize;
 
     pub fn Neon_Buffer_New(out: &mut Local, size: u32) -> bool;
     pub fn Neon_Buffer_Uninitialized(out: &mut Local, size: u32) -> bool;
