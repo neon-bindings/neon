@@ -231,7 +231,7 @@ pub trait Context<'a>: ContextInternal<'a> {
 
     // FIXME: wrap this and the tests in a feature flag
     fn try_catch<'b: 'a, F>(&mut self, f: F) -> Result<Handle<'a, JsValue>, Handle<'a, JsValue>>
-        where F: FnOnce(&mut Self) -> JsResult<'b, JsValue>
+        where F: UnwindSafe + FnOnce(&mut Self) -> JsResult<'b, JsValue>
     {
         self.try_catch_internal(f)
     }

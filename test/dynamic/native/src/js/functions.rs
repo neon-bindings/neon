@@ -113,7 +113,11 @@ pub fn call_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
     Ok(cx.try_catch(|cx| {
         let global = cx.global();
         let args: Vec<Handle<JsValue>> = vec![];
-        let _ = f.call(cx, global, args)?;
-        Ok(cx.undefined().upcast())
+        f.call(cx, global, args)
     }).unwrap_or_else(|err| err))
+}
+
+pub fn panic_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
+    Ok(cx.try_catch(|_| { panic!("oh no") })
+         .unwrap_or_else(|err| err))
 }

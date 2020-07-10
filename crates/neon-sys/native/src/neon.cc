@@ -542,26 +542,25 @@ extern "C" void Neon_EventHandler_Delete(void * thread_safe_cb) {
     cb->close();
 }
 
-extern "C" bool Neon_TryCatch_With(Neon_TryCatchGlue glue_fn, void *cx, void *rust_thunk, v8::Local<v8::Value> *result) {
+extern "C" try_catch_control_t Neon_TryCatch_With(Neon_TryCatchGlue glue_fn, void *rust_thunk, void *cx, v8::Local<v8::Value> *result, void **unwind_value) {
   Nan::TryCatch try_catch;
 
-  bool ok;
-  v8::Local<v8::Value> ok_result;
+  try_catch_control_t ctrl = glue_fn(rust_thunk, cx, result, unwind_value);
 
-  glue_fn(rust_thunk, cx, &ok, &ok_result);
+  if (ctrl == CONTROL_PANICKED) {
+    return CONTROL_PANICKED;
+  }
 
   if (!try_catch.HasCaught()) {
-    if (ok) {
-      *result = ok_result;
-    } else {
-      // It's unlikely but possible that a Neon user might return `Err(Throw)` even
-      // though the VM is not actually in a throwing state. In this case we will
-      // simply produce the JS undefined value.
+    // It's possible, if unlikely, that a Neon user might return `Err(Throw)` even
+    // though the VM is not actually in a throwing state. In this case we will
+    // simply produce the JS undefined value.
+    if (ctrl == CONTROL_THREW) {
       *result = Nan::Undefined();
     }
-    return false;
+    return CONTROL_RETURNED;
   } else {
     *result = try_catch.Exception();
-    return true;
+    return CONTROL_THREW;
   }
 }

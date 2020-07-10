@@ -1,11 +1,14 @@
 use std;
+use std::any::Any;
 use std::boxed::Box;
 use std::cell::Cell;
 use std::mem::MaybeUninit;
 use std::os::raw::c_void;
+use std::panic::{AssertUnwindSafe, UnwindSafe, catch_unwind, resume_unwind};
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::scope::Root;
+use neon_runtime::try_catch::TryCatchControl;
 use types::{JsObject, JsValue};
 use handle::{Handle, Managed};
 use object::class::ClassMap;
@@ -120,36 +123,73 @@ pub trait ContextInternal<'a>: Sized {
     fn deactivate(&self) { self.scope_metadata().active.set(false); }
 
     fn try_catch_internal<'b: 'a, F>(&mut self, f: F) -> Result<Handle<'a, JsValue>, Handle<'a, JsValue>>
-        where F: FnOnce(&mut Self) -> JsResult<'b, JsValue>
+        where F: UnwindSafe + FnOnce(&mut Self) -> JsResult<'b, JsValue>
     {
         // A closure does not have a guaranteed layout, so we need to box it in order to pass
         // a pointer to it across the boundary into C++.
-        let p = Box::into_raw(Box::new(f)) as *mut c_void;
+        let rust_thunk = Box::into_raw(Box::new(f));
+
         let mut local: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
-        let threw = unsafe { neon_runtime::try_catch::with(try_catch_glue::<Self, F>, self as *mut Self as *mut c_void, p, &mut *local.as_mut_ptr()) };
-        let local = unsafe { local.assume_init() };
-        if threw {
-            Err(JsValue::new_internal(local))
-        } else {
-            Ok(JsValue::new_internal(local))
+        let mut unwind_value: MaybeUninit<*mut c_void> = MaybeUninit::zeroed();
+
+        let ctrl = unsafe {
+            neon_runtime::try_catch::with(try_catch_glue::<Self, F>,
+                                          rust_thunk as *mut c_void,
+                                          (self as *mut Self) as *mut c_void,
+                                          local.as_mut_ptr(),
+                                          unwind_value.as_mut_ptr())
+        };
+
+        match ctrl {
+            TryCatchControl::Panicked => {
+                let unwind_value: Box<dyn Any + Send> = *unsafe {
+                    Box::from_raw(unwind_value.assume_init() as *mut Box<dyn Any + Send>)
+                };
+                resume_unwind(unwind_value);
+            }
+            TryCatchControl::Returned => {
+                let local = unsafe { local.assume_init() };
+                Ok(JsValue::new_internal(local))
+            }
+            TryCatchControl::Threw => {
+                let local = unsafe { local.assume_init() };
+                Err(JsValue::new_internal(local))
+            }
         }
     }
 }
 
-extern "C" fn try_catch_glue<'a, 'b: 'a, C: ContextInternal<'a>, F>(p: *mut c_void, cx: *mut c_void, ok: *mut bool, ok_value: *mut raw::Local)
+extern "C" fn try_catch_glue<'a, 'b: 'a, C, F>(rust_thunk: *mut c_void,
+                                               cx: *mut c_void,
+                                               returned: *mut raw::Local,
+                                               unwind_value: *mut *mut c_void) -> TryCatchControl
     where C: ContextInternal<'a>,
-          F: FnOnce(&mut C) -> JsResult<'b, JsValue>
+          F: UnwindSafe + FnOnce(&mut C) -> JsResult<'b, JsValue>
 {
-    let f: F = *unsafe { Box::from_raw(p as *mut F) };
+    let f: F = *unsafe { Box::from_raw(rust_thunk as *mut F) };
+    let cx: &mut C = unsafe { std::mem::transmute(cx) };
 
-    // FIXME: convert_panics(f)
-    match f(unsafe { std::mem::transmute(cx) }) {
-        Ok(result) => unsafe {
-            *ok = true;
-            *ok_value = result.to_raw();
+    // The mutable reference to the context is a fiction of the Neon library,
+    // since it doesn't actually contain any data in the Rust memory space,
+    // just a link to the JS VM. So we don't need to do any kind of poisoning
+    // of the context when a panic occurs. So we suppress the Rust compiler
+    // errors from using the mutable reference across an unwind boundary.
+    match catch_unwind(AssertUnwindSafe(|| f(cx))) {
+        // No Rust panic, no JS exception.
+        Ok(Ok(result)) => unsafe {
+            *returned = result.to_raw();
+            TryCatchControl::Returned
         }
-        Err(_) => unsafe {
-            *ok = false;
+        // No Rust panic, caught a JS exception.
+        Ok(Err(_)) => {
+            TryCatchControl::Threw
+        }
+        // Rust panicked.
+        Err(err) => unsafe {
+            // A panic value has an undefined layout, so wrap it in an extra box.
+            let boxed = Box::new(err);
+            *unwind_value = Box::into_raw(boxed) as *mut c_void;
+            TryCatchControl::Panicked
         }
     }
 }

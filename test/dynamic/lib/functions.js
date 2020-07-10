@@ -30,7 +30,7 @@ describe('JsFunction', function() {
     assert.throws(function() { addon.panic_after_throw() }, Error, /^internal error in Neon module: this should override the RangeError$/);
   });
 
-  it('catches an excption with cx.try_catch', function() {
+  it('catches an exception with cx.try_catch', function() {
     var error = new Error('Something bad happened');
     assert.equal(addon.throw_and_catch(error), error);
     assert.equal(addon.throw_and_catch(42), 42);
@@ -43,6 +43,17 @@ describe('JsFunction', function() {
         }) + ' upon';
       }) + ' a';
     }) + ' time', 'once upon a time');
+  });
+
+  it('gets a regular value with cx.try_catch', function() {
+    assert.equal(addon.call_and_catch(() => { return 42 }), 42);
+  });
+
+  it('propagates a panic with cx.try_catch', function() {
+    assert.throws(function() {
+      addon.panic_and_catch();
+      return 'unreachable';
+    }, Error, /^internal error in Neon module: oh no$/);
   });
 
   it('computes the right number of arguments', function() {
