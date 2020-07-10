@@ -10,7 +10,7 @@ pub unsafe extern "C" fn new(env: Env, out: &mut Local, size: u32) -> bool {
     if status == napi::napi_status::napi_ok {
         let mut bytes = null_mut();
         let size = data(env, &mut bytes, *out);
-        std::ptr::write_bytes(bytes, 0, size);
+        std::ptr::write_bytes(bytes as *mut u8, 0, size);
         true
     } else {
         false
