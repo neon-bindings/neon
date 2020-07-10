@@ -5,12 +5,12 @@ use std::ptr::null_mut;
 use nodejs_sys as napi;
 
 pub unsafe extern "C" fn new(env: Env, out: &mut Local, size: u32) -> bool {
-    let status = napi::napi_create_buffer(env, size as usize, null_mut(), out as *mut _);
-
+    let mut bytes = null_mut();
+    let status = napi::napi_create_buffer(env, size as usize, &mut bytes as *mut _, out as *mut _);
     if status == napi::napi_status::napi_ok {
-        let mut bytes = null_mut();
-        let size = data(env, &mut bytes, *out);
-        std::ptr::write_bytes(bytes as *mut u8, 0, size);
+        // zero-initialize it. If performance is critical, JsBuffer::uninitialized can be used
+        // instead.
+        std::ptr::write_bytes(bytes, 0, size as usize);
         true
     } else {
         false
