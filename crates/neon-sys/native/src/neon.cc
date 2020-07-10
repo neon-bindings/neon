@@ -188,7 +188,7 @@ extern "C" bool Neon_Convert_ToObject(v8::Local<v8::Object> *out, v8::Local<v8::
   return maybe.ToLocal(out);
 }
 
-extern "C" bool Neon_Buffer_New(v8::Local<v8::Object> *out, uint32_t size) {
+extern "C" bool Neon_Buffer_New(v8::Isolate *isolate, v8::Local<v8::Object> *out, uint32_t size) {
   Nan::MaybeLocal<v8::Object> maybe = Nan::NewBuffer(size);
   if (!maybe.ToLocal(out)) {
     return false;

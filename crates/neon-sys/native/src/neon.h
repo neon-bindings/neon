@@ -49,7 +49,7 @@ extern "C" {
   bool Neon_Convert_ToString(v8::Local<v8::String> *out, v8::Isolate *isolate, v8::Local<v8::Value> value);
   bool Neon_Convert_ToObject(v8::Local<v8::Object> *out, v8::Local<v8::Value> *value);
 
-  bool Neon_Buffer_New(v8::Local<v8::Object> *out, uint32_t size);
+  bool Neon_Buffer_New(v8::Isolate *isolate, v8::Local<v8::Object> *out, uint32_t size);
   size_t Neon_Buffer_Data(v8::Isolate *isolate, void **base_out, v8::Local<v8::Object> obj);
 
   bool Neon_ArrayBuffer_New(v8::Local<v8::ArrayBuffer> *out, v8::Isolate *isolate, uint32_t size);
