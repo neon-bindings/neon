@@ -23,7 +23,7 @@ pub unsafe extern "C" fn set_return(_info: FunctionCallbackInfo, _value: Local) 
 
 }
 
-pub unsafe extern "C" fn get_isolate(info: FunctionCallbackInfo) -> Env { unimplemented!() }
+pub unsafe extern "C" fn get_isolate(_info: FunctionCallbackInfo) -> Env { unimplemented!() }
 
 // FIXME: Remove. This will never be implemented
 pub unsafe extern "C" fn current_isolate() -> Env { panic!("current_isolate won't be implemented in n-api") }
