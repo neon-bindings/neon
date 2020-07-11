@@ -8,6 +8,7 @@ use std::panic::{AssertUnwindSafe, UnwindSafe, catch_unwind, resume_unwind};
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::scope::Root;
+#[cfg(feature = "legacy-runtime")]
 use neon_runtime::try_catch::TryCatchControl;
 use types::{JsObject, JsValue};
 use handle::{Handle, Managed};
@@ -122,6 +123,7 @@ pub trait ContextInternal<'a>: Sized {
     fn activate(&self) { self.scope_metadata().active.set(true); }
     fn deactivate(&self) { self.scope_metadata().active.set(false); }
 
+    #[cfg(feature = "legacy-runtime")]
     fn try_catch_internal<'b: 'a, F>(&mut self, f: F) -> Result<Handle<'a, JsValue>, Handle<'a, JsValue>>
         where F: UnwindSafe + FnOnce(&mut Self) -> JsResult<'b, JsValue>
     {
@@ -157,8 +159,16 @@ pub trait ContextInternal<'a>: Sized {
             }
         }
     }
+
+    #[cfg(feature = "napi-runtime")]
+    fn try_catch_internal<'b: 'a, F>(&mut self, f: F) -> Result<Handle<'a, JsValue>, Handle<'a, JsValue>>
+        where F: UnwindSafe + FnOnce(&mut Self) -> JsResult<'b, JsValue>
+    {
+        unimplemented!()
+    }
 }
 
+#[cfg(feature = "legacy-runtime")]
 extern "C" fn try_catch_glue<'a, 'b: 'a, C, F>(rust_thunk: *mut c_void,
                                                cx: *mut c_void,
                                                returned: *mut raw::Local,
