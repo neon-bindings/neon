@@ -89,4 +89,23 @@ describe('JsFunction', function() {
   it.skip('computes a value in a scoped computation', function() {
     assert.equal(addon.compute_scoped(), 99);
   });
+
+  it('catches an exception with cx.try_catch', function() {
+    var error = new Error('Something bad happened');
+    assert.equal(addon.throw_and_catch(error), error);
+    assert.equal(addon.throw_and_catch(42), 42);
+    assert.equal(addon.throw_and_catch('a string'), 'a string');
+    assert.equal(addon.call_and_catch(() => { throw 'shade' }), 'shade');
+    assert.equal(addon.call_and_catch(() => {
+      throw addon.call_and_catch(() => {
+        throw addon.call_and_catch(() => {
+          throw 'once';
+        }) + ' upon';
+      }) + ' a';
+    }) + ' time', 'once upon a time');
+  });
+
+  it('gets a regular value with cx.try_catch', function() {
+    assert.equal(addon.call_and_catch(() => { return 42 }), 42);
+  });
 });

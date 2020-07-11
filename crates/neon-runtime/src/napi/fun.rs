@@ -3,8 +3,7 @@
 use call::CCallback;
 use raw::{Env, Local};
 use std::os::raw::c_void;
-use std::mem::MaybeUninit;
-use std::ptr::{null, null_mut};
+use std::ptr::null;
 
 use nodejs_sys as napi;
 

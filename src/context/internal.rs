@@ -1,17 +1,24 @@
 use std;
+#[cfg(feature = "legacy-runtime")]
 use std::any::Any;
 use std::boxed::Box;
 use std::cell::Cell;
 use std::mem::MaybeUninit;
 use std::os::raw::c_void;
-use std::panic::{AssertUnwindSafe, UnwindSafe, catch_unwind, resume_unwind};
+use std::panic::UnwindSafe;
+#[cfg(feature = "legacy-runtime")]
+use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::scope::Root;
 #[cfg(feature = "legacy-runtime")]
 use neon_runtime::try_catch::TryCatchControl;
 use types::{JsObject, JsValue};
-use handle::{Handle, Managed};
+#[cfg(feature = "napi-runtime")]
+use types::JsUndefined;
+use handle::Handle;
+#[cfg(feature = "legacy-runtime")]
+use handle::Managed;
 use object::class::ClassMap;
 use result::{JsResult, NeonResult};
 use super::ModuleContext;
@@ -164,7 +171,17 @@ pub trait ContextInternal<'a>: Sized {
     fn try_catch_internal<'b: 'a, F>(&mut self, f: F) -> Result<Handle<'a, JsValue>, Handle<'a, JsValue>>
         where F: UnwindSafe + FnOnce(&mut Self) -> JsResult<'b, JsValue>
     {
-        unimplemented!()
+        let result = f(self);
+        let mut local: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
+        unsafe {
+            if neon_runtime::error::catch_error(self.env().to_raw(), local.as_mut_ptr()) {
+                Err(JsValue::new_internal(local.assume_init()))
+            } else if let Ok(result) = result {
+                Ok(result)
+            } else {
+                Ok(JsUndefined::new_internal(self.env()).upcast())
+            }
+        }
     }
 }
 

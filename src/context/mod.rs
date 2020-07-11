@@ -308,7 +308,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Throws a JS value.
     fn throw<'b, T: Value, U>(&mut self, v: Handle<'b, T>) -> NeonResult<U> {
         unsafe {
-            neon_runtime::error::throw(v.to_raw());
+            neon_runtime::error::throw(self.env().to_raw(), v.to_raw());
         }
         Err(Throw)
     }

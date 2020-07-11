@@ -1,7 +1,11 @@
 //! Facilities for creating and throwing JS errors.
 
+use raw::{Isolate, Local};
+
 /// Throws an `Error` object in the current context.
-pub use neon_sys::Neon_Error_Throw as throw;
+pub unsafe fn throw(_: Isolate, val: Local) {
+    neon_sys::Neon_Error_Throw(val)
+}
 
 /// Mutates the `out` argument provided to refer to a newly created `Error` object.
 pub use neon_sys::Neon_Error_NewError as new_error;
