@@ -229,7 +229,7 @@ pub trait Context<'a>: ContextInternal<'a> {
         result
     }
 
-    // FIXME: wrap this and the tests in a feature flag
+    #[cfg(feature = "try-catch-api")]
     fn try_catch<'b: 'a, F>(&mut self, f: F) -> Result<Handle<'a, JsValue>, Handle<'a, JsValue>>
         where F: UnwindSafe + FnOnce(&mut Self) -> JsResult<'b, JsValue>
     {
