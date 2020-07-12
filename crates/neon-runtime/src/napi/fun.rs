@@ -3,8 +3,7 @@
 use call::CCallback;
 use raw::{Env, Local};
 use std::os::raw::c_void;
-use std::mem::MaybeUninit;
-use std::ptr::{null, null_mut};
+use std::ptr::null;
 
 use nodejs_sys as napi;
 
@@ -27,7 +26,7 @@ pub unsafe extern "C" fn new_template(_out: &mut Local, _env: Env, _callback: CC
     unimplemented!()
 }
 
-pub unsafe extern "C" fn get_dynamic_callback(env: Env, data: *mut c_void) -> *mut c_void {
+pub unsafe extern "C" fn get_dynamic_callback(_env: Env, data: *mut c_void) -> *mut c_void {
     data
 }
 
