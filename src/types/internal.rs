@@ -39,7 +39,7 @@ impl<T: Value> Callback<()> for FunctionCallback<T> {
                 let data = info.data(env);
                 let dynamic_callback: fn(FunctionContext) -> JsResult<T> =
                     mem::transmute(neon_runtime::fun::get_dynamic_callback(env.to_raw(), data));
-                if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
+                if let Ok(value) = convert_panics(env, || { dynamic_callback(cx) }) {
                     info.set_return(value);
                 }
             })
@@ -59,16 +59,16 @@ impl<T: Value> Callback<raw::Local> for FunctionCallback<T> {
                 let data = info.data(env);
                 let dynamic_callback: fn(FunctionContext) -> JsResult<T> =
                     mem::transmute(neon_runtime::fun::get_dynamic_callback(env.to_raw(), data));
-                if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
+                if let Ok(value) = convert_panics(env, || { dynamic_callback(cx) }) {
                     value.to_raw()
                 } else {
-                    // What should we return if the function panicked?
-                    //
-                    // `ptr::null_mut()` may work, but we should have a test to verify that, which
-                    // can be created after [#505][0]. For now, let's not guess!
-                    //
-                    // [0]: https://github.com/neon-bindings/neon/pull/505.
-                    unimplemented!("cannot return from function after a panic")
+                    // We do not have a Js Value to return, most likely due to an exception.
+                    // If we are in a throwing state, constructing a Js Value would be invalid.
+                    // While not explicitly written, the N-API documentation includes many examples
+                    // of returning `NULL` when a native function does not return a value.
+                    // Note, `raw::Local` in this context is a type alias for `*mut napi_value` and not a struct
+                    // https://nodejs.org/api/n-api.html#n_api_napi_create_function
+                    std::ptr::null_mut()
                 }
             })
         }
