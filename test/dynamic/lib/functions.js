@@ -56,6 +56,10 @@ describe('JsFunction', function() {
     }, Error, /^internal error in Neon module: oh no$/);
   });
 
+  it('panics on unexpected Err(Throw) with cx.try_catch', function() {
+    assert.throw(addon.unexpected_throw_and_catch, Error, /^internal error in Neon module: try_catch: unexpected Err\(Throw\) when VM is not in a throwing state$/);
+  })
+
   it('computes the right number of arguments', function() {
     assert.equal(addon.num_arguments(), 0);
     assert.equal(addon.num_arguments('a'), 1);

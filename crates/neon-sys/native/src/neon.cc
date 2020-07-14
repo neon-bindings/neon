@@ -553,10 +553,10 @@ extern "C" try_catch_control_t Neon_TryCatch_With(Neon_TryCatchGlue glue_fn, voi
 
   if (!try_catch.HasCaught()) {
     // It's possible, if unlikely, that a Neon user might return `Err(Throw)` even
-    // though the VM is not actually in a throwing state. In this case we will
-    // simply produce the JS undefined value.
+    // though the VM is not actually in a throwing state. In this case we return
+    // `CONTROL_UNEXPECTED_ERR` to signal that Rust should panic.
     if (ctrl == CONTROL_THREW) {
-      *result = Nan::Undefined();
+      return CONTROL_UNEXPECTED_ERR;
     }
     return CONTROL_RETURNED;
   } else {

@@ -73,6 +73,7 @@ register_module!(mut cx, {
     cx.export_function("throw_and_catch", throw_and_catch)?;
     cx.export_function("call_and_catch", call_and_catch)?;
     cx.export_function("panic_and_catch", panic_and_catch)?;
+    cx.export_function("unexpected_throw_and_catch", unexpected_throw_and_catch)?;
 
     cx.export_class::<JsEmitter>("Emitter")?;
     cx.export_class::<JsTestEmitter>("TestEmitter")?;

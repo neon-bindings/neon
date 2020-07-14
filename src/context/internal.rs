@@ -164,6 +164,9 @@ pub trait ContextInternal<'a>: Sized {
                 let local = unsafe { local.assume_init() };
                 Err(JsValue::new_internal(local))
             }
+            TryCatchControl::UnexpectedErr => {
+                panic!("try_catch: unexpected Err(Throw) when VM is not in a throwing state");
+            }
         }
     }
 
@@ -179,7 +182,7 @@ pub trait ContextInternal<'a>: Sized {
             } else if let Ok(result) = result {
                 Ok(result)
             } else {
-                Ok(JsUndefined::new_internal(self.env()).upcast())
+                panic!("try_catch: unexpected Err(Throw) when VM is not in a throwing state");
             }
         }
     }

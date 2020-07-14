@@ -82,7 +82,8 @@ impl Default for CCallback {
 pub enum TryCatchControl {
     Returned = 0,
     Threw = 1,
-    Panicked = 2
+    Panicked = 2,
+    UnexpectedErr = 3
 }
 
 #[derive(Clone, Copy)]

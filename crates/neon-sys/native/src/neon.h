@@ -15,7 +15,8 @@ typedef struct {
 typedef enum : uint8_t {
   CONTROL_RETURNED = 0,
   CONTROL_THREW = 1,
-  CONTROL_PANICKED = 2
+  CONTROL_PANICKED = 2,
+  CONTROL_UNEXPECTED_ERR = 3
 } try_catch_control_t;
 
 extern "C" {
@@ -154,7 +155,7 @@ extern "C" {
   typedef try_catch_control_t (*Neon_TryCatchGlue)(void *rust_thunk, void *cx, v8::Local<v8::Value> *result, void **unwind_value);
 
   // The `result` out-parameter can be assumed to be initialized if and only if this function
-  // does not return `CONTROL_PANICKED`.
+  // returns `CONTROL_RETURNED` or `CONTROL_THREW`.
   // The `unwind_value` out-parameter can be assumed to be initialized if and only if this
   // function returns `CONTROL_PANICKED`.
   try_catch_control_t Neon_TryCatch_With(Neon_TryCatchGlue glue, void *rust_thunk, void *cx, v8::Local<v8::Value> *result, void **unwind_value);
