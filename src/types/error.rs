@@ -40,7 +40,7 @@ impl JsError {
     pub fn error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<Handle<'a, JsError>> {
         let msg = cx.string(msg.as_ref());
         build(|out| unsafe {
-            neon_runtime::error::new_error(out, msg.to_raw());
+            neon_runtime::error::new_error(cx.env().to_raw(), out, msg.to_raw());
             true
         })
     }
@@ -49,7 +49,7 @@ impl JsError {
     pub fn type_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<Handle<'a, JsError>> {
         let msg = cx.string(msg.as_ref());
         build(|out| unsafe {
-            neon_runtime::error::new_type_error(out, msg.to_raw());
+            neon_runtime::error::new_type_error(cx.env().to_raw(), out, msg.to_raw());
             true
         })
     }
@@ -58,13 +58,13 @@ impl JsError {
     pub fn range_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<Handle<'a, JsError>> {
         let msg = cx.string(msg.as_ref());
         build(|out| unsafe {
-            neon_runtime::error::new_range_error(out, msg.to_raw());
+            neon_runtime::error::new_range_error(cx.env().to_raw(), out, msg.to_raw());
             true
         })
     }
 }
 
-pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> NeonResult<T>>(f: F) -> NeonResult<T> {
+pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> NeonResult<T>>(env: Env, f: F) -> NeonResult<T> {
     match catch_unwind(|| { f() }) {
         Ok(result) => result,
         Err(panic) => {
@@ -77,7 +77,9 @@ pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> NeonResult<T>>(f: F)
             };
             let (data, len) = Utf8::from(&msg[..]).truncate().lower();
             unsafe {
-                neon_runtime::error::throw_error_from_utf8(data, len);
+                #[cfg(feature = "napi-runtime")]
+                neon_runtime::error::clear_exception(env.to_raw());
+                neon_runtime::error::throw_error_from_utf8(env.to_raw(), data, len);
                 Err(Throw)
             }
         }

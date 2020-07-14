@@ -23,7 +23,7 @@ pub unsafe extern "C" fn set_return(_info: FunctionCallbackInfo, _value: Local) 
 
 }
 
-pub unsafe extern "C" fn get_isolate(info: FunctionCallbackInfo) -> Env { unimplemented!() }
+pub unsafe extern "C" fn get_isolate(_info: FunctionCallbackInfo) -> Env { unimplemented!() }
 
 // FIXME: Remove. This will never be implemented
 pub unsafe extern "C" fn current_isolate() -> Env { panic!("current_isolate won't be implemented in n-api") }
@@ -74,14 +74,11 @@ pub unsafe extern "C" fn len(env: Env, info: FunctionCallbackInfo) -> i32 {
     argc as i32
 }
 
-/// Mutates the `out` argument provided to refer to the `napi_value` of the `i`th argument
-/// passed to the function.
-pub unsafe extern "C" fn get(env: Env, info: FunctionCallbackInfo, i: i32, out: &mut Local) {
-    // TODO make this not allocate: https://github.com/neon-bindings/neon/issues/530
-    // Instead, we can probably get all the arguments at once in `neon` itself?
-    let mut args = vec![null_mut(); (i + 1) as usize];
+/// Returns the function arguments as a `Vec<Local>`
+pub unsafe extern "C" fn argv(env: Env, info: FunctionCallbackInfo) -> Vec<Local> {
+    let len = len(env, info);
+    let mut args = vec![null_mut(); len as usize];
     let mut num_args = args.len();
-
     let status = napi::napi_get_cb_info(
         env,
         info,
@@ -91,6 +88,5 @@ pub unsafe extern "C" fn get(env: Env, info: FunctionCallbackInfo, i: i32, out: 
         null_mut(),
     );
     assert_eq!(status, napi::napi_status::napi_ok);
-    assert!(num_args > i as usize);
-    *out = args[i as usize];
+    args
 }

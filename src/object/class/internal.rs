@@ -34,7 +34,7 @@ impl<T: Class> Callback<()> for MethodCallback<T> {
                 };
                 let dynamic_callback: fn(CallContext<T>) -> JsResult<JsValue> =
                     mem::transmute(neon_runtime::fun::get_dynamic_callback(cx.env().to_raw(), data));
-                if let Ok(value) = convert_panics(|| { dynamic_callback(cx) }) {
+                if let Ok(value) = convert_panics(env, || { dynamic_callback(cx) }) {
                     info.set_return(value);
                 }
             })
@@ -71,7 +71,7 @@ impl Callback<()> for ConstructorCallCallback {
                 let data = info.data(cx.env());
                 let kernel: fn(CallContext<JsValue>) -> JsResult<JsValue> =
                     mem::transmute(neon_runtime::class::get_call_kernel(data));
-                if let Ok(value) = convert_panics(|| { kernel(cx) }) {
+                if let Ok(value) = convert_panics(env, || { kernel(cx) }) {
                     info.set_return(value);
                 }
             })
@@ -93,7 +93,7 @@ impl<T: Class> Callback<*mut c_void> for AllocateCallback<T> {
                 let data = info.data(cx.env());
                 let kernel: fn(CallContext<JsUndefined>) -> NeonResult<T::Internals> =
                     mem::transmute(neon_runtime::class::get_allocate_kernel(data));
-                if let Ok(value) = convert_panics(|| { kernel(cx) }) {
+                if let Ok(value) = convert_panics(env, || { kernel(cx) }) {
                     let p = Box::into_raw(Box::new(value));
                     mem::transmute(p)
                 } else {
@@ -118,7 +118,7 @@ impl<T: Class> Callback<bool> for ConstructCallback<T> {
                 let data = info.data(cx.env());
                 let kernel: fn(CallContext<T>) -> NeonResult<Option<Handle<JsObject>>> =
                     mem::transmute(neon_runtime::class::get_construct_kernel(data));
-                match convert_panics(|| { kernel(cx) }) {
+                match convert_panics(env, || { kernel(cx) }) {
                     Ok(None) => true,
                     Ok(Some(obj)) => {
                         info.set_return(obj);
