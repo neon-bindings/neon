@@ -8,13 +8,21 @@ pub unsafe fn throw(_: Isolate, val: Local) {
 }
 
 /// Mutates the `out` argument provided to refer to a newly created `Error` object.
-pub use neon_sys::Neon_Error_NewError as new_error;
+pub unsafe fn new_error(_: Isolate, out: &mut Local, msg: Local) {
+    neon_sys::Neon_Error_NewError(out, msg)
+}
 
 /// Mutates the `out` argument provided to refer to a newly created `TypeError` object.
-pub use neon_sys::Neon_Error_NewTypeError as new_type_error;
+pub unsafe fn new_type_error(_: Isolate, out: &mut Local, msg: Local) {
+    neon_sys::Neon_Error_NewTypeError(out, msg)
+}
 
 /// Mutates the `out` argument provided to refer to a newly created `RangeError` object.
-pub use neon_sys::Neon_Error_NewRangeError as new_range_error;
+pub unsafe fn new_range_error(_: Isolate, out: &mut Local, msg: Local) {
+    neon_sys::Neon_Error_NewRangeError(out, msg)
+}
 
 /// Throws an `Error` object in the current context.
-pub use neon_sys::Neon_Error_ThrowErrorFromUtf8 as throw_error_from_utf8;
+pub unsafe fn throw_error_from_utf8(_: Isolate, msg: *const u8, len: i32) {
+    neon_sys::Neon_Error_ThrowErrorFromUtf8(msg, len)
+}

@@ -22,13 +22,11 @@ describe('JsFunction', function() {
     addon.check_string_and_number("string", 42);
   });
 
-  // The N-API runtime doesn't yet handle panics.
-  it.skip('converts a Rust panic to a throw in a function', function() {
+  it('converts a Rust panic to a throw in a function', function() {
     assert.throws(function() { addon.panic() }, Error, /^internal error in Neon module: zomg$/);
   });
 
-  // The N-API runtime doesn't yet handle panics.
-  it.skip('lets panic override a throw', function() {
+  it('lets panic override a throw', function() {
     assert.throws(function() { addon.panic_after_throw() }, Error, /^internal error in Neon module: this should override the RangeError$/);
   });
 
@@ -73,8 +71,7 @@ describe('JsFunction', function() {
     assert.equal(addon.is_argument_zero_some.call(null, ['a', 'b']), true);
   });
 
-  // The N-API runtime cannot yet throw errors.
-  it.skip('correctly casts an argument via cx.arguments', function() {
+  it('correctly casts an argument via cx.arguments', function() {
     assert.equal(addon.require_argument_zero_string('foobar'), 'foobar');
     assert.throws(function() { addon.require_argument_zero_string(new Date()) }, TypeError);
     assert.throws(function() { addon.require_argument_zero_string(17) }, TypeError);

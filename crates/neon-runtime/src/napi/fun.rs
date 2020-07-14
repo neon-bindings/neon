@@ -26,7 +26,7 @@ pub unsafe extern "C" fn new_template(_out: &mut Local, _env: Env, _callback: CC
     unimplemented!()
 }
 
-pub unsafe extern "C" fn get_dynamic_callback(env: Env, data: *mut c_void) -> *mut c_void {
+pub unsafe extern "C" fn get_dynamic_callback(_env: Env, data: *mut c_void) -> *mut c_void {
     data
 }
 
