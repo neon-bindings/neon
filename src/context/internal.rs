@@ -5,9 +5,8 @@ use std::boxed::Box;
 use std::cell::Cell;
 use std::mem::MaybeUninit;
 use std::os::raw::c_void;
-use std::panic::UnwindSafe;
 #[cfg(feature = "legacy-runtime")]
-use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
+use std::panic::{AssertUnwindSafe, UnwindSafe, catch_unwind, resume_unwind};
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::scope::Root;
@@ -172,7 +171,7 @@ pub trait ContextInternal<'a>: Sized {
 
     #[cfg(feature = "napi-runtime")]
     fn try_catch_internal<'b: 'a, F>(&mut self, f: F) -> Result<Handle<'a, JsValue>, Handle<'a, JsValue>>
-        where F: UnwindSafe + FnOnce(&mut Self) -> JsResult<'b, JsValue>
+        where F: FnOnce(&mut Self) -> JsResult<'b, JsValue>
     {
         let result = f(self);
         let mut local: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
