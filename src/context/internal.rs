@@ -12,12 +12,8 @@ use neon_runtime::raw;
 use neon_runtime::scope::Root;
 #[cfg(feature = "legacy-runtime")]
 use neon_runtime::try_catch::TryCatchControl;
-use types::{JsObject, JsValue};
-#[cfg(feature = "napi-runtime")]
-use types::JsUndefined;
+use types::{JsObject, JsValue, Value};
 use handle::Handle;
-#[cfg(feature = "legacy-runtime")]
-use handle::Managed;
 use object::class::ClassMap;
 use result::{JsResult, NeonResult};
 use super::ModuleContext;
@@ -130,8 +126,9 @@ pub trait ContextInternal<'a>: Sized {
     fn deactivate(&self) { self.scope_metadata().active.set(false); }
 
     #[cfg(feature = "legacy-runtime")]
-    fn try_catch_internal<'b: 'a, F>(&mut self, f: F) -> Result<Handle<'a, JsValue>, Handle<'a, JsValue>>
-        where F: UnwindSafe + FnOnce(&mut Self) -> JsResult<'b, JsValue>
+    fn try_catch_internal<'b: 'a, T, F>(&mut self, f: F) -> Result<Handle<'a, T>, Handle<'a, JsValue>>
+        where T: Value,
+              F: UnwindSafe + FnOnce(&mut Self) -> JsResult<'b, T>
     {
         // A closure does not have a guaranteed layout, so we need to box it in order to pass
         // a pointer to it across the boundary into C++.
@@ -141,7 +138,7 @@ pub trait ContextInternal<'a>: Sized {
         let mut unwind_value: MaybeUninit<*mut c_void> = MaybeUninit::zeroed();
 
         let ctrl = unsafe {
-            neon_runtime::try_catch::with(try_catch_glue::<Self, F>,
+            neon_runtime::try_catch::with(try_catch_glue::<Self, T, F>,
                                           rust_thunk as *mut c_void,
                                           (self as *mut Self) as *mut c_void,
                                           local.as_mut_ptr(),
@@ -157,7 +154,7 @@ pub trait ContextInternal<'a>: Sized {
             }
             TryCatchControl::Returned => {
                 let local = unsafe { local.assume_init() };
-                Ok(JsValue::new_internal(local))
+                Ok(Handle::new_internal(T::from_raw(local)))
             }
             TryCatchControl::Threw => {
                 let local = unsafe { local.assume_init() };
@@ -170,8 +167,9 @@ pub trait ContextInternal<'a>: Sized {
     }
 
     #[cfg(feature = "napi-runtime")]
-    fn try_catch_internal<'b: 'a, F>(&mut self, f: F) -> Result<Handle<'a, JsValue>, Handle<'a, JsValue>>
-        where F: FnOnce(&mut Self) -> JsResult<'b, JsValue>
+    fn try_catch_internal<'b: 'a, T, F>(&mut self, f: F) -> Result<Handle<'a, T>, Handle<'a, JsValue>>
+        where T: Value,
+              F: FnOnce(&mut Self) -> JsResult<'b, T>
     {
         let result = f(self);
         let mut local: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
@@ -188,12 +186,13 @@ pub trait ContextInternal<'a>: Sized {
 }
 
 #[cfg(feature = "legacy-runtime")]
-extern "C" fn try_catch_glue<'a, 'b: 'a, C, F>(rust_thunk: *mut c_void,
-                                               cx: *mut c_void,
-                                               returned: *mut raw::Local,
-                                               unwind_value: *mut *mut c_void) -> TryCatchControl
+extern "C" fn try_catch_glue<'a, 'b: 'a, C, T, F>(rust_thunk: *mut c_void,
+                                                  cx: *mut c_void,
+                                                  returned: *mut raw::Local,
+                                                  unwind_value: *mut *mut c_void) -> TryCatchControl
     where C: ContextInternal<'a>,
-          F: UnwindSafe + FnOnce(&mut C) -> JsResult<'b, JsValue>
+          T: Value,
+          F: UnwindSafe + FnOnce(&mut C) -> JsResult<'b, T>
 {
     let f: F = *unsafe { Box::from_raw(rust_thunk as *mut F) };
     let cx: &mut C = unsafe { std::mem::transmute(cx) };

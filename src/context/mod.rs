@@ -227,15 +227,17 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     #[cfg(all(feature = "try-catch-api", feature = "napi-runtime"))]
-    fn try_catch<'b: 'a, F>(&mut self, f: F) -> Result<Handle<'a, JsValue>, Handle<'a, JsValue>>
-        where F: FnOnce(&mut Self) -> JsResult<'b, JsValue>
+    fn try_catch<'b: 'a, T, F>(&mut self, f: F) -> Result<Handle<'a, T>, Handle<'a, JsValue>>
+        where T: Value,
+              F: FnOnce(&mut Self) -> JsResult<'b, T>
     {
         self.try_catch_internal(f)
     }
 
     #[cfg(all(feature = "try-catch-api", feature = "legacy-runtime"))]
-    fn try_catch<'b: 'a, F>(&mut self, f: F) -> Result<Handle<'a, JsValue>, Handle<'a, JsValue>>
-        where F: UnwindSafe + FnOnce(&mut Self) -> JsResult<'b, JsValue>
+    fn try_catch<'b: 'a, T, F>(&mut self, f: F) -> Result<Handle<'a, T>, Handle<'a, JsValue>>
+        where T: Value,
+              F: UnwindSafe + FnOnce(&mut Self) -> JsResult<'b, T>
     {
         self.try_catch_internal(f)
     }
