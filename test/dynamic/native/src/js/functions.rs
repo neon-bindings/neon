@@ -1,5 +1,6 @@
 use neon::prelude::*;
 use neon::object::This;
+use neon::result::Throw;
 
 fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let x = cx.argument::<JsNumber>(0)?.value();
@@ -98,4 +99,31 @@ pub fn compute_scoped(mut cx: FunctionContext) -> JsResult<JsNumber> {
         })?;
     }
     Ok(i)
+}
+
+pub fn throw_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let v = cx.argument_opt(0).unwrap_or_else(|| cx.undefined().upcast());
+    Ok(cx.try_catch(|cx| {
+        let _ = cx.throw(v)?;
+        Ok(cx.string("unreachable").upcast())
+    }).unwrap_or_else(|err| err))
+}
+
+pub fn call_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let f: Handle<JsFunction> = cx.argument(0)?;
+    Ok(cx.try_catch(|cx| {
+        let global = cx.global();
+        let args: Vec<Handle<JsValue>> = vec![];
+        f.call(cx, global, args)
+    }).unwrap_or_else(|err| err))
+}
+
+pub fn panic_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
+    Ok(cx.try_catch(|_| { panic!("oh no") })
+         .unwrap_or_else(|err| err))
+}
+
+pub fn unexpected_throw_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
+    Ok(cx.try_catch(|_| { Err(Throw) })
+         .unwrap_or_else(|err| err))
 }

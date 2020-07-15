@@ -14,4 +14,4 @@ crate-type = ["cdylib"]
 neon-build = {version = "*", path = "../../../crates/neon-build"}
 
 [dependencies]
-neon = {version = "*", path = "../../../", features = ["event-handler-api"]}
+neon = {version = "*", path = "../../../", features = ["event-handler-api", "try-catch-api"]}

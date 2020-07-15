@@ -78,8 +78,27 @@ impl Default for CCallback {
     }
 }
 
+#[repr(u8)]
+pub enum TryCatchControl {
+    Returned = 0,
+    Threw = 1,
+    Panicked = 2,
+    UnexpectedErr = 3
+}
+
 #[derive(Clone, Copy)]
 pub struct InheritedHandleScope;
+
+/// A Rust extern "glue function" for C++ to invoke a Rust closure with a `TryCatch`
+/// live on the stack.
+/// The `result` argument can be assumed to be initialized if and only if the glue
+/// function returns `TryCatchControl::Returned`.
+/// The `unwind_value` argument can be assumed to be initialized if and only if the
+/// glue function returns `TryCatchControl::Panicked`.
+pub type TryCatchGlue = extern fn(rust_thunk: *mut c_void,
+                                  cx: *mut c_void,
+                                  result: *mut Local,
+                                  unwind_value: *mut *mut c_void) -> TryCatchControl;
 
 extern "C" {
 
@@ -202,4 +221,15 @@ extern "C" {
     pub fn Neon_EventHandler_Schedule(thread_safe_cb: *mut c_void, rust_callback: *mut c_void,
                                         complete: unsafe extern fn(Local, Local, *mut c_void));
     pub fn Neon_EventHandler_Delete(thread_safe_cb: *mut c_void);
+
+    /// Invokes a Rust closure with a `TryCatch` live on the stack.
+    /// The `result` value can be assumed to be initialized if and only if this function
+    /// does not return `TryCatchControl::Panicked`.
+    /// The `unwind_value` value can be assumed to be initialized if and only if this
+    /// function returns `TryCatchControl::Panicked`.
+    pub fn Neon_TryCatch_With(glue: TryCatchGlue,
+                              rust_thunk: *mut c_void,
+                              cx: *mut c_void,
+                              result: *mut Local,
+                              unwind_value: *mut *mut c_void) -> TryCatchControl;
 }
