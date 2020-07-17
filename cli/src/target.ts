@@ -1,13 +1,9 @@
-import { existsSync } from 'fs';
-import { promisify } from 'util';
 import * as rust from './rust';
 import * as path from 'path';
 import Dict from 'ts-dict';
-import * as rimraf from 'rimraf';
 import Crate from './crate';
 import BuildSettings from './build-settings';
-
-const rmrf = promisify(rimraf);
+import { rimraf } from './helpers';
 
 const LIB_PREFIX: Dict<string> = {
   'darwin':  "lib",
@@ -67,9 +63,7 @@ export default class Target {
   async clean() {
     // Remove the directory associated with this target.
     const absolutePathSubdir = path.resolve(this.crate.root, 'target', this.subdirectory);
-    if (existsSync(absolutePathSubdir)) {
-      await rmrf(absolutePathSubdir);
-    }
+    await rimraf(absolutePathSubdir);
 
     // If this target was the active target, remove the addon.
     if (this.crate.artifacts.haveActivated(this.subdirectory)) {
