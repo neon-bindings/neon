@@ -16,3 +16,4 @@ pub mod convert;
 pub mod class;
 pub mod task;
 pub mod handler;
+pub mod try_catch;

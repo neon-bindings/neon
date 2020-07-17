@@ -5,6 +5,28 @@ use nodejs_sys as napi;
 
 use raw::{Env, Local};
 
+pub unsafe fn is_throwing(env: Env) -> bool {
+    let mut b: MaybeUninit<bool> = MaybeUninit::zeroed();
+
+    let status = napi::napi_is_exception_pending(env, b.as_mut_ptr());
+
+    assert_eq!(status, napi::napi_status::napi_ok);
+
+    b.assume_init()
+}
+
+pub unsafe fn catch_error(env: Env, error: *mut Local) -> bool {
+    if !is_throwing(env) {
+        return false;
+    }
+
+    let status = napi::napi_get_and_clear_last_exception(env, error);
+
+    assert_eq!(status, napi::napi_status::napi_ok);
+
+    true
+}
+
 pub unsafe fn clear_exception(env: Env) {
     let mut result = MaybeUninit::uninit();
     let status = napi::napi_is_exception_pending(env, result.as_mut_ptr());

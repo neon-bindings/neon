@@ -30,6 +30,36 @@ describe('JsFunction', function() {
     assert.throws(function() { addon.panic_after_throw() }, Error, /^internal error in Neon module: this should override the RangeError$/);
   });
 
+  it('catches an exception with cx.try_catch', function() {
+    var error = new Error('Something bad happened');
+    assert.equal(addon.throw_and_catch(error), error);
+    assert.equal(addon.throw_and_catch(42), 42);
+    assert.equal(addon.throw_and_catch('a string'), 'a string');
+    assert.equal(addon.call_and_catch(() => { throw 'shade' }), 'shade');
+    assert.equal(addon.call_and_catch(() => {
+      throw addon.call_and_catch(() => {
+        throw addon.call_and_catch(() => {
+          throw 'once';
+        }) + ' upon';
+      }) + ' a';
+    }) + ' time', 'once upon a time');
+  });
+
+  it('gets a regular value with cx.try_catch', function() {
+    assert.equal(addon.call_and_catch(() => { return 42 }), 42);
+  });
+
+  it('propagates a panic with cx.try_catch', function() {
+    assert.throws(function() {
+      addon.panic_and_catch();
+      return 'unreachable';
+    }, Error, /^internal error in Neon module: oh no$/);
+  });
+
+  it('panics on unexpected Err(Throw) with cx.try_catch', function() {
+    assert.throw(addon.unexpected_throw_and_catch, Error, /^internal error in Neon module: try_catch: unexpected Err\(Throw\) when VM is not in a throwing state$/);
+  })
+
   it('computes the right number of arguments', function() {
     assert.equal(addon.num_arguments(), 0);
     assert.equal(addon.num_arguments('a'), 1);

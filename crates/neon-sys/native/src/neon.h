@@ -5,11 +5,19 @@
 #include <stdint.h>
 #include <v8.h>
 
-// corresponding Rust struct `CCallback` defined in fun.rs
+// corresponding Rust struct `CCallback` defined in lib.rs
 typedef struct {
   void* static_callback;
   void* dynamic_callback;
 } callback_t;
+
+// corresponding Rust enum `TryCatchControl` defined in lib.rs
+typedef enum : uint8_t {
+  CONTROL_RETURNED = 0,
+  CONTROL_THREW = 1,
+  CONTROL_PANICKED = 2,
+  CONTROL_UNEXPECTED_ERR = 3
+} try_catch_control_t;
 
 extern "C" {
 
@@ -139,6 +147,18 @@ extern "C" {
   void* Neon_EventHandler_New(v8::Isolate *isolate, v8::Local<v8::Value> self, v8::Local<v8::Function> callback);
   void Neon_EventHandler_Schedule(void* thread_safe_cb, void* rust_callback, Neon_EventHandler handler);
   void Neon_EventHandler_Delete(void* thread_safe_cb);
+
+  // The `result` out-parameter can be assumed to be initialized if and only if this function
+  // returns `CONTROL_RETURNED`.
+  // The `unwind_value` out-parameter can be assumed to be initialized if and only if this
+  // function returns `CONTROL_PANICKED`.
+  typedef try_catch_control_t (*Neon_TryCatchGlue)(void *rust_thunk, void *cx, v8::Local<v8::Value> *result, void **unwind_value);
+
+  // The `result` out-parameter can be assumed to be initialized if and only if this function
+  // returns `CONTROL_RETURNED` or `CONTROL_THREW`.
+  // The `unwind_value` out-parameter can be assumed to be initialized if and only if this
+  // function returns `CONTROL_PANICKED`.
+  try_catch_control_t Neon_TryCatch_With(Neon_TryCatchGlue glue, void *rust_thunk, void *cx, v8::Local<v8::Value> *result, void **unwind_value);
 }
 
 #endif

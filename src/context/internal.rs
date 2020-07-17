@@ -1,13 +1,21 @@
 use std;
+#[cfg(feature = "legacy-runtime")]
+use std::any::Any;
+use std::boxed::Box;
 use std::cell::Cell;
+use std::mem::MaybeUninit;
 use std::os::raw::c_void;
+#[cfg(feature = "legacy-runtime")]
+use std::panic::{AssertUnwindSafe, UnwindSafe, catch_unwind, resume_unwind};
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::scope::Root;
-use types::JsObject;
+#[cfg(feature = "legacy-runtime")]
+use neon_runtime::try_catch::TryCatchControl;
+use types::{JsObject, JsValue, Value};
 use handle::Handle;
 use object::class::ClassMap;
-use result::NeonResult;
+use result::{JsResult, NeonResult};
 use super::ModuleContext;
 
 #[cfg(feature = "legacy-runtime")]
@@ -116,6 +124,102 @@ pub trait ContextInternal<'a>: Sized {
 
     fn activate(&self) { self.scope_metadata().active.set(true); }
     fn deactivate(&self) { self.scope_metadata().active.set(false); }
+
+    #[cfg(feature = "legacy-runtime")]
+    fn try_catch_internal<'b: 'a, T, F>(&mut self, f: F) -> Result<Handle<'a, T>, Handle<'a, JsValue>>
+        where T: Value,
+              F: UnwindSafe + FnOnce(&mut Self) -> JsResult<'b, T>
+    {
+        // A closure does not have a guaranteed layout, so we need to box it in order to pass
+        // a pointer to it across the boundary into C++.
+        let rust_thunk = Box::into_raw(Box::new(f));
+
+        let mut local: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
+        let mut unwind_value: MaybeUninit<*mut c_void> = MaybeUninit::zeroed();
+
+        let ctrl = unsafe {
+            neon_runtime::try_catch::with(try_catch_glue::<Self, T, F>,
+                                          rust_thunk as *mut c_void,
+                                          (self as *mut Self) as *mut c_void,
+                                          local.as_mut_ptr(),
+                                          unwind_value.as_mut_ptr())
+        };
+
+        match ctrl {
+            TryCatchControl::Panicked => {
+                let unwind_value: Box<dyn Any + Send> = *unsafe {
+                    Box::from_raw(unwind_value.assume_init() as *mut Box<dyn Any + Send>)
+                };
+                resume_unwind(unwind_value);
+            }
+            TryCatchControl::Returned => {
+                let local = unsafe { local.assume_init() };
+                Ok(Handle::new_internal(T::from_raw(local)))
+            }
+            TryCatchControl::Threw => {
+                let local = unsafe { local.assume_init() };
+                Err(JsValue::new_internal(local))
+            }
+            TryCatchControl::UnexpectedErr => {
+                panic!("try_catch: unexpected Err(Throw) when VM is not in a throwing state");
+            }
+        }
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    fn try_catch_internal<'b: 'a, T, F>(&mut self, f: F) -> Result<Handle<'a, T>, Handle<'a, JsValue>>
+        where T: Value,
+              F: FnOnce(&mut Self) -> JsResult<'b, T>
+    {
+        let result = f(self);
+        let mut local: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
+        unsafe {
+            if neon_runtime::error::catch_error(self.env().to_raw(), local.as_mut_ptr()) {
+                Err(JsValue::new_internal(local.assume_init()))
+            } else if let Ok(result) = result {
+                Ok(result)
+            } else {
+                panic!("try_catch: unexpected Err(Throw) when VM is not in a throwing state");
+            }
+        }
+    }
+}
+
+#[cfg(feature = "legacy-runtime")]
+extern "C" fn try_catch_glue<'a, 'b: 'a, C, T, F>(rust_thunk: *mut c_void,
+                                                  cx: *mut c_void,
+                                                  returned: *mut raw::Local,
+                                                  unwind_value: *mut *mut c_void) -> TryCatchControl
+    where C: ContextInternal<'a>,
+          T: Value,
+          F: UnwindSafe + FnOnce(&mut C) -> JsResult<'b, T>
+{
+    let f: F = *unsafe { Box::from_raw(rust_thunk as *mut F) };
+    let cx: &mut C = unsafe { std::mem::transmute(cx) };
+
+    // The mutable reference to the context is a fiction of the Neon library,
+    // since it doesn't actually contain any data in the Rust memory space,
+    // just a link to the JS VM. So we don't need to do any kind of poisoning
+    // of the context when a panic occurs. So we suppress the Rust compiler
+    // errors from using the mutable reference across an unwind boundary.
+    match catch_unwind(AssertUnwindSafe(|| f(cx))) {
+        // No Rust panic, no JS exception.
+        Ok(Ok(result)) => unsafe {
+            *returned = result.to_raw();
+            TryCatchControl::Returned
+        }
+        // No Rust panic, caught a JS exception.
+        Ok(Err(_)) => {
+            TryCatchControl::Threw
+        }
+        // Rust panicked.
+        Err(err) => unsafe {
+            // A panic value has an undefined layout, so wrap it in an extra box.
+            let boxed = Box::new(err);
+            *unwind_value = Box::into_raw(boxed) as *mut c_void;
+            TryCatchControl::Panicked
+        }
+    }
 }
 
 #[cfg(feature = "legacy-runtime")]
