@@ -32,9 +32,9 @@ See our [Neon fundamentals docs](https://neon-bindings.com/docs/primitives) and 
 
 ### Node.js
 
-| Node 8 | Node 10 | Node 12 |
-| ------ | ------- | ------- |
-| ✓      | ✓       | ✓       |
+| Node 10 | Node 12 | Node 14 |
+| ------- | ------- | ------- |
+| ✓       | ✓       | ✓       |
 
 Support for [LTS versions of Node](https://github.com/nodejs/LTS#lts-schedule) and current are expected. If you're using a different version of Node and believe it should be supported, let us know.
 

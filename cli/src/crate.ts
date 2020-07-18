@@ -1,9 +1,9 @@
 import * as TOML from 'toml';
 import * as path from 'path';
-import { readFileSync } from 'fs';
-import { remove, copy } from './async/fs';
+import { readFileSync, promises as fs } from 'fs';
 import Artifacts from './artifacts';
 import Project from './project';
+import { rimraf } from './helpers';
 
 export type CrateOptions = {
   subdirectory?: string,
@@ -14,7 +14,7 @@ export type CrateOptions = {
 export default class Crate {
   /** The Neon project containing this crate. */
   readonly project: Project;
-  /** The subpath of this crate relative to the Neon project root. */  
+  /** The subpath of this crate relative to the Neon project root. */
   readonly subdirectory: string;
   /** The subpath of the `.node` addon relative to this crate root. */
   readonly nodefile: string;
@@ -43,12 +43,12 @@ export default class Crate {
   }
 
   async finish(dylib: string) {
-    await remove(this.addon);
-    await copy(dylib, this.addon);
+    await rimraf(this.addon);
+    await fs.copyFile(dylib, this.addon);
   }
 
   async removeAddon() {
-    await remove(this.addon);
+    await rimraf(this.addon);
   }
 
   resetArtifacts() {

@@ -1,6 +1,5 @@
-import { readFile, writeFile, mkdirs, stat } from '../async/fs';
+import { mkdirSync, writeFileSync, promises as fsPromises } from 'fs';
 import { prompt } from 'inquirer';
-import gitconfig from '../async/git-config';
 import * as path from 'path';
 import * as handlebars from 'handlebars';
 import * as semver from 'semver';
@@ -8,6 +7,9 @@ import * as style from '../style';
 import validateLicense = require('validate-npm-package-license');
 import validateName = require('validate-npm-package-name');
 import * as JSON from 'ts-typed-json';
+const gitconfig = require('git-config');
+
+const { readFile, stat } = fsPromises;
 
 const ROOT_DIR = path.resolve(__dirname, '..', '..');
 const TEMPLATES_DIR = path.resolve(ROOT_DIR, 'templates');
@@ -36,7 +38,7 @@ async function guessAuthor() {
     email: undefined
   };
   try {
-    let config = await gitconfig();
+    let config = gitconfig.sync();
     if (config.user.name) {
       author.name = config.user.name;
     }
@@ -193,16 +195,16 @@ export default async function wizard(pwd: string, name: string, neon: string | n
   let native_ = path.resolve(root, 'native');
   let src = path.resolve(native_, 'src');
 
-  await mkdirs(lib);
-  await mkdirs(src);
+  mkdirSync(lib, { recursive: true });
+  mkdirSync(src, { recursive: true });
 
-  await writeFile(path.resolve(root,    '.gitignore'),   (await GITIGNORE_TEMPLATE)(ctx), { flag: 'wx' });
-  await writeFile(path.resolve(root,    'package.json'), (await NPM_TEMPLATE)(ctx),       { flag: 'wx' });
-  await writeFile(path.resolve(native_, 'Cargo.toml'),   (await CARGO_TEMPLATE)(ctx),     { flag: 'wx' });
-  await writeFile(path.resolve(root,    'README.md'),    (await README_TEMPLATE)(ctx),    { flag: 'wx' });
-  await writeFile(path.resolve(root,    answers.node),   (await INDEXJS_TEMPLATE)(ctx),   { flag: 'wx' });
-  await writeFile(path.resolve(src,     'lib.rs'),       (await LIBRS_TEMPLATE)(ctx),     { flag: 'wx' });
-  await writeFile(path.resolve(native_, 'build.rs'),     (await BUILDRS_TEMPLATE)(ctx),   { flag: 'wx' });
+  writeFileSync(path.resolve(root,    '.gitignore'),   (await GITIGNORE_TEMPLATE)(ctx), { flag: 'wx' });
+  writeFileSync(path.resolve(root,    'package.json'), (await NPM_TEMPLATE)(ctx),       { flag: 'wx' });
+  writeFileSync(path.resolve(native_, 'Cargo.toml'),   (await CARGO_TEMPLATE)(ctx),     { flag: 'wx' });
+  writeFileSync(path.resolve(root,    'README.md'),    (await README_TEMPLATE)(ctx),    { flag: 'wx' });
+  writeFileSync(path.resolve(root,    answers.node),   (await INDEXJS_TEMPLATE)(ctx),   { flag: 'wx' });
+  writeFileSync(path.resolve(src,     'lib.rs'),       (await LIBRS_TEMPLATE)(ctx),     { flag: 'wx' });
+  writeFileSync(path.resolve(native_, 'build.rs'),     (await BUILDRS_TEMPLATE)(ctx),   { flag: 'wx' });
 
   let relativeRoot = path.relative(pwd, root);
   let relativeNode = path.relative(pwd, path.resolve(root, answers.node));

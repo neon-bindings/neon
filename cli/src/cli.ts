@@ -10,7 +10,6 @@ import log from './log';
 import { setup as setupLogging } from './log';
 import Dict from 'ts-dict';
 import * as JSON from 'ts-typed-json';
-import unknown from 'ts-unknown';
 import { Toolchain } from './rust';
 
 let metadata = JSON.loadSync(path.resolve(__dirname, '..', 'package.json'));
@@ -291,7 +290,6 @@ export default class CLI {
       }
 
       process.exit(1);
-      return;
     }
 
     try {
