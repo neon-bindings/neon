@@ -1,11 +1,10 @@
 import * as rust from './rust';
 import * as path from 'path';
-import Dict from 'ts-dict';
 import Crate from './crate';
 import BuildSettings from './build-settings';
 import { rimraf } from './helpers';
 
-const LIB_PREFIX: Dict<string> = {
+const LIB_PREFIX: Record<string, string> = {
   'darwin':  "lib",
   'freebsd': "lib",
   'linux':   "lib",
@@ -13,7 +12,7 @@ const LIB_PREFIX: Dict<string> = {
   'win32':   ""
 };
 
-const LIB_SUFFIX: Dict<string> = {
+const LIB_SUFFIX: Record<string, string> = {
   'darwin':  ".dylib",
   'freebsd': ".so",
   'linux':   ".so",

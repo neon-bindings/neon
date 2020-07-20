@@ -8,7 +8,6 @@ import cliArgs = require('command-line-args');
 import cliUsage = require('command-line-usage');
 import log from './log';
 import { setup as setupLogging } from './log';
-import Dict from 'ts-dict';
 import * as JSON from 'ts-typed-json';
 import { Toolchain } from './rust';
 
@@ -42,7 +41,7 @@ function parseModules(cwd: string, names: string[], paths: boolean) {
   };
 }
 
-type Action = (this: CLI, options: Dict<unknown>, usage: string) => void;
+type Action = (this: CLI, options: Record<string, unknown>, usage: string) => void;
 
 type Command = {
   args: cliArgs.OptionDefinition[],
@@ -50,7 +49,7 @@ type Command = {
   action: Action
 };
 
-type Spec = Dict<Command>;
+type Spec = Record<string, Command>;
 
 const spec: Spec = {
 
@@ -246,7 +245,7 @@ const spec: Spec = {
         return;
       }
 
-      console.log(JSON.asObject(metadata).version);
+      console.log((JSON.asObject(metadata) as any).version);
     }
   }
 

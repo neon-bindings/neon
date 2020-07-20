@@ -1,5 +1,4 @@
 declare module 'command-line-usage' {
-    import Dict from 'ts-dict';
 
     namespace internal {
         export type Sections = Section | Section[];
@@ -8,7 +7,7 @@ declare module 'command-line-usage' {
 
         export type ContentSection = {
             header: string,
-            content: string | string[] | Dict<any>[],
+            content: string | string[] | Record<string, any>[],
             raw?: boolean
         };
 
@@ -43,7 +42,6 @@ declare module 'command-line-commands' {
 }
 
 declare module 'command-line-args' {
-    import Dict from 'ts-dict';
 
     namespace internal {
         export type CommandLineArgsOptions = {
@@ -66,7 +64,7 @@ declare module 'command-line-args' {
 
     function internal(optionDefinitions: internal.OptionDefinition[],
                       options?: internal.CommandLineArgsOptions)
-        : Dict<unknown>;
+        : Record<string, unknown>;
 
     export = internal;
 }

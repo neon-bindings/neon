@@ -1,7 +1,11 @@
 import BuildSettings from './build-settings';
 import { writeFileSync } from 'fs';
-import Dict from 'ts-dict';
 import * as JSON from 'ts-typed-json';
+
+type ArtifactsOutput = {
+  active?: any,
+  targets?: string[]
+}
 
 /**
  * The current state of build artifacts, for all targets.
@@ -16,9 +20,9 @@ export default class Artifacts {
   /**
    * A table tracking the state of any build artifacts in the `target`
    * directory.
-   * 
+   *
    * On Windows, this table has the type:
-   * 
+   *
    * ```
    * {
    *   "i686-pc-windows-msvc\\debug"?: BuildSettings,
@@ -27,9 +31,9 @@ export default class Artifacts {
    *   "x86_64-pc-windows-msvc\\release"?: BuildSettings
    * }
    * ```
-   * 
+   *
    * On Linux and macOS, this table has the type:
-   * 
+   *
    * ```
    * {
    *   "debug"?: BuildSettings,
@@ -37,10 +41,10 @@ export default class Artifacts {
    * }
    * ```
    */
-  private targets: Dict<BuildSettings>;
+  private targets: Record<string, BuildSettings>;
 
   constructor(active: string | null = null,
-              targets: Dict<BuildSettings> = {})
+              targets: Record<string, BuildSettings> = {})
   {
     this.active = active;
     this.targets = targets;
@@ -58,15 +62,15 @@ export default class Artifacts {
     if (!JSON.isObject(json)) {
       throw new TypeError("expected object, found " + (json === null ? "null" : typeof json));
     }
-    let active = json.active;
+    let { active } = json as ArtifactsOutput;
     if (typeof active !== 'string' && active !== null) {
       throw new TypeError("json.active is not a string or null");
     }
-    let jsonTargets = json.targets;
+    let { targets: jsonTargets } = json as any;
     if (!JSON.isObject(jsonTargets)) {
       throw new TypeError("json.targets is not an object");
     }
-    let targets: Dict<BuildSettings> = {};
+    let targets: Record<string, BuildSettings> = {};
     for (let key of Object.keys(jsonTargets)) {
       targets[key] = BuildSettings.fromJSON(jsonTargets[key]);
     }
