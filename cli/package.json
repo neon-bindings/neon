@@ -32,7 +32,6 @@
   },
   "devDependencies": {
     "@types/chalk": "^2.2.0",
-    "@types/git-config": "0.0.29",
     "@types/inquirer": "^6.5.0",
     "@types/mocha": "^8.0.0",
     "@types/node": "10.17.26",

@@ -1,8 +1,8 @@
 import { mkdirSync, writeFileSync, promises as fsPromises } from 'fs';
 import { prompt } from 'inquirer';
-import * as path from 'path';
-import * as handlebars from 'handlebars';
-import * as semver from 'semver';
+import path from 'path';
+import handlebars from 'handlebars';
+import semver from 'semver';
 import * as style from '../style';
 import validateLicense = require('validate-npm-package-license');
 import validateName = require('validate-npm-package-name');
@@ -32,8 +32,13 @@ const LIBRS_TEMPLATE     = compile('lib.rs.hbs');
 const README_TEMPLATE    = compile('README.md.hbs');
 const BUILDRS_TEMPLATE   = compile('build.rs.hbs');
 
+type Author = {
+  name?: string,
+  email?: string
+};
+
 async function guessAuthor() {
-  let author = {
+  let author: Author = {
     name: process.env.USER || process.env.USERNAME,
     email: undefined
   };

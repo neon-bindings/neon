@@ -1,5 +1,5 @@
 import { promisify } from 'util';
-import * as child from 'child_process';
+import child from 'child_process';
 
 export function spawn(command: string, args?: string[], options?: child.SpawnOptions): Promise<number> {
   return new Promise((resolve, reject) => {

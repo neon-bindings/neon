@@ -1,8 +1,8 @@
 import * as rust from './rust';
-import * as path from 'path';
+import path from 'path';
 import Crate from './crate';
 import BuildSettings from './build-settings';
-import { rimraf } from './helpers';
+import { rimraf } from './async/rimraf';
 
 const LIB_PREFIX: Record<string, string> = {
   'darwin':  "lib",

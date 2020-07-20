@@ -1,9 +1,9 @@
-import * as TOML from 'toml';
-import * as path from 'path';
+import TOML from 'toml';
+import path from 'path';
 import { readFileSync, promises as fs } from 'fs';
 import Artifacts from './artifacts';
 import Project from './project';
-import { rimraf } from './helpers';
+import { rimraf } from './async/rimraf';
 
 export type CrateOptions = {
   subdirectory?: string,

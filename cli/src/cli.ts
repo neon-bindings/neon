@@ -1,4 +1,4 @@
-import * as path from 'path';
+import path from 'path';
 import neon_new from './ops/neon_new';
 import neon_build from './ops/neon_build';
 import neon_clean from './ops/neon_clean';
