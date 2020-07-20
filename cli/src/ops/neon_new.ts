@@ -7,7 +7,7 @@ import * as style from '../style';
 import validateLicense = require('validate-npm-package-license');
 import validateName = require('validate-npm-package-name');
 import * as JSON from 'ts-typed-json';
-const gitconfig = require('git-config');
+import gitconfig from 'git-config';
 
 const { readFile, stat } = fsPromises;
 
