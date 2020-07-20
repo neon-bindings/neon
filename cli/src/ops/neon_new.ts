@@ -75,6 +75,24 @@ async function parseNeonVersion(flag: string | null) : Promise<NeonVersion> {
   return { type: path.isAbsolute(flag) ? "absolute" : "relative", value: flag };
 }
 
+interface Answers {
+  name: {
+    npm: {
+      full: string;
+      scope: string | null;
+      local: string;
+    };
+    cargo: {
+      external: string;
+      internal: string;
+    };
+  };
+  description: string;
+  git: string;
+  author: string;
+  node: string;
+}
+
 export default async function wizard(pwd: string, name: string, neon: string | null, features: string | null, noDefaultFeatures: boolean) {
   let its = validateName(name);
   if (!its.validForNewPackages) {
@@ -94,7 +112,7 @@ export default async function wizard(pwd: string, name: string, neon: string | n
   let root = path.resolve(pwd, local);
   let guess = await guessAuthor();
 
-  let answers = await prompt([
+  let answers: Answers = await prompt([
     {
       type: 'input',
       name: 'version',

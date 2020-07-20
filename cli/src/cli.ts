@@ -159,7 +159,7 @@ const spec: Spec = {
     }, {
       header: "Synopsis",
       content: ["$ neon build [options]",
-                "$ neon build [options] [underline]{module} ..."]
+                "$ neon build [options] {underline module} ..."]
     }, {
       header: "Options",
       optionList: [{
@@ -202,7 +202,7 @@ const spec: Spec = {
     }, {
       header: "Synopsis",
       content: ["$ neon clean [options]",
-                "$ neon clean [options] [underline]{module} ..."]
+                "$ neon clean [options] {underline module} ..."]
     }, {
       header: "Options",
       optionList: [{
