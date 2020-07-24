@@ -9,9 +9,13 @@ unsafe fn is_type(env: Env, val: Local, expect: napi::napi_valuetype) -> bool {
     actual == expect
 }
 
-pub unsafe extern "C" fn is_undefined(_env: Env, _val: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn is_undefined(env: Env, val: Local) -> bool {
+    is_type(env, val, napi::napi_valuetype::napi_undefined)
+}
 
-pub unsafe extern "C" fn is_null(_env: Env, _val: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn is_null(env: Env, val: Local) -> bool {
+    is_type(env, val, napi::napi_valuetype::napi_null)
+}
 
 /// Is `val` a JavaScript number?
 pub unsafe extern "C" fn is_number(env: Env, val: Local) -> bool {
@@ -42,7 +46,14 @@ pub unsafe extern "C" fn is_function(env: Env, val: Local) -> bool {
     is_type(env, val, napi::napi_valuetype::napi_function)
 }
 
-pub unsafe extern "C" fn is_error(_env: Env, _val: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn is_error(env: Env, val: Local) -> bool {
+    let mut result = false;
+    if napi::napi_is_error(env, val, &mut result as *mut _) == napi::napi_status::napi_ok {
+        result
+    } else {
+        false
+    }
+}
 
 /// Is `val` a Node.js Buffer instance?
 pub unsafe extern "C" fn is_buffer(env: Env, val: Local) -> bool {
