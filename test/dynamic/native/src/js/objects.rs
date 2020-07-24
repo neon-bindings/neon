@@ -76,6 +76,11 @@ pub fn write_array_buffer_with_borrow_mut(mut cx: FunctionContext) -> JsResult<J
     Ok(cx.undefined())
 }
 
+pub fn return_buffer(mut cx: FunctionContext) -> JsResult<JsBuffer> {
+    let b: Handle<JsBuffer> = cx.buffer(16)?;
+    Ok(b)
+}
+
 pub fn read_buffer_with_lock(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let b: Handle<JsBuffer> = cx.argument(0)?;
     let i = cx.argument::<JsNumber>(1)?.value() as u32 as usize;

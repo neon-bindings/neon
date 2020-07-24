@@ -102,14 +102,16 @@ pub enum CallKind {
 /// Types of JS values that support the `Borrow` and `BorrowMut` traits can be inspected while the engine is locked by passing a reference to a `Lock` to their methods.
 pub struct Lock<'a> {
     pub(crate) ledger: RefCell<Ledger>,
+    pub(crate) env: Env,
     phantom: PhantomData<&'a ()>
 }
 
 impl<'a> Lock<'a> {
-    fn new() -> Self {
+    fn new(env: Env) -> Self {
         Lock {
             ledger: RefCell::new(Ledger::new()),
-            phantom: PhantomData
+            env,
+            phantom: PhantomData,
         }
     }
 }
@@ -122,9 +124,9 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
     /// 
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
-    fn lock(&self) -> Lock {
+    fn lock(&self) -> Lock<'_> {
         self.check_active();
-        Lock::new()
+        Lock::new(self.env())
     }
 
     /// Convenience method for locking the JavaScript engine and borrowing a single JS value's internals.

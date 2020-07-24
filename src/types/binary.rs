@@ -23,8 +23,9 @@ pub struct JsBuffer(raw::Local);
 impl JsBuffer {
 
     /// Constructs a new `Buffer` object, safely zero-filled.
-    pub fn new<'a, C: Context<'a>>(_: &mut C, size: u32) -> JsResult<'a, JsBuffer> {
-        build(|out| { unsafe { neon_runtime::buffer::new(out, size) } })
+    pub fn new<'a, C: Context<'a>>(cx: &mut C, size: u32) -> JsResult<'a, JsBuffer> {
+        let env = cx.env();
+        build(|out| { unsafe { neon_runtime::buffer::new(env.to_raw(), out, size) } })
     }
 
     /// Constructs a new `Buffer` object, safely zero-filled.
@@ -178,7 +179,7 @@ impl<'a> Borrow for &'a JsBuffer {
         // Initialize pointer
         unsafe {
             let pointer = data.as_mut_ptr();
-            (*pointer).size = neon_runtime::buffer::data(&mut (*pointer).base, self.to_raw());
+            (*pointer).size = neon_runtime::buffer::data(guard.env.to_raw(), &mut (*pointer).base, self.to_raw());
         }
 
         // UB if pointer is not initialized!
@@ -203,7 +204,7 @@ impl<'a> BorrowMut for &'a mut JsBuffer {
         // Initialize pointer
         unsafe {
             let pointer = data.as_mut_ptr();
-            (*pointer).size = neon_runtime::buffer::data(&mut (*pointer).base, self.to_raw());
+            (*pointer).size = neon_runtime::buffer::data(guard.env.to_raw(), &mut (*pointer).base, self.to_raw());
         }
 
         // UB if pointer is not initialized!
@@ -222,7 +223,7 @@ impl<'a> Borrow for &'a JsArrayBuffer {
         // Initialize pointer
         unsafe {
             let pointer = data.as_mut_ptr();
-            (*pointer).size = neon_runtime::arraybuffer::data(&mut (*pointer).base, self.to_raw());
+            (*pointer).size = neon_runtime::arraybuffer::data(guard.env.to_raw(), &mut (*pointer).base, self.to_raw());
         }
 
         // UB if pointer is not initialized!
@@ -247,7 +248,7 @@ impl<'a> BorrowMut for &'a mut JsArrayBuffer {
         // Initialize pointer
         unsafe {
             let pointer = data.as_mut_ptr();
-            (*pointer).size = neon_runtime::arraybuffer::data(&mut (*pointer).base, self.to_raw());
+            (*pointer).size = neon_runtime::arraybuffer::data(guard.env.to_raw(), &mut (*pointer).base, self.to_raw());
         }
 
         // UB if pointer is not initialized!

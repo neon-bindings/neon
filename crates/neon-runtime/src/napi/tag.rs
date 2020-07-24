@@ -43,6 +43,16 @@ pub unsafe extern "C" fn is_function(env: Env, val: Local) -> bool {
 
 pub unsafe extern "C" fn is_error(_env: Env, _val: Local) -> bool { unimplemented!() }
 
-pub unsafe extern "C" fn is_buffer(_env: Env, _obj: Local) -> bool { unimplemented!() }
+/// Is `val` a Node.js Buffer instance?
+pub unsafe extern "C" fn is_buffer(env: Env, val: Local) -> bool {
+    let mut result = false;
+    assert_eq!(napi::napi_is_buffer(env, val, &mut result as *mut _), napi::napi_status::napi_ok);
+    result
+}
 
-pub unsafe extern "C" fn is_arraybuffer(_env: Env, _obj: Local) -> bool { unimplemented!() }
+/// Is `val` an ArrayBuffer instance?
+pub unsafe extern "C" fn is_arraybuffer(env: Env, val: Local) -> bool {
+    let mut result = false;
+    assert_eq!(napi::napi_is_arraybuffer(env, val, &mut result as *mut _), napi::napi_status::napi_ok);
+    result
+}

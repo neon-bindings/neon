@@ -188,7 +188,7 @@ extern "C" bool Neon_Convert_ToObject(v8::Local<v8::Object> *out, v8::Local<v8::
   return maybe.ToLocal(out);
 }
 
-extern "C" bool Neon_Buffer_New(v8::Local<v8::Object> *out, uint32_t size) {
+extern "C" bool Neon_Buffer_New(v8::Isolate *isolate, v8::Local<v8::Object> *out, uint32_t size) {
   Nan::MaybeLocal<v8::Object> maybe = Nan::NewBuffer(size);
   if (!maybe.ToLocal(out)) {
     return false;
@@ -204,7 +204,7 @@ extern "C" bool Neon_Buffer_Uninitialized(v8::Local<v8::Object> *out, uint32_t s
   return maybe.ToLocal(out);
 }
 
-extern "C" size_t Neon_Buffer_Data(void **base_out, v8::Local<v8::Object> obj) {
+extern "C" size_t Neon_Buffer_Data(v8::Isolate *isolate, void **base_out, v8::Local<v8::Object> obj) {
   *base_out = node::Buffer::Data(obj);
 
   return node::Buffer::Length(obj);
@@ -219,7 +219,7 @@ extern "C" bool Neon_ArrayBuffer_New(v8::Local<v8::ArrayBuffer> *out, v8::Isolat
   return true;
 }
 
-extern "C" size_t Neon_ArrayBuffer_Data(void **base_out, v8::Local<v8::ArrayBuffer> buffer) {
+extern "C" size_t Neon_ArrayBuffer_Data(v8::Isolate *isolate, void **base_out, v8::Local<v8::ArrayBuffer> buffer) {
   v8::ArrayBuffer::Contents contents = buffer->GetContents();
   *base_out = contents.Data();
 
