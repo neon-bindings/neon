@@ -5,11 +5,8 @@ use nodejs_sys as napi;
 /// Return true if an `napi_value` `val` has the expected value type.
 unsafe fn is_type(env: Env, val: Local, expect: napi::napi_valuetype) -> bool {
     let mut actual = napi::napi_valuetype::napi_undefined;
-    if napi::napi_typeof(env, val, &mut actual as *mut _) == napi::napi_status::napi_ok {
-        actual == expect
-    } else {
-        false
-    }
+    assert_eq!(napi::napi_typeof(env, val, &mut actual as *mut _), napi::napi_status::napi_ok);
+    actual == expect
 }
 
 pub unsafe extern "C" fn is_undefined(_env: Env, _val: Local) -> bool { unimplemented!() }
@@ -37,11 +34,8 @@ pub unsafe extern "C" fn is_object(env: Env, val: Local) -> bool {
 
 pub unsafe extern "C" fn is_array(env: Env, val: Local) -> bool {
     let mut result = false;
-    if napi::napi_is_array(env, val, &mut result as *mut _) == napi::napi_status::napi_ok {
-        result
-    } else {
-        false
-    }
+    assert_eq!(napi::napi_is_array(env, val, &mut result as *mut _), napi::napi_status::napi_ok);
+    result
 }
 
 pub unsafe extern "C" fn is_function(env: Env, val: Local) -> bool {
