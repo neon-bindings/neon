@@ -124,7 +124,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
     /// 
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
-    fn lock<'c>(&'c self) -> Lock<'c> {
+    fn lock(&self) -> Lock<'_> {
         self.check_active();
         Lock::new(self.env())
     }
