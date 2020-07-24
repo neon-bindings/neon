@@ -1,10 +1,15 @@
 //! Facilities for working with Array `napi_value`s.
 
-use raw::{Local, Env};
+use raw::{Env, Local};
 
 use nodejs_sys as napi;
 
-pub unsafe extern "C" fn new(_out: &mut Local, _env: Env, _length: u32) { unimplemented!() }
+pub unsafe extern "C" fn new(out: &mut Local, env: Env, length: u32) {
+    assert_eq!(
+        napi::napi_create_array_with_length(env, length as usize, out as *mut _),
+        napi::napi_status::napi_ok,
+    );
+}
 
 /// Gets the length of a `napi_value` containing a JavaScript Array.
 ///
@@ -13,6 +18,9 @@ pub unsafe extern "C" fn new(_out: &mut Local, _env: Env, _length: u32) { unimpl
 /// exception.
 pub unsafe extern "C" fn len(env: Env, array: Local) -> u32 {
     let mut len = 0;
-    assert_eq!(napi::napi_get_array_length(env, array, &mut len as *mut _), napi::napi_status::napi_ok);
+    assert_eq!(
+        napi::napi_get_array_length(env, array, &mut len as *mut _),
+        napi::napi_status::napi_ok
+    );
     len
 }
