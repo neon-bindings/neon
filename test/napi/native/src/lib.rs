@@ -102,6 +102,7 @@ register_module!(|mut cx| {
     cx.export_function("return_js_array", return_js_array)?;
     cx.export_function("return_js_array_with_number", return_js_array_with_number)?;
     cx.export_function("return_js_array_with_string", return_js_array_with_string)?;
+    cx.export_function("read_js_array", read_js_array)?;
 
     cx.export_function("return_js_global_object", return_js_global_object)?;
     cx.export_function("return_js_object", return_js_object)?;

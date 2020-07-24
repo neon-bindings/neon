@@ -35,7 +35,14 @@ pub unsafe extern "C" fn is_object(env: Env, val: Local) -> bool {
     is_type(env, val, napi::napi_valuetype::napi_object)
 }
 
-pub unsafe extern "C" fn is_array(_env: Env, _val: Local) -> bool { unimplemented!() }
+pub unsafe extern "C" fn is_array(env: Env, val: Local) -> bool {
+    let mut result = false;
+    if napi::napi_is_array(env, val, &mut result as *mut _) == napi::napi_status::napi_ok {
+        result
+    } else {
+        false
+    }
+}
 
 pub unsafe extern "C" fn is_function(env: Env, val: Local) -> bool {
     is_type(env, val, napi::napi_valuetype::napi_function)

@@ -17,3 +17,10 @@ pub fn return_js_array_with_string(mut cx: FunctionContext) -> JsResult<JsArray>
     array.set(&mut cx, 0, s)?;
     Ok(array)
 }
+
+pub fn read_js_array(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let array: Handle<JsArray> = cx.argument(0)?;
+    let first_element = array.get(&mut cx, 0)?;
+
+    Ok(first_element)
+}
