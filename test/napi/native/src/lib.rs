@@ -4,13 +4,17 @@ mod js {
     pub mod arrays;
     pub mod errors;
     pub mod functions;
+    pub mod numbers;
     pub mod objects;
+    pub mod strings;
 }
 
 use js::arrays::*;
 use js::errors::*;
 use js::functions::*;
+use js::numbers::*;
 use js::objects::*;
+use js::strings::*;
 
 register_module!(|mut cx| {
     let greeting = cx.string("Hello, World!");
@@ -86,6 +90,18 @@ register_module!(|mut cx| {
     }
 
     cx.export_function("add1", add1)?;
+
+    cx.export_function("return_js_string", return_js_string)?;
+
+    cx.export_function("return_js_number", return_js_number)?;
+    cx.export_function("return_large_js_number", return_large_js_number)?;
+    cx.export_function("return_negative_js_number", return_negative_js_number)?;
+    cx.export_function("return_float_js_number", return_float_js_number)?;
+    cx.export_function("return_negative_float_js_number", return_negative_float_js_number)?;
+    cx.export_function("accept_and_return_js_number", accept_and_return_js_number)?;
+    cx.export_function("accept_and_return_large_js_number", accept_and_return_large_js_number)?;
+    cx.export_function("accept_and_return_float_js_number", accept_and_return_float_js_number)?;
+    cx.export_function("accept_and_return_negative_js_number", accept_and_return_negative_js_number)?;
 
     cx.export_function("return_js_function", return_js_function)?;
     cx.export_function("call_js_function", call_js_function)?;
