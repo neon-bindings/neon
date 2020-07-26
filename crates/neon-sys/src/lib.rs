@@ -141,7 +141,7 @@ extern "C" {
     pub fn Neon_Class_HasInstance(metadata: *mut c_void, v: Local) -> bool;
     pub fn Neon_Class_GetInstanceInternals(obj: Local) -> *mut c_void;
 
-    pub fn Neon_Convert_ToObject(out: &mut Local, value: &Local) -> bool;
+    pub fn Neon_Convert_ToObject(out: &mut Local, isolate: Isolate, value: Local) -> bool;
     pub fn Neon_Convert_ToString(out: &mut Local, isolate: Isolate, value: Local) -> bool;
 
     pub fn Neon_Error_Throw(val: Local);

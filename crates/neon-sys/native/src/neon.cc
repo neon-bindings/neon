@@ -183,8 +183,8 @@ extern "C" bool Neon_Convert_ToString(v8::Local<v8::String> *out, v8::Isolate *i
   return maybe.ToLocal(out);
 }
 
-extern "C" bool Neon_Convert_ToObject(v8::Local<v8::Object> *out, v8::Local<v8::Value> *value) {
-  Nan::MaybeLocal<v8::Object> maybe = Nan::To<v8::Object>(*value);
+extern "C" bool Neon_Convert_ToObject(v8::Local<v8::Object> *out, v8::Isolate *isolate, v8::Local<v8::Value> value) {
+  Nan::MaybeLocal<v8::Object> maybe = Nan::To<v8::Object>(value);
   return maybe.ToLocal(out);
 }
 

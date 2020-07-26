@@ -2,6 +2,7 @@ use neon::prelude::*;
 
 mod js {
     pub mod arrays;
+    pub mod coercions;
     pub mod errors;
     pub mod functions;
     pub mod numbers;
@@ -10,6 +11,7 @@ mod js {
 }
 
 use js::arrays::*;
+use js::coercions::*;
 use js::errors::*;
 use js::functions::*;
 use js::numbers::*;
@@ -119,6 +121,8 @@ register_module!(|mut cx| {
     cx.export_function("return_js_array_with_number", return_js_array_with_number)?;
     cx.export_function("return_js_array_with_string", return_js_array_with_string)?;
     cx.export_function("read_js_array", read_js_array)?;
+
+    cx.export_function("to_string", to_string)?;
 
     cx.export_function("return_js_global_object", return_js_global_object)?;
     cx.export_function("return_js_object", return_js_object)?;
