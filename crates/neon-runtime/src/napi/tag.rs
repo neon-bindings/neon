@@ -48,11 +48,8 @@ pub unsafe extern "C" fn is_function(env: Env, val: Local) -> bool {
 
 pub unsafe extern "C" fn is_error(env: Env, val: Local) -> bool {
     let mut result = false;
-    if napi::napi_is_error(env, val, &mut result as *mut _) == napi::napi_status::napi_ok {
-        result
-    } else {
-        false
-    }
+    assert_eq!(napi::napi_is_error(env, val, &mut result as *mut _), napi::napi_status::napi_ok);
+    result
 }
 
 /// Is `val` a Node.js Buffer instance?
