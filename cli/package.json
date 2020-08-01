@@ -25,7 +25,7 @@
     "rimraf": "^3.0.2",
     "semver": "^7.3.2",
     "toml": "^3.0.0",
-    "ts-typed-json": "^0.3.1",
+    "ts-typed-json": "^0.3.2",
     "validate-npm-package-license": "^3.0.4",
     "validate-npm-package-name": "^3.0.0"
   },
