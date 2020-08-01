@@ -245,7 +245,7 @@ const spec: Spec = {
         return;
       }
 
-      console.log((JSON.asObject(metadata) as any).version);
+      console.log((JSON.asObject(metadata)).version);
     }
   }
 

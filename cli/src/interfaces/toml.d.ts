@@ -1,3 +1,3 @@
 declare module 'toml' {
-    export function parse(source: string): any;
+    export function parse<T extends object>(source: string): Partial<T> | undefined | null;
 }

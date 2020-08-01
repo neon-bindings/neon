@@ -62,14 +62,12 @@ export default class BuildSettings {
   }
 
   static fromJSON(value: JSON.Value): BuildSettings {
-    if (!JSON.isObject(value)) {
-      throw new TypeError("value must be an object");
-    }
-    let { rustc, env, nodeVersion } = value as any;
+    value = JSON.asObject(value, "value")
+    let { rustc, env, nodeVersion } = value;
     if (typeof rustc !== 'string') {
       throw new TypeError("value.rustc must be a string");
     }
-    if ('nodeVersion' in (value as JSON.Object)) {
+    if ('nodeVersion' in value) {
       if (typeof nodeVersion !== 'string' && nodeVersion !== null) {
         throw new TypeError("value.nodeVersion must be a string or null");
       }
