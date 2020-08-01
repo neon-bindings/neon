@@ -1,0 +1,28 @@
+name: Generate Docs
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  doc:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Rust ${{ matrix.rust-toolchain }}
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - name: Run cargo doc
+      run: cargo doc
+    - name: edit target/doc/index.html
+      run: 'echo "<meta http-equiv=refresh content=0;url=neon/index.html>" > target/doc/index.html'
+    - name: Push docs to gh-pages branch
+      uses: JamesIves/github-pages-deploy-action@37acdb9c8dbc56e55255f36199ba2f3651b74db3
+      with:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BRANCH: gh-pages
+        FOLDER: target/doc

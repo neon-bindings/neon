@@ -12,7 +12,7 @@
   },
   "repository": "https://github.com/electron/electron-quick-start",
   "devDependencies": {
-    "electron": "^6.0.7",
+    "electron": "^6.0.9",
     "electron-build-env": "^0.2.0",
     "spectron": "^8.0.0"
   }
