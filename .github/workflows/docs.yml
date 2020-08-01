@@ -21,7 +21,7 @@ jobs:
     - name: edit target/doc/index.html
       run: 'echo "<meta http-equiv=refresh content=0;url=neon/index.html>" > target/doc/index.html'
     - name: Push docs to gh-pages branch
-      uses: JamesIves/github-pages-deploy-action@releases/v3
+      uses: JamesIves/github-pages-deploy-action@37acdb9c8dbc56e55255f36199ba2f3651b74db3
       with:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         BRANCH: gh-pages
