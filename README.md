@@ -1,7 +1,8 @@
 <img src="neon.png" alt="neon" width="100%" />
 
-[![Travis Build Status](https://travis-ci.org/neon-bindings/neon.svg?branch=master)](https://travis-ci.org/neon-bindings/neon)
-[![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/github/neon-bindings/neon?branch=master&svg=true)](https://ci.appveyor.com/project/dherman/neon/branch/master)
+[![Linux Build Status](https://github.com/neon-bindings/neon/workflows/.github/workflows/linux.yml/badge.svg)](https://github.com/neon-bindings/neon/actions?query=workflow%3A%22Test+on+Linux%22)
+[![macOS Build Status](https://github.com/neon-bindings/neon/workflows/.github/workflows/macos.yml/badge.svg)](https://github.com/neon-bindings/neon/actions?query=workflow%3A%22Test+on+MacOS%22)
+[![Windows Build Status](https://github.com/neon-bindings/neon/workflows/.github/workflows/windows.yml/badge.svg)](https://github.com/neon-bindings/neon/actions?query=workflow%3A%22Test+on+Windows%22)
 [![](http://meritbadge.herokuapp.com/neon)](https://crates.io/crates/neon)
 [![npm](https://img.shields.io/npm/v/neon-cli.svg)](https://www.npmjs.com/package/neon-cli)
 
