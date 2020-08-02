@@ -48,7 +48,7 @@
     "ts-unknown": "^0.2.0"
   },
   "scripts": {
-    "test": "npm run transpile && mocha lib/**/*.js",
+    "test": "npm run transpile && mocha --timeout 5000 lib/**/*.js",
     "transpile": "tsc"
   }
 }
