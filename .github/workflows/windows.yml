@@ -1,14 +1,16 @@
 name: Test on Windows
 
-on: [push, pull_request]
+on:
+  push:
+    # Disable this on our own internal PRs.
+    branches:
+      - master
+  pull_request
 
 jobs:
   build:
 
     runs-on: windows-latest
-
-    # Disable this on our own internal PRs since it'll be run on the push to the branch.
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
 
     strategy:
       matrix:
