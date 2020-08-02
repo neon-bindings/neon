@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "install": "node ../../cli/bin/cli.js build --release",
-    "test": "mocha --recursive lib"
+    "test": "mocha --timeout 5000 --recursive lib"
   },
   "devDependencies": {
     "chai": "^4.2.0",
