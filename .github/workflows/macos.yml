@@ -5,7 +5,9 @@ on:
     # Disable this on our own internal PRs.
     branches:
       - master
-  pull_request: true
+  pull_request:
+    branches:
+      - master
 
 jobs:
   build:
