@@ -1,8 +1,7 @@
 import * as rust from './rust';
-import Dict from 'ts-dict';
 import * as JSON from 'ts-typed-json';
 
-function isStringDict(x: JSON.Object): x is Dict<string | null> {
+function isStringDict(x: JSON.Object): x is Record<string, string | null> {
   for (let key of Object.keys(x)) {
     if (x[key] !== null && typeof x[key] !== 'string') {
       return false;
@@ -14,9 +13,9 @@ function isStringDict(x: JSON.Object): x is Dict<string | null> {
 export default class BuildSettings {
   private rustc: string;
   private nodeVersion: string | null;
-  private env: Dict<string | null>;
+  private env: Record<string, string | null>;
 
-  constructor(rustc: string, nodeVersion: string | null, env: Dict<string | null>) {
+  constructor(rustc: string, nodeVersion: string | null, env: Record<string, string | null>) {
     this.rustc = rustc;
     this.nodeVersion = nodeVersion;
     this.env = env;
@@ -63,9 +62,7 @@ export default class BuildSettings {
   }
 
   static fromJSON(value: JSON.Value): BuildSettings {
-    if (!JSON.isObject(value)) {
-      throw new TypeError("value must be an object");
-    }
+    value = JSON.asObject(value, "value")
     let { rustc, env, nodeVersion } = value;
     if (typeof rustc !== 'string') {
       throw new TypeError("value.rustc must be a string");

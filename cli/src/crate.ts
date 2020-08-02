@@ -1,9 +1,9 @@
-import * as TOML from 'toml';
-import * as path from 'path';
+import TOML from 'toml';
+import path from 'path';
 import { readFileSync, promises as fs } from 'fs';
 import Artifacts from './artifacts';
 import Project from './project';
-import { rimraf } from './helpers';
+import { rimraf } from './async/rimraf';
 
 export type CrateOptions = {
   subdirectory?: string,
@@ -61,10 +61,17 @@ export default class Crate {
 
 }
 
-function loadLibName(file: string): string {
-  let metadata = TOML.parse(readFileSync(file, 'utf8'));
+type Metadata = {
+  lib?: {
+    name?: string
+  }
+}
 
-  if (!metadata || typeof metadata !== 'object' || !metadata.lib.name) {
+function loadLibName(file: string): string {
+  let metadata = TOML.parse<Metadata>(readFileSync(file, 'utf8'));
+  if (!metadata) throw new Error(`Failed to parse TOML file "${file}"`)
+
+  if (!metadata || typeof metadata !== 'object' || !metadata?.lib?.name) {
     throw new Error("Cargo.toml does not contain a [lib] section with a 'name' field");
   }
 

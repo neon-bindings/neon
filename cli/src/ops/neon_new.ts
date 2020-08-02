@@ -1,13 +1,13 @@
 import { mkdirSync, writeFileSync, promises as fsPromises } from 'fs';
 import { prompt } from 'inquirer';
-import * as path from 'path';
-import * as handlebars from 'handlebars';
-import * as semver from 'semver';
+import path from 'path';
+import handlebars from 'handlebars';
+import semver from 'semver';
 import * as style from '../style';
 import validateLicense = require('validate-npm-package-license');
 import validateName = require('validate-npm-package-name');
 import * as JSON from 'ts-typed-json';
-const gitconfig = require('git-config');
+import gitconfig from 'git-config';
 
 const { readFile, stat } = fsPromises;
 
@@ -32,8 +32,13 @@ const LIBRS_TEMPLATE     = compile('lib.rs.hbs');
 const README_TEMPLATE    = compile('README.md.hbs');
 const BUILDRS_TEMPLATE   = compile('build.rs.hbs');
 
+type Author = {
+  name?: string,
+  email?: string
+};
+
 async function guessAuthor() {
-  let author = {
+  let author: Author = {
     name: process.env.USER || process.env.USERNAME,
     email: undefined
   };
@@ -75,6 +80,24 @@ async function parseNeonVersion(flag: string | null) : Promise<NeonVersion> {
   return { type: path.isAbsolute(flag) ? "absolute" : "relative", value: flag };
 }
 
+interface Answers {
+  name: {
+    npm: {
+      full: string;
+      scope: string | null;
+      local: string;
+    };
+    cargo: {
+      external: string;
+      internal: string;
+    };
+  };
+  description: string;
+  git: string;
+  author: string;
+  node: string;
+}
+
 export default async function wizard(pwd: string, name: string, neon: string | null, features: string | null, noDefaultFeatures: boolean) {
   let its = validateName(name);
   if (!its.validForNewPackages) {
@@ -94,7 +117,7 @@ export default async function wizard(pwd: string, name: string, neon: string | n
   let root = path.resolve(pwd, local);
   let guess = await guessAuthor();
 
-  let answers = await prompt([
+  let answers: Answers = await prompt([
     {
       type: 'input',
       name: 'version',

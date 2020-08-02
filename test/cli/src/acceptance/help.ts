@@ -3,7 +3,7 @@ import { SpawnChain } from 'suspicion';
 
 function describeHelp(cmd: string,
                       should: string,
-                      test: (proc: any, done: () => void) => void,
+                      test: (proc: unknown, done: () => void) => void,
                       args: string[]): void
 {
   describe(cmd, function() {

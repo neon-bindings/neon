@@ -1,4 +1,4 @@
-import * as path from 'path';
+import path from 'path';
 import neon_new from './ops/neon_new';
 import neon_build from './ops/neon_build';
 import neon_clean from './ops/neon_clean';
@@ -8,7 +8,6 @@ import cliArgs = require('command-line-args');
 import cliUsage = require('command-line-usage');
 import log from './log';
 import { setup as setupLogging } from './log';
-import Dict from 'ts-dict';
 import * as JSON from 'ts-typed-json';
 import { Toolchain } from './rust';
 
@@ -42,7 +41,7 @@ function parseModules(cwd: string, names: string[], paths: boolean) {
   };
 }
 
-type Action = (this: CLI, options: Dict<unknown>, usage: string) => void;
+type Action = (this: CLI, options: Record<string, unknown>, usage: string) => void;
 
 type Command = {
   args: cliArgs.OptionDefinition[],
@@ -50,7 +49,7 @@ type Command = {
   action: Action
 };
 
-type Spec = Dict<Command>;
+type Spec = Record<string, Command>;
 
 const spec: Spec = {
 
@@ -160,7 +159,7 @@ const spec: Spec = {
     }, {
       header: "Synopsis",
       content: ["$ neon build [options]",
-                "$ neon build [options] [underline]{module} ..."]
+                "$ neon build [options] {underline module} ..."]
     }, {
       header: "Options",
       optionList: [{
@@ -203,7 +202,7 @@ const spec: Spec = {
     }, {
       header: "Synopsis",
       content: ["$ neon clean [options]",
-                "$ neon clean [options] [underline]{module} ..."]
+                "$ neon clean [options] {underline module} ..."]
     }, {
       header: "Options",
       optionList: [{
@@ -246,7 +245,7 @@ const spec: Spec = {
         return;
       }
 
-      console.log(JSON.asObject(metadata).version);
+      console.log((JSON.asObject(metadata)).version);
     }
   }
 

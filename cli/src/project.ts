@@ -1,4 +1,4 @@
-import * as path from 'path';
+import path from 'path';
 import Crate from './crate';
 import Target from './target';
 import BuildSettings from './build-settings';

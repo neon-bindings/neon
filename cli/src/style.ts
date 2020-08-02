@@ -1,4 +1,4 @@
-import * as chalk from 'chalk';
+import chalk from 'chalk';
 
 export let project = chalk.cyan.bold;
 export let command = chalk.green.bold;
