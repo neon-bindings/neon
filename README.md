@@ -1,9 +1,10 @@
 <img src="neon.png" alt="neon" width="100%" />
 
-[![Travis Build Status](https://travis-ci.org/neon-bindings/neon.svg?branch=master)](https://travis-ci.org/neon-bindings/neon)
-[![Appveyor Build Status](https://ci.appveyor.com/api/projects/status/github/neon-bindings/neon?branch=master&svg=true)](https://ci.appveyor.com/project/dherman/neon/branch/master)
-[![](http://meritbadge.herokuapp.com/neon)](https://crates.io/crates/neon)
+[![Cargo](http://meritbadge.herokuapp.com/neon)](https://crates.io/crates/neon)
 [![npm](https://img.shields.io/npm/v/neon-cli.svg)](https://www.npmjs.com/package/neon-cli)
+[![Linux Build Status](https://github.com/neon-bindings/neon/workflows/Test%20on%20Linux/badge.svg)](https://github.com/neon-bindings/neon/actions?query=workflow%3A%22Test+on+Linux%22)
+[![macOS Build Status](https://github.com/neon-bindings/neon/workflows/Test%20on%20MacOS/badge.svg)](https://github.com/neon-bindings/neon/actions?query=workflow%3A%22Test+on+MacOS%22)
+[![Windows Build Status](https://github.com/neon-bindings/neon/workflows/Test%20on%20Windows/badge.svg)](https://github.com/neon-bindings/neon/actions?query=workflow%3A%22Test+on+Windows%22)
 
 Rust bindings for writing safe and fast native Node.js modules.
 
