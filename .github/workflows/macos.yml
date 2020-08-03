@@ -1,6 +1,13 @@
 name: Test on MacOS
 
-on: [push, pull_request]
+on:
+  push:
+    # Prevent duplicate runs of this workflow on our own internal PRs.
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
 
 jobs:
   build:
