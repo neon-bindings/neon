@@ -2,7 +2,7 @@ name: Test on Windows
 
 on:
   push:
-    # Disable this on our own internal PRs.
+    # Prevent duplicate runs of this workflow on our own internal PRs.
     branches:
       - master
   pull_request:
