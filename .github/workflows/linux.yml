@@ -31,9 +31,10 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - name: install g++-4.8
       run: sudo apt-get install -y g++-4.8
-    - name: set DISPLAY env
-      run: echo "::set-env DISPLAY=:99.0"
+    - name: Start Xvfb
+      run: |
+        Xvfb :99 &
+        disown -ar
+        echo "::set-env name=DISPLAY:::99"
     - name: run cargo test
-      uses: GabrielBB/xvfb-action@e9adbdcd44108e54f12d6a49a373a074385b8512
-      with:
-        run: cargo test --release -- --nocapture
+      run: cargo test --release -- --nocapture
