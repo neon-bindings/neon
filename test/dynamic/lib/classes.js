@@ -14,7 +14,7 @@ describe('JsClass', function() {
     assert(u instanceof User);
   });
 
-  it('can use getter funtion defined in Rust', function () {
+  it('can use getter function defined in Rust', function () {
     var u = new User(1, "some", "thing", "else");
     assert.equal(u.get('id'), 1);
     assert.equal(u.get('first_name'), "some");
