@@ -383,7 +383,7 @@ mod tests {
         };
 
         eprintln!("Running Neon test: {} {} {}", shell, command_flag, cmd);
-    
+
         assert!(Command::new(&shell)
                         .current_dir(dir)
                         .args(&[&command_flag, cmd])
@@ -495,11 +495,10 @@ mod tests {
         if std::env::var("CI") == Ok("true".to_string()) {
             run("cargo package", &test_package);
         } else {
-            run("cargo package --allow-dirty", &test_package);            
+            run("cargo package --allow-dirty", &test_package);
         }
     }
 
-    #[cfg(not(windows))]
     #[test]
     fn napi_test() {
         let _guard = TEST_MUTEX.lock();

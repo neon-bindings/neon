@@ -1,4 +1,6 @@
 extern crate cfg_if;
+#[cfg(all(windows, not(feature = "neon-sys")))]
+extern crate ureq;
 
 use cfg_if::cfg_if;
 
@@ -30,6 +32,41 @@ cfg_if! {
                 println!("cargo:rustc-cdylib-link-arg=delayimp.lib");
                 println!("cargo:rustc-cdylib-link-arg=/DELAYLOAD:node.exe");
             }
+        }
+    } else if #[cfg(windows)] {
+        // ^ automatically not neon-sys
+        use std::fs::File;
+        use std::io::{self, Read, ErrorKind};
+        use std::process::Command;
+
+        fn node_version() -> io::Result<String> {
+            let output = Command::new("node").arg("-v").output()?;
+            let stdout = String::from_utf8(output.stdout).map_err(|error| {
+                io::Error::new(ErrorKind::InvalidData, error)
+            })?;
+            Ok(stdout.trim().to_string())
+        }
+
+        fn download_node_lib(version: &str) -> io::Result<impl Read> {
+            let mut request = ureq::get(&format!(
+                "https://nodejs.org/dist/{version}/win-{arch}/node.lib",
+                version = version,
+                arch = "x64",
+            ));
+            let response = request.call();
+            Ok(response.into_reader())
+        }
+
+        /// Set up the build environment by setting Cargo configuration variables.
+        pub fn setup() {
+            let version = node_version().expect("Could not determine Node.js version");
+            let mut node_lib = download_node_lib(&version).expect("Could not connect to nodejs.org");
+            let mut output = File::create(concat!(env!("OUT_DIR"), r"\node.lib")).unwrap();
+            std::io::copy(&mut node_lib, &mut output);
+
+            println!("cargo:rustc-link-search=native={}", env!("OUT_DIR"));
+            // println!("cargo:rustc-link-search=native={}", &node_lib_path.display());
+            println!("cargo:rustc-link-lib=node");
         }
     } else if #[cfg(target_os = "macos")] {
         /// Set up the build environment by setting Cargo configuration variables.
