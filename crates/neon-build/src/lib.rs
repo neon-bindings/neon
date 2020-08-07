@@ -103,6 +103,8 @@ cfg_if! {
 
             println!("cargo:rustc-link-search=native={}", env!("OUT_DIR"));
             println!("cargo:rustc-link-lib=node-{}", arch);
+            println!("cargo:rustc-cdylib-link-arg=delayimp.lib");
+            println!("cargo:rustc-cdylib-link-arg=/DELAYLOAD:node.exe");
         }
     } else if #[cfg(target_os = "macos")] {
         /// Set up the build environment by setting Cargo configuration variables.
