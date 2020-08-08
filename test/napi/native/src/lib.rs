@@ -164,6 +164,7 @@ register_module!(|mut cx| {
 
     cx.export_function("throw_and_catch", throw_and_catch)?;
     cx.export_function("call_and_catch", call_and_catch)?;
+    cx.export_function("is_construct", is_construct)?;
 
     fn call_get_own_property_names(mut cx: FunctionContext) -> JsResult<JsArray> {
         let object = cx.argument::<JsObject>(0)?;
