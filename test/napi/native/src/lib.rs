@@ -7,6 +7,7 @@ mod js {
     pub mod functions;
     pub mod numbers;
     pub mod objects;
+    pub mod types;
     pub mod strings;
 }
 
@@ -16,6 +17,7 @@ use js::errors::*;
 use js::functions::*;
 use js::numbers::*;
 use js::objects::*;
+use js::types::*;
 use js::strings::*;
 
 register_module!(|mut cx| {
@@ -140,6 +142,17 @@ register_module!(|mut cx| {
     cx.export_function("read_buffer_with_borrow", read_buffer_with_borrow)?;
     cx.export_function("write_buffer_with_lock", write_buffer_with_lock)?;
     cx.export_function("write_buffer_with_borrow_mut", write_buffer_with_borrow_mut)?;
+
+    cx.export_function("is_array", is_array)?;
+    cx.export_function("is_array_buffer", is_array_buffer)?;
+    cx.export_function("is_boolean", is_boolean)?;
+    cx.export_function("is_buffer", is_buffer)?;
+    cx.export_function("is_error", is_error)?;
+    cx.export_function("is_null", is_null)?;
+    cx.export_function("is_number", is_number)?;
+    cx.export_function("is_object", is_object)?;
+    cx.export_function("is_string", is_string)?;
+    cx.export_function("is_undefined", is_undefined)?;
 
     cx.export_function("new_error", new_error)?;
     cx.export_function("new_type_error", new_type_error)?;
