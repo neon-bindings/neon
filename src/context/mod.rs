@@ -47,8 +47,18 @@ impl CallbackInfo<'_> {
         }
     }
 
+    #[cfg(feature = "legacy-runtime")]
     fn kind(&self) -> CallKind {
         if unsafe { neon_runtime::call::is_construct(std::mem::transmute(self)) } {
+            CallKind::Construct
+        } else {
+            CallKind::Call
+        }
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    fn kind<'b, C: Context<'b>>(&self, cx: &C) -> CallKind {
+        if unsafe { neon_runtime::call::is_construct(cx.env().to_raw(), self.info) } {
             CallKind::Construct
         } else {
             CallKind::Call
@@ -479,7 +489,15 @@ impl<'a, T: This> UnwindSafe for CallContext<'a, T> { }
 
 impl<'a, T: This> CallContext<'a, T> {
     /// Indicates whether the function was called via the JavaScript `[[Call]]` or `[[Construct]]` semantics.
-    pub fn kind(&self) -> CallKind { self.info.kind() }
+    pub fn kind(&self) -> CallKind {
+        #[cfg(feature = "legacy-runtime")]
+        let kind = self.info.kind();
+
+        #[cfg(feature = "napi-runtime")]
+        let kind = self.info.kind(self);
+
+        kind
+    }
 
     pub(crate) fn with<U, F: for<'b> FnOnce(CallContext<'b, T>) -> U>(env: Env, info: &'a CallbackInfo<'a>, f: F) -> U {
         Scope::with(env, |scope| {

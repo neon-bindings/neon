@@ -105,4 +105,9 @@ describe('JsFunction', function() {
   it('gets a regular value with cx.try_catch', function() {
     assert.equal(addon.call_and_catch(() => { return 42 }), 42);
   });
+
+  it('distinguishes calls from constructs', function() {
+    assert.equal(addon.is_construct.call({}).wasConstructed, false);
+    assert.equal((new addon.is_construct()).wasConstructed, true);
+  });
 });

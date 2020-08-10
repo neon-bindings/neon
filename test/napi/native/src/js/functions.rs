@@ -118,3 +118,14 @@ pub fn call_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
         f.call(cx, global, args)
     }).unwrap_or_else(|err| err))
 }
+
+pub fn is_construct(mut cx: FunctionContext) -> JsResult<JsObject> {
+    let this = cx.this();
+    let construct = match cx.kind() {
+        CallKind::Construct => true,
+        _ => false
+    };
+    let construct = cx.boolean(construct);
+    this.set(&mut cx, "wasConstructed", construct)?;
+    Ok(this)
+}
