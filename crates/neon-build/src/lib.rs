@@ -44,14 +44,14 @@ cfg_if! {
             Ok(stdout.trim().to_string())
         }
 
-        fn download_node_lib(version: &str) -> Result<Vec<u8>> {
+        fn download_node_lib(version: &str, arch: &str) -> Result<Vec<u8>> {
             let script = format!(r#"
                 var url = "https://nodejs.org/dist/{version}/win-{arch}/node.lib";
                 // double braces because we're in a format string
                 require("https").get(url, function (res) {{
                     res.pipe(process.stdout);
                 }});
-            "#, version = version, arch = "x64");
+            "#, version = version, arch = arch);
 
             let output = Command::new("node").arg("-e").arg(script).output()?;
 
@@ -61,12 +61,17 @@ cfg_if! {
         /// Set up the build environment by setting Cargo configuration variables.
         pub fn setup() {
             let version = node_version().expect("Could not determine Node.js version");
-            let node_lib = download_node_lib(&version).expect("Could not download `node.lib`");
-            std::fs::write(concat!(env!("OUT_DIR"), r"\node.lib"), &node_lib).expect("Could not save `node.lib`");
+            let arch = if std::env::var("CARGO_CFG_TARGET_ARCH").unwrap() == "x86" {
+                "x86"
+            } else {
+                "x64"
+            };
+
+            let node_lib = download_node_lib(&version, arch).expect("Could not download `node.lib`");
+            std::fs::write(format!(r"{}\node-{}.lib", env!("OUT_DIR"), arch), &node_lib).expect("Could not save `node.lib`");
 
             println!("cargo:rustc-link-search=native={}", env!("OUT_DIR"));
-            // println!("cargo:rustc-link-search=native={}", &node_lib_path.display());
-            println!("cargo:rustc-link-lib=node");
+            println!("cargo:rustc-link-lib=node-{}", arch);
         }
     } else if #[cfg(target_os = "macos")] {
         /// Set up the build environment by setting Cargo configuration variables.
