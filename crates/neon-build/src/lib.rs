@@ -35,6 +35,7 @@ cfg_if! {
         // ^ automatically not neon-sys
         use std::io::{Error, ErrorKind, Result};
         use std::process::Command;
+        use std::path::Path;
 
         fn node_version() -> Result<String> {
             let output = Command::new("node").arg("-v").output()?;
@@ -60,6 +61,19 @@ cfg_if! {
 
         /// Set up the build environment by setting Cargo configuration variables.
         pub fn setup() {
+            // If the user specified a node.lib path, we do not need to download
+            if let Some(node_lib_path) = std::env::var_os("NEON_NODE_LIB") {
+                let node_lib_path = Path::new(&node_lib_path);
+                // Clearing the file name returns the root+directory name
+                let dir = node_lib_path.with_file_name("");
+                let basename = node_lib_path.file_stem().expect("Could not parse lib name from NEON_NODE_LIB. Does the path include the full file name?");
+
+                println!("cargo:rustc-link-search=native={}", dir.display());
+                // Littul hack to output the OsStr file stem
+                println!("cargo:rustc-link-lib={}", Path::new(basename).display());
+                return;
+            }
+
             let version = node_version().expect("Could not determine Node.js version");
             let arch = if std::env::var("CARGO_CFG_TARGET_ARCH").unwrap() == "x86" {
                 "x86"
