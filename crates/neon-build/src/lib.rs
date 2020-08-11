@@ -39,6 +39,11 @@ cfg_if! {
 
         fn node_version() -> Result<String> {
             let output = Command::new("node").arg("-v").output()?;
+            if !output.status.success() {
+                let hopefully_stack_trace = String::from_utf8(output.stderr)
+                    .unwrap_or_else(|_| "<subprocess output garbage>".to_string());
+                panic!("Could not download node.lib: {}", hopefully_stack_trace);
+            }
             let stdout = String::from_utf8(output.stdout).map_err(|error| {
                 Error::new(ErrorKind::InvalidData, error)
             })?;
@@ -46,15 +51,18 @@ cfg_if! {
         }
 
         fn download_node_lib(version: &str, arch: &str) -> Result<Vec<u8>> {
-            let script = format!(r#"
-                var url = "https://nodejs.org/dist/{version}/win-{arch}/node.lib";
-                // double braces because we're in a format string
-                require("https").get(url, function (res) {{
+            let script = r#"
+                var url = process.argv[1]
+                require("https").get(url, function (res) {
                     res.pipe(process.stdout);
-                }});
-            "#, version = version, arch = arch);
+                });
+            "#;
+            let url = format!("https://nodejs.org/dist/{version}/win-{arch}/node.lib", version = version, arch = arch);
 
-            let output = Command::new("node").arg("-e").arg(script).output()?;
+            let output = Command::new("node")
+                .arg("-e").arg(script)
+                .arg(url)
+                .output()?;
 
             Ok(output.stdout)
         }
