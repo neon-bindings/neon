@@ -89,8 +89,13 @@ cfg_if! {
                 "x64"
             };
 
-            let node_lib = download_node_lib(&version, arch).expect("Could not download `node.lib`");
-            std::fs::write(format!(r"{}\node-{}.lib", env!("OUT_DIR"), arch), &node_lib).expect("Could not save `node.lib`");
+            let node_lib_store_path = format!(r"{}/node-{}.lib", env!("OUT_DIR"), arch);
+
+            // Download node.lib if it does not exist
+            if let Err(_) = std::fs::metadata(&node_lib_store_path) {
+                let node_lib = download_node_lib(&version, arch).expect("Could not download `node.lib`");
+                std::fs::write(&node_lib_store_path, &node_lib).expect("Could not save `node.lib`");
+            }
 
             println!("cargo:rustc-link-search=native={}", env!("OUT_DIR"));
             println!("cargo:rustc-link-lib=node-{}", arch);
