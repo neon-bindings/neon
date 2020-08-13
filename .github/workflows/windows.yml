@@ -30,6 +30,9 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+    # for `bindgen`
+    # not sure if this is the right thing to do but i wanna see if it compiles
+    - run: choco install llvm
     # - name: update node-gyp to latest
     #   # https://github.com/nodejs/node-gyp/issues/1933#issuecomment-586915535
     #   run: npm install -g node-gyp@latest
