@@ -522,8 +522,7 @@ extern "C" bool Neon_Mem_SameHandle(v8::Local<v8::Value> v1, v8::Local<v8::Value
   return v1 == v2;
 }
 
-extern "C" void Neon_Task_Schedule(void *task, Neon_TaskPerformCallback perform, Neon_TaskCompleteCallback complete, v8::Local<v8::Function> callback) {
-  v8::Isolate *isolate = v8::Isolate::GetCurrent();
+extern "C" void Neon_Task_Schedule(v8::Isolate *isolate, void *task, Neon_TaskPerformCallback perform, Neon_TaskCompleteCallback complete, v8::Local<v8::Function> callback) {
   neon::Task *internal_task = new neon::Task(isolate, task, perform, complete, callback);
   neon::queue_task(internal_task);
 }

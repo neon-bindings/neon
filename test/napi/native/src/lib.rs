@@ -9,6 +9,7 @@ mod js {
     pub mod objects;
     pub mod types;
     pub mod strings;
+    pub mod tasks;
 }
 
 use js::arrays::*;
@@ -19,6 +20,7 @@ use js::numbers::*;
 use js::objects::*;
 use js::types::*;
 use js::strings::*;
+use js::tasks::*;
 
 register_module!(|mut cx| {
     let greeting = cx.string("Hello, World!");
@@ -116,6 +118,10 @@ register_module!(|mut cx| {
     cx.export_function("is_argument_zero_some", is_argument_zero_some)?;
     cx.export_function("require_argument_zero_string", require_argument_zero_string)?;
     cx.export_function("check_string_and_number", check_string_and_number)?;
+
+    cx.export_function("perform_async_task", perform_async_task)?;
+    cx.export_function("perform_failing_task", perform_failing_task)?;
+
     cx.export_function("execute_scoped", execute_scoped)?;
     cx.export_function("compute_scoped", compute_scoped)?;
 

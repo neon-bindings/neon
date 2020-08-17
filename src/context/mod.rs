@@ -576,8 +576,7 @@ pub struct TaskContext<'a> {
 }
 
 impl<'a> TaskContext<'a> {
-    pub(crate) fn with<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(f: F) -> T {
-        let env = Env::current();
+    pub(crate) fn with<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: Env, f: F) -> T {
         Scope::with(env, |scope| {
             f(TaskContext { scope })
         })

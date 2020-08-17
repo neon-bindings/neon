@@ -8,6 +8,7 @@ use types::{Value, JsFunction};
 use result::JsResult;
 use handle::{Handle, Managed};
 use context::TaskContext;
+use context::internal::Env;
 use neon_runtime;
 use neon_runtime::raw;
 
@@ -35,16 +36,38 @@ pub trait Task: Send + Sized + 'static {
     /// ```js
     /// function callback(err, value) {}
     /// ```
+    #[cfg(feature = "legacy-runtime")]
     fn schedule(self, callback: Handle<JsFunction>) {
-        let boxed_self = Box::new(self);
-        let self_raw = Box::into_raw(boxed_self);
-        let callback_raw = callback.to_raw();
-        unsafe {
-            neon_runtime::task::schedule(mem::transmute(self_raw),
-                                         perform_task::<Self>,
-                                         complete_task::<Self>,
-                                         callback_raw);
-        }
+        schedule_internal(Env::current(), self, callback);
+    }
+
+    /// Schedule a task to be executed on a background thread.
+    ///
+    /// `callback` should have the following signature:
+    ///
+    /// ```js
+    /// function callback(err, value) {}
+    /// ```
+    #[cfg(feature = "napi-runtime")]
+    fn schedule<'a, C: crate::context::Context<'a>>(
+        self,
+        cx: &mut C,
+        callback: Handle<JsFunction>,
+    ) {
+        schedule_internal(cx.env(), self, callback);
+    }
+}
+
+fn schedule_internal<T: Task>(env: Env, task: T, callback: Handle<JsFunction>) {
+    let boxed_task = Box::new(task);
+    let task_raw = Box::into_raw(boxed_task);
+    let callback_raw = callback.to_raw();
+    unsafe {
+        neon_runtime::task::schedule(env.to_raw(),
+                                     mem::transmute(task_raw),
+                                     perform_task::<T>,
+                                     complete_task::<T>,
+                                     callback_raw);
     }
 }
 
@@ -55,10 +78,10 @@ unsafe extern "C" fn perform_task<T: Task>(task: *mut c_void) -> *mut c_void {
     mem::transmute(Box::into_raw(Box::new(result)))
 }
 
-unsafe extern "C" fn complete_task<T: Task>(task: *mut c_void, result: *mut c_void, out: &mut raw::Local) {
+unsafe extern "C" fn complete_task<T: Task>(env: *mut c_void, task: *mut c_void, result: *mut c_void, out: &mut raw::Local) {
     let result: Result<T::Output, T::Error> = *Box::from_raw(mem::transmute(result));
     let task: Box<T> = Box::from_raw(mem::transmute(task));
-    TaskContext::with(|cx| {
+    TaskContext::with(mem::transmute(env), |cx| {
         if let Ok(result) = task.complete(cx, result) {
             *out = result.to_raw();
         }
