@@ -2,14 +2,17 @@
 
 use std::marker::{Send, Sized};
 use std::mem;
+#[cfg(feature = "legacy-runtime")]
 use std::os::raw::c_void;
 
 use types::{Value, JsFunction};
 use result::JsResult;
 use handle::{Handle, Managed};
 use context::TaskContext;
+#[cfg(feature = "legacy-runtime")]
 use context::internal::Env;
 use neon_runtime;
+#[cfg(feature = "legacy-runtime")]
 use neon_runtime::raw;
 
 /// A Rust task that can be executed in a background thread.
@@ -54,10 +57,36 @@ pub trait Task: Send + Sized + 'static {
         cx: &mut C,
         callback: Handle<JsFunction>,
     ) {
-        schedule_internal(cx.env(), self, callback);
+        let execute = |task: Self| {
+            let output = task.perform();
+
+            (task, output)
+        };
+
+        let complete = |env, (task, output): (Self, Result<Self::Output, Self::Error>)| {
+            let env = unsafe { mem::transmute(env) };
+
+            TaskContext::with(env, |cx| {
+                match task.complete(cx, output) {
+                    Ok(v) => Some(v.to_raw()),
+                    Err(_) => None,
+                }
+            })
+        };
+
+        unsafe {
+            neon_runtime::task::schedule(
+                cx.env().to_raw(),
+                self,
+                execute,
+                complete,
+                callback.to_raw(),
+            );
+        }
     }
 }
 
+#[cfg(feature = "legacy-runtime")]
 fn schedule_internal<T: Task>(env: Env, task: T, callback: Handle<JsFunction>) {
     let boxed_task = Box::new(task);
     let task_raw = Box::into_raw(boxed_task);
@@ -71,6 +100,7 @@ fn schedule_internal<T: Task>(env: Env, task: T, callback: Handle<JsFunction>) {
     }
 }
 
+#[cfg(feature = "legacy-runtime")]
 unsafe extern "C" fn perform_task<T: Task>(task: *mut c_void) -> *mut c_void {
     let task: Box<T> = Box::from_raw(mem::transmute(task));
     let result = task.perform();
@@ -78,6 +108,7 @@ unsafe extern "C" fn perform_task<T: Task>(task: *mut c_void) -> *mut c_void {
     mem::transmute(Box::into_raw(Box::new(result)))
 }
 
+#[cfg(feature = "legacy-runtime")]
 unsafe extern "C" fn complete_task<T: Task>(env: *mut c_void, task: *mut c_void, result: *mut c_void, out: &mut raw::Local) {
     let result: Result<T::Output, T::Error> = *Box::from_raw(mem::transmute(result));
     let task: Box<T> = Box::from_raw(mem::transmute(task));

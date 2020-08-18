@@ -1,24 +1,27 @@
 use neon::prelude::*;
 
-struct SuccessTask;
+struct SuccessTask {
+    name: String,
+}
 
 impl Task for SuccessTask {
-    type Output = i32;
+    type Output = String;
     type Error = String;
-    type JsEvent = JsNumber;
+    type JsEvent = JsString;
 
     fn perform(&self) -> Result<Self::Output, Self::Error> {
-        Ok(17)
+        Ok(format!("Hello, {}!", self.name))
     }
 
     fn complete(self, mut cx: TaskContext, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent> {
-        Ok(cx.number(result.unwrap()))
+        Ok(cx.string(result.unwrap()))
     }
 }
 
 pub fn perform_async_task(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    let f = cx.argument::<JsFunction>(0)?;
-    SuccessTask.schedule(&mut cx, f);
+    let name = cx.argument::<JsString>(0)?.value(&mut cx);
+    let f = cx.argument::<JsFunction>(1)?;
+    (SuccessTask { name }).schedule(&mut cx, f);
     Ok(cx.undefined())
 }
 

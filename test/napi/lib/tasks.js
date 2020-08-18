@@ -1,15 +1,17 @@
 var addon = require('../native');
+const { expect } = require('chai');
 var assert = require('chai').assert;
 
 describe('Task', function() {
   it('completes a successful task', function (done) {
-    addon.perform_async_task((err, n) => {
+    addon.perform_async_task('World', (err, n) => {
+      var expected = 'Hello, World!';
       if (err) {
         done(err);
-      } else if (n === 17) {
+      } else if (n === expected) {
         done();
       } else {
-        done(new Error("not 17 but: " + n));
+        done(new Error(`not ${expected} but: ${n}`));
       }
     });
   });
@@ -30,7 +32,7 @@ describe('Task', function() {
 
   it('executes microtasks after callback', function () {
     return new Promise((resolve, reject) => {
-      addon.perform_async_task((err, res) => {
+      addon.perform_async_task('World', (err, res) => {
         if (err) {
           reject(err);
         } else {

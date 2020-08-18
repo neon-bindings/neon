@@ -5,25 +5,6 @@ use nodejs_sys as napi;
 
 use raw::{Env, Local};
 
-type Perform = unsafe extern fn(*mut c_void) -> *mut c_void;
-type Complete = unsafe extern fn(*mut c_void, *mut c_void, *mut c_void, &mut Local);
-
-// Stores state for async work being executed
-struct AsyncWork {
-    // User-provided data context. This is passed to perform and complete
-    task: *mut c_void,
-    // Persistent reference to the callback function to prevent GC 
-    callback: napi::napi_ref,
-    // Handle to async work being queued
-    request: napi::napi_async_work,
-    // User provided function to perform asynchronously
-    perform: Perform,
-    // User provided function to call on the main-thread after task is complete
-    complete: Complete,
-    // Output pointer passed to `complete` function
-    output: *mut c_void,
-}
-
 unsafe fn null(env: napi::napi_env) -> Local {
     let mut result = MaybeUninit::uninit();
 
@@ -58,7 +39,9 @@ unsafe fn global(env: napi::napi_env) -> Local {
 }
 
 // Resource name to identify async work in diagnostic information
-unsafe fn async_work_name(env: napi::napi_env) -> Local {
+unsafe fn async_work_name(
+    env: napi::napi_env,
+) -> Local {
     let name = b"neon task";
     let mut result = MaybeUninit::uninit();
     let status = napi::napi_create_string_utf8(
@@ -73,76 +56,189 @@ unsafe fn async_work_name(env: napi::napi_env) -> Local {
     result.assume_init()
 }
 
-// Dereference async work and execute perform function
-// Executed on the libuv thread pool
-unsafe extern "C" fn perform_work(_: napi::napi_env, data: *mut c_void) {
-    let mut work = &mut *(data as *mut AsyncWork);
+// Stores state for async work being executed
+struct AsyncTask<Data, Execute, Output, Complete> {
+    data: Option<Data>,
+    execute: Option<Execute>,
+    output: Option<Output>,
+    complete: Option<Complete>,
+    callback: napi::napi_ref,
+    work: MaybeUninit<napi::napi_async_work>,
+}
 
-    work.output = (work.perform)(work.task);
+// RAII guard to drop callback
+struct NapiCallback {
+    env: napi::napi_env,
+    value: napi::napi_ref,
+}
+
+impl NapiCallback {
+    unsafe fn new(
+        env: napi::napi_env,
+        value: Local,
+    ) -> Self {
+        // Create a persistent reference to the JavaScript function
+        let mut result = MaybeUninit::uninit();
+        let status = napi::napi_create_reference(
+            env,
+            value,
+            1,
+            result.as_mut_ptr(),
+        );
+
+        assert_eq!(status, napi::napi_status::napi_ok);
+
+        Self {
+            env,
+            value: result.assume_init(),
+        }
+    }
+
+    unsafe fn as_raw(&self) -> napi::napi_ref {
+        self.value
+    }
+
+    unsafe fn from_raw(env: napi::napi_env, value: napi::napi_ref) -> Self {
+        Self {
+            env,
+            value,
+        }
+    }
+}
+
+impl Drop for NapiCallback {
+    fn drop(&mut self) {
+        unsafe {
+            napi::napi_delete_reference(self.env, self.value);
+        }
+    }
+}
+
+// RAII guard to drop async work and callback
+struct NapiAsyncWork<Data, Execute, Output, Complete> {
+    env: napi::napi_env,
+    callback: NapiCallback,
+    task: Box<AsyncTask<Data, Execute, Output, Complete>>,
+    work: napi::napi_async_work,
+}
+
+impl<Data, Execute, Output, Complete> NapiAsyncWork<Data, Execute, Output, Complete>
+where
+    Execute: FnOnce(Data) -> Output,
+    Complete: FnOnce(napi::napi_env, Output) -> Option<Local>,
+{
+    unsafe fn new(
+        env: napi::napi_env,
+        data: Data,
+        execute: Execute,
+        complete: Complete,
+        callback: NapiCallback,
+    ) -> Self {
+        let name = async_work_name(env);
+
+        // Create struct to hold state for async work
+        // WARN: `AsyncWork` is self-referential. It becomes the `data` pointer
+        // in the async work, which is then assigned to `work`.
+        let mut task = Box::new(AsyncTask {
+            data: Some(data),
+            execute: Some(execute),
+            output: None,
+            complete: Some(complete),
+            callback: callback.as_raw(),
+            // `null` is a valid value and checked in N-API
+            work: MaybeUninit::zeroed(),
+        });
+
+        let status = napi::napi_create_async_work(
+            env,
+            std::ptr::null_mut(),
+            name,
+            Some(perform_work::<Data, Execute, Output, Complete>),
+            Some(complete_work::<Data, Execute, Output, Complete>),
+            // Does not use `Box::into_raw` because `Task` might not be used
+            // 1. `Task` should be dropped if the work fails to be queued
+            // 2. `work` is self referential and needs to be aliased
+            &mut *task as *mut _ as *mut c_void,
+            task.work.as_mut_ptr(),
+        );
+
+        assert_eq!(status, napi::napi_status::napi_ok);
+
+        let work = task.work.assume_init();
+
+        Self {
+            env,
+            callback,
+            task,
+            work,
+        }
+    }
+
+    unsafe fn as_raw(&self) -> napi::napi_async_work {
+        self.work
+    }
+
+    unsafe fn from_raw(env: napi::napi_env, task: *mut c_void) -> Self {
+        let task: Box<AsyncTask<Data, Execute, Output, Complete>> =
+            Box::from_raw(task as *mut _);
+
+        let work = task.work.assume_init();
+
+        Self {
+            env,
+            callback: NapiCallback::from_raw(env, task.callback),
+            task,
+            work,
+        }
+    }
+}
+
+impl<Data, Execute, Output, Complete> Drop for NapiAsyncWork<Data, Execute, Output, Complete> {
+    fn drop(&mut self) {
+        unsafe {
+            napi::napi_delete_async_work(self.env, self.work);
+        }
+    }
+}
+
+unsafe extern "C" fn perform_work<Data, Execute, Output, Complete>(
+    _: napi::napi_env,
+    task: *mut c_void,
+)
+where
+    Execute: FnOnce(Data) -> Output,
+{
+    let task = &mut *(task as *mut AsyncTask<Data, Execute, Output, Complete>);
+    let execute = task.execute.take().unwrap();
+    let data = task.data.take().unwrap();
+
+    task.output.replace(execute(data));
 }
 
 // Complete async work on the main thread
-unsafe extern "C" fn complete_work(
+unsafe extern "C" fn complete_work<Data, Execute, Output, Complete>(
     env: napi::napi_env,
     status: napi::napi_status,
-    data: *mut c_void,
-) {
-    // Unbox as the first step to ensure destructor runs
-    let work = Box::from_raw(data as *mut AsyncWork);
-
-    // Output pointer for the result of user provided `complete` function
-    // Should use `zeroed` in case complete does not initialize
-    let mut complete_output = MaybeUninit::zeroed();
-    let AsyncWork {
-        task,
-        callback: callback_ref,
-        request,
-        complete,
-        output,
-        ..
-    } = *work;
-
-    // Helper method to delete references when done
-    let delete_refs = || {
-        let delete_ref_status = napi::napi_delete_reference(env, callback_ref);
-        let delete_work_status = napi::napi_delete_async_work(env, request);
-    
-        assert_eq!(delete_ref_status, napi::napi_status::napi_ok);
-        assert_eq!(delete_work_status, napi::napi_status::napi_ok);
-    };
+    task: *mut c_void,
+)
+where
+    Execute: FnOnce(Data) -> Output,
+    Complete: FnOnce(napi::napi_env, Output) -> Option<Local>,
+{
+    // Unbox the task first to ensure it is dropped
+    let mut task = NapiAsyncWork::<Data, Execute, Output, Complete>::from_raw(env, task);
 
     // Neon does not support cancelling tasks but there may be other ways for
     // tasks to become cancelled.
-    // Drop references to prevent a leak and return early
+    // Must come after `task` is unboxed to prevent memory leaks.
     if status == napi::napi_status::napi_cancelled {
-        delete_refs();
-
         return;
     }
 
-    // Execute the user provided complete function with the output of `perform`
-    // `complete` must not panic or memory may leak.
-    complete(env as *mut _, task, output, &mut *complete_output.as_mut_ptr());
-
-    // Unwrap the reference to the callback
-    let mut result = MaybeUninit::uninit();
-    let status = napi::napi_get_reference_value(
-        env,
-        callback_ref,
-        result.as_mut_ptr(),
-    );
-
-    // Work has been completed and references can be dropped. This should
-    // be performed early to ensure it is not skipped by a panic.
-    delete_refs();
-
-    // Do not assert that callback was dereferenced successfully until
-    // after it was dropped to prevent a leak
-    let callback = {
-        assert_eq!(status, napi::napi_status::napi_ok);
-
-        result.assume_init()
-    };
+    // Run the provided `complete` function
+    let output = task.task.output.take().unwrap();
+    let complete = task.task.complete.take().unwrap();
+    let output = complete(env, output);
 
     // Determine if an exception has been thrown
     let mut result = MaybeUninit::uninit();
@@ -171,7 +267,20 @@ unsafe extern "C" fn complete_work(
 
     // Completed successfully, call with `callback(null, output)`
     } else {
-        [null(env), complete_output.assume_init()]
+        [null(env), output.unwrap_or_else(|| undefined(env))]
+    };
+
+    let mut result = MaybeUninit::uninit();
+    let status = napi::napi_get_reference_value(
+        env,
+        task.callback.as_raw(),
+        result.as_mut_ptr(),
+    );
+
+    let callback = {
+        assert_eq!(status, napi::napi_status::napi_ok);
+
+        result.assume_init()
     };
 
     assert_eq!(
@@ -187,80 +296,37 @@ unsafe extern "C" fn complete_work(
     );
 }
 
-
-
-// Schedule work to be performed asynchronously
-pub unsafe extern "C" fn schedule(
+pub unsafe fn schedule<Data, Execute, Output, Complete>(
     env: Env,
-    task: *mut c_void,
-    perform: Perform,
+    data: Data,
+    execute: Execute,
     complete: Complete,
-    callback: Local
-) {
-    let name = async_work_name(env);
-
-    // Create a persistent reference to the callback
-    let mut result = MaybeUninit::uninit();
-    let status = napi::napi_create_reference(
+    callback: Local,
+)
+where
+    Data: Send + Sized + 'static,
+    Output: Send + Sized + 'static,
+    Execute: FnOnce(Data) -> Output + Send + 'static,
+    Complete: FnOnce(napi::napi_env, Output) -> Option<Local>,
+{
+    let callback = NapiCallback::new(env, callback);
+    let task = NapiAsyncWork::<_, _, Output, _>::new(
         env,
-        callback,
-        1,
-        result.as_mut_ptr(),
-    );
-
-    let callback = {
-        assert_eq!(status, napi::napi_status::napi_ok);
-
-        result.assume_init()
-    };
-
-    // Create struct to hold state for async work
-    // WARN: `AsyncWork` is self-referential. It becomes the `data` pointer
-    // in the async work. `request` is initialized empty and later assigned.
-    let mut work = Box::new(AsyncWork {
-        task,
-        callback,
-        // Placeholder for the async request after it is created
-        request: std::ptr::null_mut(),
-        perform,
+        data,
+        execute,
         complete,
-        // Placeholder for the result of the `perform` function
-        output: std::ptr::null_mut(),
-    });
-
-    // Create the async work and assign it to the `request` placeholder in `work`
-    let request = &mut work.request as *mut _;
-    let status = napi::napi_create_async_work(
-        env,
-        std::ptr::null_mut(),
-        name,
-        Some(perform_work),
-        Some(complete_work),
-        Box::into_raw(work) as *mut _,
-        request,
+        callback,
     );
 
-    // If the async work failed to create, delete the callback reference
-    // to prevent a leak.
-    if status != napi::napi_status::napi_ok {
-        assert_eq!(
-            napi::napi_delete_reference(env, callback),
-            napi::napi_status::napi_ok,
-        );
-        assert_eq!(status, napi::napi_status::napi_ok);
-    }
+    // Assumption: The queued task will execute if and only if the call to
+    // queue the work returns `napi_status::napi_ok`. If it does not and the
+    // task executes, a double free will occur.
+    assert_eq!(
+        napi::napi_queue_async_work(env, task.as_raw()),
+        napi::napi_status::napi_ok,
+    );
 
-    // Queue the async work
-    let status = napi::napi_queue_async_work(env, *request);
-
-    // If the work failed to queue, delete the work and the reference
-    // to prevent a leak.
-    if status != napi::napi_status::napi_ok {
-        let delete_ref_status = napi::napi_delete_reference(env, callback);
-        let delete_work_status = napi::napi_delete_async_work(env, *request);
-
-        assert_eq!(delete_ref_status, napi::napi_status::napi_ok);
-        assert_eq!(delete_work_status, napi::napi_status::napi_ok);
-        assert_eq!(status, napi::napi_status::napi_ok);
-    }
+    // If we queued successfully, prevent `Drop`
+    // It will be dropped in `complete`
+    std::mem::forget(task);
 }
