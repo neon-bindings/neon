@@ -41,4 +41,4 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 
 ## Communication
 
-* Slack: http://neon-community.slack.com -- get an invite from [the Slackin app](http://neon-community-slackin.herokuapp.com)
+* Slack: <https://rust-bindings.slack.com> -- get an invite from [the Slackin app](https://rust-bindings-slackin.herokuapp.com)
