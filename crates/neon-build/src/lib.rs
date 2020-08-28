@@ -33,16 +33,15 @@ cfg_if! {
         }
     } else if #[cfg(windows)] {
         // ^ automatically not neon-sys
-        use std::io::{Error, ErrorKind, Result};
+        use std::io::{Error, ErrorKind, Write, Result};
         use std::process::Command;
         use std::path::Path;
 
         fn node_version() -> Result<String> {
             let output = Command::new("node").arg("-v").output()?;
             if !output.status.success() {
-                let hopefully_stack_trace = String::from_utf8(output.stderr)
-                    .unwrap_or_else(|_| "<subprocess output garbage>".to_string());
-                panic!("Could not download node.lib: {}", hopefully_stack_trace);
+                let _ = std::io::stderr().write_all(&output.stderr);
+                panic!("Could not download node.lib. There is likely more information from stderr above.");
             }
             let stdout = String::from_utf8(output.stdout).map_err(|error| {
                 Error::new(ErrorKind::InvalidData, error)
