@@ -76,7 +76,10 @@ cfg_if! {
                 let basename = node_lib_path.file_stem().expect("Could not parse lib name from NEON_NODE_LIB. Does the path include the full file name?");
 
                 println!("cargo:rustc-link-search=native={}", dir.display());
-                // Littul hack to output the OsStr file stem
+                // `basename` is an OsStr, we can output it anyway by re-wrapping it in a Path
+                // Both `dir` and `basename` will be mangled (contain replacement characters) if
+                // they are not UTF-8 paths. If we don't mangle them though, Cargo will: so
+                // non-UTF-8 paths are simply not supported.
                 println!("cargo:rustc-link-lib={}", Path::new(basename).display());
                 return;
             }
