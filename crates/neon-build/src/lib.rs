@@ -81,7 +81,9 @@ cfg_if! {
                 return;
             }
 
-            let version = node_version().expect("Could not determine Node.js version");
+            let version = std::env::var("npm_config_target")
+                .or_else(|_| node_version())
+                .expect("Could not determine Node.js version");
             let arch = if std::env::var("CARGO_CFG_TARGET_ARCH").unwrap() == "x86" {
                 "x86"
             } else {
