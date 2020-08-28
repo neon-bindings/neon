@@ -48,16 +48,16 @@ struct DelayLoadInfo {
 #[allow(non_snake_case)]
 type PfnDliHook = unsafe extern "C" fn(dliNotify: usize, pdli: *const DelayLoadInfo) -> FARPROC;
 
+const HOST_BINARIES: &[&[u8]] = &[b"node.exe", b"electron.exe"];
+
 unsafe extern "C" fn load_exe_hook(event: usize, info: *const DelayLoadInfo) -> FARPROC {
-    // TODO this may need to be "electron.exe" in some cases
-    let host_binary = b"node.exe";
 
     if event != 0x01 /* dliNotePreLoadLibrary */ {
         return null_mut();
     }
 
     let dll_name = CStr::from_ptr((*info).szDll);
-    if dll_name.to_bytes() != host_binary {
+    if !HOST_BINARIES.iter().any(|&host_name| host_name == dll_name.to_bytes()) {
         return null_mut();
     }
 
