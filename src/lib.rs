@@ -11,7 +11,7 @@ extern crate lazy_static;
 #[cfg(target_os = "windows")]
 extern crate winapi;
 
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "napi-runtime"))]
 // This module statically provides a delayed load hook: we don't need to call anything to initialize it.
 mod win_delay_load_hook;
 
