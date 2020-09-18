@@ -1,3 +1,23 @@
+# version 0.4.1
+
+## Features
+
+### Try Catch
+
+Added the `cx.try_catch` API of [RFC 29](https://github.com/neon-bindings/rfcs/pull/29). This feature is behind the `try-catch-api` feature flag.
+
+## Bug Fixes
+
+* Pass `async_context` to `node::MakeCallback` (https://github.com/neon-bindings/neon/pull/498)
+* Cache bust neon if node version changes (https://github.com/neon-bindings/neon/pull/388)
+* Fix debug builds in windows (https://github.com/neon-bindings/neon/pull/400)
+* Fix cross compiling architectures (https://github.com/neon-bindings/neon/pull/491)
+* Fix neon new hanging on Windows (https://github.com/neon-bindings/neon/pull/537)
+
+## CI Improvements
+
+The Neon Project now uses Github Actions thanks to @lhr0909! As part of this change, CI now runs on all of our supported platforms (macOS, Windows, linux) and Node versions.
+
 # Version ✨0.4✨ 🎉
 
 ## `EventHandler` API
