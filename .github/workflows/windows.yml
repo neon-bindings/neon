@@ -30,9 +30,16 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+    - name: Install libclang
+      uses: KyleMayes/install-llvm-action@7770802
+      with:
+        version: "10"
+        directory: ${{ runner.temp }}/llvm
     # - name: update node-gyp to latest
     #   # https://github.com/nodejs/node-gyp/issues/1933#issuecomment-586915535
     #   run: npm install -g node-gyp@latest
     - run: npm config set msvs_version 2019
     - name: run cargo test
       run: cargo test --release
+      env:
+        LIBCLANG_PATH: ${{ runner.temp }}/llvm/bin
