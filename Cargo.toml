@@ -55,7 +55,7 @@ docs-only = ["neon-runtime/docs-only"]
 try-catch-api = []
 
 [package.metadata.docs.rs]
-features = ["docs-only"]
+features = ["docs-only", "event-handler-api", "try-catch-api"]
 
 [workspace]
 members = [
