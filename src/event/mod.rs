@@ -55,7 +55,16 @@ impl EventHandler {
     pub fn schedule_with<F>(&self, arg_cb: F)
         where F: FnOnce(&mut EventContext, Handle<JsValue>, Handle<JsFunction>),
               F: Send + 'static {
-        let callback = Box::into_raw(Box::new(arg_cb)) as *mut c_void;
+        // HACK: Work around for race condition in `close`. `EventHandler` cannot be
+        // dropped until all callbacks have executed.
+        // NOTE: This will still leak memory if the callback is never called
+        let cloned_cb = self.clone();
+        let cb = move |cx, this, cb| {
+            arg_cb(cx, this, cb);
+            std::mem::drop(cloned_cb);
+        };
+
+        let callback = Box::into_raw(Box::new(cb)) as *mut c_void;
         unsafe {
             neon_runtime::handler::schedule((*self.0).0, callback, handle_callback::<F>);
         }

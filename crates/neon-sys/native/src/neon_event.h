@@ -25,6 +25,12 @@ namespace neon {
             context_.Reset(isolate, isolate->GetCurrentContext());
         }
 
+        ~EventHandler() {
+            self_.Reset();
+            callback_.Reset();
+            context_.Reset();
+        }
+
         void schedule(void *rust_callback, Neon_EventHandler handler) {
             {
                 std::lock_guard<std::mutex> lock(mutex_);
