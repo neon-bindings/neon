@@ -1,6 +1,5 @@
 //! Helper to run a callback in the libuv main thread.
 
-use std::mem;
 use std::os::raw::c_void;
 
 use types::*;
@@ -52,6 +51,15 @@ impl EventHandler {
         })
     }
 
+    fn schedule_internal<F>(&self, cb: F)
+        where F: FnOnce(&mut EventContext, Handle<JsValue>, Handle<JsFunction>),
+              F: Send + 'static {
+        let callback = Box::into_raw(Box::new(cb)) as *mut c_void;
+        unsafe {
+            neon_runtime::handler::schedule((*self.0).0, callback, handle_callback::<F>);
+        }
+    }
+
     pub fn schedule_with<F>(&self, arg_cb: F)
         where F: FnOnce(&mut EventContext, Handle<JsValue>, Handle<JsFunction>),
               F: Send + 'static {
@@ -59,15 +67,11 @@ impl EventHandler {
         // dropped until all callbacks have executed.
         // NOTE: This will still leak memory if the callback is never called
         let cloned_cb = self.clone();
-        let cb = move |cx, this, cb| {
-            arg_cb(cx, this, cb);
-            std::mem::drop(cloned_cb);
-        };
 
-        let callback = Box::into_raw(Box::new(cb)) as *mut c_void;
-        unsafe {
-            neon_runtime::handler::schedule((*self.0).0, callback, handle_callback::<F>);
-        }
+        self.schedule_internal(move |cx, this, cb| {
+            arg_cb(cx, this, cb);
+            let _ = cloned_cb;
+        });
     }
 }
 
@@ -76,7 +80,7 @@ unsafe extern "C" fn handle_callback<F>(this: raw::Local, func: raw::Local, call
     EventContext::with(|mut cx: EventContext| {
         let this = JsValue::new_internal(this);
         let func: Handle<JsFunction> = Handle::new_internal(JsFunction::from_raw(func));
-        let callback: Box<F> = Box::from_raw(mem::transmute(callback));
+        let callback: Box<F> = Box::from_raw(callback as *mut _);
         callback(&mut cx, this, func);
     })
 }
