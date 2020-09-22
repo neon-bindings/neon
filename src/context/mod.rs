@@ -14,6 +14,8 @@ use borrow::{Ref, RefMut, Borrow, BorrowMut};
 use borrow::internal::Ledger;
 use context::internal::Env;
 use handle::{Managed, Handle};
+#[cfg(feature = "napi-runtime")]
+use sync::EventQueue;
 use types::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
 #[cfg(feature = "napi-runtime")]
 use types::boxed::{Finalize, JsBox};
@@ -379,6 +381,12 @@ pub trait Context<'a>: ContextInternal<'a> {
     fn boxed<U: Finalize + Send + 'static>(&mut self, v: U) -> Handle<'a, JsBox<U>> {
         JsBox::new(self, v)
     }
+
+    #[cfg(feature = "napi-runtime")]
+    /// Creates an unbounded queue of events to be executed on a JavaScript thread
+    fn event_queue(&mut self) -> EventQueue {
+        EventQueue::new(self)
+    }
 }
 
 /// A view of the JS engine in the context of top-level initialization of a Neon module.
@@ -592,6 +600,13 @@ pub struct TaskContext<'a> {
 impl<'a> TaskContext<'a> {
     pub(crate) fn with<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(f: F) -> T {
         let env = Env::current();
+        Scope::with(env, |scope| {
+            f(TaskContext { scope })
+        })
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    pub(crate) fn with_context<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: Env, f: F) -> T {
         Scope::with(env, |scope| {
             f(TaskContext { scope })
         })

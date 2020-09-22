@@ -137,6 +137,12 @@ pub struct JsBox<T: Send + 'static> {
     raw_data: *const T,
 }
 
+impl<T: Send + 'static> std::fmt::Debug for JsBox<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "JsBox<{}>", std::any::type_name::<T>())
+    }
+}
+
 // Attempt to use a `napi_value` as a `napi_external` to unwrap a `BoxAny>
 /// Safety: `local` must be a `napi_value` that is valid for the lifetime `'a`.
 unsafe fn maybe_external_deref<'a>(env: Env, local: raw::Local) -> Option<&'a BoxAny> {
