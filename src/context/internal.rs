@@ -154,7 +154,7 @@ pub trait ContextInternal<'a>: Sized {
             }
             TryCatchControl::Returned => {
                 let local = unsafe { local.assume_init() };
-                Ok(Handle::new_internal(T::from_raw(local)))
+                Ok(Handle::new_internal(T::from_raw(self.env(), local)))
             }
             TryCatchControl::Threw => {
                 let local = unsafe { local.assume_init() };

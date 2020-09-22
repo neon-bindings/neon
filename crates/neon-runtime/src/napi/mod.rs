@@ -5,6 +5,7 @@ pub mod call;
 pub mod class;
 pub mod convert;
 pub mod error;
+pub mod external;
 pub mod fun;
 pub mod mem;
 pub mod object;

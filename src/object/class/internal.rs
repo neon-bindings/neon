@@ -19,7 +19,7 @@ impl<T: Class> Callback<()> for MethodCallback<T> {
         unsafe {
             info.with_cx::<T, _, _>(env, |mut cx| {
                 let data = info.data(cx.env());
-                let this: Handle<JsValue> = Handle::new_internal(JsValue::from_raw(info.this(&mut cx)));
+                let this: Handle<JsValue> = Handle::new_internal(JsValue::from_raw(env, info.this(&mut cx)));
 
                 #[cfg(feature = "legacy-runtime")]
                 let is_a_t = this.is_a::<T>();
@@ -143,7 +143,7 @@ pub struct ClassMetadata {
 
 impl ClassMetadata {
     pub unsafe fn constructor<'a, T: Class, C: Context<'a>>(&self, cx: &mut C) -> JsResult<'a, JsFunction<T>> {
-        build(|out| {
+        build(cx.env(), |out| {
             neon_runtime::class::metadata_to_constructor(out, mem::transmute(cx.env()), self.pointer)
         })
     }

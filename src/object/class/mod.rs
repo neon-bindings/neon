@@ -121,12 +121,12 @@ pub trait Class: Managed + Any {
 unsafe impl<T: Class> This for T {
     #[cfg(feature = "legacy-runtime")]
     fn as_this(h: raw::Local) -> Self {
-        Self::from_raw(h)
+        Self::from_raw(Env::current(), h)
     }
 
     #[cfg(feature = "napi-runtime")]
-    fn as_this(_env: Env, h: raw::Local) -> Self {
-        Self::from_raw(h)
+    fn as_this(env: Env, h: raw::Local) -> Self {
+        Self::from_raw(env, h)
     }
 }
 
@@ -175,7 +175,7 @@ pub(crate) trait ClassInternal: Class {
             }
 
             for (name, method) in descriptor.methods {
-                let method: Handle<JsValue> = build(|out| {
+                let method: Handle<JsValue> = build(cx.env(), |out| {
                     let callback = method.into_c_callback();
                     neon_runtime::fun::new_template(out, env, callback)
                 })?;

@@ -17,7 +17,7 @@ pub trait ValueInternal: Managed + 'static {
 
     fn downcast<Other: Value>(env: Env, other: Other) -> Option<Self> {
         if Self::is_typeof(env, other) {
-            Some(Self::from_raw(other.to_raw()))
+            Some(Self::from_raw(env, other.to_raw()))
         } else {
             None
         }

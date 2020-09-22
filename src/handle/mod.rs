@@ -10,7 +10,6 @@ use neon_runtime;
 use neon_runtime::raw;
 use types::Value;
 use context::Context;
-#[cfg(feature = "legacy-runtime")]
 use context::internal::Env;
 use result::{JsResult, JsResultExt};
 use self::internal::SuperType;
@@ -19,7 +18,7 @@ use self::internal::SuperType;
 pub trait Managed: Copy {
     fn to_raw(self) -> raw::Local;
 
-    fn from_raw(h: raw::Local) -> Self;
+    fn from_raw(env: Env, h: raw::Local) -> Self;
 }
 
 /// A safely rooted _handle_ to a JS value in memory that is managed by the garbage collector.
@@ -125,10 +124,10 @@ impl<'a, T: Value> Handle<'a, T> {
     /// ```no_run
     /// # use neon::prelude::*;
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    /// let v: Handle<JsValue> = cx.number(17).upcast(&mut cx);
-    /// v.is_a::<JsString>(&mut cx); // false
-    /// v.is_a::<JsNumber>(&mut cx); // true
-    /// v.is_a::<JsValue>(&mut cx);  // true
+    /// let v: Handle<JsValue> = cx.number(17).upcast();
+    /// v.is_a::<JsString, _>(&mut cx); // false
+    /// v.is_a::<JsNumber, _>(&mut cx); // true
+    /// v.is_a::<JsValue, _>(&mut cx);  // true
     /// # Ok(cx.undefined())
     /// # }
     /// ```
