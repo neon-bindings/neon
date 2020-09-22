@@ -23,6 +23,8 @@ pub mod task;
 pub mod event;
 pub mod meta;
 pub mod prelude;
+#[cfg(feature = "napi-runtime")]
+pub mod sync;
 
 #[doc(hidden)]
 pub mod macro_internal;

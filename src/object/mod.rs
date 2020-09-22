@@ -90,6 +90,7 @@ mod traits {
     use context::Context;
     use context::internal::Env;
     use result::{NeonResult, JsResult, Throw};
+    use sync::Root;
 
     /// A property key in a JavaScript object.
     pub trait PropertyKey {
@@ -203,6 +204,10 @@ mod traits {
             } else {
                 Err(Throw)
             }
+        }
+
+        fn root<'a, C: Context<'a>>(&self, cx: &mut C) -> Root<Self> {
+            Root::new(cx, self)
         }
     }
 

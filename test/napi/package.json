@@ -6,7 +6,7 @@
   "license": "MIT",
   "scripts": {
     "install": "cargo build -p napi --release",
-    "test": "mocha --timeout 5000 --recursive lib"
+    "test": "mocha --expose-gc --timeout 5000 --recursive lib"
   },
   "devDependencies": {
     "chai": "^4.2.0",
