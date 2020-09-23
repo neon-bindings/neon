@@ -1,4 +1,10 @@
-# version 0.4.1
+# Version 0.4.2
+
+## Bug Fixes
+
+* Fix memory leak and race condition in `EventHandler`
+
+# Version 0.4.1
 
 ## Features
 
