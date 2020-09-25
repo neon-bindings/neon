@@ -13,3 +13,6 @@ cfg-if = "0.1.9"
 
 [build-dependencies]
 cfg-if = "0.1.9"
+
+[features]
+output-lib = []

@@ -10,9 +10,6 @@ license = "MIT/Apache-2.0"
 exclude = ["neon.jpg"]
 build = "build.rs"
 
-[build-dependencies]
-neon-build = { version = "=0.4.2", path = "crates/neon-build" }
-
 [dev-dependencies]
 lazy_static = "1.4.0"
 rustversion = "0.1.4"
@@ -22,6 +19,7 @@ semver = "0.9"
 cslice = "0.2"
 semver = "0.9.0"
 neon-runtime = { version = "=0.4.2", path = "crates/neon-runtime" }
+neon-build = { version = "=0.4.2", path = "crates/neon-build" }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 winapi = { version = "0.3.9", features = ["minwindef", "libloaderapi", "ntdef"] }
@@ -64,5 +62,5 @@ members = [
     "test/static",
     "test/electron/native",
     "test/dynamic/native",
-    "test/napi/native"
+    "test/napi"
 ]
