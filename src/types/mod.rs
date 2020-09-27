@@ -19,6 +19,7 @@ use object::{Object, This};
 use object::class::Callback;
 use handle::{Handle, Managed};
 use handle::internal::SuperType;
+use smallvec::SmallVec;
 use self::internal::{ValueInternal, FunctionCallback};
 use self::utf8::Utf8;
 
@@ -587,7 +588,7 @@ impl<CL: Object> JsFunction<CL> {
               A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
     {
-        let mut args = args.into_iter().collect::<Vec<_>>();
+        let mut args = args.into_iter().collect::<SmallVec::<[_; 8]>>();
         let (argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
         let env = cx.env().to_raw();
         build(|out| {
