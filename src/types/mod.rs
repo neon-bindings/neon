@@ -602,7 +602,7 @@ impl<CL: Object> JsFunction<CL> {
         where A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
     {
-        let mut args = args.into_iter().collect::<Vec<_>>();
+        let mut args = args.into_iter().collect::<SmallVec::<[_; 8]>>();
         let (argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
         let env = cx.env().to_raw();
         build(|out| {
