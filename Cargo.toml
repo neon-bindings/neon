@@ -22,6 +22,7 @@ semver = "0.9"
 cslice = "0.2"
 semver = "0.9.0"
 neon-runtime = { version = "=0.4.2", path = "crates/neon-runtime" }
+smallvec = { version = "1.4.2", optional = true }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 winapi = { version = "0.3.9", features = ["minwindef", "libloaderapi", "ntdef"] }
@@ -45,7 +46,7 @@ legacy-runtime = ["neon-runtime/neon-sys", "neon-build/neon-sys"]
 
 # Feature flag to enable the experimental N-API runtime. For now, this feature
 # is disabled by default.
-napi-runtime = ["neon-runtime/nodejs-sys"]
+napi-runtime = ["neon-runtime/nodejs-sys", "smallvec"]
 
 # Feature flag to disable external dependencies on docs build
 docs-only = ["neon-runtime/docs-only"]

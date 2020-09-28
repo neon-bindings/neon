@@ -4,6 +4,9 @@ extern crate neon_runtime;
 extern crate cslice;
 extern crate semver;
 
+#[cfg(feature = "napi-runtime")]
+extern crate smallvec;
+
 #[cfg(test)]
 #[macro_use]
 extern crate lazy_static;

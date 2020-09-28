@@ -20,6 +20,8 @@ use types::error::JsError;
 use object::{Object, This};
 use object::class::Class;
 use result::{NeonResult, JsResult, Throw};
+#[cfg(feature = "napi-runtime")]
+use smallvec::SmallVec;
 use self::internal::{ContextInternal, Scope, ScopeMetadata};
 
 #[repr(C)]
@@ -84,7 +86,7 @@ impl CallbackInfo<'_> {
     }
 
     #[cfg(feature = "napi-runtime")]
-    pub fn argv<'b, C: Context<'b>>(&self, cx: &mut C) -> Vec<raw::Local> {
+    pub fn argv<'b, C: Context<'b>>(&self, cx: &mut C) -> SmallVec<[raw::Local; 8]> {
         unsafe {
             neon_runtime::call::argv(cx.env().to_raw(), self.info)
         }
@@ -481,7 +483,7 @@ pub struct CallContext<'a, T: This> {
     scope: Scope<'a, raw::HandleScope>,
     info: &'a CallbackInfo<'a>,
     #[cfg(feature = "napi-runtime")]
-    arguments: Option<Vec<raw::Local>>,
+    arguments: Option<SmallVec<[raw::Local; 8]>>,
     phantom_type: PhantomData<T>
 }
 
