@@ -60,6 +60,11 @@ describe('JsFunction', function() {
     assert.throw(addon.unexpected_throw_and_catch, Error, /^internal error in Neon module: try_catch: unexpected Err\(Throw\) when VM is not in a throwing state$/);
   })
 
+  it('should be able to stringify a downcast error', function () {
+    let msg = addon.downcast_error();
+    assert.strictEqual(msg, "failed to downcast string to number");
+  });
+
   it('computes the right number of arguments', function() {
     assert.equal(addon.num_arguments(), 0);
     assert.equal(addon.num_arguments('a'), 1);

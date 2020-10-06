@@ -33,4 +33,10 @@ describe('errors', function() {
     
     assert.throws(() => addon.throw_error(msg), msg);
   });
+
+  it('should be able to stringify a downcast error', function () {
+    let msg = addon.downcast_error();
+    assert.strictEqual(msg, "failed to downcast string to number");
+  });
+
 });
