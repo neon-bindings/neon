@@ -28,7 +28,7 @@ The Neon Project now uses Github Actions thanks to @lhr0909! As part of this cha
 
 ## `EventHandler` API
 
-The [`EventHandler` API](https://github.com/neon-bindings/rfcs/blob/master/text/0025-event-handler.md) is a new feature for scheduling work on the javascript main thread from other threads. Big thanks to @geovie for the RFC and implementation.
+The [`EventHandler` API](https://github.com/neon-bindings/rfcs/blob/main/text/0025-event-handler.md) is a new feature for scheduling work on the javascript main thread from other threads. Big thanks to @geovie for the RFC and implementation.
 
 This feature is currently _unstable_ and gated by a `event-handler-api` feature flag.
 
@@ -107,16 +107,16 @@ Neon 0.3.2 lays the groundwork for the next major revision. Development of Neon 
 See the [Neon 0.2 Migration Guide](https://github.com/neon-bindings/neon/wiki/Neon-0.2-Migration-Guide) for documentation on migrating your projects from the Neon 0.1.x series to Neon 0.2, and please [let us know](https://github.com/neon-bindings/neon#get-involved) if you need help!
 
 * Release automation (#318)
-* New `ArrayBuffer` views API -- see [RFC 5](https://github.com/neon-bindings/rfcs/blob/master/text/0005-array-buffer-views.md) (#306)
-* VM 2.0 -- see [RFC 14](https://github.com/neon-bindings/rfcs/blob/master/text/0014-vm-2.0.md) (#306)
-* New `JsString` constructor -- see [RFC 21](https://github.com/neon-bindings/rfcs/blob/master/text/0021-string-constructor.md) (#322)
-* Eliminated `JsInteger`, `JsVariant`, `callee()` -- see [RFC 22](https://github.com/neon-bindings/rfcs/blob/master/text/0022-zero-dot-two.md) (#323)
-* Renamed `Key` to `PropertyKey` and its method names -- see [RFC 22](https://github.com/neon-bindings/rfcs/blob/master/text/0022-zero-dot-two.md) (#323)
-* Module reorganization -- see [RFC 20](https://github.com/neon-bindings/rfcs/blob/master/text/0020-module-reorg.md) (#324)
-* New `JsError` API -- see [RFC 23](https://github.com/neon-bindings/rfcs/blob/master/text/0023-error-subtyping.md) (#325)
-* Eliminated `ToJsString` API -- see [RFC 22](https://github.com/neon-bindings/rfcs/blob/master/text/0022-zero-dot-two.md) (#326)
-* Eliminated `NEON_NODE_ABI` env var -- see [RFC 22](https://github.com/neon-bindings/rfcs/blob/master/text/0022-zero-dot-two.md) (#327)
-* Default to release builds -- see [RFC 22](https://github.com/neon-bindings/rfcs/blob/master/text/0022-zero-dot-two.md) (#328)
+* New `ArrayBuffer` views API -- see [RFC 5](https://github.com/neon-bindings/rfcs/blob/main/text/0005-array-buffer-views.md) (#306)
+* VM 2.0 -- see [RFC 14](https://github.com/neon-bindings/rfcs/blob/main/text/0014-vm-2.0.md) (#306)
+* New `JsString` constructor -- see [RFC 21](https://github.com/neon-bindings/rfcs/blob/main/text/0021-string-constructor.md) (#322)
+* Eliminated `JsInteger`, `JsVariant`, `callee()` -- see [RFC 22](https://github.com/neon-bindings/rfcs/blob/main/text/0022-zero-dot-two.md) (#323)
+* Renamed `Key` to `PropertyKey` and its method names -- see [RFC 22](https://github.com/neon-bindings/rfcs/blob/main/text/0022-zero-dot-two.md) (#323)
+* Module reorganization -- see [RFC 20](https://github.com/neon-bindings/rfcs/blob/main/text/0020-module-reorg.md) (#324)
+* New `JsError` API -- see [RFC 23](https://github.com/neon-bindings/rfcs/blob/main/text/0023-error-subtyping.md) (#325)
+* Eliminated `ToJsString` API -- see [RFC 22](https://github.com/neon-bindings/rfcs/blob/main/text/0022-zero-dot-two.md) (#326)
+* Eliminated `NEON_NODE_ABI` env var -- see [RFC 22](https://github.com/neon-bindings/rfcs/blob/main/text/0022-zero-dot-two.md) (#327)
+* Default to release builds -- see [RFC 22](https://github.com/neon-bindings/rfcs/blob/main/text/0022-zero-dot-two.md) (#328)
 * Made `Buffer` construction safe by default (#329, #331)
 * Made `Throw` not implement `std::error::Error` to avoid accidental suppression, thanks to [@kjvalencik](https://github.com/kjvalencik) (#334)
 * Fixed a bug causing unnecessary rebuilds, thanks to [@kjvalencik](https://github.com/kjvalencik) (#343)
