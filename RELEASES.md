@@ -1,10 +1,26 @@
+# Version 0.5.0
+
+_Re-publish_
+
+Versions `0.4.1` and `0.4.2` included a breaking change in `neon-runtime`. At the time, this was considered acceptable because `neon-runtime` is considered an internal crate and not part of the public API. However, it was discovered, after publishing, that `neon-serde`, a commonly used crate in the `neon` ecosystem, contained a direct dependency on `neon-runtime`. In order to best support users, versions `0.4.1` and `0.4.2` were "yanked" and re-published as `0.5.0`.
+
+Additionally, the team is working with the authors of `neon-serde` to remove the dependency on `neon-runtime` to prevent future issues.
+
+## Bug Fixes
+
+* Fix stack overflow in `DowncastError` `Display` impl (https://github.com/neon-bindings/neon/pull/606)
+
 # Version 0.4.2
+
+_Unpublished / Yanked_
 
 ## Bug Fixes
 
 * Fix memory leak and race condition in `EventHandler`
 
 # Version 0.4.1
+
+_Unpublished / Yanked_
 
 ## Features
 
