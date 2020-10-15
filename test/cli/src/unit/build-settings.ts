@@ -7,6 +7,10 @@ describe('build settings', () => {
     npm_config_arch: null,
     npm_config_target_arch: null,
     npm_config_disturl: null,
+    npm_config_node_engine: null,
+    npm_config_node_gyp: null,
+    npm_config_nodedir: null,
+    npm_config_platform: null,
     npm_config_runtime: null,
     npm_config_build_from_source: null,
     npm_config_devdir: null
@@ -55,6 +59,10 @@ describe('build settings', () => {
         npm_config_arch:              process.env.npm_config_arch || null,
         npm_config_target_arch:       process.env.npm_config_target_arch || null,
         npm_config_disturl:           process.env.npm_config_disturl || null,
+        npm_config_node_engine:       process.env.npm_config_node_engine || null,
+        npm_config_node_gyp:          process.env.npm_config_node_gyp || null,
+        npm_config_nodedir:           process.env.npm_config_nodedir || null,
+        npm_config_platform:          process.env.npm_config_platform || null,
         npm_config_runtime:           process.env.npm_config_runtime || null,
         npm_config_build_from_source: process.env.npm_config_build_from_source || null,
         npm_config_devdir:            process.env.npm_config_devdir || null
