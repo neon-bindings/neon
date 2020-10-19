@@ -94,7 +94,7 @@ mod build {
     //
     //     gyp verb architecture ia32
     fn parse_node_arch(node_gyp_output: &str) -> String {
-        let version_regex = Regex::new(r"gyp verb architecture (?P<arch>ia32|x64)").unwrap();
+        let version_regex = Regex::new(r"gyp verb architecture (?P<arch>ia32|x64|arm|arm64)").unwrap();
         let captures = version_regex.captures(&node_gyp_output).unwrap();
         String::from(&captures["arch"])
     }
