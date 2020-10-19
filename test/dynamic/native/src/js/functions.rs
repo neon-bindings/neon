@@ -127,3 +127,12 @@ pub fn unexpected_throw_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> 
     Ok(cx.try_catch(|_| { Err(Throw) })
          .unwrap_or_else(|err| err))
 }
+
+pub fn downcast_error(mut cx: FunctionContext) -> JsResult<JsString> {
+    let s = cx.string("hi");
+    if let Err(e) = s.downcast::<JsNumber>() {
+        Ok(cx.string(format!("{}", e)))
+    } else {
+        panic!()
+    }
+}

@@ -18,7 +18,7 @@ we encourage you to [submit an RFC](https://github.com/neon-bindings/rfcs)!
 
 The [RFC process](https://github.com/neon-bindings/rfcs#the-process) has a little more overhead than
 filing an issue, but it's for the goal of allowing the Neon community to have a chance to vet
-design ideas and reach consensus. And even at that, we've deliberately kept the [RFC template](https://github.com/neon-bindings/rfcs/blob/master/0000-template.md)
+design ideas and reach consensus. And even at that, we've deliberately kept the [RFC template](https://github.com/neon-bindings/rfcs/blob/main/0000-template.md)
 simple and open-ended.
 
 ### Good first bugs

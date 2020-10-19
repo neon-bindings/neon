@@ -158,6 +158,7 @@ register_module!(|mut cx| {
     cx.export_function("new_type_error", new_type_error)?;
     cx.export_function("new_range_error", new_range_error)?;
     cx.export_function("throw_error", throw_error)?;
+    cx.export_function("downcast_error", downcast_error)?;
 
     cx.export_function("panic", panic)?;
     cx.export_function("panic_after_throw", panic_after_throw)?;
