@@ -3,6 +3,7 @@
 extern crate neon_runtime;
 extern crate cslice;
 extern crate semver;
+extern crate smallvec;
 
 #[cfg(test)]
 #[macro_use]
