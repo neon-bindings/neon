@@ -4,9 +4,13 @@ use raw::{Env, Local};
 
 use nodejs_sys as napi;
 
+/// `finalize_external` is invoked immediately before a `napi_external` is garbage collected
 extern "C" fn finalize_external<T: Send + 'static>(
     env: napi::napi_env,
+    // Raw pointer to a `Box<T>` stored by a `napi_external`
     data: *mut std::ffi::c_void,
+    // Pointer to a Rust `fn` stored in the `hint` parameter of a `napi_external` called
+    // with the contents of `data` immediately before the value is garbage collected.
     hint: *mut std::ffi::c_void,
 ) {
     unsafe {
@@ -17,9 +21,11 @@ extern "C" fn finalize_external<T: Send + 'static>(
     }
 }
 
+/// Returns a pointer to data stored in a `napi_external`
 /// Safety: `deref` must only be called with `napi_external` created by that
 /// module. Calling `deref` with an external created by another native module,
 /// even another neon module, is undefined behavior.
+/// https://github.com/neon-bindings/neon/issues/591
 pub unsafe fn deref<T: Send + 'static>(
     env: Env,
     local: Local,

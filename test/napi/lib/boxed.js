@@ -61,12 +61,12 @@ describe('boxed', function() {
   it('should type check externals', function () {
     // `any::type_name` does not guarantee exact format
     // failed downcast to neon::types::boxed::JsBox<napi::js::boxed::Person>
-    assert.throws(() => addon.person_greet({}), /failed downcast to.*JsBox.*Person/);
+    assert.throws(() => addon.person_greet({}), /failed to downcast.*JsBox.*Person/);
   });
 
   it('should type check dynamic type', function () {
     const unit = addon.external_unit();
 
-    assert.throws(() => addon.person_greet(unit), /failed downcast/);
+    assert.throws(() => addon.person_greet(unit), /failed to downcast/);
   });
 });
