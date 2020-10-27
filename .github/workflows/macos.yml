@@ -4,10 +4,10 @@ on:
   push:
     # Prevent duplicate runs of this workflow on our own internal PRs.
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   build:
