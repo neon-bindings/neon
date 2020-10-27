@@ -89,7 +89,7 @@ Since `neon-build` has been included in the project template since `0.1` this ch
 
 ## N-API
 
-Neon 0.3.2 lays the groundwork for the next major revision. Development of Neon against an ABI stable Node API (N-API) will occur on master.
+Neon 0.3.2 lays the groundwork for the next major revision. Development of Neon against an ABI stable Node API (N-API) will occur on main.
 
 * Added `legacy-runtime` and `n-api` feature flags for toggling neon runtime
 * Moved the legacy runtime to `nodejs-sys` crate
