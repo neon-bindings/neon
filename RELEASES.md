@@ -1,3 +1,13 @@
+# Version 0.5.1
+
+## Performance
+
+* `smallvec` is used for collecting arguments and yields a small performance gain when calling `JsFunction`
+
+## Broader Support
+
+Thanks to @staltz, neon now builds for both iOS and Android with [nodejs-mobile](https://github.com/JaneaSystems/nodejs-mobile).
+
 # Version 0.5.0
 
 _Re-publish_
