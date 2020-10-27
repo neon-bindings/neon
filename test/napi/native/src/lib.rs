@@ -2,6 +2,7 @@ use neon::prelude::*;
 
 mod js {
     pub mod arrays;
+    pub mod boxed;
     pub mod coercions;
     pub mod errors;
     pub mod functions;
@@ -12,6 +13,7 @@ mod js {
 }
 
 use js::arrays::*;
+use js::boxed::*;
 use js::coercions::*;
 use js::errors::*;
 use js::functions::*;
@@ -173,6 +175,14 @@ register_module!(|mut cx| {
     }
 
     cx.export_function("get_own_property_names", call_get_own_property_names)?;
+
+    cx.export_function("person_new", person_new)?;
+    cx.export_function("person_greet", person_greet)?;
+    cx.export_function("ref_person_new", ref_person_new)?;
+    cx.export_function("ref_person_greet", ref_person_greet)?;
+    cx.export_function("ref_person_set_name", ref_person_set_name)?;
+    cx.export_function("ref_person_fail", ref_person_fail)?;
+    cx.export_function("external_unit", external_unit)?;
 
     Ok(())
 });

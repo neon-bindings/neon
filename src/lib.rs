@@ -271,7 +271,10 @@ macro_rules! impl_managed {
                 raw
             }
 
-            fn from_raw(raw: $crate::macro_internal::runtime::raw::Local) -> Self {
+            fn from_raw(
+                _env: neon::macro_internal::Env,
+                raw: $crate::macro_internal::runtime::raw::Local,
+            ) -> Self {
                 $cls(raw)
             }
         }
@@ -295,14 +298,20 @@ macro_rules! impl_managed {
 ///     /// A class for generating greeting strings.
 ///     pub class JsGreeter for Greeter {
 ///         init(mut cx) {
+/// #           #[cfg(feature = "legacy-runtime")]
 ///             let greeting = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
+/// #           #[cfg(feature = "napi-runtime")]
+/// #           let greeting = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value(&mut cx);
 ///             Ok(Greeter {
 ///                 greeting: greeting
 ///             })
 ///         }
 ///
 ///         method hello(mut cx) {
+/// #           #[cfg(feature = "legacy-runtime")]
 ///             let name = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
+/// #           #[cfg(feature = "napi-runtime")]
+/// #           let name = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value(&mut cx);
 ///             let this = cx.this();
 ///             let msg = {
 ///                 let guard = cx.lock();

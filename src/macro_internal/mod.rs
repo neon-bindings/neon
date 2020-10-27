@@ -3,7 +3,7 @@
 
 // Used by the class macro.
 pub use object::class::internal::{AllocateCallback, ConstructCallback, ConstructorCallCallback, MethodCallback};
-pub use context::internal::initialize_module;
+pub use context::internal::{initialize_module, Env};
 
 // An alias for neon_runtime so macros can refer to it.
 pub mod runtime {
