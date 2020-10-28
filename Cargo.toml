@@ -1,6 +1,6 @@
 [package]
 name = "neon"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Dave Herman <david.herman@gmail.com>"]
 description = "A safe abstraction layer for Node.js."
 readme = "README.md"
@@ -11,7 +11,7 @@ exclude = ["neon.jpg"]
 build = "build.rs"
 
 [build-dependencies]
-neon-build = { version = "=0.5.0", path = "crates/neon-build" }
+neon-build = { version = "=0.5.1", path = "crates/neon-build" }
 
 [dev-dependencies]
 lazy_static = "1.4.0"
@@ -22,7 +22,7 @@ semver = "0.9"
 cslice = "0.2"
 semver = "0.9.0"
 smallvec = "1.4.2"
-neon-runtime = { version = "=0.5.0", path = "crates/neon-runtime" }
+neon-runtime = { version = "=0.5.1", path = "crates/neon-runtime" }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 winapi = { version = "0.3.9", features = ["minwindef", "libloaderapi", "ntdef"] }
