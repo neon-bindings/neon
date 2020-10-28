@@ -46,22 +46,41 @@ cfg_if! {
             let stdout = String::from_utf8(output.stdout).map_err(|error| {
                 Error::new(ErrorKind::InvalidData, error)
             })?;
-            Ok(stdout.trim().to_string())
+            // npm_config_target should not contain a leading "v"
+            Ok(stdout.trim().trim_start_matches('v').to_string())
         }
 
         fn download_node_lib(version: &str, arch: &str) -> Result<Vec<u8>> {
+            // Assume we're building for node if a disturl is not specified.
+            let dist_url = std::env::var("NPM_CONFIG_DISTURL").unwrap_or("https://nodejs.org/dist".into());
             let script = r#"
-                var url = process.argv[1]
-                require("https").get(url, function (res) {
-                    res.pipe(process.stdout);
-                });
+                const https = require("https");
+                var url = process.argv[1];
+                function download(url) {
+                    https.get(url, function (res) {
+                        if(res.statusCode === 302) {
+                            return download(res.headers.location);
+                        } else if(res.statusCode === 200) {
+                            res.pipe(process.stdout);
+                        } else {
+                            console.error("Invalid HTTP Status: " + res.statusCode);
+                        }
+                    });
+                }
+                download(url);
             "#;
-            let url = format!("https://nodejs.org/dist/{version}/win-{arch}/node.lib", version = version, arch = arch);
+            let url = format!("{dist_url}/v{version}/win-{arch}/node.lib", dist_url = dist_url, version = version, arch = arch);
 
             let output = Command::new("node")
                 .arg("-e").arg(script)
                 .arg(url)
                 .output()?;
+                
+            // If the stderr was used, assume an error occured
+            if !output.stderr.is_empty() {
+                // Pack unknown error string into an io error lossily and return
+                return Err(Error::new(std::io::ErrorKind::Other, String::from_utf8_lossy(&output.stderr)));
+            }
 
             Ok(output.stdout)
         }
