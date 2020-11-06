@@ -77,13 +77,11 @@ describe('JsFunction', function() {
     assert.throws(function() { addon.require_argument_zero_string(17) }, TypeError);
   });
 
-  // The N-API runtime does not support scoped computation yet.
-  it.skip('executes a scoped computation', function() {
+  it('executes a scoped computation', function() {
     assert.equal(addon.execute_scoped(), 99);
   });
 
-  // The N-API runtime does not support scoped computation yet.
-  it.skip('computes a value in a scoped computation', function() {
+  it('computes a value in a scoped computation', function() {
     assert.equal(addon.compute_scoped(), 99);
   });
 
