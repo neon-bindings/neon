@@ -11,8 +11,8 @@ type Local = napi::napi_value;
 // implementation for N-API.
 pub trait Root {
     unsafe fn allocate() -> Self;
-    unsafe fn enter(&mut self, Env);
-    unsafe fn exit(&mut self, Env);
+    unsafe fn enter(&mut self, env: Env);
+    unsafe fn exit(&mut self, env: Env);
 }
 
 impl Root for HandleScope {
