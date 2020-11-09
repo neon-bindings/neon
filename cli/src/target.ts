@@ -31,22 +31,27 @@ export type TargetOptions = {
 export default class Target {
   readonly crate: Crate;
   readonly release: boolean;
-  readonly arch: string;
   readonly triple: string;
   readonly subdirectory: string;
   readonly root: string;
   readonly dylib: string;
 
   constructor(crate: Crate, options: TargetOptions = {}) {
-    let { release = true, arch = process.env.npm_config_arch || process.arch } = options;
+    let { release = true, arch = process.env.npm_config_arch } = options;
     this.crate = crate;
     this.release = release;
-    this.arch = arch;
+    this.triple = '';
 
     if (process.platform === 'win32') {
-      this.triple = (arch === 'ia32') ? 'i686-pc-windows-msvc' : 'x86_64-pc-windows-msvc';
-    } else {
-      this.triple = '';
+      switch (arch) {
+        case 'ia32':
+          this.triple = 'i686-pc-windows-msvc';
+          break;
+        case 'x64':
+          this.triple = 'x86_64-pc-windows-msvc';
+          break;
+        default:
+      }
     }
 
     if (process.env.CARGO_BUILD_TARGET) {
