@@ -8,6 +8,7 @@ const LIB_PREFIX: Record<string, string> = {
   'darwin':  "lib",
   'freebsd': "lib",
   'linux':   "lib",
+  'openbsd': "lib",
   'sunos':   "lib",
   'win32':   ""
 };
@@ -16,6 +17,7 @@ const LIB_SUFFIX: Record<string, string> = {
   'darwin':  ".dylib",
   'freebsd': ".so",
   'linux':   ".so",
+  'openbsd': ".so",
   'sunos':   ".so",
   'win32':   ".dll"
 };
