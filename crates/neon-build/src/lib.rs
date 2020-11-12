@@ -22,14 +22,11 @@ cfg_if! {
             println!("cargo:rustc-link-search=native={}", &node_lib_path.display());
             println!("cargo:rustc-link-lib={}", &node_lib_file_path.file_stem().unwrap().to_str().unwrap());
 
-            // Link `win_delay_load_hook.obj` for windows electron
-            let node_runtime_env = "npm_config_runtime";
-            println!("cargo:rerun-if-env-changed={}", node_runtime_env);
-            if var(node_runtime_env).map(|s| s == "electron") == Ok(true) {
-                println!("cargo:rustc-cdylib-link-arg=win_delay_load_hook.obj");
-                println!("cargo:rustc-cdylib-link-arg=delayimp.lib");
-                println!("cargo:rustc-cdylib-link-arg=/DELAYLOAD:node.exe");
-            }
+            // Link `win_delay_load_hook.obj`
+            // Needed for electron, but okay for other environments
+            println!("cargo:rustc-cdylib-link-arg=win_delay_load_hook.obj");
+            println!("cargo:rustc-cdylib-link-arg=delayimp.lib");
+            println!("cargo:rustc-cdylib-link-arg=/DELAYLOAD:node.exe");
         }
     } else if #[cfg(windows)] {
         // ^ automatically not neon-sys
