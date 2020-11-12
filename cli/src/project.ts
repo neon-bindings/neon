@@ -38,7 +38,7 @@ export default class Project {
     });
   }
 
-  async build(toolchain: rust.Toolchain, release: boolean) {
+  async build(toolchain: rust.Toolchain, release: boolean, args: string[]) {
     let target = new Target(this.crate, { release: release });
     let settings = BuildSettings.current(toolchain);
 
@@ -50,7 +50,7 @@ export default class Project {
 
     // 2. Build the dylib.
     log("running cargo");
-    await target.build(toolchain, settings);
+    await target.build(toolchain, settings, args);
 
     // 3. Copy the dylib as the main addon file.
     log("generating " + path.join(this.crate.subdirectory, this.crate.nodefile));
