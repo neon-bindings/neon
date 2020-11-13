@@ -29,6 +29,23 @@ function logIf(multiple: boolean, action: string, cwd: string, module: string) {
   }
 }
 
+function parseArgv(argv: string[]): { cli: string[], extra: string[] } {
+  let splitAt = argv.indexOf('--');
+
+  // No additional arguments provided
+  if (splitAt < 0) {
+    return {
+      cli: argv,
+      extra: [],
+    };
+  }
+
+  return {
+    cli: argv.slice(0, splitAt),
+    extra: argv.slice(splitAt + 1)
+  };
+}
+
 function parseModules(cwd: string, names: string[], paths: boolean) {
   let modules = names.length
       ? names.map(m => paths ? path.resolve(cwd, m)
@@ -61,7 +78,7 @@ const spec: Spec = {
       content: "Neon is a tool for building native Node.js modules with Rust."
     }, {
       header: "Synopsis",
-      content: "$ neon [options] <command>"
+      content: "$ neon [options] <command> -- [cargo options]"
     }, {
       header: "Command List",
       content: [{ name: "new", summary: "Create a new Neon project." },
@@ -180,6 +197,7 @@ const spec: Spec = {
         return;
       }
 
+      let extra = options.extra as string[];
       let { modules, multiple } = parseModules(this.cwd,
                                                (options.modules || []) as string[],
                                                !!options.path);
@@ -187,7 +205,7 @@ const spec: Spec = {
       for (let module of modules) {
         logIf(multiple, "building", this.cwd, module);
 
-        await neon_build(module, this.toolchain, !!options.release);
+        await neon_build(module, this.toolchain, !!options.release, extra);
       }
     }
   },
@@ -293,8 +311,10 @@ export default class CLI {
 
     try {
       let { command, argv } = parsed;
+      let { cli, extra } = parseArgv(argv);
+      let options = { extra, ...cliArgs(spec[command].args, { argv: cli }) };
       await spec[command].action.call(this,
-                                      cliArgs(spec[command].args, { argv }),
+                                      options,
                                       cliUsage(spec[command].usage));
     } catch (e) {
       console.error(style.error(e.message));
