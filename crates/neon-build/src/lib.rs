@@ -1,4 +1,6 @@
 extern crate cfg_if;
+#[cfg(all(windows, not(feature = "neon-sys")))]
+extern crate ureq;
 
 use cfg_if::cfg_if;
 
@@ -33,7 +35,7 @@ cfg_if! {
         }
     } else if #[cfg(windows)] {
         // ^ automatically not neon-sys
-        use std::io::{Error, ErrorKind, Write, Result};
+        use std::io::{Error, ErrorKind, Write, Read, Result};
         use std::process::Command;
         use std::path::Path;
 
@@ -53,36 +55,16 @@ cfg_if! {
         fn download_node_lib(version: &str, arch: &str) -> Result<Vec<u8>> {
             // Assume we're building for node if a disturl is not specified.
             let dist_url = std::env::var("NPM_CONFIG_DISTURL").unwrap_or("https://nodejs.org/dist".into());
-            let script = r#"
-                const https = require("https");
-                var url = process.argv[1];
-                function download(url) {
-                    https.get(url, function (res) {
-                        if(res.statusCode === 302) {
-                            return download(res.headers.location);
-                        } else if(res.statusCode === 200) {
-                            res.pipe(process.stdout);
-                        } else {
-                            console.error("Invalid HTTP Status: " + res.statusCode);
-                        }
-                    });
-                }
-                download(url);
-            "#;
-            let url = format!("{dist_url}/v{version}/win-{arch}/node.lib", dist_url = dist_url, version = version, arch = arch);
-
-            let output = Command::new("node")
-                .arg("-e").arg(script)
-                .arg(url)
-                .output()?;
-                
-            // If the stderr was used, assume an error occured
-            if !output.stderr.is_empty() {
-                // Pack unknown error string into an io error lossily and return
-                return Err(Error::new(std::io::ErrorKind::Other, String::from_utf8_lossy(&output.stderr)));
-            }
-
-            Ok(output.stdout)
+            let mut request = ureq::get(&format!(
+                "{dist_url}/v{version}/win-{arch}/node.lib",
+                dist_url = dist_url,
+                version = version,
+                arch = arch,
+            ));
+            let response = request.call();
+            let mut bytes = vec![];
+            response.into_reader().read_to_end(&mut bytes)?;
+            Ok(bytes)
         }
 
         /// Set up the build environment by setting Cargo configuration variables.
