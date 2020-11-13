@@ -31,7 +31,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - name: Install libclang
-      uses: KyleMayes/install-llvm-action@7770802
+      uses: KyleMayes/install-llvm-action@01144dc
       with:
         version: "10"
         directory: ${{ runner.temp }}/llvm
