@@ -1,4 +1,6 @@
 extern crate cfg_if;
+#[cfg(all(windows, not(feature = "neon-sys")))]
+extern crate ureq;
 
 use cfg_if::cfg_if;
 
@@ -33,7 +35,7 @@ cfg_if! {
         }
     } else if #[cfg(windows)] {
         // ^ automatically not neon-sys
-        use std::io::{Error, ErrorKind, Write, Result};
+        use std::io::{Error, ErrorKind, Write, Read, Result};
         use std::process::Command;
         use std::path::Path;
 
@@ -46,24 +48,23 @@ cfg_if! {
             let stdout = String::from_utf8(output.stdout).map_err(|error| {
                 Error::new(ErrorKind::InvalidData, error)
             })?;
-            Ok(stdout.trim().to_string())
+            // npm_config_target should not contain a leading "v"
+            Ok(stdout.trim().trim_start_matches('v').to_string())
         }
 
         fn download_node_lib(version: &str, arch: &str) -> Result<Vec<u8>> {
-            let script = r#"
-                var url = process.argv[1]
-                require("https").get(url, function (res) {
-                    res.pipe(process.stdout);
-                });
-            "#;
-            let url = format!("https://nodejs.org/dist/{version}/win-{arch}/node.lib", version = version, arch = arch);
-
-            let output = Command::new("node")
-                .arg("-e").arg(script)
-                .arg(url)
-                .output()?;
-
-            Ok(output.stdout)
+            // Assume we're building for node if a disturl is not specified.
+            let dist_url = std::env::var("NPM_CONFIG_DISTURL").unwrap_or("https://nodejs.org/dist".into());
+            let mut request = ureq::get(&format!(
+                "{dist_url}/v{version}/win-{arch}/node.lib",
+                dist_url = dist_url,
+                version = version,
+                arch = arch,
+            ));
+            let response = request.call();
+            let mut bytes = vec![];
+            response.into_reader().read_to_end(&mut bytes)?;
+            Ok(bytes)
         }
 
         /// Set up the build environment by setting Cargo configuration variables.

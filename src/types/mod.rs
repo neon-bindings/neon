@@ -1,6 +1,8 @@
 //! Representations of JavaScript's core builtin types.
 
 pub(crate) mod binary;
+#[cfg(feature = "napi-runtime")]
+pub(crate) mod boxed;
 pub(crate) mod error;
 
 pub(crate) mod internal;
@@ -19,17 +21,20 @@ use object::{Object, This};
 use object::class::Callback;
 use handle::{Handle, Managed};
 use handle::internal::SuperType;
+use smallvec::SmallVec;
 use self::internal::{ValueInternal, FunctionCallback};
 use self::utf8::Utf8;
 
 pub use self::binary::{JsBuffer, JsArrayBuffer, BinaryData, BinaryViewType};
+#[cfg(feature = "napi-runtime")]
+pub use self::boxed::JsBox;
 pub use self::error::JsError;
 
-pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(init: F) -> JsResult<'a, T> {
+pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(env: Env, init: F) -> JsResult<'a, T> {
     unsafe {
         let mut local: raw::Local = std::mem::zeroed();
         if init(&mut local) {
-            Ok(Handle::new_internal(T::from_raw(local)))
+            Ok(Handle::new_internal(T::from_raw(env, local)))
         } else {
             Err(Throw)
         }
@@ -52,7 +57,7 @@ impl<T: Object> SuperType<T> for JsObject {
 pub trait Value: ValueInternal {
     fn to_string<'a, C: Context<'a>>(self, cx: &mut C) -> JsResult<'a, JsString> {
         let env = cx.env();
-        build(|out| {
+        build(env, |out| {
             unsafe { neon_runtime::convert::to_string(out, env.to_raw(), self.to_raw()) }
         })
     }
@@ -72,7 +77,7 @@ impl Value for JsValue { }
 impl Managed for JsValue {
     fn to_raw(self) -> raw::Local { self.0 }
 
-    fn from_raw(h: raw::Local) -> Self { JsValue(h) }
+    fn from_raw(_: Env, h: raw::Local) -> Self { JsValue(h) }
 }
 
 impl ValueInternal for JsValue {
@@ -139,7 +144,7 @@ impl Value for JsUndefined { }
 impl Managed for JsUndefined {
     fn to_raw(self) -> raw::Local { self.0 }
 
-    fn from_raw(h: raw::Local) -> Self { JsUndefined(h) }
+    fn from_raw(_: Env, h: raw::Local) -> Self { JsUndefined(h) }
 }
 
 unsafe impl This for JsUndefined {
@@ -192,7 +197,7 @@ impl Value for JsNull { }
 impl Managed for JsNull {
     fn to_raw(self) -> raw::Local { self.0 }
 
-    fn from_raw(h: raw::Local) -> Self { JsNull(h) }
+    fn from_raw(_: Env, h: raw::Local) -> Self { JsNull(h) }
 }
 
 impl ValueInternal for JsNull {
@@ -242,7 +247,7 @@ impl Value for JsBoolean { }
 impl Managed for JsBoolean {
     fn to_raw(self) -> raw::Local { self.0 }
 
-    fn from_raw(h: raw::Local) -> Self { JsBoolean(h) }
+    fn from_raw(_: Env, h: raw::Local) -> Self { JsBoolean(h) }
 }
 
 impl ValueInternal for JsBoolean {
@@ -285,7 +290,7 @@ impl Value for JsString { }
 impl Managed for JsString {
     fn to_raw(self) -> raw::Local { self.0 }
 
-    fn from_raw(h: raw::Local) -> Self { JsString(h) }
+    fn from_raw(_: Env, h: raw::Local) -> Self { JsString(h) }
 }
 
 impl ValueInternal for JsString {
@@ -408,7 +413,7 @@ impl Value for JsNumber { }
 impl Managed for JsNumber {
     fn to_raw(self) -> raw::Local { self.0 }
 
-    fn from_raw(h: raw::Local) -> Self { JsNumber(h) }
+    fn from_raw(_: Env, h: raw::Local) -> Self { JsNumber(h) }
 }
 
 impl ValueInternal for JsNumber {
@@ -429,7 +434,7 @@ impl Value for JsObject { }
 impl Managed for JsObject {
     fn to_raw(self) -> raw::Local { self.0 }
 
-    fn from_raw(h: raw::Local) -> Self { JsObject(h) }
+    fn from_raw(_: Env, h: raw::Local) -> Self { JsObject(h) }
 }
 
 unsafe impl This for JsObject {
@@ -529,7 +534,7 @@ impl Value for JsArray { }
 impl Managed for JsArray {
     fn to_raw(self) -> raw::Local { self.0 }
 
-    fn from_raw(h: raw::Local) -> Self { JsArray(h) }
+    fn from_raw(_: Env, h: raw::Local) -> Self { JsArray(h) }
 }
 
 impl ValueInternal for JsArray {
@@ -571,7 +576,7 @@ impl JsFunction {
         where C: Context<'a>,
               U: Value
     {
-        build(|out| {
+        build(cx.env(), |out| {
             let env = cx.env().to_raw();
             unsafe {
                 let callback = FunctionCallback(f).into_c_callback();
@@ -587,10 +592,10 @@ impl<CL: Object> JsFunction<CL> {
               A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
     {
-        let mut args = args.into_iter().collect::<Vec<_>>();
+        let mut args = args.into_iter().collect::<SmallVec::<[_; 8]>>();
         let (argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
         let env = cx.env().to_raw();
-        build(|out| {
+        build(cx.env(), |out| {
             unsafe {
                 neon_runtime::fun::call(out, env, self.to_raw(), this.to_raw(), argc, argv)
             }
@@ -601,10 +606,10 @@ impl<CL: Object> JsFunction<CL> {
         where A: Value + 'b,
               AS: IntoIterator<Item=Handle<'b, A>>
     {
-        let mut args = args.into_iter().collect::<Vec<_>>();
+        let mut args = args.into_iter().collect::<SmallVec::<[_; 8]>>();
         let (argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
         let env = cx.env().to_raw();
-        build(|out| {
+        build(cx.env(), |out| {
             unsafe {
                 neon_runtime::fun::construct(out, env, self.to_raw(), argc, argv)
             }
@@ -617,7 +622,7 @@ impl<T: Object> Value for JsFunction<T> { }
 impl<T: Object> Managed for JsFunction<T> {
     fn to_raw(self) -> raw::Local { self.raw }
 
-    fn from_raw(h: raw::Local) -> Self {
+    fn from_raw(_: Env, h: raw::Local) -> Self {
         JsFunction {
             raw: h,
             marker: PhantomData

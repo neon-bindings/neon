@@ -20,7 +20,7 @@ pub struct JsError(raw::Local);
 impl Managed for JsError {
     fn to_raw(self) -> raw::Local { self.0 }
 
-    fn from_raw(h: raw::Local) -> Self { JsError(h) }
+    fn from_raw(_: Env, h: raw::Local) -> Self { JsError(h) }
 }
 
 impl ValueInternal for JsError {
@@ -39,7 +39,7 @@ impl JsError {
     /// Creates a direct instance of the [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error) class.
     pub fn error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<Handle<'a, JsError>> {
         let msg = cx.string(msg.as_ref());
-        build(|out| unsafe {
+        build(cx.env(), |out| unsafe {
             neon_runtime::error::new_error(cx.env().to_raw(), out, msg.to_raw());
             true
         })
@@ -48,7 +48,7 @@ impl JsError {
     /// Creates an instance of the [`TypeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypeError) class.
     pub fn type_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<Handle<'a, JsError>> {
         let msg = cx.string(msg.as_ref());
-        build(|out| unsafe {
+        build(cx.env(), |out| unsafe {
             neon_runtime::error::new_type_error(cx.env().to_raw(), out, msg.to_raw());
             true
         })
@@ -57,7 +57,7 @@ impl JsError {
     /// Creates an instance of the [`RangeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RangeError) class.
     pub fn range_error<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, msg: S) -> NeonResult<Handle<'a, JsError>> {
         let msg = cx.string(msg.as_ref());
-        build(|out| unsafe {
+        build(cx.env(), |out| unsafe {
             neon_runtime::error::new_range_error(cx.env().to_raw(), out, msg.to_raw());
             true
         })

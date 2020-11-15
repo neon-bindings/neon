@@ -75,12 +75,13 @@ export default class Target {
   }
 
   async build(toolchain: rust.Toolchain,
-              settings: BuildSettings)
+              settings: BuildSettings,
+              additionalArgs: string[])
   {
     let releaseFlags = this.release ? ["--release"] : [];
     let targetFlags = this.triple ? ["--target=" + this.triple] : [];
 
-    let args = ['build'].concat(releaseFlags, targetFlags);
+    let args = ['build'].concat(releaseFlags, targetFlags, additionalArgs);
 
     try {
       let result = await rust.spawn("cargo", args, toolchain, {

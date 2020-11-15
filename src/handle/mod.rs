@@ -10,7 +10,6 @@ use neon_runtime;
 use neon_runtime::raw;
 use types::Value;
 use context::Context;
-#[cfg(feature = "legacy-runtime")]
 use context::internal::Env;
 use result::{JsResult, JsResultExt};
 use self::internal::SuperType;
@@ -19,7 +18,7 @@ use self::internal::SuperType;
 pub trait Managed: Copy {
     fn to_raw(self) -> raw::Local;
 
-    fn from_raw(h: raw::Local) -> Self;
+    fn from_raw(env: Env, h: raw::Local) -> Self;
 }
 
 /// A safely rooted _handle_ to a JS value in memory that is managed by the garbage collector.
@@ -52,7 +51,6 @@ impl<'a, T: Managed + 'a> Handle<'a, T> {
 pub struct DowncastError<F: Value, T: Value> {
     phantom_from: PhantomData<F>,
     phantom_to: PhantomData<T>,
-    description: String
 }
 
 impl<F: Value, T: Value> Debug for DowncastError<F, T> {
@@ -66,22 +64,17 @@ impl<F: Value, T: Value> DowncastError<F, T> {
         DowncastError {
             phantom_from: PhantomData,
             phantom_to: PhantomData,
-            description: format!("failed downcast to {}", T::name())
         }
     }
 }
 
 impl<F: Value, T: Value> Display for DowncastError<F, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.to_string())
+        write!(f, "failed to downcast {} to {}", F::name(), T::name())
     }
 }
 
-impl<F: Value, T: Value> Error for DowncastError<F, T> {
-    fn description(&self) -> &str {
-        &self.description
-    }
-}
+impl<F: Value, T: Value> Error for DowncastError<F, T> {}
 
 /// The result of a call to `Handle::downcast()`.
 pub type DowncastResult<'a, F, T> = Result<Handle<'a, T>, DowncastError<F, T>>;
@@ -90,7 +83,7 @@ impl<'a, F: Value, T: Value> JsResultExt<'a, T> for DowncastResult<'a, F, T> {
     fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, T> {
         match self {
             Ok(v) => Ok(v),
-            Err(e) => cx.throw_type_error(&e.description)
+            Err(e) => cx.throw_type_error(&e.to_string())
         }
     }
 }
@@ -131,10 +124,10 @@ impl<'a, T: Value> Handle<'a, T> {
     /// ```no_run
     /// # use neon::prelude::*;
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    /// let v: Handle<JsValue> = cx.number(17).upcast(&mut cx);
-    /// v.is_a::<JsString>(&mut cx); // false
-    /// v.is_a::<JsNumber>(&mut cx); // true
-    /// v.is_a::<JsValue>(&mut cx);  // true
+    /// let v: Handle<JsValue> = cx.number(17).upcast();
+    /// v.is_a::<JsString, _>(&mut cx); // false
+    /// v.is_a::<JsNumber, _>(&mut cx); // true
+    /// v.is_a::<JsValue, _>(&mut cx);  // true
     /// # Ok(cx.undefined())
     /// # }
     /// ```

@@ -3,8 +3,6 @@
 extern crate neon_runtime;
 extern crate cslice;
 extern crate semver;
-
-#[cfg(feature = "napi-runtime")]
 extern crate smallvec;
 
 #[cfg(test)]
@@ -108,7 +106,9 @@ macro_rules! register_module {
         // Mark this function as a global constructor (like C++).
         #[allow(improper_ctypes)]
         #[cfg_attr(target_os = "linux", link_section = ".ctors")]
+        #[cfg_attr(target_os = "android", link_section = ".ctors")]
         #[cfg_attr(target_os = "macos", link_section = "__DATA,__mod_init_func")]
+        #[cfg_attr(target_os = "ios", link_section = "__DATA,__mod_init_func")]
         #[cfg_attr(target_os = "windows", link_section = ".CRT$XCU")]
         #[used]
         pub static __LOAD_NEON_MODULE: extern "C" fn() = {
@@ -271,7 +271,10 @@ macro_rules! impl_managed {
                 raw
             }
 
-            fn from_raw(raw: $crate::macro_internal::runtime::raw::Local) -> Self {
+            fn from_raw(
+                _env: neon::macro_internal::Env,
+                raw: $crate::macro_internal::runtime::raw::Local,
+            ) -> Self {
                 $cls(raw)
             }
         }
@@ -295,14 +298,20 @@ macro_rules! impl_managed {
 ///     /// A class for generating greeting strings.
 ///     pub class JsGreeter for Greeter {
 ///         init(mut cx) {
+/// #           #[cfg(feature = "legacy-runtime")]
 ///             let greeting = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
+/// #           #[cfg(feature = "napi-runtime")]
+/// #           let greeting = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value(&mut cx);
 ///             Ok(Greeter {
 ///                 greeting: greeting
 ///             })
 ///         }
 ///
 ///         method hello(mut cx) {
+/// #           #[cfg(feature = "legacy-runtime")]
 ///             let name = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
+/// #           #[cfg(feature = "napi-runtime")]
+/// #           let name = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value(&mut cx);
 ///             let this = cx.this();
 ///             let msg = {
 ///                 let guard = cx.lock();

@@ -25,12 +25,12 @@ impl JsBuffer {
     /// Constructs a new `Buffer` object, safely zero-filled.
     pub fn new<'a, C: Context<'a>>(cx: &mut C, size: u32) -> JsResult<'a, JsBuffer> {
         let env = cx.env();
-        build(|out| { unsafe { neon_runtime::buffer::new(env.to_raw(), out, size) } })
+        build(env, |out| { unsafe { neon_runtime::buffer::new(env.to_raw(), out, size) } })
     }
 
     /// Constructs a new `Buffer` object, safely zero-filled.
-    pub unsafe fn uninitialized<'a, C: Context<'a>>(_: &mut C, size: u32) -> JsResult<'a, JsBuffer> {
-        build(|out| { neon_runtime::buffer::uninitialized(out, size) })
+    pub unsafe fn uninitialized<'a, C: Context<'a>>(cx: &mut C, size: u32) -> JsResult<'a, JsBuffer> {
+        build(cx.env(), |out| { neon_runtime::buffer::uninitialized(out, size) })
     }
 
 }
@@ -38,7 +38,7 @@ impl JsBuffer {
 impl Managed for JsBuffer {
     fn to_raw(self) -> raw::Local { self.0 }
 
-    fn from_raw(h: raw::Local) -> Self { JsBuffer(h) }
+    fn from_raw(_env: Env, h: raw::Local) -> Self { JsBuffer(h) }
 }
 
 impl ValueInternal for JsBuffer {
@@ -62,7 +62,7 @@ impl JsArrayBuffer {
 
     /// Constructs a new `ArrayBuffer` object with the given size, in bytes.
     pub fn new<'a, C: Context<'a>>(cx: &mut C, size: u32) -> JsResult<'a, JsArrayBuffer> {
-        build(|out| { unsafe { neon_runtime::arraybuffer::new(out, mem::transmute(cx.env()), size) } })
+        build(cx.env(), |out| { unsafe { neon_runtime::arraybuffer::new(out, mem::transmute(cx.env()), size) } })
     }
 
 }
@@ -70,7 +70,7 @@ impl JsArrayBuffer {
 impl Managed for JsArrayBuffer {
     fn to_raw(self) -> raw::Local { self.0 }
 
-    fn from_raw(h: raw::Local) -> Self { JsArrayBuffer(h) }
+    fn from_raw(_env: Env, h: raw::Local) -> Self { JsArrayBuffer(h) }
 }
 
 impl ValueInternal for JsArrayBuffer {
