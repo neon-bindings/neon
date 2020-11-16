@@ -1,3 +1,18 @@
+# Version 0.5.2
+
+## CLI
+
+Added support for [additional arguments](https://github.com/neon-bindings/neon/pull/633) passed to `cargo build`. Resolves https://github.com/neon-bindings/neon/issues/471.
+
+```sh
+neon build --release -- --features awesome
+```
+
+## N-API
+
+* Improved [arguments performance](https://github.com/neon-bindings/neon/pull/610)
+* Add [redirect and `NPM_CONFIG_DISTURL`](https://github.com/neon-bindings/neon/pull/620) support
+
 # Version 0.5.1
 
 ## Performance
