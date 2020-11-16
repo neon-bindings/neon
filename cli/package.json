@@ -1,6 +1,6 @@
 {
   "name": "neon-cli",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Build and load native Rust/Neon modules.",
   "author": "Dave Herman <david.herman@gmail.com>",
   "repository": {
@@ -10,7 +10,7 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "bin": {
-    "neon": "./bin/cli.js"
+    "neon": "bin/cli.js"
   },
   "license": "SEE LICENSE IN LICENSE-*",
   "dependencies": {

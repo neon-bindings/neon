@@ -14,6 +14,7 @@ Neon owes its existence to the contributions of these fine people.
 * [Eduard-Mihai Burtescu](https://github.com/eddyb)
 * [Gabriel Castro](https://github.com/GabrielCastro)
 * [Lin Clark](https://github.com/linclark)
+* [Nathaniel Daniel](https://github.com/adumbidiot)
 * [Joey Ezechiëls](https://github.com/jjpe)
 * [Cory Forsyth](https://github.com/bantic)
 * [Dave Herman](https://github.com/dherman)
