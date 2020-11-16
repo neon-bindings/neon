@@ -2,7 +2,7 @@ use std::mem::MaybeUninit;
 use std::os::raw::c_void;
 use std::ptr::null_mut;
 use raw::{FunctionCallbackInfo, Env, Local};
-
+use smallvec::{smallvec, SmallVec};
 use nodejs_sys as napi;
 
 #[repr(C)]
@@ -93,10 +93,10 @@ pub unsafe extern "C" fn len(env: Env, info: FunctionCallbackInfo) -> i32 {
     argc as i32
 }
 
-/// Returns the function arguments as a `Vec<Local>`
-pub unsafe extern "C" fn argv(env: Env, info: FunctionCallbackInfo) -> Vec<Local> {
+/// Returns the function arguments as a `SmallVec<[Local; 8]>`
+pub unsafe extern "C" fn argv(env: Env, info: FunctionCallbackInfo) -> SmallVec<[Local; 8]> {
     let len = len(env, info);
-    let mut args = vec![null_mut(); len as usize];
+    let mut args = smallvec![null_mut(); len as usize];
     let mut num_args = args.len();
     let status = napi::napi_get_cb_info(
         env,

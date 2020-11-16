@@ -1,4 +1,5 @@
 extern crate cfg_if;
+extern crate smallvec;
 
 #[cfg(all(not(feature = "neon-sys"), not(feature = "nodejs-sys")))]
 compile_error!("The Neon runtime must have at least one of the `neon-sys` or `nodejs-sys` backends enabled.");
