@@ -22,7 +22,8 @@ use js::objects::*;
 use js::types::*;
 use js::strings::*;
 
-register_module!(|mut cx| {
+#[neon::main]
+fn main(mut cx: ModuleContext) -> NeonResult<()> {
     let greeting = cx.string("Hello, World!");
     let greeting_copy = greeting.value(&mut cx);
     let greeting_copy = cx.string(greeting_copy);
@@ -185,4 +186,4 @@ register_module!(|mut cx| {
     cx.export_function("external_unit", external_unit)?;
 
     Ok(())
-});
+}

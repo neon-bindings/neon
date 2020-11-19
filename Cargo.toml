@@ -23,6 +23,7 @@ cslice = "0.2"
 semver = "0.9.0"
 smallvec = "1.4.2"
 neon-runtime = { version = "=0.5.2", path = "crates/neon-runtime" }
+neon-macros = { version = "=0.5.2", path = "crates/neon-macros", optional = true }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 winapi = { version = "0.3.9", features = ["minwindef", "libloaderapi", "ntdef"] }
@@ -46,7 +47,7 @@ legacy-runtime = ["neon-runtime/neon-sys", "neon-build/neon-sys"]
 
 # Feature flag to enable the experimental N-API runtime. For now, this feature
 # is disabled by default.
-napi-runtime = ["neon-runtime/nodejs-sys"]
+napi-runtime = ["proc-macros", "neon-macros/napi", "neon-runtime/nodejs-sys"]
 
 # Feature flag to disable external dependencies on docs build
 docs-only = ["neon-runtime/docs-only"]
@@ -54,12 +55,16 @@ docs-only = ["neon-runtime/docs-only"]
 # Feature flag to enable the try_catch API of RFC 29.
 try-catch-api = []
 
+# Feature flag to include procedural macros
+proc-macros = ["neon-macros"]
+
 [package.metadata.docs.rs]
-features = ["docs-only", "event-handler-api", "try-catch-api"]
+features = ["docs-only", "event-handler-api", "proc-macros", "try-catch-api"]
 
 [workspace]
 members = [
     "crates/neon-build",
+    "crates/neon-macros",
     "crates/neon-runtime",
     "crates/neon-sys",
     "test/static",
