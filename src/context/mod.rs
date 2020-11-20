@@ -234,7 +234,7 @@ pub trait Context<'a>: ContextInternal<'a> {
                 let escapable_handle_scope = cx.scope.handle_scope as *mut raw::EscapableHandleScope;
                 let escapee = f(cx)?;
                 let mut result_local: raw::Local = std::mem::zeroed();
-                neon_runtime::scope::escape(&mut result_local, escapable_handle_scope, escapee.to_raw());
+                neon_runtime::scope::escape(self.env().to_raw(), &mut result_local, escapable_handle_scope, escapee.to_raw());
                 Ok(Handle::new_internal(V::from_raw(self.env(), result_local)))
             }
         });

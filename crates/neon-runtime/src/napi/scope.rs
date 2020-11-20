@@ -55,7 +55,11 @@ impl Root for InheritedHandleScope {
     unsafe fn exit(&mut self, _: Env) { }
 }
 
-pub unsafe extern "C" fn escape(_out: &mut Local, _scope: *mut EscapableHandleScope, _value: Local) { unimplemented!() }
+pub unsafe extern "C" fn escape(env: Env, out: &mut Local, scope: *mut EscapableHandleScope, value: Local) {
+    let status = napi::napi_escape_handle(env, (*scope).word, value, out as *mut _);
+
+    assert_eq!(status, napi::napi_status::napi_ok);
+}
 
 pub unsafe extern "C" fn chained(_out: *mut c_void, _closure: *mut c_void, _callback: extern fn(&mut c_void, *mut c_void, *mut c_void, *mut c_void), _parent_scope: *mut c_void) { unimplemented!() }
 

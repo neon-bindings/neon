@@ -68,7 +68,7 @@ extern "C" {
   typedef void(*Neon_NestedScopeCallback)(void *, void *, void *);
   typedef void(*Neon_RootScopeCallback)(void *, void *, void *);
 
-  void Neon_Scope_Escape(v8::Local<v8::Value> *out, Nan::EscapableHandleScope *scope, v8::Local<v8::Value> value);
+  void Neon_Scope_Escape(v8::Isolate *isolate, v8::Local<v8::Value> *out, Nan::EscapableHandleScope *scope, v8::Local<v8::Value> value);
   void Neon_Scope_Nested(void *out, void *closure, Neon_NestedScopeCallback callback, void *realm);
   void Neon_Scope_Chained(void *out, void *closure, Neon_ChainedScopeCallback callback, void *parent_scope);
   void Neon_Scope_Enter(v8::HandleScope *scope, v8::Isolate *isolate);

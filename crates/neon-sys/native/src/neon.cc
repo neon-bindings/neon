@@ -231,7 +231,7 @@ extern "C" bool Neon_Tag_IsArrayBuffer(v8::Isolate *isolate, v8::Local<v8::Value
   return value->IsArrayBuffer();
 }
 
-extern "C" void Neon_Scope_Escape(v8::Local<v8::Value> *out, Nan::EscapableHandleScope *scope, v8::Local<v8::Value> value) {
+extern "C" void Neon_Scope_Escape(v8::Isolate *isolate, v8::Local<v8::Value> *out, Nan::EscapableHandleScope *scope, v8::Local<v8::Value> value) {
   *out = scope->Escape(value);
 }
 
