@@ -26,7 +26,8 @@ neon-runtime = { version = "=0.7.0", path = "crates/neon-runtime" }
 neon-macros = { version = "=0.7.0", path = "crates/neon-macros", optional = true }
 
 [features]
-default = ["legacy-runtime"]
+default = ["napi-runtime"]
+# default = ["legacy-runtime"]
 
 # Enable static tests. These can be fragile because of variations in Rust compiler
 # error message formatting from version to version, so they're disabled by default.

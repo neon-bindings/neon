@@ -16,7 +16,7 @@ use context::internal::Env;
 use handle::{Managed, Handle};
 #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
 use event::EventQueue;
-use types::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
+use types::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined, JsDate};
 #[cfg(feature = "napi-1")]
 use types::boxed::{Finalize, JsBox};
 use types::binary::{JsArrayBuffer, JsBuffer};
@@ -135,12 +135,12 @@ impl<'a> Lock<'a> {
 }
 
 /// An _execution context_, which provides context-sensitive access to the JavaScript engine. Most operations that interact with the engine require passing a reference to a context.
-/// 
+///
 /// A context has a lifetime `'a`, which ensures the safety of handles managed by the JS garbage collector. All handles created during the lifetime of a context are kept alive for that duration and cannot outlive the context.
 pub trait Context<'a>: ContextInternal<'a> {
 
     /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
-    /// 
+    ///
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
     fn lock(&self) -> Lock<'_> {
         self.check_active();
@@ -148,9 +148,9 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Convenience method for locking the JavaScript engine and borrowing a single JS value's internals.
-    /// 
+    ///
     /// # Example:
-    /// 
+    ///
     /// ```no_run
     /// # use neon::prelude::*;
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
@@ -160,7 +160,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// # Ok(n)
     /// # }
     /// ```
-    /// 
+    ///
     /// Note: the borrowed value is required to be a reference to a handle instead of a handle
     /// as a workaround for a [Rust compiler bug](https://github.com/rust-lang/rust/issues/29997).
     /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
@@ -177,9 +177,9 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Convenience method for locking the JavaScript engine and mutably borrowing a single JS value's internals.
-    /// 
+    ///
     /// # Example:
-    /// 
+    ///
     /// ```no_run
     /// # use neon::prelude::*;
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -191,7 +191,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// # Ok(cx.undefined())
     /// # }
     /// ```
-    /// 
+    ///
     /// Note: the borrowed value is required to be a reference to a handle instead of a handle
     /// as a workaround for a [Rust compiler bug](https://github.com/rust-lang/rust/issues/29997).
     /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
@@ -208,9 +208,9 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Executes a computation in a new memory management scope.
-    /// 
+    ///
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape.
-    /// 
+    ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
     fn execute_scoped<T, F>(&self, f: F) -> T
         where F: for<'b> FnOnce(ExecuteContext<'b>) -> T
@@ -223,9 +223,9 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Executes a computation in a new memory management scope and computes a single result value that outlives the computation.
-    /// 
+    ///
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape, with the exception of the result value, which is rooted in the outer context.
-    /// 
+    ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
     fn compute_scoped<V, F>(&self, f: F) -> JsResult<'a, V>
         where V: Value,
@@ -264,14 +264,14 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Convenience method for creating a `JsString` value.
-    /// 
+    ///
     /// If the string exceeds the limits of the JS engine, this method panics.
     fn string<S: AsRef<str>>(&mut self, s: S) -> Handle<'a, JsString> {
         JsString::new(self, s)
     }
 
     /// Convenience method for creating a `JsString` value.
-    /// 
+    ///
     /// If the string exceeds the limits of the JS engine, this method returns an `Err` value.
     fn try_string<S: AsRef<str>>(&mut self, s: S) -> StringResult<'a> {
         JsString::try_new(self, s)
@@ -311,6 +311,11 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Convenience method for creating an empty `JsBuffer` value.
     fn buffer(&mut self, size: u32) -> JsResult<'a, JsBuffer> {
         JsBuffer::new(self, size)
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    fn date<V: Into<f64>>(&mut self, date: V) -> Handle<'a, JsDate> {
+        JsDate::new(self, date)
     }
 
     /// Produces a handle to the JavaScript global object.
@@ -367,7 +372,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Convenience method for wrapping a value in a `JsBox`.
     ///
     /// # Example:
-    /// 
+    ///
     /// ```rust
     /// # use neon::prelude::*;
     /// struct Point(usize, usize);
@@ -500,7 +505,7 @@ impl<'a, 'b> ContextInternal<'a> for ComputeContext<'a, 'b> {
 impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> { }
 
 /// A view of the JS engine in the context of a function call.
-/// 
+///
 /// The type parameter `T` is the type of the `this`-binding.
 pub struct CallContext<'a, T: This> {
     scope: Scope<'a, raw::HandleScope>,
