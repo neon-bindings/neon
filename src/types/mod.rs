@@ -427,21 +427,24 @@ impl ValueInternal for JsNumber {
 /// A JavaScript Date object.
 #[repr(C)]
 #[derive(Clone, Copy)]
+#[cfg(feature = "napi-runtime")]
 pub struct JsDate(raw::Local);
 
+#[cfg(feature = "napi-runtime")]
 impl Value for JsDate { }
 
+#[cfg(feature = "napi-runtime")]
 impl Managed for JsDate {
     fn to_raw(self) -> raw::Local { self.0 }
 
     fn from_raw(_: Env, h: raw::Local) -> Self { JsDate(h) }
 }
 
+#[cfg(feature = "napi-runtime")]
 impl JsDate {
     pub const MIN_VALID_VALUE: f64 = -8640000000000000.0;
     pub const MAX_VALID_VALUE: f64 = 8640000000000000.0;
 
-    #[cfg(feature = "napi-runtime")]
     pub(crate) fn new_internal<'a>(env: Env, value: f64) -> Handle<'a, JsDate> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
@@ -450,12 +453,10 @@ impl JsDate {
         }
     }
 
-    #[cfg(feature = "napi-runtime")]
     pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, time: T) -> Handle<'a, JsDate> {
         JsDate::new_internal(cx.env(), time.into())
     }
 
-    #[cfg(feature = "napi-runtime")]
     pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> f64 {
         let env = cx.env().to_raw();
         unsafe {
@@ -463,21 +464,22 @@ impl JsDate {
         }
     }
 
-    #[cfg(feature = "napi-runtime")]
     pub fn is_valid<'a, C: Context<'a>>(self, cx: &mut C) -> bool {
         let value = self.value(cx);
         return value <= JsDate::MAX_VALID_VALUE && value >= JsDate::MIN_VALID_VALUE;
     }
 }
 
+#[cfg(feature = "napi-runtime")]
 impl ValueInternal for JsDate {
     fn name() -> String { "object".to_string() }
 
     fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_object(env.to_raw(), other.to_raw()) }
+        unsafe { neon_runtime::tag::is_date(env.to_raw(), other.to_raw()) }
     }
 }
 
+#[cfg(feature = "napi-runtime")]
 impl Object for JsDate { }
 
 /// A JavaScript object.

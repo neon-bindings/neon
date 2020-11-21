@@ -314,8 +314,8 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     #[cfg(feature = "napi-runtime")]
-    fn date<V: Into<f64>>(&mut self, date: V) -> Handle<'a, JsDate> {
-        JsDate::new(self, date)
+    fn date<V: Into<f64>>(&mut self, value: V) -> Handle<'a, JsDate> {
+        JsDate::new(self, value)
     }
 
     /// Produces a handle to the JavaScript global object.
