@@ -156,6 +156,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("check_date_is_invalid", check_date_is_invalid)?;
     cx.export_function("check_date_is_valid", check_date_is_valid)?;
     cx.export_function("create_date_from_value", create_date_from_value)?;
+    cx.export_function("create_and_get_invalid_date", create_and_get_invalid_date)?;
 
     cx.export_function("is_array", is_array)?;
     cx.export_function("is_array_buffer", is_array_buffer)?;

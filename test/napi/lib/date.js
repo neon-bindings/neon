@@ -19,8 +19,8 @@ describe('JsDate', function() {
   });
 
   it('should check if date is invalid', function () {
-    const dateIsValid = addon.check_date_is_invalid();
-    assert.isFalse(dateIsValid);
+    const date = addon.create_and_get_invalid_date();
+    assert.isNaN(date);
   });
 
   it('should get date value', function () {

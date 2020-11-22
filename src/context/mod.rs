@@ -314,7 +314,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     #[cfg(feature = "napi-runtime")]
-    fn date<V: Into<f64>>(&mut self, value: V) -> Handle<'a, JsDate> {
+    fn date(&mut self, value: impl Into<f64>) -> Handle<'a, JsDate> {
         JsDate::new(self, value)
     }
 

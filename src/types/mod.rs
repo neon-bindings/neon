@@ -442,19 +442,15 @@ impl Managed for JsDate {
 
 #[cfg(feature = "napi-runtime")]
 impl JsDate {
-    pub const MIN_VALID_VALUE: f64 = -8640000000000000.0;
-    pub const MAX_VALID_VALUE: f64 = 8640000000000000.0;
-
-    pub(crate) fn new_internal<'a>(env: Env, value: f64) -> Handle<'a, JsDate> {
-        unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::date::new_date( env.to_raw(), &mut local, value);
-            Handle::new_internal(JsDate(local))
-        }
-    }
+    pub const MIN_VALUE: f64 = -8.64e15;
+    pub const MAX_VALUE: f64 = 8.64e15;
 
     pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, time: T) -> Handle<'a, JsDate> {
-        JsDate::new_internal(cx.env(), time.into())
+        let env = cx.env().to_raw();
+        unsafe {
+            let local = neon_runtime::date::new_date(env, time.into());
+            Handle::new_internal(JsDate(local))
+        }
     }
 
     pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> f64 {
@@ -466,7 +462,7 @@ impl JsDate {
 
     pub fn is_valid<'a, C: Context<'a>>(self, cx: &mut C) -> bool {
         let value = self.value(cx);
-        return value <= JsDate::MAX_VALID_VALUE && value >= JsDate::MIN_VALID_VALUE;
+        return value <= JsDate::MAX_VALUE && value >= JsDate::MIN_VALUE;
     }
 }
 
