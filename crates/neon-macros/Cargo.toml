@@ -1,6 +1,6 @@
 [package]
 name = "neon-macros"
-version = "0.5.2"
+version = "0.5.3"
 authors = ["Dave Herman <david.herman@gmail.com>"]
 description = "Build logic required for Neon projects."
 repository = "https://github.com/neon-bindings/neon"
