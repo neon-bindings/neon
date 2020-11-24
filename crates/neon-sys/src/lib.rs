@@ -183,7 +183,7 @@ extern "C" {
     pub fn Neon_Primitive_Number(out: &mut Local, isolate: Isolate, v: f64);
     pub fn Neon_Primitive_NumberValue(p: Local) -> f64;
 
-    pub fn Neon_Scope_Escape(out: &mut Local, scope: *mut EscapableHandleScope, value: Local);
+    pub fn Neon_Scope_Escape(isolate: Isolate, out: &mut Local, scope: *mut EscapableHandleScope, value: Local);
     pub fn Neon_Scope_Chained(out: *mut c_void, closure: *mut c_void, callback: extern fn(&mut c_void, *mut c_void, *mut c_void, *mut c_void), parent_scope: *mut c_void);
     pub fn Neon_Scope_Nested(out: *mut c_void, closure: *mut c_void, callback: extern fn(&mut c_void, *mut c_void, *mut c_void), realm: *mut c_void);
     pub fn Neon_Scope_Enter(scope: &mut HandleScope, isolate: Isolate);

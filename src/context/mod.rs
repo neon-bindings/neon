@@ -213,7 +213,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     {
         self.check_active();
         self.deactivate();
-        let result = ExecuteContext::with(f);
+        let result = ExecuteContext::with(self, f);
         self.activate();
         result
     }
@@ -229,12 +229,12 @@ pub trait Context<'a>: ContextInternal<'a> {
     {
         self.check_active();
         self.deactivate();
-        let result = ComputeContext::with(|cx| {
+        let result = ComputeContext::with(self, |cx| {
             unsafe {
                 let escapable_handle_scope = cx.scope.handle_scope as *mut raw::EscapableHandleScope;
                 let escapee = f(cx)?;
                 let mut result_local: raw::Local = std::mem::zeroed();
-                neon_runtime::scope::escape(&mut result_local, escapable_handle_scope, escapee.to_raw());
+                neon_runtime::scope::escape(self.env().to_raw(), &mut result_local, escapable_handle_scope, escapee.to_raw());
                 Ok(Handle::new_internal(V::from_raw(self.env(), result_local)))
             }
         });
@@ -455,9 +455,8 @@ pub struct ExecuteContext<'a> {
 }
 
 impl<'a> ExecuteContext<'a> {
-    pub(crate) fn with<T, F: for<'b> FnOnce(ExecuteContext<'b>) -> T>(f: F) -> T {
-        let env = Env::current();
-        Scope::with(env, |scope| {
+    pub(crate) fn with<T, C: Context<'a>, F: for<'b> FnOnce(ExecuteContext<'b>) -> T>(cx: &C, f: F) -> T {
+        Scope::with(cx.env(), |scope| {
             f(ExecuteContext { scope })
         })
     }
@@ -479,9 +478,8 @@ pub struct ComputeContext<'a, 'outer> {
 }
 
 impl<'a, 'b> ComputeContext<'a, 'b> {
-    pub(crate) fn with<T, F: for<'c, 'd> FnOnce(ComputeContext<'c, 'd>) -> T>(f: F) -> T {
-        let env = Env::current();
-        Scope::with(env, |scope| {
+    pub(crate) fn with<T, C: Context<'a>, F: for<'c, 'd> FnOnce(ComputeContext<'c, 'd>) -> T>(cx: &C, f: F) -> T {
+        Scope::with(cx.env(), |scope| {
             f(ComputeContext {
                 scope,
                 phantom_inner: PhantomData,
