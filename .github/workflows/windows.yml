@@ -15,8 +15,9 @@ jobs:
     runs-on: windows-latest
 
     strategy:
+      fail-fast: false
       matrix:
-        node-version: [10.x, 12.x, 14.x]
+        node-version: [10.x, 12.x, 14.x, 15.x]
         rust-toolchain: [stable, beta, nightly]
 
     steps:
@@ -30,6 +31,9 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+    - name: Use npm v6
+      if: ${{ matrix.node-version == '15.x' }}
+      run: npm install -g npm@6
     - name: Install libclang
       uses: KyleMayes/install-llvm-action@01144dc
       with:

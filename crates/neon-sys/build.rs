@@ -193,12 +193,17 @@ mod build {
                 .join("src")
                 .join("neon.o")
         } else {
-            native_dir
+            let neon_dir = native_dir
                 .join("build")
                 .join(configuration)
                 .join("obj")
-                .join("neon")
-                .join("neon.obj")
+                .join("neon");
+            let object_path = neon_dir.join("src").join("neon.obj");
+            if object_path.exists() {
+                object_path
+            } else {
+                neon_dir.join("neon.obj")
+            }
         };
 
         cc::Build::new().cpp(true).object(object_path).compile("libneon.a");
