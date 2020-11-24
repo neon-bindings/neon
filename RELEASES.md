@@ -1,3 +1,19 @@
+# Version 0.5.3
+
+## Bug Fixes
+
+Upgrade `node-gyp` (https://github.com/neon-bindings/neon/pull/623)
+* Fix Windows Node 15
+* Fix Apple M1
+
+## Features
+
+Added `neon::main` macro as a replacement for `register_module!` (https://github.com/neon-bindings/neon/pull/636)
+
+## Known Issues
+
+Builds occassionally fail with Windows, Node 15 and npm 7 (https://github.com/neon-bindings/neon/issues/642)
+
 # Version 0.5.2
 
 ## CLI
