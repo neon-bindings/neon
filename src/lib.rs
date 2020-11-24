@@ -5,6 +5,9 @@ extern crate cslice;
 extern crate semver;
 extern crate smallvec;
 
+#[cfg(feature = "proc-macros")]
+extern crate neon_macros;
+
 #[cfg(test)]
 #[macro_use]
 extern crate lazy_static;
@@ -30,6 +33,9 @@ pub mod prelude;
 
 #[doc(hidden)]
 pub mod macro_internal;
+
+#[cfg(feature = "proc-macros")]
+pub use neon_macros::*;
 
 #[cfg(all(feature = "legacy-runtime", feature = "napi-runtime"))]
 compile_error!("Cannot enable both `legacy-runtime` and `napi-runtime` features.\n\nTo use `napi-runtime`, disable `legacy-runtime` by setting `default-features` to `false` in Cargo.toml\nor with cargo's --no-default-features flag.");

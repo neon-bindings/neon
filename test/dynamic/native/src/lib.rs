@@ -20,7 +20,8 @@ use js::classes::*;
 use js::tasks::*;
 use js::eventhandler::*;
 
-register_module!(mut cx, {
+#[neon::main]
+fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("return_js_string", return_js_string)?;
 
     cx.export_function("return_js_number", return_js_number)?;
@@ -84,4 +85,4 @@ register_module!(mut cx, {
     cx.export_class::<JsPanickyConstructor>("PanickyConstructor")?;
 
     Ok(())
-});
+}
