@@ -10,4 +10,3 @@ build = "build.rs"
 
 [dependencies]
 neon-sys = { version = "=0.5.3", path = "../neon-sys", optional = true }
-ureq = { version = "1.3.0", default-features = false, features = ["native-tls"] }
