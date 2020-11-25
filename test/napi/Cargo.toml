@@ -3,6 +3,7 @@ name = "napi"
 version = "0.1.0"
 authors = ["The Neon Community <david.herman@gmail.com>"]
 license = "MIT"
+build = "build.rs"
 exclude = ["artifacts.json", "index.node"]
 edition = "2018"
 
@@ -10,8 +11,11 @@ edition = "2018"
 name = "napi"
 crate-type = ["cdylib"]
 
+[build-dependencies]
+neon-build = {version = "*", path = "../../crates/neon-build"}
+
 [dependencies.neon]
 version = "*"
-path = "../../../"
+path = "../.."
 default-features = false
 features = ["default-panic-hook", "napi-runtime", "try-catch-api"]

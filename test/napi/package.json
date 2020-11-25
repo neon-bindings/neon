@@ -2,11 +2,10 @@
   "name": "napi-tests",
   "version": "0.1.0",
   "description": "Acceptance test suite for Neon with N-API backend",
-  "main": "lib/index.js",
   "author": "The Neon Community",
   "license": "MIT",
   "scripts": {
-    "install": "node ../../cli/bin/cli.js build --release",
+    "install": "cargo build -p napi --release",
     "test": "mocha --timeout 5000 --recursive lib"
   },
   "devDependencies": {

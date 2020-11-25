@@ -1,4 +1,4 @@
-const addon = require('../native');
+const addon = require('..');
 const { expect } = require('chai');
 const assert = require('chai').assert;
 
