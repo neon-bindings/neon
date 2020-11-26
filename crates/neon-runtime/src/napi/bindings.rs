@@ -47,31 +47,6 @@ pub(crate) enum NapiStatus {
     napi_would_deadlock,
 }
 
-/* Maybe we can make a macro like this:
- *
- * declare_napi_functions! {
- *     fn napi_get_undefined(env: NapiEnv, out: *mut NapiValue) -> NapiStatus;
- *     fn napi_get_null(env: NapiEnv, out: *mut NapiValue) -> NapiStatus;
- *
- *     fn napi_get_boolean(env: NapiEnv, value: bool, out: *mut NapiValue) -> NapiStatus;
- *     fn napi_get_value_bool(env: NapiEnv, value: NapiValue, out: *mut bool) -> NapiStatus;
- *
- *     fn napi_create_double(env: NapiEnv, value: f64, out: *mut NapiValue) -> NapiStatus;
- *     fn napi_get_value_double(env: NapiEnv, value: NapiValue, out: *mut f64) -> NapiStatus;
- * }
- *
- * I think it would have to be a proc macro, since we need to output those declarations several
- * times in different shapes. It would allow generating both the property declarations in the Napi
- * struct, and the `library.get()` calls in the `from_host` constructor. It could also generate
- * trampoline functions so we don't have to use an `napi!()` macro wrapper for napi function calls:
- *
- * pub unsafe fn napi_get_undefined(env: NapiEnv, out: *mut NapiValue) -> NapiStatus {
- *     ((*NAPI).napi_get_undefined)(env, out)
- * }
- *
- * Then our code wouldn't look any different compared to using nodejs-sys.
- */
-
 pub(crate) struct Napi<'a> {
     pub napi_get_undefined: Symbol<'a, unsafe extern "C" fn(env: NapiEnv, out: *mut NapiValue) -> NapiStatus>,
     pub napi_get_null: Symbol<'a, unsafe extern "C" fn(env: NapiEnv, out: *mut NapiValue) -> NapiStatus>,
