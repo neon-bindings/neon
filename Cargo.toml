@@ -47,7 +47,7 @@ legacy-runtime = ["neon-runtime/neon-sys", "neon-build/neon-sys"]
 
 # Feature flag to enable the experimental N-API runtime. For now, this feature
 # is disabled by default.
-napi-runtime = ["proc-macros", "neon-macros/napi", "neon-runtime/nodejs-sys"]
+napi-runtime = ["proc-macros", "neon-macros/napi", "neon-runtime/napi"]
 
 # Feature flag to disable external dependencies on docs build
 docs-only = ["neon-runtime/docs-only"]

@@ -1,3 +1,6 @@
+#[macro_use]
+pub(crate) mod bindings;
+
 pub mod array;
 pub mod arraybuffer;
 pub mod buffer;
@@ -16,3 +19,9 @@ pub mod string;
 pub mod tag;
 pub mod task;
 pub mod handler;
+
+/// # Safety
+/// Must only be called once.
+pub unsafe fn setup() {
+    bindings::load();
+}
