@@ -426,7 +426,7 @@ impl ValueInternal for JsNumber {
 
 /// A JavaScript Date object.
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 #[cfg(feature = "napi-runtime")]
 pub struct JsDate(raw::Local);
 
@@ -440,6 +440,12 @@ impl Managed for JsDate {
     fn from_raw(_: Env, h: raw::Local) -> Self { JsDate(h) }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum DateErrorKind {
+    Overflow,
+    Underflow,
+}
+
 #[cfg(feature = "napi-runtime")]
 impl JsDate {
     pub const MIN_VALUE: f64 = -8.64e15;
@@ -447,10 +453,20 @@ impl JsDate {
 
     pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, time: T) -> Handle<'a, JsDate> {
         let env = cx.env().to_raw();
-        unsafe {
-            let local = neon_runtime::date::new_date(env, time.into());
-            Handle::new_internal(JsDate(local))
-        }
+        let local = unsafe {
+            neon_runtime::date::new_date(env, time.into())
+        };
+        Handle::new_internal(JsDate(local))
+    }
+
+    pub fn try_new<'a, C: Context<'a>, V: Into<f64> + std::cmp::PartialOrd>(cx: &mut C, value: V) -> Result<Handle<'a, JsDate>, DateErrorKind> {
+        let env = cx.env().to_raw();
+        let local = unsafe {
+            neon_runtime::date::new_date(env, value.into())
+        };
+        let date = Handle::new_internal(JsDate(local));
+        if date.is_valid(cx) { return Ok(date); }
+        if date.value(cx) > JsDate::MAX_VALUE { Err(DateErrorKind::Overflow) } else { Err(DateErrorKind::Underflow) }
     }
 
     pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> f64 {

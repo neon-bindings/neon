@@ -29,7 +29,7 @@ pub trait Managed: Copy {
 
 /// A safely rooted _handle_ to a JS value in memory that is managed by the garbage collector.
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Handle<'a, T: Managed + 'a> {
     value: T,
     phantom: PhantomData<&'a T>
@@ -97,7 +97,7 @@ impl<'a, F: Value, T: Value> JsResultExt<'a, T> for DowncastResult<'a, F, T> {
 impl<'a, T: Value> Handle<'a, T> {
 
     /// Safely upcast a handle to a supertype.
-    /// 
+    ///
     /// This method does not require an execution context because it only copies a handle.
     pub fn upcast<U: Value + SuperType<T>>(&self) -> Handle<'a, U> {
         Handle::new_internal(SuperType::upcast_internal(self.value))
@@ -105,9 +105,9 @@ impl<'a, T: Value> Handle<'a, T> {
 
     #[cfg(feature = "legacy-runtime")]
     /// Tests whether this value is an instance of the given type.
-    /// 
+    ///
     /// # Example:
-    /// 
+    ///
     /// ```no_run
     /// # use neon::prelude::*;
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
@@ -124,9 +124,9 @@ impl<'a, T: Value> Handle<'a, T> {
 
     #[cfg(feature = "napi-1")]
     /// Tests whether this value is an instance of the given type.
-    /// 
+    ///
     /// # Example:
-    /// 
+    ///
     /// ```no_run
     /// # use neon::prelude::*;
     /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
