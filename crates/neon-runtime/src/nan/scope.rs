@@ -1,11 +1,11 @@
 //! Facilities for working with `v8::HandleScope`s and `v8::EscapableHandleScope`s.
 
-use raw::{HandleScope, EscapableHandleScope, InheritedHandleScope, Isolate};
+use crate::raw::{HandleScope, EscapableHandleScope, InheritedHandleScope, Isolate};
 
 pub trait Root {
     unsafe fn allocate() -> Self;
-    unsafe fn enter(&mut self, Isolate);
-    unsafe fn exit(&mut self, Isolate);
+    unsafe fn enter(&mut self, isolate: Isolate);
+    unsafe fn exit(&mut self, isolate: Isolate);
 }
 
 impl Root for HandleScope {

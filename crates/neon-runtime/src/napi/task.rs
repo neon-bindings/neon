@@ -1,4 +1,4 @@
-use raw::Local;
+use crate::raw::Local;
 use std::os::raw::c_void;
 
 pub unsafe extern "C" fn schedule(_task: *mut c_void,

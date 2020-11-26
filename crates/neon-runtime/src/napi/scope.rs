@@ -3,7 +3,7 @@ use std::mem::MaybeUninit;
 
 use nodejs_sys as napi;
 
-use raw::{Env, HandleScope, EscapableHandleScope, InheritedHandleScope};
+use crate::raw::{Env, HandleScope, EscapableHandleScope, InheritedHandleScope};
 
 type Local = napi::napi_value;
 

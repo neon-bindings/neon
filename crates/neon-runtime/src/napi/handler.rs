@@ -1,4 +1,4 @@
-use raw::Local;
+use crate::raw::Local;
 use std::os::raw::c_void;
 
 pub unsafe extern "C" fn new(_isolate: *mut c_void, _this: Local, _callback: Local) -> *mut c_void { unimplemented!() }

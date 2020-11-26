@@ -1,7 +1,7 @@
 //! Facilities for working with JS functions.
 
-use call::CCallback;
-use raw::{Env, Local};
+use crate::call::CCallback;
+use crate::raw::{Env, Local};
 use std::os::raw::c_void;
 use std::ptr::null;
 

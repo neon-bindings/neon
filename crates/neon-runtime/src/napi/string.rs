@@ -3,7 +3,7 @@ use std::ptr;
 
 use nodejs_sys as napi;
 
-use raw::{Env, Local};
+use crate::raw::{Env, Local};
 
 pub unsafe fn new(out: &mut Local, env: Env, data: *const u8, len: i32) -> bool {
     let status = napi::napi_create_string_utf8(
