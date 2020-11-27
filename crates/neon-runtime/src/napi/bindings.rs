@@ -70,7 +70,7 @@ fn get_host_library() -> Library {
 #[cfg(windows)]
 fn get_host_library() -> Library {
     use libloading::os::windows::Library;
-    Library::this().into()
+    Library::this().unwrap().into()
 }
 
 impl Napi {
