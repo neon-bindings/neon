@@ -47,19 +47,19 @@ pub(crate) enum NapiStatus {
     napi_would_deadlock,
 }
 
-pub(crate) struct Napi<'a> {
-    pub napi_get_undefined: Symbol<'a, unsafe extern "C" fn(env: NapiEnv, out: *mut NapiValue) -> NapiStatus>,
-    pub napi_get_null: Symbol<'a, unsafe extern "C" fn(env: NapiEnv, out: *mut NapiValue) -> NapiStatus>,
+pub(crate) struct Napi {
+    pub napi_get_undefined: Symbol<'static, unsafe extern "C" fn(env: NapiEnv, out: *mut NapiValue) -> NapiStatus>,
+    pub napi_get_null: Symbol<'static, unsafe extern "C" fn(env: NapiEnv, out: *mut NapiValue) -> NapiStatus>,
 
     pub napi_get_boolean:
-        Symbol<'a, unsafe extern "C" fn(env: NapiEnv, value: bool, out: *mut NapiValue) -> NapiStatus>,
+        Symbol<'static, unsafe extern "C" fn(env: NapiEnv, value: bool, out: *mut NapiValue) -> NapiStatus>,
     pub napi_get_value_bool:
-        Symbol<'a, unsafe extern "C" fn(env: NapiEnv, value: NapiValue, out: *mut bool) -> NapiStatus>,
+        Symbol<'static, unsafe extern "C" fn(env: NapiEnv, value: NapiValue, out: *mut bool) -> NapiStatus>,
 
     pub napi_create_double:
-        Symbol<'a, unsafe extern "C" fn(env: NapiEnv, value: f64, out: *mut NapiValue) -> NapiStatus>,
+        Symbol<'static, unsafe extern "C" fn(env: NapiEnv, value: f64, out: *mut NapiValue) -> NapiStatus>,
     pub napi_get_value_double:
-        Symbol<'a, unsafe extern "C" fn(env: NapiEnv, value: NapiValue, out: *mut f64) -> NapiStatus>,
+        Symbol<'static, unsafe extern "C" fn(env: NapiEnv, value: NapiValue, out: *mut f64) -> NapiStatus>,
 }
 
 #[cfg(not(windows))]
@@ -78,7 +78,7 @@ lazy_static! {
     static ref HOST: Library = get_host_library();
 }
 
-impl Napi<'_> {
+impl Napi {
     fn try_from_host() -> Result<Self, libloading::Error> {
         let host = &HOST;
 
