@@ -1,6 +1,5 @@
+use libloading::Library;
 use std::mem::MaybeUninit;
-use lazy_static::lazy_static;
-use libloading::{Library, Symbol};
 
 /* Later we should do:
 #[repr(C)]
@@ -48,18 +47,18 @@ pub(crate) enum NapiStatus {
 }
 
 pub(crate) struct Napi {
-    pub napi_get_undefined: Symbol<'static, unsafe extern "C" fn(env: NapiEnv, out: *mut NapiValue) -> NapiStatus>,
-    pub napi_get_null: Symbol<'static, unsafe extern "C" fn(env: NapiEnv, out: *mut NapiValue) -> NapiStatus>,
+    pub napi_get_undefined: unsafe extern "C" fn(env: NapiEnv, out: *mut NapiValue) -> NapiStatus,
+    pub napi_get_null: unsafe extern "C" fn(env: NapiEnv, out: *mut NapiValue) -> NapiStatus,
 
     pub napi_get_boolean:
-        Symbol<'static, unsafe extern "C" fn(env: NapiEnv, value: bool, out: *mut NapiValue) -> NapiStatus>,
+        unsafe extern "C" fn(env: NapiEnv, value: bool, out: *mut NapiValue) -> NapiStatus,
     pub napi_get_value_bool:
-        Symbol<'static, unsafe extern "C" fn(env: NapiEnv, value: NapiValue, out: *mut bool) -> NapiStatus>,
+        unsafe extern "C" fn(env: NapiEnv, value: NapiValue, out: *mut bool) -> NapiStatus,
 
     pub napi_create_double:
-        Symbol<'static, unsafe extern "C" fn(env: NapiEnv, value: f64, out: *mut NapiValue) -> NapiStatus>,
+        unsafe extern "C" fn(env: NapiEnv, value: f64, out: *mut NapiValue) -> NapiStatus,
     pub napi_get_value_double:
-        Symbol<'static, unsafe extern "C" fn(env: NapiEnv, value: NapiValue, out: *mut f64) -> NapiStatus>,
+        unsafe extern "C" fn(env: NapiEnv, value: NapiValue, out: *mut f64) -> NapiStatus,
 }
 
 #[cfg(not(windows))]
@@ -74,22 +73,23 @@ fn get_host_library() -> Library {
     Library::this().into()
 }
 
-lazy_static! {
-    static ref HOST: Library = get_host_library();
-}
-
 impl Napi {
     fn try_from_host() -> Result<Self, libloading::Error> {
-        let host = &HOST;
+        let host = get_host_library();
 
+        // Load symbols, then deref to raw function pointers.
+        //
+        // SAFETY: The deref here discards a lifetime specifier. This is still safe because we are
+        // only keeping pointers to functions in the host executable: if they are ever to unload,
+        // the Neon module will be unloaded first.
         Ok(unsafe {
             Self {
-                napi_get_undefined: host.get(b"napi_get_undefined")?,
-                napi_get_null: host.get(b"napi_get_null")?,
-                napi_get_boolean: host.get(b"napi_get_boolean")?,
-                napi_get_value_bool: host.get(b"napi_get_value_bool")?,
-                napi_create_double: host.get(b"napi_create_double")?,
-                napi_get_value_double: host.get(b"napi_get_value_double")?,
+                napi_get_undefined: *(host.get(b"napi_get_undefined")?),
+                napi_get_null: *(host.get(b"napi_get_null")?),
+                napi_get_boolean: *(host.get(b"napi_get_boolean")?),
+                napi_get_value_bool: *(host.get(b"napi_get_value_bool")?),
+                napi_create_double: *(host.get(b"napi_create_double")?),
+                napi_get_value_double: *(host.get(b"napi_get_value_double")?),
             }
         })
     }
