@@ -1,10 +1,10 @@
 use crate::raw::{Local, Env};
-use crate::bindings::NapiStatus;
+use crate::bindings::{self as napi, NapiStatus};
 
 /// Mutates the `out` argument provided to refer to the global `undefined` object.
 pub unsafe extern "C" fn undefined(out: &mut Local, env: Env) {
     assert_eq!(
-        napi!(napi_get_undefined(env, out as *mut Local)),
+        napi::napi_get_undefined(env, out as *mut Local),
         NapiStatus::napi_ok,
     );
 }
@@ -12,7 +12,7 @@ pub unsafe extern "C" fn undefined(out: &mut Local, env: Env) {
 /// Mutates the `out` argument provided to refer to the global `null` object.
 pub unsafe extern "C" fn null(out: &mut Local, env: Env) {
     assert_eq!(
-        napi!(napi_get_null(env, out as *mut Local)),
+        napi::napi_get_null(env, out as *mut Local),
         NapiStatus::napi_ok,
     );
 }
@@ -20,7 +20,7 @@ pub unsafe extern "C" fn null(out: &mut Local, env: Env) {
 /// Mutates the `out` argument provided to refer to one of the global `true` or `false` objects.
 pub unsafe extern "C" fn boolean(out: &mut Local, env: Env, b: bool) {
     assert_eq!(
-        napi!(napi_get_boolean(env, b, out as *mut Local)),
+        napi::napi_get_boolean(env, b, out as *mut Local),
         NapiStatus::napi_ok,
     );
 }
@@ -30,7 +30,7 @@ pub unsafe extern "C" fn boolean(out: &mut Local, env: Env, b: bool) {
 pub unsafe extern "C" fn boolean_value(env: Env, p: Local) -> bool {
     let mut value = false;
     assert_eq!(
-        napi!(napi_get_value_bool(env, p, &mut value as *mut bool)),
+        napi::napi_get_value_bool(env, p, &mut value as *mut bool),
         NapiStatus::napi_ok,
     );
     value
@@ -50,7 +50,7 @@ pub unsafe extern "C" fn integer_value(_p: Local) -> i64 { unimplemented!() }
 /// JavaScript number.
 pub unsafe extern "C" fn number(out: &mut Local, env: Env, v: f64) {
     assert_eq!(
-        napi!(napi_create_double(env, v, out as *mut Local)),
+        napi::napi_create_double(env, v, out as *mut Local),
         NapiStatus::napi_ok,
     );
 }
@@ -60,7 +60,7 @@ pub unsafe extern "C" fn number(out: &mut Local, env: Env, v: f64) {
 pub unsafe extern "C" fn number_value(env: Env, p: Local) -> f64 {
     let mut value = 0.0;
     assert_eq!(
-        napi!(napi_get_value_double(env, p, &mut value as *mut f64)),
+        napi::napi_get_value_double(env, p, &mut value as *mut f64),
         NapiStatus::napi_ok,
     );
     return value;

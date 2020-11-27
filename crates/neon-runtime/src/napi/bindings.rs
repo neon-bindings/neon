@@ -106,14 +106,32 @@ pub(crate) unsafe fn load() {
     NAPI.as_mut_ptr().write(Napi::from_host());
 }
 
-macro_rules! napi {
-    ( $name:ident ( $($args:expr),* ) ) => {
-        {
-            let bindings = $crate::napi::bindings::NAPI.as_ptr();
-            let result: $crate::napi::bindings::NapiStatus = ((*bindings).$name)(
-                $($args),*
-            );
-            result
-        }
-    }
+#[inline(always)]
+pub(crate) unsafe fn napi_get_undefined(env: NapiEnv, out: *mut NapiValue) -> NapiStatus {
+    ((*NAPI.as_ptr()).napi_get_undefined)(env, out)
+}
+
+#[inline(always)]
+pub(crate) unsafe fn napi_get_null(env: NapiEnv, out: *mut NapiValue) -> NapiStatus {
+    ((*NAPI.as_ptr()).napi_get_null)(env, out)
+}
+
+#[inline(always)]
+pub(crate) unsafe fn napi_get_boolean(env: NapiEnv, value: bool, out: *mut NapiValue) -> NapiStatus {
+    ((*NAPI.as_ptr()).napi_get_boolean)(env, value, out)
+}
+
+#[inline(always)]
+pub(crate) unsafe fn napi_get_value_bool(env: NapiEnv, value: NapiValue, out: *mut bool) -> NapiStatus {
+    ((*NAPI.as_ptr()).napi_get_value_bool)(env, value, out)
+}
+
+#[inline(always)]
+pub(crate) unsafe fn napi_create_double(env: NapiEnv, value: f64, out: *mut NapiValue) -> NapiStatus {
+    ((*NAPI.as_ptr()).napi_create_double)(env, value, out)
+}
+
+#[inline(always)]
+pub(crate) unsafe fn napi_get_value_double(env: NapiEnv, value: NapiValue, out: *mut f64) -> NapiStatus {
+    ((*NAPI.as_ptr()).napi_get_value_double)(env, value, out)
 }
