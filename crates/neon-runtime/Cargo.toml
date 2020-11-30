@@ -9,13 +9,16 @@ edition = "2018"
 
 [dependencies]
 cfg-if = "0.1.9"
+libloading = { version = "0.6.5", optional = true }
 neon-sys = { version = "=0.5.3", path = "../neon-sys", optional = true }
-nodejs-sys = { version = "0.7.0", optional = true }
 smallvec = "1.4.2"
+
+[dev-dependencies]
+nodejs-sys = "0.7.0" # Dev dependency for easy copying
 
 [features]
 default = []
-napi = ["nodejs-sys"]
+napi = ["libloading"]
 docs-only = ["neon-sys/docs-only"]
 
 [package.metadata.docs.rs]

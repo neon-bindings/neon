@@ -67,9 +67,9 @@ macro_rules! register_module {
     (|$module:pat| $init:block) => {
         #[no_mangle]
         pub unsafe extern "C" fn napi_register_module_v1(
-            env: $crate::macro_internal::runtime::nodejs_sys::napi_env,
-            m: $crate::macro_internal::runtime::nodejs_sys::napi_value
-        ) -> $crate::macro_internal::runtime::nodejs_sys::napi_value
+            env: $crate::macro_internal::runtime::raw::Env,
+            m: $crate::macro_internal::runtime::raw::Local
+        ) -> $crate::macro_internal::runtime::raw::Local
         {
             // Suppress the default Rust panic hook, which prints diagnostics to stderr.
             #[cfg(not(feature = "default-panic-hook"))]

@@ -1,9 +1,11 @@
 use std::mem::MaybeUninit;
 use std::os::raw::c_void;
 use std::ptr::null_mut;
-use crate::raw::{FunctionCallbackInfo, Env, Local};
+
 use smallvec::{smallvec, SmallVec};
-use nodejs_sys as napi;
+
+use crate::raw::{FunctionCallbackInfo, Env, Local};
+use crate::napi::bindings as napi;
 
 #[repr(C)]
 pub struct CCallback {
@@ -32,25 +34,25 @@ pub unsafe extern "C" fn current_isolate() -> Env { panic!("current_isolate won'
 pub unsafe extern "C" fn is_construct(env: Env, info: FunctionCallbackInfo) -> bool {
     let mut target: MaybeUninit<Local> = MaybeUninit::zeroed();
 
-    let status = napi::napi_get_new_target(
+    let status = napi::get_new_target(
         env,
         info,
         target.as_mut_ptr()
     );
 
-    assert_eq!(status, napi::napi_status::napi_ok);
+    assert_eq!(status, napi::Status::Ok);
 
-    // napi_get_new_target is guaranteed to assign to target, so it's initialized.
+    // get_new_target is guaranteed to assign to target, so it's initialized.
     let target: Local = target.assume_init();
 
-    // By the napi_get_new_target contract, target will either be NULL if the current
+    // By the get_new_target contract, target will either be NULL if the current
     // function was called without `new`, or a valid napi_value handle if the current
     // function was called with `new`.
     !target.is_null()
 }
 
 pub unsafe extern "C" fn this(env: Env, info: FunctionCallbackInfo, out: &mut Local) {
-    let status = napi::napi_get_cb_info(
+    let status = napi::get_cb_info(
         env,
         info,
         null_mut(),
@@ -58,14 +60,14 @@ pub unsafe extern "C" fn this(env: Env, info: FunctionCallbackInfo, out: &mut Lo
         out as *mut _,
         null_mut(),
     );
-    assert_eq!(status, napi::napi_status::napi_ok);
+    assert_eq!(status, napi::Status::Ok);
 }
 
 /// Mutates the `out` argument provided to refer to the associated data value of the
 /// `napi_callback_info`.
 pub unsafe extern "C" fn data(env: Env, info: FunctionCallbackInfo, out: &mut *mut c_void) {
     let mut data = null_mut();
-    let status = napi::napi_get_cb_info(
+    let status = napi::get_cb_info(
         env,
         info,
         null_mut(),
@@ -73,7 +75,7 @@ pub unsafe extern "C" fn data(env: Env, info: FunctionCallbackInfo, out: &mut *m
         null_mut(),
         &mut data as *mut _,
     );
-    if status == napi::napi_status::napi_ok {
+    if status == napi::Status::Ok {
         *out = data;
     }
 }
@@ -81,7 +83,7 @@ pub unsafe extern "C" fn data(env: Env, info: FunctionCallbackInfo, out: &mut *m
 /// Gets the number of arguments passed to the function.
 pub unsafe extern "C" fn len(env: Env, info: FunctionCallbackInfo) -> i32 {
     let mut argc = 0usize;
-    let status = napi::napi_get_cb_info(
+    let status = napi::get_cb_info(
         env,
         info,
         &mut argc as *mut _,
@@ -89,7 +91,7 @@ pub unsafe extern "C" fn len(env: Env, info: FunctionCallbackInfo) -> i32 {
         null_mut(),
         null_mut(),
     );
-    assert_eq!(status, napi::napi_status::napi_ok);
+    assert_eq!(status, napi::Status::Ok);
     argc as i32
 }
 
@@ -98,7 +100,7 @@ pub unsafe extern "C" fn argv(env: Env, info: FunctionCallbackInfo) -> SmallVec<
     let len = len(env, info);
     let mut args = smallvec![null_mut(); len as usize];
     let mut num_args = args.len();
-    let status = napi::napi_get_cb_info(
+    let status = napi::get_cb_info(
         env,
         info,
         &mut num_args as *mut _,
@@ -106,6 +108,6 @@ pub unsafe extern "C" fn argv(env: Env, info: FunctionCallbackInfo) -> SmallVec<
         null_mut(),
         null_mut(),
     );
-    assert_eq!(status, napi::napi_status::napi_ok);
+    assert_eq!(status, napi::Status::Ok);
     args
 }

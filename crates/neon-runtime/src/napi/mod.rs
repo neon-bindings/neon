@@ -16,3 +16,6 @@ pub mod string;
 pub mod tag;
 pub mod task;
 pub mod handler;
+
+mod bindings;
+pub use bindings::*;

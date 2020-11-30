@@ -5,7 +5,6 @@ use cfg_if::cfg_if;
 
 cfg_if! {
     if #[cfg(feature = "napi")] {
-        pub use nodejs_sys;
         pub mod napi;
     }
 }

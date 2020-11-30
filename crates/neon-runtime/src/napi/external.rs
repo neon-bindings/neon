@@ -1,12 +1,11 @@
 use std::mem::MaybeUninit;
 
 use crate::raw::{Env, Local};
-
-use nodejs_sys as napi;
+use crate::napi::bindings as napi;
 
 /// `finalize_external` is invoked immediately before a `napi_external` is garbage collected
 extern "C" fn finalize_external<T: Send + 'static>(
-    env: napi::napi_env,
+    env: Env,
     // Raw pointer to a `Box<T>` stored by a `napi_external`
     data: *mut std::ffi::c_void,
     // Pointer to a Rust `fn` stored in the `hint` parameter of a `napi_external` called
@@ -31,13 +30,13 @@ pub unsafe fn deref<T: Send + 'static>(
     local: Local,
 ) -> Option<*const T> {
     let mut result = MaybeUninit::uninit();
-    let status = napi::napi_typeof(
+    let status = napi::typeof_value(
         env,
         local,
         result.as_mut_ptr(),
     );
 
-    assert_eq!(status, napi::napi_status::napi_ok);
+    assert_eq!(status, napi::Status::Ok);
 
     let result = result.assume_init();
 
@@ -45,18 +44,18 @@ pub unsafe fn deref<T: Send + 'static>(
     // this module. In this future, this can be improved with type tagging:
     // https://nodejs.org/api/n-api.html#n_api_napi_type_tag
     // https://github.com/neon-bindings/neon/issues/591
-    if result != napi::napi_valuetype::napi_external {
+    if result != napi::ValueType::External {
         return None;
     }
 
     let mut result = MaybeUninit::uninit();
-    let status = napi::napi_get_value_external(
+    let status = napi::get_value_external(
         env,
         local,
         result.as_mut_ptr(),
     );
 
-    assert_eq!(status, napi::napi_status::napi_ok);
+    assert_eq!(status, napi::Status::Ok);
 
     Some(result.assume_init() as *const _)
 }
@@ -70,7 +69,7 @@ pub unsafe fn create<T: Send + 'static>(
     let v = Box::new(v);
     let mut result = MaybeUninit::uninit();
 
-    let status = napi::napi_create_external(
+    let status = napi::create_external(
         env,
         Box::into_raw(v) as *mut _,
         Some(finalize_external::<T>),
@@ -82,7 +81,7 @@ pub unsafe fn create<T: Send + 'static>(
 
     // `napi_create_external` will only fail if the VM is in a throwing state
     // or shutting down.
-    assert_eq!(status, napi::napi_status::napi_ok);
+    assert_eq!(status, napi::Status::Ok);
 
     result.assume_init()
 }

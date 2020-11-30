@@ -1,11 +1,8 @@
 
 use std::mem::MaybeUninit;
 
-use nodejs_sys as napi;
-
-use crate::raw::{Env, HandleScope, EscapableHandleScope, InheritedHandleScope};
-
-type Local = napi::napi_value;
+use crate::raw::{Env, HandleScope, EscapableHandleScope, InheritedHandleScope, Local};
+use crate::napi::bindings as napi;
 
 // TODO: This leaves a lot of room for UB; we can have a cleaner
 // implementation for N-API.
@@ -19,16 +16,16 @@ impl Root for HandleScope {
     unsafe fn allocate() -> Self { HandleScope::new() }
     unsafe fn enter(&mut self, env: Env) {
         let mut scope = MaybeUninit::uninit();
-        let status = napi::napi_open_handle_scope(env, scope.as_mut_ptr());
+        let status = napi::open_handle_scope(env, scope.as_mut_ptr());
 
-        assert_eq!(status, napi::napi_status::napi_ok);
+        assert_eq!(status, napi::Status::Ok);
 
         self.word = scope.assume_init();
     }
     unsafe fn exit(&mut self, env: Env) {
-        let status = napi::napi_close_handle_scope(env, self.word);
+        let status = napi::close_handle_scope(env, self.word);
 
-        assert_eq!(status, napi::napi_status::napi_ok);
+        assert_eq!(status, napi::Status::Ok);
     }
 }
 
@@ -36,16 +33,16 @@ impl Root for EscapableHandleScope {
     unsafe fn allocate() -> Self { EscapableHandleScope::new() }
     unsafe fn enter(&mut self, env: Env) {
         let mut scope = MaybeUninit::uninit();
-        let status = napi::napi_open_escapable_handle_scope(env, scope.as_mut_ptr());
+        let status = napi::open_escapable_handle_scope(env, scope.as_mut_ptr());
 
-        assert_eq!(status, napi::napi_status::napi_ok);
+        assert_eq!(status, napi::Status::Ok);
 
         self.word = scope.assume_init();
     }
     unsafe fn exit(&mut self, env: Env) {
-        let status = napi::napi_close_escapable_handle_scope(env, self.word);
+        let status = napi::close_escapable_handle_scope(env, self.word);
 
-        assert_eq!(status, napi::napi_status::napi_ok);
+        assert_eq!(status, napi::Status::Ok);
     }
 }
 
@@ -56,11 +53,11 @@ impl Root for InheritedHandleScope {
 }
 
 pub unsafe extern "C" fn escape(env: Env, out: &mut Local, scope: *mut EscapableHandleScope, value: Local) {
-    let status = napi::napi_escape_handle(env, (*scope).word, value, out as *mut _);
+    let status = napi::escape_handle(env, (*scope).word, value, out as *mut _);
 
-    assert_eq!(status, napi::napi_status::napi_ok);
+    assert_eq!(status, napi::Status::Ok);
 }
 
 pub unsafe extern "C" fn get_global(env: Env, out: &mut Local) {
-    assert_eq!(napi::napi_get_global(env, out as *mut _), napi::napi_status::napi_ok);
+    assert_eq!(crate::napi::bindings::get_global(env, out as *mut _), napi::Status::Ok);
 }

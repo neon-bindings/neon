@@ -1,0 +1,204 @@
+#[cfg(windows)]
+use libloading::os::windows::Library;
+#[cfg(not(windows))]
+use libloading::os::unix::Library;
+
+use std::os::raw::{c_char, c_void};
+use super::types::*;
+
+generate!(extern "C" {
+    fn get_undefined(env: Env, result: *mut Value) -> Status;
+
+    fn get_null(env: Env, result: *mut Value) -> Status;
+
+    fn get_global(env: Env, result: *mut Value) -> Status;
+
+    fn get_boolean(env: Env, value: bool, result: *mut Value) -> Status;
+
+    fn create_double(env: Env, value: f64, result: *mut Value) -> Status;
+
+    fn create_object(env: Env, result: *mut Value) -> Status;
+
+    fn get_value_bool(env: Env, value: Value, result: *mut bool) -> Status;
+
+    fn get_value_double(env: Env, value: Value, result: *mut f64) -> Status;
+
+    fn create_array_with_length(env: Env, length: usize, result: *mut Value) -> Status;
+
+    fn get_array_length(env: Env, value: Value, result: *mut u32)-> Status;
+
+    fn get_new_target(env: Env, cbinfo: CallbackInfo, result: *mut Value) -> Status;
+
+    fn coerce_to_object(env: Env, value: Value, result: *mut Value) -> Status;
+
+    fn coerce_to_string(env: Env, value: Value, result: *mut Value) -> Status;
+
+    fn throw(env: Env, error: Value) -> Status;
+
+    fn create_error(env: Env, code: Value, msg: Value, result: *mut Value) -> Status;
+
+    fn get_and_clear_last_exception(env: Env, result: *mut Value) -> Status;
+
+    fn is_exception_pending(env: Env, result: *mut bool) -> Status;
+
+    fn get_value_external(env: Env, value: Value, result: *mut *mut c_void) -> Status;
+
+    fn typeof_value(env: Env, value: Value, result: *mut ValueType) -> Status;
+
+    fn close_escapable_handle_scope(env: Env, scope: EscapableHandleScope) -> Status;
+
+    fn open_escapable_handle_scope(env: Env, result: *mut EscapableHandleScope) -> Status;
+
+    fn open_handle_scope(env: Env, result: *mut HandleScope) -> Status;
+
+    fn close_handle_scope(env: Env, scope: HandleScope) -> Status;
+
+    fn is_arraybuffer(env: Env, value: Value, result: *mut bool) -> Status;
+    fn is_buffer(env: Env, value: Value, result: *mut bool) -> Status;
+    fn is_error(env: Env, value: Value, result: *mut bool) -> Status;
+    fn is_array(env: Env, value: Value, result: *mut bool) -> Status;
+
+    fn get_value_string_utf8(
+        env: Env,
+        value: Value,
+        buf: *mut c_char,
+        bufsize: usize,
+        result: *mut usize,
+    ) -> Status;
+
+    fn create_type_error(
+        env: Env,
+        code: Value,
+        msg: Value,
+        result: *mut Value,
+    ) -> Status;
+
+    fn create_range_error(
+        env: Env,
+        code: Value,
+        msg: Value,
+        result: *mut Value,
+    ) -> Status;
+
+    fn create_string_utf8(
+        env: Env,
+        str: *const c_char,
+        length: usize,
+        result: *mut Value,
+    ) -> Status;
+
+    fn create_arraybuffer(
+        env: Env,
+        byte_length: usize,
+        data: *mut *mut c_void,
+        result: *mut Value,
+    ) -> Status;
+
+    fn get_arraybuffer_info(
+        env: Env,
+        arraybuffer: Value,
+        data: *mut *mut c_void,
+        byte_length: *mut usize,
+    ) -> Status;
+
+    fn create_buffer(
+        env: Env,
+        length: usize,
+        data: *mut *mut c_void,
+        result: *mut Value,
+    ) -> Status;
+
+    fn get_buffer_info(
+        env: Env,
+        value: Value,
+        data: *mut *mut c_void,
+        length: *mut usize,
+    ) -> Status;
+
+    fn get_cb_info(
+        env: Env,
+        cbinfo: CallbackInfo,
+        argc: *mut usize,
+        argv: *mut Value,
+        this_arg: *mut Value,
+        data: *mut *mut c_void,
+    ) -> Status;
+
+    fn create_external(
+        env: Env,
+        data: *mut c_void,
+        finalize_cb: Finalize,
+        finalize_hint: *mut c_void,
+        result: *mut Value,
+    ) -> Status;
+
+    fn new_instance(
+        env: Env,
+        constructor: Value,
+        argc: usize,
+        argv: *const Value,
+        result: *mut Value,
+    ) -> Status;
+
+    fn call_function(
+        env: Env,
+        recv: Value,
+        func: Value,
+        argc: usize,
+        argv: *const Value,
+        result: *mut Value,
+    ) -> Status;
+
+    fn create_function(
+        env: Env,
+        utf8name: *const c_char,
+        length: usize,
+        cb: Callback,
+        data: *mut c_void,
+        result: *mut Value,
+    ) -> Status;
+
+    fn set_property(
+        env: Env,
+        object: Value,
+        key: Value,
+        value: Value,
+    ) -> Status;
+
+    fn get_property(
+        env: Env,
+        object: Value,
+        key: Value,
+        result: *mut Value,
+    ) -> Status;
+
+    fn set_element(
+        env: Env,
+        object: Value,
+        index: u32,
+        value: Value,
+    ) -> Status;
+
+    fn get_element(
+        env: Env,
+        object: Value,
+        index: u32,
+        result: *mut Value,
+    ) -> Status;
+
+    fn get_all_property_names(
+        env: Env,
+        object: Value,
+        key_mode: KeyCollectionMode,
+        key_filter: KeyFilter,
+        key_conversion: KeyConversion,
+        result: *mut Value,
+    ) -> Status;
+
+    fn escape_handle(
+        env: Env,
+        scope: EscapableHandleScope,
+        escapee: Value,
+        result: *mut Value,
+    ) -> Status;
+});
