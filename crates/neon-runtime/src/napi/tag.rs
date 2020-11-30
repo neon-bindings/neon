@@ -1,4 +1,4 @@
-use raw::{Env, Local};
+use crate::raw::{Env, Local};
 
 use nodejs_sys as napi;
 

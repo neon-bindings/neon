@@ -1,6 +1,6 @@
 //! Facilities for working with Array `napi_value`s.
 
-use raw::{Env, Local};
+use crate::raw::{Env, Local};
 
 use nodejs_sys as napi;
 

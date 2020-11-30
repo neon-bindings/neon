@@ -1,6 +1,6 @@
 //! Facilities for creating and throwing JS errors.
 
-use raw::{Isolate, Local};
+use crate::raw::{Isolate, Local};
 
 /// Throws an `Error` object in the current context.
 pub unsafe fn throw(_: Isolate, val: Local) {

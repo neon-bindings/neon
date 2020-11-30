@@ -2,7 +2,7 @@ use std::mem::MaybeUninit;
 
 use nodejs_sys as napi;
 
-use raw::{Env, Local};
+use crate::raw::{Env, Local};
 
 /// Mutates the `out` argument to refer to a `napi_value` containing a newly created JavaScript Object.
 pub unsafe extern "C" fn new(out: &mut Local, env: Env) {

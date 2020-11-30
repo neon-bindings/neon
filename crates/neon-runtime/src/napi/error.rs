@@ -3,7 +3,7 @@ use std::ptr;
 
 use nodejs_sys as napi;
 
-use raw::{Env, Local};
+use crate::raw::{Env, Local};
 
 pub unsafe fn is_throwing(env: Env) -> bool {
     let mut b: MaybeUninit<bool> = MaybeUninit::zeroed();
