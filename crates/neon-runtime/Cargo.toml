@@ -15,6 +15,7 @@ smallvec = "1.4.2"
 
 [features]
 default = []
+napi = ["nodejs-sys"]
 docs-only = ["neon-sys/docs-only"]
 
 [package.metadata.docs.rs]
