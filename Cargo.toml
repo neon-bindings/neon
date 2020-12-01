@@ -65,7 +65,7 @@ members = [
     "crates/neon-runtime",
     "crates/neon-sys",
     "test/static",
-    "test/electron/native",
+    "test/electron",
     "test/dynamic/native",
     "test/napi"
 ]

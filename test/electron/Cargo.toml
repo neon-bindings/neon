@@ -11,9 +11,10 @@ name = "electron_tests"
 crate-type = ["cdylib"]
 
 [build-dependencies]
-neon-build = {version = "*", path = "../../../crates/neon-build"}
+neon-build = {version = "*", path = "../../crates/neon-build"}
 
 [dependencies.neon]
 version = "*"
-path = "../../../"
-features = ["proc-macros"]
+path = "../.."
+default-features = false
+features = ["proc-macros", "napi-runtime"]
