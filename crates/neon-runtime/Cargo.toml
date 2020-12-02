@@ -14,7 +14,7 @@ neon-sys = { version = "=0.5.3", path = "../neon-sys", optional = true }
 smallvec = "1.4.2"
 
 [dev-dependencies]
-nodejs-sys = "0.7.0" # Dev dependency for easy copying
+nodejs-sys = "0.7.0" # Not strictly needed; just here for easy manual copying
 
 [features]
 default = []
