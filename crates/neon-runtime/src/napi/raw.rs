@@ -1,17 +1,17 @@
 use std::ptr;
 
-use nodejs_sys as napi;
+use crate::napi::bindings as napi;
 
-pub type Local = napi::napi_value;
+pub type Local = napi::Value;
 
-pub type FunctionCallbackInfo = napi::napi_callback_info;
+pub type FunctionCallbackInfo = napi::CallbackInfo;
 
-pub type Env = napi::napi_env;
+pub type Env = napi::Env;
 
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct HandleScope {
-    pub word: napi::napi_handle_scope
+    pub word: napi::HandleScope
 }
 
 impl HandleScope {
@@ -21,7 +21,7 @@ impl HandleScope {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct EscapableHandleScope {
-    pub word: napi::napi_escapable_handle_scope
+    pub word: napi::EscapableHandleScope
 }
 
 impl EscapableHandleScope {

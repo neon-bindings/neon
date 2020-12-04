@@ -15,9 +15,9 @@ pub(crate) fn main(
         #vis #sig {
             #[no_mangle]
             unsafe extern "C" fn napi_register_module_v1(
-                env: ::neon::macro_internal::runtime::nodejs_sys::napi_env,
-                m: ::neon::macro_internal::runtime::nodejs_sys::napi_value,
-            ) -> ::neon::macro_internal::runtime::nodejs_sys::napi_value {
+                env: ::neon::macro_internal::runtime::raw::Env,
+                m: ::neon::macro_internal::runtime::raw::Local,
+            ) -> ::neon::macro_internal::runtime::raw::Local {
                 ::neon::macro_internal::initialize_module(
                     env,
                     ::std::mem::transmute(m),
