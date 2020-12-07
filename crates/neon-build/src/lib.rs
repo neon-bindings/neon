@@ -3,6 +3,9 @@ mod legacy;
 #[cfg(not(feature = "neon-sys"))]
 mod napi;
 
+#[cfg(not(feature = "neon-sys"))]
+pub use napi::Builder;
+
 /// Custom build scripts for [Neon][neon] modules.
 /// Must be called from `main.rs` in a Cargo [build script][build-script].
 ///
@@ -13,6 +16,7 @@ mod napi;
 ///
 /// ```rust
 /// // build.rs
+/// # #[allow(clippy::needless_doctest_main)]
 /// fn main() {
 ///     neon_build::setup();
 /// }
