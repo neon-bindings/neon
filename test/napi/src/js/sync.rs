@@ -120,7 +120,11 @@ pub fn greeter_greet(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 }
 
 pub fn leak_event_queue(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    let queue = Box::new(cx.event_queue().unref(&mut cx));
+    let queue = Box::new({
+        let mut queue = cx.event_queue();
+        queue.unref(&mut cx);
+        queue
+    });
 
     Box::leak(queue);
 
