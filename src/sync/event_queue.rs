@@ -38,7 +38,7 @@ impl EventQueue {
 
     /// Allow the Node event loop to exit while this `EventQueue` exists.
     /// _Idempotent_
-    pub fn unref<'a, C: Context<'a>>(mut self, cx: &mut C) -> Self {
+    pub fn unref<'a, C: Context<'a>>(&mut self, cx: &mut C) -> &mut Self {
         self.has_ref = false;
 
         unsafe {
@@ -50,7 +50,7 @@ impl EventQueue {
 
     /// Prevent the Node event loop from exiting while this `EventQueue` exists. (Default)
     /// _Idempotent_
-    pub fn reference<'a, C: Context<'a>>(mut self, cx: &mut C) -> Self {
+    pub fn reference<'a, C: Context<'a>>(&mut self, cx: &mut C) -> &mut Self {
         self.has_ref = true;
 
         unsafe {
