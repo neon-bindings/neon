@@ -542,10 +542,10 @@ extern "C" void Neon_EventHandler_Delete(void * thread_safe_cb) {
     cb->close();
 }
 
-extern "C" try_catch_control_t Neon_TryCatch_With(Neon_TryCatchGlue glue_fn, void *rust_thunk, void *cx, v8::Local<v8::Value> *result, void **unwind_value) {
+extern "C" try_catch_control_t Neon_TryCatch_With(Neon_TryCatchGlue glue_fn, void *rust_thunk, void *cx, void *ok, v8::Local<v8::Value> *err, void **unwind_value) {
   Nan::TryCatch try_catch;
 
-  try_catch_control_t ctrl = glue_fn(rust_thunk, cx, result, unwind_value);
+  try_catch_control_t ctrl = glue_fn(rust_thunk, cx, ok, unwind_value);
 
   if (ctrl == CONTROL_PANICKED) {
     return CONTROL_PANICKED;
@@ -560,7 +560,7 @@ extern "C" try_catch_control_t Neon_TryCatch_With(Neon_TryCatchGlue glue_fn, voi
     }
     return CONTROL_RETURNED;
   } else {
-    *result = try_catch.Exception();
+    *err = try_catch.Exception();
     return CONTROL_THREW;
   }
 }
