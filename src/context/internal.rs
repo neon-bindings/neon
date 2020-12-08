@@ -127,8 +127,7 @@ pub trait ContextInternal<'a>: Sized {
 
     #[cfg(feature = "legacy-runtime")]
     fn try_catch_internal<'b: 'a, T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
-        where T: Sized,
-              F: FnOnce(&mut Self) -> NeonResult<T>,
+        where F: FnOnce(&mut Self) -> NeonResult<T>,
     {
         // A closure does not have a guaranteed layout, so we need to box it in order to pass
         // a pointer to it across the boundary into C++.
@@ -167,8 +166,7 @@ pub trait ContextInternal<'a>: Sized {
 
     #[cfg(feature = "napi-runtime")]
     fn try_catch_internal<'b: 'a, T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
-        where T: Sized,
-              F: FnOnce(&mut Self) -> NeonResult<T>
+        where F: FnOnce(&mut Self) -> NeonResult<T>
     {
         let result = f(self);
         let mut local: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
@@ -190,7 +188,6 @@ extern "C" fn try_catch_glue<'a, 'b: 'a, C, T, F>(rust_thunk: *mut c_void,
                                                   returned: *mut c_void,
                                                   unwind_value: *mut *mut c_void) -> TryCatchControl
     where C: ContextInternal<'a>,
-          T: Sized,
           F: FnOnce(&mut C) -> NeonResult<T>,
 {
     let f: F = *unsafe { Box::from_raw(rust_thunk as *mut F) };
