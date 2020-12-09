@@ -74,6 +74,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("panic_after_throw", panic_after_throw)?;
     cx.export_function("throw_and_catch", throw_and_catch)?;
     cx.export_function("call_and_catch", call_and_catch)?;
+    cx.export_function("get_number_or_default", get_number_or_default)?;
     cx.export_function("panic_and_catch", panic_and_catch)?;
     cx.export_function("unexpected_throw_and_catch", unexpected_throw_and_catch)?;
     cx.export_function("downcast_error", downcast_error)?;

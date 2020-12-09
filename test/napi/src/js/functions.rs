@@ -119,6 +119,13 @@ pub fn call_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
     }).unwrap_or_else(|err| err))
 }
 
+pub fn get_number_or_default(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let n = cx.try_catch(|cx| Ok(cx.argument::<JsNumber>(0)?.value(cx)))
+        .unwrap_or(0.0);
+
+    Ok(cx.number(n))
+}
+
 pub fn is_construct(mut cx: FunctionContext) -> JsResult<JsObject> {
     let this = cx.this();
     let construct = match cx.kind() {
