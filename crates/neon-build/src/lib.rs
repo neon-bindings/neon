@@ -4,7 +4,7 @@ mod legacy;
 mod napi;
 
 #[cfg(not(feature = "neon-sys"))]
-pub use napi::Builder;
+pub use napi::Setup;
 
 /// Custom build scripts for [Neon][neon] modules.
 /// Must be called from `main.rs` in a Cargo [build script][build-script].

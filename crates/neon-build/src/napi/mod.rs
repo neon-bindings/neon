@@ -33,7 +33,7 @@ fn setup_windows(output_file: PathBuf) {
     println!("cargo:rustc-cdylib-link-arg=/PDB:{}", pdb_file.display());
 }
 
-/// `Builder` acts as a builder for initializing a Neon build script
+/// `Setup` acts as a builder for initializing a Neon build script
 ///
 /// A default setup builder is provided as [`neon_build::setup()`](crate::setup()).
 ///
@@ -44,20 +44,20 @@ fn setup_windows(output_file: PathBuf) {
 /// ```
 /// # #[allow(clippy::needless_doctest_main)]
 /// fn main() {
-///     neon_build::Builder::new()
+///     neon_build::Setup::options()
 ///         .output_dir("lib")
 ///         .output_dir("native.node")
 ///         .setup();
 /// }
 #[derive(Debug, Default)]
-pub struct Builder {
+pub struct Setup {
     output_dir: Option<PathBuf>,
     output_file: Option<PathBuf>,
 }
 
-impl Builder {
-    /// Create a new Neon build script builder
-    pub fn new() -> Self {
+impl Setup {
+    /// Create a new builder for Setup options
+    pub fn options() -> Self {
         Default::default()
     }
 
@@ -70,7 +70,7 @@ impl Builder {
     }
 
     /// Sets the name of the native library. Defaults to `index.node`. If not
-    /// absolute, paths will be relative to the [`Builder::output_dir`].
+    /// absolute, paths will be relative to the [`Setup::output_dir`].
     ///
     /// **Note**: Node.js requires that native libraries have the `.node`
     /// extension to be loaded by `require`.
@@ -120,13 +120,13 @@ impl Builder {
 }
 
 pub(crate) fn setup() {
-    Builder::new().setup()
+    Setup::options().setup()
 }
 
 #[test]
 fn test_absolute_output_file_defaults() {
     let expected = manifest_dir().join("index.node");
-    let actual = Builder::new().absolute_output_file();
+    let actual = Setup::options().absolute_output_file();
 
     assert_eq!(actual, expected);
 }
@@ -134,7 +134,7 @@ fn test_absolute_output_file_defaults() {
 #[test]
 fn test_absolute_output_file_absolute_file() {
     let expected = PathBuf::from("/tmp/hello.node");
-    let actual = Builder::new()
+    let actual = Setup::options()
         .output_dir("/tmp/ignore/me")
         .output_file("/tmp/hello.node")
         .absolute_output_file();
@@ -145,7 +145,7 @@ fn test_absolute_output_file_absolute_file() {
 #[test]
 fn test_absolute_output_file_absolute_dir() {
     let expected = PathBuf::from("/tmp/index.node");
-    let actual = Builder::new()
+    let actual = Setup::options()
         .output_dir("/tmp")
         .absolute_output_file();
 
@@ -155,7 +155,7 @@ fn test_absolute_output_file_absolute_dir() {
 #[test]
 fn test_absolute_output_file_relative_dir() {
     let expected = manifest_dir().join("lib").join("index.node");
-    let actual = Builder::new()
+    let actual = Setup::options()
         .output_dir("lib")
         .absolute_output_file();
 
@@ -165,7 +165,7 @@ fn test_absolute_output_file_relative_dir() {
 #[test]
 fn test_absolute_output_file_relative_file() {
     let expected = manifest_dir().join("lib.node");
-    let actual = Builder::new()
+    let actual = Setup::options()
         .output_file("lib.node")
         .absolute_output_file();
 
