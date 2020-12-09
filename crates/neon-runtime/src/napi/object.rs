@@ -8,6 +8,7 @@ pub unsafe extern "C" fn new(out: &mut Local, env: Env) {
     napi::create_object(env, out as *mut _);
 }
 
+#[cfg(feature = "napi-6")]
 /// Mutates the `out` argument to refer to a `napi_value` containing the own property names of the
 /// `object` as a JavaScript Array.
 pub unsafe extern "C" fn get_own_property_names(out: &mut Local, env: Env, object: Local) -> bool {

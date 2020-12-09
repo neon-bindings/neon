@@ -132,9 +132,10 @@ macro_rules! generate {
         };
 
         pub(crate) unsafe fn load() -> Result<(), libloading::Error> {
-            let host = Library::this();
+            #[cfg(not(windows))]
+            let host = libloading::os::unix::Library::this();
             #[cfg(windows)]
-            let host = host?;
+            let host = libloading::os::windows::Library::this()?;
 
             NAPI = Napi {
                 $(

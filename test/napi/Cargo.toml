@@ -18,4 +18,4 @@ neon-build = {version = "*", path = "../../crates/neon-build"}
 version = "*"
 path = "../.."
 default-features = false
-features = ["default-panic-hook", "napi-runtime", "try-catch-api"]
+features = ["default-panic-hook", "napi-6", "try-catch-api"]

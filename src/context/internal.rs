@@ -23,7 +23,7 @@ use super::ModuleContext;
 #[derive(Clone, Copy)]
 pub struct Env(raw::Isolate);
 
-#[cfg(feature = "napi-runtime")]
+#[cfg(feature = "napi-1")]
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct Env(raw::Env);
@@ -39,7 +39,7 @@ impl Env {
         ptr
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     pub(crate) fn to_raw(self) -> raw::Env {
         let Self(ptr) = self;
         ptr
@@ -59,7 +59,7 @@ impl Env {
         unsafe { std::mem::transmute(ptr) }
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     pub(crate) fn current() -> Env {
         panic!("Context::current() will not implemented with n-api")
     }
@@ -164,7 +164,7 @@ pub trait ContextInternal<'a>: Sized {
         }
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     fn try_catch_internal<'b: 'a, T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
         where F: FnOnce(&mut Self) -> NeonResult<T>
     {
@@ -227,7 +227,7 @@ pub fn initialize_module(exports: Handle<JsObject>, init: fn(ModuleContext) -> N
     });
 }
 
-#[cfg(feature = "napi-runtime")]
+#[cfg(feature = "napi-1")]
 pub fn initialize_module(env: raw::Env, exports: Handle<JsObject>, init: fn(ModuleContext) -> NeonResult<()>) {
     neon_runtime::setup();
     ModuleContext::with(Env(env), exports, |cx| {

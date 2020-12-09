@@ -51,7 +51,7 @@ impl<T: Value> Callback<()> for FunctionCallback<T> {
     }
 }
 
-#[cfg(feature = "napi-runtime")]
+#[cfg(feature = "napi-1")]
 impl<T: Value> Callback<raw::Local> for FunctionCallback<T> {
     extern "C" fn invoke(env: Env, info: CallbackInfo<'_>) -> raw::Local {
         unsafe {

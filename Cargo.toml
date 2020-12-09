@@ -42,9 +42,20 @@ default-panic-hook = []
 # enabled by default.
 legacy-runtime = ["neon-runtime/neon-sys", "neon-build/neon-sys"]
 
-# Feature flag to enable the experimental N-API runtime. For now, this feature
+# Default N-API version. Prefer to select a minimum required version.
+napi-runtime = ["napi-6"]
+
+# Select the N-API version
+# Feature flags to enable the experimental N-API runtime. For now, this feature
 # is disabled by default.
-napi-runtime = ["proc-macros", "neon-macros/napi", "neon-runtime/napi"]
+napi-1 = ["proc-macros", "neon-macros/napi", "neon-runtime/napi"]
+napi-2 = ["napi-1", "neon-runtime/napi-2"]
+napi-3 = ["napi-2", "neon-runtime/napi-3"]
+napi-4 = ["napi-3", "neon-runtime/napi-4"]
+napi-5 = ["napi-4", "neon-runtime/napi-5"]
+napi-6 = ["napi-5", "neon-runtime/napi-6"]
+napi-latest = ["napi-6"]
+napi-experimental = ["napi-6", "neon-runtime/napi-experimental"]
 
 # Feature flag to disable external dependencies on docs build
 docs-only = ["neon-runtime/docs-only"]

@@ -116,7 +116,7 @@ impl<'a, T: Value> Handle<'a, T> {
         U::is_typeof(Env::current(), self.value)
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     /// Tests whether this value is an instance of the given type.
     /// 
     /// # Example:
@@ -147,7 +147,7 @@ impl<'a, T: Value> Handle<'a, T> {
         }
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     /// Attempts to downcast a handle to another type, which may fail. A failure
     /// to downcast **does not** throw a JavaScript exception, so it's OK to
     /// continue interacting with the JS engine if this method produces an `Err`
@@ -167,7 +167,7 @@ impl<'a, T: Value> Handle<'a, T> {
         self.downcast().or_throw(cx)
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     /// Attempts to downcast a handle to another type, raising a JavaScript `TypeError`
     /// exception on failure. This method is a convenient shorthand, equivalent to
     /// `self.downcast::<U>().or_throw::<C>(cx)`.
