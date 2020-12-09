@@ -1,3 +1,12 @@
+# Version 0.6.0
+
+The `cx.try_catch(..)` API has been updated to return `T: Sized` instead of `T: Value` (https://github.com/neon-bindings/neon/pull/631). This API is strictly more powerful and allows users to return both JavaScript and Rust values from `try_catch` closures.
+
+## N-API
+
+* N-API symbols are now loaded dynamically (https://github.com/neon-bindings/neon/pull/646)
+* Build process for N-API is greatly simplified by leveraging dynamic loading (https://github.com/neon-bindings/neon/pull/647)
+
 # Version 0.5.3
 
 ## Bug Fixes
