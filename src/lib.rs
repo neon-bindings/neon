@@ -12,13 +12,6 @@ extern crate neon_macros;
 #[macro_use]
 extern crate lazy_static;
 
-#[cfg(target_os = "windows")]
-extern crate winapi;
-
-#[cfg(all(target_os = "windows", feature = "napi-runtime"))]
-// This module statically provides a delayed load hook: we don't need to call anything to initialize it.
-mod win_delay_load_hook;
-
 pub mod context;
 pub mod handle;
 pub mod types;

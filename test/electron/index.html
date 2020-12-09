@@ -2,13 +2,15 @@
 <html>
   <head>
     <meta charset="UTF-8">
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+    <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'">
     <title>Neon Electron Test</title>
   </head>
   <body>
-    <script>
-      document.write(`<h1 id="header">${require('./native').hello()}</h1>`);  
-    </script>  
+    <h1 id="greeting"></h1>
 
+    <!-- You can also require other files to run in this process -->
     <script src="./renderer.js"></script>
   </body>
 </html>
