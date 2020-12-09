@@ -104,10 +104,10 @@ pub fn compute_scoped(mut cx: FunctionContext) -> JsResult<JsNumber> {
 
 pub fn throw_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
     let v = cx.argument_opt(0).unwrap_or_else(|| cx.undefined().upcast());
-    Ok(cx.try_catch(|cx| {
-        let _ = cx.throw(v)?;
-        Ok(cx.string("unreachable").upcast())
-    }).unwrap_or_else(|err| err))
+
+    cx.try_catch(|cx| cx.throw(v))
+        .map(|_: ()| Ok(cx.string("unreachable").upcast()))
+        .unwrap_or_else(|err| Ok(err))
 }
 
 pub fn call_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
@@ -117,6 +117,13 @@ pub fn call_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
         let args: Vec<Handle<JsValue>> = vec![];
         f.call(cx, global, args)
     }).unwrap_or_else(|err| err))
+}
+
+pub fn get_number_or_default(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let n = cx.try_catch(|cx| Ok(cx.argument::<JsNumber>(0)?.value(cx)))
+        .unwrap_or(0.0);
+
+    Ok(cx.number(n))
 }
 
 pub fn is_construct(mut cx: FunctionContext) -> JsResult<JsObject> {

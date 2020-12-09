@@ -97,7 +97,7 @@ pub struct InheritedHandleScope;
 /// glue function returns `TryCatchControl::Panicked`.
 pub type TryCatchGlue = extern fn(rust_thunk: *mut c_void,
                                   cx: *mut c_void,
-                                  result: *mut Local,
+                                  result: *mut c_void,
                                   unwind_value: *mut *mut c_void) -> TryCatchControl;
 
 extern "C" {
@@ -230,6 +230,7 @@ extern "C" {
     pub fn Neon_TryCatch_With(glue: TryCatchGlue,
                               rust_thunk: *mut c_void,
                               cx: *mut c_void,
-                              result: *mut Local,
+                              ok: *mut c_void,
+                              err: *mut Local,
                               unwind_value: *mut *mut c_void) -> TryCatchControl;
 }

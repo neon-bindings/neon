@@ -49,6 +49,12 @@ describe('JsFunction', function() {
     assert.equal(addon.call_and_catch(() => { return 42 }), 42);
   });
 
+  it('can return Rust type from cx.try_catch', function() {
+    const n = Math.random();
+    assert.strictEqual(addon.get_number_or_default(n), n);
+    assert.strictEqual(addon.get_number_or_default(), 0);
+  });
+
   it('propagates a panic with cx.try_catch', function() {
     assert.throws(function() {
       addon.panic_and_catch();

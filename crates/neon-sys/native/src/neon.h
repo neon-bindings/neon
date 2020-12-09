@@ -148,17 +148,19 @@ extern "C" {
   void Neon_EventHandler_Schedule(void* thread_safe_cb, void* rust_callback, Neon_EventHandler handler);
   void Neon_EventHandler_Delete(void* thread_safe_cb);
 
-  // The `result` out-parameter can be assumed to be initialized if and only if this function
+  // The `ok` out-parameter can be assumed to be initialized if and only if this function
   // returns `CONTROL_RETURNED`.
   // The `unwind_value` out-parameter can be assumed to be initialized if and only if this
   // function returns `CONTROL_PANICKED`.
-  typedef try_catch_control_t (*Neon_TryCatchGlue)(void *rust_thunk, void *cx, v8::Local<v8::Value> *result, void **unwind_value);
+  typedef try_catch_control_t (*Neon_TryCatchGlue)(void *rust_thunk, void *cx, void *ok, void **unwind_value);
 
-  // The `result` out-parameter can be assumed to be initialized if and only if this function
-  // returns `CONTROL_RETURNED` or `CONTROL_THREW`.
+  // The `ok` out-parameter can be assumed to be initialized if and only if this function
+  // returns `CONTROL_RETURNED`.
+  // The `err` out-parameter can be assumed to be initialized if and only if this function
+  // returns `CONTROL_THREW`.
   // The `unwind_value` out-parameter can be assumed to be initialized if and only if this
   // function returns `CONTROL_PANICKED`.
-  try_catch_control_t Neon_TryCatch_With(Neon_TryCatchGlue glue, void *rust_thunk, void *cx, v8::Local<v8::Value> *result, void **unwind_value);
+  try_catch_control_t Neon_TryCatch_With(Neon_TryCatchGlue glue, void *rust_thunk, void *cx, void *ok, v8::Local<v8::Value> *err, void **unwind_value);
 }
 
 #endif
