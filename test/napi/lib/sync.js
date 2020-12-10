@@ -64,4 +64,24 @@ const assert = require('chai').assert;
     // If the EventQueue is not unreferenced, the test runner will not cleanly exit
     addon.leak_event_queue();
   });
+
+  it('should be able to resolve a promise', function () {
+    let expected = {};
+
+    return addon.resolve_promise(expected).then(function (actual) {
+      assert.strictEqual(actual, expected);
+    });
+  });
+
+  it('should be able to reject a promise', function () {
+    let expected = {};
+
+    return addon.reject_promise(expected)
+      .then(function () {
+        throw new Error('Expected to reject');
+      })
+      .catch(function (actual) {
+        assert.strictEqual(actual, expected);
+      });
+  });
 });

@@ -253,4 +253,24 @@ generate!(extern "C" {
         env: Env,
         func: ThreadsafeFunction,
     ) -> Status;
+
+    fn create_promise(
+        env: Env,
+        deferred: *mut Deferred,
+        promise: *mut Value,
+    ) -> Status;
+
+    fn resolve_deferred(
+        env: Env,
+        deferred: Deferred,
+        resolution: Value,
+    ) -> Status;
+
+    fn reject_deferred(
+        env: Env,
+        deferred: Deferred,
+        rejection: Value,
+    ) -> Status;
+
+    fn is_promise(env: Env, value: Value, is_promise: *mut bool) -> Status;
 });

@@ -4,6 +4,8 @@ pub(crate) mod binary;
 #[cfg(feature = "napi-runtime")]
 pub(crate) mod boxed;
 pub(crate) mod error;
+#[cfg(feature = "napi-runtime")]
+pub(crate) mod promise;
 
 pub(crate) mod internal;
 pub(crate) mod utf8;
@@ -29,6 +31,8 @@ pub use self::binary::{JsBuffer, JsArrayBuffer, BinaryData, BinaryViewType};
 #[cfg(feature = "napi-runtime")]
 pub use self::boxed::JsBox;
 pub use self::error::JsError;
+#[cfg(feature = "napi-runtime")]
+pub use self::promise::{JsPromise, Deferred};
 
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(env: Env, init: F) -> JsResult<'a, T> {
     unsafe {

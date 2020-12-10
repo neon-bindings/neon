@@ -16,7 +16,7 @@ use context::internal::Env;
 use handle::{Managed, Handle};
 #[cfg(feature = "napi-runtime")]
 use sync::EventQueue;
-use types::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
+use types::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined, JsPromise, Deferred};
 #[cfg(feature = "napi-runtime")]
 use types::boxed::{Finalize, JsBox};
 use types::binary::{JsArrayBuffer, JsBuffer};
@@ -386,6 +386,11 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Creates an unbounded queue of events to be executed on a JavaScript thread
     fn event_queue(&mut self) -> EventQueue {
         EventQueue::new(self)
+    }
+
+    #[cfg(feature = "napi-runtime")]
+    fn promise(&mut self) -> (Handle<'a, JsPromise>, Deferred) {
+        JsPromise::new(self)
     }
 }
 

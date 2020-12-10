@@ -18,6 +18,7 @@ pub mod task;
 pub mod handler;
 pub mod reference;
 pub mod tsfn;
+pub mod promise;
 
 mod bindings;
 pub use bindings::*;

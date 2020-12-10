@@ -55,6 +55,14 @@ pub struct ThreadsafeFunction__ {
 
 pub type ThreadsafeFunction = *mut ThreadsafeFunction__;
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct Deferred__ {
+    _unused: [u8; 0],
+}
+
+pub type Deferred = *mut Deferred__;
+
 pub(crate) type Callback = Option<
     unsafe extern "C" fn(env: Env, info: CallbackInfo) -> Value,
 >;

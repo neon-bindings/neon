@@ -195,5 +195,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("greeter_greet", greeter_greet)?;
     cx.export_function("leak_event_queue", leak_event_queue)?;
 
+    cx.export_function("resolve_promise", resolve_promise)?;
+    cx.export_function("reject_promise", reject_promise)?;
+
     Ok(())
 }

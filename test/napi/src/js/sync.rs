@@ -130,3 +130,21 @@ pub fn leak_event_queue(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
     Ok(cx.undefined())
 }
+
+pub fn resolve_promise(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    let value = cx.argument::<JsValue>(0)?;
+    let (promise, deferred) = cx.promise();
+
+    deferred.resolve(&mut cx, value);
+
+    Ok(promise)
+}
+
+pub fn reject_promise(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    let value = cx.argument::<JsValue>(0)?;
+    let (promise, deferred) = cx.promise();
+
+    deferred.reject(&mut cx, value);
+
+    Ok(promise)
+}
