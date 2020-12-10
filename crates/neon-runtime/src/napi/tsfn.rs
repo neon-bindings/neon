@@ -1,32 +1,28 @@
 use std::ffi::c_void;
 use std::mem::MaybeUninit;
 
-use nodejs_sys as napi;
-
-use raw::{Local, Env};
-
-pub use nodejs_sys::napi_threadsafe_function_call_mode as CallMode;
-pub use nodejs_sys::napi_status as Status;
+use crate::napi::bindings as napi;
+use crate::raw::{Local, Env};
 
 unsafe fn string(env: Env, s: impl AsRef<str>) -> Local {
     let s = s.as_ref();
     let mut result = MaybeUninit::uninit();
 
     assert_eq!(
-        napi::napi_create_string_utf8(
+        napi::create_string_utf8(
             env,
             s.as_bytes().as_ptr() as *const _,
             s.len(),
             result.as_mut_ptr(),
         ),
-        napi::napi_status::napi_ok,
+        napi::Status::Ok,
     );
 
     result.assume_init()
 }
 
 #[derive(Debug)]
-struct Tsfn(napi::napi_threadsafe_function);
+struct Tsfn(napi::ThreadsafeFunction);
 
 unsafe impl Send for Tsfn {}
 unsafe impl Sync for Tsfn {}
@@ -44,12 +40,12 @@ struct Callback<T> {
 }
 
 pub struct CallError<T> {
-    kind: Status,
+    kind: napi::Status,
     data: T,
 }
 
 impl<T> CallError<T> {
-    pub fn kind(&self) -> Status {
+    pub fn kind(&self) -> napi::Status {
         self.kind
     }
 
@@ -75,7 +71,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
         let mut result = MaybeUninit::uninit();
 
         assert_eq!(
-            napi::napi_create_threadsafe_function(
+            napi::create_threadsafe_function(
                 env,
                 std::ptr::null_mut(),
                 std::ptr::null_mut(),
@@ -90,7 +86,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
                 Some(Self::callback),
                 result.as_mut_ptr(),
             ),
-            napi::napi_status::napi_ok,
+            napi::Status::Ok,
         );
     
         Self {
@@ -99,21 +95,28 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
         }
     }
 
-    pub fn call(&self, data: T, is_blocking: CallMode) -> Result<(), CallError<T>> {
+    pub fn call(
+        &self,
+        data: T,
+        is_blocking: Option<napi::ThreadsafeFunctionCallMode>,
+    ) -> Result<(), CallError<T>> {
+        let is_blocking = is_blocking
+            .unwrap_or(napi::ThreadsafeFunctionCallMode::Blocking);
+
         let callback = Box::into_raw(Box::new(Callback {
             callback: self.callback,
             data,
         }));
 
         let status = unsafe {
-            napi::napi_call_threadsafe_function(
+            napi::call_threadsafe_function(
                 self.tsfn.0,
                 callback as *mut _,
                 is_blocking,
             )
         };
 
-        if status == Status::napi_ok {
+        if status == napi::Status::Ok {
             Ok(())
         } else {
             // If the call failed, the callback won't execute
@@ -128,27 +131,27 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
 
     pub unsafe fn reference(&mut self, env: Env) {
         assert_eq!(
-            napi::napi_ref_threadsafe_function(
+            napi::ref_threadsafe_function(
                 env,
                 self.tsfn.0,
             ),
-            napi::napi_status::napi_ok,
+            napi::Status::Ok,
         );
     }
 
     pub unsafe fn unref(&mut self, env: Env) {
         assert_eq!(
-            napi::napi_unref_threadsafe_function(
+            napi::unref_threadsafe_function(
                 env,
                 self.tsfn.0,
             ),
-            napi::napi_status::napi_ok,
+            napi::Status::Ok,
         );
     }
 
     unsafe extern "C" fn callback(
         env: Env,
-        _js_callback: napi::napi_value,
+        _js_callback: napi::Value,
         _context: *mut c_void,
         data: *mut c_void,
     ) {
@@ -175,9 +178,9 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
 impl<T> Drop for ThreadsafeFunction<T> {
     fn drop(&mut self) {
         unsafe {
-            napi::napi_release_threadsafe_function(
+            napi::release_threadsafe_function(
                 self.tsfn.0,
-                napi::napi_threadsafe_function_release_mode::napi_tsfn_release,
+                napi::ThreadsafeFunctionReleaseMode::Release,
             );
         };
     }

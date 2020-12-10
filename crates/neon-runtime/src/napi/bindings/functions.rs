@@ -201,4 +201,56 @@ generate!(extern "C" {
         escapee: Value,
         result: *mut Value,
     ) -> Status;
+
+    fn create_reference(
+        env: Env,
+        value: Value,
+        initial_ref_count: u32,
+        result: *mut Ref,
+    ) -> Status;
+
+    fn reference_ref(env: Env, reference: Ref, result: *mut u32) -> Status;
+
+    fn reference_unref(env: Env, reference: Ref, result: *mut u32) -> Status;
+
+    fn get_reference_value(
+        env: Env,
+        reference: Ref,
+        result: *mut Value,
+    ) -> Status;
+
+    fn create_threadsafe_function(
+        env: Env,
+        func: Value,
+        async_resource: Value,
+        async_resource_name: Value,
+        max_queue_size: usize,
+        initial_thread_count: usize,
+        thread_finalize_data: *mut c_void,
+        thread_finalize_cb: Finalize,
+        context: *mut c_void,
+        call_js_cb: ThreadsafeFunctionCallJs,
+        result: *mut ThreadsafeFunction,
+    ) -> Status;
+
+    fn call_threadsafe_function(
+        func: ThreadsafeFunction,
+        data: *mut c_void,
+        is_blocking: ThreadsafeFunctionCallMode,
+    ) -> Status;
+
+    fn release_threadsafe_function(
+        func: ThreadsafeFunction,
+        mode: ThreadsafeFunctionReleaseMode,
+    ) -> Status;
+
+    fn ref_threadsafe_function(
+        env: Env,
+        func: ThreadsafeFunction,
+    ) -> Status;
+
+    fn unref_threadsafe_function(
+        env: Env,
+        func: ThreadsafeFunction,
+    ) -> Status;
 });
