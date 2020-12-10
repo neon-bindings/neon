@@ -1,5 +1,5 @@
 use neon_runtime::raw::Env;
-use neon_runtime::tsfn::{CallMode, ThreadsafeFunction};
+use neon_runtime::tsfn::ThreadsafeFunction;
 
 use context::{Context, TaskContext};
 use result::JsResult;
@@ -86,7 +86,7 @@ impl EventQueue {
         });
 
         self.tsfn
-            .call(callback, CallMode::napi_tsfn_blocking)
+            .call(callback, None)
             .map_err(|_| EventQueueError)
     }
 
