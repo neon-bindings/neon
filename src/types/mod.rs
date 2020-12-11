@@ -32,7 +32,7 @@ pub use self::binary::{JsBuffer, JsArrayBuffer, BinaryData, BinaryViewType};
 pub use self::boxed::JsBox;
 pub use self::error::JsError;
 #[cfg(feature = "napi-runtime")]
-pub use self::promise::{JsPromise, Deferred};
+pub use self::promise::{JsPromise, Deferred, JsPromiseFuture};
 
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(env: Env, init: F) -> JsResult<'a, T> {
     unsafe {
@@ -68,6 +68,24 @@ pub trait Value: ValueInternal {
 
     fn as_value<'a, C: Context<'a>>(self, _: &mut C) -> Handle<'a, JsValue> {
         JsValue::new_internal(self.to_raw())
+    }
+
+    fn to_future_adapter<'a, C, F, R>(
+        self,
+        cx: &mut C,
+        callback: F,
+    ) -> JsPromiseFuture<F, R>
+    where
+        C: Context<'a>,
+        R: Send + 'static,
+        F: for<'c> FnOnce(
+            crate::context::TaskContext<'c>,
+            Result<Handle<'c, JsValue>, Handle<'c, JsValue>>,
+        ) -> R + Send + 'static,
+    {
+        let maybe_promise = self.as_value(cx);
+
+        JsPromiseFuture::new(cx, maybe_promise, callback)
     }
 }
 
