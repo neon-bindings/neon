@@ -1,0 +1,10 @@
+{
+  "name": "tokio-test",
+  "version": "0.1.0",
+  "description": "Acceptance test suite for Neon with N-API backend",
+  "author": "The Neon Community",
+  "license": "MIT",
+  "scripts": {
+    "install": "cargo build -p tokio-test"
+  }
+}
