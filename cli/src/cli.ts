@@ -167,6 +167,7 @@ const spec: Spec = {
 
   build: {
     args: [{ name: "release", alias: "r", type: Boolean },
+           { name: "crate", alias: "c", type: String, defaultValue: "native" },
            { name: "path", alias: "p", type: Boolean },
            { name: "modules", type: String, multiple: true, defaultOption: true },
            { name: "help", alias: "h", type: Boolean }],
@@ -185,6 +186,11 @@ const spec: Spec = {
         type: Boolean,
         description: "Release build."
       }, {
+        name: "crate",
+        alias: "c",
+        type: String,
+        description: "Specify the path of the Rust crate."
+      }, {
         name: "path",
         alias: "p",
         type: Boolean,
@@ -197,6 +203,7 @@ const spec: Spec = {
         return;
       }
 
+      const crate = (options.crate || 'native') as string;
       let extra = options.extra as string[];
       let { modules, multiple } = parseModules(this.cwd,
                                                (options.modules || []) as string[],
@@ -205,13 +212,14 @@ const spec: Spec = {
       for (let module of modules) {
         logIf(multiple, "building", this.cwd, module);
 
-        await neon_build(module, this.toolchain, !!options.release, extra);
+        await neon_build(module, this.toolchain, crate, !!options.release, extra);
       }
     }
   },
 
   clean: {
-    args: [{ name: "path", alias: "p", type: Boolean },
+    args: [{ name: "crate", alias: "c", type: String, defaultValue: "native" },
+           { name: "path", alias: "p", type: Boolean },
            { name: "modules", type: String, multiple: true, defaultOption: true },
            { name: "help", alias: "h", type: Boolean }],
     usage: [{
@@ -224,6 +232,11 @@ const spec: Spec = {
     }, {
       header: "Options",
       optionList: [{
+        name: "crate",
+        alias: "c",
+        type: String,
+        description: "Specify the path of the Rust crate."
+      }, {
         name: "path",
         alias: "p",
         type: Boolean,
@@ -236,6 +249,7 @@ const spec: Spec = {
         return;
       }
 
+      const crate = (options.crate || 'native') as string;
       let { modules, multiple } = parseModules(this.cwd,
                                                (options.modules || []) as string[],
                                                !!options.path);
@@ -243,7 +257,7 @@ const spec: Spec = {
       for (let module of modules) {
         logIf(multiple, "cleaning", this.cwd, module);
 
-        await neon_clean(module);
+        await neon_clean(module, crate);
       }
     }
   },
