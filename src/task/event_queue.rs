@@ -2,8 +2,7 @@ use neon_runtime::raw::Env;
 use neon_runtime::tsfn::ThreadsafeFunction;
 
 use context::{Context, TaskContext};
-use result::JsResult;
-use types::Value;
+use result::NeonResult;
 
 type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 
@@ -40,7 +39,9 @@ type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 ///                 cx.number(result).upcast(),
 ///             ];
 /// 
-///             callback.call(&mut cx, this, args)
+///             callback.call(&mut cx, this, args)?;
+///
+///             Ok(())
 ///         });
 ///     });
 /// 
@@ -102,20 +103,18 @@ impl EventQueue {
 
     /// Schedules a closure to execute on the JavaScript thread that created this EventQueue
     /// Panics if there is a libuv error
-    pub fn send<F, T>(&self, f: F)
+    pub fn send<F>(&self, f: F)
     where
-        F: FnOnce(TaskContext) -> JsResult<T> + Send + 'static,
-        T: Value,
+        F: FnOnce(TaskContext) -> NeonResult<()> + Send + 'static,
     {
         self.try_send(f).unwrap()
     }
 
     /// Schedules a closure to execute on the JavaScript thread that created this EventQueue
     /// Returns an `Error` if the task could not be scheduled.
-    pub fn try_send<F, T>(&self, f: F) -> Result<(), EventQueueError>
+    pub fn try_send<F>(&self, f: F) -> Result<(), EventQueueError>
     where
-        F: FnOnce(TaskContext) -> JsResult<T> + Send + 'static,
-        T: Value,
+        F: FnOnce(TaskContext) -> NeonResult<()> + Send + 'static,
     {
         let callback = Box::new(move |env| {
             let env = unsafe { std::mem::transmute(env) };

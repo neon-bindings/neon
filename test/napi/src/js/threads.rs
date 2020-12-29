@@ -20,7 +20,9 @@ pub fn thread_callback(mut cx: FunctionContext) -> JsResult<JsUndefined> {
         let this = cx.undefined();
         let args = Vec::<Handle<JsValue>>::new();
 
-        callback.call(&mut cx, this, args)
+        callback.call(&mut cx, this, args)?;
+
+        Ok(())
     }));
 
     Ok(cx.undefined())
@@ -40,7 +42,9 @@ pub fn multi_threaded_callback(mut cx: FunctionContext) -> JsResult<JsUndefined>
             let this = cx.undefined();
             let args = vec![cx.number(i as f64)];
 
-            callback.call(&mut cx, this, args)
+            callback.call(&mut cx, this, args)?;
+
+            Ok(())
         }));
     }
 
@@ -69,7 +73,9 @@ impl AsyncGreeter {
             let this = cx.undefined();
             let args = vec![cx.string(greeting)];
 
-            callback.call(&mut cx, this, args)
+            callback.call(&mut cx, this, args)?;
+
+            Ok(())
         }));
 
         Ok(cx.undefined())
