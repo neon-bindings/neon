@@ -10,7 +10,7 @@ mod js {
     pub mod objects;
     pub mod types;
     pub mod strings;
-    pub mod sync;
+    pub mod threads;
 }
 
 use js::arrays::*;
@@ -22,7 +22,7 @@ use js::numbers::*;
 use js::objects::*;
 use js::types::*;
 use js::strings::*;
-use js::sync::*;
+use js::threads::*;
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {

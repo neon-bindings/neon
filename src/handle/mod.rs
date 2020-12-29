@@ -2,6 +2,12 @@
 
 pub(crate) mod internal;
 
+#[cfg(feature = "napi-runtime")]
+mod root;
+
+#[cfg(feature = "napi-runtime")]
+pub use self::root::Root;
+
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::error::Error;

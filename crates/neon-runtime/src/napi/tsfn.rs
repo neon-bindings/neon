@@ -1,3 +1,5 @@
+//! Idiomatic Rust wrappers for N-API threadsafe functions
+
 use std::ffi::c_void;
 use std::mem::MaybeUninit;
 
@@ -28,6 +30,8 @@ unsafe impl Send for Tsfn {}
 unsafe impl Sync for Tsfn {}
 
 #[derive(Debug)]
+/// Threadsafe Function encapsulate a Rust function pointer and N-API threadsafe
+/// function for scheduling tasks to execute on a JavaScript thread.
 pub struct ThreadsafeFunction<T> {
     tsfn: Tsfn,
     callback: fn(Env, T),
@@ -39,23 +43,27 @@ struct Callback<T> {
     data: T,
 }
 
+/// Error returned when scheduling a threadsafe function with some data
 pub struct CallError<T> {
     kind: napi::Status,
     data: T,
 }
 
 impl<T> CallError<T> {
+    /// The specific error that occurred
     pub fn kind(&self) -> napi::Status {
         self.kind
     }
 
+    /// Returns the data that was sent when scheduling to allow re-scheduling
     pub fn into_inner(self) -> T {
         self.data
     }
 }
 
 impl<T: Send + 'static> ThreadsafeFunction<T> {
-    // Caller must maintain that `Env` is valid for the current thread
+    /// Creates a new unbounded N-API Threadsafe Function
+    /// Safety: `Env` must be valid for the current thread
     pub unsafe fn new(
         env: Env,
         callback: fn(Env, T),        
@@ -63,6 +71,8 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
         Self::with_capacity(env, 0, callback)
     }
 
+    /// Creates a bounded N-API Threadsafe Function
+    /// Safety: `Env` must be valid for the current thread
     pub unsafe fn with_capacity(
         env: Env,
         max_queue_size: usize,
@@ -95,6 +105,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
         }
     }
 
+    /// Schedule a threadsafe function to be executed with some data
     pub fn call(
         &self,
         data: T,
@@ -129,6 +140,8 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
         }
     }
 
+    /// References a threadsafe function to prevent exiting the event loop until it has been dropped. (Default)
+    /// Safety: `Env` must be valid for the current thread
     pub unsafe fn reference(&mut self, env: Env) {
         assert_eq!(
             napi::ref_threadsafe_function(
@@ -139,6 +152,8 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
         );
     }
 
+    /// Unreferences a threadsafe function to allow exiting the event loop before it has been dropped.
+    /// Safety: `Env` must be valid for the current thread
     pub unsafe fn unref(&mut self, env: Env) {
         assert_eq!(
             napi::unref_threadsafe_function(
@@ -149,6 +164,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
         );
     }
 
+    // Provides a C ABI wrapper for invoking the user supplied function pointer
     unsafe extern "C" fn callback(
         env: Env,
         _js_callback: napi::Value,
@@ -167,7 +183,6 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
 
         // Event loop has terminated
         if env.is_null() {
-            eprintln!("This is surprising");
             return;
         }
 

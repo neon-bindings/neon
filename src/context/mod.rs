@@ -15,7 +15,7 @@ use borrow::internal::Ledger;
 use context::internal::Env;
 use handle::{Managed, Handle};
 #[cfg(feature = "napi-runtime")]
-use sync::EventQueue;
+use task::EventQueue;
 use types::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
 #[cfg(feature = "napi-runtime")]
 use types::boxed::{Finalize, JsBox};
@@ -384,7 +384,7 @@ pub trait Context<'a>: ContextInternal<'a> {
 
     #[cfg(feature = "napi-runtime")]
     /// Creates an unbounded queue of events to be executed on a JavaScript thread
-    fn event_queue(&mut self) -> EventQueue {
+    fn queue(&mut self) -> EventQueue {
         EventQueue::new(self)
     }
 }

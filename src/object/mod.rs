@@ -84,13 +84,12 @@ mod traits {
 #[cfg(feature = "napi-runtime")]
 mod traits {
     use neon_runtime::raw;
-    use handle::{Handle, Managed};
+    use handle::{Handle, Managed, Root};
     use types::{Value, JsValue, JsArray, build};
     use types::utf8::Utf8;
     use context::Context;
     use context::internal::Env;
     use result::{NeonResult, JsResult, Throw};
-    use sync::Root;
 
     /// A property key in a JavaScript object.
     pub trait PropertyKey {

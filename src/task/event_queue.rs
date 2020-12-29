@@ -8,6 +8,46 @@ use types::Value;
 type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 
 /// Queue for scheduling Rust closures to execute on tge JavaScript main thread
+///
+/// # Example
+///
+/// The following example spawns a standard Rust thread to complete a computation
+/// and calls back to a JavaScript function asynchronously with the result.
+///
+/// ```
+/// # use neon::prelude::*;
+/// # fn fibonacci(_: f64) -> f64 { todo!() }
+/// fn async_fibonacci(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+///     // These types (`f64`, `Root<JsFunction>`, `EventQueue`) may all be sent
+///     // across threads.
+///     let n = cx.argument::<JsNumber>(0)?.value(&mut cx);
+///     let callback = cx.argument::<JsFunction>(1)?.root(&mut cx);
+///     let queue = cx.queue();
+///
+///     // Spawn a thread to complete the execution. This will _not_ block the
+///     // JavaScript event loop.
+///     std::thread::spawn(move || {
+///         let result = fibonacci(n);
+///
+///         // Send a closure as a task to be executed by the JavaScript event
+///         // queue. This _will_ block the event queue while executing.
+///         queue.send(move |mut cx| {
+///             let callback = callback.into_inner(&mut cx);
+///             let this = cx.undefined();
+///             let null = cx.null();
+///             let args = vec![
+///                 cx.null().upcast::<JsValue>(),
+///                 cx.number(result).upcast(),
+///             ];
+/// 
+///             callback.call(&mut cx, this, args)
+///         });
+///     });
+/// 
+///     Ok(cx.undefined())
+/// }
+/// ```
+
 pub struct EventQueue {
     tsfn: ThreadsafeFunction<Callback>,
     has_ref: bool,
@@ -80,6 +120,8 @@ impl EventQueue {
         let callback = Box::new(move |env| {
             let env = unsafe { std::mem::transmute(env) };
 
+            // Note: It is sufficient to use `TaskContext`'s `InheritedHandleScope` because
+            // N-API creates a `HandleScope` before calling the callback.
             TaskContext::with_context(env, move |cx| {
                 let _ = f(cx);
             });

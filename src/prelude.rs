@@ -11,6 +11,8 @@ pub use task::Task;
 pub use event::EventHandler;
 pub use crate::{register_module, declare_types};
 #[cfg(feature = "napi-runtime")]
-pub use types::boxed::{Finalize, JsBox};
-#[cfg(feature = "napi-runtime")]
-pub use sync::{EventQueue, Root};
+pub use crate::{
+    handle::Root,
+    task::{EventQueue, EventQueueError},
+    types::boxed::{Finalize, JsBox}
+};

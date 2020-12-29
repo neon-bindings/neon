@@ -13,16 +13,6 @@ use types::boxed::Finalize;
 #[derive(Clone)]
 struct NapiRef(*mut c_void);
 
-// Provides unsafe `Send` and `Sync` on a `PhantomData`
-struct UnsafePhantom<T>(PhantomData<T>);
-
-impl<T> UnsafePhantom<T> {
-    // Safety: Caller must ensure `T` is `Send` and `Sync`
-    unsafe fn new() -> Self {
-        UnsafePhantom(PhantomData)
-    }
-}
-
 /// `Root<T>` holds a reference to a `JavaScript` object and prevents it from
 /// being garbage collected. `Root<T>` may be sent across threads, but the
 /// referenced objected may only be accessed on the JavaScript thread that
@@ -30,7 +20,7 @@ impl<T> UnsafePhantom<T> {
 #[repr(transparent)]
 pub struct Root<T> {
     internal: NapiRef,
-    _phantom: UnsafePhantom<T>,
+    _phantom: PhantomData<T>,
 }
 
 impl<T> std::fmt::Debug for Root<T> {
@@ -39,14 +29,11 @@ impl<T> std::fmt::Debug for Root<T> {
     }
 }
 
-// `napi_ref` are intended to be `Send` and `Sync`.
-unsafe impl Send for NapiRef {}
-unsafe impl Sync for NapiRef {}
-
-// Treat `T` as though it were `Send` and `Sync`
-// Safety: Caller must ensure `T` is only used on the main thread
-unsafe impl<T> Send for UnsafePhantom<T> {}
-unsafe impl<T> Sync for UnsafePhantom<T> {}
+// `Root` are intended to be `Send` and `Sync`
+// Safety: `Root` contains two types. A `NapiRef` which is `Send` and `Sync` and a
+// `PhantomData` that does not impact the safety.
+unsafe impl<T> Send for Root<T> {}
+unsafe impl<T> Sync for Root<T> {}
 
 impl<T: Object> Root<T> {
     /// Create a reference to a JavaScript object. The object will not be
@@ -64,7 +51,7 @@ impl<T: Object> Root<T> {
 
         Self {
             internal: NapiRef(internal as *mut _),
-            _phantom: unsafe { UnsafePhantom::new() },
+            _phantom: PhantomData,
         }
     }
 
@@ -90,7 +77,7 @@ impl<T: Object> Root<T> {
 
         Self {
             internal: self.internal.clone(),
-            _phantom: unsafe { UnsafePhantom::new() },
+            _phantom: PhantomData,
         }
     }
 
