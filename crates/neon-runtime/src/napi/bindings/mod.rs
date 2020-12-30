@@ -85,8 +85,8 @@ macro_rules! napi_name {
 ///     assert!(
 ///         actual_napi_version >= expected_napi_version,
 ///         "Minimum required N-API Version {}, found {}.",
-///         actual_napi_version,
 ///         expected_napi_version,
+///         actual_napi_version,
 ///     );
 ///
 ///     NAPI = Napi {
@@ -144,8 +144,8 @@ macro_rules! generate {
             assert!(
                 actual_napi_version >= expected_napi_version,
                 "Minimum required N-API Version {}, found {}.",
-                actual_napi_version,
                 expected_napi_version,
+                actual_napi_version,
             );
 
             NAPI = Napi {
