@@ -131,18 +131,17 @@ macro_rules! generate {
             }
         };
 
-        pub(crate) unsafe fn load(actual: u32, expected: u32) -> Result<(), libloading::Error> {
+        pub(crate) unsafe fn load(
+            host: &libloading::Library,
+            actual_napi_version: u32,
+            expected_napi_version: u32,
+        ) -> Result<(), libloading::Error> {
             assert!(
-                actual >= expected,
+                actual_napi_version >= expected_napi_version,
                 "Minimum required N-API Version {}, found {}.",
-                expected,
-                actual,
+                actual_napi_version,
+                expected_napi_version,
             );
-
-            #[cfg(not(windows))]
-            let host = libloading::os::unix::Library::this();
-            #[cfg(windows)]
-            let host = libloading::os::windows::Library::this()?;
 
             NAPI = Napi {
                 $(
