@@ -211,10 +211,35 @@ pub(crate) use napi1::*;
 #[cfg(feature = "napi-6")]
 pub(crate) use napi6::*;
 
-pub(crate) unsafe fn load() -> Result<(), libloading::Error> {
-    napi1::load()?;
+use super::{Env, Status};
+
+// This symbol is loaded separately because it is a prerequisite
+unsafe fn get_version(env: Env) -> Result<u32, libloading::Error> {
+    #[cfg(not(windows))]
+    let host = libloading::os::unix::Library::this();
+    #[cfg(windows)]
+    let host = libloading::os::windows::Library::this()?;
+
+    let get_version = host.get::<fn(Env, *mut u32) -> Status>(b"napi_get_version")?;
+    let mut version = 0;
+
+    assert_eq!(
+        get_version(env, &mut version as *mut _),
+        Status::Ok,
+    );
+
+    Ok(version)
+}
+
+pub(crate) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
+    // This never fail since `get_version` is in N-API Version 1 and the module will fail
+    // with `Error: Module did not self-register` if N-API does not exist.
+    let version = get_version(env).expect("Failed to find N-API version");
+
+    napi1::load(version, 1)?;
+
     #[cfg(feature = "napi-6")]
-    napi6::load()?;
+    napi6::load(version, 6)?;
 
     Ok(())
 }

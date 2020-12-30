@@ -131,7 +131,14 @@ macro_rules! generate {
             }
         };
 
-        pub(crate) unsafe fn load() -> Result<(), libloading::Error> {
+        pub(crate) unsafe fn load(actual: u32, expected: u32) -> Result<(), libloading::Error> {
+            assert!(
+                actual >= expected,
+                "Minimum required N-API Version {}, found {}.",
+                expected,
+                actual,
+            );
+
             #[cfg(not(windows))]
             let host = libloading::os::unix::Library::this();
             #[cfg(windows)]
@@ -168,8 +175,7 @@ static SETUP: Once = Once::new();
 /// Loads N-API symbols from host process.
 /// Must be called at least once before using any functions in `neon-runtime` or
 /// they will panic.
-pub fn setup() {
-    SETUP.call_once(|| unsafe {
-        load().expect("Failed to load N-API symbols");
-    });
+/// Safety: `env` must be a valid `napi_env` for the current thread
+pub unsafe fn setup(env: Env) {
+    SETUP.call_once(|| load(env).expect("Failed to load N-API symbols"));
 }
