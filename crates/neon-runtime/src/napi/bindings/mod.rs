@@ -77,12 +77,17 @@ macro_rules! napi_name {
 ///
 /// // Load N-API symbols from the host process
 /// // # Safety: Must only be called once
-/// pub(crate) unsafe fn load() -> Result<(), libloading::Error> {
-///     // Load the host process as a library
-///     let host = Library::this();
-///     #[cfg(windows)]
-///     // On Windows, the host process might not be a library
-///     let host = host?;
+/// pub(crate) unsafe fn load(
+///     host: &libloading::Library,
+///     actual_napi_version: u32,
+///     expected_napi_version: u32,
+/// ) -> Result<(), libloading::Error> {
+///     assert!(
+///         actual_napi_version >= expected_napi_version,
+///         "Minimum required N-API Version {}, found {}.",
+///         actual_napi_version,
+///         expected_napi_version,
+///     );
 ///
 ///     NAPI = Napi {
 ///         // Load each N-API symbol
