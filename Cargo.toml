@@ -48,6 +48,8 @@ napi-runtime = ["napi-6"]
 # Select the N-API version
 # Feature flags to enable the experimental N-API runtime. For now, this feature
 # is disabled by default.
+# The Node N-API documentation specifies N-API and Node version requirements
+# https://nodejs.org/api/n-api.html
 napi-1 = ["proc-macros", "neon-macros/napi", "neon-runtime/napi"]
 napi-2 = ["napi-1", "neon-runtime/napi-2"]
 napi-3 = ["napi-2", "neon-runtime/napi-3"]

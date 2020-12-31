@@ -1,3 +1,8 @@
+// Attention contributors: These bindings are manually specified as needed and
+// are very likely incomplete. When adding new bindings, reference the N-API
+// documentation for the N-API version that introduced the API.
+// https://nodejs.org/api/n-api.html
+
 mod napi1 { 
     use std::os::raw::{c_char, c_void};
     use super::super::types::*;

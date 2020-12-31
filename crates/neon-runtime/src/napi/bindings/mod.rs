@@ -84,7 +84,7 @@ macro_rules! napi_name {
 /// ) -> Result<(), libloading::Error> {
 ///     assert!(
 ///         actual_napi_version >= expected_napi_version,
-///         "Minimum required N-API Version {}, found {}.",
+///         "Minimum required N-API version {}, found {}.",
 ///         expected_napi_version,
 ///         actual_napi_version,
 ///     );
@@ -143,7 +143,7 @@ macro_rules! generate {
         ) -> Result<(), libloading::Error> {
             assert!(
                 actual_napi_version >= expected_napi_version,
-                "Minimum required N-API Version {}, found {}.",
+                "Minimum required N-API version {}, found {}.",
                 expected_napi_version,
                 actual_napi_version,
             );
