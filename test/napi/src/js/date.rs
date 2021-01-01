@@ -40,6 +40,27 @@ pub fn create_and_get_invalid_date(mut cx: FunctionContext) -> JsResult<JsNumber
     let date = cx.date(time).value(&mut cx);
     assert!(!cx.date(time).is_valid(&mut cx));
     assert!(cx.date(time).value(&mut cx).is_nan());
+
+    let time = JsDate::MIN_VALUE - 1.0;
+    let date = cx.date(time).value(&mut cx);
+    assert!(!cx.date(time).is_valid(&mut cx));
+    assert!(cx.date(time).value(&mut cx).is_nan());
+
+    let time = JsDate::MAX_VALUE + 2.0;
+    let date = cx.date(time).value(&mut cx);
+    assert!(!cx.date(time).is_valid(&mut cx));
+    assert!(cx.date(time).value(&mut cx).is_nan());
+
+    let time = JsDate::MAX_VALUE + 3.0;
+    let date = cx.date(time).value(&mut cx);
+    assert!(!cx.date(time).is_valid(&mut cx));
+    assert!(cx.date(time).value(&mut cx).is_nan());
+
+    let time = JsDate::MAX_VALUE + 1_000.0;
+    let date = cx.date(time).value(&mut cx);
+    assert!(!cx.date(time).is_valid(&mut cx));
+    assert!(cx.date(time).value(&mut cx).is_nan());
+
     Ok(cx.number(date))
 }
 
