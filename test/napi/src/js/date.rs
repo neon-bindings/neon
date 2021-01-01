@@ -20,10 +20,10 @@ pub fn check_date_is_valid(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 }
 
 pub fn try_new_date(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    let date_overflow = JsDate::try_new(&mut cx, JsDate::MAX_VALUE + 1.0);
-    let date_underflow = JsDate::try_new(&mut cx, JsDate::MIN_VALUE - 1.0);
-    assert_eq!(date_overflow.unwrap_err(), neon::types::DateErrorKind::Overflow);
-    assert_eq!(date_underflow.unwrap_err(), neon::types::DateErrorKind::Underflow);
+    let date_overflow = JsDate::new_lossy(&mut cx, JsDate::MAX_VALUE + 1.0);
+    let date_underflow = JsDate::new_lossy(&mut cx, JsDate::MIN_VALUE - 1.0);
+    assert_eq!(date_overflow.unwrap_err(), neon::types::DateError::Overflow);
+    assert_eq!(date_underflow.unwrap_err(), neon::types::DateError::Underflow);
     Ok(cx.undefined())
 }
 

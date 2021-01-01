@@ -441,7 +441,7 @@ impl Managed for JsDate {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum DateErrorKind {
+pub enum DateError {
     Overflow,
     Underflow,
 }
@@ -459,14 +459,14 @@ impl JsDate {
         Handle::new_internal(JsDate(local))
     }
 
-    pub fn try_new<'a, C: Context<'a>, V: Into<f64> + std::cmp::PartialOrd>(cx: &mut C, value: V) -> Result<Handle<'a, JsDate>, DateErrorKind> {
+    pub fn new_lossy<'a, C: Context<'a>, V: Into<f64> + std::cmp::PartialOrd>(cx: &mut C, value: V) -> Result<Handle<'a, JsDate>, DateError> {
         let env = cx.env().to_raw();
         let local = unsafe {
             neon_runtime::date::new_date(env, value.into())
         };
         let date = Handle::new_internal(JsDate(local));
         if date.is_valid(cx) { return Ok(date); }
-        if date.value(cx) > JsDate::MAX_VALUE { Err(DateErrorKind::Overflow) } else { Err(DateErrorKind::Underflow) }
+        if date.value(cx) > JsDate::MAX_VALUE { Err(DateError::Overflow) } else { Err(DateError::Underflow) }
     }
 
     pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> f64 {
