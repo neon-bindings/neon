@@ -19,6 +19,10 @@ mod napi1 {
 
         fn get_value_double(env: Env, value: Value, result: *mut f64) -> Status;
 
+        fn create_date(env: Env, value: f64, result: *mut Value) -> Status;
+
+        fn get_date_value(env: Env, value: Value, result: *mut f64) -> Status;
+
         fn create_array_with_length(env: Env, length: usize, result: *mut Value) -> Status;
 
         fn get_array_length(env: Env, value: Value, result: *mut u32)-> Status;
@@ -53,6 +57,7 @@ mod napi1 {
         fn is_buffer(env: Env, value: Value, result: *mut bool) -> Status;
         fn is_error(env: Env, value: Value, result: *mut bool) -> Status;
         fn is_array(env: Env, value: Value, result: *mut bool) -> Status;
+        fn is_date(env: Env, value: Value, result: *mut bool) -> Status;
 
         fn get_value_string_utf8(
             env: Env,
@@ -252,7 +257,7 @@ mod napi4 {
 }
 
 #[cfg(feature = "napi-6")]
-mod napi6 {  
+mod napi6 {
     use super::super::types::*;
 
     generate!(extern "C" {
@@ -264,7 +269,7 @@ mod napi6 {
             key_conversion: KeyConversion,
             result: *mut Value,
         ) -> Status;
-    });    
+    });
 }
 
 pub(crate) use napi1::*;

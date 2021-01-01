@@ -1,4 +1,4 @@
-var addon = require('../native');
+var addon = require('..');
 var assert = require('chai').assert;
 
 describe('JsDate', function() {
