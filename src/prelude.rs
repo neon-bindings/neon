@@ -15,5 +15,5 @@ pub use crate::{
     handle::Root,
     types::boxed::{Finalize, JsBox}
 };
-#[cfg(feature = "napi-4")]
-pub use crate::task::{EventQueue, EventQueueError};
+#[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
+pub use crate::event::{EventQueue, EventQueueError};

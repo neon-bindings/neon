@@ -19,7 +19,7 @@ pub mod object;
 pub mod borrow;
 pub mod result;
 pub mod task;
-#[cfg(feature = "event-handler-api")]
+#[cfg(any(feature = "event-handler-api", all(feature = "napi-4", feature = "event-queue-api")))]
 pub mod event;
 pub mod meta;
 pub mod prelude;
