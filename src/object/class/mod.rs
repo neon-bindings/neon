@@ -124,7 +124,7 @@ unsafe impl<T: Class> This for T {
         Self::from_raw(Env::current(), h)
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     fn as_this(env: Env, h: raw::Local) -> Self {
         Self::from_raw(env, h)
     }
@@ -285,7 +285,7 @@ pub(crate) trait Callback<T: Clone + Copy + Sized>: Sized {
     /// Exports the callback as a pair consisting of the static `Self::invoke`
     /// method and the computed callback, both converted to raw void pointers.
     fn into_c_callback(self) -> CCallback {
-        #[cfg(feature = "napi-runtime")]
+        #[cfg(feature = "napi-1")]
         let invoke = Self::invoke;
         #[cfg(feature = "legacy-runtime")]
         let invoke = Self::invoke_compat;

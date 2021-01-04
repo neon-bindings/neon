@@ -29,7 +29,7 @@ impl Drop for EventHandlerInner {
 pub struct EventHandler(Arc<EventHandlerInner>);
 
 impl EventHandler {
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     pub fn new<'a, C: Context<'a>, T: Value>(cx: &C, this: Handle<T>, callback: Handle<JsFunction>) -> Self {
         unimplemented!()
     }

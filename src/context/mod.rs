@@ -14,17 +14,17 @@ use borrow::{Ref, RefMut, Borrow, BorrowMut};
 use borrow::internal::Ledger;
 use context::internal::Env;
 use handle::{Managed, Handle};
-#[cfg(feature = "napi-runtime")]
+#[cfg(feature = "napi-4")]
 use task::EventQueue;
 use types::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
-#[cfg(feature = "napi-runtime")]
+#[cfg(feature = "napi-1")]
 use types::boxed::{Finalize, JsBox};
 use types::binary::{JsArrayBuffer, JsBuffer};
 use types::error::JsError;
 use object::{Object, This};
 use object::class::Class;
 use result::{NeonResult, JsResult, Throw};
-#[cfg(feature = "napi-runtime")]
+#[cfg(feature = "napi-1")]
 use smallvec::SmallVec;
 use self::internal::{ContextInternal, Scope, ScopeMetadata};
 
@@ -62,7 +62,7 @@ impl CallbackInfo<'_> {
         }
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     fn kind<'b, C: Context<'b>>(&self, cx: &C) -> CallKind {
         if unsafe { neon_runtime::call::is_construct(cx.env().to_raw(), self.info) } {
             CallKind::Construct
@@ -89,7 +89,7 @@ impl CallbackInfo<'_> {
         }
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     pub fn argv<'b, C: Context<'b>>(&self, cx: &mut C) -> SmallVec<[raw::Local; 8]> {
         unsafe {
             neon_runtime::call::argv(cx.env().to_raw(), self.info)
@@ -279,7 +279,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     fn null(&mut self) -> Handle<'a, JsNull> {
         #[cfg(feature = "legacy-runtime")]
         return JsNull::new();
-        #[cfg(feature = "napi-runtime")]
+        #[cfg(feature = "napi-1")]
         return JsNull::new(self);
     }
 
@@ -287,7 +287,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     fn undefined(&mut self) -> Handle<'a, JsUndefined> {
         #[cfg(feature = "legacy-runtime")]
         return JsUndefined::new();
-        #[cfg(feature = "napi-runtime")]
+        #[cfg(feature = "napi-1")]
         return JsUndefined::new(self);
     }
 
@@ -361,7 +361,7 @@ pub trait Context<'a>: ContextInternal<'a> {
         self.throw(err)
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     /// Convenience method for wrapping a value in a `JsBox`.
     ///
     /// # Example:
@@ -382,7 +382,7 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsBox::new(self, v)
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-4")]
     /// Creates an unbounded queue of events to be executed on a JavaScript thread
     fn queue(&mut self) -> EventQueue {
         EventQueue::new(self)
@@ -502,7 +502,7 @@ impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> { }
 pub struct CallContext<'a, T: This> {
     scope: Scope<'a, raw::HandleScope>,
     info: &'a CallbackInfo<'a>,
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     arguments: Option<SmallVec<[raw::Local; 8]>>,
     phantom_type: PhantomData<T>
 }
@@ -515,7 +515,7 @@ impl<'a, T: This> CallContext<'a, T> {
         #[cfg(feature = "legacy-runtime")]
         let kind = self.info.kind();
 
-        #[cfg(feature = "napi-runtime")]
+        #[cfg(feature = "napi-1")]
         let kind = self.info.kind(self);
 
         kind
@@ -526,7 +526,7 @@ impl<'a, T: This> CallContext<'a, T> {
             f(CallContext {
                 scope,
                 info,
-                #[cfg(feature = "napi-runtime")]
+                #[cfg(feature = "napi-1")]
                 arguments: None,
                 phantom_type: PhantomData
             })
@@ -541,7 +541,7 @@ impl<'a, T: This> CallContext<'a, T> {
         #[cfg(feature = "legacy-runtime")]
         { self.info.get(self, i) }
 
-        #[cfg(feature = "napi-runtime")]
+        #[cfg(feature = "napi-1")]
         {
             let local = if let Some(arguments) = &self.arguments {
                 arguments.get(i as usize).cloned()
@@ -569,7 +569,7 @@ impl<'a, T: This> CallContext<'a, T> {
     pub fn this(&mut self) -> Handle<'a, T> {
         #[cfg(feature = "legacy-runtime")]
         let this = T::as_this(self.info.this(self));
-        #[cfg(feature = "napi-runtime")]
+        #[cfg(feature = "napi-1")]
         let this = T::as_this(self.env(), self.info.this(self));
 
         Handle::new_internal(this)
@@ -605,7 +605,7 @@ impl<'a> TaskContext<'a> {
         })
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-4")]
     pub(crate) fn with_context<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: Env, f: F) -> T {
         Scope::with(env, |scope| {
             f(TaskContext { scope })
@@ -622,12 +622,12 @@ impl<'a> ContextInternal<'a> for TaskContext<'a> {
 impl<'a> Context<'a> for TaskContext<'a> { }
 
 /// A view of the JS engine in the context of a finalize method on garbage collection
-#[cfg(feature = "napi-runtime")]
+#[cfg(feature = "napi-1")]
 pub(crate) struct FinalizeContext<'a> {
     scope: Scope<'a, raw::HandleScope>
 }
 
-#[cfg(feature = "napi-runtime")]
+#[cfg(feature = "napi-1")]
 impl<'a> FinalizeContext<'a> {
     pub(crate) fn with<T, F: for<'b> FnOnce(FinalizeContext<'b>) -> T>(env: Env, f: F) -> T {
         Scope::with(env, |scope| {
@@ -636,12 +636,12 @@ impl<'a> FinalizeContext<'a> {
     }
 }
 
-#[cfg(feature = "napi-runtime")]
+#[cfg(feature = "napi-1")]
 impl<'a> ContextInternal<'a> for FinalizeContext<'a> {
     fn scope_metadata(&self) -> &ScopeMetadata {
         &self.scope.metadata
     }
 }
 
-#[cfg(feature = "napi-runtime")]
+#[cfg(feature = "napi-1")]
 impl<'a> Context<'a> for FinalizeContext<'a> { }

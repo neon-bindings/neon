@@ -10,9 +10,10 @@ pub use task::Task;
 #[cfg(feature = "event-handler-api")]
 pub use event::EventHandler;
 pub use crate::{register_module, declare_types};
-#[cfg(feature = "napi-runtime")]
+#[cfg(feature = "napi-1")]
 pub use crate::{
     handle::Root,
-    task::{EventQueue, EventQueueError},
     types::boxed::{Finalize, JsBox}
 };
+#[cfg(feature = "napi-4")]
+pub use crate::task::{EventQueue, EventQueueError};

@@ -1,7 +1,7 @@
 //! Representations of JavaScript's core builtin types.
 
 pub(crate) mod binary;
-#[cfg(feature = "napi-runtime")]
+#[cfg(feature = "napi-1")]
 pub(crate) mod boxed;
 pub(crate) mod error;
 
@@ -26,7 +26,7 @@ use self::internal::{ValueInternal, FunctionCallback};
 use self::utf8::Utf8;
 
 pub use self::binary::{JsBuffer, JsArrayBuffer, BinaryData, BinaryViewType};
-#[cfg(feature = "napi-runtime")]
+#[cfg(feature = "napi-1")]
 pub use self::boxed::JsBox;
 pub use self::error::JsError;
 
@@ -94,7 +94,7 @@ unsafe impl This for JsValue {
         JsValue(h)
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     fn as_this(_env: Env, h: raw::Local) -> Self {
         JsValue(h)
     }
@@ -117,7 +117,7 @@ impl JsUndefined {
         JsUndefined::new_internal(Env::current())
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsUndefined> {
         JsUndefined::new_internal(cx.env())
     }
@@ -153,7 +153,7 @@ unsafe impl This for JsUndefined {
         JsUndefined::as_this_compat(Env::current(), h)
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     fn as_this(env: Env, h: raw::Local) -> Self {
         JsUndefined::as_this_compat(env, h)
     }
@@ -178,7 +178,7 @@ impl JsNull {
         JsNull::new_internal(Env::current())
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsNull> {
         JsNull::new_internal(cx.env())
     }
@@ -233,7 +233,7 @@ impl JsBoolean {
         }
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> bool {
         let env = cx.env().to_raw();
         unsafe {
@@ -309,7 +309,7 @@ impl JsString {
         }
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     pub fn size<'a, C: Context<'a>>(self, cx: &mut C) -> isize {
         let env = cx.env().to_raw();
 
@@ -330,7 +330,7 @@ impl JsString {
         }
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> String {
         let env = cx.env().to_raw();
 
@@ -399,7 +399,7 @@ impl JsNumber {
         }
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> f64 {
         let env = cx.env().to_raw();
         unsafe {
@@ -443,7 +443,7 @@ unsafe impl This for JsObject {
         JsObject(h)
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     fn as_this(_env: Env, h: raw::Local) -> Self {
         JsObject(h)
     }
@@ -523,7 +523,7 @@ impl JsArray {
         self.len_inner(Env::current())
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-1")]
     pub fn len<'a, C: Context<'a>>(self, cx: &mut C) -> u32 {
         self.len_inner(cx.env())
     }

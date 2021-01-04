@@ -1,9 +1,9 @@
 //! Utilities for scheduling tasks to be executed by the Node.js runtime
 
-#[cfg(feature = "napi-runtime")]
+#[cfg(feature = "napi-4")]
 mod event_queue;
 
-#[cfg(feature = "napi-runtime")]
+#[cfg(feature = "napi-4")]
 pub use self::event_queue::{EventQueue, EventQueueError};
 
 use std::marker::{Send, Sized};

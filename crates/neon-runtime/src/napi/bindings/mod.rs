@@ -77,12 +77,17 @@ macro_rules! napi_name {
 ///
 /// // Load N-API symbols from the host process
 /// // # Safety: Must only be called once
-/// pub(crate) unsafe fn load() -> Result<(), libloading::Error> {
-///     // Load the host process as a library
-///     let host = Library::this();
-///     #[cfg(windows)]
-///     // On Windows, the host process might not be a library
-///     let host = host?;
+/// pub(crate) unsafe fn load(
+///     host: &libloading::Library,
+///     actual_napi_version: u32,
+///     expected_napi_version: u32,
+/// ) -> Result<(), libloading::Error> {
+///     assert!(
+///         actual_napi_version >= expected_napi_version,
+///         "Minimum required N-API version {}, found {}.",
+///         expected_napi_version,
+///         actual_napi_version,
+///     );
 ///
 ///     NAPI = Napi {
 ///         // Load each N-API symbol
@@ -131,10 +136,17 @@ macro_rules! generate {
             }
         };
 
-        pub(crate) unsafe fn load() -> Result<(), libloading::Error> {
-            let host = Library::this();
-            #[cfg(windows)]
-            let host = host?;
+        pub(crate) unsafe fn load(
+            host: &libloading::Library,
+            actual_napi_version: u32,
+            expected_napi_version: u32,
+        ) -> Result<(), libloading::Error> {
+            assert!(
+                actual_napi_version >= expected_napi_version,
+                "Minimum required N-API version {}, found {}.",
+                expected_napi_version,
+                actual_napi_version,
+            );
 
             NAPI = Napi {
                 $(
@@ -167,8 +179,7 @@ static SETUP: Once = Once::new();
 /// Loads N-API symbols from host process.
 /// Must be called at least once before using any functions in `neon-runtime` or
 /// they will panic.
-pub fn setup() {
-    SETUP.call_once(|| unsafe {
-        load().expect("Failed to load N-API symbols");
-    });
+/// Safety: `env` must be a valid `napi_env` for the current thread
+pub unsafe fn setup(env: Env) {
+    SETUP.call_once(|| load(env).expect("Failed to load N-API symbols"));
 }

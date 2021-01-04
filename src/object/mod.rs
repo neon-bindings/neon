@@ -81,15 +81,20 @@ mod traits {
     }
 }
 
-#[cfg(feature = "napi-runtime")]
+#[cfg(feature = "napi-1")]
 mod traits {
     use neon_runtime::raw;
     use handle::{Handle, Managed, Root};
-    use types::{Value, JsValue, JsArray, build};
+    use types::{Value, JsValue, build};
     use types::utf8::Utf8;
     use context::Context;
     use context::internal::Env;
-    use result::{NeonResult, JsResult, Throw};
+    use result::{NeonResult, Throw};
+
+    #[cfg(feature = "napi-6")]
+    use types::JsArray;
+    #[cfg(feature = "napi-6")]
+    use result::JsResult;
 
     /// A property key in a JavaScript object.
     pub trait PropertyKey {
@@ -188,6 +193,7 @@ mod traits {
             build(cx.env(), |out| { unsafe { key.get_from(cx, out, self.to_raw()) } })
         }
 
+        #[cfg(feature = "napi-6")]
         fn get_own_property_names<'a, C: Context<'a>>(self, cx: &mut C) -> JsResult<'a, JsArray> {
             let env = cx.env();
 

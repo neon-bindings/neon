@@ -47,12 +47,14 @@ pub struct Ref__ {
 
 pub type Ref = *mut Ref__;
 
+#[cfg(feature = "napi-4")]
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct ThreadsafeFunction__ {
     _unused: [u8; 0],
 }
 
+#[cfg(feature = "napi-4")]
 pub type ThreadsafeFunction = *mut ThreadsafeFunction__;
 
 pub(crate) type Callback = Option<
@@ -67,6 +69,7 @@ pub(crate) type Finalize = Option<
     ),
 >;
 
+#[cfg(feature = "napi-4")]
 pub type ThreadsafeFunctionCallJs = Option<
     unsafe extern "C" fn(
         env: Env,
@@ -136,6 +139,7 @@ pub enum KeyConversion {
     NumbersToStrings = 1,
 }
 
+#[cfg(feature = "napi-4")]
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum ThreadsafeFunctionCallMode {
@@ -143,6 +147,7 @@ pub enum ThreadsafeFunctionCallMode {
     Blocking = 1,
 }
 
+#[cfg(feature = "napi-4")]
 #[allow(dead_code)]
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
