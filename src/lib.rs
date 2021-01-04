@@ -30,10 +30,10 @@ pub mod macro_internal;
 #[cfg(feature = "proc-macros")]
 pub use neon_macros::*;
 
-#[cfg(all(feature = "legacy-runtime", feature = "napi-runtime"))]
+#[cfg(all(feature = "legacy-runtime", feature = "napi-1"))]
 compile_error!("Cannot enable both `legacy-runtime` and `napi-runtime` features.\n\nTo use `napi-runtime`, disable `legacy-runtime` by setting `default-features` to `false` in Cargo.toml\nor with cargo's --no-default-features flag.");
 
-#[cfg(all(feature = "napi-runtime", not(feature = "legacy-runtime")))]
+#[cfg(all(feature = "napi-1", not(feature = "legacy-runtime")))]
 /// Register the current crate as a Node module, providing startup
 /// logic for initializing the module object at runtime.
 ///
@@ -299,7 +299,7 @@ macro_rules! impl_managed {
 ///         init(mut cx) {
 /// #           #[cfg(feature = "legacy-runtime")]
 ///             let greeting = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
-/// #           #[cfg(feature = "napi-runtime")]
+/// #           #[cfg(feature = "napi-1")]
 /// #           let greeting = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value(&mut cx);
 ///             Ok(Greeter {
 ///                 greeting: greeting
@@ -309,7 +309,7 @@ macro_rules! impl_managed {
 ///         method hello(mut cx) {
 /// #           #[cfg(feature = "legacy-runtime")]
 ///             let name = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value();
-/// #           #[cfg(feature = "napi-runtime")]
+/// #           #[cfg(feature = "napi-1")]
 /// #           let name = cx.argument::<JsString>(0)?.to_string(&mut cx)?.value(&mut cx);
 ///             let this = cx.this();
 ///             let msg = {

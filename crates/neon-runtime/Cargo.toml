@@ -19,6 +19,12 @@ nodejs-sys = "0.7.0" # Not strictly needed; just here for easy manual copying
 [features]
 default = []
 napi = ["libloading"]
+napi-2 = ["napi"]
+napi-3 = ["napi-2"]
+napi-4 = ["napi-3"]
+napi-5 = ["napi-4"]
+napi-6 = ["napi-5"]
+napi-experimental = ["napi-6"]
 docs-only = ["neon-sys/docs-only"]
 
 [package.metadata.docs.rs]

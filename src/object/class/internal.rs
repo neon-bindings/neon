@@ -23,7 +23,7 @@ impl<T: Class> Callback<()> for MethodCallback<T> {
 
                 #[cfg(feature = "legacy-runtime")]
                 let is_a_t = this.is_a::<T>();
-                #[cfg(feature = "napi-runtime")]
+                #[cfg(feature = "napi-1")]
                 let is_a_t = this.is_a::<T, _>(&mut cx);
 
                 if !is_a_t {
