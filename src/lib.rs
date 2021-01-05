@@ -19,7 +19,7 @@ pub mod object;
 pub mod borrow;
 pub mod result;
 pub mod task;
-#[cfg(feature = "event-handler-api")]
+#[cfg(any(feature = "event-handler-api", all(feature = "napi-4", feature = "event-queue-api")))]
 pub mod event;
 pub mod meta;
 pub mod prelude;
@@ -31,7 +31,7 @@ pub mod macro_internal;
 pub use neon_macros::*;
 
 #[cfg(all(feature = "legacy-runtime", feature = "napi-1"))]
-compile_error!("Cannot enable both `legacy-runtime` and `napi-runtime` features.\n\nTo use `napi-runtime`, disable `legacy-runtime` by setting `default-features` to `false` in Cargo.toml\nor with cargo's --no-default-features flag.");
+compile_error!("Cannot enable both `legacy-runtime` and `napi-*` features.\n\nTo use `napi-*`, disable `legacy-runtime` by setting `default-features` to `false` in Cargo.toml\nor with cargo's --no-default-features flag.");
 
 #[cfg(all(feature = "napi-1", not(feature = "legacy-runtime")))]
 /// Register the current crate as a Node module, providing startup

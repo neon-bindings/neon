@@ -22,6 +22,8 @@ pub struct CallbackInfo__ {
     _unused: [u8; 0],
 }
 
+pub type CallbackInfo = *mut CallbackInfo__;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct EscapableHandleScope__ {
@@ -34,9 +36,26 @@ pub type EscapableHandleScope = *mut EscapableHandleScope__;
 pub struct HandleScope__ {
     _unused: [u8; 0],
 }
+
 pub type HandleScope = *mut HandleScope__;
 
-pub type CallbackInfo = *mut CallbackInfo__;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct Ref__ {
+    _unused: [u8; 0],
+}
+
+pub type Ref = *mut Ref__;
+
+#[cfg(feature = "napi-4")]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct ThreadsafeFunction__ {
+    _unused: [u8; 0],
+}
+
+#[cfg(feature = "napi-4")]
+pub type ThreadsafeFunction = *mut ThreadsafeFunction__;
 
 pub(crate) type Callback = Option<
     unsafe extern "C" fn(env: Env, info: CallbackInfo) -> Value,
@@ -50,10 +69,20 @@ pub(crate) type Finalize = Option<
     ),
 >;
 
+#[cfg(feature = "napi-4")]
+pub type ThreadsafeFunctionCallJs = Option<
+    unsafe extern "C" fn(
+        env: Env,
+        js_callback: Value,
+        context: *mut c_void,
+        data: *mut c_void,
+    ),
+>;
+
 #[allow(dead_code)]
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
-pub(crate) enum Status {
+pub enum Status {
     Ok = 0,
     InvalidArg = 1,
     ObjectExpected = 2,
@@ -108,6 +137,23 @@ pub enum KeyCollectionMode {
 pub enum KeyConversion {
     KeepNumbers = 0,
     NumbersToStrings = 1,
+}
+
+#[cfg(feature = "napi-4")]
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum ThreadsafeFunctionCallMode {
+    NonBlocking = 0,
+    Blocking = 1,
+}
+
+#[cfg(feature = "napi-4")]
+#[allow(dead_code)]
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum ThreadsafeFunctionReleaseMode {
+    Release = 0,
+    Abort = 1,
 }
 
 #[repr(transparent)]

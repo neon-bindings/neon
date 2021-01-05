@@ -1,64 +1,59 @@
-// Attention contributors: These bindings are manually specified as needed and
-// are very likely incomplete. When adding new bindings, reference the N-API
-// documentation for the N-API version that introduced the API.
-// https://nodejs.org/api/n-api.html
-
-mod napi1 { 
+mod napi1 {
     use std::os::raw::{c_char, c_void};
     use super::super::types::*;
 
     generate!(extern "C" {
         fn get_undefined(env: Env, result: *mut Value) -> Status;
-    
+
         fn get_null(env: Env, result: *mut Value) -> Status;
-    
+
         fn get_global(env: Env, result: *mut Value) -> Status;
-    
+
         fn get_boolean(env: Env, value: bool, result: *mut Value) -> Status;
-    
+
         fn create_double(env: Env, value: f64, result: *mut Value) -> Status;
-    
+
         fn create_object(env: Env, result: *mut Value) -> Status;
-    
+
         fn get_value_bool(env: Env, value: Value, result: *mut bool) -> Status;
-    
+
         fn get_value_double(env: Env, value: Value, result: *mut f64) -> Status;
-    
+
         fn create_array_with_length(env: Env, length: usize, result: *mut Value) -> Status;
-    
+
         fn get_array_length(env: Env, value: Value, result: *mut u32)-> Status;
-    
+
         fn get_new_target(env: Env, cbinfo: CallbackInfo, result: *mut Value) -> Status;
-    
+
         fn coerce_to_object(env: Env, value: Value, result: *mut Value) -> Status;
-    
+
         fn coerce_to_string(env: Env, value: Value, result: *mut Value) -> Status;
-    
+
         fn throw(env: Env, error: Value) -> Status;
-    
+
         fn create_error(env: Env, code: Value, msg: Value, result: *mut Value) -> Status;
-    
+
         fn get_and_clear_last_exception(env: Env, result: *mut Value) -> Status;
-    
+
         fn is_exception_pending(env: Env, result: *mut bool) -> Status;
-    
+
         fn get_value_external(env: Env, value: Value, result: *mut *mut c_void) -> Status;
-    
+
         fn typeof_value(env: Env, value: Value, result: *mut ValueType) -> Status;
-    
+
         fn close_escapable_handle_scope(env: Env, scope: EscapableHandleScope) -> Status;
-    
+
         fn open_escapable_handle_scope(env: Env, result: *mut EscapableHandleScope) -> Status;
-    
+
         fn open_handle_scope(env: Env, result: *mut HandleScope) -> Status;
-    
+
         fn close_handle_scope(env: Env, scope: HandleScope) -> Status;
-    
+
         fn is_arraybuffer(env: Env, value: Value, result: *mut bool) -> Status;
         fn is_buffer(env: Env, value: Value, result: *mut bool) -> Status;
         fn is_error(env: Env, value: Value, result: *mut bool) -> Status;
         fn is_array(env: Env, value: Value, result: *mut bool) -> Status;
-    
+
         fn get_value_string_utf8(
             env: Env,
             value: Value,
@@ -66,56 +61,56 @@ mod napi1 {
             bufsize: usize,
             result: *mut usize,
         ) -> Status;
-    
+
         fn create_type_error(
             env: Env,
             code: Value,
             msg: Value,
             result: *mut Value,
         ) -> Status;
-    
+
         fn create_range_error(
             env: Env,
             code: Value,
             msg: Value,
             result: *mut Value,
         ) -> Status;
-    
+
         fn create_string_utf8(
             env: Env,
             str: *const c_char,
             length: usize,
             result: *mut Value,
         ) -> Status;
-    
+
         fn create_arraybuffer(
             env: Env,
             byte_length: usize,
             data: *mut *mut c_void,
             result: *mut Value,
         ) -> Status;
-    
+
         fn get_arraybuffer_info(
             env: Env,
             arraybuffer: Value,
             data: *mut *mut c_void,
             byte_length: *mut usize,
         ) -> Status;
-    
+
         fn create_buffer(
             env: Env,
             length: usize,
             data: *mut *mut c_void,
             result: *mut Value,
         ) -> Status;
-    
+
         fn get_buffer_info(
             env: Env,
             value: Value,
             data: *mut *mut c_void,
             length: *mut usize,
         ) -> Status;
-    
+
         fn get_cb_info(
             env: Env,
             cbinfo: CallbackInfo,
@@ -124,7 +119,7 @@ mod napi1 {
             this_arg: *mut Value,
             data: *mut *mut c_void,
         ) -> Status;
-    
+
         fn create_external(
             env: Env,
             data: *mut c_void,
@@ -132,7 +127,7 @@ mod napi1 {
             finalize_hint: *mut c_void,
             result: *mut Value,
         ) -> Status;
-    
+
         fn new_instance(
             env: Env,
             constructor: Value,
@@ -140,7 +135,7 @@ mod napi1 {
             argv: *const Value,
             result: *mut Value,
         ) -> Status;
-    
+
         fn call_function(
             env: Env,
             recv: Value,
@@ -149,7 +144,7 @@ mod napi1 {
             argv: *const Value,
             result: *mut Value,
         ) -> Status;
-    
+
         fn create_function(
             env: Env,
             utf8name: *const c_char,
@@ -158,42 +153,102 @@ mod napi1 {
             data: *mut c_void,
             result: *mut Value,
         ) -> Status;
-    
+
         fn set_property(
             env: Env,
             object: Value,
             key: Value,
             value: Value,
         ) -> Status;
-    
+
         fn get_property(
             env: Env,
             object: Value,
             key: Value,
             result: *mut Value,
         ) -> Status;
-    
+
         fn set_element(
             env: Env,
             object: Value,
             index: u32,
             value: Value,
         ) -> Status;
-    
+
         fn get_element(
             env: Env,
             object: Value,
             index: u32,
             result: *mut Value,
         ) -> Status;
-    
+
         fn escape_handle(
             env: Env,
             scope: EscapableHandleScope,
             escapee: Value,
             result: *mut Value,
         ) -> Status;
-    });    
+
+        fn create_reference(
+            env: Env,
+            value: Value,
+            initial_ref_count: u32,
+            result: *mut Ref,
+        ) -> Status;
+
+        fn reference_ref(env: Env, reference: Ref, result: *mut u32) -> Status;
+
+        fn reference_unref(env: Env, reference: Ref, result: *mut u32) -> Status;
+
+        fn get_reference_value(
+            env: Env,
+            reference: Ref,
+            result: *mut Value,
+        ) -> Status;
+    });
+}
+
+#[cfg(feature = "napi-4")]
+mod napi4 {
+    use std::os::raw::c_void;
+    use super::super::types::*;
+
+    generate!(extern "C" {
+        fn create_threadsafe_function(
+            env: Env,
+            func: Value,
+            async_resource: Value,
+            async_resource_name: Value,
+            max_queue_size: usize,
+            initial_thread_count: usize,
+            thread_finalize_data: *mut c_void,
+            thread_finalize_cb: Finalize,
+            context: *mut c_void,
+            call_js_cb: ThreadsafeFunctionCallJs,
+            result: *mut ThreadsafeFunction,
+        ) -> Status;
+
+        fn call_threadsafe_function(
+            func: ThreadsafeFunction,
+            data: *mut c_void,
+            is_blocking: ThreadsafeFunctionCallMode,
+        ) -> Status;
+
+        fn release_threadsafe_function(
+            func: ThreadsafeFunction,
+            mode: ThreadsafeFunctionReleaseMode,
+        ) -> Status;
+
+        fn ref_threadsafe_function(
+            env: Env,
+            func: ThreadsafeFunction,
+        ) -> Status;
+
+        fn unref_threadsafe_function(
+            env: Env,
+            func: ThreadsafeFunction,
+        ) -> Status;
+    });
 }
 
 #[cfg(feature = "napi-6")]
@@ -213,6 +268,8 @@ mod napi6 {
 }
 
 pub(crate) use napi1::*;
+#[cfg(feature = "napi-4")]
+pub(crate) use napi4::*;
 #[cfg(feature = "napi-6")]
 pub(crate) use napi6::*;
 
@@ -242,6 +299,9 @@ pub(crate) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
     let version = get_version(&host, env).expect("Failed to find N-API version");
 
     napi1::load(&host, version, 1)?;
+
+    #[cfg(feature = "napi-4")]
+    napi4::load(&host, version, 4)?;
 
     #[cfg(feature = "napi-6")]
     napi6::load(&host, version, 6)?;

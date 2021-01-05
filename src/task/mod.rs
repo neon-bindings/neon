@@ -1,4 +1,4 @@
-//! Asynchronous background _tasks_ that run in the Node thread pool.
+//! Utilities for scheduling tasks to be executed by the Node.js runtime
 
 use std::marker::{Send, Sized};
 use std::mem;
@@ -11,7 +11,7 @@ use context::TaskContext;
 use neon_runtime;
 use neon_runtime::raw;
 
-/// A Rust task that can be executed in a background thread.
+/// A Rust task that can be executed in the background on the Node thread pool.
 pub trait Task: Send + Sized + 'static {
     /// The task's result type, which is sent back to the main thread to communicate a successful result back to JavaScript.
     type Output: Send + 'static;
