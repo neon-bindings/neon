@@ -1,3 +1,21 @@
+# Version 0.7.0
+
+## N-API
+
+### Version Selection
+
+Neon supports a large number of different Node versions which may have different N-API requirements. Neon now supports selecting the minimum required N-API version required by a module. For example, for N-API Version 4:
+
+```toml
+neon = { version = "0.7", default-features = false, features = ["napi-4"] }
+```
+
+If the Neon module is loaded in an older version of Node that does not support that N-API version, a `panic` message will inform the user.
+
+### Threadsafe Functions
+
+A prerelease version of `EventQueue` for calling into the main JavaScript thread from Rust threads can be enabled with the `event-queue-api` feature flag. The API is considered unstable and may change in the future until the [RFC](https://github.com/neon-bindings/rfcs/pull/32) is merged.
+
 # Version 0.6.0
 
 The `cx.try_catch(..)` API has been updated to return `T: Sized` instead of `T: Value` (https://github.com/neon-bindings/neon/pull/631). This API is strictly more powerful and allows users to return both JavaScript and Rust values from `try_catch` closures.
