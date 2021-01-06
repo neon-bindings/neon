@@ -18,6 +18,7 @@ pub mod types;
 pub mod object;
 pub mod borrow;
 pub mod result;
+#[cfg(feature = "legacy-runtime")]
 pub mod task;
 #[cfg(any(feature = "event-handler-api", all(feature = "napi-4", feature = "event-queue-api")))]
 pub mod event;

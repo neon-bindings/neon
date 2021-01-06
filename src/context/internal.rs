@@ -59,11 +59,6 @@ impl Env {
         unsafe { std::mem::transmute(ptr) }
     }
 
-    #[cfg(feature = "napi-1")]
-    pub(crate) fn current() -> Env {
-        panic!("Context::current() will not implemented with n-api")
-    }
-
     #[cfg(feature = "legacy-runtime")]
     pub(crate) fn current() -> Env {
         unsafe {

@@ -6,6 +6,7 @@ pub use object::{Object, Class};
 pub use borrow::{Borrow, BorrowMut};
 pub use context::{CallKind, Context, ModuleContext, ExecuteContext, ComputeContext, CallContext, FunctionContext, MethodContext, TaskContext};
 pub use result::{NeonResult, JsResult, JsResultExt};
+#[cfg(feature = "legacy-runtime")]
 pub use task::Task;
 #[cfg(all(not(feature = "napi-1"), feature = "event-handler-api"))]
 pub use event::EventHandler;

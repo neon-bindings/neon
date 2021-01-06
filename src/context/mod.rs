@@ -598,6 +598,7 @@ pub struct TaskContext<'a> {
 }
 
 impl<'a> TaskContext<'a> {
+    #[cfg(feature = "legacy-runtime")]
     pub(crate) fn with<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(f: F) -> T {
         let env = Env::current();
         Scope::with(env, |scope| {

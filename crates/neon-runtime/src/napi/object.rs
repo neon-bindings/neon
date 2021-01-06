@@ -30,11 +30,6 @@ pub unsafe extern "C" fn get_own_property_names(out: &mut Local, env: Env, objec
     true
 }
 
-// Unused.
-pub unsafe extern "C" fn get_isolate(_obj: Local) -> Env {
-    unimplemented!()
-}
-
 /// Mutate the `out` argument to refer to the value at `index` in the given `object`. Returns `false` if the value couldn't be retrieved.
 pub unsafe extern "C" fn get_index(out: &mut Local, env: Env, object: Local, index: u32) -> bool {
     let status = napi::get_element(env, object, index, out as *mut _);

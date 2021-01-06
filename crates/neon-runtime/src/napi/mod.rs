@@ -14,8 +14,6 @@ pub mod raw;
 pub mod scope;
 pub mod string;
 pub mod tag;
-pub mod task;
-pub mod handler;
 pub mod reference;
 #[cfg(feature = "napi-4")]
 pub mod tsfn;
