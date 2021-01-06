@@ -22,13 +22,6 @@ impl Default for CCallback {
     }
 }
 
-pub unsafe extern "C" fn set_return(_info: FunctionCallbackInfo, _value: Local) {
-
-}
-
-// FIXME: Remove. This will never be implemented
-pub unsafe extern "C" fn current_isolate() -> Env { panic!("current_isolate won't be implemented in n-api") }
-
 pub unsafe extern "C" fn is_construct(env: Env, info: FunctionCallbackInfo) -> bool {
     let mut target: MaybeUninit<Local> = MaybeUninit::zeroed();
 

@@ -22,10 +22,6 @@ pub unsafe extern "C" fn new(out: &mut Local, env: Env, callback: CCallback) -> 
     status == napi::Status::Ok
 }
 
-pub unsafe extern "C" fn new_template(_out: &mut Local, _env: Env, _callback: CCallback) -> bool {
-    unimplemented!()
-}
-
 pub unsafe extern "C" fn get_dynamic_callback(_env: Env, data: *mut c_void) -> *mut c_void {
     data
 }

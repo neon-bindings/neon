@@ -1,9 +1,8 @@
-use std;
 #[cfg(feature = "legacy-runtime")]
 use std::any::Any;
-use std::boxed::Box;
 use std::cell::Cell;
 use std::mem::MaybeUninit;
+#[cfg(feature = "legacy-runtime")]
 use std::os::raw::c_void;
 #[cfg(feature = "legacy-runtime")]
 use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
@@ -14,6 +13,7 @@ use neon_runtime::scope::Root;
 use neon_runtime::try_catch::TryCatchControl;
 use types::{JsObject, JsValue};
 use handle::Handle;
+#[cfg(feature = "legacy-runtime")]
 use object::class::ClassMap;
 use result::NeonResult;
 use super::ModuleContext;
@@ -28,6 +28,7 @@ pub struct Env(raw::Isolate);
 #[derive(Clone, Copy)]
 pub struct Env(raw::Env);
 
+#[cfg(feature = "legacy-runtime")]
 extern "C" fn drop_class_map(map: Box<ClassMap>) {
     std::mem::drop(map);
 }
@@ -45,6 +46,7 @@ impl Env {
         ptr
     }
 
+    #[cfg(feature = "legacy-runtime")]
     pub(crate) fn class_map(&mut self) -> &mut ClassMap {
         let mut ptr: *mut c_void = unsafe { neon_runtime::class::get_class_map(self.to_raw()) };
         if ptr.is_null() {

@@ -172,6 +172,7 @@ macro_rules! register_module {
     }
 }
 
+#[cfg(feature = "legacy-runtime")]
 #[doc(hidden)]
 #[macro_export(local_inner_macros)]
 macro_rules! class_definition {
@@ -261,6 +262,7 @@ macro_rules! class_definition {
     };
 }
 
+#[cfg(feature = "legacy-runtime")]
 #[doc(hidden)]
 #[macro_export(local_inner_macros)]
 macro_rules! impl_managed {
@@ -281,6 +283,7 @@ macro_rules! impl_managed {
     }
 }
 
+#[cfg(feature = "legacy-runtime")]
 /// Declare custom native JavaScript types with Rust implementations.
 ///
 /// Example:
@@ -363,6 +366,7 @@ macro_rules! declare_types {
     { } => { };
 }
 
+#[cfg(feature = "legacy-runtime")]
 #[doc(hidden)]
 #[macro_export]
 macro_rules! neon_stringify {

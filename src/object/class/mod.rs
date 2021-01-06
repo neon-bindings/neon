@@ -9,14 +9,13 @@ use std::slice;
 use std::collections::HashMap;
 use neon_runtime;
 use neon_runtime::raw;
-use neon_runtime::call::CCallback;
-use context::{Context, Lock, CallbackInfo};
+use context::{Context, Lock};
 use context::internal::Env;
 use result::{NeonResult, JsResult, Throw};
 use borrow::{Borrow, BorrowMut, Ref, RefMut, LoanError};
 use handle::{Handle, Managed};
 use types::{Value, JsFunction, JsValue, build};
-use types::internal::ValueInternal;
+use types::internal::{Callback, ValueInternal};
 use object::{Object, This};
 use self::internal::{ClassMetadata, MethodCallback, ConstructorCallCallback, AllocateCallback, ConstructCallback};
 
@@ -257,41 +256,6 @@ impl<'a, T: Class> BorrowMut for &'a mut T {
         unsafe {
             let ptr: *mut c_void = neon_runtime::class::get_instance_internals(self.to_raw());
             RefMut::new(lock, mem::transmute(ptr))
-        }
-    }
-}
-
-/// A dynamically computed callback that can be passed through C to the engine.
-/// This type makes it possible to export a dynamically computed Rust function
-/// as a pair of 1) a raw pointer to the dynamically computed function, and 2)
-/// a static function that knows how to transmute that raw pointer and call it.
-pub(crate) trait Callback<T: Clone + Copy + Sized>: Sized {
-    /// Extracts the computed Rust function and invokes it. The Neon runtime
-    /// ensures that the computed function is provided as the extra data field,
-    /// wrapped as a V8 External, in the `CallbackInfo` argument.
-    extern "C" fn invoke(env: Env, info: CallbackInfo<'_>) -> T;
-
-    /// See `invoke`. This is used by the non-n-api implementation, so that every impl for this
-    /// trait doesn't need to provide two versions of `invoke`.
-    #[cfg(feature = "legacy-runtime")]
-    #[doc(hidden)]
-    extern "C" fn invoke_compat(info: CallbackInfo<'_>) -> T {
-        Self::invoke(Env::current(), info)
-    }
-
-    /// Converts the callback to a raw void pointer.
-    fn as_ptr(self) -> *mut c_void;
-
-    /// Exports the callback as a pair consisting of the static `Self::invoke`
-    /// method and the computed callback, both converted to raw void pointers.
-    fn into_c_callback(self) -> CCallback {
-        #[cfg(feature = "napi-1")]
-        let invoke = Self::invoke;
-        #[cfg(feature = "legacy-runtime")]
-        let invoke = Self::invoke_compat;
-        CCallback {
-            static_callback: unsafe { mem::transmute(invoke as usize) },
-            dynamic_callback: self.as_ptr()
         }
     }
 }
