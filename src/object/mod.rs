@@ -1,7 +1,9 @@
 //! Traits for working with JavaScript objects.
 
+#[cfg(feature = "legacy-runtime")]
 pub(crate) mod class;
 
+#[cfg(feature = "legacy-runtime")]
 pub use self::class::{Class, ClassDescriptor};
 pub use self::traits::*;
 

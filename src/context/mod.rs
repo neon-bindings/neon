@@ -22,6 +22,7 @@ use types::boxed::{Finalize, JsBox};
 use types::binary::{JsArrayBuffer, JsBuffer};
 use types::error::JsError;
 use object::{Object, This};
+#[cfg(feature = "legacy-runtime")]
 use object::class::Class;
 use result::{NeonResult, JsResult, Throw};
 #[cfg(feature = "napi-1")]
@@ -47,6 +48,7 @@ impl CallbackInfo<'_> {
         CallContext::<T>::with(env, self, f)
     }
 
+    #[cfg(feature = "legacy-runtime")]
     pub fn set_return<'a, 'b, T: Value>(&'a self, value: Handle<'b, T>) {
         unsafe {
             neon_runtime::call::set_return(self.info, value.to_raw())
@@ -421,6 +423,7 @@ impl<'a> ModuleContext<'a> {
         Ok(())
     }
 
+    #[cfg(feature = "legacy-runtime")]
     /// Convenience method for exporting a Neon class constructor from a module.
     pub fn export_class<T: Class>(&mut self, key: &str) -> NeonResult<()> {
         let constructor = T::constructor(self)?;
@@ -598,6 +601,7 @@ pub struct TaskContext<'a> {
 }
 
 impl<'a> TaskContext<'a> {
+    #[cfg(feature = "legacy-runtime")]
     pub(crate) fn with<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(f: F) -> T {
         let env = Env::current();
         Scope::with(env, |scope| {

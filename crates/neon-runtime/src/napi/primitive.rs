@@ -24,16 +24,6 @@ pub unsafe extern "C" fn boolean_value(env: Env, p: Local) -> bool {
     value
 }
 
-// DEPRECATE(0.2)
-pub unsafe extern "C" fn integer(_out: &mut Local, _isolate: Env, _x: i32) { unimplemented!() }
-
-pub unsafe extern "C" fn is_u32(_p: Local) -> bool { unimplemented!() }
-
-pub unsafe extern "C" fn is_i32(_p: Local) -> bool { unimplemented!() }
-
-// DEPRECATE(0.2)
-pub unsafe extern "C" fn integer_value(_p: Local) -> i64 { unimplemented!() }
-
 /// Mutates the `out` argument provided to refer to a newly created `Local` containing a
 /// JavaScript number.
 pub unsafe extern "C" fn number(out: &mut Local, env: Env, v: f64) {
