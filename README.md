@@ -21,7 +21,7 @@ Then see the [Hello World guide](https://neon-bindings.com/docs/hello-world/) fo
 
 # Docs
 
-See our [Neon fundamentals docs](https://neon-bindings.com/docs/primitives) and our [API docs](https://neon-bindings.com/api/neon/).
+See our [Neon fundamentals docs](https://neon-bindings.com/docs/intro) and our [API docs](https://docs.rs/neon/latest/neon).
 
 # Platform Support
 
