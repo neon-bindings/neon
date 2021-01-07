@@ -16,7 +16,9 @@ use context::internal::Env;
 use handle::{Managed, Handle};
 #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
 use event::EventQueue;
-use types::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined, JsDate};
+use types::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
+#[cfg(feature = "napi-5")]
+use types::JsDate;
 #[cfg(feature = "napi-1")]
 use types::boxed::{Finalize, JsBox};
 use types::binary::{JsArrayBuffer, JsBuffer};
@@ -313,7 +315,7 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsBuffer::new(self, size)
     }
 
-    #[cfg(feature = "napi-runtime")]
+    #[cfg(feature = "napi-5")]
     fn date(&mut self, value: impl Into<f64>) -> Handle<'a, JsDate> {
         JsDate::new(self, value)
     }

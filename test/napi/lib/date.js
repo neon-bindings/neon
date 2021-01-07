@@ -18,6 +18,14 @@ describe('JsDate', function() {
     assert.isTrue(dateIsValid);
   });
 
+  it('should try new date', function () {
+    assert.isUndefined(addon.try_new_date());
+  });
+
+  it('should try new lossy date', function () {
+    assert.isUndefined(addon.try_new_lossy_date());
+  });
+
   it('should check if date is invalid', function () {
     const date = addon.create_and_get_invalid_date();
     assert.isNaN(date);
