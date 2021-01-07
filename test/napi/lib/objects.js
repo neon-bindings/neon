@@ -81,6 +81,11 @@ describe('JsObject', function() {
     assert.equal((new Uint32Array(b))[3], 400100);
   });
 
+  it('gets a 16-byte, uninitialized Buffer', function() {
+    var b = addon.return_uninitialized_buffer();
+    assert.ok(b.length === 16);
+  });
+
   it('gets a 16-byte, zeroed Buffer', function() {
     var b = addon.return_buffer();
     assert.ok(b.equals(Buffer.alloc(16)));

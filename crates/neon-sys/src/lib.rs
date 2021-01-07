@@ -109,7 +109,7 @@ extern "C" {
     pub fn Neon_ArrayBuffer_Data<'a, 'b>(isolate: Isolate, base_out: &'a mut *mut c_void, obj: Local) -> usize;
 
     pub fn Neon_Buffer_New(isolate: Isolate, out: &mut Local, size: u32) -> bool;
-    pub fn Neon_Buffer_Uninitialized(out: &mut Local, size: u32) -> bool;
+    pub fn Neon_Buffer_Uninitialized(isolate: Isolate, out: &mut Local, size: u32) -> bool;
     pub fn Neon_Buffer_Data<'a, 'b>(isolate: Isolate, base_out: &'a mut *mut c_void, obj: Local) -> usize;
 
     pub fn Neon_Call_SetReturn(info: FunctionCallbackInfo, value: Local);

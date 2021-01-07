@@ -199,7 +199,7 @@ extern "C" bool Neon_Buffer_New(v8::Isolate *isolate, v8::Local<v8::Object> *out
   return true;
 }
 
-extern "C" bool Neon_Buffer_Uninitialized(v8::Local<v8::Object> *out, uint32_t size) {
+extern "C" bool Neon_Buffer_Uninitialized(v8::Isolate *isolate, v8::Local<v8::Object> *out, uint32_t size) {
   Nan::MaybeLocal<v8::Object> maybe = Nan::NewBuffer(size);
   return maybe.ToLocal(out);
 }

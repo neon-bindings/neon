@@ -76,6 +76,11 @@ pub fn write_array_buffer_with_borrow_mut(mut cx: FunctionContext) -> JsResult<J
     Ok(cx.undefined())
 }
 
+pub fn return_uninitialized_buffer(mut cx: FunctionContext) -> JsResult<JsBuffer> {
+    let b: Handle<JsBuffer> = unsafe { JsBuffer::uninitialized(&mut cx, 16)? };
+    Ok(b)
+}
+
 pub fn return_buffer(mut cx: FunctionContext) -> JsResult<JsBuffer> {
     let b: Handle<JsBuffer> = cx.buffer(16)?;
     Ok(b)
