@@ -17,7 +17,11 @@ pub unsafe extern "C" fn new(env: Env, out: &mut Local, size: u32) -> bool {
     }
 }
 
-pub unsafe extern "C" fn uninitialized(_out: &mut Local, _size: u32) -> bool { unimplemented!() }
+pub unsafe extern "C" fn uninitialized(env: Env, out: &mut Local, size: u32) -> bool {
+    let mut bytes = null_mut();
+    let status = napi::create_buffer(env, size as usize, &mut bytes as *mut _, out as *mut _);
+    status == napi::Status::Ok
+}
 
 pub unsafe extern "C" fn data<'a, 'b>(env: Env, base_out: &'a mut *mut c_void, obj: Local) -> usize {
     let mut size = 0;
