@@ -14,6 +14,7 @@ pub mod scope;
 pub mod string;
 pub mod tag;
 pub mod reference;
+#[cfg(feature = "napi-5")]
 pub mod date;
 #[cfg(feature = "napi-4")]
 pub mod tsfn;

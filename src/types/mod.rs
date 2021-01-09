@@ -4,6 +4,8 @@ pub(crate) mod binary;
 #[cfg(feature = "napi-1")]
 pub(crate) mod boxed;
 pub(crate) mod error;
+#[cfg(feature = "napi-5")]
+pub(crate) mod date;
 
 pub(crate) mod internal;
 pub(crate) mod utf8;
@@ -13,7 +15,6 @@ use std::fmt;
 use std::os::raw::c_void;
 use std::marker::PhantomData;
 use std::fmt::Debug;
-use std::error::Error;
 use neon_runtime;
 use neon_runtime::raw;
 use context::{Context, FunctionContext};
@@ -31,6 +32,8 @@ pub use self::binary::{JsBuffer, JsArrayBuffer, BinaryData, BinaryViewType};
 #[cfg(feature = "napi-1")]
 pub use self::boxed::JsBox;
 pub use self::error::JsError;
+#[cfg(feature = "napi-5")]
+pub use self::date::{JsDate, DateError, DateErrorKind};
 
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(env: Env, init: F) -> JsResult<'a, T> {
     unsafe {
@@ -425,128 +428,6 @@ impl ValueInternal for JsNumber {
         unsafe { neon_runtime::tag::is_number(env.to_raw(), other.to_raw()) }
     }
 }
-
-/// A JavaScript Date object.
-#[repr(C)]
-#[derive(Clone, Copy, Debug)]
-#[cfg(feature = "napi-5")]
-pub struct JsDate(raw::Local);
-
-#[cfg(feature = "napi-5")]
-impl Value for JsDate { }
-
-#[cfg(feature = "napi-5")]
-impl Managed for JsDate {
-    fn to_raw(self) -> raw::Local { self.0 }
-
-    fn from_raw(_: Env, h: raw::Local) -> Self { JsDate(h) }
-}
-
-#[cfg(feature = "napi-5")]
-#[derive(PartialEq, PartialOrd, Clone, Debug)]
-pub struct DateError(f64, DateErrorKind);
-
-#[cfg(feature = "napi-5")]
-impl DateError {
-    pub fn kind(&self) -> DateErrorKind {
-        self.1
-    }
-}
-
-#[cfg(feature = "napi-5")]
-impl fmt::Display for DateError {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "{}", self.1.as_str())
-    }
-}
-
-#[cfg(feature = "napi-5")]
-impl Error for DateError {}
-
-#[cfg(feature = "napi-5")]
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug)]
-pub enum DateErrorKind {
-    Overflow,
-    Underflow,
-}
-
-#[cfg(feature = "napi-5")]
-impl DateErrorKind {
-    pub fn as_str(&self) -> &'static str {
-        match *self {
-            DateErrorKind::Overflow => "date overflow",
-            DateErrorKind::Underflow => "date underflow",
-        }
-    }
-}
-
-#[cfg(feature = "napi-5")]
-pub type DateResult<'a> = Result<Handle<'a, JsDate>, DateError>;
-
-#[cfg(feature = "napi-5")]
-impl<'a> JsResultExt<'a, JsDate> for DateResult<'a> {
-    /// Creates a `Error` on error
-    fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, JsDate> {
-        match self {
-            Ok(v) => Ok(v),
-            Err(e) => cx.throw_error(&e.to_string())
-        }
-    }
-}
-
-#[cfg(feature = "napi-5")]
-impl JsDate {
-    pub const MIN_VALUE: f64 = -8.64e15;
-    pub const MAX_VALUE: f64 = 8.64e15;
-
-    pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, time: T) -> Handle<'a, JsDate> {
-        let env = cx.env().to_raw();
-        let local = unsafe {
-            neon_runtime::date::new_date(env, time.into())
-        };
-        Handle::new_internal(JsDate(local))
-    }
-
-    pub fn new_lossy<'a, C: Context<'a>, V: Into<f64> + std::cmp::PartialOrd>(cx: &mut C, value: V) -> DateResult<'a> {
-        let env = cx.env().to_raw();
-        let time = value.into();
-        let local = unsafe {
-            neon_runtime::date::new_date(env, time.clone())
-        };
-        let date = Handle::new_internal(JsDate(local));
-        if date.is_valid(cx) { return Ok(date); }
-
-        if time > JsDate::MAX_VALUE {
-            Err(DateError(time, DateErrorKind::Overflow))
-        } else {
-            Err(DateError(time, DateErrorKind::Underflow))
-        }
-    }
-
-    pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> f64 {
-        let env = cx.env().to_raw();
-        unsafe {
-            neon_runtime::date::value(env, self.to_raw())
-        }
-    }
-
-    pub fn is_valid<'a, C: Context<'a>>(self, cx: &mut C) -> bool {
-        let value = self.value(cx);
-        return value <= JsDate::MAX_VALUE && value >= JsDate::MIN_VALUE;
-    }
-}
-
-#[cfg(feature = "napi-5")]
-impl ValueInternal for JsDate {
-    fn name() -> String { "object".to_string() }
-
-    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
-        unsafe { neon_runtime::tag::is_date(env.to_raw(), other.to_raw()) }
-    }
-}
-
-#[cfg(feature = "napi-5")]
-impl Object for JsDate { }
 
 /// A JavaScript object.
 #[repr(C)]

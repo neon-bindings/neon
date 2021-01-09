@@ -18,7 +18,7 @@ use handle::{Managed, Handle};
 use event::EventQueue;
 use types::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
 #[cfg(feature = "napi-5")]
-use types::JsDate;
+use types::date::{JsDate, DateError};
 #[cfg(feature = "napi-1")]
 use types::boxed::{Finalize, JsBox};
 use types::binary::{JsArrayBuffer, JsBuffer};
@@ -29,6 +29,7 @@ use object::class::Class;
 use result::{NeonResult, JsResult, Throw};
 #[cfg(feature = "napi-1")]
 use smallvec::SmallVec;
+
 use self::internal::{ContextInternal, Scope, ScopeMetadata};
 
 #[repr(C)]
@@ -316,7 +317,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     #[cfg(feature = "napi-5")]
-    fn date(&mut self, value: impl Into<f64>) -> Handle<'a, JsDate> {
+    fn date(&mut self, value: impl Into<f64> + PartialOrd) -> Result<Handle<'a, JsDate>, DateError> {
         JsDate::new(self, value)
     }
 
