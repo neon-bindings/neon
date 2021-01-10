@@ -75,4 +75,14 @@ describe('type checks', function() {
     assert(!addon.is_undefined(null));
     assert(!addon.is_undefined('anything other than undefined'));
   });
+
+  it('strict_equals', function () {
+    assert(addon.strict_equals(17, 17));
+    assert(!addon.strict_equals(17, 18));
+    let o1 = {};
+    let o2 = {};
+    assert(addon.strict_equals(o1, o1));
+    assert(!addon.strict_equals(o1, o2));
+    assert(!addon.strict_equals(o1, 17));
+  });
 });

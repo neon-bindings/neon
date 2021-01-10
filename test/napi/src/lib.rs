@@ -159,6 +159,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("is_object", is_object)?;
     cx.export_function("is_string", is_string)?;
     cx.export_function("is_undefined", is_undefined)?;
+    cx.export_function("strict_equals", strict_equals)?;
 
     cx.export_function("new_error", new_error)?;
     cx.export_function("new_type_error", new_type_error)?;

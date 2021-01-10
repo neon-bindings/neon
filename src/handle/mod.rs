@@ -181,6 +181,12 @@ impl<'a, T: Value> Handle<'a, T> {
         self.downcast(cx).or_throw(cx)
     }
 
+    #[cfg(feature = "napi-1")]
+    pub fn strict_equals<'b, U: Value, C: Context<'b>>(&self, cx: &mut C, other: Handle<'b, U>) -> bool {
+        unsafe {
+            neon_runtime::mem::strict_equals(cx.env().to_raw(), self.to_raw(), other.to_raw())
+        }
+    }
 }
 
 impl<'a, T: Managed> Deref for Handle<'a, T> {
