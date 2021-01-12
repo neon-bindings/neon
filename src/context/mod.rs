@@ -316,7 +316,7 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsBuffer::new(self, size)
     }
 
-    /// Create a `JsDate`. This prevents
+    /// Convenience method for creating a `JsDate` value.
     #[cfg(feature = "napi-5")]
     fn date(&mut self, value: impl Into<f64>) -> Result<Handle<'a, JsDate>, DateError> {
         JsDate::new(self, value)

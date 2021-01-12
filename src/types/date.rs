@@ -51,8 +51,8 @@ pub enum DateErrorKind {
 impl DateErrorKind {
     fn as_str(&self) -> &'static str {
         match *self {
-            DateErrorKind::Overflow => "Uncaught RangeError: Date overflow",
-            DateErrorKind::Underflow => "Uncaught RangeError: Date underflow",
+            DateErrorKind::Overflow => "Date overflow",
+            DateErrorKind::Underflow => "Date underflow",
         }
     }
 }
@@ -70,8 +70,8 @@ impl JsDate {
     /// The largest possible Date value, defined by ECMAScript. See https://www.ecma-international.org/ecma-262/5.1/#sec-15.7.3.2
     pub const MAX_VALUE: f64 = 8.64e15;
 
-    /// Create a new Date. It errors when `value` is an out of bounds JavaScript Date value. When `value`
-    /// is `NaN`, an invalid
+    /// Creates a new Date. It errors when `value` is outside the range of valid JavaScript Date values. When `value`
+    /// is `NaN`, the operation will succeed but with an invalid Date
     pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, value: T) -> Result<Handle<'a, JsDate>, DateError> {
         let env = cx.env().to_raw();
         let time = value.into();
@@ -89,7 +89,8 @@ impl JsDate {
         Ok(date)
     }
 
-    /// Create a new Date with lossy conversion for out of bounds Date values.
+    /// Creates a new Date with lossy conversion for out of bounds Date values. Out of bounds
+    /// values will be treated as NaN
     pub fn new_lossy<'a, C: Context<'a>, V: Into<f64>>(cx: &mut C, value: V) -> Handle<'a, JsDate> {
         let env = cx.env().to_raw();
         let local = unsafe {
@@ -98,7 +99,7 @@ impl JsDate {
         Handle::new_internal(JsDate(local))
     }
 
-    /// Get the Date's value
+    /// Gets the Date's value. An invalid Date will return `std::f64::NaN`
     pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> f64 {
         let env = cx.env().to_raw();
         unsafe {
@@ -106,7 +107,8 @@ impl JsDate {
         }
     }
 
-    /// Check if the Date's value is valid
+    /// Checks if the Date's value is valid. A Date is valid if its value is between
+    /// `JsDate::MIN_VALUE` and `JsDate::MAX_VALUE` or if it is `NaN`
     pub fn is_valid<'a, C: Context<'a>>(self, cx: &mut C) -> bool {
         let value = self.value(cx);
         value <= JsDate::MAX_VALUE && value >= JsDate::MIN_VALUE

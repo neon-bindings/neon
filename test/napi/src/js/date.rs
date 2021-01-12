@@ -1,4 +1,4 @@
-use std::f64::NAN;
+use std::{f64::NAN};
 
 use neon::prelude::*;
 use neon::types::JsDate;
@@ -34,6 +34,18 @@ pub fn try_new_lossy_date(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let date_underflow = JsDate::new(&mut cx, JsDate::MIN_VALUE - 1.0);
     assert_eq!(date_overflow.unwrap_err().kind(), neon::types::DateErrorKind::Overflow);
     assert_eq!(date_underflow.unwrap_err().kind(), neon::types::DateErrorKind::Underflow);
+    Ok(cx.undefined())
+}
+
+pub fn nan_dates(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let date_nan = JsDate::new(&mut cx, NAN).unwrap();
+    assert!(!date_nan.is_valid(&mut cx));
+    assert!(date_nan.value(&mut cx).is_nan());
+
+    let date_nan_lossy = JsDate::new_lossy(&mut cx, NAN);
+    assert!(!date_nan_lossy.is_valid(&mut cx));
+    assert!(date_nan_lossy.value(&mut cx).is_nan());
+
     Ok(cx.undefined())
 }
 
