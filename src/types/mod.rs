@@ -10,7 +10,6 @@ pub(crate) mod date;
 pub(crate) mod internal;
 pub(crate) mod utf8;
 
-use std;
 use std::fmt;
 use std::os::raw::c_void;
 use std::marker::PhantomData;

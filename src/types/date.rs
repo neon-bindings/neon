@@ -1,4 +1,3 @@
-use std;
 use std::fmt;
 use std::fmt::Debug;
 use std::error::Error;
@@ -11,9 +10,9 @@ use object::{Object};
 use handle::{Handle, Managed};
 use super::{Value, ValueInternal};
 
-/// A JavaScript Date object.
+/// A JavaScript Date object
 #[repr(C)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct JsDate(raw::Local);
 
 impl Value for JsDate { }
@@ -24,7 +23,8 @@ impl Managed for JsDate {
     fn from_raw(_: Env, h: raw::Local) -> Self { JsDate(h) }
 }
 
-#[derive(PartialEq, PartialOrd, Clone, Debug)]
+/// The Error struct for a Date
+#[derive(Debug)]
 pub struct DateError(DateErrorKind);
 
 impl DateError {
@@ -35,13 +35,14 @@ impl DateError {
 
 impl fmt::Display for DateError {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        write!(fmt, "{}", self.0.as_str())
+        fmt.write_str(self.0.as_str())
     }
 }
 
 impl Error for DateError {}
 
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug)]
+/// The error kinds corresponding to `DateError`
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum DateErrorKind {
     Overflow,
     Underflow,
@@ -56,20 +57,21 @@ impl DateErrorKind {
     }
 }
 
-impl<'a> JsResultExt<'a, JsDate> for Result<Handle<'a, JsDate>, DateError> {
-    /// Creates a `Error` on error
-    fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, JsDate> {
-        match self {
-            Ok(v) => Ok(v),
-            Err(e) => cx.throw_range_error(&e.to_string())
-        }
+impl<'a, T: Value> JsResultExt<'a, T> for Result<Handle<'a, T>, DateError> {
+    /// Creates an `Error` on error
+    fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, T> {
+        self.or_else(|e| cx.throw_range_error(e.0.as_str()))
     }
 }
 
 impl JsDate {
+    /// The smallest possible Date value, defined by ECMAScript. See https://www.ecma-international.org/ecma-262/5.1/#sec-15.7.3.3
     pub const MIN_VALUE: f64 = -8.64e15;
+    /// The largest possible Date value, defined by ECMAScript. See https://www.ecma-international.org/ecma-262/5.1/#sec-15.7.3.2
     pub const MAX_VALUE: f64 = 8.64e15;
 
+    /// Create a new Date. It errors when `value` is an out of bounds JavaScript Date value. When `value`
+    /// is `NaN`, an invalid
     pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, value: T) -> Result<Handle<'a, JsDate>, DateError> {
         let env = cx.env().to_raw();
         let time = value.into();
@@ -81,13 +83,14 @@ impl JsDate {
         }
 
         let local = unsafe {
-            neon_runtime::date::new_date(env, time.clone())
+            neon_runtime::date::new_date(env, time)
         };
         let date = Handle::new_internal(JsDate(local));
         Ok(date)
     }
 
-    pub fn new_lossy<'a, C: Context<'a>, V: Into<f64> + std::cmp::PartialOrd>(cx: &mut C, value: V) -> Handle<'a, JsDate> {
+    /// Create a new Date with lossy conversion for out of bounds Date values.
+    pub fn new_lossy<'a, C: Context<'a>, V: Into<f64>>(cx: &mut C, value: V) -> Handle<'a, JsDate> {
         let env = cx.env().to_raw();
         let local = unsafe {
             neon_runtime::date::new_date(env, value.into())
@@ -95,6 +98,7 @@ impl JsDate {
         Handle::new_internal(JsDate(local))
     }
 
+    /// Get the Date's value
     pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> f64 {
         let env = cx.env().to_raw();
         unsafe {
@@ -102,6 +106,7 @@ impl JsDate {
         }
     }
 
+    /// Check if the Date's value is valid
     pub fn is_valid<'a, C: Context<'a>>(self, cx: &mut C) -> bool {
         let value = self.value(cx);
         value <= JsDate::MAX_VALUE && value >= JsDate::MIN_VALUE

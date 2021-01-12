@@ -316,8 +316,9 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsBuffer::new(self, size)
     }
 
+    /// Create a `JsDate`. This prevents
     #[cfg(feature = "napi-5")]
-    fn date(&mut self, value: impl Into<f64> + PartialOrd) -> Result<Handle<'a, JsDate>, DateError> {
+    fn date(&mut self, value: impl Into<f64>) -> Result<Handle<'a, JsDate>, DateError> {
         JsDate::new(self, value)
     }
 
