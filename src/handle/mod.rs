@@ -35,12 +35,14 @@ pub struct Handle<'a, T: Managed + 'a> {
     phantom: PhantomData<&'a T>
 }
 
+#[cfg(feature = "legacy-runtime")]
 impl<'a, T: Managed + 'a> PartialEq for Handle<'a, T> {
     fn eq(&self, other: &Self) -> bool {
         unsafe { neon_runtime::mem::same_handle(self.to_raw(), other.to_raw()) }
     }
 }
 
+#[cfg(feature = "legacy-runtime")]
 impl<'a, T: Managed + 'a> Eq for Handle<'a, T> { }
 
 impl<'a, T: Managed + 'a> Handle<'a, T> {
