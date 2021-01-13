@@ -35,12 +35,14 @@ pub struct Handle<'a, T: Managed + 'a> {
     phantom: PhantomData<&'a T>
 }
 
+#[cfg(feature = "legacy-runtime")]
 impl<'a, T: Managed + 'a> PartialEq for Handle<'a, T> {
     fn eq(&self, other: &Self) -> bool {
         unsafe { neon_runtime::mem::same_handle(self.to_raw(), other.to_raw()) }
     }
 }
 
+#[cfg(feature = "legacy-runtime")]
 impl<'a, T: Managed + 'a> Eq for Handle<'a, T> { }
 
 impl<'a, T: Managed + 'a> Handle<'a, T> {
@@ -181,6 +183,12 @@ impl<'a, T: Value> Handle<'a, T> {
         self.downcast(cx).or_throw(cx)
     }
 
+    #[cfg(feature = "napi-1")]
+    pub fn strict_equals<'b, U: Value, C: Context<'b>>(&self, cx: &mut C, other: Handle<'b, U>) -> bool {
+        unsafe {
+            neon_runtime::mem::strict_equals(cx.env().to_raw(), self.to_raw(), other.to_raw())
+        }
+    }
 }
 
 impl<'a, T: Managed> Deref for Handle<'a, T> {

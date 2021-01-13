@@ -205,6 +205,13 @@ mod napi1 {
             reference: Ref,
             result: *mut Value,
         ) -> Status;
+
+        fn strict_equals(
+            env: Env,
+            lhs: Value,
+            rhs: Value,
+            result: *mut bool
+        ) -> Status;
     });
 }
 
