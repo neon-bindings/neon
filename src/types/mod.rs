@@ -4,14 +4,16 @@ pub(crate) mod binary;
 #[cfg(feature = "napi-1")]
 pub(crate) mod boxed;
 pub(crate) mod error;
+#[cfg(feature = "napi-5")]
+pub(crate) mod date;
 
 pub(crate) mod internal;
 pub(crate) mod utf8;
 
-use std;
 use std::fmt;
 use std::os::raw::c_void;
 use std::marker::PhantomData;
+use std::fmt::Debug;
 use neon_runtime;
 use neon_runtime::raw;
 use context::{Context, FunctionContext};
@@ -29,6 +31,8 @@ pub use self::binary::{JsBuffer, JsArrayBuffer, BinaryData, BinaryViewType};
 #[cfg(feature = "napi-1")]
 pub use self::boxed::JsBox;
 pub use self::error::JsError;
+#[cfg(feature = "napi-5")]
+pub use self::date::{JsDate, DateError, DateErrorKind};
 
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(env: Env, init: F) -> JsResult<'a, T> {
     unsafe {

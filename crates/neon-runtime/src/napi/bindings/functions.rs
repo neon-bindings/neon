@@ -258,8 +258,21 @@ mod napi4 {
     });
 }
 
+#[cfg(feature = "napi-5")]
+mod napi5 {
+    use super::super::types::*;
+
+    generate!(extern "C" {
+        fn create_date(env: Env, value: f64, result: *mut Value) -> Status;
+
+        fn get_date_value(env: Env, value: Value, result: *mut f64) -> Status;
+
+        fn is_date(env: Env, value: Value, result: *mut bool) -> Status;
+    });
+}
+
 #[cfg(feature = "napi-6")]
-mod napi6 {  
+mod napi6 {
     use super::super::types::*;
 
     generate!(extern "C" {
@@ -271,12 +284,14 @@ mod napi6 {
             key_conversion: KeyConversion,
             result: *mut Value,
         ) -> Status;
-    });    
+    });
 }
 
 pub(crate) use napi1::*;
 #[cfg(feature = "napi-4")]
 pub(crate) use napi4::*;
+#[cfg(feature = "napi-5")]
+pub(crate) use napi5::*;
 #[cfg(feature = "napi-6")]
 pub(crate) use napi6::*;
 
@@ -309,6 +324,9 @@ pub(crate) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
 
     #[cfg(feature = "napi-4")]
     napi4::load(&host, version, 4)?;
+
+    #[cfg(feature = "napi-5")]
+    napi5::load(&host, version, 5)?;
 
     #[cfg(feature = "napi-6")]
     napi6::load(&host, version, 6)?;

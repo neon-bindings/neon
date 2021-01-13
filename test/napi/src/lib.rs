@@ -11,6 +11,7 @@ mod js {
     pub mod types;
     pub mod strings;
     pub mod threads;
+    pub mod date;
 }
 
 use js::arrays::*;
@@ -23,6 +24,7 @@ use js::objects::*;
 use js::types::*;
 use js::strings::*;
 use js::threads::*;
+use js::date::*;
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
@@ -148,6 +150,16 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("read_buffer_with_borrow", read_buffer_with_borrow)?;
     cx.export_function("write_buffer_with_lock", write_buffer_with_lock)?;
     cx.export_function("write_buffer_with_borrow_mut", write_buffer_with_borrow_mut)?;
+
+    cx.export_function("create_date", create_date)?;
+    cx.export_function("get_date_value", get_date_value)?;
+    cx.export_function("check_date_is_invalid", check_date_is_invalid)?;
+    cx.export_function("check_date_is_valid", check_date_is_valid)?;
+    cx.export_function("try_new_date", try_new_date)?;
+    cx.export_function("try_new_lossy_date", try_new_lossy_date)?;
+    cx.export_function("nan_dates", nan_dates)?;
+    cx.export_function("create_date_from_value", create_date_from_value)?;
+    cx.export_function("create_and_get_invalid_date", create_and_get_invalid_date)?;
 
     cx.export_function("is_array", is_array)?;
     cx.export_function("is_array_buffer", is_array_buffer)?;
