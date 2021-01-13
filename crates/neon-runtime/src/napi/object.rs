@@ -57,7 +57,7 @@ pub unsafe extern "C" fn get_string(env: Env, out: &mut Local, object: Local, ke
 
     // Not using `crate::string::new()` because it requires a _reference_ to a Local,
     // while we only have uninitialized memory.
-    if napi::create_string_utf8(env, key as *const i8, len as usize, key_val.as_mut_ptr())
+    if napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr())
         != napi::Status::Ok
     {
         return false;
@@ -84,7 +84,7 @@ pub unsafe extern "C" fn set_string(env: Env, out: &mut bool, object: Local, key
 
     *out = true;
 
-    if napi::create_string_utf8(env, key as *const i8, len as usize, key_val.as_mut_ptr())
+    if napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr())
         != napi::Status::Ok
     {
         *out = false;

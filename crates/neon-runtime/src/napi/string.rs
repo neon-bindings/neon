@@ -7,7 +7,7 @@ use crate::napi::bindings as napi;
 pub unsafe fn new(out: &mut Local, env: Env, data: *const u8, len: i32) -> bool {
     let status = napi::create_string_utf8(
         env,
-        data as *const i8,
+        data as *const _,
         len as usize,
         out,
     );
@@ -35,7 +35,7 @@ pub unsafe extern "C" fn data(env: Env, out: *mut u8, len: isize, value: Local) 
     let status = napi::get_value_string_utf8(
         env,
         value,
-        out as *mut i8,
+        out as *mut _,
         len as usize,
         read.as_mut_ptr(),
     );

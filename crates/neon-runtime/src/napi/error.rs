@@ -94,7 +94,7 @@ pub unsafe fn throw_error_from_utf8(env: Env, msg: *const u8, len: i32) {
     let mut out = MaybeUninit::uninit();
     let status = napi::create_string_utf8(
         env,
-        msg as *const i8,
+        msg as *const _,
         len as usize,
         out.as_mut_ptr(),
     );
