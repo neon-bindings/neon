@@ -16,8 +16,9 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [10.x, 12.x, 14.x, 15.x]
-        rust-toolchain: [stable, beta, nightly]
+        node-version: [12.x, 14.x, 15.x]
+        rust-toolchain: [stable, beta]
+        rust-target: [x86_64-pc-windows-msvc, aarch64-pc-windows-msvc]
 
     steps:
     - uses: actions/checkout@v2
@@ -25,7 +26,7 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         toolchain: ${{ matrix.rust-toolchain }}
-        target: x86_64-pc-windows-msvc
+        target: ${{ matrix.rust-target }}
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
@@ -43,7 +44,7 @@ jobs:
     #   run: npm install -g node-gyp@latest
     - run: npm config set msvs_version 2019
     - name: run cargo test
-      run: cargo test --release
+      run: cargo test --release --target=${{ matrix.rust-target }}
       env:
         LIBCLANG_PATH: ${{ runner.temp }}/llvm/bin
     - name: run CLI test
