@@ -16,7 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x, 14.x, 15.x]
+        node-version: [12, 14, 15]
         rust-toolchain: [stable, beta]
         rust-target: [x86_64-pc-windows-msvc, aarch64-pc-windows-msvc]
 
@@ -28,11 +28,11 @@ jobs:
         toolchain: ${{ matrix.rust-toolchain }}
         target: ${{ matrix.rust-target }}
     - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v2
       with:
         node-version: ${{ matrix.node-version }}
     - name: Use npm v6
-      if: ${{ matrix.node-version == '15.x' }}
+      if: ${{ matrix.node-version == '15' }}
       run: npm install -g npm@6
     - name: Install libclang
       uses: KyleMayes/install-llvm-action@01144dc97b1e2693196c3056414a44f15180648b
