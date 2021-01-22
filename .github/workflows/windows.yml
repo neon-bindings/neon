@@ -27,6 +27,7 @@ jobs:
       with:
         toolchain: ${{ matrix.rust-toolchain }}
         target: ${{ matrix.rust-target }}
+        override: true 
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v2
       with:
