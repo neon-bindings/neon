@@ -135,7 +135,11 @@ impl<T> Drop for Root<T> {
         // panic and instead prefer to leak.
         if std::thread::panicking() {
             eprintln!("Warning: neon::sync::Root leaked during a panic");
-        } else {
+            return;
+        }
+
+        // Only panic if the event loop is still running
+        if let Ok(true) = crate::context::internal::IS_RUNNING.try_with(|v| *v.borrow()) {
             panic!("Must call `into_inner` or `drop` on `Root` \
                 https://docs.rs/neon/latest/neon/sync/index.html#drop-safety");
         }

@@ -34,12 +34,12 @@ unsafe impl Sync for Tsfn {}
 /// function for scheduling tasks to execute on a JavaScript thread.
 pub struct ThreadsafeFunction<T> {
     tsfn: Tsfn,
-    callback: fn(Env, T),
+    callback: fn(Option<Env>, T),
 }
 
 #[derive(Debug)]
 struct Callback<T> {
-    callback: fn(Env, T),
+    callback: fn(Option<Env>, T),
     data: T,
 }
 
@@ -66,7 +66,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     /// Safety: `Env` must be valid for the current thread
     pub unsafe fn new(
         env: Env,
-        callback: fn(Env, T),        
+        callback: fn(Option<Env>, T),
     ) -> Self {
         Self::with_capacity(env, 0, callback)
     }
@@ -76,7 +76,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     pub unsafe fn with_capacity(
         env: Env,
         max_queue_size: usize,
-        callback: fn(Env, T),
+        callback: fn(Option<Env>, T),
     ) -> Self {
         let mut result = MaybeUninit::uninit();
 
@@ -171,20 +171,17 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
         _context: *mut c_void,
         data: *mut c_void,
     ) {
-        // Event loop may be terminated
-        if data.is_null() {
-            return;
-        }
-
         let Callback {
             callback,
             data,
         } = *Box::from_raw(data as *mut Callback<T>);
 
         // Event loop has terminated
-        if env.is_null() {
-            return;
-        }
+        let env = if env.is_null() {
+            None
+        } else {
+            Some(env)
+        };
 
         callback(env, data);
     }
