@@ -29,7 +29,7 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - name: install g++-4.8
-      run: sudo apt-get install -y g++-4.8
+    - name: install build-essential
+      run: sudo apt-get install -y build-essential
     - name: run cargo test
       run: xvfb-run --auto-servernum cargo test --release -- --nocapture

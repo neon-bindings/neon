@@ -138,8 +138,14 @@ impl EventQueue {
     }
 
     // Monomorphized trampoline funciton for calling the user provided closure
-    fn callback(env: Env, callback: Callback) {
-        callback(env)
+    fn callback(env: Option<Env>, callback: Callback) {
+        if let Some(env) = env {
+            callback(env);
+        } else {
+            crate::context::internal::IS_RUNNING.with(|v| {
+                *v.borrow_mut() = false;
+            });
+        }
     }
 }
 

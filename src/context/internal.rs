@@ -1,6 +1,6 @@
 #[cfg(feature = "legacy-runtime")]
 use std::any::Any;
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::mem::MaybeUninit;
 #[cfg(feature = "legacy-runtime")]
 use std::os::raw::c_void;
@@ -27,6 +27,11 @@ pub struct Env(raw::Isolate);
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct Env(raw::Env);
+
+thread_local! {
+    #[allow(unused)]
+    pub(crate) static IS_RUNNING: RefCell<bool> = RefCell::new(false);
+}
 
 #[cfg(feature = "legacy-runtime")]
 extern "C" fn drop_class_map(map: Box<ClassMap>) {
@@ -227,6 +232,11 @@ pub fn initialize_module(exports: Handle<JsObject>, init: fn(ModuleContext) -> N
 #[cfg(feature = "napi-1")]
 pub fn initialize_module(env: raw::Env, exports: Handle<JsObject>, init: fn(ModuleContext) -> NeonResult<()>) {
     unsafe { neon_runtime::setup(env); }
+
+    IS_RUNNING.with(|v| {
+        *v.borrow_mut() = true;
+    });
+
     ModuleContext::with(Env(env), exports, |cx| {
         let _ = init(cx);
     });
