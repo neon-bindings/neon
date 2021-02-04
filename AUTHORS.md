@@ -18,6 +18,7 @@ Neon owes its existence to the contributions of these fine people.
 * [Joey Ezechiëls](https://github.com/jjpe)
 * [Cory Forsyth](https://github.com/bantic)
 * [Dave Herman](https://github.com/dherman)
+* [Himself65](https://github.com/Himself65)
 * [Maciej Hirsz](https://github.com/maciejhirsz)
 * [Amal Hussein](https://github.com/nomadtechie)
 * [Usagi Ito](https://github.com/usagi)
