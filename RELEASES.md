@@ -1,3 +1,16 @@
+# Version 0.7.1
+
+### Features
+
+* Added `JsDate` to N-API backend (https://github.com/neon-bindings/neon/pull/639)
+* Implement `JsBuffer::unitialized` for N-API backend (https://github.com/neon-bindings/neon/pull/664)
+
+### Fixes
+
+* Do not panic if a `Root` is leaked after the event loop has stopped (https://github.com/neon-bindings/neon/pull/677)
+* Stubs for features that will not be implemented in the N-API backend are removed (https://github.com/neon-bindings/neon/pull/663)
+* Fix doc URL link (https://github.com/neon-bindings/neon/pull/663)
+
 # Version 0.7.0
 
 ## N-API
