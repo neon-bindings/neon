@@ -370,11 +370,19 @@ impl<T: Finalize> Finalize for Vec<T> {
     }
 }
 
-// Smart Pointers
+// Smart pointers and other wrappers
 
 impl<T: Finalize> Finalize for std::boxed::Box<T> {
     fn finalize<'a, C: Context<'a>>(self, cx: &mut C) {
         (*self).finalize(cx);
+    }
+}
+
+impl<T: Finalize> Finalize for Option<T> {
+    fn finalize<'a, C: Context<'a>>(self, cx: &mut C) {
+        if let Some(v) = self {
+            v.finalize(cx);
+        }
     }
 }
 
