@@ -1,0 +1,27 @@
+{
+  "name": "cargo-cp-artifact",
+  "version": "0.0.1",
+  "description": "Copies compiler artifacts emitted by rustc by parsing Cargo metadata",
+  "main": "index.js",
+  "bin": {
+    "cargo-cp-artifact": "index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neon-bindings/cargo-cp-artifact.git"
+  },
+  "keywords": [
+    "cargo",
+    "rust",
+    "neon"
+  ],
+  "author": "K.J. Valencik",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/neon-bindings/cargo-cp-artifact/issues"
+  },
+  "homepage": "https://github.com/neon-bindings/cargo-cp-artifact#readme"
+}
