@@ -138,9 +138,13 @@ impl<'a> BinaryData<'a> {
     /// # }
     /// ```
     pub fn as_slice<T: BinaryViewType>(self) -> &'a [T] {
-        let base = unsafe { mem::transmute(self.base) };
-        let len = self.size / mem::size_of::<T>();
-        unsafe { slice::from_raw_parts(base, len) }
+        if self.size == 0 {
+            &[]
+        } else {
+            let base = unsafe { mem::transmute(self.base) };
+            let len = self.size / mem::size_of::<T>();
+            unsafe { slice::from_raw_parts(base, len) }
+        }
     }
 
     /// Produces a mutable slice as a view into the contents of this buffer.
@@ -160,9 +164,13 @@ impl<'a> BinaryData<'a> {
     /// # }
     /// ```
     pub fn as_mut_slice<T: BinaryViewType>(self) -> &'a mut [T] {
-        let base = unsafe { mem::transmute(self.base) };
-        let len = self.size / mem::size_of::<T>();
-        unsafe { slice::from_raw_parts_mut(base, len) }
+        if self.size == 0 {
+            &mut []
+        } else {
+            let base = unsafe { mem::transmute(self.base) };
+            let len = self.size / mem::size_of::<T>();
+            unsafe { slice::from_raw_parts_mut(base, len) }
+        }
     }
 
     /// Produces the length of the buffer, in bytes.
