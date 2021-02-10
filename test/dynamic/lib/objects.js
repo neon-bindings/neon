@@ -57,6 +57,14 @@ describe('JsObject', function() {
     assert.equal(addon.read_array_buffer_with_borrow(b, 3), 89898989);
   });
 
+  it('correctly reads an empty ArrayBuffer using the borrow API', function() {
+    let nonempty = Uint8Array.from([1, 2, 3]);
+    assert.equal(addon.sum_array_buffer_with_borrow(nonempty.buffer), 6);
+
+    let empty = Uint8Array.from([]);
+    assert.equal(addon.sum_array_buffer_with_borrow(empty.buffer), 0);
+  });
+
   it('correctly writes to an ArrayBuffer using the lock API', function() {
     var b = new ArrayBuffer(16);
     addon.write_array_buffer_with_lock(b, 0, 999);
@@ -79,6 +87,16 @@ describe('JsObject', function() {
     assert.equal((new Uint32Array(b))[2], 22);
     addon.write_array_buffer_with_borrow_mut(b, 3, 400100);
     assert.equal((new Uint32Array(b))[3], 400100);
+  });
+
+  it('correctly writes to an empty ArrayBuffer using the borrow API', function() {
+    let nonempty = Uint8Array.from([1, 2, 3]);
+    addon.increment_array_buffer_with_borrow_mut(nonempty.buffer);
+    assert.deepEqual(Array.from(nonempty), [2, 3, 4]);
+
+    let empty = Uint8Array.from([]);
+    addon.increment_array_buffer_with_borrow_mut(empty.buffer);
+    assert.deepEqual(Array.from(empty), []);
   });
 
   it('gets a 16-byte, zeroed Buffer', function() {
@@ -110,6 +128,14 @@ describe('JsObject', function() {
     assert.equal(addon.read_buffer_with_borrow(b, 3), 22914478);
   });
 
+  it('correctly reads an empty Buffer using the borrow API', function() {
+    let nonempty = Buffer.from([1, 2, 3]);
+    assert.equal(addon.sum_buffer_with_borrow(nonempty), 6);
+
+    let empty = Buffer.from([]);
+    assert.equal(addon.sum_buffer_with_borrow(empty), 0);
+  });
+
   it('correctly writes to a Buffer using the lock API', function() {
     var b = Buffer.allocUnsafe(16);
     b.fill(0);
@@ -134,5 +160,15 @@ describe('JsObject', function() {
     assert.equal(b.readUInt32LE(8), 232);
     addon.write_buffer_with_borrow_mut(b, 3, 66012);
     assert.equal(b.readUInt32LE(12), 66012);
+  });
+
+  it('correctly writes to an empty Buffer using the borrow API', function() {
+    let nonempty = Buffer.from([1, 2, 3]);
+    addon.increment_buffer_with_borrow_mut(nonempty);
+    assert.deepEqual(Array.from(nonempty), [2, 3, 4]);
+
+    let empty = Buffer.from([]);
+    addon.increment_buffer_with_borrow_mut(empty);
+    assert.deepEqual(Array.from(empty), []);
   });
 });

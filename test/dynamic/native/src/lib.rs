@@ -46,13 +46,17 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("return_array_buffer", return_array_buffer)?;
     cx.export_function("read_array_buffer_with_lock", read_array_buffer_with_lock)?;
     cx.export_function("read_array_buffer_with_borrow", read_array_buffer_with_borrow)?;
+    cx.export_function("sum_array_buffer_with_borrow", sum_array_buffer_with_borrow)?;
     cx.export_function("write_array_buffer_with_lock", write_array_buffer_with_lock)?;
     cx.export_function("write_array_buffer_with_borrow_mut", write_array_buffer_with_borrow_mut)?;
+    cx.export_function("increment_array_buffer_with_borrow_mut", increment_array_buffer_with_borrow_mut)?;
     cx.export_function("return_buffer", return_buffer)?;
     cx.export_function("read_buffer_with_lock", read_buffer_with_lock)?;
     cx.export_function("read_buffer_with_borrow", read_buffer_with_borrow)?;
+    cx.export_function("sum_buffer_with_borrow", sum_buffer_with_borrow)?;
     cx.export_function("write_buffer_with_lock", write_buffer_with_lock)?;
     cx.export_function("write_buffer_with_borrow_mut", write_buffer_with_borrow_mut)?;
+    cx.export_function("increment_buffer_with_borrow_mut", increment_buffer_with_borrow_mut)?;
 
     cx.export_function("return_js_function", return_js_function)?;
     cx.export_function("call_js_function", call_js_function)?;
