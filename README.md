@@ -11,25 +11,25 @@ npm install -g cargo-cp-artifact
 ## Usage
 
 ```
-cargo-cp-artifact [crate-name=output-file] -- [wrapped-command]
+cargo-cp-artifact [crate-name=artifact-kind=output-file] -- [wrapped-command]
 ```
 
-`cargo-cp-artifact` accepts a list of crate name to output file mappings and a command to wrap.`cargo-cp-artifact` will read `stdout` of the wrapped command and parse it as [cargo metadata](https://doc.rust-lang.org/cargo/reference/external-tools.html#json-messages). Compiler artifacts that match arguments provided will be copied to the target destination.
+`cargo-cp-artifact` accepts a list of crate name and artifact kind to output file mappings and a command to wrap.`cargo-cp-artifact` will read `stdout` of the wrapped command and parse it as [cargo metadata](https://doc.rust-lang.org/cargo/reference/external-tools.html#json-messages). Compiler artifacts that match arguments provided will be copied to the target destination.
 
-When wrapping a `cargo` command, it is necessary to include a `json` `--message-format`.
+When wrapping a `cargo` command, it is necessary to include a `json` format to `--message-format`.
 
 ## Examples
 
 ### Wrapping cargo
 
 ```sh
-cargo-cp-artifact my-crate=lib/index.node -- cargo build --message-format=json-render-diagnostics
+cargo-cp-artifact my-crate=cdylib=lib/index.node -- cargo build --message-format=json-render-diagnostics
 ```
 
 ### Parsing a file
 
 ```sh
-cargo-cp-artifact my-crate=lib/index.node -- cat build-output.txt
+cargo-cp-artifact my-crate=cdylib=lib/index.node -- cat build-output.txt
 ```
 
 ### `npm` script
@@ -37,8 +37,9 @@ cargo-cp-artifact my-crate=lib/index.node -- cat build-output.txt
 `package.json`
 ```json
 {
+    "name": "my-crate",
     "scripts": {
-        "build": "cargo-cp-artifact my-crate=lib/index.node -- cargo build --message-format=json-render-diagnostics"
+        "build": "cargo-cp-artifact $npm_package_name=cdylib=lib/index.node -- cargo build --message-format=json-render-diagnostics"
     }
 }
 ```
