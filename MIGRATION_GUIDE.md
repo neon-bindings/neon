@@ -137,7 +137,14 @@ fn user_full_name(mut cx: FunctionContext) -> JsResult<JsString> {
 
 ### Concurrency
 
-The supported mechanism for concurrency is the Event Queue API (`neon::event::EventQueue`).
+The supported mechanism for concurrency is the Event Queue API (`neon::event::EventQueue`). This feature has not yet stabilized, so to use this API, you'll also need to enable the `"event-queue-api"` feature flag as well:
+
+```toml
+[dependencies.neon]
+version = "0.7.1"
+default-features = false
+features = ["napi", "event-queue-api"]
+```
 
 #### Deprecated: Task API
 
