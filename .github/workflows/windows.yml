@@ -34,7 +34,7 @@ jobs:
       if: ${{ matrix.node-version == '15.x' }}
       run: npm install -g npm@6
     - name: Install libclang
-      uses: KyleMayes/install-llvm-action@01144dc
+      uses: KyleMayes/install-llvm-action@01144dc97b1e2693196c3056414a44f15180648b
       with:
         version: "10"
         directory: ${{ runner.temp }}/llvm

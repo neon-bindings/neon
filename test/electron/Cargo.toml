@@ -4,14 +4,9 @@ version = "0.1.0"
 edition = "2018"
 authors = ["The Neon Community"]
 license = "MIT/Apache-2.0"
-build = "build.rs"
 
 [lib]
-name = "electron_tests"
 crate-type = ["cdylib"]
-
-[build-dependencies]
-neon-build = {version = "*", path = "../../crates/neon-build"}
 
 [dependencies.neon]
 version = "*"

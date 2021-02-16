@@ -6,12 +6,13 @@
   "author": "The Neon Community",
   "license": "MIT",
   "scripts": {
-    "install": "cargo build -p electron-tests --release",
+    "install": "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
     "start": "electron .",
     "test": "node test"
   },
   "repository": "https://github.com/electron/electron-quick-start",
   "devDependencies": {
+    "cargo-cp-artifact": "^0.1.0 ",
     "electron": "^11.0.3",
     "spectron": "^13.0.0"
   }
