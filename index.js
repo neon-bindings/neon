@@ -149,7 +149,11 @@ function parseOutputFile(opts) {
     quitError(`Missing artifact kind: ${opts}`);
   }
 
-  const crateName = opts.slice(0, nameSplitAt);
+  const crateNameRaw = opts.slice(0, nameSplitAt);
+  const crateName = crateNameRaw === "$npm_package_name"
+    ? process.env.npm_package_name
+    : crateNameRaw;
+
   const remainder = opts.slice(nameSplitAt + 1);
   const kindSplitAt = remainder.indexOf("=");
 

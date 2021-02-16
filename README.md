@@ -44,6 +44,8 @@ cargo-cp-artifact my-crate=cdylib=lib/index.node -- cat build-output.txt
 }
 ```
 
+_Note: `cargo-cp-artifact` will interpolate the special name `$npm_package_name` for portability across platforms (e.g., Windows)._
+
 ```sh
 npm run build
 

@@ -1,6 +1,6 @@
 {
   "name": "cargo-cp-artifact",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Copies compiler artifacts emitted by rustc by parsing Cargo metadata",
   "main": "index.js",
   "bin": {
