@@ -552,4 +552,35 @@ mod tests {
         run("npm install", &test_napi);
         run("npm test", &test_napi);
     }
+
+    #[test]
+    fn napi_migration_test() {
+        let _guard = TEST_MUTEX.lock();
+
+        log("napi_migration_test");
+
+        cli_setup();
+
+        let node_version_output = Command::new("node")
+            .arg("--version")
+            .output()
+            .expect("failed to get Node version")
+            .stdout;
+
+        // Chop off the 'v' prefix.
+        let node_version_bytes = &node_version_output[1..];
+        let node_version_str = std::str::from_utf8(node_version_bytes).unwrap();
+        let node_version = Version::parse(node_version_str).unwrap();
+
+        let v10 = Version::parse("10.0.0").unwrap();
+
+        if node_version <= v10 {
+            eprintln!("N-API tests only run on Node 10 or later.");
+            return;
+        }
+
+        let test_napi = project_root().join("test").join("napi-migration");
+        run("npm install", &test_napi);
+        run("npm test", &test_napi);
+    }
 }

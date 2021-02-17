@@ -84,5 +84,6 @@ members = [
     "test/static",
     "test/electron",
     "test/dynamic/native",
-    "test/napi"
+    "test/napi",
+    "test/napi-migration"
 ]

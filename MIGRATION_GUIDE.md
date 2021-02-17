@@ -1,5 +1,28 @@
 # N-API Migration Guide
 
+## What is this about?
+
+Since v10, Node.js supports an improved API for building native modules, known as [N-API](https://nodejs.org/api/n-api.html). N-API offers a clearer, more complete, and more stable API layer for writing Node.js plugins than previous Node versions did.
+
+The Neon community has been [hard at work](https://github.com/neon-bindings/neon/issues/444) porting the library to a new backend based on N-API.
+
+### Why N-API?
+
+Some key benefits of the new backend include:
+- Compiled Neon modules will work in all versions of Node _without needing to be recompiled_, guaranteed!
+- You can precompile Neon-based libraries to be completely transparent to downstream consumers.
+- The build process is streamlined, making Neon apps more reliable and easier to debug.
+- The stability guarantees of N-API allow us to avoid risk of incompatible changes to future releases of Neon.
+
+### What does this mean for me?
+
+Porting Neon to N-API has been mostly transparent, but it has required a few backwards-incompatible changes. This guide provides instructions on how to migrate existing apps to the new N-API backend.
+
+Fortunately, the guaranteed stability of N-API means that once Neon users do this migration, we have increased confidence in the stability of Neon. We expect this to be the **last major breaking change before reaching Neon 1.0.**
+
+If you have any trouble porting, **please reach out to us** with a Neon issue or on the community Slack! We want to help everyone upgrade as smoothly and seamlessly as possible.
+
+
 ## Getting started
 
 ### Supported Node versions
