@@ -31,14 +31,20 @@ The N-API backend of Neon requires a minimum Node version of 10.0.
 
 ### Enabling the N-API backend
 
-To enable the N-API backend, you need to enable the `"napi"` feature flag in your `Cargo.toml`:
+To enable the N-API backend, you need to:
+
+1. Disable the default features (for now, the default features select the legacy backend) by setting `default-features = false`; and
+2. Enable the appropriate feature flag in your `Cargo.toml` to select the N-API version you need support for (each N-API version N uses the feature flag `"napi-N"`, for example `"napi-4"` for N-API version 4).
+
+As a rule, you should choose the **oldest version of N-API that has the APIs you need.** (We will be adding N-API version requirements to the Neon API docs to make this clearer in the future.) You can consult the [official N-API feature matrix](https://nodejs.org/api/n-api.html#n_api_node_api_version_matrix) to see which N-API versions come with various versions of Node.
 
 ```toml
 [dependencies.neon]
 version = "0.7.1"
 default-features = false
-features = ["napi"]
+features = ["napi-4"]
 ```
+
 
 ## Minor API changes
 
@@ -166,7 +172,7 @@ The supported mechanism for concurrency is the Event Queue API (`neon::event::Ev
 [dependencies.neon]
 version = "0.7.1"
 default-features = false
-features = ["napi", "event-queue-api"]
+features = ["napi-4", "event-queue-api"]
 ```
 
 #### Deprecated: Task API
