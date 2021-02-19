@@ -145,12 +145,20 @@ declare_types! {
 
 **After:**
 
+On the Rust side, the wrapped type must implement the `Finalize` trait, but this comes with a default implementation so it can be implemented with an empty `impl` block:
+
 ```rust
 struct User {
     first_name: String,
     last_name: String,
 }
 
+impl Finalize for User { }
+```
+
+The type can then be exposed to JavaScript with simple functions that wrap `User` in a `JsBox`:
+
+```rust
 fn create_user(mut cx: FunctionContext) -> JsResult<JsBox<User>> {
     let first_name = cx.argument::<JsString>(0)?.value(&mut cx);
     let last_name = cx.argument::<JsString>(1)?.value(&mut cx);
@@ -161,6 +169,20 @@ fn user_full_name(mut cx: FunctionContext) -> JsResult<JsString> {
     let user = cx.argument::<JsBox<User>>(0)?;
     let full_name = user.full_name();
     Ok(cx.string(full_name))
+}
+```
+
+Finally, you can provide an idiomatic JavaScript interface to the type by wrapping the boxed type in a class:
+
+```js
+class User {
+    constructor(firstName, lastName) {
+        this.boxed = addon.createUser(firstName, lastName);
+    }
+
+    fullName() {
+        return addon.userFullName(this.boxed);
+    }
 }
 ```
 
