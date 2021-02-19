@@ -207,6 +207,8 @@ That said, **if you believe you need access to the libuv thread pool, please [fi
 
 **Before:**
 
+With the `Task` API it was possible to define background computations off the main JavaScript thread, but these could only be run within the libuv thread pool--which runs all the system logic for the internals of Node.js. This gave Neon programmers a real power but forced them to contend with Node.js system tasks.
+
 ```rust
 impl Task for MyTask {
     type Output = i32;
@@ -237,6 +239,8 @@ pub fn start_task(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 ```
 
 **After:**
+
+With the N-API backend, Neon programmers can use their own native threads and avoid competing with the Node.js system internals. This also brings some convenience since it doesn't require defining any custom trait implementations.
 
 ```rust
 pub fn start_task(mut cx: FunctionContext) -> JsResult<JsUndefined> {
