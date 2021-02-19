@@ -108,7 +108,7 @@ The N-API backend introduces two categories of significant change:
 
 The `declare_types!` macro is deprecated and replaced by the `JsBox` type.
 
-_Rationale:_ The `declare_types!` macro provides a syntax for defining classes, but requires substantial boilerplate and is unergonomic for simple cases. It's also not flexible enough to express the full range of JavaScript classes syntax and semantics. With the `JsBox` type, it's easy to embed Rust data in JavaScript objects, which can then be nested inside of more feature-rich classes defined in pure JavaScript (or TypeScript).
+_Rationale:_ The `declare_types!` macro provides a syntax for defining classes, but requires substantial boilerplate and is unergonomic for simple cases and tends to interact poorly with IDEs. It's also not flexible enough to express the full range of JavaScript classes syntax and semantics. With the `JsBox` type, it's easy to embed Rust data in JavaScript objects, which can then be nested inside of more feature-rich classes defined in pure JavaScript (or TypeScript).
 
 **Before:**
 
