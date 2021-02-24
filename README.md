@@ -11,25 +11,49 @@ npm install -g cargo-cp-artifact
 ## Usage
 
 ```
-cargo-cp-artifact [crate-name=artifact-kind=output-file] -- [wrapped-command]
+cargo-cp-artifact --artifact artifact-kind crate-name output-file -- wrapped-command
 ```
 
 `cargo-cp-artifact` accepts a list of crate name and artifact kind to output file mappings and a command to wrap.`cargo-cp-artifact` will read `stdout` of the wrapped command and parse it as [cargo metadata](https://doc.rust-lang.org/cargo/reference/external-tools.html#json-messages). Compiler artifacts that match arguments provided will be copied to the target destination.
 
 When wrapping a `cargo` command, it is necessary to include a `json` format to `--message-format`.
 
+### Arguments
+
+Multiple arguments are allowed to copy multiple build artifacts.
+
+#### `--artifact`
+
+_Alias: `-a`_
+
+Followed by *three* arguments: `artifact-kind crate-name output-file`
+
+#### `--npm`
+
+_Alias: `-n`_
+
+Followed by *two* arguments: `artifact-kind output-file`
+
+The crate name will be read from the `npm_package_name` environment variable.
+
+### Artifact Kind
+
+Valid artifact kinds are `bin`, `cdylib`, and `dylib`. They may be abbreviated as `b`, `c`, and `d` respectively.
+
+For example, `-ac` is the equivalent of `--artifact cdylib`.
+
 ## Examples
 
 ### Wrapping cargo
 
 ```sh
-cargo-cp-artifact my-crate=cdylib=lib/index.node -- cargo build --message-format=json-render-diagnostics
+cargo-cp-artifact -a cdylib my-crate lib/index.node -- cargo build --message-format=json-render-diagnostics
 ```
 
 ### Parsing a file
 
 ```sh
-cargo-cp-artifact my-crate=cdylib=lib/index.node -- cat build-output.txt
+cargo-cp-artifact -a cdylib my-crate lib/index.node -- cat build-output.txt
 ```
 
 ### `npm` script
@@ -39,17 +63,15 @@ cargo-cp-artifact my-crate=cdylib=lib/index.node -- cat build-output.txt
 {
     "name": "my-crate",
     "scripts": {
-        "build": "cargo-cp-artifact $npm_package_name=cdylib=lib/index.node -- cargo build --message-format=json-render-diagnostics"
+        "build": "cargo-cp-artifact -nc lib/index.node -- cargo build --message-format=json-render-diagnostics"
     }
 }
 ```
 
-_Note: `cargo-cp-artifact` will interpolate the special name `$npm_package_name` for portability across platforms (e.g., Windows)._
-
 ```sh
 npm run build
 
-# Additional arguments ma be passed
+# Additional arguments may be passed
 npm run build -- --feature=serde
 ```
 

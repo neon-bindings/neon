@@ -1,0 +1,128 @@
+"use strict";
+
+const { spawn } = require("child_process");
+const { promises: { copyFile, mkdir, stat } } = require("fs");
+const { dirname } = require("path");
+const readline = require("readline");
+
+const { ParseError, getArtifactName, parse } = require("./args");
+
+function run(argv, env) {
+  const options = parseArgs(argv, env);
+  const copied = {};
+
+  const cp = spawn(options.cmd, options.args, {
+    stdio: ["inherit", "pipe", "inherit"]
+  });
+
+  const rl = readline.createInterface({ input: cp.stdout });
+
+  cp.on("error", (err) => {
+    console.error(err);
+    process.exitCode = 1;
+  });
+
+  cp.on("exit", (code) => {
+    if (!process.exitCode) {
+      process.exitCode = code;
+    }
+  });
+
+  rl.on("line", (line) => {
+    try {
+      processCargoBuildLine(options, copied, line);
+    } catch (err) {
+      console.error(err);
+      process.exitCode = 1;
+    }
+  });
+
+  process.on("exit", () => {
+    Object.keys(options.artifacts).forEach((name) => {
+      if (!copied[name]) {
+        console.error(`Did not copy "${name}"`);
+
+        if (!process.exitCode) {
+          process.exitCode = 1;
+        }
+      }
+    });
+  });
+}
+
+function processCargoBuildLine(options, copied, line) {
+  const data = JSON.parse(line);
+
+  if (!data || data.reason !== "compiler-artifact" || !data.target) {
+    return;
+  }
+
+  const { kind: kinds, name } = data.target;
+
+  if (!Array.isArray(kinds) || !kinds.length) {
+    return;
+  }
+
+  const [kind] = kinds;
+  const key = getArtifactName({ artifactType: kind, crateName: name });
+  const outputFiles = options.artifacts[key];
+
+  if (!outputFiles || !Array.isArray(data.filenames)) {
+    return;
+  }
+
+  const [filename] = data.filenames;
+
+  if (!filename) {
+    return;
+  }
+
+  Promise
+    .all(outputFiles.map(outputFile => copyArtifact(filename, outputFile)))
+    .then(() => {
+      copied[key] = true;
+    })
+    .catch((err) => {
+      process.exitCode = 1;
+      console.error(err);
+    });
+}
+
+async function isNewer(filename, outputFile) {
+  try {
+    const prevStats = await stat(outputFile);
+    const nextStats = await stat(filename);
+
+    return nextStats.mtime > prevStats.mtime;
+  } catch (_err) {}
+
+  return true;
+}
+
+async function copyArtifact(filename, outputFile) {
+  if (!(await isNewer(filename, outputFile))) {
+    return;
+  }
+
+  await mkdir(dirname(outputFile), { recursive: true });
+  await copyFile(filename, outputFile);
+}
+
+function parseArgs(argv, env) {
+  try {
+    return parse(argv, env);
+  } catch (err) {
+    if (err instanceof ParseError) {
+      quitError(err.message);
+    } else {
+      throw err;
+    }
+  }
+}
+
+function quitError(msg) {
+  console.error(msg);
+  process.exit(1);
+}
+
+module.exports = run;
