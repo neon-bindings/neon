@@ -35,7 +35,15 @@ function getCrateNameFromEnv(env) {
     ].join(" "));
   }
 
-  return env[NPM_ENV];
+  const name = env[NPM_ENV];
+  const firstSlash = name.indexOf("/");
+
+  // This is a namespaced package; assume the crate is the un-namespaced version
+  if (name[0] === "@" && firstSlash > 0) {
+    return name.slice(firstSlash + 1);
+  }
+
+  return name;
 }
 
 function parse(argv, env) {

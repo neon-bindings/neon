@@ -84,6 +84,23 @@ describe("Argument Parsing", () => {
     assert.deepStrictEqual(parse(args, env), expected);
   });
 
+  it("should remove namespace from package name", () => {
+    const args = "-nc index.node -- a b c".split(" ");
+    const env = {
+      npm_package_name: "@my-namespace/my-crate"
+    };
+
+    const expected = {
+      artifacts: {
+        "cdylib:my-crate": ["index.node"]
+      },
+      cmd: "a",
+      args: ["b", "c"]
+    };
+
+    assert.deepStrictEqual(parse(args, env), expected);
+  });
+
   it("should be able to provide multiple artifacts", () => {
     const args = `
       -nb my-bin

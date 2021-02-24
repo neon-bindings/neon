@@ -34,7 +34,7 @@ _Alias: `-n`_
 
 Followed by *two* arguments: `artifact-kind output-file`
 
-The crate name will be read from the `npm_package_name` environment variable.
+The crate name will be read from the `npm_package_name` environment variable. If the package name includes a namespace (`@namespace/package`), the namespace will be removed when matching the crate name (`package`).
 
 ### Artifact Kind
 
