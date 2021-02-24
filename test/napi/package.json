@@ -5,10 +5,11 @@
   "author": "The Neon Community",
   "license": "MIT",
   "scripts": {
-    "install": "cargo build -p napi --release",
+    "install": "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
     "test": "mocha --expose-gc --timeout 5000 --recursive lib"
   },
   "devDependencies": {
+    "cargo-cp-artifact": "^0.1.0",
     "chai": "^4.2.0",
     "mocha": "^8.1.0"
   }
