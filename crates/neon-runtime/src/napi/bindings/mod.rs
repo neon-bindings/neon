@@ -41,7 +41,7 @@ macro_rules! napi_name {
 /// ```
 /// extern "C" {
 ///     fn get_undefined(env: Env, result: *mut Value) -> Status;
-///     /* Additional functions may be included */  
+///     /* Additional functions may be included */
 /// }
 /// ```
 ///
@@ -109,60 +109,68 @@ macro_rules! generate {
     (extern "C" {
         $(fn $name:ident($($param:ident: $ptype:ty$(,)?)*) -> $rtype:ty;)+
     }) => {
-        pub(crate) struct Napi {
-            $(
-                $name: unsafe extern "C" fn(
-                    $($param: $ptype,)*
-                ) -> $rtype,
-            )*
-        }
 
-        #[inline(never)]
-        fn panic_load<T>() -> T {
-            panic!("Must load N-API bindings")
-        }
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "napi-embedding")] {
 
-        static mut NAPI: Napi = {
-            $(
-                unsafe extern "C" fn $name($(_: $ptype,)*) -> $rtype {
-                    panic_load()
+            }
+            else {
+                pub(crate) struct Napi {
+                    $(
+                        $name: unsafe extern "C" fn(
+                            $($param: $ptype,)*
+                        ) -> $rtype,
+                    )*
                 }
-            )*
 
-            Napi {
+                #[inline(never)]
+                fn panic_load<T>() -> T {
+                    panic!("Must load N-API bindings")
+                }
+
+                static mut NAPI: Napi = {
+                    $(
+                        unsafe extern "C" fn $name($(_: $ptype,)*) -> $rtype {
+                            panic_load()
+                        }
+                    )*
+
+                    Napi {
+                        $(
+                            $name,
+                        )*
+                    }
+                };
+
+                pub(crate) unsafe fn load(
+                    host: &libloading::Library,
+                    actual_napi_version: u32,
+                    expected_napi_version: u32,
+                ) -> Result<(), libloading::Error> {
+                    assert!(
+                        actual_napi_version >= expected_napi_version,
+                        "Minimum required N-API version {}, found {}.",
+                        expected_napi_version,
+                        actual_napi_version,
+                    );
+
+                    NAPI = Napi {
+                        $(
+                            $name: *host.get(napi_name!($name).as_bytes())?,
+                        )*
+                    };
+
+                    Ok(())
+                }
+
                 $(
-                    $name,
+                    #[inline]
+                    pub(crate) unsafe fn $name($($param: $ptype,)*) -> $rtype {
+                        (NAPI.$name)($($param,)*)
+                    }
                 )*
             }
-        };
-
-        pub(crate) unsafe fn load(
-            host: &libloading::Library,
-            actual_napi_version: u32,
-            expected_napi_version: u32,
-        ) -> Result<(), libloading::Error> {
-            assert!(
-                actual_napi_version >= expected_napi_version,
-                "Minimum required N-API version {}, found {}.",
-                expected_napi_version,
-                actual_napi_version,
-            );
-
-            NAPI = Napi {
-                $(
-                    $name: *host.get(napi_name!($name).as_bytes())?,
-                )*
-            };
-
-            Ok(())
         }
-
-        $(
-            #[inline]
-            pub(crate) unsafe fn $name($($param: $ptype,)*) -> $rtype {
-                (NAPI.$name)($($param,)*)
-            }
-        )*
     };
 }
 
@@ -174,12 +182,14 @@ pub(crate) use types::*;
 mod types;
 mod functions;
 
-static SETUP: Once = Once::new();
-
 /// Loads N-API symbols from host process.
 /// Must be called at least once before using any functions in `neon-runtime` or
 /// they will panic.
 /// Safety: `env` must be a valid `napi_env` for the current thread
 pub unsafe fn setup(env: Env) {
-    SETUP.call_once(|| load(env).expect("Failed to load N-API symbols"));
+    #[cfg(not(feature = "napi-embedding"))]
+    {
+        static SETUP: Once = Once::new();
+        SETUP.call_once(|| load(env).expect("Failed to load N-API symbols"));
+    }
 }

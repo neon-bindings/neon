@@ -12,6 +12,7 @@ cfg-if = "1.0.0"
 libloading = { version = "0.6.5", optional = true }
 neon-sys = { version = "=0.7.1", path = "../neon-sys", optional = true }
 smallvec = "1.4.2"
+paste = "1.0.4"
 
 [dev-dependencies]
 nodejs-sys = "0.7.0" # Not strictly needed; just here for easy manual copying
@@ -25,6 +26,7 @@ napi-4 = ["napi-3"]
 napi-5 = ["napi-4"]
 napi-6 = ["napi-5"]
 napi-experimental = ["napi-6"]
+napi-embedding = [ ]
 docs-only = ["neon-sys/docs-only"]
 
 [package.metadata.docs.rs]

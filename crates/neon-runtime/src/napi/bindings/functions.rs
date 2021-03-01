@@ -295,41 +295,45 @@ pub(crate) use napi5::*;
 #[cfg(feature = "napi-6")]
 pub(crate) use napi6::*;
 
-use super::{Env, Status};
+cfg_if::cfg_if! {
+    if #[cfg(not(feature = "napi-embedding"))] {
+        use super::{Env, Status};
 
-// This symbol is loaded separately because it is a prerequisite
-unsafe fn get_version(host: &libloading::Library, env: Env) -> Result<u32, libloading::Error> {
-    let get_version = host.get::<fn(Env, *mut u32) -> Status>(b"napi_get_version")?;
-    let mut version = 0;
+        // This symbol is loaded separately because it is a prerequisite
+        unsafe fn get_version(host: &libloading::Library, env: Env) -> Result<u32, libloading::Error> {
+            let get_version = host.get::<fn(Env, *mut u32) -> Status>(b"napi_get_version")?;
+            let mut version = 0;
 
-    assert_eq!(
-        get_version(env, &mut version as *mut _),
-        Status::Ok,
-    );
+            assert_eq!(
+                get_version(env, &mut version as *mut _),
+                Status::Ok,
+            );
 
-    Ok(version)
-}
+            Ok(version)
+        }
 
-pub(crate) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
-    #[cfg(not(windows))]
-    let host = libloading::os::unix::Library::this().into();
-    #[cfg(windows)]
-    let host = libloading::os::windows::Library::this()?.into();
+        pub(crate) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
+            #[cfg(not(windows))]
+            let host = libloading::os::unix::Library::this().into();
+            #[cfg(windows)]
+            let host = libloading::os::windows::Library::this()?.into();
 
-    // This never fail since `get_version` is in N-API Version 1 and the module will fail
-    // with `Error: Module did not self-register` if N-API does not exist.
-    let version = get_version(&host, env).expect("Failed to find N-API version");
+            // This never fail since `get_version` is in N-API Version 1 and the module will fail
+            // with `Error: Module did not self-register` if N-API does not exist.
+            let version = get_version(&host, env).expect("Failed to find N-API version");
 
-    napi1::load(&host, version, 1)?;
+            napi1::load(&host, version, 1)?;
 
-    #[cfg(feature = "napi-4")]
-    napi4::load(&host, version, 4)?;
+            #[cfg(feature = "napi-4")]
+            napi4::load(&host, version, 4)?;
 
-    #[cfg(feature = "napi-5")]
-    napi5::load(&host, version, 5)?;
+            #[cfg(feature = "napi-5")]
+            napi5::load(&host, version, 5)?;
 
-    #[cfg(feature = "napi-6")]
-    napi6::load(&host, version, 6)?;
+            #[cfg(feature = "napi-6")]
+            napi6::load(&host, version, 6)?;
 
-    Ok(())
+            Ok(())
+        }
+    }
 }
