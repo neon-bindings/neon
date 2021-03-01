@@ -26,6 +26,25 @@ macro_rules! napi_name {
     };
 }
 
+macro_rules! generate_fn_with_link_name {
+    ($link_name:ident, $name:ident, ($($param:ident: $ptype:ty$(,)?)*), $rtype:ty) => {
+        #[inline]
+        pub(crate) unsafe fn $name($($param: $ptype,)*) -> $rtype {
+            extern "C" { fn $link_name($($param: $ptype,)*) -> $rtype; }
+            $link_name($($param,)*)
+        }
+    };
+}
+
+macro_rules! generate_embedded {
+    (typeof_value, ($($param:ident: $ptype:ty$(,)?)*), $rtype:ty) => {
+        generate_fn_with_link_name!(napi_typeof, typeof_value, ($($param: $ptype,)*), $rtype);
+    };
+    ($name:ident, ($($param:ident: $ptype:ty$(,)?)*), $rtype:ty) => {
+        paste::paste! { generate_fn_with_link_name!([<napi_ $name>], $name, ($($param: $ptype,)*), $rtype); }
+    };
+}
+
 /// Generate dynamic bindings to N-API symbols from definitions in an
 /// block `extern "C"`.
 ///
@@ -109,12 +128,12 @@ macro_rules! generate {
     (extern "C" {
         $(fn $name:ident($($param:ident: $ptype:ty$(,)?)*) -> $rtype:ty;)+
     }) => {
-
         cfg_if::cfg_if! {
             if #[cfg(feature = "napi-embedding")] {
-
-            }
-            else {
+                $(
+                    generate_embedded!($name, ($($param: $ptype,)*), $rtype);
+                )*
+            } else {
                 pub(crate) struct Napi {
                     $(
                         $name: unsafe extern "C" fn(

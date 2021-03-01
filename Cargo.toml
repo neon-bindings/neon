@@ -56,6 +56,7 @@ napi-3 = ["napi-2", "neon-runtime/napi-3"]
 napi-4 = ["napi-3", "neon-runtime/napi-4"]
 napi-5 = ["napi-4", "neon-runtime/napi-5"]
 napi-6 = ["napi-5", "neon-runtime/napi-6"]
+napi-embedding = [ "neon-runtime/napi-embedding" ]
 napi-latest = ["napi-6"]
 napi-experimental = ["napi-6", "neon-runtime/napi-experimental"]
 
