@@ -1,0 +1,19 @@
+[package]
+name = "{{project.name.cargo}}"
+version = "{{project.version}}"
+{{#if project.author}}
+authors = ["{{project.author}}{{#if project.email}} <{{project.email}}>{{/if}}"]
+{{/if}}
+{{#if project.license}}
+license = "{{project.license}}"
+{{/if}}
+edition = "2018"
+exclude = ["index.node"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies.neon]
+version = {{neon.libs.version}}
+default-features = false
+features = ["napi-6"]

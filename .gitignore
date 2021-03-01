@@ -7,6 +7,7 @@ Cargo.lock
 **/index.node
 **/artifacts.json
 cli/lib
+create-neon/dist
 test/cli/lib
 npm-debug.log
 rls*.log
