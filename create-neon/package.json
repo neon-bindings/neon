@@ -8,7 +8,9 @@
     "url": "https://github.com/neon-bindings/neon/issues"
   },
   "homepage": "https://github.com/neon-bindings/neon#readme",
-  "bin": "./dist/bin/create-neon.js",
+  "bin": {
+    "create-neon": "dist/bin/create-neon.js"
+  },
   "files": [
     "dist/**/*",
     "templates/**/*"
@@ -16,7 +18,8 @@
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "manual-test": "tsc && rm -rf throwaway-test && mkdir throwaway-test && cd throwaway-test && node ../dist/bin/create-neon.js"
   },
   "repository": {
     "type": "git",
