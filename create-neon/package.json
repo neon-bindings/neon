@@ -9,17 +9,16 @@
   },
   "homepage": "https://github.com/neon-bindings/neon#readme",
   "bin": {
-    "create-neon": "dist/bin/create-neon.js"
+    "create-neon": "dist/src/bin/create-neon.js"
   },
   "files": [
-    "dist/**/*",
-    "templates/**/*"
+    "dist/**/*"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r data/templates dist/data",
     "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "manual-test": "tsc && rm -rf throwaway-test && mkdir throwaway-test && cd throwaway-test && node ../dist/bin/create-neon.js"
+    "manual-test": "npm run build && rm -rf throwaway-test && mkdir throwaway-test && cd throwaway-test && node ../dist/src/bin/create-neon.js"
   },
   "repository": {
     "type": "git",
@@ -31,5 +30,8 @@
   "devDependencies": {
     "@types/node": "^14.14.31",
     "typescript": "^4.2.2"
+  },
+  "dependencies": {
+    "handlebars": "^4.7.7"
   }
 }
