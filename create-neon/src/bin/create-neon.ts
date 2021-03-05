@@ -14,9 +14,15 @@ async function main() {
   let project: Project;
 
   try {
-    project = await Project.load('package.json');
+    project = await Project.load('package.json', versions['cargo-cp-artifact']);
   } catch (err) {
     die("Could not read `package.json`: " + err.message);
+  }
+
+  try {
+    project.save('package.json');
+  } catch (err) {
+    die("Could not update `package.json`: " + err.message);
   }
 
   // Select the N-API version associated with the current
