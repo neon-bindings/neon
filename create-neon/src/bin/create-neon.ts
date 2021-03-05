@@ -1,52 +1,58 @@
-import { readFile, mkdir, writeFile } from 'fs/promises';
+import { mkdir } from 'fs/promises';
 import npmInit from '../npm-init';
 import versions from '../../data/versions.json';
-import template from '../template';
+import { Project, Metadata } from '../metadata';
 import * as path from 'path';
+import Template from '../template';
 
-function escapeQuotes(str: string): string {
-  return str.replace(/"/g, '\\"');
+function die(message: string): never {
+  console.error(`❌ ${message}`);
+  process.exit(1);
 }
 
 async function main() {
   await npmInit();
 
-  let name: string;
-  let version: string;
-  let author: string;
-  let license: string;
-  let description: string;
+  let project: Project;
 
   try {
-    let json = JSON.parse(await readFile('package.json', 'utf8'));
-    name = json.name || "";
-    version = json.version || "";
-    author = escapeQuotes(json.author || "");
-    license = json.license || "";
-    description = escapeQuotes(json.description || "");
+    project = await Project.load('package.json');
   } catch (err) {
-    console.error("Could not read `package.json`: " + err.message);
-    process.exit(1);
+    die("Could not read `package.json`: " + err.message);
   }
 
-  let ctx = {
-    project: { name, version, author, license, description },
-    versions
-  };
+  // Select the N-API version associated with the current
+  // running Node process.
+  let inferred = process.versions.napi;
 
-  let gitignore = (await template('.gitignore.hbs'))(ctx);
-  let manifest = (await template('Cargo.toml.hbs'))(ctx);
-  let readme = (await template('README.md.hbs'))(ctx);
-  let librs = (await template('lib.rs.hbs'))(ctx);
+  let napi = inferred
+    ? Math.min(+versions.napi, +inferred)
+    : +versions.napi;
+
+  let metadata: Metadata = {
+    project,
+    versions: {
+      neon: versions.neon,
+      napi: napi
+    }
+  };
 
   await mkdir('src');
 
-  await writeFile('.gitignore', gitignore, { flag: 'wx' });
-  await writeFile('Cargo.toml', manifest, { flag: 'wx' });
-  await writeFile('README.md', readme, { flag: 'wx' });
-  await writeFile(path.join('src', 'lib.rs'), librs, { flag: 'wx' });
+  let gitignore = new Template('.gitignore.hbs', '.gitignore');
+  let manifest = new Template('Cargo.toml.hbs', 'Cargo.toml');
+  let readme = new Template('README.md.hbs', 'README.md');
+  let lib = new Template('lib.rs.hbs', path.join('src', 'lib.rs'));
 
-  console.log(`✨ Created Neon project \`${ctx.project.name}\`. Happy 🦀 hacking! ✨`);
+  for (let template of [gitignore, manifest, readme, lib]) {
+    try {
+      await template.expand(metadata);
+    } catch (err) {
+      die(`Could not save ${template.target}: ${err.message}`);
+    }
+  }
+
+  console.log(`✨ Initialized Neon project \`${metadata.project.name}\`. Happy 🦀 hacking! ✨`);
 }
 
 main();

@@ -1,3 +1,5 @@
 # {{project.name}}
 
-{{project.description}}
+{{#if project.description}}
+{{project.description.raw}}
+{{/if}}

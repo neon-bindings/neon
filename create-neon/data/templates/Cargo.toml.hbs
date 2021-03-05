@@ -1,8 +1,11 @@
 [package]
 name = "{{project.name}}"
 version = "{{project.version}}"
+{{#if project.description}}
+description = {{project.description.quoted}}
+{{/if}}
 {{#if project.author}}
-authors = ["{{project.author}}"]
+authors = [{{project.author.quoted}}]
 {{/if}}
 {{#if project.license}}
 license = "{{project.license}}"
