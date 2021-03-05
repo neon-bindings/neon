@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { mkdir } from 'fs/promises';
 import npmInit from '../npm-init';
 import versions from '../../data/versions.json';
