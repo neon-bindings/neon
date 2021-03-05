@@ -4,11 +4,7 @@ import versions from '../../data/versions.json';
 import { Project, Metadata } from '../metadata';
 import * as path from 'path';
 import Template from '../template';
-
-function die(message: string): never {
-  console.error(`❌ ${message}`);
-  process.exit(1);
-}
+import die from '../die';
 
 async function main() {
   await npmInit();
