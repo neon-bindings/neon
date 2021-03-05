@@ -1,4 +1,3 @@
-import die from './die';
 import shell from './shell';
 
 export default async function npmInit(): Promise<number> {

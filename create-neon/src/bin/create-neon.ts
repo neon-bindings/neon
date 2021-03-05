@@ -22,8 +22,8 @@ async function main() {
   let inferred = process.versions.napi;
 
   let napi = inferred
-    ? Math.min(+versions.napi, +inferred)
-    : +versions.napi;
+    ? Math.min(Number(versions.napi), Number(inferred))
+    : Number(versions.napi);
 
   let metadata: Metadata = {
     project,
