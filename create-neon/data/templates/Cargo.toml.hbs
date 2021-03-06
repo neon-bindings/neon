@@ -1,14 +1,14 @@
 [package]
-name = "{{project.name}}"
-version = "{{project.version}}"
-{{#if project.description}}
-description = {{project.description.quoted}}
+name = "{{package.name}}"
+version = "{{package.version}}"
+{{#if package.description}}
+description = {{package.quotedDescription}}
 {{/if}}
-{{#if project.author}}
-authors = [{{project.author.quoted}}]
+{{#if package.author}}
+authors = [{{package.quotedAuthor}}]
 {{/if}}
-{{#if project.license}}
-license = "{{project.license}}"
+{{#if package.license}}
+license = "{{package.license}}"
 {{/if}}
 edition = "2018"
 exclude = ["index.node"]

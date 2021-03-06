@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 import { mkdir } from 'fs/promises';
-import { Metadata } from '../metadata';
 import * as path from 'path';
 import die from '../die';
 import Package from '../package';
-import expand from '../expand';
+import expand, { Versions } from '../expand';
+import versions from '../../data/versions.json';
 
 const TEMPLATES: Record<string, string> = {
   '.gitignore.hbs': '.gitignore',
@@ -13,6 +13,21 @@ const TEMPLATES: Record<string, string> = {
   'README.md.hbs':  'README.md',
   'lib.rs.hbs':     path.join('src', 'lib.rs')
 };
+
+function inferVersions(): Versions {
+  // Select the N-API version associated with the current
+  // running Node process.
+  let inferred = process.versions.napi;
+
+  let napi = inferred
+    ? Math.min(Number(versions.napi), Number(inferred))
+    : Number(versions.napi);
+
+  return {
+    neon: versions.neon,
+    napi: napi
+  };
+}
 
 async function main(name: string) {
   try {
@@ -31,11 +46,12 @@ async function main(name: string) {
 
   await mkdir(path.join(name, 'src'));
 
-  let metadata = Metadata.from(pkg);
-
   for (let source of Object.keys(TEMPLATES)) {
     let target = path.join(name, TEMPLATES[source]);
-    await expand(source, target, metadata);
+    await expand(source, target, {
+      package: pkg,
+      versions: inferVersions()
+    });
   }
 
   console.log(`✨ Created Neon project \`${name}\`. Happy 🦀 hacking! ✨`);

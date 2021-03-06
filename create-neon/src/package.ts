@@ -27,8 +27,10 @@ export default class Package {
   name: string;
   version: string;
   author: string;
+  quotedAuthor: string;
   license: string;
   description: string;
+  quotedDescription: string;
 
   static async create(name: string): Promise<Package> {
     let seed = {
@@ -66,7 +68,9 @@ export default class Package {
     this.name = json.name;
     this.version = json.version;
     this.author = json.author;
+    this.quotedAuthor = JSON.stringify(json.author);
     this.license = json.license;
     this.description = json.description;
+    this.quotedDescription = JSON.stringify(json.description);
   }
 }

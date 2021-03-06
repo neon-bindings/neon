@@ -1,9 +1,19 @@
 import { readFile, writeFile } from 'fs/promises';
 import handlebars from 'handlebars';
 import * as path from 'path';
-import { Metadata } from './metadata';
+import Package from './package';
 
 const TEMPLATES_DIR = path.join(__dirname, '..', 'data', 'templates');
+
+export interface Versions {
+  neon: string,
+  napi: number
+};
+
+export interface Metadata {
+  package: Package,
+  versions: Versions
+};
 
 export default async function expand(source: string, target: string, metadata: Metadata) {
   let template = await readFile(path.join(TEMPLATES_DIR, source), 'utf8');
