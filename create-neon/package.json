@@ -18,7 +18,7 @@
     "build": "tsc && cp -r data/templates dist/data",
     "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "manual-test": "npm run build && rm -rf throwaway-test && mkdir throwaway-test && cd throwaway-test && node ../dist/src/bin/create-neon.js"
+    "manual-test": "npm run build && rm -rf throwaway-test && node ./dist/src/bin/create-neon.js throwaway-test"
   },
   "repository": {
     "type": "git",

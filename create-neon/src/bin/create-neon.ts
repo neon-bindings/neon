@@ -1,62 +1,54 @@
 #!/usr/bin/env node
 
 import { mkdir } from 'fs/promises';
-import npmInit from '../npm-init';
-import versions from '../../data/versions.json';
-import { Project, Metadata } from '../metadata';
+import { Metadata } from '../metadata';
 import * as path from 'path';
-import Template from '../template';
 import die from '../die';
+import Package from '../package';
+import expand from '../expand';
 
-async function main() {
-  await npmInit();
+const TEMPLATES: Record<string, string> = {
+  '.gitignore.hbs': '.gitignore',
+  'Cargo.toml.hbs': 'Cargo.toml',
+  'README.md.hbs':  'README.md',
+  'lib.rs.hbs':     path.join('src', 'lib.rs')
+};
 
-  let project: Project;
+async function main(name: string) {
+  try {
+    await mkdir(name);
+  } catch (err) {
+    die(`Could not create \`${name}\`: ${err.message}`);
+  }
+
+  let pkg: Package;
 
   try {
-    project = await Project.load('package.json', versions['cargo-cp-artifact']);
+    pkg = await Package.create(name);
   } catch (err) {
-    die("Could not read `package.json`: " + err.message);
+    die("Could not create `package.json`: " + err.message);
   }
 
-  try {
-    project.save('package.json');
-  } catch (err) {
-    die("Could not update `package.json`: " + err.message);
+  await mkdir(path.join(name, 'src'));
+
+  let metadata = Metadata.from(pkg);
+
+  for (let source of Object.keys(TEMPLATES)) {
+    let target = path.join(name, TEMPLATES[source]);
+    await expand(source, target, metadata);
   }
 
-  // Select the N-API version associated with the current
-  // running Node process.
-  let inferred = process.versions.napi;
-
-  let napi = inferred
-    ? Math.min(Number(versions.napi), Number(inferred))
-    : Number(versions.napi);
-
-  let metadata: Metadata = {
-    project,
-    versions: {
-      neon: versions.neon,
-      napi: napi
-    }
-  };
-
-  await mkdir('src');
-
-  let gitignore = new Template('.gitignore.hbs', '.gitignore');
-  let manifest = new Template('Cargo.toml.hbs', 'Cargo.toml');
-  let readme = new Template('README.md.hbs', 'README.md');
-  let lib = new Template('lib.rs.hbs', path.join('src', 'lib.rs'));
-
-  for (let template of [gitignore, manifest, readme, lib]) {
-    try {
-      await template.expand(metadata);
-    } catch (err) {
-      die(`Could not save ${template.target}: ${err.message}`);
-    }
-  }
-
-  console.log(`✨ Initialized Neon project \`${metadata.project.name}\`. Happy 🦀 hacking! ✨`);
+  console.log(`✨ Created Neon project \`${name}\`. Happy 🦀 hacking! ✨`);
 }
 
-main();
+if (process.argv.length !== 3) {
+  console.error("✨ create-neon: Create a new Neon project with zero configuration. ✨");
+  console.error();
+  console.error("Usage: npm init neon name");
+  console.error();
+  console.error("  name   The name of your Neon project, placed in a new directory of the same name.");
+  console.error();
+  process.exit(1);
+}
+
+main(process.argv[2]);
