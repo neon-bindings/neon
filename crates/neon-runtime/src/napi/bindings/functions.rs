@@ -212,6 +212,8 @@ mod napi1 {
             rhs: Value,
             result: *mut bool
         ) -> Status;
+
+        fn run_script(env: Env, script: Value, result: *mut Value) -> Status;
     });
 }
 
