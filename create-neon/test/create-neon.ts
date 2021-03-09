@@ -33,7 +33,7 @@ const PROJECT = 'create-neon-test-project';
 
 describe('Project creation', () => {
   afterEach(async () => {
-    await fs.rmdir(PROJECT, { recursive: true, maxRetries: 3 });
+    await fs.rmdir(PROJECT, { recursive: true, maxRetries: 3, retryDelay: 500 });
   });
 
   it('succeeds with all default answers', async () => {
