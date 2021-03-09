@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { mkdir } from 'fs/promises';
+import { promises as fs } from 'fs';
 import * as path from 'path';
 import die from '../die';
 import Package from '../package';
@@ -31,7 +31,7 @@ function inferVersions(): Versions {
 
 async function main(name: string) {
   try {
-    await mkdir(name);
+    await fs.mkdir(name);
   } catch (err) {
     die(`Could not create \`${name}\`: ${err.message}`);
   }
@@ -44,7 +44,7 @@ async function main(name: string) {
     die("Could not create `package.json`: " + err.message);
   }
 
-  await mkdir(path.join(name, 'src'));
+  await fs.mkdir(path.join(name, 'src'));
 
   for (let source of Object.keys(TEMPLATES)) {
     let target = path.join(name, TEMPLATES[source]);

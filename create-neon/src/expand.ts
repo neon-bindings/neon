@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'fs/promises';
+import { promises as fs } from 'fs';
 import handlebars from 'handlebars';
 import * as path from 'path';
 import Package from './package';
@@ -16,9 +16,9 @@ export interface Metadata {
 };
 
 export default async function expand(source: string, target: string, metadata: Metadata) {
-  let template = await readFile(path.join(TEMPLATES_DIR, source), 'utf8');
+  let template = await fs.readFile(path.join(TEMPLATES_DIR, source), 'utf8');
   let compiled = handlebars.compile(template, { noEscape: true });
   let expanded = compiled(metadata);
   // The 'wx' flag creates the file but fails if it already exists.
-  await writeFile(target, expanded, { flag: 'wx' });
+  await fs.writeFile(target, expanded, { flag: 'wx' });
 }

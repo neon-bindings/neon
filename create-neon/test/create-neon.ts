@@ -2,7 +2,7 @@ import { assert } from 'chai';
 import { spawn } from 'child_process';
 import execa from 'execa';
 import * as path from 'path';
-import { readFile, rmdir } from 'fs/promises';
+import { promises as fs } from 'fs';
 import * as TOML from 'toml';
 import expect from '../dev/expect';
 
@@ -33,7 +33,7 @@ const PROJECT = 'create-neon-test-project';
 
 describe('Project creation', () => {
   afterEach(async () => {
-    await rmdir(PROJECT, { recursive: true });
+    await fs.rmdir(PROJECT, { recursive: true });
   });
 
   it('succeeds with all default answers', async () => {
@@ -50,7 +50,7 @@ describe('Project creation', () => {
 
     assert.strictEqual(code, 0);
 
-    let json = JSON.parse(await readFile(path.join(PROJECT, 'package.json'), { encoding: 'utf8' }));
+    let json = JSON.parse(await fs.readFile(path.join(PROJECT, 'package.json'), { encoding: 'utf8' }));
 
     assert.strictEqual(json.name, PROJECT);
     assert.strictEqual(json.main, 'index.node');
@@ -60,7 +60,7 @@ describe('Project creation', () => {
     assert.strictEqual(json.description, '');
     assert.strictEqual(json.author, '');
 
-    let toml = TOML.parse(await readFile(path.join(PROJECT, 'Cargo.toml'), { encoding: 'utf8' }));
+    let toml = TOML.parse(await fs.readFile(path.join(PROJECT, 'Cargo.toml'), { encoding: 'utf8' }));
 
     assert.strictEqual(toml.package.name, PROJECT);
     assert.strictEqual(toml.package.version, '0.1.0');
@@ -82,12 +82,12 @@ describe('Project creation', () => {
 
     assert.strictEqual(code, 0);
 
-    let json = JSON.parse(await readFile(path.join(PROJECT, 'package.json'), { encoding: 'utf8' }));
+    let json = JSON.parse(await fs.readFile(path.join(PROJECT, 'package.json'), { encoding: 'utf8' }));
 
     assert.strictEqual(json.description, 'the "hello world" of examples');
     assert.strictEqual(json.author, '"Dave Herman" <dherman@example.com>');
 
-    let toml = TOML.parse(await readFile(path.join(PROJECT, 'Cargo.toml'), { encoding: 'utf8' }));
+    let toml = TOML.parse(await fs.readFile(path.join(PROJECT, 'Cargo.toml'), { encoding: 'utf8' }));
 
     assert.strictEqual(toml.package.description, 'the "hello world" of examples');
     assert.deepEqual(toml.package.authors, ['"Dave Herman" <dherman@example.com>']);

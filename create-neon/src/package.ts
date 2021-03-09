@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'fs/promises';
+import { promises as fs } from 'fs';
 import * as path from 'path';
 import versions from '../data/versions.json';
 import shell from './shell';
@@ -50,16 +50,16 @@ export default class Package {
     let filename = path.join(name, 'package.json');
   
     // 1. Write initial values to prevent `npm init` from asking unnecessary questions.
-    await writeFile(filename, JSON.stringify(seed));
+    await fs.writeFile(filename, JSON.stringify(seed));
   
     // 2. Call `npm init` to ask the user remaining questions.
     await shell('npm', ['init'], name);
   
     // 3. Sort the values in idiomatic `npm init` order.
-    let sorted = sort(JSON.parse(await readFile(filename, 'utf8')));
+    let sorted = sort(JSON.parse(await fs.readFile(filename, 'utf8')));
   
     // 4. Save the result to package.json.
-    await writeFile(filename, JSON.stringify(sorted, undefined, 2));
+    await fs.writeFile(filename, JSON.stringify(sorted, undefined, 2));
   
     return new Package(sorted);
   }
