@@ -5,6 +5,7 @@ import * as path from 'path';
 import { promises as fs } from 'fs';
 import * as TOML from 'toml';
 import expect from '../dev/expect';
+import rimraf from '../dev/rimraf';
 
 const NODE: string = process.execPath;
 const CREATE_NEON = path.join(__dirname, '..', 'dist', 'src', 'bin', 'create-neon.js');
@@ -33,7 +34,7 @@ const PROJECT = 'create-neon-test-project';
 
 describe('Project creation', () => {
   afterEach(async () => {
-    await fs.rmdir(PROJECT, { recursive: true, maxRetries: 3, retryDelay: 500 });
+    await rimraf(PROJECT, { maxBusyTries: 3, emfileWait: 100 });
   });
 
   it('succeeds with all default answers', async () => {
