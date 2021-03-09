@@ -57,7 +57,7 @@ async function main(name: string) {
   console.log(`✨ Created Neon project \`${name}\`. Happy 🦀 hacking! ✨`);
 }
 
-if (process.argv.length !== 3) {
+if (process.argv.length < 3) {
   console.error("✨ create-neon: Create a new Neon project with zero configuration. ✨");
   console.error();
   console.error("Usage: npm init neon name");

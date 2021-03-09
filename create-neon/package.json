@@ -12,13 +12,15 @@
     "create-neon": "dist/src/bin/create-neon.js"
   },
   "files": [
-    "dist/**/*"
+    "dist/src/**/*",
+    "dist/data/**/*"
   ],
   "scripts": {
     "build": "tsc && cp -r data/templates dist/data",
     "prepublishOnly": "npm run build",
+    "pretest": "npm run build",
     "test": "mocha",
-    "manual-test": "npm run build && rm -rf throwaway-test && node ./dist/src/bin/create-neon.js throwaway-test"
+    "manual-test": "npm run build && rm -rf create-neon-manual-test-project && node ./dist/src/bin/create-neon.js create-neon-manual-test-project"
   },
   "repository": {
     "type": "git",
