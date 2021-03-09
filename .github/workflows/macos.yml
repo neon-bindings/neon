@@ -35,3 +35,6 @@ jobs:
     #   run: npm install -g node-gyp@latest
     - name: run cargo test
       run: cargo test --release
+    - name: run CLI test
+      working-directory: ./create-neon
+      run: npm test
