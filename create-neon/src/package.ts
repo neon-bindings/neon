@@ -23,8 +23,6 @@ function sort(json: any): any {
   return Object.assign(next, json);
 }
 
-const NPM = /^win/.test(process.platform) ? 'npm.cmd' : 'npm';
-
 export default class Package {
   name: string;
   version: string;
@@ -55,7 +53,7 @@ export default class Package {
     await fs.writeFile(filename, JSON.stringify(seed));
   
     // 2. Call `npm init` to ask the user remaining questions.
-    await shell(NPM, ['init'], name);
+    await shell('npm', ['init'], name);
   
     // 3. Sort the values in idiomatic `npm init` order.
     let sorted = sort(JSON.parse(await fs.readFile(filename, 'utf8')));

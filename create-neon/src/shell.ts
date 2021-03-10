@@ -5,7 +5,7 @@ import { spawn } from 'child_process';
  * All stdio is inherited directly from the current process.
  */
 export default function shell(cmd: string, args: string[], cwd: string): Promise<undefined> {
-  let child = spawn(cmd, args, { stdio: 'inherit', cwd });
+  let child = spawn(cmd, args, { stdio: 'inherit', shell: true, cwd });
 
   let resolve: (result: undefined) => void;
   let reject: (error: Error) => void;
