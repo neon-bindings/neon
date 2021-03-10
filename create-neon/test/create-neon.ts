@@ -38,18 +38,21 @@ describe('Project creation', () => {
   });
 
   it('succeeds with all default answers', async () => {
-    let code = await expect(spawn(NODE, [CREATE_NEON, PROJECT]), {
-      'package name:':   '',
-      'version:':        '',
-      'description:':    '',
-      'git repository:': '',
-      'keywords:':       '',
-      'author:':         '',
-      'license:':        '',
-      'Is this OK?':     ''
-    });
-
-    assert.strictEqual(code, 0);
+    try {
+      await expect(spawn(NODE, [CREATE_NEON, PROJECT]), {
+        'package name:':   '',
+        'version:':        '',
+        'description:':    '',
+        'git repository:': '',
+        'keywords:':       '',
+        'author:':         '',
+        'license:':        '',
+        'Is this OK?':     ''
+      });
+    } catch (error) {
+      console.log(error.output);
+      assert.fail("create-neon unexpectedly failed: " + error.message);
+    }
 
     let json = JSON.parse(await fs.readFile(path.join(PROJECT, 'package.json'), { encoding: 'utf8' }));
 
@@ -70,18 +73,21 @@ describe('Project creation', () => {
   });
 
   it('handles quotation marks in author and description', async () => {
-    let code = await expect(spawn(NODE, [CREATE_NEON, PROJECT]), {
-      'package name:':   '',
-      'version:':        '',
-      'description:':    'the "hello world" of examples',
-      'git repository:': '',
-      'keywords:':       '',
-      'author:':         '"Dave Herman" <dherman@example.com>',
-      'license:':        '',
-      'Is this OK?':     ''
-    });
-
-    assert.strictEqual(code, 0);
+    try {
+      await expect(spawn(NODE, [CREATE_NEON, PROJECT]), {
+        'package name:':   '',
+        'version:':        '',
+        'description:':    'the "hello world" of examples',
+        'git repository:': '',
+        'keywords:':       '',
+        'author:':         '"Dave Herman" <dherman@example.com>',
+        'license:':        '',
+        'Is this OK?':     ''
+      });
+    } catch (error) {
+      console.log(error.output);
+      assert.fail("create-neon unexpectedly failed");
+    }
 
     let json = JSON.parse(await fs.readFile(path.join(PROJECT, 'package.json'), { encoding: 'utf8' }));
 

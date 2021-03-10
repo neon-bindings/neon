@@ -74,6 +74,14 @@ async function* run(script: Record<string, string>, stdin: Writable, stdout: Rea
   }
 }
 
+export class ChildError extends Error {
+  output: string[][];
+  constructor(message: string, output: string[][]) {
+    super(message);
+    this.output = output;
+  }
+}
+
 function exit(child: ChildProcess): Promise<number | null> {
   let resolve: (code: number | null) => void;
   let result: Promise<number | null> = new Promise(res => { resolve = res; });
@@ -83,8 +91,18 @@ function exit(child: ChildProcess): Promise<number | null> {
   return result;
 }
 
-export default async function expect(child: ChildProcess, script: Record<string, string>): Promise<number | null> {
-  for await (let _ of run(script, child.stdin!, child.stdout!)) { }
-
-  return await exit(child);
+export default async function expect(child: ChildProcess, script: Record<string, string>): Promise<void> {
+  let output: string[][] = [];
+  for await (let lines of run(script, child.stdin!, child.stdout!)) {
+    output.push(lines);
+  }
+  let code = await exit(child);
+  switch (code) {
+    case null:
+      throw new ChildError("child process interrupted", output);
+    case 0:
+      return;
+    default:
+      throw new ChildError("child process exited with code " + code, output);
+  }
 }
