@@ -1,0 +1,22 @@
+[package]
+name = "{{package.name}}"
+version = "{{package.version}}"
+{{#if package.description}}
+description = {{package.quotedDescription}}
+{{/if}}
+{{#if package.author}}
+authors = [{{package.quotedAuthor}}]
+{{/if}}
+{{#if package.license}}
+license = "{{package.license}}"
+{{/if}}
+edition = "2018"
+exclude = ["index.node"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies.neon]
+version = "{{versions.neon}}"
+default-features = false
+features = ["napi-{{versions.napi}}"]

@@ -33,3 +33,6 @@ jobs:
       run: sudo apt-get install -y build-essential
     - name: run cargo test
       run: xvfb-run --auto-servernum cargo test --release -- --nocapture
+    - name: run CLI test
+      working-directory: ./create-neon
+      run: npm test
