@@ -105,7 +105,8 @@ export default async function expect(child: ChildProcess, script: Record<string,
     case 0:
       return;
     default:
-      console.log("stderr: " + stderr);
+      console.log("stderr: " + stderr.trim());
+      console.log("stdout: " + JSON.stringify(output));
       throw new ChildError("child process exited with code " + code, output);
   }
 }

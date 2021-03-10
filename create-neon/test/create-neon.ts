@@ -50,7 +50,6 @@ describe('Project creation', () => {
         'Is this OK?':     ''
       });
     } catch (error) {
-      console.log("stdout lines: " + error.output);
       assert.fail("create-neon unexpectedly failed: " + error.message);
     }
 
@@ -85,7 +84,6 @@ describe('Project creation', () => {
         'Is this OK?':     ''
       });
     } catch (error) {
-      console.log(error.output);
       assert.fail("create-neon unexpectedly failed");
     }
 
