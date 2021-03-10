@@ -12,5 +12,8 @@ describe('JsString', function() {
     it('should throw if the script throws', function () {
       expect(() => addon.run_string_as_script('throw new Error("b1-66er")')).to.throw('b1-66er');
     });
+    it('should throw SyntaxError if the string has invalid syntax', function () {
+      expect(() => addon.run_string_as_script('invalid js code')).to.throw(SyntaxError);
+    });
   })
 });
