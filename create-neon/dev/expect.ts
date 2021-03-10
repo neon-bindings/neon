@@ -1,6 +1,7 @@
 import { ChildProcess } from 'child_process';
 import { PassThrough, Readable, Writable } from 'stream';
 import { StringDecoder } from 'string_decoder';
+import readStream from 'stream-to-string';
 
 function readChunks(input: Readable): Readable {
   let output = new PassThrough({ objectMode: true });
@@ -96,6 +97,7 @@ export default async function expect(child: ChildProcess, script: Record<string,
   for await (let lines of run(script, child.stdin!, child.stdout!)) {
     output.push(lines);
   }
+  let stderr = await readStream(child.stderr!);
   let code = await exit(child);
   switch (code) {
     case null:
@@ -103,6 +105,7 @@ export default async function expect(child: ChildProcess, script: Record<string,
     case 0:
       return;
     default:
+      console.log("stderr: " + stderr);
       throw new ChildError("child process exited with code " + code, output);
   }
 }
