@@ -212,6 +212,24 @@ mod napi1 {
             rhs: Value,
             result: *mut bool
         ) -> Status;
+
+        fn create_external_arraybuffer(
+            env: Env,
+            data: *mut c_void,
+            length: usize,
+            finalize_cb: Finalize,
+            finalize_hint: *mut c_void,
+            result: *mut Value,
+        ) -> Status;
+
+        fn create_external_buffer(
+            env: Env,
+            length: usize,
+            data: *mut c_void,
+            finalize_cb: Finalize,
+            finalize_hint: *mut c_void,
+            result: *mut Value,
+        ) -> Status;
     });
 }
 

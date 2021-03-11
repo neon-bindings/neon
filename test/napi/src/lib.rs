@@ -148,6 +148,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("increment_array_buffer_with_borrow_mut", increment_array_buffer_with_borrow_mut)?;
     cx.export_function("return_uninitialized_buffer", return_uninitialized_buffer)?;
     cx.export_function("return_buffer", return_buffer)?;
+    cx.export_function("return_external_buffer", return_external_buffer)?;
+    cx.export_function("return_external_array_buffer", return_external_array_buffer)?;
     cx.export_function("read_buffer_with_lock", read_buffer_with_lock)?;
     cx.export_function("read_buffer_with_borrow", read_buffer_with_borrow)?;
     cx.export_function("sum_buffer_with_borrow", sum_buffer_with_borrow)?;
