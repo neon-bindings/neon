@@ -156,11 +156,11 @@ mod build {
             .expect("Failed to run \"node-gyp configure\" for neon-sys!");
 
         if !output.status.success() {
-            panic!(format!(
+            panic!(
                 "Failed to run \"node-gyp configure\" for neon-sys!\n Out: {}\n Err: {}",
                 String::from_utf8_lossy(&output.stdout),
                 String::from_utf8_lossy(&output.stderr)
-            ));
+            );
         }
 
         if cfg!(windows) {
