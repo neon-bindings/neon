@@ -11,7 +11,7 @@ pub unsafe fn new(out: &mut Local, env: Env, size: u32) -> bool {
     status == napi::Status::Ok
 }
 
-pub unsafe fn data<'a, 'b>(env: Env, base_out: &'a mut *mut c_void, obj: Local) -> usize {
+pub unsafe fn data(env: Env, base_out: &mut *mut c_void, obj: Local) -> usize {
     let mut size = 0;
     assert_eq!(
         napi::get_arraybuffer_info(env, obj, base_out as *mut _, &mut size as *mut _),

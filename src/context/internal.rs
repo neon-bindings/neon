@@ -57,13 +57,13 @@ impl Env {
         if ptr.is_null() {
             let b: Box<ClassMap> = Box::new(ClassMap::new());
             let raw = Box::into_raw(b);
-            ptr = unsafe { std::mem::transmute(raw) };
+            ptr = raw.cast();
             let free_map: *mut c_void = unsafe { std::mem::transmute(drop_class_map as usize) };
             unsafe {
                 neon_runtime::class::set_class_map(self.to_raw(), ptr, free_map);
             }
         }
-        unsafe { std::mem::transmute(ptr) }
+        unsafe { &mut *ptr.cast() }
     }
 
     #[cfg(feature = "legacy-runtime")]
@@ -128,7 +128,7 @@ pub trait ContextInternal<'a>: Sized {
     fn deactivate(&self) { self.scope_metadata().active.set(false); }
 
     #[cfg(feature = "legacy-runtime")]
-    fn try_catch_internal<'b: 'a, T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
+    fn try_catch_internal<T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
         where F: FnOnce(&mut Self) -> NeonResult<T>,
     {
         // A closure does not have a guaranteed layout, so we need to box it in order to pass
@@ -167,7 +167,7 @@ pub trait ContextInternal<'a>: Sized {
     }
 
     #[cfg(feature = "napi-1")]
-    fn try_catch_internal<'b: 'a, T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
+    fn try_catch_internal<T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
         where F: FnOnce(&mut Self) -> NeonResult<T>
     {
         let result = f(self);
@@ -193,7 +193,7 @@ extern "C" fn try_catch_glue<'a, 'b: 'a, C, T, F>(rust_thunk: *mut c_void,
           F: FnOnce(&mut C) -> NeonResult<T>,
 {
     let f: F = *unsafe { Box::from_raw(rust_thunk as *mut F) };
-    let cx: &mut C = unsafe { std::mem::transmute(cx) };
+    let cx: &mut C = unsafe { &mut *cx.cast() };
 
     // The mutable reference to the context is a fiction of the Neon library,
     // since it doesn't actually contain any data in the Rust memory space,

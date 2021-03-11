@@ -1,7 +1,6 @@
 //! Utilities for scheduling tasks to be executed by the Node.js runtime
 
 use std::marker::{Send, Sized};
-use std::mem;
 use std::os::raw::c_void;
 
 use types::{Value, JsFunction};
@@ -26,7 +25,7 @@ pub trait Task: Send + Sized + 'static {
     fn perform(&self) -> Result<Self::Output, Self::Error>;
 
     /// Convert the result of the task to a JavaScript value to be passed to the asynchronous callback. This method is executed on the main thread at some point after the background task is completed.
-    fn complete<'a>(self, cx: TaskContext<'a>, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent>;
+    fn complete(self, cx: TaskContext, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent>;
 
     /// Schedule a task to be executed on a background thread.
     ///
@@ -40,7 +39,7 @@ pub trait Task: Send + Sized + 'static {
         let self_raw = Box::into_raw(boxed_self);
         let callback_raw = callback.to_raw();
         unsafe {
-            neon_runtime::task::schedule(mem::transmute(self_raw),
+            neon_runtime::task::schedule(self_raw.cast(),
                                          perform_task::<Self>,
                                          complete_task::<Self>,
                                          callback_raw);
@@ -49,15 +48,15 @@ pub trait Task: Send + Sized + 'static {
 }
 
 unsafe extern "C" fn perform_task<T: Task>(task: *mut c_void) -> *mut c_void {
-    let task: Box<T> = Box::from_raw(mem::transmute(task));
+    let task: Box<T> = Box::from_raw(task.cast());
     let result = task.perform();
     Box::into_raw(task);
-    mem::transmute(Box::into_raw(Box::new(result)))
+    Box::into_raw(Box::new(result)).cast()
 }
 
 unsafe extern "C" fn complete_task<T: Task>(task: *mut c_void, result: *mut c_void, out: &mut raw::Local) {
-    let result: Result<T::Output, T::Error> = *Box::from_raw(mem::transmute(result));
-    let task: Box<T> = Box::from_raw(mem::transmute(task));
+    let result: Result<T::Output, T::Error> = *Box::from_raw(result.cast());
+    let task: Box<T> = Box::from_raw(task.cast());
     TaskContext::with(|cx| {
         if let Ok(result) = task.complete(cx, result) {
             *out = result.to_raw();

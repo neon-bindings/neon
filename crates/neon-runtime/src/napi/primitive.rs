@@ -35,5 +35,5 @@ pub unsafe fn number(out: &mut Local, env: Env, v: f64) {
 pub unsafe fn number_value(env: Env, p: Local) -> f64 {
     let mut value = 0.0;
     assert_eq!(napi::get_value_double(env, p, &mut value as *mut f64), napi::Status::Ok);
-    return value;
+    value
 }

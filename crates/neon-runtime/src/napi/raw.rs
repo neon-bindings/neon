@@ -18,6 +18,12 @@ impl HandleScope {
     pub fn new() -> Self { Self { word: ptr::null_mut() } }
 }
 
+impl Default for HandleScope {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct EscapableHandleScope {
@@ -26,6 +32,12 @@ pub struct EscapableHandleScope {
 
 impl EscapableHandleScope {
     pub fn new() -> Self { Self { word: ptr::null_mut() } }
+}
+
+impl Default for EscapableHandleScope {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[derive(Clone, Copy)]

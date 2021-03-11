@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 mod napi1 {
     use std::os::raw::{c_char, c_void};
     use super::super::types::*;

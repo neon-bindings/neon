@@ -3,16 +3,16 @@
 use semver::Version;
 
 /// The Neon version.
-pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 /// The Neon major version.
-pub const MAJOR: &'static str = env!("CARGO_PKG_VERSION_MAJOR");
+pub const MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
 
 /// The Neon minor version.
-pub const MINOR: &'static str = env!("CARGO_PKG_VERSION_MINOR");
+pub const MINOR: &str = env!("CARGO_PKG_VERSION_MINOR");
 
 /// The neon patch version.
-pub const PATCH: &'static str = env!("CARGO_PKG_VERSION_PATCH");
+pub const PATCH: &str = env!("CARGO_PKG_VERSION_PATCH");
 
 /// Produces a `semver::Version` data structure representing the Neon version.
 pub fn version() -> Version {
@@ -29,8 +29,8 @@ pub fn version() -> Version {
 
 /// The current build profile (either `"release"` or `"debug"`).
 #[cfg(neon_profile = "release")]
-pub const BUILD_PROFILE: &'static str = "release";
+pub const BUILD_PROFILE: &str = "release";
 
 /// The current build profile (either `"release"` or `"debug"`).
 #[cfg(not(neon_profile = "release"))]
-pub const BUILD_PROFILE: &'static str = "debug";
+pub const BUILD_PROFILE: &str = "debug";

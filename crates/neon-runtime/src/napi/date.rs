@@ -24,5 +24,5 @@ pub unsafe fn value(env: Env, p: Local) -> f64 {
     let mut value = 0.0;
     let status = napi::get_date_value(env, p, &mut value as *mut _);
     assert_eq!(status, napi::Status::Ok);
-    return value;
+    value
 }

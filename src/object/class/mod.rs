@@ -51,10 +51,10 @@ pub struct ClassDescriptor<'a, T: Class> {
 impl<'a, T: Class> ClassDescriptor<'a, T> {
 
     /// Constructs a new minimal `ClassDescriptor` with a name and allocator.
-    pub fn new<'b, U: Class>(name: &'b str, allocate: AllocateCallback<U>) -> ClassDescriptor<'b, U> {
-        ClassDescriptor {
-            name: name,
-            allocate: allocate,
+    pub fn new<'b: 'a>(name: &'b str, allocate: AllocateCallback<T>) -> Self {
+        Self {
+            name,
+            allocate,
             call: None,
             construct: None,
             methods: Vec::new()
@@ -82,7 +82,7 @@ impl<'a, T: Class> ClassDescriptor<'a, T> {
 }
 
 extern "C" fn drop_internals<T>(internals: *mut c_void) {
-    let p: Box<T> = unsafe { Box::from_raw(mem::transmute(internals)) };
+    let p: Box<T> = unsafe { Box::from_raw(internals.cast()) };
     mem::drop(p);
 }
 
@@ -112,7 +112,7 @@ pub trait Class: Managed + Any {
     }
 
     #[doc(hidden)]
-    fn describe<'a>(name: &'a str, allocate: AllocateCallback<Self>) -> ClassDescriptor<'a, Self> {
+    fn describe(name: &str, allocate: AllocateCallback<Self>) -> ClassDescriptor<Self> {
         ClassDescriptor::<Self>::new(name, allocate)
     }
 }
@@ -136,7 +136,7 @@ pub(crate) trait ClassInternal: Class {
         cx.env()
           .class_map()
           .get(&TypeId::of::<Self>())
-          .map(|m| m.clone())
+          .copied()
     }
 
     fn metadata<'a, C: Context<'a>>(cx: &mut C) -> NeonResult<ClassMetadata> {
@@ -238,7 +238,7 @@ impl<'a, T: Class> Borrow for &'a T {
     fn try_borrow<'b>(self, lock: &'b Lock<'b>) -> Result<Ref<'b, Self::Target>, LoanError> {
         unsafe {
             let ptr: *mut c_void = neon_runtime::class::get_instance_internals(self.to_raw());
-            Ref::new(lock, mem::transmute(ptr))
+            Ref::new(lock, &mut *ptr.cast())
         }
     }
 }
@@ -255,7 +255,7 @@ impl<'a, T: Class> BorrowMut for &'a mut T {
     fn try_borrow_mut<'b>(self, lock: &'b Lock<'b>) -> Result<RefMut<'b, Self::Target>, LoanError> {
         unsafe {
             let ptr: *mut c_void = neon_runtime::class::get_instance_internals(self.to_raw());
-            RefMut::new(lock, mem::transmute(ptr))
+            RefMut::new(lock, &mut *ptr.cast())
         }
     }
 }

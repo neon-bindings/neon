@@ -49,7 +49,7 @@ where
     result.assume_init()
 }
 
-pub unsafe fn data<'a, 'b>(env: Env, base_out: &'a mut *mut c_void, obj: Local) -> usize {
+pub unsafe fn data(env: Env, base_out: &mut *mut c_void, obj: Local) -> usize {
     let mut size = 0;
     assert_eq!(
         napi::get_buffer_info(env, obj, base_out as *mut _, &mut size as *mut _),

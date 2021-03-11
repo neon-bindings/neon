@@ -41,7 +41,7 @@ impl<T: Class> Callback<()> for MethodCallback<T> {
         }
     }
 
-    fn as_ptr(self) -> *mut c_void {
+    fn into_ptr(self) -> *mut c_void {
         self.0 as *mut c_void
     }
 }
@@ -78,7 +78,7 @@ impl Callback<()> for ConstructorCallCallback {
         }
     }
 
-    fn as_ptr(self) -> *mut c_void {
+    fn into_ptr(self) -> *mut c_void {
         self.0 as *mut c_void
     }
 }
@@ -95,7 +95,7 @@ impl<T: Class> Callback<*mut c_void> for AllocateCallback<T> {
                     mem::transmute(neon_runtime::class::get_allocate_kernel(data));
                 if let Ok(value) = convert_panics(env, || { kernel(cx) }) {
                     let p = Box::into_raw(Box::new(value));
-                    mem::transmute(p)
+                    p.cast()
                 } else {
                     null_mut()
                 }
@@ -103,7 +103,7 @@ impl<T: Class> Callback<*mut c_void> for AllocateCallback<T> {
         }
     }
 
-    fn as_ptr(self) -> *mut c_void {
+    fn into_ptr(self) -> *mut c_void {
         self.0 as *mut c_void
     }
 }
@@ -130,7 +130,7 @@ impl<T: Class> Callback<bool> for ConstructCallback<T> {
         }
     }
 
-    fn as_ptr(self) -> *mut c_void {
+    fn into_ptr(self) -> *mut c_void {
         self.0 as *mut c_void
     }
 }
