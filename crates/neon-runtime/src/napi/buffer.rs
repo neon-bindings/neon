@@ -5,7 +5,7 @@ use std::ptr::null_mut;
 
 use crate::napi::bindings as napi;
 
-pub unsafe extern "C" fn new(env: Env, out: &mut Local, size: u32) -> bool {
+pub unsafe fn new(env: Env, out: &mut Local, size: u32) -> bool {
     let mut bytes = null_mut();
     let status = napi::create_buffer(env, size as usize, &mut bytes as *mut _, out as *mut _);
     if status == napi::Status::Ok {
@@ -18,7 +18,7 @@ pub unsafe extern "C" fn new(env: Env, out: &mut Local, size: u32) -> bool {
     }
 }
 
-pub unsafe extern "C" fn uninitialized(env: Env, out: &mut Local, size: u32) -> bool {
+pub unsafe fn uninitialized(env: Env, out: &mut Local, size: u32) -> bool {
     let mut bytes = null_mut();
     let status = napi::create_buffer(env, size as usize, &mut bytes as *mut _, out as *mut _);
     status == napi::Status::Ok
@@ -49,7 +49,7 @@ where
     result.assume_init()
 }
 
-pub unsafe extern "C" fn data<'a, 'b>(env: Env, base_out: &'a mut *mut c_void, obj: Local) -> usize {
+pub unsafe fn data<'a, 'b>(env: Env, base_out: &'a mut *mut c_void, obj: Local) -> usize {
     let mut size = 0;
     assert_eq!(
         napi::get_buffer_info(env, obj, base_out as *mut _, &mut size as *mut _),
