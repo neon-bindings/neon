@@ -30,7 +30,7 @@ impl Task for FailureTask {
     type JsEvent = JsNumber;
 
     fn perform(&self) -> Result<Self::Output, Self::Error> {
-        Err(format!("I am a failing task"))
+        Err(String::from("I am a failing task"))
     }
 
     fn complete(self, mut cx: TaskContext, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent> {

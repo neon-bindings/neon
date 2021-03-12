@@ -106,7 +106,7 @@ pub fn throw_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
 
     cx.try_catch(|cx| cx.throw(v))
         .map(|_: ()| Ok(cx.string("unreachable").upcast()))
-        .unwrap_or_else(|err| Ok(err))
+        .unwrap_or_else(Ok)
 }
 
 pub fn call_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {

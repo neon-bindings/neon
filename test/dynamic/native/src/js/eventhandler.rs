@@ -116,7 +116,7 @@ declare_types! {
             let cmd = match result {
               Ok(v) => {
                 if let Ok(number) = v.downcast::<JsNumber>() {
-                   if number.value() == 12f64 {
+                   if (number.value() - 12f64).abs() < f64::EPSILON {
                      "done".into()
                    } else {
                      "wrong number".into()

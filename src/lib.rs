@@ -411,7 +411,7 @@ mod tests {
                         .current_dir(dir)
                         .args(&[&command_flag, cmd])
                         .status()
-                        .expect(&format!("failed to execute test command: {} {} {}", shell, command_flag, cmd))
+                        .unwrap_or_else(|_| panic!("failed to execute test command: {} {} {}", shell, command_flag, cmd))
                         .success());
     }
 
