@@ -111,7 +111,7 @@ impl JsDate {
     /// `JsDate::MIN_VALUE` and `JsDate::MAX_VALUE` or if it is `NaN`
     pub fn is_valid<'a, C: Context<'a>>(self, cx: &mut C) -> bool {
         let value = self.value(cx);
-        value <= JsDate::MAX_VALUE && value >= JsDate::MIN_VALUE
+        (JsDate::MIN_VALUE..=JsDate::MAX_VALUE).contains(&value)
     }
 }
 

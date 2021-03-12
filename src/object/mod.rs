@@ -79,6 +79,7 @@ mod traits {
 
     /// The trait of types that can be a function's `this` binding.
     pub unsafe trait This: Managed {
+        #[allow(clippy::wrong_self_convention)]
         fn as_this(h: raw::Local) -> Self;
     }
 }
@@ -220,6 +221,7 @@ mod traits {
 
     /// The trait of types that can be a function's `this` binding.
     pub unsafe trait This: Managed {
+        #[allow(clippy::wrong_self_convention)]
         fn as_this(env: Env, h: raw::Local) -> Self;
     }
 }

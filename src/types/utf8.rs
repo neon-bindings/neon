@@ -63,7 +63,7 @@ impl<'a> Utf8<'a> {
         }
 
         SmallUtf8 {
-            contents: contents
+            contents,
         }
     }
 }

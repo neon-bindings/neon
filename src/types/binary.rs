@@ -170,7 +170,7 @@ impl<'a> BinaryData<'a> {
         if self.size == 0 {
             &[]
         } else {
-            let base = unsafe { mem::transmute(self.base) };
+            let base = self.base.cast();
             let len = self.size / mem::size_of::<T>();
             unsafe { slice::from_raw_parts(base, len) }
         }
@@ -196,7 +196,7 @@ impl<'a> BinaryData<'a> {
         if self.size == 0 {
             &mut []
         } else {
-            let base = unsafe { mem::transmute(self.base) };
+            let base = self.base.cast();
             let len = self.size / mem::size_of::<T>();
             unsafe { slice::from_raw_parts_mut(base, len) }
         }
@@ -205,6 +205,11 @@ impl<'a> BinaryData<'a> {
     /// Produces the length of the buffer, in bytes.
     pub fn len(self) -> usize {
         self.size
+    }
+
+    /// Returns `true` if the buffer is empty
+    pub fn is_empty(self) -> bool {
+        self.len() == 0
     }
 }
 

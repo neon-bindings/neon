@@ -51,8 +51,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     let one = cx.number(1);
     let two = cx.number(2.1);
-    assert_eq!(one.value(&mut cx), 1.0);
-    assert_eq!(two.value(&mut cx), 2.1);
+    assert!((one.value(&mut cx) - 1.0).abs() < f64::EPSILON);
+    assert!((two.value(&mut cx) - 2.1).abs() < f64::EPSILON);
     cx.export_value("one", one)?;
     cx.export_value("two", two)?;
 
@@ -70,14 +70,14 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         rust_created.set(&mut cx, "whatever", whatever)?;
     }
 
-    assert_eq!({
+    assert!(({
         let v: Handle<JsNumber> = rust_created.get(&mut cx, "a")?.downcast_or_throw(&mut cx)?;
         v.value(&mut cx)
-    }, 1.0f64);
-    assert_eq!({
+    } - 1.0f64).abs() < f64::EPSILON);
+    assert!(({
         let v: Handle<JsNumber> = rust_created.get(&mut cx, 0)?.downcast_or_throw(&mut cx)?;
         v.value(&mut cx)
-    }, 1.0f64);
+    } - 1.0f64).abs() < f64::EPSILON);
     assert_eq!({
         let v: Handle<JsBoolean> = rust_created.get(&mut cx, "whatever")?.downcast_or_throw(&mut cx)?;
         v.value(&mut cx)

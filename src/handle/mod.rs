@@ -48,7 +48,7 @@ impl<'a, T: Managed + 'a> Eq for Handle<'a, T> { }
 impl<'a, T: Managed + 'a> Handle<'a, T> {
     pub(crate) fn new_internal(value: T) -> Handle<'a, T> {
         Handle {
-            value: value,
+            value,
             phantom: PhantomData
         }
     }
@@ -193,13 +193,13 @@ impl<'a, T: Value> Handle<'a, T> {
 
 impl<'a, T: Managed> Deref for Handle<'a, T> {
     type Target = T;
-    fn deref<'b>(&'b self) -> &'b T {
+    fn deref(&self) -> &T {
         &self.value
     }
 }
 
 impl<'a, T: Managed> DerefMut for Handle<'a, T> {
-    fn deref_mut<'b>(&'b mut self) -> &'b mut T {
+    fn deref_mut(&mut self) -> &mut T {
         &mut self.value
     }
 }
