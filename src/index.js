@@ -18,7 +18,17 @@ function run(argv, env) {
   const rl = readline.createInterface({ input: cp.stdout });
 
   cp.on("error", (err) => {
-    console.error(err);
+    if (options.cmd === "cargo" && err.code === "ENOENT") {
+      console.error(`Error: could not find the \`cargo\` executable.
+
+You can find instructions for installing Rust and Cargo at:
+
+    https://www.rust-lang.org/tools/install
+
+`);
+    } else {
+      console.error(err);
+    }
     process.exitCode = 1;
   });
 
