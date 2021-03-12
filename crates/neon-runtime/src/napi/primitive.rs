@@ -1,5 +1,5 @@
-use crate::raw::{Local, Env};
 use crate::napi::bindings as napi;
+use crate::raw::{Env, Local};
 
 /// Mutates the `out` argument provided to refer to the global `undefined` object.
 pub unsafe fn undefined(out: &mut Local, env: Env) {
@@ -20,7 +20,10 @@ pub unsafe fn boolean(out: &mut Local, env: Env, b: bool) {
 /// boolean, this function panics.
 pub unsafe fn boolean_value(env: Env, p: Local) -> bool {
     let mut value = false;
-    assert_eq!(napi::get_value_bool(env, p, &mut value as *mut bool), napi::Status::Ok);
+    assert_eq!(
+        napi::get_value_bool(env, p, &mut value as *mut bool),
+        napi::Status::Ok
+    );
     value
 }
 
@@ -34,6 +37,9 @@ pub unsafe fn number(out: &mut Local, env: Env, v: f64) {
 /// the given `Local` is not a number.
 pub unsafe fn number_value(env: Env, p: Local) -> f64 {
     let mut value = 0.0;
-    assert_eq!(napi::get_value_double(env, p, &mut value as *mut f64), napi::Status::Ok);
+    assert_eq!(
+        napi::get_value_double(env, p, &mut value as *mut f64),
+        napi::Status::Ok
+    );
     value
 }

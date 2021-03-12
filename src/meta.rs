@@ -21,7 +21,7 @@ pub fn version() -> Version {
         minor: MINOR.parse().unwrap(),
         patch: PATCH.parse().unwrap(),
         pre: vec![],
-        build: vec![]
+        build: vec![],
     }
 }
 

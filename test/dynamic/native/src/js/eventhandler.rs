@@ -1,11 +1,11 @@
 use neon::prelude::*;
 
-use std::thread;
 use std::sync::mpsc;
+use std::thread;
 use std::time::Duration;
 
 pub struct Emitter {
-  cb: Option<EventHandler>,
+    cb: Option<EventHandler>,
 }
 
 declare_types! {
@@ -78,7 +78,7 @@ declare_types! {
 }
 
 pub struct TestEmitter {
-  cb: Option<EventHandler>,
+    cb: Option<EventHandler>,
 }
 
 declare_types! {

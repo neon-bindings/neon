@@ -1,26 +1,30 @@
-use std::fmt;
-use std::fmt::Debug;
-use std::error::Error;
+use super::{Value, ValueInternal};
+use context::internal::Env;
+use context::Context;
+use handle::{Handle, Managed};
 use neon_runtime;
 use neon_runtime::raw;
-use context::{Context};
-use context::internal::Env;
+use object::Object;
 use result::{JsResult, JsResultExt};
-use object::{Object};
-use handle::{Handle, Managed};
-use super::{Value, ValueInternal};
+use std::error::Error;
+use std::fmt;
+use std::fmt::Debug;
 
 /// A JavaScript Date object
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct JsDate(raw::Local);
 
-impl Value for JsDate { }
+impl Value for JsDate {}
 
 impl Managed for JsDate {
-    fn to_raw(self) -> raw::Local { self.0 }
+    fn to_raw(self) -> raw::Local {
+        self.0
+    }
 
-    fn from_raw(_: Env, h: raw::Local) -> Self { JsDate(h) }
+    fn from_raw(_: Env, h: raw::Local) -> Self {
+        JsDate(h)
+    }
 }
 
 /// The Error struct for a Date
@@ -72,19 +76,20 @@ impl JsDate {
 
     /// Creates a new Date. It errors when `value` is outside the range of valid JavaScript Date values. When `value`
     /// is `NaN`, the operation will succeed but with an invalid Date
-    pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, value: T) -> Result<Handle<'a, JsDate>, DateError> {
+    pub fn new<'a, C: Context<'a>, T: Into<f64>>(
+        cx: &mut C,
+        value: T,
+    ) -> Result<Handle<'a, JsDate>, DateError> {
         let env = cx.env().to_raw();
         let time = value.into();
 
         if time > JsDate::MAX_VALUE {
-            return Err(DateError(DateErrorKind::Overflow))
+            return Err(DateError(DateErrorKind::Overflow));
         } else if time < JsDate::MIN_VALUE {
-            return Err(DateError(DateErrorKind::Underflow))
+            return Err(DateError(DateErrorKind::Underflow));
         }
 
-        let local = unsafe {
-            neon_runtime::date::new_date(env, time)
-        };
+        let local = unsafe { neon_runtime::date::new_date(env, time) };
         let date = Handle::new_internal(JsDate(local));
         Ok(date)
     }
@@ -93,18 +98,14 @@ impl JsDate {
     /// values will be treated as NaN
     pub fn new_lossy<'a, C: Context<'a>, V: Into<f64>>(cx: &mut C, value: V) -> Handle<'a, JsDate> {
         let env = cx.env().to_raw();
-        let local = unsafe {
-            neon_runtime::date::new_date(env, value.into())
-        };
+        let local = unsafe { neon_runtime::date::new_date(env, value.into()) };
         Handle::new_internal(JsDate(local))
     }
 
     /// Gets the Date's value. An invalid Date will return `std::f64::NaN`
     pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> f64 {
         let env = cx.env().to_raw();
-        unsafe {
-            neon_runtime::date::value(env, self.to_raw())
-        }
+        unsafe { neon_runtime::date::value(env, self.to_raw()) }
     }
 
     /// Checks if the Date's value is valid. A Date is valid if its value is between
@@ -116,11 +117,13 @@ impl JsDate {
 }
 
 impl ValueInternal for JsDate {
-    fn name() -> String { "object".to_string() }
+    fn name() -> String {
+        "object".to_string()
+    }
 
     fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
         unsafe { neon_runtime::tag::is_date(env.to_raw(), other.to_raw()) }
     }
 }
 
-impl Object for JsDate { }
+impl Object for JsDate {}

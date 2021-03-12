@@ -10,7 +10,9 @@ impl Finalize for Person {}
 
 impl Person {
     fn new(name: impl ToString) -> Self {
-        Self { name: name.to_string() }
+        Self {
+            name: name.to_string(),
+        }
     }
 
     fn greet(&self) -> String {

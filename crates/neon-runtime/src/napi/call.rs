@@ -4,20 +4,20 @@ use std::ptr::null_mut;
 
 use smallvec::{smallvec, SmallVec};
 
-use crate::raw::{FunctionCallbackInfo, Env, Local};
 use crate::napi::bindings as napi;
+use crate::raw::{Env, FunctionCallbackInfo, Local};
 
 #[repr(C)]
 pub struct CCallback {
     pub static_callback: *mut c_void,
-    pub dynamic_callback: *mut c_void
+    pub dynamic_callback: *mut c_void,
 }
 
 impl Default for CCallback {
     fn default() -> Self {
         CCallback {
             static_callback: null_mut(),
-            dynamic_callback: null_mut()
+            dynamic_callback: null_mut(),
         }
     }
 }
@@ -25,11 +25,7 @@ impl Default for CCallback {
 pub unsafe fn is_construct(env: Env, info: FunctionCallbackInfo) -> bool {
     let mut target: MaybeUninit<Local> = MaybeUninit::zeroed();
 
-    let status = napi::get_new_target(
-        env,
-        info,
-        target.as_mut_ptr()
-    );
+    let status = napi::get_new_target(env, info, target.as_mut_ptr());
 
     assert_eq!(status, napi::Status::Ok);
 
@@ -43,14 +39,7 @@ pub unsafe fn is_construct(env: Env, info: FunctionCallbackInfo) -> bool {
 }
 
 pub unsafe fn this(env: Env, info: FunctionCallbackInfo, out: &mut Local) {
-    let status = napi::get_cb_info(
-        env,
-        info,
-        null_mut(),
-        null_mut(),
-        out as *mut _,
-        null_mut(),
-    );
+    let status = napi::get_cb_info(env, info, null_mut(), null_mut(), out as *mut _, null_mut());
     assert_eq!(status, napi::Status::Ok);
 }
 

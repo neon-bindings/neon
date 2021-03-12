@@ -3,12 +3,12 @@
 use std::marker::{Send, Sized};
 use std::os::raw::c_void;
 
-use types::{Value, JsFunction};
-use result::JsResult;
-use handle::{Handle, Managed};
 use context::TaskContext;
+use handle::{Handle, Managed};
 use neon_runtime;
 use neon_runtime::raw;
+use result::JsResult;
+use types::{JsFunction, Value};
 
 /// A Rust task that can be executed in the background on the Node thread pool.
 pub trait Task: Send + Sized + 'static {
@@ -25,7 +25,11 @@ pub trait Task: Send + Sized + 'static {
     fn perform(&self) -> Result<Self::Output, Self::Error>;
 
     /// Convert the result of the task to a JavaScript value to be passed to the asynchronous callback. This method is executed on the main thread at some point after the background task is completed.
-    fn complete(self, cx: TaskContext, result: Result<Self::Output, Self::Error>) -> JsResult<Self::JsEvent>;
+    fn complete(
+        self,
+        cx: TaskContext,
+        result: Result<Self::Output, Self::Error>,
+    ) -> JsResult<Self::JsEvent>;
 
     /// Schedule a task to be executed on a background thread.
     ///
@@ -39,10 +43,12 @@ pub trait Task: Send + Sized + 'static {
         let self_raw = Box::into_raw(boxed_self);
         let callback_raw = callback.to_raw();
         unsafe {
-            neon_runtime::task::schedule(self_raw.cast(),
-                                         perform_task::<Self>,
-                                         complete_task::<Self>,
-                                         callback_raw);
+            neon_runtime::task::schedule(
+                self_raw.cast(),
+                perform_task::<Self>,
+                complete_task::<Self>,
+                callback_raw,
+            );
         }
     }
 }
@@ -54,7 +60,11 @@ unsafe extern "C" fn perform_task<T: Task>(task: *mut c_void) -> *mut c_void {
     Box::into_raw(Box::new(result)).cast()
 }
 
-unsafe extern "C" fn complete_task<T: Task>(task: *mut c_void, result: *mut c_void, out: &mut raw::Local) {
+unsafe extern "C" fn complete_task<T: Task>(
+    task: *mut c_void,
+    result: *mut c_void,
+    out: &mut raw::Local,
+) {
     let result: Result<T::Output, T::Error> = *Box::from_raw(result.cast());
     let task: Box<T> = Box::from_raw(task.cast());
     TaskContext::with(|cx| {

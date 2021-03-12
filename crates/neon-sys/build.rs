@@ -12,11 +12,11 @@ mod build {
 
 #[cfg(not(feature = "docs-only"))]
 mod build {
-    use std::process::Command;
+    use regex::Regex;
     use std::env;
     use std::fs;
     use std::path::Path;
-    use regex::Regex;
+    use std::process::Command;
 
     pub fn main() {
         let out_dir = env::var("OUT_DIR").unwrap();
@@ -94,7 +94,8 @@ mod build {
     //
     //     gyp verb architecture ia32
     fn parse_node_arch(node_gyp_output: &str) -> String {
-        let version_regex = Regex::new(r"gyp verb architecture (?P<arch>ia32|x64|arm|arm64)").unwrap();
+        let version_regex =
+            Regex::new(r"gyp verb architecture (?P<arch>ia32|x64|arm|arm64)").unwrap();
         let captures = version_regex.captures(&node_gyp_output).unwrap();
         String::from(&captures["arch"])
     }
@@ -109,7 +110,10 @@ mod build {
             .find(node_root_dir_flag_pattern)
             .map(|i| i + node_root_dir_flag_pattern.len())
             .expect("Couldn't find node_root_dir in node-gyp output.");
-        let node_root_dir_end_index = node_gyp_output[node_root_dir_start_index..].find('\'').unwrap() + node_root_dir_start_index;
+        let node_root_dir_end_index = node_gyp_output[node_root_dir_start_index..]
+            .find('\'')
+            .unwrap()
+            + node_root_dir_start_index;
         &node_gyp_output[node_root_dir_start_index..node_root_dir_end_index]
     }
 
@@ -131,7 +135,10 @@ mod build {
             .find(node_lib_file_flag_pattern)
             .map(|i| i + node_lib_file_flag_pattern.len())
             .expect("Couldn't find node_lib_file in node-gyp output.");
-        let node_lib_file_end_index = node_gyp_output[node_lib_file_start_index..].find('\'').unwrap() + node_lib_file_start_index;
+        let node_lib_file_end_index = node_gyp_output[node_lib_file_start_index..]
+            .find('\'')
+            .unwrap()
+            + node_lib_file_start_index;
         &node_gyp_output[node_lib_file_start_index..node_lib_file_end_index]
     }
 
@@ -147,11 +154,21 @@ mod build {
         }
 
         // Ensure that all package.json dependencies and dev dependencies are installed.
-        npm(native_dir).args(&["install", "--silent"]).status().expect("Failed to run \"npm install\" for neon-sys!");
+        npm(native_dir)
+            .args(&["install", "--silent"])
+            .status()
+            .expect("Failed to run \"npm install\" for neon-sys!");
 
         // Run `node-gyp configure` in verbose mode to read node_root_dir on Windows.
         let output = npm(native_dir)
-            .args(&["run", if debug() { "configure-debug" } else { "configure-release" }])
+            .args(&[
+                "run",
+                if debug() {
+                    "configure-debug"
+                } else {
+                    "configure-release"
+                },
+            ])
             .output()
             .expect("Failed to run \"node-gyp configure\" for neon-sys!");
 
@@ -165,18 +182,34 @@ mod build {
 
         if cfg!(windows) {
             let node_gyp_output = String::from_utf8_lossy(&output.stderr);
-            println!("cargo:node_root_dir={}", parse_node_root_dir(&node_gyp_output));
-            println!("cargo:node_lib_file={}", parse_node_lib_file(&node_gyp_output));
+            println!(
+                "cargo:node_root_dir={}",
+                parse_node_root_dir(&node_gyp_output)
+            );
+            println!(
+                "cargo:node_lib_file={}",
+                parse_node_lib_file(&node_gyp_output)
+            );
         }
 
         // Run `node-gyp build`.
         let build_output = npm(native_dir)
-            .args(&["run", if debug() { "build-debug" } else { "build-release" }])
+            .args(&[
+                "run",
+                if debug() {
+                    "build-debug"
+                } else {
+                    "build-release"
+                },
+            ])
             .output()
             .expect("Failed to run \"node-gyp build\" for neon-sys!");
 
         let node_gyp_build_output = String::from_utf8_lossy(&build_output.stderr);
-        println!("cargo:node_arch={}", parse_node_arch(&node_gyp_build_output));
+        println!(
+            "cargo:node_arch={}",
+            parse_node_arch(&node_gyp_build_output)
+        );
     }
 
     // Link the built object file into a static library.
@@ -205,7 +238,10 @@ mod build {
             }
         };
 
-        cc::Build::new().cpp(true).object(object_path).compile("libneon.a");
+        cc::Build::new()
+            .cpp(true)
+            .object(object_path)
+            .compile("libneon.a");
     }
 
     #[cfg(unix)]
@@ -236,7 +272,7 @@ mod build {
     fn debug() -> bool {
         match env::var("DEBUG") {
             Ok(s) => s == "true",
-            Err(_) => false
+            Err(_) => false,
         }
     }
 }

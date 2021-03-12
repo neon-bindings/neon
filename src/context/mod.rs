@@ -2,33 +2,36 @@
 
 pub(crate) mod internal;
 
+use borrow::internal::Ledger;
+use borrow::{Borrow, BorrowMut, Ref, RefMut};
+use context::internal::Env;
+#[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
+use event::EventQueue;
+use handle::{Handle, Managed};
+use neon_runtime;
+use neon_runtime::raw;
+#[cfg(feature = "legacy-runtime")]
+use object::class::Class;
+use object::{Object, This};
+use result::{JsResult, NeonResult, Throw};
+#[cfg(feature = "napi-1")]
+use smallvec::SmallVec;
 use std;
 use std::cell::RefCell;
 use std::convert::Into;
 use std::marker::PhantomData;
 use std::os::raw::c_void;
 use std::panic::UnwindSafe;
-use neon_runtime;
-use neon_runtime::raw;
-use borrow::{Ref, RefMut, Borrow, BorrowMut};
-use borrow::internal::Ledger;
-use context::internal::Env;
-use handle::{Managed, Handle};
-#[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
-use event::EventQueue;
-use types::{JsValue, Value, JsObject, JsArray, JsFunction, JsBoolean, JsNumber, JsString, StringResult, JsNull, JsUndefined};
-#[cfg(feature = "napi-5")]
-use types::date::{JsDate, DateError};
+use types::binary::{JsArrayBuffer, JsBuffer};
 #[cfg(feature = "napi-1")]
 use types::boxed::{Finalize, JsBox};
-use types::binary::{JsArrayBuffer, JsBuffer};
+#[cfg(feature = "napi-5")]
+use types::date::{DateError, JsDate};
 use types::error::JsError;
-use object::{Object, This};
-#[cfg(feature = "legacy-runtime")]
-use object::class::Class;
-use result::{NeonResult, JsResult, Throw};
-#[cfg(feature = "napi-1")]
-use smallvec::SmallVec;
+use types::{
+    JsArray, JsBoolean, JsFunction, JsNull, JsNumber, JsObject, JsString, JsUndefined, JsValue,
+    StringResult, Value,
+};
 
 use self::internal::{ContextInternal, Scope, ScopeMetadata};
 
@@ -47,15 +50,17 @@ impl CallbackInfo<'_> {
         }
     }
 
-    pub unsafe fn with_cx<T: This, U, F: for<'a> FnOnce(CallContext<'a, T>) -> U>(&self, env: Env, f: F) -> U {
+    pub unsafe fn with_cx<T: This, U, F: for<'a> FnOnce(CallContext<'a, T>) -> U>(
+        &self,
+        env: Env,
+        f: F,
+    ) -> U {
         CallContext::<T>::with(env, self, f)
     }
 
     #[cfg(feature = "legacy-runtime")]
     pub fn set_return<T: Value>(&self, value: Handle<T>) {
-        unsafe {
-            neon_runtime::call::set_return(self.info, value.to_raw())
-        }
+        unsafe { neon_runtime::call::set_return(self.info, value.to_raw()) }
     }
 
     #[cfg(feature = "legacy-runtime")]
@@ -77,9 +82,7 @@ impl CallbackInfo<'_> {
     }
 
     pub fn len<'b, C: Context<'b>>(&self, cx: &C) -> i32 {
-        unsafe {
-            neon_runtime::call::len(cx.env().to_raw(), self.info)
-        }
+        unsafe { neon_runtime::call::len(cx.env().to_raw(), self.info) }
     }
 
     #[cfg(feature = "legacy-runtime")]
@@ -96,9 +99,7 @@ impl CallbackInfo<'_> {
 
     #[cfg(feature = "napi-1")]
     pub fn argv<'b, C: Context<'b>>(&self, cx: &mut C) -> SmallVec<[raw::Local; 8]> {
-        unsafe {
-            neon_runtime::call::argv(cx.env().to_raw(), self.info)
-        }
+        unsafe { neon_runtime::call::argv(cx.env().to_raw(), self.info) }
     }
 
     pub fn this<'b, C: Context<'b>>(&self, cx: &mut C) -> raw::Local {
@@ -115,7 +116,7 @@ impl CallbackInfo<'_> {
 #[derive(Clone, Copy, Debug)]
 pub enum CallKind {
     Construct,
-    Call
+    Call,
 }
 
 /// An RAII implementation of a "scoped lock" of the JS engine. When this structure is dropped (falls out of scope), the engine will be unlocked.
@@ -124,7 +125,7 @@ pub enum CallKind {
 pub struct Lock<'a> {
     pub(crate) ledger: RefCell<Ledger>,
     pub(crate) env: Env,
-    phantom: PhantomData<&'a ()>
+    phantom: PhantomData<&'a ()>,
 }
 
 impl<'a> Lock<'a> {
@@ -141,7 +142,6 @@ impl<'a> Lock<'a> {
 ///
 /// A context has a lifetime `'a`, which ensures the safety of handles managed by the JS garbage collector. All handles created during the lifetime of a context are kept alive for that duration and cannot outlive the context.
 pub trait Context<'a>: ContextInternal<'a> {
-
     /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
     ///
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
@@ -170,9 +170,10 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// but while the extra `&` is a small ergonomics regression, this API is still a nice
     /// convenience.
     fn borrow<'c, V, T, F>(&self, v: &'c Handle<V>, f: F) -> T
-        where V: Value,
-              &'c V: Borrow,
-              F: for<'b> FnOnce(Ref<'b, <&'c V as Borrow>::Target>) -> T
+    where
+        V: Value,
+        &'c V: Borrow,
+        F: for<'b> FnOnce(Ref<'b, <&'c V as Borrow>::Target>) -> T,
     {
         let lock = self.lock();
         let contents = v.borrow(&lock);
@@ -201,9 +202,10 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// but while the extra `&mut` is a small ergonomics regression, this API is still a nice
     /// convenience.
     fn borrow_mut<'c, V, T, F>(&self, v: &'c mut Handle<V>, f: F) -> T
-        where V: Value,
-              &'c mut V: BorrowMut,
-              F: for<'b> FnOnce(RefMut<'b, <&'c mut V as Borrow>::Target>) -> T
+    where
+        V: Value,
+        &'c mut V: BorrowMut,
+        F: for<'b> FnOnce(RefMut<'b, <&'c mut V as Borrow>::Target>) -> T,
     {
         let lock = self.lock();
         let contents = v.borrow_mut(&lock);
@@ -216,7 +218,8 @@ pub trait Context<'a>: ContextInternal<'a> {
     ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
     fn execute_scoped<T, F>(&self, f: F) -> T
-        where F: for<'b> FnOnce(ExecuteContext<'b>) -> T
+    where
+        F: for<'b> FnOnce(ExecuteContext<'b>) -> T,
     {
         self.check_active();
         self.deactivate();
@@ -231,19 +234,23 @@ pub trait Context<'a>: ContextInternal<'a> {
     ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
     fn compute_scoped<V, F>(&self, f: F) -> JsResult<'a, V>
-        where V: Value,
-              F: for<'b, 'c> FnOnce(ComputeContext<'b, 'c>) -> JsResult<'b, V>
+    where
+        V: Value,
+        F: for<'b, 'c> FnOnce(ComputeContext<'b, 'c>) -> JsResult<'b, V>,
     {
         self.check_active();
         self.deactivate();
-        let result = ComputeContext::with(self, |cx| {
-            unsafe {
-                let escapable_handle_scope = cx.scope.handle_scope as *mut raw::EscapableHandleScope;
-                let escapee = f(cx)?;
-                let mut result_local: raw::Local = std::mem::zeroed();
-                neon_runtime::scope::escape(self.env().to_raw(), &mut result_local, escapable_handle_scope, escapee.to_raw());
-                Ok(Handle::new_internal(V::from_raw(self.env(), result_local)))
-            }
+        let result = ComputeContext::with(self, |cx| unsafe {
+            let escapable_handle_scope = cx.scope.handle_scope as *mut raw::EscapableHandleScope;
+            let escapee = f(cx)?;
+            let mut result_local: raw::Local = std::mem::zeroed();
+            neon_runtime::scope::escape(
+                self.env().to_raw(),
+                &mut result_local,
+                escapable_handle_scope,
+                escapee.to_raw(),
+            );
+            Ok(Handle::new_internal(V::from_raw(self.env(), result_local)))
         });
         self.activate();
         result
@@ -251,7 +258,8 @@ pub trait Context<'a>: ContextInternal<'a> {
 
     #[cfg(feature = "try-catch-api")]
     fn try_catch<T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
-        where F: FnOnce(&mut Self) -> NeonResult<T>
+    where
+        F: FnOnce(&mut Self) -> NeonResult<T>,
     {
         self.try_catch_internal(f)
     }
@@ -324,10 +332,8 @@ pub trait Context<'a>: ContextInternal<'a> {
 
     /// Produces a handle to the JavaScript global object.
     fn global(&mut self) -> Handle<'a, JsObject> {
-        JsObject::build(|out| {
-            unsafe {
-                neon_runtime::scope::get_global(self.env().to_raw(), out);
-            }
+        JsObject::build(|out| unsafe {
+            neon_runtime::scope::get_global(self.env().to_raw(), out);
         })
     }
 
@@ -403,30 +409,38 @@ pub trait Context<'a>: ContextInternal<'a> {
 /// A view of the JS engine in the context of top-level initialization of a Neon module.
 pub struct ModuleContext<'a> {
     scope: Scope<'a, raw::HandleScope>,
-    exports: Handle<'a, JsObject>
+    exports: Handle<'a, JsObject>,
 }
 
-impl<'a> UnwindSafe for ModuleContext<'a> { }
+impl<'a> UnwindSafe for ModuleContext<'a> {}
 
 impl<'a> ModuleContext<'a> {
-    pub(crate) fn with<T, F: for<'b> FnOnce(ModuleContext<'b>) -> T>(env: Env, exports: Handle<'a, JsObject>, f: F) -> T {
+    pub(crate) fn with<T, F: for<'b> FnOnce(ModuleContext<'b>) -> T>(
+        env: Env,
+        exports: Handle<'a, JsObject>,
+        f: F,
+    ) -> T {
         // These assertions ensure the proper amount of space is reserved on the rust stack
         // This is only necessary in the legacy runtime.
         #[cfg(feature = "legacy-runtime")]
         {
-            debug_assert!(unsafe { neon_runtime::scope::size() } <= std::mem::size_of::<raw::HandleScope>());
-            debug_assert!(unsafe { neon_runtime::scope::alignment() } <= std::mem::align_of::<raw::HandleScope>());
+            debug_assert!(
+                unsafe { neon_runtime::scope::size() } <= std::mem::size_of::<raw::HandleScope>()
+            );
+            debug_assert!(
+                unsafe { neon_runtime::scope::alignment() }
+                    <= std::mem::align_of::<raw::HandleScope>()
+            );
         }
-        Scope::with(env, |scope| {
-            f(ModuleContext {
-                scope,
-                exports
-            })
-        })
+        Scope::with(env, |scope| f(ModuleContext { scope, exports }))
     }
 
     /// Convenience method for exporting a Neon function from a module.
-    pub fn export_function<T: Value>(&mut self, key: &str, f: fn(FunctionContext) -> JsResult<T>) -> NeonResult<()> {
+    pub fn export_function<T: Value>(
+        &mut self,
+        key: &str,
+        f: fn(FunctionContext) -> JsResult<T>,
+    ) -> NeonResult<()> {
         let value = JsFunction::new(self, f)?.upcast::<JsValue>();
         self.exports.set(self, key, value)?;
         Ok(())
@@ -458,18 +472,19 @@ impl<'a> ContextInternal<'a> for ModuleContext<'a> {
     }
 }
 
-impl<'a> Context<'a> for ModuleContext<'a> { }
+impl<'a> Context<'a> for ModuleContext<'a> {}
 
 /// A view of the JS engine in the context of a scoped computation started by `Context::execute_scoped()`.
 pub struct ExecuteContext<'a> {
-    scope: Scope<'a, raw::HandleScope>
+    scope: Scope<'a, raw::HandleScope>,
 }
 
 impl<'a> ExecuteContext<'a> {
-    pub(crate) fn with<T, C: Context<'a>, F: for<'b> FnOnce(ExecuteContext<'b>) -> T>(cx: &C, f: F) -> T {
-        Scope::with(cx.env(), |scope| {
-            f(ExecuteContext { scope })
-        })
+    pub(crate) fn with<T, C: Context<'a>, F: for<'b> FnOnce(ExecuteContext<'b>) -> T>(
+        cx: &C,
+        f: F,
+    ) -> T {
+        Scope::with(cx.env(), |scope| f(ExecuteContext { scope }))
     }
 }
 
@@ -479,22 +494,25 @@ impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
     }
 }
 
-impl<'a> Context<'a> for ExecuteContext<'a> { }
+impl<'a> Context<'a> for ExecuteContext<'a> {}
 
 /// A view of the JS engine in the context of a scoped computation started by `Context::compute_scoped()`.
 pub struct ComputeContext<'a, 'outer> {
     scope: Scope<'a, raw::EscapableHandleScope>,
     phantom_inner: PhantomData<&'a ()>,
-    phantom_outer: PhantomData<&'outer ()>
+    phantom_outer: PhantomData<&'outer ()>,
 }
 
 impl<'a, 'b> ComputeContext<'a, 'b> {
-    pub(crate) fn with<T, C: Context<'a>, F: for<'c, 'd> FnOnce(ComputeContext<'c, 'd>) -> T>(cx: &C, f: F) -> T {
+    pub(crate) fn with<T, C: Context<'a>, F: for<'c, 'd> FnOnce(ComputeContext<'c, 'd>) -> T>(
+        cx: &C,
+        f: F,
+    ) -> T {
         Scope::with(cx.env(), |scope| {
             f(ComputeContext {
                 scope,
                 phantom_inner: PhantomData,
-                phantom_outer: PhantomData
+                phantom_outer: PhantomData,
             })
         })
     }
@@ -506,7 +524,7 @@ impl<'a, 'b> ContextInternal<'a> for ComputeContext<'a, 'b> {
     }
 }
 
-impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> { }
+impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> {}
 
 /// A view of the JS engine in the context of a function call.
 ///
@@ -516,10 +534,10 @@ pub struct CallContext<'a, T: This> {
     info: &'a CallbackInfo<'a>,
     #[cfg(feature = "napi-1")]
     arguments: Option<SmallVec<[raw::Local; 8]>>,
-    phantom_type: PhantomData<T>
+    phantom_type: PhantomData<T>,
 }
 
-impl<'a, T: This> UnwindSafe for CallContext<'a, T> { }
+impl<'a, T: This> UnwindSafe for CallContext<'a, T> {}
 
 impl<'a, T: This> CallContext<'a, T> {
     /// Indicates whether the function was called via the JavaScript `[[Call]]` or `[[Construct]]` semantics.
@@ -533,28 +551,38 @@ impl<'a, T: This> CallContext<'a, T> {
         kind
     }
 
-    pub(crate) fn with<U, F: for<'b> FnOnce(CallContext<'b, T>) -> U>(env: Env, info: &'a CallbackInfo<'a>, f: F) -> U {
+    pub(crate) fn with<U, F: for<'b> FnOnce(CallContext<'b, T>) -> U>(
+        env: Env,
+        info: &'a CallbackInfo<'a>,
+        f: F,
+    ) -> U {
         Scope::with(env, |scope| {
             f(CallContext {
                 scope,
                 info,
                 #[cfg(feature = "napi-1")]
                 arguments: None,
-                phantom_type: PhantomData
+                phantom_type: PhantomData,
             })
         })
     }
 
     /// Indicates the number of arguments that were passed to the function.
-    pub fn len(&self) -> i32 { self.info.len(self) }
+    pub fn len(&self) -> i32 {
+        self.info.len(self)
+    }
 
     /// Indicates if no arguments were passed to the function.
-    pub fn is_empty(&self) -> bool { self.len() == 0 }
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 
     /// Produces the `i`th argument, or `None` if `i` is greater than or equal to `self.len()`.
     pub fn argument_opt(&mut self, i: i32) -> Option<Handle<'a, JsValue>> {
         #[cfg(feature = "legacy-runtime")]
-        { self.info.get(self, i) }
+        {
+            self.info.get(self, i)
+        }
 
         #[cfg(feature = "napi-1")]
         {
@@ -576,7 +604,7 @@ impl<'a, T: This> CallContext<'a, T> {
     pub fn argument<V: Value>(&mut self, i: i32) -> JsResult<'a, V> {
         match self.argument_opt(i) {
             Some(v) => v.downcast_or_throw(self),
-            None => self.throw_type_error("not enough arguments")
+            None => self.throw_type_error("not enough arguments"),
         }
     }
 
@@ -597,7 +625,7 @@ impl<'a, T: This> ContextInternal<'a> for CallContext<'a, T> {
     }
 }
 
-impl<'a, T: This> Context<'a> for CallContext<'a, T> { }
+impl<'a, T: This> Context<'a> for CallContext<'a, T> {}
 
 /// A shorthand for a `CallContext` with `this`-type `JsObject`.
 pub type FunctionContext<'a> = CallContext<'a, JsObject>;
@@ -609,23 +637,19 @@ pub type MethodContext<'a, T> = CallContext<'a, T>;
 pub struct TaskContext<'a> {
     /// We use an "inherited HandleScope" here because the C++ `neon::Task::complete`
     /// method sets up and tears down a `HandleScope` for us.
-    scope: Scope<'a, raw::InheritedHandleScope>
+    scope: Scope<'a, raw::InheritedHandleScope>,
 }
 
 impl<'a> TaskContext<'a> {
     #[cfg(feature = "legacy-runtime")]
     pub(crate) fn with<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(f: F) -> T {
         let env = Env::current();
-        Scope::with(env, |scope| {
-            f(TaskContext { scope })
-        })
+        Scope::with(env, |scope| f(TaskContext { scope }))
     }
 
     #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
     pub(crate) fn with_context<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: Env, f: F) -> T {
-        Scope::with(env, |scope| {
-            f(TaskContext { scope })
-        })
+        Scope::with(env, |scope| f(TaskContext { scope }))
     }
 }
 
@@ -635,20 +659,18 @@ impl<'a> ContextInternal<'a> for TaskContext<'a> {
     }
 }
 
-impl<'a> Context<'a> for TaskContext<'a> { }
+impl<'a> Context<'a> for TaskContext<'a> {}
 
 /// A view of the JS engine in the context of a finalize method on garbage collection
 #[cfg(feature = "napi-1")]
 pub(crate) struct FinalizeContext<'a> {
-    scope: Scope<'a, raw::HandleScope>
+    scope: Scope<'a, raw::HandleScope>,
 }
 
 #[cfg(feature = "napi-1")]
 impl<'a> FinalizeContext<'a> {
     pub(crate) fn with<T, F: for<'b> FnOnce(FinalizeContext<'b>) -> T>(env: Env, f: F) -> T {
-        Scope::with(env, |scope| {
-            f(FinalizeContext { scope })
-        })
+        Scope::with(env, |scope| f(FinalizeContext { scope }))
     }
 }
 
@@ -660,4 +682,4 @@ impl<'a> ContextInternal<'a> for FinalizeContext<'a> {
 }
 
 #[cfg(feature = "napi-1")]
-impl<'a> Context<'a> for FinalizeContext<'a> { }
+impl<'a> Context<'a> for FinalizeContext<'a> {}

@@ -38,13 +38,13 @@ type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 ///                 cx.null().upcast::<JsValue>(),
 ///                 cx.number(result).upcast(),
 ///             ];
-/// 
+///
 ///             callback.call(&mut cx, this, args)?;
 ///
 ///             Ok(())
 ///         });
 ///     });
-/// 
+///
 ///     Ok(cx.undefined())
 /// }
 /// ```
@@ -64,12 +64,7 @@ impl EventQueue {
     /// Creates an unbounded queue for scheduling closures on the JavaScript
     /// main thread
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Self {
-        let tsfn = unsafe {
-            ThreadsafeFunction::new(
-                cx.env().to_raw(),
-                Self::callback,
-            )
-        };
+        let tsfn = unsafe { ThreadsafeFunction::new(cx.env().to_raw(), Self::callback) };
 
         Self {
             tsfn,
@@ -82,9 +77,7 @@ impl EventQueue {
     pub fn unref<'a, C: Context<'a>>(&mut self, cx: &mut C) -> &mut Self {
         self.has_ref = false;
 
-        unsafe {
-            self.tsfn.unref(cx.env().to_raw())
-        }
+        unsafe { self.tsfn.unref(cx.env().to_raw()) }
 
         self
     }
@@ -94,9 +87,7 @@ impl EventQueue {
     pub fn reference<'a, C: Context<'a>>(&mut self, cx: &mut C) -> &mut Self {
         self.has_ref = true;
 
-        unsafe {
-            self.tsfn.reference(cx.env().to_raw())
-        }
+        unsafe { self.tsfn.reference(cx.env().to_raw()) }
 
         self
     }
@@ -126,9 +117,7 @@ impl EventQueue {
             });
         });
 
-        self.tsfn
-            .call(callback, None)
-            .map_err(|_| EventQueueError)
+        self.tsfn.call(callback, None).map_err(|_| EventQueueError)
     }
 
     /// Returns a boolean indicating if this `EventQueue` will prevent the Node event

@@ -45,9 +45,7 @@ impl<T: Object> Root<T> {
     /// calling one of these methods, it will *panic*.
     pub fn new<'a, C: Context<'a>>(cx: &mut C, value: &T) -> Self {
         let env = cx.env().to_raw();
-        let internal = unsafe {
-            reference::new(env, value.to_raw())
-        };
+        let internal = unsafe { reference::new(env, value.to_raw()) };
 
         Self {
             internal: NapiRef(internal as *mut _),
@@ -97,9 +95,7 @@ impl<T: Object> Root<T> {
         let env = cx.env();
         let internal = ManuallyDrop::new(self).internal.0 as *mut _;
 
-        let local = unsafe {
-            reference::get(env.to_raw(), internal)
-        };
+        let local = unsafe { reference::get(env.to_raw(), internal) };
 
         unsafe {
             reference::unreference(env.to_raw(), internal);
@@ -113,9 +109,7 @@ impl<T: Object> Root<T> {
     /// can be used in place of a clone immediately followed by a call to `into_inner`.
     pub fn to_inner<'a, C: Context<'a>>(&self, cx: &mut C) -> Handle<'a, T> {
         let env = cx.env();
-        let local = unsafe {
-            reference::get(env.to_raw(), self.internal.0 as *mut _)
-        };
+        let local = unsafe { reference::get(env.to_raw(), self.internal.0 as *mut _) };
 
         Handle::new_internal(T::from_raw(env, local))
     }
@@ -123,7 +117,7 @@ impl<T: Object> Root<T> {
 
 // Allows putting `Root<T>` directly in a container that implements `Finalize`
 // For example, `Vec<Root<T>>` or `JsBox`.
-impl <T: Object> Finalize for Root<T> {
+impl<T: Object> Finalize for Root<T> {
     fn finalize<'a, C: Context<'a>>(self, cx: &mut C) {
         self.drop(cx);
     }
@@ -140,8 +134,10 @@ impl<T> Drop for Root<T> {
 
         // Only panic if the event loop is still running
         if let Ok(true) = crate::context::internal::IS_RUNNING.try_with(|v| *v.borrow()) {
-            panic!("Must call `into_inner` or `drop` on `Root` \
-                https://docs.rs/neon/latest/neon/sync/index.html#drop-safety");
+            panic!(
+                "Must call `into_inner` or `drop` on `Root` \
+                https://docs.rs/neon/latest/neon/sync/index.html#drop-safety"
+            );
         }
     }
 }

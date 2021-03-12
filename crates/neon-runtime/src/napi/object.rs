@@ -21,7 +21,8 @@ pub unsafe fn get_own_property_names(out: &mut Local, env: Env, object: Local) -
         napi::KeyFilter::ALL_PROPERTIES | napi::KeyFilter::SKIP_SYMBOLS,
         napi::KeyConversion::NumbersToStrings,
         property_names.as_mut_ptr(),
-    ) != napi::Status::Ok {
+    ) != napi::Status::Ok
+    {
         return false;
     }
 
@@ -52,7 +53,13 @@ pub unsafe fn set_index(out: &mut bool, env: Env, object: Local, index: u32, val
 }
 
 /// Mutate the `out` argument to refer to the value at a named `key` in the given `object`. Returns `false` if the value couldn't be retrieved.
-pub unsafe fn get_string(env: Env, out: &mut Local, object: Local, key: *const u8, len: i32) -> bool {
+pub unsafe fn get_string(
+    env: Env,
+    out: &mut Local,
+    object: Local,
+    key: *const u8,
+    len: i32,
+) -> bool {
     let mut key_val = MaybeUninit::uninit();
 
     // Not using `crate::string::new()` because it requires a _reference_ to a Local,
@@ -64,9 +71,7 @@ pub unsafe fn get_string(env: Env, out: &mut Local, object: Local, key: *const u
     }
 
     // Not using napi_get_named_property() because the `key` may not be null terminated.
-    if napi::get_property(env, object, key_val.assume_init(), out as *mut _)
-        != napi::Status::Ok
-    {
+    if napi::get_property(env, object, key_val.assume_init(), out as *mut _) != napi::Status::Ok {
         return false;
     }
 
@@ -79,7 +84,14 @@ pub unsafe fn get_string(env: Env, out: &mut Local, object: Local, key: *const u
 /// see [discussion].
 ///
 /// [discussion]: https://github.com/neon-bindings/neon/pull/458#discussion_r344827965
-pub unsafe fn set_string(env: Env, out: &mut bool, object: Local, key: *const u8, len: i32, val: Local) -> bool {
+pub unsafe fn set_string(
+    env: Env,
+    out: &mut bool,
+    object: Local,
+    key: *const u8,
+    len: i32,
+    val: Local,
+) -> bool {
     let mut key_val = MaybeUninit::uninit();
 
     *out = true;
@@ -91,9 +103,7 @@ pub unsafe fn set_string(env: Env, out: &mut bool, object: Local, key: *const u8
         return false;
     }
 
-    if napi::set_property(env, object, key_val.assume_init(), val)
-        != napi::Status::Ok
-    {
+    if napi::set_property(env, object, key_val.assume_init(), val) != napi::Status::Ok {
         *out = false;
         return false;
     }
