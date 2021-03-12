@@ -250,7 +250,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     #[cfg(feature = "try-catch-api")]
-    fn try_catch<'b: 'a, T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
+    fn try_catch<T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
         where F: FnOnce(&mut Self) -> NeonResult<T>
     {
         self.try_catch_internal(f)
