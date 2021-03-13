@@ -4,14 +4,14 @@ use crate::napi::bindings as napi;
 use crate::raw::{Env, Local};
 
 /// Mutates the `out` argument to refer to a `napi_value` containing a newly created JavaScript Object.
-pub unsafe extern "C" fn new(out: &mut Local, env: Env) {
+pub unsafe fn new(out: &mut Local, env: Env) {
     napi::create_object(env, out as *mut _);
 }
 
 #[cfg(feature = "napi-6")]
 /// Mutates the `out` argument to refer to a `napi_value` containing the own property names of the
 /// `object` as a JavaScript Array.
-pub unsafe extern "C" fn get_own_property_names(out: &mut Local, env: Env, object: Local) -> bool {
+pub unsafe fn get_own_property_names(out: &mut Local, env: Env, object: Local) -> bool {
     let mut property_names = MaybeUninit::uninit();
 
     if napi::get_all_property_names(
@@ -31,7 +31,7 @@ pub unsafe extern "C" fn get_own_property_names(out: &mut Local, env: Env, objec
 }
 
 /// Mutate the `out` argument to refer to the value at `index` in the given `object`. Returns `false` if the value couldn't be retrieved.
-pub unsafe extern "C" fn get_index(out: &mut Local, env: Env, object: Local, index: u32) -> bool {
+pub unsafe fn get_index(out: &mut Local, env: Env, object: Local, index: u32) -> bool {
     let status = napi::get_element(env, object, index, out as *mut _);
 
     status == napi::Status::Ok
@@ -44,7 +44,7 @@ pub unsafe extern "C" fn get_index(out: &mut Local, env: Env, object: Local, ind
 /// see [discussion].
 ///
 /// [discussion]: https://github.com/neon-bindings/neon/pull/458#discussion_r344827965
-pub unsafe extern "C" fn set_index(out: &mut bool, env: Env, object: Local, index: u32, val: Local) -> bool {
+pub unsafe fn set_index(out: &mut bool, env: Env, object: Local, index: u32, val: Local) -> bool {
     let status = napi::set_element(env, object, index, val);
     *out = status == napi::Status::Ok;
 
@@ -52,7 +52,7 @@ pub unsafe extern "C" fn set_index(out: &mut bool, env: Env, object: Local, inde
 }
 
 /// Mutate the `out` argument to refer to the value at a named `key` in the given `object`. Returns `false` if the value couldn't be retrieved.
-pub unsafe extern "C" fn get_string(env: Env, out: &mut Local, object: Local, key: *const u8, len: i32) -> bool {
+pub unsafe fn get_string(env: Env, out: &mut Local, object: Local, key: *const u8, len: i32) -> bool {
     let mut key_val = MaybeUninit::uninit();
 
     // Not using `crate::string::new()` because it requires a _reference_ to a Local,
@@ -79,7 +79,7 @@ pub unsafe extern "C" fn get_string(env: Env, out: &mut Local, object: Local, ke
 /// see [discussion].
 ///
 /// [discussion]: https://github.com/neon-bindings/neon/pull/458#discussion_r344827965
-pub unsafe extern "C" fn set_string(env: Env, out: &mut bool, object: Local, key: *const u8, len: i32, val: Local) -> bool {
+pub unsafe fn set_string(env: Env, out: &mut bool, object: Local, key: *const u8, len: i32, val: Local) -> bool {
     let mut key_val = MaybeUninit::uninit();
 
     *out = true;
@@ -103,7 +103,7 @@ pub unsafe extern "C" fn set_string(env: Env, out: &mut bool, object: Local, key
 
 /// Mutates `out` to refer to the value of the property of `object` named by the `key` value.
 /// Returns false if the value couldn't be retrieved.
-pub unsafe extern "C" fn get(out: &mut Local, env: Env, object: Local, key: Local) -> bool {
+pub unsafe fn get(out: &mut Local, env: Env, object: Local, key: Local) -> bool {
     let status = napi::get_property(env, object, key, out as *mut _);
 
     status == napi::Status::Ok
@@ -115,7 +115,7 @@ pub unsafe extern "C" fn get(out: &mut Local, env: Env, object: Local, key: Loca
 /// see [discussion].
 ///
 /// [discussion]: https://github.com/neon-bindings/neon/pull/458#discussion_r344827965
-pub unsafe extern "C" fn set(out: &mut bool, env: Env, object: Local, key: Local, val: Local) -> bool {
+pub unsafe fn set(out: &mut bool, env: Env, object: Local, key: Local, val: Local) -> bool {
     let status = napi::set_property(env, object, key, val);
     *out = status == napi::Status::Ok;
 

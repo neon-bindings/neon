@@ -98,6 +98,20 @@ pub fn return_buffer(mut cx: FunctionContext) -> JsResult<JsBuffer> {
     Ok(b)
 }
 
+pub fn return_external_buffer(mut cx: FunctionContext) -> JsResult<JsBuffer> {
+    let data = cx.argument::<JsString>(0)?.value(&mut cx);
+    let buf = JsBuffer::external(&mut cx, data.into_bytes());
+
+    Ok(buf)
+}
+
+pub fn return_external_array_buffer(mut cx: FunctionContext) -> JsResult<JsArrayBuffer> {
+    let data = cx.argument::<JsString>(0)?.value(&mut cx);
+    let buf = JsArrayBuffer::external(&mut cx, data.into_bytes());
+
+    Ok(buf)
+}
+
 pub fn read_buffer_with_lock(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let b: Handle<JsBuffer> = cx.argument(0)?;
     let i = cx.argument::<JsNumber>(1)?.value(&mut cx) as u32 as usize;

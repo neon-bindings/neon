@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 mod napi1 {
     use std::os::raw::{c_char, c_void};
     use super::super::types::*;
@@ -213,7 +215,23 @@ mod napi1 {
             result: *mut bool
         ) -> Status;
 
-        fn run_script(env: Env, script: Value, result: *mut Value) -> Status;
+        fn create_external_arraybuffer(
+            env: Env,
+            data: *mut c_void,
+            length: usize,
+            finalize_cb: Finalize,
+            finalize_hint: *mut c_void,
+            result: *mut Value,
+        ) -> Status;
+
+        fn create_external_buffer(
+            env: Env,
+            length: usize,
+            data: *mut c_void,
+            finalize_cb: Finalize,
+            finalize_hint: *mut c_void,
+            result: *mut Value,
+        ) -> Status;
     });
 }
 

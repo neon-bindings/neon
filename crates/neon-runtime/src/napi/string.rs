@@ -15,7 +15,7 @@ pub unsafe fn new(out: &mut Local, env: Env, data: *const u8, len: i32) -> bool 
     status == napi::Status::Ok
 }
 
-pub unsafe extern "C" fn utf8_len(env: Env, value: Local) -> isize {
+pub unsafe fn utf8_len(env: Env, value: Local) -> isize {
     let mut len = MaybeUninit::uninit();
     let status = napi::get_value_string_utf8(
         env,
@@ -30,7 +30,7 @@ pub unsafe extern "C" fn utf8_len(env: Env, value: Local) -> isize {
     len.assume_init() as isize
 }
 
-pub unsafe extern "C" fn data(env: Env, out: *mut u8, len: isize, value: Local) -> isize {
+pub unsafe fn data(env: Env, out: *mut u8, len: isize, value: Local) -> isize {
     let mut read = MaybeUninit::uninit();
     let status = napi::get_value_string_utf8(
         env,

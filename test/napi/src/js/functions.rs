@@ -107,7 +107,7 @@ pub fn throw_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
 
     cx.try_catch(|cx| cx.throw(v))
         .map(|_: ()| Ok(cx.string("unreachable").upcast()))
-        .unwrap_or_else(|err| Ok(err))
+        .unwrap_or_else(Ok)
 }
 
 pub fn call_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
@@ -128,10 +128,7 @@ pub fn get_number_or_default(mut cx: FunctionContext) -> JsResult<JsNumber> {
 
 pub fn is_construct(mut cx: FunctionContext) -> JsResult<JsObject> {
     let this = cx.this();
-    let construct = match cx.kind() {
-        CallKind::Construct => true,
-        _ => false
-    };
+    let construct = matches!(cx.kind(), CallKind::Construct);
     let construct = cx.boolean(construct);
     this.set(&mut cx, "wasConstructed", construct)?;
     Ok(this)

@@ -52,12 +52,12 @@ impl Root for InheritedHandleScope {
     unsafe fn exit(&mut self, _: Env) { }
 }
 
-pub unsafe extern "C" fn escape(env: Env, out: &mut Local, scope: *mut EscapableHandleScope, value: Local) {
+pub unsafe fn escape(env: Env, out: &mut Local, scope: *mut EscapableHandleScope, value: Local) {
     let status = napi::escape_handle(env, (*scope).word, value, out as *mut _);
 
     assert_eq!(status, napi::Status::Ok);
 }
 
-pub unsafe extern "C" fn get_global(env: Env, out: &mut Local) {
+pub unsafe fn get_global(env: Env, out: &mut Local) {
     assert_eq!(crate::napi::bindings::get_global(env, out as *mut _), napi::Status::Ok);
 }

@@ -46,8 +46,8 @@ impl<T: Value> Callback<()> for FunctionCallback<T> {
         }
     }
 
-    fn as_ptr(self) -> *mut c_void {
-        unsafe { mem::transmute(self.0) }
+    fn into_ptr(self) -> *mut c_void {
+        self.0 as *mut _
     }
 }
 
@@ -74,8 +74,8 @@ impl<T: Value> Callback<raw::Local> for FunctionCallback<T> {
         }
     }
 
-    fn as_ptr(self) -> *mut c_void {
-        unsafe { mem::transmute(self.0) }
+    fn into_ptr(self) -> *mut c_void {
+        self.0 as *mut _
     }
 }
 
@@ -98,7 +98,7 @@ pub(crate) trait Callback<T: Clone + Copy + Sized>: Sized {
     }
 
     /// Converts the callback to a raw void pointer.
-    fn as_ptr(self) -> *mut c_void;
+    fn into_ptr(self) -> *mut c_void;
 
     /// Exports the callback as a pair consisting of the static `Self::invoke`
     /// method and the computed callback, both converted to raw void pointers.
@@ -109,7 +109,7 @@ pub(crate) trait Callback<T: Clone + Copy + Sized>: Sized {
         let invoke = Self::invoke_compat;
         CCallback {
             static_callback: unsafe { mem::transmute(invoke as usize) },
-            dynamic_callback: self.as_ptr()
+            dynamic_callback: self.into_ptr()
         }
     }
 }

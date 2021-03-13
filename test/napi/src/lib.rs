@@ -51,8 +51,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     let one = cx.number(1);
     let two = cx.number(2.1);
-    assert_eq!(one.value(&mut cx), 1.0);
-    assert_eq!(two.value(&mut cx), 2.1);
+    assert!((one.value(&mut cx) - 1.0).abs() < f64::EPSILON);
+    assert!((two.value(&mut cx) - 2.1).abs() < f64::EPSILON);
     cx.export_value("one", one)?;
     cx.export_value("two", two)?;
 
@@ -70,14 +70,14 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         rust_created.set(&mut cx, "whatever", whatever)?;
     }
 
-    assert_eq!({
+    assert!(({
         let v: Handle<JsNumber> = rust_created.get(&mut cx, "a")?.downcast_or_throw(&mut cx)?;
         v.value(&mut cx)
-    }, 1.0f64);
-    assert_eq!({
+    } - 1.0f64).abs() < f64::EPSILON);
+    assert!(({
         let v: Handle<JsNumber> = rust_created.get(&mut cx, 0)?.downcast_or_throw(&mut cx)?;
         v.value(&mut cx)
-    }, 1.0f64);
+    } - 1.0f64).abs() < f64::EPSILON);
     assert_eq!({
         let v: Handle<JsBoolean> = rust_created.get(&mut cx, "whatever")?.downcast_or_throw(&mut cx)?;
         v.value(&mut cx)
@@ -149,6 +149,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("increment_array_buffer_with_borrow_mut", increment_array_buffer_with_borrow_mut)?;
     cx.export_function("return_uninitialized_buffer", return_uninitialized_buffer)?;
     cx.export_function("return_buffer", return_buffer)?;
+    cx.export_function("return_external_buffer", return_external_buffer)?;
+    cx.export_function("return_external_array_buffer", return_external_array_buffer)?;
     cx.export_function("read_buffer_with_lock", read_buffer_with_lock)?;
     cx.export_function("read_buffer_with_borrow", read_buffer_with_borrow)?;
     cx.export_function("sum_buffer_with_borrow", sum_buffer_with_borrow)?;

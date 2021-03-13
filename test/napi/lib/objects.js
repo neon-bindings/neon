@@ -91,6 +91,20 @@ describe('JsObject', function() {
     assert.ok(b.equals(Buffer.alloc(16)));
   });
 
+  it('gets an external Buffer', function() {
+    var expected = "String to copy";
+    var buf = addon.return_external_buffer(expected);
+    assert.instanceOf(buf, Buffer);
+    assert.strictEqual(buf.toString(), expected);
+  });
+
+  it('gets an external ArrayBuffer', function() {
+    var expected = "String to copy";
+    var buf = addon.return_external_array_buffer(expected);
+    assert.instanceOf(buf, ArrayBuffer);
+    assert.strictEqual(Buffer.from(buf).toString(), expected);
+  });
+
   it('correctly reads a Buffer using the lock API', function() {
     var b = Buffer.allocUnsafe(16);
     b.writeUInt32LE(147,    0);

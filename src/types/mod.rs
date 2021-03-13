@@ -134,6 +134,7 @@ impl JsUndefined {
         }
     }
 
+    #[allow(clippy::wrong_self_convention)]
     fn as_this_compat(env: Env, _: raw::Local) -> Self {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
@@ -540,6 +541,16 @@ impl JsArray {
     #[cfg(feature = "napi-1")]
     pub fn len<'a, C: Context<'a>>(self, cx: &mut C) -> u32 {
         self.len_inner(cx.env())
+    }
+
+    #[cfg(feature = "legacy-runtime")]
+    pub fn is_empty(self) -> bool {
+        self.len() == 0
+    }
+
+    #[cfg(feature = "napi-1")]
+    pub fn is_empty<'a, C: Context<'a>>(self, cx: &mut C) -> bool {
+        self.len(cx) == 0
     }
 }
 

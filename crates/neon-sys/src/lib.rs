@@ -45,6 +45,12 @@ impl HandleScope {
     pub fn new() -> HandleScope { unsafe { mem::zeroed() } }
 }
 
+impl Default for HandleScope {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 const ESCAPABLE_HANDLE_SCOPE_SIZE: usize = 32;
 
 /// A V8 `EscapableHandleScope`.
@@ -61,6 +67,12 @@ pub struct EscapableHandleScope {
 
 impl EscapableHandleScope {
     pub fn new() -> EscapableHandleScope { unsafe { mem::zeroed() } }
+}
+
+impl Default for EscapableHandleScope {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[repr(C)]

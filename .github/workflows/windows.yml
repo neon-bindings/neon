@@ -46,3 +46,6 @@ jobs:
       run: cargo test --release
       env:
         LIBCLANG_PATH: ${{ runner.temp }}/llvm/bin
+    - name: run CLI test
+      working-directory: ./create-neon
+      run: npm test

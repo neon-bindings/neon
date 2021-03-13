@@ -3,8 +3,14 @@
 use crate::raw::{HandleScope, EscapableHandleScope, InheritedHandleScope, Isolate};
 
 pub trait Root {
+    /// # Safety
+    /// Allocates an uninitialized scope. See `enter` and `exit`.
     unsafe fn allocate() -> Self;
+    /// # Safety
+    /// Must be called exactly once after creating a `Root` and before usage
     unsafe fn enter(&mut self, _: Isolate);
+    /// # Safety
+    /// Must be called exactly once, if and only if `enter` succeeds
     unsafe fn exit(&mut self, _: Isolate);
 }
 
