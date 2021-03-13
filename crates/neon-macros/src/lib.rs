@@ -18,7 +18,7 @@ use legacy as macros;
 /// module. This attribute should only be used _once_ in a module and will
 /// be called each time the module is initialized in a context.
 ///
-/// ```no_run
+/// ```ignore
 /// # use neon::prelude::*;
 /// #[neon::main]
 /// fn my_module(mut cx: ModuleContext) -> NeonResult<()> {

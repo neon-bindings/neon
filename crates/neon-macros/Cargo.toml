@@ -16,8 +16,3 @@ napi = []
 [dependencies]
 quote = "1"
 syn = { version = "1", features = ["full"] }
-
-[dev-dependencies.neon]
-version = "*"
-path = "../.."
-features = ["proc-macros"]

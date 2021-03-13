@@ -10,7 +10,7 @@ on:
       - main
 
 jobs:
-  build:
+  lint:
 
     runs-on: ubuntu-latest
 
@@ -33,29 +33,7 @@ jobs:
       run: sudo apt-get install -y build-essential
     - name: Formatting
       run: cargo fmt --all -- --check
-    - name: neon (N-API)
-      run: cargo clippy --all-targets --no-default-features --features napi-experimental -- -A clippy::missing_safety_doc
-    - name: Tests (N-API)
-      run: cargo clippy --all-targets --manifest-path=test/napi/Cargo.toml -- -A clippy::missing_safety_doc
-    - name: neon-build (N-API)
-      run: cargo clippy --all-targets -p neon-build -- -A clippy::missing_safety_doc
-    - name: neon-macros (N-API)
-      run: cargo clippy --all-targets --manifest-path=crates/neon-macros/Cargo.toml --features napi -- -A clippy::missing_safety_doc
-    - name: neon-runtime (N-API)
-      run: cargo clippy --all-targets --manifest-path=crates/neon-runtime/Cargo.toml --features napi-experimental -- -A clippy::missing_safety_doc
-    - name: Tests (Electron)
-      run: cargo clippy --all-targets --manifest-path=test/electron/Cargo.toml -- -A clippy::missing_safety_doc
-    - name: Tests (Static)
-      run: cargo clippy --all-targets -p static_tests -- -A clippy::missing_safety_doc
-    - name: neon (Legacy)
-      run: cargo clippy --all-targets --no-default-features --features legacy-runtime -- -A clippy::missing_safety_doc
-    - name: Tests (Legacy)
-      run: cargo clippy --all-targets --manifest-path=test/dynamic/native/Cargo.toml -- -A clippy::missing_safety_doc
-    - name: neon-build (Legacy)
-      run: cargo clippy --all-targets --manifest-path=crates/neon-build/Cargo.toml --features neon-sys -- -A clippy::missing_safety_doc
-    - name: neon-macros (Legacy)
-      run: cargo clippy --all-targets --manifest-path=crates/neon-macros/Cargo.toml -- -A clippy::missing_safety_doc
-    - name: neon-runtime (Legacy)
-      run: cargo clippy --all-targets --manifest-path=crates/neon-runtime/Cargo.toml --features neon-sys -- -A clippy::missing_safety_doc
-    - name: neon-sys (Legacy)
-      run: cargo clippy --all-targets -p neon-sys -- -A clippy::missing_safety_doc
+    - name: Clippy (N-API)
+      run: cargo clippy-napi
+    - name: Clippy (Legacy)
+      run: cargo clippy-legacy
