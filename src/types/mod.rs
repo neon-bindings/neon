@@ -361,15 +361,6 @@ impl JsString {
         }
     }
 
-    #[cfg(feature = "napi-1")]
-    pub fn run_as_script<'a, C: Context<'a>>(self, cx: &mut C) -> JsResult<'a, JsValue> {
-        let env = cx.env().to_raw();
-        build(cx.env(), |out| {
-            unsafe {
-                neon_runtime::string::run_script(out, env, self.to_raw())
-            }
-        })
-    }
 
     pub(crate) fn new_internal<'a>(env: Env, val: &str) -> Option<Handle<'a, JsString>> {
         let (ptr, len) = if let Some(small) = Utf8::from(val).into_small() {

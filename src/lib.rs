@@ -23,6 +23,7 @@ pub mod task;
 #[cfg(any(feature = "event-handler-api", all(feature = "napi-4", feature = "event-queue-api")))]
 pub mod event;
 pub mod meta;
+pub mod reflect;
 pub mod prelude;
 
 #[doc(hidden)]

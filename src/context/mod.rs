@@ -393,13 +393,6 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsBox::new(self, v)
     }
 
-    #[cfg(feature = "napi-1")]
-    /// Convenience method for creating a `JsString` value and running it as a script.
-    fn run_script<S: AsRef<str>>(&mut self, code: S) -> JsResult<'a, JsValue> {
-        let js_string = self.string(code);
-        js_string.run_as_script(self)
-    }
-
     #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
     /// Creates an unbounded queue of events to be executed on a JavaScript thread
     fn queue(&mut self) -> EventQueue {

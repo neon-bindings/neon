@@ -45,7 +45,7 @@ pub unsafe fn data(env: Env, out: *mut u8, len: isize, value: Local) -> isize {
     read.assume_init() as isize
 }
 
-pub unsafe extern "C" fn run_script(out: &mut Local, env: Env, value: Local) -> bool {
+pub unsafe fn run_script(out: &mut Local, env: Env, value: Local) -> bool {
     let status = napi::run_script(
         env,
         value,
