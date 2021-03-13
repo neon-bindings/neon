@@ -1,6 +1,6 @@
 {
   "name": "create-neon",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Create Neon projects with no build configuration.",
   "author": "Dave Herman <david.herman@gmail.com>",
   "license": "MIT",
