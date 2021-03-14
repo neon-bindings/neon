@@ -361,7 +361,6 @@ impl JsString {
         }
     }
 
-
     pub(crate) fn new_internal<'a>(env: Env, val: &str) -> Option<Handle<'a, JsString>> {
         let (ptr, len) = if let Some(small) = Utf8::from(val).into_small() {
             small.lower()
