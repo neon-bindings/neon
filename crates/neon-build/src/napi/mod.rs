@@ -94,7 +94,9 @@ impl Setup {
     }
 
     fn absolute_output_file(&self) -> PathBuf {
-        let output_file = self.output_file.clone()
+        let output_file = self
+            .output_file
+            .clone()
             .unwrap_or_else(|| PathBuf::from("index.node"));
 
         // Don't prepend `output_dir` if `output_file` is absolute
@@ -145,9 +147,7 @@ fn test_absolute_output_file_absolute_file() {
 #[test]
 fn test_absolute_output_file_absolute_dir() {
     let expected = PathBuf::from("/tmp/index.node");
-    let actual = Setup::options()
-        .output_dir("/tmp")
-        .absolute_output_file();
+    let actual = Setup::options().output_dir("/tmp").absolute_output_file();
 
     assert_eq!(actual, expected);
 }
@@ -155,9 +155,7 @@ fn test_absolute_output_file_absolute_dir() {
 #[test]
 fn test_absolute_output_file_relative_dir() {
     let expected = manifest_dir().join("lib").join("index.node");
-    let actual = Setup::options()
-        .output_dir("lib")
-        .absolute_output_file();
+    let actual = Setup::options().output_dir("lib").absolute_output_file();
 
     assert_eq!(actual, expected);
 }

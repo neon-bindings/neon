@@ -2,7 +2,7 @@ use std::mem::MaybeUninit;
 
 use crate::napi::bindings as napi;
 
-use crate::raw::{Local, Env};
+use crate::raw::{Env, Local};
 
 pub unsafe fn new(env: Env, value: Local) -> napi::Ref {
     let mut result = MaybeUninit::uninit();

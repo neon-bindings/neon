@@ -4,7 +4,7 @@ use std::ffi::c_void;
 use std::mem::MaybeUninit;
 
 use crate::napi::bindings as napi;
-use crate::raw::{Local, Env};
+use crate::raw::{Env, Local};
 
 unsafe fn string(env: Env, s: impl AsRef<str>) -> Local {
     let s = s.as_ref();
@@ -64,10 +64,7 @@ impl<T> CallError<T> {
 impl<T: Send + 'static> ThreadsafeFunction<T> {
     /// Creates a new unbounded N-API Threadsafe Function
     /// Safety: `Env` must be valid for the current thread
-    pub unsafe fn new(
-        env: Env,
-        callback: fn(Option<Env>, T),
-    ) -> Self {
+    pub unsafe fn new(env: Env, callback: fn(Option<Env>, T)) -> Self {
         Self::with_capacity(env, 0, callback)
     }
 
@@ -98,7 +95,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
             ),
             napi::Status::Ok,
         );
-    
+
         Self {
             tsfn: Tsfn(result.assume_init()),
             callback,
@@ -111,21 +108,15 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
         data: T,
         is_blocking: Option<napi::ThreadsafeFunctionCallMode>,
     ) -> Result<(), CallError<T>> {
-        let is_blocking = is_blocking
-            .unwrap_or(napi::ThreadsafeFunctionCallMode::Blocking);
+        let is_blocking = is_blocking.unwrap_or(napi::ThreadsafeFunctionCallMode::Blocking);
 
         let callback = Box::into_raw(Box::new(Callback {
             callback: self.callback,
             data,
         }));
 
-        let status = unsafe {
-            napi::call_threadsafe_function(
-                self.tsfn.0,
-                callback as *mut _,
-                is_blocking,
-            )
-        };
+        let status =
+            unsafe { napi::call_threadsafe_function(self.tsfn.0, callback as *mut _, is_blocking) };
 
         if status == napi::Status::Ok {
             Ok(())
@@ -144,10 +135,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     /// Safety: `Env` must be valid for the current thread
     pub unsafe fn reference(&mut self, env: Env) {
         assert_eq!(
-            napi::ref_threadsafe_function(
-                env,
-                self.tsfn.0,
-            ),
+            napi::ref_threadsafe_function(env, self.tsfn.0,),
             napi::Status::Ok,
         );
     }
@@ -156,10 +144,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     /// Safety: `Env` must be valid for the current thread
     pub unsafe fn unref(&mut self, env: Env) {
         assert_eq!(
-            napi::unref_threadsafe_function(
-                env,
-                self.tsfn.0,
-            ),
+            napi::unref_threadsafe_function(env, self.tsfn.0,),
             napi::Status::Ok,
         );
     }
@@ -171,17 +156,10 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
         _context: *mut c_void,
         data: *mut c_void,
     ) {
-        let Callback {
-            callback,
-            data,
-        } = *Box::from_raw(data as *mut Callback<T>);
+        let Callback { callback, data } = *Box::from_raw(data as *mut Callback<T>);
 
         // Event loop has terminated
-        let env = if env.is_null() {
-            None
-        } else {
-            Some(env)
-        };
+        let env = if env.is_null() { None } else { Some(env) };
 
         callback(env, data);
     }

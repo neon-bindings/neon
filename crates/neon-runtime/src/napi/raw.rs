@@ -11,11 +11,15 @@ pub type Env = napi::Env;
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct HandleScope {
-    pub word: napi::HandleScope
+    pub word: napi::HandleScope,
 }
 
 impl HandleScope {
-    pub fn new() -> Self { Self { word: ptr::null_mut() } }
+    pub fn new() -> Self {
+        Self {
+            word: ptr::null_mut(),
+        }
+    }
 }
 
 impl Default for HandleScope {
@@ -27,11 +31,15 @@ impl Default for HandleScope {
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct EscapableHandleScope {
-    pub word: napi::EscapableHandleScope
+    pub word: napi::EscapableHandleScope,
 }
 
 impl EscapableHandleScope {
-    pub fn new() -> Self { Self { word: ptr::null_mut() } }
+    pub fn new() -> Self {
+        Self {
+            word: ptr::null_mut(),
+        }
+    }
 }
 
 impl Default for EscapableHandleScope {

@@ -57,26 +57,14 @@ pub struct ThreadsafeFunction__ {
 #[cfg(feature = "napi-4")]
 pub type ThreadsafeFunction = *mut ThreadsafeFunction__;
 
-pub(crate) type Callback = Option<
-    unsafe extern "C" fn(env: Env, info: CallbackInfo) -> Value,
->;
+pub(crate) type Callback = Option<unsafe extern "C" fn(env: Env, info: CallbackInfo) -> Value>;
 
-pub(crate) type Finalize = Option<
-    unsafe extern "C" fn(
-        env: Env,
-        finalize_data: *mut c_void,
-        finalize_hint: *mut c_void,
-    ),
->;
+pub(crate) type Finalize =
+    Option<unsafe extern "C" fn(env: Env, finalize_data: *mut c_void, finalize_hint: *mut c_void)>;
 
 #[cfg(feature = "napi-4")]
 pub type ThreadsafeFunctionCallJs = Option<
-    unsafe extern "C" fn(
-        env: Env,
-        js_callback: Value,
-        context: *mut c_void,
-        data: *mut c_void,
-    ),
+    unsafe extern "C" fn(env: Env, js_callback: Value, context: *mut c_void, data: *mut c_void),
 >;
 
 #[allow(dead_code)]

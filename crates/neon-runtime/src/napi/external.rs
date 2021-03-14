@@ -1,7 +1,7 @@
 use std::mem::MaybeUninit;
 
-use crate::raw::{Env, Local};
 use crate::napi::bindings as napi;
+use crate::raw::{Env, Local};
 
 /// `finalize_external` is invoked immediately before a `napi_external` is garbage collected
 extern "C" fn finalize_external<T: Send + 'static>(
@@ -25,16 +25,9 @@ extern "C" fn finalize_external<T: Send + 'static>(
 /// module. Calling `deref` with an external created by another native module,
 /// even another neon module, is undefined behavior.
 /// https://github.com/neon-bindings/neon/issues/591
-pub unsafe fn deref<T: Send + 'static>(
-    env: Env,
-    local: Local,
-) -> Option<*const T> {
+pub unsafe fn deref<T: Send + 'static>(env: Env, local: Local) -> Option<*const T> {
     let mut result = MaybeUninit::uninit();
-    let status = napi::typeof_value(
-        env,
-        local,
-        result.as_mut_ptr(),
-    );
+    let status = napi::typeof_value(env, local, result.as_mut_ptr());
 
     assert_eq!(status, napi::Status::Ok);
 
@@ -49,11 +42,7 @@ pub unsafe fn deref<T: Send + 'static>(
     }
 
     let mut result = MaybeUninit::uninit();
-    let status = napi::get_value_external(
-        env,
-        local,
-        result.as_mut_ptr(),
-    );
+    let status = napi::get_value_external(env, local, result.as_mut_ptr());
 
     assert_eq!(status, napi::Status::Ok);
 
@@ -61,11 +50,7 @@ pub unsafe fn deref<T: Send + 'static>(
 }
 
 /// Creates a `napi_external` from a Rust type
-pub unsafe fn create<T: Send + 'static>(
-    env: Env,
-    v: T,
-    finalizer: fn(Env, T),
-) -> Local {
+pub unsafe fn create<T: Send + 'static>(env: Env, v: T, finalizer: fn(Env, T)) -> Local {
     let v = Box::new(v);
     let mut result = MaybeUninit::uninit();
 

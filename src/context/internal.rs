@@ -1,3 +1,13 @@
+use super::ModuleContext;
+use handle::Handle;
+use neon_runtime;
+use neon_runtime::raw;
+use neon_runtime::scope::Root;
+#[cfg(feature = "legacy-runtime")]
+use neon_runtime::try_catch::TryCatchControl;
+#[cfg(feature = "legacy-runtime")]
+use object::class::ClassMap;
+use result::NeonResult;
 #[cfg(feature = "legacy-runtime")]
 use std::any::Any;
 use std::cell::{Cell, RefCell};
@@ -5,18 +15,8 @@ use std::mem::MaybeUninit;
 #[cfg(feature = "legacy-runtime")]
 use std::os::raw::c_void;
 #[cfg(feature = "legacy-runtime")]
-use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
-use neon_runtime;
-use neon_runtime::raw;
-use neon_runtime::scope::Root;
-#[cfg(feature = "legacy-runtime")]
-use neon_runtime::try_catch::TryCatchControl;
+use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use types::{JsObject, JsValue};
-use handle::Handle;
-#[cfg(feature = "legacy-runtime")]
-use object::class::ClassMap;
-use result::NeonResult;
-use super::ModuleContext;
 
 #[cfg(feature = "legacy-runtime")]
 #[repr(C)]
@@ -68,20 +68,18 @@ impl Env {
 
     #[cfg(feature = "legacy-runtime")]
     pub(crate) fn current() -> Env {
-        unsafe {
-            std::mem::transmute(neon_runtime::call::current_isolate())
-        }
+        unsafe { std::mem::transmute(neon_runtime::call::current_isolate()) }
     }
 }
 
 pub struct ScopeMetadata {
     env: Env,
-    active: Cell<bool>
+    active: Cell<bool>,
 }
 
 pub struct Scope<'a, R: Root + 'static> {
     pub metadata: ScopeMetadata,
-    pub handle_scope: &'a mut R
+    pub handle_scope: &'a mut R,
 }
 
 impl<'a, R: Root + 'static> Scope<'a, R> {
@@ -94,9 +92,9 @@ impl<'a, R: Root + 'static> Scope<'a, R> {
             let scope = Scope {
                 metadata: ScopeMetadata {
                     env,
-                    active: Cell::new(true)
+                    active: Cell::new(true),
                 },
-                handle_scope: &mut handle_scope
+                handle_scope: &mut handle_scope,
             };
             f(scope)
         };
@@ -124,12 +122,17 @@ pub trait ContextInternal<'a>: Sized {
         }
     }
 
-    fn activate(&self) { self.scope_metadata().active.set(true); }
-    fn deactivate(&self) { self.scope_metadata().active.set(false); }
+    fn activate(&self) {
+        self.scope_metadata().active.set(true);
+    }
+    fn deactivate(&self) {
+        self.scope_metadata().active.set(false);
+    }
 
     #[cfg(feature = "legacy-runtime")]
     fn try_catch_internal<T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
-        where F: FnOnce(&mut Self) -> NeonResult<T>,
+    where
+        F: FnOnce(&mut Self) -> NeonResult<T>,
     {
         // A closure does not have a guaranteed layout, so we need to box it in order to pass
         // a pointer to it across the boundary into C++.
@@ -140,12 +143,14 @@ pub trait ContextInternal<'a>: Sized {
         let mut unwind_value: MaybeUninit<*mut c_void> = MaybeUninit::zeroed();
 
         let ctrl = unsafe {
-            neon_runtime::try_catch::with(try_catch_glue::<Self, T, F>,
-                                          rust_thunk as *mut c_void,
-                                          (self as *mut Self) as *mut c_void,
-                                          ok.as_mut_ptr() as *mut c_void,
-                                          err.as_mut_ptr(),
-                                          unwind_value.as_mut_ptr())
+            neon_runtime::try_catch::with(
+                try_catch_glue::<Self, T, F>,
+                rust_thunk as *mut c_void,
+                (self as *mut Self) as *mut c_void,
+                ok.as_mut_ptr() as *mut c_void,
+                err.as_mut_ptr(),
+                unwind_value.as_mut_ptr(),
+            )
         };
 
         match ctrl {
@@ -168,7 +173,8 @@ pub trait ContextInternal<'a>: Sized {
 
     #[cfg(feature = "napi-1")]
     fn try_catch_internal<T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
-        where F: FnOnce(&mut Self) -> NeonResult<T>
+    where
+        F: FnOnce(&mut Self) -> NeonResult<T>,
     {
         let result = f(self);
         let mut local: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
@@ -185,12 +191,15 @@ pub trait ContextInternal<'a>: Sized {
 }
 
 #[cfg(feature = "legacy-runtime")]
-extern "C" fn try_catch_glue<'a, 'b: 'a, C, T, F>(rust_thunk: *mut c_void,
-                                                  cx: *mut c_void,
-                                                  returned: *mut c_void,
-                                                  unwind_value: *mut *mut c_void) -> TryCatchControl
-    where C: ContextInternal<'a>,
-          F: FnOnce(&mut C) -> NeonResult<T>,
+extern "C" fn try_catch_glue<'a, 'b: 'a, C, T, F>(
+    rust_thunk: *mut c_void,
+    cx: *mut c_void,
+    returned: *mut c_void,
+    unwind_value: *mut *mut c_void,
+) -> TryCatchControl
+where
+    C: ContextInternal<'a>,
+    F: FnOnce(&mut C) -> NeonResult<T>,
 {
     let f: F = *unsafe { Box::from_raw(rust_thunk as *mut F) };
     let cx: &mut C = unsafe { &mut *cx.cast() };
@@ -205,18 +214,16 @@ extern "C" fn try_catch_glue<'a, 'b: 'a, C, T, F>(rust_thunk: *mut c_void,
         Ok(Ok(result)) => unsafe {
             (returned as *mut T).write(result);
             TryCatchControl::Returned
-        }
+        },
         // No Rust panic, caught a JS exception.
-        Ok(Err(_)) => {
-            TryCatchControl::Threw
-        }
+        Ok(Err(_)) => TryCatchControl::Threw,
         // Rust panicked.
         Err(err) => unsafe {
             // A panic value has an undefined layout, so wrap it in an extra box.
             let boxed = Box::new(err);
             *unwind_value = Box::into_raw(boxed) as *mut c_void;
             TryCatchControl::Panicked
-        }
+        },
     }
 }
 
@@ -230,8 +237,14 @@ pub fn initialize_module(exports: Handle<JsObject>, init: fn(ModuleContext) -> N
 }
 
 #[cfg(feature = "napi-1")]
-pub fn initialize_module(env: raw::Env, exports: Handle<JsObject>, init: fn(ModuleContext) -> NeonResult<()>) {
-    unsafe { neon_runtime::setup(env); }
+pub fn initialize_module(
+    env: raw::Env,
+    exports: Handle<JsObject>,
+    init: fn(ModuleContext) -> NeonResult<()>,
+) {
+    unsafe {
+        neon_runtime::setup(env);
+    }
 
     IS_RUNNING.with(|v| {
         *v.borrow_mut() = true;

@@ -23,7 +23,7 @@ pub(crate) fn main(
                     ::std::mem::transmute(m),
                     #name,
                 );
-    
+
                 m
             }
 

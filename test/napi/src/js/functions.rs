@@ -1,5 +1,5 @@
-use neon::prelude::*;
 use neon::object::This;
+use neon::prelude::*;
 
 fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let x = cx.argument::<JsNumber>(0)?.value(&mut cx);
@@ -14,16 +14,24 @@ pub fn call_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let f = cx.argument::<JsFunction>(0)?;
     let args: Vec<Handle<JsNumber>> = vec![cx.number(16.0)];
     let null = cx.null();
-    f.call(&mut cx, null, args)?.downcast::<JsNumber, _>(&mut cx).or_throw(&mut cx)
+    f.call(&mut cx, null, args)?
+        .downcast::<JsNumber, _>(&mut cx)
+        .or_throw(&mut cx)
 }
 
 pub fn construct_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let f = cx.argument::<JsFunction>(0)?;
     let zero = cx.number(0.0);
     let o = f.construct(&mut cx, vec![zero])?;
-    let get_utc_full_year_method = o.get(&mut cx, "getUTCFullYear")?.downcast::<JsFunction, _>(&mut cx).or_throw(&mut cx)?;
+    let get_utc_full_year_method = o
+        .get(&mut cx, "getUTCFullYear")?
+        .downcast::<JsFunction, _>(&mut cx)
+        .or_throw(&mut cx)?;
     let args: Vec<Handle<JsValue>> = vec![];
-    get_utc_full_year_method.call(&mut cx, o.upcast::<JsValue>(), args)?.downcast::<JsNumber, _>(&mut cx).or_throw(&mut cx)
+    get_utc_full_year_method
+        .call(&mut cx, o.upcast::<JsValue>(), args)?
+        .downcast::<JsNumber, _>(&mut cx)
+        .or_throw(&mut cx)
 }
 
 trait CheckArgument<'a> {
@@ -47,7 +55,8 @@ pub fn panic(_: FunctionContext) -> JsResult<JsUndefined> {
 }
 
 pub fn panic_after_throw(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    cx.throw_range_error::<_, ()>("entering throw state with a RangeError").unwrap_err();
+    cx.throw_range_error::<_, ()>("entering throw state with a RangeError")
+        .unwrap_err();
     panic!("this should override the RangeError")
 }
 
@@ -103,7 +112,9 @@ pub fn compute_scoped(mut cx: FunctionContext) -> JsResult<JsNumber> {
 }
 
 pub fn throw_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
-    let v = cx.argument_opt(0).unwrap_or_else(|| cx.undefined().upcast());
+    let v = cx
+        .argument_opt(0)
+        .unwrap_or_else(|| cx.undefined().upcast());
 
     cx.try_catch(|cx| cx.throw(v))
         .map(|_: ()| Ok(cx.string("unreachable").upcast()))
@@ -112,15 +123,18 @@ pub fn throw_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
 
 pub fn call_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
     let f: Handle<JsFunction> = cx.argument(0)?;
-    Ok(cx.try_catch(|cx| {
-        let global = cx.global();
-        let args: Vec<Handle<JsValue>> = vec![];
-        f.call(cx, global, args)
-    }).unwrap_or_else(|err| err))
+    Ok(cx
+        .try_catch(|cx| {
+            let global = cx.global();
+            let args: Vec<Handle<JsValue>> = vec![];
+            f.call(cx, global, args)
+        })
+        .unwrap_or_else(|err| err))
 }
 
 pub fn get_number_or_default(mut cx: FunctionContext) -> JsResult<JsNumber> {
-    let n = cx.try_catch(|cx| Ok(cx.argument::<JsNumber>(0)?.value(cx)))
+    let n = cx
+        .try_catch(|cx| Ok(cx.argument::<JsNumber>(0)?.value(cx)))
         .unwrap_or(0.0);
 
     Ok(cx.number(n))
