@@ -4,27 +4,27 @@ mod js {
     pub mod arrays;
     pub mod boxed;
     pub mod coercions;
+    pub mod date;
     pub mod errors;
     pub mod functions;
     pub mod numbers;
     pub mod objects;
-    pub mod types;
     pub mod strings;
     pub mod threads;
-    pub mod date;
+    pub mod types;
 }
 
 use js::arrays::*;
 use js::boxed::*;
 use js::coercions::*;
+use js::date::*;
 use js::errors::*;
 use js::functions::*;
 use js::numbers::*;
 use js::objects::*;
-use js::types::*;
 use js::strings::*;
 use js::threads::*;
-use js::date::*;
+use js::types::*;
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
@@ -70,20 +70,34 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         rust_created.set(&mut cx, "whatever", whatever)?;
     }
 
-    assert!(({
-        let v: Handle<JsNumber> = rust_created.get(&mut cx, "a")?.downcast_or_throw(&mut cx)?;
-        v.value(&mut cx)
-    } - 1.0f64).abs() < f64::EPSILON);
-    assert!(({
-        let v: Handle<JsNumber> = rust_created.get(&mut cx, 0)?.downcast_or_throw(&mut cx)?;
-        v.value(&mut cx)
-    } - 1.0f64).abs() < f64::EPSILON);
-    assert_eq!({
-        let v: Handle<JsBoolean> = rust_created.get(&mut cx, "whatever")?.downcast_or_throw(&mut cx)?;
-        v.value(&mut cx)
-    }, true);
+    assert!(
+        ({
+            let v: Handle<JsNumber> = rust_created.get(&mut cx, "a")?.downcast_or_throw(&mut cx)?;
+            v.value(&mut cx)
+        } - 1.0f64)
+            .abs()
+            < f64::EPSILON
+    );
+    assert!(
+        ({
+            let v: Handle<JsNumber> = rust_created.get(&mut cx, 0)?.downcast_or_throw(&mut cx)?;
+            v.value(&mut cx)
+        } - 1.0f64)
+            .abs()
+            < f64::EPSILON
+    );
+    assert_eq!(
+        {
+            let v: Handle<JsBoolean> = rust_created
+                .get(&mut cx, "whatever")?
+                .downcast_or_throw(&mut cx)?;
+            v.value(&mut cx)
+        },
+        true
+    );
 
-    let property_names = rust_created.get_own_property_names(&mut cx)?
+    let property_names = rust_created
+        .get_own_property_names(&mut cx)?
         .to_vec(&mut cx)?
         .into_iter()
         .map(|value| {
@@ -109,11 +123,23 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("return_large_js_number", return_large_js_number)?;
     cx.export_function("return_negative_js_number", return_negative_js_number)?;
     cx.export_function("return_float_js_number", return_float_js_number)?;
-    cx.export_function("return_negative_float_js_number", return_negative_float_js_number)?;
+    cx.export_function(
+        "return_negative_float_js_number",
+        return_negative_float_js_number,
+    )?;
     cx.export_function("accept_and_return_js_number", accept_and_return_js_number)?;
-    cx.export_function("accept_and_return_large_js_number", accept_and_return_large_js_number)?;
-    cx.export_function("accept_and_return_float_js_number", accept_and_return_float_js_number)?;
-    cx.export_function("accept_and_return_negative_js_number", accept_and_return_negative_js_number)?;
+    cx.export_function(
+        "accept_and_return_large_js_number",
+        accept_and_return_large_js_number,
+    )?;
+    cx.export_function(
+        "accept_and_return_float_js_number",
+        accept_and_return_float_js_number,
+    )?;
+    cx.export_function(
+        "accept_and_return_negative_js_number",
+        accept_and_return_negative_js_number,
+    )?;
 
     cx.export_function("return_js_function", return_js_function)?;
     cx.export_function("call_js_function", call_js_function)?;
@@ -138,15 +164,27 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("return_js_object", return_js_object)?;
     cx.export_function("return_js_object_with_number", return_js_object_with_number)?;
     cx.export_function("return_js_object_with_string", return_js_object_with_string)?;
-    cx.export_function("return_js_object_with_mixed_content", return_js_object_with_mixed_content)?;
+    cx.export_function(
+        "return_js_object_with_mixed_content",
+        return_js_object_with_mixed_content,
+    )?;
 
     cx.export_function("return_array_buffer", return_array_buffer)?;
     cx.export_function("read_array_buffer_with_lock", read_array_buffer_with_lock)?;
-    cx.export_function("read_array_buffer_with_borrow", read_array_buffer_with_borrow)?;
+    cx.export_function(
+        "read_array_buffer_with_borrow",
+        read_array_buffer_with_borrow,
+    )?;
     cx.export_function("sum_array_buffer_with_borrow", sum_array_buffer_with_borrow)?;
     cx.export_function("write_array_buffer_with_lock", write_array_buffer_with_lock)?;
-    cx.export_function("write_array_buffer_with_borrow_mut", write_array_buffer_with_borrow_mut)?;
-    cx.export_function("increment_array_buffer_with_borrow_mut", increment_array_buffer_with_borrow_mut)?;
+    cx.export_function(
+        "write_array_buffer_with_borrow_mut",
+        write_array_buffer_with_borrow_mut,
+    )?;
+    cx.export_function(
+        "increment_array_buffer_with_borrow_mut",
+        increment_array_buffer_with_borrow_mut,
+    )?;
     cx.export_function("return_uninitialized_buffer", return_uninitialized_buffer)?;
     cx.export_function("return_buffer", return_buffer)?;
     cx.export_function("return_external_buffer", return_external_buffer)?;
@@ -156,7 +194,10 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("sum_buffer_with_borrow", sum_buffer_with_borrow)?;
     cx.export_function("write_buffer_with_lock", write_buffer_with_lock)?;
     cx.export_function("write_buffer_with_borrow_mut", write_buffer_with_borrow_mut)?;
-    cx.export_function("increment_buffer_with_borrow_mut", increment_buffer_with_borrow_mut)?;
+    cx.export_function(
+        "increment_buffer_with_borrow_mut",
+        increment_buffer_with_borrow_mut,
+    )?;
 
     cx.export_function("create_date", create_date)?;
     cx.export_function("get_date_value", get_date_value)?;

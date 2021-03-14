@@ -1,5 +1,7 @@
 #[cfg(all(not(feature = "neon-sys"), not(feature = "napi")))]
-compile_error!("The Neon runtime must have at least one of the `neon-sys` or `napi` backends enabled.");
+compile_error!(
+    "The Neon runtime must have at least one of the `neon-sys` or `napi` backends enabled."
+);
 
 use cfg_if::cfg_if;
 

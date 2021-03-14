@@ -21,8 +21,8 @@ pub unsafe fn data(env: Env, base_out: &mut *mut c_void, obj: Local) -> usize {
 }
 
 pub unsafe fn new_external<T>(env: Env, data: T) -> Local
-    where
-        T: AsMut<[u8]> + Send,
+where
+    T: AsMut<[u8]> + Send,
 {
     // Safety: Boxing could move the data; must box before grabbing a raw pointer
     let mut data = Box::new(data);

@@ -1,7 +1,7 @@
 //! The [Neon](https://www.neon-bindings.com/) crate provides bindings for writing Node.js plugins with a safe and fast Rust API.
 
-extern crate neon_runtime;
 extern crate cslice;
+extern crate neon_runtime;
 extern crate semver;
 extern crate smallvec;
 
@@ -12,19 +12,22 @@ extern crate neon_macros;
 #[macro_use]
 extern crate lazy_static;
 
-pub mod context;
-pub mod handle;
-pub mod types;
-pub mod object;
 pub mod borrow;
+pub mod context;
+#[cfg(any(
+    feature = "event-handler-api",
+    all(feature = "napi-4", feature = "event-queue-api")
+))]
+pub mod event;
+pub mod handle;
+pub mod meta;
+pub mod reflect;
+pub mod object;
+pub mod prelude;
 pub mod result;
 #[cfg(feature = "legacy-runtime")]
 pub mod task;
-#[cfg(any(feature = "event-handler-api", all(feature = "napi-4", feature = "event-queue-api")))]
-pub mod event;
-pub mod meta;
-pub mod reflect;
-pub mod prelude;
+pub mod types;
 
 #[doc(hidden)]
 pub mod macro_internal;
@@ -281,7 +284,7 @@ macro_rules! impl_managed {
                 $cls(raw)
             }
         }
-    }
+    };
 }
 
 #[cfg(feature = "legacy-runtime")]
@@ -379,10 +382,10 @@ macro_rules! neon_stringify {
 #[cfg(test)]
 mod tests {
     extern crate rustversion;
+    use semver::Version;
     use std::path::{Path, PathBuf};
     use std::process::Command;
     use std::sync::Mutex;
-    use semver::Version;
 
     // Create a mutex to enforce sequential running of the tests.
     lazy_static! {
@@ -409,11 +412,14 @@ mod tests {
         eprintln!("Running Neon test: {} {} {}", shell, command_flag, cmd);
 
         assert!(Command::new(&shell)
-                        .current_dir(dir)
-                        .args(&[&command_flag, cmd])
-                        .status()
-                        .expect(&format!("failed to execute test command: {} {} {}", shell, command_flag, cmd))
-                        .success());
+            .current_dir(dir)
+            .args(&[&command_flag, cmd])
+            .status()
+            .unwrap_or_else(|_| panic!(
+                "failed to execute test command: {} {} {}",
+                shell, command_flag, cmd
+            ))
+            .success());
     }
 
     fn cli_setup() {
@@ -442,7 +448,10 @@ mod tests {
 
         log("static_test");
 
-        run("cargo test --release", &project_root().join("test").join("static"));
+        run(
+            "cargo test --release",
+            &project_root().join("test").join("static"),
+        );
     }
 
     // Only run the static tests in Beta. This will catch changes to error reporting
@@ -451,22 +460,30 @@ mod tests {
     #[rustversion::beta]
     #[cfg(feature = "enable-static-tests")]
     #[test]
-    fn static_test() { static_test_impl() }
+    fn static_test() {
+        static_test_impl()
+    }
 
     #[rustversion::beta]
     #[cfg(not(feature = "enable-static-tests"))]
     #[test]
     #[ignore]
-    fn static_test() { static_test_impl() }
+    fn static_test() {
+        static_test_impl()
+    }
 
     #[rustversion::not(beta)]
     #[cfg(feature = "enable-static-tests")]
-    compile_error!("The `enable-static-tests` feature can only be enabled with the Rust beta toolchain.");
+    compile_error!(
+        "The `enable-static-tests` feature can only be enabled with the Rust beta toolchain."
+    );
 
     #[rustversion::not(beta)]
     #[test]
     #[ignore]
-    fn static_test() { static_test_impl() }
+    fn static_test() {
+        static_test_impl()
+    }
 
     #[test]
     fn dynamic_test() {

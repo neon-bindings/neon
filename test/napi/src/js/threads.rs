@@ -15,15 +15,17 @@ pub fn thread_callback(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let callback = cx.argument::<JsFunction>(0)?.root(&mut cx);
     let queue = cx.queue();
 
-    std::thread::spawn(move || queue.send(move |mut cx| {
-        let callback = callback.into_inner(&mut cx);
-        let this = cx.undefined();
-        let args = Vec::<Handle<JsValue>>::new();
+    std::thread::spawn(move || {
+        queue.send(move |mut cx| {
+            let callback = callback.into_inner(&mut cx);
+            let this = cx.undefined();
+            let args = Vec::<Handle<JsValue>>::new();
 
-        callback.call(&mut cx, this, args)?;
+            callback.call(&mut cx, this, args)?;
 
-        Ok(())
-    }));
+            Ok(())
+        })
+    });
 
     Ok(cx.undefined())
 }
@@ -37,15 +39,17 @@ pub fn multi_threaded_callback(mut cx: FunctionContext) -> JsResult<JsUndefined>
         let callback = callback.clone(&mut cx);
         let queue = Arc::clone(&queue);
 
-        std::thread::spawn(move || queue.send(move |mut cx| {
-            let callback = callback.into_inner(&mut cx);
-            let this = cx.undefined();
-            let args = vec![cx.number(i as f64)];
+        std::thread::spawn(move || {
+            queue.send(move |mut cx| {
+                let callback = callback.into_inner(&mut cx);
+                let this = cx.undefined();
+                let args = vec![cx.number(i as f64)];
 
-            callback.call(&mut cx, this, args)?;
+                callback.call(&mut cx, this, args)?;
 
-            Ok(())
-        }));
+                Ok(())
+            })
+        });
     }
 
     callback.drop(&mut cx);
@@ -68,15 +72,17 @@ impl AsyncGreeter {
         let callback = self.callback.clone(&mut cx);
         let queue = Arc::clone(&self.queue);
 
-        std::thread::spawn(move || queue.send(|mut cx| {
-            let callback = callback.into_inner(&mut cx);
-            let this = cx.undefined();
-            let args = vec![cx.string(greeting)];
+        std::thread::spawn(move || {
+            queue.send(|mut cx| {
+                let callback = callback.into_inner(&mut cx);
+                let this = cx.undefined();
+                let args = vec![cx.string(greeting)];
 
-            callback.call(&mut cx, this, args)?;
+                callback.call(&mut cx, this, args)?;
 
-            Ok(())
-        }));
+                Ok(())
+            })
+        });
 
         Ok(cx.undefined())
     }
@@ -84,7 +90,9 @@ impl AsyncGreeter {
 
 impl Finalize for AsyncGreeter {
     fn finalize<'a, C: Context<'a>>(self, cx: &mut C) {
-        let Self { callback, shutdown, .. } = self;
+        let Self {
+            callback, shutdown, ..
+        } = self;
 
         if let Some(shutdown) = shutdown {
             let shutdown = shutdown.into_inner(cx);

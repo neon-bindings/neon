@@ -171,8 +171,8 @@ use std::sync::Once;
 pub(crate) use functions::*;
 pub(crate) use types::*;
 
-mod types;
 mod functions;
+mod types;
 
 static SETUP: Once = Once::new();
 

@@ -11,5 +11,7 @@ mod event_handler;
 pub use self::event_handler::EventHandler;
 
 #[cfg(all(feature = "napi-1", feature = "event-handler-api"))]
-compile_error!("The `EventHandler` API is not supported with the N-API \
-    backend. Use `EventQueue` instead.");
+compile_error!(
+    "The `EventHandler` API is not supported with the N-API \
+    backend. Use `EventQueue` instead."
+);

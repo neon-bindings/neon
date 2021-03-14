@@ -1,6 +1,6 @@
 //! Facilities for working with `v8::HandleScope`s and `v8::EscapableHandleScope`s.
 
-use crate::raw::{HandleScope, EscapableHandleScope, InheritedHandleScope, Isolate};
+use crate::raw::{EscapableHandleScope, HandleScope, InheritedHandleScope, Isolate};
 
 pub trait Root {
     /// # Safety
@@ -15,7 +15,9 @@ pub trait Root {
 }
 
 impl Root for HandleScope {
-    unsafe fn allocate() -> Self { HandleScope::new() }
+    unsafe fn allocate() -> Self {
+        HandleScope::new()
+    }
     unsafe fn enter(&mut self, isolate: Isolate) {
         enter(self, isolate)
     }
@@ -25,7 +27,9 @@ impl Root for HandleScope {
 }
 
 impl Root for EscapableHandleScope {
-    unsafe fn allocate() -> Self { EscapableHandleScope::new() }
+    unsafe fn allocate() -> Self {
+        EscapableHandleScope::new()
+    }
     unsafe fn enter(&mut self, isolate: Isolate) {
         enter_escapable(self, isolate)
     }
@@ -35,9 +39,11 @@ impl Root for EscapableHandleScope {
 }
 
 impl Root for InheritedHandleScope {
-    unsafe fn allocate() -> Self { InheritedHandleScope }
-    unsafe fn enter(&mut self, _: Isolate) { }
-    unsafe fn exit(&mut self, _: Isolate) { }
+    unsafe fn allocate() -> Self {
+        InheritedHandleScope
+    }
+    unsafe fn enter(&mut self, _: Isolate) {}
+    unsafe fn exit(&mut self, _: Isolate) {}
 }
 
 /// Mutates the `out` argument provided to refer to the newly escaped `v8::Local` value.

@@ -1,12 +1,12 @@
 use std::any::{self, Any};
 use std::ops::Deref;
 
-use neon_runtime::raw;
 use neon_runtime::external;
+use neon_runtime::raw;
 
-use crate::context::{Context, FinalizeContext};
 use crate::context::internal::Env;
-use crate::handle::{Managed, Handle};
+use crate::context::{Context, FinalizeContext};
+use crate::handle::{Handle, Managed};
 use crate::types::internal::ValueInternal;
 use crate::types::Value;
 
@@ -89,38 +89,38 @@ type BoxAny = Box<dyn Any + Send + 'static>;
 ///     pub fn new(name: String) -> Self {
 ///         Person { name }
 ///     }
-/// 
+///
 ///     pub fn set_name(&mut self, name: String) {
 ///         self.name = name;
 ///     }
-/// 
+///
 ///     pub fn greet(&self) -> String {
 ///         format!("Hello, {}!", self.name)
 ///     }
 /// }
-/// 
+///
 /// fn person_new(mut cx: FunctionContext) -> JsResult<BoxedPerson> {
 ///     let name = cx.argument::<JsString>(0)?.value(&mut cx);
 ///     let person = RefCell::new(Person::new(name));
-/// 
+///
 ///     Ok(cx.boxed(person))
 /// }
-/// 
+///
 /// fn person_set_name(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 ///     let person = cx.argument::<BoxedPerson>(0)?;
 ///     let mut person = person.borrow_mut();
 ///     let name = cx.argument::<JsString>(1)?.value(&mut cx);
-/// 
+///
 ///     person.set_name(name);
-/// 
+///
 ///     Ok(cx.undefined())
 /// }
-/// 
+///
 /// fn person_greet(mut cx: FunctionContext) -> JsResult<JsString> {
 ///     let person = cx.argument::<BoxedPerson>(0)?;
 ///     let person = person.borrow();
 ///     let greeting = person.greet();
-/// 
+///
 ///     Ok(cx.string(greeting))
 /// }
 pub struct JsBox<T: Send + 'static> {
@@ -146,8 +146,7 @@ impl<T: Send + 'static> std::fmt::Debug for JsBox<T> {
 // Attempt to use a `napi_value` as a `napi_external` to unwrap a `BoxAny>
 /// Safety: `local` must be a `napi_value` that is valid for the lifetime `'a`.
 unsafe fn maybe_external_deref<'a>(env: Env, local: raw::Local) -> Option<&'a BoxAny> {
-    external::deref::<BoxAny>(env.to_raw(), local)
-        .map(|v| &*v)
+    external::deref::<BoxAny>(env.to_raw(), local).map(|v| &*v)
 }
 
 // Custom `Clone` implementation since `T` might not be `Clone`
@@ -162,7 +161,7 @@ impl<T: Send + 'static> Clone for JsBox<T> {
 
 impl<T: Send + 'static> Copy for JsBox<T> {}
 
-impl<T: Send + 'static> Value for JsBox<T> { }
+impl<T: Send + 'static> Value for JsBox<T> {}
 
 impl<T: Send + 'static> Managed for JsBox<T> {
     fn to_raw(self) -> raw::Local {
@@ -175,10 +174,7 @@ impl<T: Send + 'static> Managed for JsBox<T> {
             .downcast_ref()
             .expect("Failed to downcast Any");
 
-        Self {
-            local,
-            raw_data,
-        }        
+        Self { local, raw_data }
     }
 }
 
@@ -199,10 +195,7 @@ impl<T: Send + 'static> ValueInternal for JsBox<T> {
 
         // Attempt to downcast the `Option<&BoxAny>` to `Option<*const T>`
         data.and_then(|v| v.downcast_ref())
-            .map(|raw_data| Self {
-                local,
-                raw_data,
-            })
+            .map(|raw_data| Self { local, raw_data })
     }
 }
 
@@ -239,23 +232,15 @@ impl<T: Finalize + Send + 'static> JsBox<T> {
             let data = *data.downcast::<U>().unwrap();
             let env = unsafe { std::mem::transmute(env) };
 
-            FinalizeContext::with(
-                env,
-                move |mut cx| data.finalize(&mut cx),
-            );
+            FinalizeContext::with(env, move |mut cx| data.finalize(&mut cx));
         }
 
         let v = Box::new(value) as BoxAny;
         // Since this value was just constructed, we know it is `T`
         let raw_data = &*v as *const dyn Any as *const T;
-        let local = unsafe {
-            external::create(cx.env().to_raw(), v, finalizer::<T>)
-        };
+        let local = unsafe { external::create(cx.env().to_raw(), v, finalizer::<T>) };
 
-        Handle::new_internal(Self {
-            local,
-            raw_data,
-        })
+        Handle::new_internal(Self { local, raw_data })
     }
 }
 

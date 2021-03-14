@@ -1,14 +1,14 @@
-use std::mem;
-use std::os::raw::c_void;
+use super::Value;
+use context::internal::Env;
+use context::{CallbackInfo, FunctionContext};
 use neon_runtime;
 use neon_runtime::call::CCallback;
 use neon_runtime::raw;
-use context::{CallbackInfo, FunctionContext};
-use context::internal::Env;
-use types::error::convert_panics;
-use types::{JsObject, Handle, Managed};
 use result::JsResult;
-use super::Value;
+use std::mem;
+use std::os::raw::c_void;
+use types::error::convert_panics;
+use types::{Handle, JsObject, Managed};
 
 pub trait ValueInternal: Managed + 'static {
     fn name() -> String;
@@ -39,7 +39,7 @@ impl<T: Value> Callback<()> for FunctionCallback<T> {
                 let data = info.data(env);
                 let dynamic_callback: fn(FunctionContext) -> JsResult<T> =
                     mem::transmute(neon_runtime::fun::get_dynamic_callback(env.to_raw(), data));
-                if let Ok(value) = convert_panics(env, || { dynamic_callback(cx) }) {
+                if let Ok(value) = convert_panics(env, || dynamic_callback(cx)) {
                     info.set_return(value);
                 }
             })
@@ -59,7 +59,7 @@ impl<T: Value> Callback<raw::Local> for FunctionCallback<T> {
                 let data = info.data(env);
                 let dynamic_callback: fn(FunctionContext) -> JsResult<T> =
                     mem::transmute(neon_runtime::fun::get_dynamic_callback(env.to_raw(), data));
-                if let Ok(value) = convert_panics(env, || { dynamic_callback(cx) }) {
+                if let Ok(value) = convert_panics(env, || dynamic_callback(cx)) {
                     value.to_raw()
                 } else {
                     // We do not have a Js Value to return, most likely due to an exception.
@@ -109,7 +109,7 @@ pub(crate) trait Callback<T: Clone + Copy + Sized>: Sized {
         let invoke = Self::invoke_compat;
         CCallback {
             static_callback: unsafe { mem::transmute(invoke as usize) },
-            dynamic_callback: self.into_ptr()
+            dynamic_callback: self.into_ptr(),
         }
     }
 }

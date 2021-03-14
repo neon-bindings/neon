@@ -8,17 +8,17 @@ mod root;
 #[cfg(feature = "napi-1")]
 pub use self::root::Root;
 
-use std::marker::PhantomData;
-use std::ops::{Deref, DerefMut};
-use std::error::Error;
-use std::fmt::{self, Debug, Display};
+use self::internal::SuperType;
+use context::internal::Env;
+use context::Context;
 use neon_runtime;
 use neon_runtime::raw;
-use types::Value;
-use context::Context;
-use context::internal::Env;
 use result::{JsResult, JsResultExt};
-use self::internal::SuperType;
+use std::error::Error;
+use std::fmt::{self, Debug, Display};
+use std::marker::PhantomData;
+use std::ops::{Deref, DerefMut};
+use types::Value;
 
 /// The trait of data that is managed by the JS garbage collector and can only be accessed via handles.
 pub trait Managed: Copy {
@@ -32,7 +32,7 @@ pub trait Managed: Copy {
 #[derive(Clone, Copy, Debug)]
 pub struct Handle<'a, T: Managed + 'a> {
     value: T,
-    phantom: PhantomData<&'a T>
+    phantom: PhantomData<&'a T>,
 }
 
 #[cfg(feature = "legacy-runtime")]
@@ -43,13 +43,13 @@ impl<'a, T: Managed + 'a> PartialEq for Handle<'a, T> {
 }
 
 #[cfg(feature = "legacy-runtime")]
-impl<'a, T: Managed + 'a> Eq for Handle<'a, T> { }
+impl<'a, T: Managed + 'a> Eq for Handle<'a, T> {}
 
 impl<'a, T: Managed + 'a> Handle<'a, T> {
     pub(crate) fn new_internal(value: T) -> Handle<'a, T> {
         Handle {
             value,
-            phantom: PhantomData
+            phantom: PhantomData,
         }
     }
 }
@@ -91,13 +91,12 @@ impl<'a, F: Value, T: Value> JsResultExt<'a, T> for DowncastResult<'a, F, T> {
     fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, T> {
         match self {
             Ok(v) => Ok(v),
-            Err(e) => cx.throw_type_error(&e.to_string())
+            Err(e) => cx.throw_type_error(&e.to_string()),
         }
     }
 }
 
 impl<'a, T: Value> Handle<'a, T> {
-
     /// Safely upcast a handle to a supertype.
     ///
     /// This method does not require an execution context because it only copies a handle.
@@ -151,7 +150,7 @@ impl<'a, T: Value> Handle<'a, T> {
     pub fn downcast<U: Value>(&self) -> DowncastResult<'a, T, U> {
         match U::downcast(Env::current(), self.value) {
             Some(v) => Ok(Handle::new_internal(v)),
-            None => Err(DowncastError::new())
+            None => Err(DowncastError::new()),
         }
     }
 
@@ -163,7 +162,7 @@ impl<'a, T: Value> Handle<'a, T> {
     pub fn downcast<'b, U: Value, C: Context<'b>>(&self, cx: &mut C) -> DowncastResult<'a, T, U> {
         match U::downcast(cx.env(), self.value) {
             Some(v) => Ok(Handle::new_internal(v)),
-            None => Err(DowncastError::new())
+            None => Err(DowncastError::new()),
         }
     }
 
@@ -184,7 +183,11 @@ impl<'a, T: Value> Handle<'a, T> {
     }
 
     #[cfg(feature = "napi-1")]
-    pub fn strict_equals<'b, U: Value, C: Context<'b>>(&self, cx: &mut C, other: Handle<'b, U>) -> bool {
+    pub fn strict_equals<'b, U: Value, C: Context<'b>>(
+        &self,
+        cx: &mut C,
+        other: Handle<'b, U>,
+    ) -> bool {
         unsafe {
             neon_runtime::mem::strict_equals(cx.env().to_raw(), self.to_raw(), other.to_raw())
         }

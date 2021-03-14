@@ -1,8 +1,7 @@
-
 use std::mem::MaybeUninit;
 
-use crate::raw::{Env, HandleScope, EscapableHandleScope, InheritedHandleScope, Local};
 use crate::napi::bindings as napi;
+use crate::raw::{Env, EscapableHandleScope, HandleScope, InheritedHandleScope, Local};
 
 // TODO: This leaves a lot of room for UB; we can have a cleaner
 // implementation for N-API.
@@ -13,7 +12,9 @@ pub trait Root {
 }
 
 impl Root for HandleScope {
-    unsafe fn allocate() -> Self { HandleScope::new() }
+    unsafe fn allocate() -> Self {
+        HandleScope::new()
+    }
     unsafe fn enter(&mut self, env: Env) {
         let mut scope = MaybeUninit::uninit();
         let status = napi::open_handle_scope(env, scope.as_mut_ptr());
@@ -30,7 +31,9 @@ impl Root for HandleScope {
 }
 
 impl Root for EscapableHandleScope {
-    unsafe fn allocate() -> Self { EscapableHandleScope::new() }
+    unsafe fn allocate() -> Self {
+        EscapableHandleScope::new()
+    }
     unsafe fn enter(&mut self, env: Env) {
         let mut scope = MaybeUninit::uninit();
         let status = napi::open_escapable_handle_scope(env, scope.as_mut_ptr());
@@ -47,9 +50,11 @@ impl Root for EscapableHandleScope {
 }
 
 impl Root for InheritedHandleScope {
-    unsafe fn allocate() -> Self { InheritedHandleScope }
-    unsafe fn enter(&mut self, _: Env) { }
-    unsafe fn exit(&mut self, _: Env) { }
+    unsafe fn allocate() -> Self {
+        InheritedHandleScope
+    }
+    unsafe fn enter(&mut self, _: Env) {}
+    unsafe fn exit(&mut self, _: Env) {}
 }
 
 pub unsafe fn escape(env: Env, out: &mut Local, scope: *mut EscapableHandleScope, value: Local) {
@@ -59,5 +64,8 @@ pub unsafe fn escape(env: Env, out: &mut Local, scope: *mut EscapableHandleScope
 }
 
 pub unsafe fn get_global(env: Env, out: &mut Local) {
-    assert_eq!(crate::napi::bindings::get_global(env, out as *mut _), napi::Status::Ok);
+    assert_eq!(
+        crate::napi::bindings::get_global(env, out as *mut _),
+        napi::Status::Ok
+    );
 }

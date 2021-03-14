@@ -9,12 +9,12 @@ pub use self::traits::*;
 
 #[cfg(feature = "legacy-runtime")]
 mod traits {
-    use neon_runtime::raw;
-    use handle::{Handle, Managed};
-    use types::{Value, JsValue, JsArray, build};
-    use types::utf8::Utf8;
     use context::Context;
-    use result::{NeonResult, JsResult, Throw};
+    use handle::{Handle, Managed};
+    use neon_runtime::raw;
+    use result::{JsResult, NeonResult, Throw};
+    use types::utf8::Utf8;
+    use types::{build, JsArray, JsValue, Value};
 
     /// A property key in a JavaScript object.
     pub trait PropertyKey {
@@ -56,18 +56,27 @@ mod traits {
 
     /// The trait of all object types.
     pub trait Object: Value {
-        fn get<'a, C: Context<'a>, K: PropertyKey>(self, cx: &mut C, key: K) -> NeonResult<Handle<'a, JsValue>> {
-            build(cx.env(), |out| { unsafe { key.get_from(out, self.to_raw()) } })
+        fn get<'a, C: Context<'a>, K: PropertyKey>(
+            self,
+            cx: &mut C,
+            key: K,
+        ) -> NeonResult<Handle<'a, JsValue>> {
+            build(cx.env(), |out| unsafe { key.get_from(out, self.to_raw()) })
         }
 
         fn get_own_property_names<'a, C: Context<'a>>(self, cx: &mut C) -> JsResult<'a, JsArray> {
             let env = cx.env();
-            build(env, |out| {
-                unsafe { neon_runtime::object::get_own_property_names(out, env.to_raw(), self.to_raw()) }
+            build(env, |out| unsafe {
+                neon_runtime::object::get_own_property_names(out, env.to_raw(), self.to_raw())
             })
         }
 
-        fn set<'a, C: Context<'a>, K: PropertyKey, W: Value>(self, _: &mut C, key: K, val: Handle<W>) -> NeonResult<bool> {
+        fn set<'a, C: Context<'a>, K: PropertyKey, W: Value>(
+            self,
+            _: &mut C,
+            key: K,
+            val: Handle<W>,
+        ) -> NeonResult<bool> {
             let mut result = false;
             if unsafe { key.set_from(&mut result, self.to_raw(), val.to_raw()) } {
                 Ok(result)
@@ -86,18 +95,18 @@ mod traits {
 
 #[cfg(feature = "napi-1")]
 mod traits {
-    use neon_runtime::raw;
-    use handle::{Handle, Managed, Root};
-    use types::{Value, JsValue, build};
-    use types::utf8::Utf8;
-    use context::Context;
     use context::internal::Env;
+    use context::Context;
+    use handle::{Handle, Managed, Root};
+    use neon_runtime::raw;
     use result::{NeonResult, Throw};
+    use types::utf8::Utf8;
+    use types::{build, JsValue, Value};
 
     #[cfg(feature = "napi-6")]
-    use types::JsArray;
-    #[cfg(feature = "napi-6")]
     use result::JsResult;
+    #[cfg(feature = "napi-6")]
+    use types::JsArray;
 
     /// A property key in a JavaScript object.
     pub trait PropertyKey {
@@ -105,7 +114,7 @@ mod traits {
             self,
             cx: &mut C,
             out: &mut raw::Local,
-            obj: raw::Local
+            obj: raw::Local,
         ) -> bool;
 
         unsafe fn set_from<'c, C: Context<'c>>(
@@ -122,7 +131,7 @@ mod traits {
             self,
             cx: &mut C,
             out: &mut raw::Local,
-            obj: raw::Local
+            obj: raw::Local,
         ) -> bool {
             neon_runtime::object::get_index(out, cx.env().to_raw(), obj, self)
         }
@@ -143,7 +152,7 @@ mod traits {
             self,
             cx: &mut C,
             out: &mut raw::Local,
-            obj: raw::Local
+            obj: raw::Local,
         ) -> bool {
             let env = cx.env().to_raw();
 
@@ -168,7 +177,7 @@ mod traits {
             self,
             cx: &mut C,
             out: &mut raw::Local,
-            obj: raw::Local
+            obj: raw::Local,
         ) -> bool {
             let (ptr, len) = Utf8::from(self).into_small_unwrap().lower();
             let env = cx.env().to_raw();
@@ -192,20 +201,31 @@ mod traits {
 
     /// The trait of all object types.
     pub trait Object: Value {
-        fn get<'a, C: Context<'a>, K: PropertyKey>(self, cx: &mut C, key: K) -> NeonResult<Handle<'a, JsValue>> {
-            build(cx.env(), |out| { unsafe { key.get_from(cx, out, self.to_raw()) } })
+        fn get<'a, C: Context<'a>, K: PropertyKey>(
+            self,
+            cx: &mut C,
+            key: K,
+        ) -> NeonResult<Handle<'a, JsValue>> {
+            build(cx.env(), |out| unsafe {
+                key.get_from(cx, out, self.to_raw())
+            })
         }
 
         #[cfg(feature = "napi-6")]
         fn get_own_property_names<'a, C: Context<'a>>(self, cx: &mut C) -> JsResult<'a, JsArray> {
             let env = cx.env();
 
-            build(cx.env(), |out| {
-                unsafe { neon_runtime::object::get_own_property_names(out, env.to_raw(), self.to_raw()) }
+            build(cx.env(), |out| unsafe {
+                neon_runtime::object::get_own_property_names(out, env.to_raw(), self.to_raw())
             })
         }
 
-        fn set<'a, C: Context<'a>, K: PropertyKey, W: Value>(self, cx: &mut C, key: K, val: Handle<W>) -> NeonResult<bool> {
+        fn set<'a, C: Context<'a>, K: PropertyKey, W: Value>(
+            self,
+            cx: &mut C,
+            key: K,
+            val: Handle<W>,
+        ) -> NeonResult<bool> {
             let mut result = false;
             if unsafe { key.set_from(cx, &mut result, self.to_raw(), val.to_raw()) } {
                 Ok(result)
