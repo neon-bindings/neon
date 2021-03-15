@@ -194,6 +194,8 @@ mod napi1 {
                 finalize_hint: *mut c_void,
                 result: *mut Value,
             ) -> Status;
+
+            fn run_script(env: Env, script: Value, result: *mut Value) -> Status;
         }
     );
 }

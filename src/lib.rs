@@ -23,6 +23,7 @@ pub mod handle;
 pub mod meta;
 pub mod object;
 pub mod prelude;
+pub mod reflect;
 pub mod result;
 #[cfg(feature = "legacy-runtime")]
 pub mod task;
