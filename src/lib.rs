@@ -21,9 +21,9 @@ pub mod context;
 pub mod event;
 pub mod handle;
 pub mod meta;
-pub mod reflect;
 pub mod object;
 pub mod prelude;
+pub mod reflect;
 pub mod result;
 #[cfg(feature = "legacy-runtime")]
 pub mod task;

@@ -195,7 +195,7 @@ mod napi1 {
                 result: *mut Value,
             ) -> Status;
 
-			fn run_script(env: Env, script: Value, result: *mut Value) -> Status;
+            fn run_script(env: Env, script: Value, result: *mut Value) -> Status;
         }
     );
 }

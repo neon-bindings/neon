@@ -30,11 +30,7 @@ pub unsafe fn data(env: Env, out: *mut u8, len: isize, value: Local) -> isize {
 }
 
 pub unsafe fn run_script(out: &mut Local, env: Env, value: Local) -> bool {
-    let status = napi::run_script(
-        env,
-        value,
-        out as *mut _,
-    );
+    let status = napi::run_script(env, value, out as *mut _);
 
     status == napi::Status::Ok
 }
