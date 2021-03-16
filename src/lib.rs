@@ -23,6 +23,7 @@ pub mod handle;
 pub mod meta;
 pub mod object;
 pub mod prelude;
+#[cfg(feature = "napi-1")]
 pub mod reflect;
 pub mod result;
 #[cfg(feature = "legacy-runtime")]
