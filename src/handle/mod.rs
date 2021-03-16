@@ -3,7 +3,7 @@
 pub(crate) mod internal;
 
 #[cfg(feature = "napi-1")]
-mod root;
+pub(crate) mod root;
 
 #[cfg(feature = "napi-1")]
 pub use self::root::Root;

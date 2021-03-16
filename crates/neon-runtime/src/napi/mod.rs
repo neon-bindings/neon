@@ -8,6 +8,8 @@ pub mod date;
 pub mod error;
 pub mod external;
 pub mod fun;
+#[cfg(feature = "napi-6")]
+pub mod lifecycle;
 pub mod mem;
 pub mod object;
 pub mod primitive;

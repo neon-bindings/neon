@@ -144,3 +144,44 @@ pub fn leak_event_queue(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
     Ok(cx.undefined())
 }
+
+pub fn drop_global_queue(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    struct Wrapper {
+        callback: Option<Root<JsFunction>>,
+        queue: EventQueue,
+    }
+
+    impl Finalize for Wrapper {}
+
+    // To verify that the type is dropped on the global drop queue, the callback
+    // is called from the `Drop` impl on `Wrapper`
+    impl Drop for Wrapper {
+        fn drop(&mut self) {
+            if let Some(callback) = self.callback.take() {
+                self.queue.send(|mut cx| {
+                    let callback = callback.into_inner(&mut cx);
+                    let this = cx.undefined();
+                    let args = vec![cx.undefined()];
+
+                    callback.call(&mut cx, this, args)?;
+
+                    Ok(())
+                });
+            }
+        }
+    }
+
+    let callback = cx.argument::<JsFunction>(0)?.root(&mut cx);
+    let queue = cx.queue();
+
+    let wrapper = cx.boxed(Wrapper {
+        callback: Some(callback),
+        queue,
+    });
+
+    // Put the `Wrapper` instance in a `Root` and drop it
+    // Without the global drop queue, this will panic
+    let _ = wrapper.root(&mut cx);
+
+    Ok(cx.undefined())
+}

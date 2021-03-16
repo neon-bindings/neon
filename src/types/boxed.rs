@@ -7,6 +7,7 @@ use neon_runtime::raw;
 use crate::context::internal::Env;
 use crate::context::{Context, FinalizeContext};
 use crate::handle::{Handle, Managed};
+use crate::object::Object;
 use crate::types::internal::ValueInternal;
 use crate::types::Value;
 
@@ -158,6 +159,8 @@ impl<T: Send + 'static> Clone for JsBox<T> {
         }
     }
 }
+
+impl<T: Send + 'static> Object for JsBox<T> {}
 
 impl<T: Send + 'static> Copy for JsBox<T> {}
 
