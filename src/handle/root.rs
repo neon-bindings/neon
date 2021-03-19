@@ -1,6 +1,7 @@
 use std::ffi::c_void;
 use std::marker::PhantomData;
 use std::mem::ManuallyDrop;
+use std::sync::Arc;
 
 use neon_runtime::reference;
 #[cfg(feature = "napi-6")]
@@ -18,7 +19,10 @@ use types::boxed::Finalize;
 pub(crate) struct NapiRef(*mut c_void);
 
 // # Safety
-// `NapiRef` are intended to be `Send` and `Sync`
+// `NapiRef` are reference counted types that allow references to JavaScript objects
+// to outlive a `Context` (`napi_env`). Since access is serialized by obtaining a
+// `Context`, they are both `Send` and `Sync`.
+// https://nodejs.org/api/n-api.html#n_api_references_to_objects_with_a_lifespan_longer_than_that_of_the_native_method
 unsafe impl Send for NapiRef {}
 unsafe impl Sync for NapiRef {}
 
@@ -29,7 +33,7 @@ unsafe impl Sync for NapiRef {}
 pub struct Root<T> {
     internal: NapiRef,
     #[cfg(feature = "napi-6")]
-    drop_queue: &'static ThreadsafeFunction<NapiRef>,
+    drop_queue: Arc<ThreadsafeFunction<NapiRef>>,
     _phantom: PhantomData<T>,
 }
 
@@ -90,7 +94,7 @@ impl<T: Object> Root<T> {
         Self {
             internal: self.internal.clone(),
             #[cfg(feature = "napi-6")]
-            drop_queue: self.drop_queue,
+            drop_queue: Arc::clone(&self.drop_queue),
             _phantom: PhantomData,
         }
     }

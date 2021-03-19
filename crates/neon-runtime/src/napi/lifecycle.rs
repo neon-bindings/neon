@@ -1,3 +1,13 @@
+//! # Environment life cycle APIs
+//!
+//! These APIs map to the life cycle of a specific "Agent" or self-contained
+//! environment. If a Neon module is loaded multiple times (Web Workers, worker
+//! threads), these API will be handle data associated with a specific instance.
+//!
+//! See the [N-API Lifecycle][npai-docs] documentation for more details.
+//!
+//! [napi-docs]: https://nodejs.org/api/n-api.html#n_api_environment_life_cycle_apis
+
 use std::mem::MaybeUninit;
 use std::os::raw::c_void;
 use std::ptr;
