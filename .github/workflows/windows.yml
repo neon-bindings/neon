@@ -15,6 +15,7 @@ jobs:
     runs-on: windows-latest
 
     strategy:
+    fail-fast: false
       matrix:
         node-version: [12, 14, 15]
         rust-toolchain: [stable, beta]
@@ -27,7 +28,8 @@ jobs:
       with:
         toolchain: ${{ matrix.rust-toolchain }}
         target: ${{ matrix.rust-target }}
-        override: true 
+        default: true
+        override: true
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v2
       with:
