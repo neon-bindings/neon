@@ -43,6 +43,21 @@ impl<T: Object> Root<T> {
     /// The caller _must_ ensure `Root::into_inner` or `Root::drop` is called
     /// to properly dispose of the `Root<T>`. If the value is dropped without
     /// calling one of these methods, it will *panic*.
+    ///
+    /// Be careful that you aren't short-circuiting with an early return before
+    /// your Root value gets into_inner'd or dropped. The following will cause
+    /// a runtime panic when your error case gets triggered:
+    /// ```
+    /// let callback = cx.argument::<JsFunction>(1)?.root(&mut cx);
+    /// let my_log = match (create_log_entry(&id_generator, "log-emitter")) {
+    ///                Err(_err) => {
+    ///                  return cx.throw_error("Couldn't construct log");
+    ///                },
+    ///                Ok(log) => log,
+    /// };
+    /// ```
+    /// The solution in the original case for this was to bind the callback
+    /// after the fallible code, right before spawning an async task.
     pub fn new<'a, C: Context<'a>>(cx: &mut C, value: &T) -> Self {
         let env = cx.env().to_raw();
         let internal = unsafe { reference::new(env, value.to_raw()) };
