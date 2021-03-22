@@ -40,7 +40,7 @@ As a rule, you should choose the **oldest version of N-API that has the APIs you
 
 ```toml
 [dependencies.neon]
-version = "0.7.1"
+version = "0.8.0"
 default-features = false
 features = ["napi-4"]
 ```
@@ -192,7 +192,7 @@ The supported mechanism for concurrency is the Event Queue API (`neon::event::Ev
 
 ```toml
 [dependencies.neon]
-version = "0.7.1"
+version = "0.8.0"
 default-features = false
 features = ["napi-4", "event-queue-api"]
 ```
