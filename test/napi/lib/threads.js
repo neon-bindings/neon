@@ -64,4 +64,11 @@ const assert = require('chai').assert;
     // If the EventQueue is not unreferenced, the test runner will not cleanly exit
     addon.leak_event_queue();
   });
+
+  it('should drop leaked Root from the global queue', function (cb) {
+    addon.drop_global_queue(cb);
+
+    // Asynchronously GC to give the task queue a chance to execute
+    setTimeout(() => global.gc(), 10);
+  });
 });
