@@ -117,7 +117,7 @@ async function copyArtifact(filename, outputFile) {
   const outputDir = dirname(outputFile);
 
   // Don't try to create the current directory
-  if (outputDir) {
+  if (outputDir && outputDir !== ".") {
     await mkdir(outputDir, { recursive: true });
   }
 
