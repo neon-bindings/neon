@@ -23,6 +23,7 @@ pub mod handle;
 pub mod meta;
 pub mod object;
 pub mod prelude;
+#[cfg(feature = "napi-1")]
 pub mod reflect;
 pub mod result;
 #[cfg(feature = "legacy-runtime")]
@@ -34,6 +35,9 @@ pub mod macro_internal;
 
 #[cfg(feature = "proc-macros")]
 pub use neon_macros::*;
+
+#[cfg(feature = "napi-6")]
+mod lifecycle;
 
 #[cfg(all(feature = "legacy-runtime", feature = "napi-1"))]
 compile_error!("Cannot enable both `legacy-runtime` and `napi-*` features.\n\nTo use `napi-*`, disable `legacy-runtime` by setting `default-features` to `false` in Cargo.toml\nor with cargo's --no-default-features flag.");

@@ -257,6 +257,7 @@ mod napi5 {
 #[cfg(feature = "napi-6")]
 mod napi6 {
     use super::super::types::*;
+    use std::os::raw::c_void;
 
     generate!(
         extern "C" {
@@ -268,6 +269,15 @@ mod napi6 {
                 key_conversion: KeyConversion,
                 result: *mut Value,
             ) -> Status;
+
+            fn set_instance_data(
+                env: Env,
+                data: *mut c_void,
+                finalize_cb: Finalize,
+                finalize_hint: *mut c_void,
+            ) -> Status;
+
+            fn get_instance_data(env: Env, data: *mut *mut c_void) -> Status;
         }
     );
 }

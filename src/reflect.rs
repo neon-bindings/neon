@@ -3,7 +3,6 @@ use handle::{Handle, Managed};
 use result::JsResult;
 use types::{build, JsString, JsValue};
 
-#[cfg(feature = "napi-1")]
 pub fn eval<'a, 'b, C: Context<'a>>(
     cx: &mut C,
     script: Handle<'b, JsString>,
