@@ -40,14 +40,20 @@ impl<T: Object> Root<T> {
     /// garbage collected until the `Root` is dropped. A `Root<T>` may only
     /// be dropped on the JavaScript thread that created it.
     ///
-    /// The caller _must_ ensure `Root::into_inner` or `Root::drop` is called
+    /// The caller should ensure `Root::into_inner` or `Root::drop` is called
     /// to properly dispose of the `Root<T>`. If the value is dropped without
-    /// calling one of these methods, it will *panic*.
+    /// calling one of these methods, de-allocation will happen via a
+    /// slower path. Prior to 0.8, it would actually panic.
     ///
     /// Be careful that you aren't short-circuiting with an early return before
     /// your Root value gets into_inner'd or dropped. The following will cause
-    /// a runtime panic when your error case gets triggered:
+    /// the slow path starting with version 0.8 when your error case
+    /// gets triggered:
     /// ```
+    /// # use neon::prelude::*;
+    /// # fn create_log_entry(a: &str, b: &str) -> Result<String, String> { unimplemented!() }
+    /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    /// # let id_generator = "";
     /// let callback = cx.argument::<JsFunction>(1)?.root(&mut cx);
     /// let my_log = match (create_log_entry(&id_generator, "log-emitter")) {
     ///                Err(_err) => {
@@ -55,6 +61,8 @@ impl<T: Object> Root<T> {
     ///                },
     ///                Ok(log) => log,
     /// };
+    /// # Ok(cx.undefined())
+    /// # }
     /// ```
     /// The solution in the original case for this was to bind the callback
     /// after the fallible code, right before spawning an async task.
