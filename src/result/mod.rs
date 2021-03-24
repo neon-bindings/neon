@@ -1,4 +1,4 @@
-//! Types and traits for working with JavaScript exceptions.
+//! Represents JavaScript exceptions as a Rust `Result` type.
 
 use context::Context;
 use handle::Handle;

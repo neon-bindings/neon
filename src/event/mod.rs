@@ -1,3 +1,5 @@
+//! Exposes the JavaScript event queue for scheduling asynchronous events.
+
 #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
 mod event_queue;
 

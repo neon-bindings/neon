@@ -14,8 +14,10 @@ use legacy as macros;
 // Implementations are in the backend dependent module
 
 #[proc_macro_attribute]
-/// Marks a method as the main entrypoint for initialization in a Neon
-/// module. This attribute should only be used _once_ in a module and will
+/// Marks a function as the main entry point for initialization in
+/// a Neon module.
+///
+/// This attribute should only be used _once_ in a module and will
 /// be called each time the module is initialized in a context.
 ///
 /// ```ignore

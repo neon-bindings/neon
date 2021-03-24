@@ -1,3 +1,5 @@
+//! Exposes JavaScript's reflection API to Rust.
+
 use context::Context;
 use handle::{Handle, Managed};
 use result::JsResult;
