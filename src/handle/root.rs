@@ -45,10 +45,9 @@ impl<T: Object> Root<T> {
     /// calling one of these methods, de-allocation will happen via a
     /// slower path. Prior to 0.8, it would actually panic.
     ///
-    /// Be careful that you aren't short-circuiting with an early return before
-    /// your Root value gets into_inner'd or dropped. The following will cause
-    /// the slow path starting with version 0.8 when your error case
-    /// gets triggered:
+    /// For example, early return with a ? or an explicit return before freeing
+    /// a `Root` will trigger the slow path:
+    ///
     /// ```
     /// # use neon::prelude::*;
     /// # fn create_log_entry(a: &str, b: &str) -> Result<String, String> { unimplemented!() }
