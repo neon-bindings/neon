@@ -43,7 +43,7 @@
 //! to be executed when the module is first loaded. This function can have
 //! any name but is conventionally called `main`:
 //!
-//! ```
+//! ```ignore
 //! # use neon::prelude::*;
 //! #
 //! # fn hello(mut cx: FunctionContext) -> JsResult<JsString> {
@@ -61,7 +61,7 @@
 //! function via [`ModuleContext::export_function`](./context/struct.ModuleContext.html#method.export_function).
 //! The `hello` function is defined just above `main` in `src/lib.rs`:
 //!
-//! ```
+//! ```ignore
 //! # use neon::prelude::*;
 //! #
 //! fn hello(mut cx: FunctionContext) -> JsResult<JsString> {
