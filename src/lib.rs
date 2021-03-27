@@ -1,6 +1,6 @@
 //! The [Neon](https://www.neon-bindings.com/) crate provides bindings for
 //! writing [Node.js addons](https://nodejs.org/api/addons.html) (i.e.,
-//! dynamically-linked binary modules) with a safe and fast Rust API.
+//! dynamically-loaded binary modules) with a safe and fast Rust API.
 //!
 //! ## Getting Started
 //!
@@ -40,7 +40,7 @@
 //!
 //! The generated `src/lib.rs` contains a function annotated with the
 //! `#[neon::main]` attribute, marking it as the module's main entry point
-//! to be executed when the module is first loaded. This function can have
+//! to be executed when the module is loaded. This function can have
 //! any name but is conventionally called `main`:
 //!
 //! ```ignore
@@ -69,7 +69,7 @@
 //! }
 //! ```
 //!
-//! The `hello` function takes a [`FunctionContext`](./context/type.FunctionContext.html) and
+//! The `hello` function takes a [`FunctionContext`](context::FunctionContext) and
 //! returns a JavaScript string. Because all Neon functions can potentially throw a
 //! JavaScript exception, the return type is wrapped in a [`JsResult`](./result/type.JsResult.html).
 
