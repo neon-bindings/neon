@@ -1,4 +1,35 @@
-//! Types and traits for obtaining temporary access to the internals of JavaScript values.
+//! Provides temporary access to JavaScript typed arrays.
+//!
+//! ## Typed Arrays
+//!
+//! JavaScript's [typed arrays][typed-arrays] are objects that allow reading and writing
+//! raw binary data in memory.
+//!
+//! Typed arrays are managed with the [`ArrayBuffer`][ArrayBuffer] type, which controls
+//! the storage of the underlying data buffer, and several typed views for managing access
+//! to the buffer. Neon provides access to the `ArrayBuffer` class with the
+//! [`JsArrayBuffer`](crate::types::JsArrayBuffer) type.
+//!
+//! Node also provides a [`Buffer`][Buffer] type, which is built on top of `ArrayBuffer`
+//! and provides additional functionality. Neon provides access to the `Buffer` class
+//! with the [`JsBuffer`](crate::types::JsBuffer) type.
+//!
+//! Many of Node's I/O APIs work with these types, and they can also be used for
+//! compact in-memory data structures, which can be shared efficiently between
+//! JavaScript and Rust without copying.
+//!
+//! ## Borrowing
+//!
+//! Neon makes it possible to [borrow][borrow] temporary access to the internal memory
+//! of a typed array by pausing execution of JavaScript with a
+//! [`Lock`](crate::context::Lock) and returning a reference to a
+//! [`BinaryData`](crate::types::BinaryData) struct. The [`Borrow`](Borrow) and
+//! [`BorrowMut`](BorrowMut) traits provide the methods for borrowing this typed array data.
+//!
+//! [typed-arrays]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
+//! [borrow]: https://doc.rust-lang.org/beta/rust-by-example/scope/borrow.html
+//! [ArrayBuffer]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer
+//! [Buffer]: https://nodejs.org/api/buffer.html
 
 pub(crate) mod internal;
 

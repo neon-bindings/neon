@@ -1,4 +1,4 @@
-//! Utilities exposing metadata about the Neon version and build.
+//! Metadata about the Neon version and build.
 
 use semver::Version;
 
@@ -11,7 +11,7 @@ pub const MAJOR: &str = env!("CARGO_PKG_VERSION_MAJOR");
 /// The Neon minor version.
 pub const MINOR: &str = env!("CARGO_PKG_VERSION_MINOR");
 
-/// The neon patch version.
+/// The Neon patch version.
 pub const PATCH: &str = env!("CARGO_PKG_VERSION_PATCH");
 
 /// Produces a `semver::Version` data structure representing the Neon version.

@@ -1,4 +1,4 @@
-//! Node _execution contexts_, which manage access to the JavaScript engine at various points in the Node.js runtime lifecycle.
+//! Provides runtime access to the JavaScript engine.
 
 pub(crate) mod internal;
 

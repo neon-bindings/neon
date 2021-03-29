@@ -1,4 +1,4 @@
-//! A convenience module that re-exports the most commonly-used Neon APIs.
+//! Convenience module for the most common Neon imports.
 
 #[cfg(feature = "legacy-runtime")]
 pub use crate::declare_types;

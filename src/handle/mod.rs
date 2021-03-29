@@ -1,4 +1,4 @@
-//! Safe _handles_ to managed JavaScript memory.
+//! References to garbage-collected JavaScript values.
 
 pub(crate) mod internal;
 
