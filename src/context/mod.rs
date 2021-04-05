@@ -15,6 +15,45 @@
 //! is also used to determine the lifetime of [`Handle`](crate::handle::Handle)s, which
 //! provide safe references to JavaScript memory managed by the engine's garbage collector.
 //!
+//! ## Examples
+//!
+//! ### Call Contexts
+//!
+//! A Neon function is a JavaScript function implemented in Rust as a function from
+//! [`CallContext`](CallContext) to a [`Value`](crate::types::Value) type (wrapped in
+//! [`JsResult`](crate::result::JsResult) in case of exceptions). For example, we can
+//! write a simple string scanner that counts whitespace in a JavaScript string and
+//! returns a [`JsNumber`](crate::types::JsNumber):
+//!
+//! ```ignore
+//! fn count_whitespace(mut cx: FunctionContext) -> JsResult<JsNumber> {
+//!     let s: Handle<JsString> = cx.argument(0)?;
+//!     let contents = s.value();
+//!     let count = contents
+//!         .chars()                       // iterate over the characters
+//!         .filter(|c| c.is_whitespace()) // select the whitespace chars
+//!         .count();                      // count the resulting chars
+//!     Ok(cx.number(count))
+//! }
+//! ```
+//!
+//! Notice we use the [`FunctionContext`](FunctionContext) shorthand for `CallContext<JsObject>`,
+//! which is appropriate for most Neon functions.
+//!
+//! ### Module Contexts
+//!
+//! Another important context type is [`ModuleContext`](ModuleContext), which is provided
+//! to a Neon module's [`main`](crate::main) function to enable sharing Neon functions back
+//! with JavaScript:
+//!
+//! ```ignore
+//! #[neon::main]
+//! fn main(cx: ModuleContext) -> NeonResult<()> {
+//!     cx.export_function("countWhitespace", count_whitespace)?;
+//!     Ok(())
+//! }
+//! ```
+//!
 //! ## See also
 //!
 //! 1. Ecma International. [Execution contexts](https://tc39.es/ecma262/#sec-execution-contexts), _ECMAScript Language Specification_.
