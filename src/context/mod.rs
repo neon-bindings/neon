@@ -1,4 +1,66 @@
 //! Provides runtime access to the JavaScript engine.
+//!
+//! An _execution context_ represents the current state of a thread of execution in the
+//! JavaScript engine. Internally, it tracks things like the set of pending function calls,
+//! whether the engine is currently throwing an exception or not, and whether the engine is
+//! in the process of shutting down. Abstractly, however, the context also manages what
+//! operations are safely available.
+//!
+//! The [`Context`](Context) trait provides an abstract interface to the JavaScript
+//! execution context. All interaction with the JavaScript engine in Neon code is mediated
+//! through instances of this trait.
+//!
+//! Because contexts represent the engine at a point in time, they are associated with a
+//! [_lifetime_][lifetime], which limits how long Rust code is allowed to access them. This
+//! is also used to determine the lifetime of [`Handle`](crate::handle::Handle)s, which
+//! provide safe references to JavaScript memory managed by the engine's garbage collector.
+//!
+//! ## Examples
+//!
+//! ### Call Contexts
+//!
+//! A Neon function is a JavaScript function implemented in Rust as a function from
+//! [`CallContext`](CallContext) to a [`Value`](crate::types::Value) type (wrapped in
+//! [`JsResult`](crate::result::JsResult) in case of exceptions). For example, we can
+//! write a simple string scanner that counts whitespace in a JavaScript string and
+//! returns a [`JsNumber`](crate::types::JsNumber):
+//!
+//! ```ignore
+//! fn count_whitespace(mut cx: FunctionContext) -> JsResult<JsNumber> {
+//!     let s: Handle<JsString> = cx.argument(0)?;
+//!     let contents = s.value();
+//!     let count = contents
+//!         .chars()                       // iterate over the characters
+//!         .filter(|c| c.is_whitespace()) // select the whitespace chars
+//!         .count();                      // count the resulting chars
+//!     Ok(cx.number(count))
+//! }
+//! ```
+//!
+//! Notice we use the [`FunctionContext`](FunctionContext) shorthand for `CallContext<JsObject>`,
+//! which is appropriate for most Neon functions.
+//!
+//! ### Module Contexts
+//!
+//! Another important context type is [`ModuleContext`](ModuleContext), which is provided
+//! to a Neon module's [`main`](crate::main) function to enable sharing Neon functions back
+//! with JavaScript:
+//!
+//! ```ignore
+//! #[neon::main]
+//! fn main(cx: ModuleContext) -> NeonResult<()> {
+//!     cx.export_function("countWhitespace", count_whitespace)?;
+//!     Ok(())
+//! }
+//! ```
+//!
+//! ## See also
+//!
+//! 1. Ecma International. [Execution contexts](https://tc39.es/ecma262/#sec-execution-contexts), _ECMAScript Language Specification_.
+//! 2. Madhavan Nagarajan. [What is the Execution Context and Stack in JavaScript?](https://medium.com/@itIsMadhavan/what-is-the-execution-context-stack-in-javascript-e169812e851a)
+//! 3. Rupesh Mishra. [Execution context, Scope chain and JavaScript internals](https://medium.com/@happymishra66/execution-context-in-javascript-319dd72e8e2c).
+//!
+//! [lifetime]: https://doc.rust-lang.org/book/ch10-00-generics.html
 
 pub(crate) mod internal;
 
@@ -112,16 +174,18 @@ impl CallbackInfo<'_> {
     }
 }
 
-/// Indicates whether a function call was called with JavaScript's `[[Call]]` or `[[Construct]]` semantics.
+/// Indicates whether a function was called with `new`.
 #[derive(Clone, Copy, Debug)]
 pub enum CallKind {
     Construct,
     Call,
 }
 
-/// An RAII implementation of a "scoped lock" of the JS engine. When this structure is dropped (falls out of scope), the engine will be unlocked.
+/// A temporary lock of an execution context.
 ///
-/// Types of JS values that support the `Borrow` and `BorrowMut` traits can be inspected while the engine is locked by passing a reference to a `Lock` to their methods.
+/// While a lock is alive, no JavaScript code can be executed in the execution context.
+///
+/// Objects that support the `Borrow` and `BorrowMut` traits can be inspected while the context is locked by passing a reference to a `Lock` to their methods.
 pub struct Lock<'a> {
     pub(crate) ledger: RefCell<Ledger>,
     pub(crate) env: Env,
@@ -138,7 +202,9 @@ impl<'a> Lock<'a> {
     }
 }
 
-/// An _execution context_, which provides context-sensitive access to the JavaScript engine. Most operations that interact with the engine require passing a reference to a context.
+/// An _execution context_, which represents the current state of a thread of execution in the JavaScript engine.
+///
+/// All interaction with the JavaScript engine in Neon code is mediated through instances of this trait.
 ///
 /// A context has a lifetime `'a`, which ensures the safety of handles managed by the JS garbage collector. All handles created during the lifetime of a context are kept alive for that duration and cannot outlive the context.
 pub trait Context<'a>: ContextInternal<'a> {
@@ -406,7 +472,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 }
 
-/// A view of the JS engine in the context of top-level initialization of a Neon module.
+/// An execution context of module initialization.
 pub struct ModuleContext<'a> {
     scope: Scope<'a, raw::HandleScope>,
     exports: Handle<'a, JsObject>,
@@ -474,7 +540,7 @@ impl<'a> ContextInternal<'a> for ModuleContext<'a> {
 
 impl<'a> Context<'a> for ModuleContext<'a> {}
 
-/// A view of the JS engine in the context of a scoped computation started by `Context::execute_scoped()`.
+/// An execution context of a scope created by [`Context::execute_scoped()`](Context::execute_scoped).
 pub struct ExecuteContext<'a> {
     scope: Scope<'a, raw::HandleScope>,
 }
@@ -496,7 +562,7 @@ impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
 
 impl<'a> Context<'a> for ExecuteContext<'a> {}
 
-/// A view of the JS engine in the context of a scoped computation started by `Context::compute_scoped()`.
+/// An execution context of a scope created by [`Context::compute_scoped()`](Context::compute_scoped).
 pub struct ComputeContext<'a, 'outer> {
     scope: Scope<'a, raw::EscapableHandleScope>,
     phantom_inner: PhantomData<&'a ()>,
@@ -526,7 +592,7 @@ impl<'a, 'b> ContextInternal<'a> for ComputeContext<'a, 'b> {
 
 impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> {}
 
-/// A view of the JS engine in the context of a function call.
+/// An execution context of a function call.
 ///
 /// The type parameter `T` is the type of the `this`-binding.
 pub struct CallContext<'a, T: This> {
@@ -540,7 +606,7 @@ pub struct CallContext<'a, T: This> {
 impl<'a, T: This> UnwindSafe for CallContext<'a, T> {}
 
 impl<'a, T: This> CallContext<'a, T> {
-    /// Indicates whether the function was called via the JavaScript `[[Call]]` or `[[Construct]]` semantics.
+    /// Indicates whether the function was called with `new`.
     pub fn kind(&self) -> CallKind {
         #[cfg(feature = "legacy-runtime")]
         let kind = self.info.kind();
@@ -627,13 +693,13 @@ impl<'a, T: This> ContextInternal<'a> for CallContext<'a, T> {
 
 impl<'a, T: This> Context<'a> for CallContext<'a, T> {}
 
-/// A shorthand for a `CallContext` with `this`-type `JsObject`.
+/// A shorthand for a [`CallContext`](CallContext) with `this`-type [`JsObject`](crate::types::JsObject).
 pub type FunctionContext<'a> = CallContext<'a, JsObject>;
 
-/// An alias for `CallContext`, useful for indicating that the function is a method of a class.
+/// An alias for [`CallContext`](CallContext), useful for indicating that the function is a method of a class.
 pub type MethodContext<'a, T> = CallContext<'a, T>;
 
-/// A view of the JS engine in the context of a task completion callback.
+/// An execution context of a task completion callback.
 pub struct TaskContext<'a> {
     /// We use an "inherited HandleScope" here because the C++ `neon::Task::complete`
     /// method sets up and tears down a `HandleScope` for us.
