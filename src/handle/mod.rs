@@ -1,4 +1,38 @@
 //! References to garbage-collected JavaScript values.
+//!
+//! A _handle_ is a safe reference to a JavaScript value that is owned and managed
+//! by the JavaScript engine's memory management system (the garbage collector).
+//!
+//! Neon APIs that accept and return JavaScript values never use raw pointer types
+//! ([`*T`](https://doc.rust-lang.org/std/primitive.pointer.html)) or reference types
+//! ([`&T`](https://doc.rust-lang.org/std/primitive.reference.html)). Instead they
+//! use the special Neon type [`Handle`](Handle), which encapsulates a JavaScript
+//! [`Value`](crate::types::Value) and ensures that Rust only maintains access to
+//! the value while it is guaranteed to be valid.
+//!
+//! ## Example
+//!
+//! This Neon function takes an object as its argument, extracts two properties,
+//! `width` and `height`, and multiplies them together as numbers. Each JavaScript
+//! value in the calculation is stored locally in a `Handle`.
+//!
+//! ```ignore
+//! fn area(mut cx: FunctionContext) -> JsResult<JsNumber> {
+//!     let rect: Handle<JsObject> = cx.argument(0)?;
+//!
+//!     let width: Handle<JsNumber> = rect
+//!         .get(&mut cx, "width")?
+//!         .downcast(&mut cx)?;
+//!     let w: f64 = width.value(&mut cx);
+//!
+//!     let height: Handle<JsNumber> = rect
+//!         .get(&mut cx, "height")?
+//!         .downcast(&mut cx)?;
+//!     let h: f64 = height.value(&mut cx);
+//!
+//!     Ok(cx.number(w * h))
+//! }
+//! ```
 
 pub(crate) mod internal;
 
