@@ -4,11 +4,25 @@
 //! by the JavaScript engine's memory management system (the garbage collector).
 //!
 //! Neon APIs that accept and return JavaScript values never use raw pointer types
-//! ([`*T`](https://doc.rust-lang.org/std/primitive.pointer.html)) or reference types
-//! ([`&T`](https://doc.rust-lang.org/std/primitive.reference.html)). Instead they
-//! use the special Neon type [`Handle`](Handle), which encapsulates a JavaScript
+//! ([`*T`][ptr]) or reference types ([`&T`][ref]). Instead they use the special
+//! Neon type [`Handle`](Handle), which encapsulates a JavaScript
 //! [`Value`](crate::types::Value) and ensures that Rust only maintains access to
 //! the value while it is guaranteed to be valid.
+//!
+//! ## Working with Handles
+//!
+//! The `Handle` type implements the standard [`Deref`][Deref] trait, so you can
+//! use a `Handle<T>` as if it had type `&T`, including directly calling methods of
+//! `T` on the handle.
+//!
+//! For example, a `Handle<JsNumber>` behaves like a `&JsNumber`, which means we can
+//! call methods such as [`JsNumber::value()`](crate::types::JsNumber::value) on the
+//! handle:
+//!
+//! ```ignore
+//!     let n: Handle<JsNumber> = cx.argument(0)?;
+//!     let v = n.value(&mut cx); // JsNumber::value()
+//! ```
 //!
 //! ## Example
 //!
@@ -33,6 +47,10 @@
 //!     Ok(cx.number(w * h))
 //! }
 //! ```
+//!
+//! [ptr]: https://doc.rust-lang.org/std/primitive.pointer.html
+//! [ref]: https://doc.rust-lang.org/std/primitive.reference.html
+//! [Deref]: https://doc.rust-lang.org/std/ops/trait.Deref.html
 
 pub(crate) mod internal;
 
