@@ -10,6 +10,11 @@
 //! you cannot call additional throwing APIs**. All throwing APIs immediately panic if called
 //! while the thread is already throwing.
 //!
+//! Typically, Neon code can manage JavaScript exceptions correctly and conveniently by
+//! using Rust's [question mark (`?`)][question-mark] operator. This ensures that Rust code
+//! "short-circuits" when an exception is thrown and returns back to JavaScript without
+//! calling any throwing APIs.
+//!
 //! ## Example
 //!
 //! Neon functions typically use [`JsResult`](JsResult) for their return type. This
@@ -24,6 +29,8 @@
 //!     Ok(prop)
 //! }
 //! ```
+//!
+//! [question-mark]: https://doc.rust-lang.org/edition-guide/rust-2018/error-handling-and-panics/the-question-mark-operator-for-easier-error-handling.html
 
 use context::Context;
 use handle::Handle;
