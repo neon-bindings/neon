@@ -25,7 +25,7 @@ See our [Neon fundamentals docs](https://neon-bindings.com/docs/intro) and our [
 
 # N-API Migration Guide
 
-We are [hard at work](https://github.com/neon-bindings/neon/issues/444) porting Neon to a new backend based on [N-API](https://nodejs.org/api/n-api.html), which will be the basis for Neon 1.0.
+We've ported Neon to a new backend based on [N-API](https://nodejs.org/api/n-api.html), which will be the basis for Neon 1.0.
 
 **Read the new [migration guide](https://github.com/neon-bindings/neon/blob/main/MIGRATION_GUIDE.md)** to learn how to port your Neon projects to N-API!
 
