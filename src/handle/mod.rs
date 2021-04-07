@@ -11,13 +11,10 @@
 //!
 //! ## Working with Handles
 //!
-//! The `Handle` type implements the standard [`Deref`][Deref] trait, so you can
-//! use a `Handle<T>` as if it had type `&T`, including directly calling methods of
-//! `T` on the handle.
-//!
-//! For example, a `Handle<JsNumber>` behaves like a `&JsNumber`, which means we can
-//! call methods such as [`JsNumber::value()`](crate::types::JsNumber::value) on the
-//! handle:
+//! The `Handle<T>` type automatically dereferences to `T` (via the standard
+//! [`Deref`][Deref] trait), so you can call `T`'s methods on a value of type
+//! `Handle<T>`. For example, we can call
+//! [`JsNumber::value()`](crate::types::JsNumber::value) on a `Handle<JsNumber>`:
 //!
 //! ```ignore
 //!     let n: Handle<JsNumber> = cx.argument(0)?;
