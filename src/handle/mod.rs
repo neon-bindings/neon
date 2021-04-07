@@ -1,4 +1,49 @@
 //! References to garbage-collected JavaScript values.
+//!
+//! A _handle_ is a safe reference to a JavaScript value that is owned and managed
+//! by the JavaScript engine's memory management system (the garbage collector).
+//!
+//! Neon APIs that accept and return JavaScript values never use raw pointer types
+//! ([`*T`](pointer)) or reference types ([`&T`](reference)). Instead they use the
+//! special Neon type [`Handle`](Handle), which encapsulates a JavaScript
+//! [`Value`](crate::types::Value) and ensures that Rust only maintains access to
+//! the value while it is guaranteed to be valid.
+//!
+//! ## Working with Handles
+//!
+//! The `Handle<T>` type automatically dereferences to `T` (via the standard
+//! [`Deref`](std::ops::Deref) trait), so you can call `T`'s methods on a value of
+//! type `Handle<T>`. For example, we can call
+//! [`JsNumber::value()`](crate::types::JsNumber::value) on a `Handle<JsNumber>`:
+//!
+//! ```ignore
+//!     let n: Handle<JsNumber> = cx.argument(0)?;
+//!     let v = n.value(&mut cx); // JsNumber::value()
+//! ```
+//!
+//! ## Example
+//!
+//! This Neon function takes an object as its argument, extracts two properties,
+//! `width` and `height`, and multiplies them together as numbers. Each JavaScript
+//! value in the calculation is stored locally in a `Handle`.
+//!
+//! ```ignore
+//! fn area(mut cx: FunctionContext) -> JsResult<JsNumber> {
+//!     let rect: Handle<JsObject> = cx.argument(0)?;
+//!
+//!     let width: Handle<JsNumber> = rect
+//!         .get(&mut cx, "width")?
+//!         .downcast(&mut cx)?;
+//!     let w: f64 = width.value(&mut cx);
+//!
+//!     let height: Handle<JsNumber> = rect
+//!         .get(&mut cx, "height")?
+//!         .downcast(&mut cx)?;
+//!     let h: f64 = height.value(&mut cx);
+//!
+//!     Ok(cx.number(w * h))
+//! }
+//! ```
 
 pub(crate) mod internal;
 
@@ -20,14 +65,14 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use types::Value;
 
-/// The trait of data that is managed by the JS garbage collector and can only be accessed via handles.
+/// The trait of data owned by the JavaScript engine and that can only be accessed via handles.
 pub trait Managed: Copy {
     fn to_raw(self) -> raw::Local;
 
     fn from_raw(env: Env, h: raw::Local) -> Self;
 }
 
-/// A safely rooted _handle_ to a JS value in memory that is managed by the garbage collector.
+/// A handle to a JavaScript value that is owned by the JavaScript engine.
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct Handle<'a, T: Managed + 'a> {
@@ -84,7 +129,7 @@ impl<F: Value, T: Value> Display for DowncastError<F, T> {
 
 impl<F: Value, T: Value> Error for DowncastError<F, T> {}
 
-/// The result of a call to `Handle::downcast()`.
+/// The result of a call to [`Handle::downcast()`](Handle::downcast).
 pub type DowncastResult<'a, F, T> = Result<Handle<'a, T>, DowncastError<F, T>>;
 
 impl<'a, F: Value, T: Value> JsResultExt<'a, T> for DowncastResult<'a, F, T> {

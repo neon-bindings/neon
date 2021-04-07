@@ -26,10 +26,11 @@ pub(crate) struct NapiRef(*mut c_void);
 unsafe impl Send for NapiRef {}
 unsafe impl Sync for NapiRef {}
 
-/// `Root<T>` holds a reference to a `JavaScript` object and prevents it from
-/// being garbage collected. `Root<T>` may be sent across threads, but the
-/// referenced objected may only be accessed on the JavaScript thread that
-/// created it.
+/// A thread-safe handle that holds a reference to a JavaScript object and
+/// prevents it from being garbage collected.
+///
+/// A `Root<T>` may be sent across threads, but the referenced object may
+/// only be accessed on the JavaScript thread that created it.
 pub struct Root<T> {
     internal: NapiRef,
     #[cfg(feature = "napi-6")]
