@@ -69,14 +69,14 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use types::Value;
 
-/// The trait of data that is managed by the JS garbage collector and can only be accessed via handles.
+/// The trait of data owned by the JavaScript engine and that can only be accessed via handles.
 pub trait Managed: Copy {
     fn to_raw(self) -> raw::Local;
 
     fn from_raw(env: Env, h: raw::Local) -> Self;
 }
 
-/// A safely rooted _handle_ to a JS value in memory that is managed by the garbage collector.
+/// A handle to a JavaScript value that is owned by the JavaScript engine.
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
 pub struct Handle<'a, T: Managed + 'a> {
@@ -133,7 +133,7 @@ impl<F: Value, T: Value> Display for DowncastError<F, T> {
 
 impl<F: Value, T: Value> Error for DowncastError<F, T> {}
 
-/// The result of a call to `Handle::downcast()`.
+/// The result of a call to [`Handle::downcast()`](Handle::downcast).
 pub type DowncastResult<'a, F, T> = Result<Handle<'a, T>, DowncastError<F, T>>;
 
 impl<'a, F: Value, T: Value> JsResultExt<'a, T> for DowncastResult<'a, F, T> {
