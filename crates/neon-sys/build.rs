@@ -205,6 +205,14 @@ mod build {
             .output()
             .expect("Failed to run \"node-gyp build\" for neon-sys!");
 
+        if !build_output.status.success() {
+            panic!(
+                "Failed to run \"node-gyp build\" for neon-sys!\n Out: {}\n Err: {}",
+                String::from_utf8_lossy(&build_output.stdout),
+                String::from_utf8_lossy(&build_output.stderr)
+            );
+        }
+
         let node_gyp_build_output = String::from_utf8_lossy(&build_output.stderr);
         println!(
             "cargo:node_arch={}",
