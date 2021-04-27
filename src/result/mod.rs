@@ -5,10 +5,10 @@
 //! [`NeonResult`](NeonResult) (or its shorthand [`JsResult`](JsResult)).
 //!
 //! When a throwing API triggers a JavaScript exception, it returns an [Err](std::result::Result::Err)
-//! result. This indicates that the thread is now throwing, and allows Rust code to perform any
-//! cleanup—with an important restriction: **while the JavaScript thread is still throwing,
-//! you cannot call additional throwing APIs**. All throwing APIs immediately panic if called
-//! while the thread is already throwing.
+//! result. This indicates that the thread associated with the [`Context`](crate::context::Context)
+//! is now throwing, and allows Rust code to perform any cleanup. See the
+//! [`neon::context`](crate::context#throwing-exceptions) module documentation for more about
+//! contexts and exceptions.
 //!
 //! Typically, Neon code can manage JavaScript exceptions correctly and conveniently by
 //! using Rust's [question mark (`?`)][question-mark] operator. This ensures that Rust code
@@ -57,7 +57,7 @@ impl Display for Throw {
 /// The result type for throwing APIs.
 pub type NeonResult<T> = Result<T, Throw>;
 
-/// A result type for throwing APIs that produce JavaScript values.
+/// Shorthand for a [`NeonResult`](NeonResult) that produces JavaScript values.
 pub type JsResult<'b, T> = NeonResult<Handle<'b, T>>;
 
 /// Extension trait for converting Rust [`Result`](std::result::Result) values
