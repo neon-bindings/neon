@@ -39,9 +39,9 @@ We've ported Neon to a new backend based on [N-API](https://nodejs.org/api/n-api
 
 ### Node.js
 
-| Node 10 | Node 12 | Node 14 |
-| ------- | ------- | ------- |
-| ✓       | ✓       | ✓       |
+| Node 10 | Node 12 | Node 14 | Node 16 |
+| ------- | ------- | ------- | ------- |
+| ✓       | ✓       | ✓       | ✓       |
 
 Support for [LTS versions of Node](https://github.com/nodejs/LTS#lts-schedule) and current are expected. If you're using a different version of Node and believe it should be supported, let us know.
 
