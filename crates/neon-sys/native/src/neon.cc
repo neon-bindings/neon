@@ -332,7 +332,7 @@ extern "C" void Neon_Class_SetClassMap(v8::Isolate *isolate, void *map, Neon_Dro
   neon::ClassMapHolder *holder = new neon::ClassMapHolder(map, drop_map);
   isolate->SetData(NEON_ISOLATE_SLOT, holder);
   // ISSUE(#77): When workers land in node, this will need to be generalized to a per-worker version.
-  node::AtExit(cleanup_class_map, holder);
+  node::AtExit(node::GetCurrentEnvironment(isolate->GetCurrentContext()), cleanup_class_map, holder);
 }
 
 extern "C" void *Neon_Class_GetCallKernel(void *wrapper) {
