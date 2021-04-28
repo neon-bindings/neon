@@ -22,7 +22,8 @@
 //! throwing an exception if the argument is not of the right type or extracting the property
 //! fails:
 //!
-//! ```ignore
+//! ```
+//! # use neon::prelude::*;
 //! fn get_message(mut cx: FunctionContext) -> JsResult<JsValue> {
 //!     let obj: Handle<JsObject> = cx.argument(0)?;
 //!     let prop: Handle<JsValue> = obj.get(&mut cx, "message")?;

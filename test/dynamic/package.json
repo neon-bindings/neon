@@ -6,7 +6,7 @@
   "author": "The Neon Community",
   "license": "MIT",
   "scripts": {
-    "install": "node ../../cli/bin/cli.js build --release",
+    "install": "node ../../cli/bin/cli.js build",
     "test": "mocha --timeout 5000 --recursive lib"
   },
   "devDependencies": {

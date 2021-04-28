@@ -15,6 +15,7 @@
 //! a convenient shorthand for `CallContext<JsObject>`):
 //!
 //! ```
+//! # use neon::prelude::*;
 //! fn hello(mut cx: FunctionContext) -> JsResult<JsString> {
 //!     Ok(cx.string("hello Neon"))
 //! }
@@ -25,11 +26,15 @@
 //! with JavaScript:
 //!
 //! ```
+//! # #[cfg(feature = "neon-macros")] {
+//! # use neon::prelude::*;
+//! # fn hello(_: FunctionContext) -> JsResult<JsValue> { todo!() }
 //! #[neon::main]
-//! fn main(cx: ModuleContext) -> NeonResult<()> {
+//! fn main(mut cx: ModuleContext) -> NeonResult<()> {
 //!     cx.export_function("hello", hello)?;
 //!     Ok(())
 //! }
+//! # }
 //! ```
 //!
 //! ## Memory Management
@@ -43,16 +48,19 @@
 //! write a simple string scanner that counts whitespace in a JavaScript string and
 //! returns a [`JsNumber`](crate::types::JsNumber):
 //!
-//! ```ignore
+//! ```
+//! # #[cfg(feature = "napi-1")] {
+//! # use neon::prelude::*;
 //! fn count_whitespace(mut cx: FunctionContext) -> JsResult<JsNumber> {
 //!     let s: Handle<JsString> = cx.argument(0)?;
-//!     let contents = s.value();
+//!     let contents = s.value(&mut cx);
 //!     let count = contents
 //!         .chars()                       // iterate over the characters
 //!         .filter(|c| c.is_whitespace()) // select the whitespace chars
 //!         .count();                      // count the resulting chars
-//!     Ok(cx.number(count))
+//!     Ok(cx.number(count as f64))
 //! }
+//! # }
 //! ```
 //!
 //! In this example, `s` is assigned a handle to a string, which ensures that the string
@@ -74,10 +82,12 @@
 //! a Neon function has to work with several temporary handles on each pass through
 //! the loop:
 //!
-//! ```ignore
+//! ```
+//! # #[cfg(feature = "napi-1")] {
+//! # use neon::prelude::*;
 //! # fn iterate(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-//!     let iterator = /* ... */;                           // iterator object
-//!     let next = iterator.get("next")?                    // iterator's `next` method
+//!     let iterator = cx.argument::<JsObject>(0)?;         // iterator object
+//!     let next = iterator.get(&mut cx, "next")?           // iterator's `next` method
 //!         .downcast_or_throw::<JsFunction, _>(&mut cx)?;
 //!     let mut numbers = vec![];                           // results vector
 //!     let mut done = false;                               // loop controller
@@ -85,16 +95,19 @@
 //!     while !done {
 //!         done = cx.execute_scoped(|mut cx| {                   // temporary scope
 //!             let args: Vec<Handle<JsValue>> = vec![];
-//!             let obj = next.call(&mut cx, iterator, args)?;    // temporary object
+//!             let obj = next.call(&mut cx, iterator, args)?     // temporary object
+//!                 .downcast_or_throw::<JsObject, _>(&mut cx)?;
 //!             let number = obj.get(&mut cx, "value")?           // temporary number
 //!                 .downcast_or_throw::<JsNumber, _>(&mut cx)?
 //!                 .value(&mut cx);
 //!             numbers.push(number);
 //!             Ok(obj.get(&mut cx, "done")?                      // temporary boolean
 //!                 .downcast_or_throw::<JsBoolean, _>(&mut cx)?
-//!                 value(&mut cx));
+//!                 .value(&mut cx))
 //!         })?;
 //!     }
+//! #   Ok(cx.undefined())
+//! # }
 //! # }
 //! ```
 //!
