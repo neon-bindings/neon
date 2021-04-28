@@ -3,25 +3,43 @@
 //! An _execution context_ represents the current state of a thread of execution in the
 //! JavaScript engine. Internally, it tracks things like the set of pending function calls,
 //! whether the engine is currently throwing an exception or not, and whether the engine is
-//! in the process of shutting down. Abstractly, however, the context also manages what
-//! operations are safely available.
+//! in the process of shutting down. The context uses this internal state to manage what
+//! operations are safely available and when.
 //!
 //! The [`Context`](Context) trait provides an abstract interface to the JavaScript
 //! execution context. All interaction with the JavaScript engine in Neon code is mediated
 //! through instances of this trait.
+//!
+//! One particularly useful context type is [`CallContext`](CallContext), which is passed
+//! to all Neon functions as their initial execution context (or [`FunctionContext`](FunctionContext),
+//! a convenient shorthand for `CallContext<JsObject>`):
+//!
+//! ```
+//! fn hello(mut cx: FunctionContext) -> JsResult<JsString> {
+//!     Ok(cx.string("hello Neon"))
+//! }
+//! ```
+//!
+//! Another important context type is [`ModuleContext`](ModuleContext), which is provided
+//! to a Neon module's [`main`](crate::main) function to enable sharing Neon functions back
+//! with JavaScript:
+//!
+//! ```
+//! #[neon::main]
+//! fn main(cx: ModuleContext) -> NeonResult<()> {
+//!     cx.export_function("hello", hello)?;
+//!     Ok(())
+//! }
+//! ```
+//!
+//! ## Memory Management
 //!
 //! Because contexts represent the engine at a point in time, they are associated with a
 //! [_lifetime_][lifetime], which limits how long Rust code is allowed to access them. This
 //! is also used to determine the lifetime of [`Handle`](crate::handle::Handle)s, which
 //! provide safe references to JavaScript memory managed by the engine's garbage collector.
 //!
-//! ## Examples
-//!
-//! ### Call Contexts
-//!
-//! A Neon function is a JavaScript function implemented in Rust as a function from
-//! [`CallContext`](CallContext) to a [`Value`](crate::types::Value) type (wrapped in
-//! [`JsResult`](crate::result::JsResult) in case of exceptions). For example, we can
+//! For example, we can
 //! write a simple string scanner that counts whitespace in a JavaScript string and
 //! returns a [`JsNumber`](crate::types::JsNumber):
 //!
@@ -37,22 +55,73 @@
 //! }
 //! ```
 //!
-//! Notice we use the [`FunctionContext`](FunctionContext) shorthand for `CallContext<JsObject>`,
-//! which is appropriate for most Neon functions.
+//! In this example, `s` is assigned a handle to a string, which ensures that the string
+//! is _kept alive_ (i.e., prevented from having its storage reclaimed by the JavaScript
+//! engine's garbage collector) for the duration of the `count_whitespace` function. This
+//! is how Neon takes advantage of Rust's type system to allow your Rust code to safely
+//! interact with JavaScript values.
 //!
-//! ### Module Contexts
+//! ### Temporary Scopes
 //!
-//! Another important context type is [`ModuleContext`](ModuleContext), which is provided
-//! to a Neon module's [`main`](crate::main) function to enable sharing Neon functions back
-//! with JavaScript:
+//! Sometimes it can be useful to limit the scope of a handle's lifetime, to allow the
+//! engine to reclaim memory sooner. This can be important when, for example, an expensive inner loop generates
+//! temporary JavaScript values that are only needed inside the loop. In these cases,
+//! the [`execute_scoped`](Context::execute_scoped) and [`compute_scoped`](Context::compute_scoped)
+//! methods allow you to create temporary contexts in order to allocate temporary
+//! handles.
+//!
+//! For example, to extract the elements of a JavaScript [iterator][iterator] from Rust,
+//! a Neon function has to work with several temporary handles on each pass through
+//! the loop:
 //!
 //! ```ignore
-//! #[neon::main]
-//! fn main(cx: ModuleContext) -> NeonResult<()> {
-//!     cx.export_function("countWhitespace", count_whitespace)?;
-//!     Ok(())
-//! }
+//! # fn iterate(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+//!     let iterator = /* ... */;                           // iterator object
+//!     let next = iterator.get("next")?                    // iterator's `next` method
+//!         .downcast_or_throw::<JsFunction, _>(&mut cx)?;
+//!     let mut numbers = vec![];                           // results vector
+//!     let mut done = false;                               // loop controller
+//!
+//!     while !done {
+//!         done = cx.execute_scoped(|mut cx| {                   // temporary scope
+//!             let args: Vec<Handle<JsValue>> = vec![];
+//!             let obj = next.call(&mut cx, iterator, args)?;    // temporary object
+//!             let number = obj.get(&mut cx, "value")?           // temporary number
+//!                 .downcast_or_throw::<JsNumber, _>(&mut cx)?
+//!                 .value(&mut cx);
+//!             numbers.push(number);
+//!             Ok(obj.get(&mut cx, "done")?                      // temporary boolean
+//!                 .downcast_or_throw::<JsBoolean, _>(&mut cx)?
+//!                 value(&mut cx));
+//!         })?;
+//!     }
+//! # }
 //! ```
+//!
+//! The temporary scope ensures that the temporary values are only kept alive
+//! during a single pass through the loop, since the temporary context is
+//! discarded (and all of its handles released) on the inside of the loop.
+//!
+//! ## Throwing Exceptions
+//!
+//! When a Neon API causes a JavaScript exception to be thrown, it returns an
+//! [`Err`](std::result::Result::Err) result, indicating that the thread associated
+//! with the context is now throwing. This allows Rust code to perform any
+//! cleanup before returning, but with an important restriction:
+//!
+//! > **While a JavaScript thread is throwing, its context cannot be used.**
+//!
+//! Unless otherwise documented, any Neon API that uses a context (as `self` or as
+//! a parameter) immediately panics if called while the context's thread is throwing.
+//!
+//! Typically, Neon code can manage JavaScript exceptions correctly and conveniently
+//! by using Rust's [question mark (`?`)][question-mark] operator. This ensures that
+//! Rust code "short-circuits" when an exception is thrown and returns back to
+//! JavaScript without calling any throwing APIs.
+//!
+//! Alternatively, to invoke a Neon API and catch any JavaScript exceptions, use the
+//! [`Context::try_catch`](Context::try_catch) method, which catches any thrown
+//! exception and restores the context to non-throwing state.
 //!
 //! ## See also
 //!
@@ -61,6 +130,8 @@
 //! 3. Rupesh Mishra. [Execution context, Scope chain and JavaScript internals](https://medium.com/@happymishra66/execution-context-in-javascript-319dd72e8e2c).
 //!
 //! [lifetime]: https://doc.rust-lang.org/book/ch10-00-generics.html
+//! [iterator]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators
+//! [question-mark]: https://doc.rust-lang.org/edition-guide/rust-2018/error-handling-and-panics/the-question-mark-operator-for-easier-error-handling.html
 
 pub(crate) mod internal;
 
