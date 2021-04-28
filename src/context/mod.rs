@@ -14,7 +14,7 @@
 //! to all Neon functions as their initial execution context (or [`FunctionContext`](FunctionContext),
 //! a convenient shorthand for `CallContext<JsObject>`):
 //!
-//! ```ignore
+//! ```
 //! fn hello(mut cx: FunctionContext) -> JsResult<JsString> {
 //!     Ok(cx.string("hello Neon"))
 //! }
@@ -24,7 +24,7 @@
 //! to a Neon module's [`main`](crate::main) function to enable sharing Neon functions back
 //! with JavaScript:
 //!
-//! ```ignore
+//! ```
 //! #[neon::main]
 //! fn main(cx: ModuleContext) -> NeonResult<()> {
 //!     cx.export_function("hello", hello)?;
