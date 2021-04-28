@@ -7,8 +7,8 @@
 //! When a throwing API triggers a JavaScript exception, it returns an [Err](std::result::Result::Err)
 //! result. This indicates that the thread associated with the [`Context`](crate::context::Context)
 //! is now throwing, and allows Rust code to perform any cleanup. See the
-//! [`neon::context`](crate::context#throwing-exceptions) module documentation for more about
-//! contexts and exceptions.
+//! [`neon::context`](crate::context) module documentation for more about
+//! [contexts and exceptions](crate::context#throwing-exceptions).
 //!
 //! Typically, Neon code can manage JavaScript exceptions correctly and conveniently by
 //! using Rust's [question mark (`?`)][question-mark] operator. This ensures that Rust code
