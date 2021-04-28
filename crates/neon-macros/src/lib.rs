@@ -22,7 +22,7 @@ use legacy as macros;
 ///
 /// ```ignore
 /// #[neon::main]
-/// fn init(mut cx: ModuleContext) -> NeonResult<()> {
+/// fn main(mut cx: ModuleContext) -> NeonResult<()> {
 ///     let version = cx.string("1.0.0");
 ///
 ///     cx.export_value("version", version)?;

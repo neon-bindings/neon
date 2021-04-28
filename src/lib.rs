@@ -43,7 +43,7 @@
 //! point to be executed when the module is loaded. This function can have
 //! any name but is conventionally called `main`:
 //!
-//! ```
+//! ```no_run
 //! # #[cfg(feature = "neon-macros")] {
 //! # use neon::prelude::*;
 //! #
@@ -52,7 +52,7 @@
 //! # }
 //! #
 //! #[neon::main]
-//! fn init(mut cx: ModuleContext) -> NeonResult<()> {
+//! fn main(mut cx: ModuleContext) -> NeonResult<()> {
 //!     cx.export_function("hello", hello)?;
 //!     Ok(())
 //! }
