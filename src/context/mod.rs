@@ -76,21 +76,22 @@
 //!
 //! ```ignore
 //! # fn iterate(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-//!     let iterator = /* ... */;                  // iterator object
-//!     let next = iterator.get("next")?           // iterator's `next` method
-//!         .downcast::<JsFunction, _>(&mut cx)?;
-//!     let mut numbers = vec![];                  // results vector
-//!     let mut done = false;                      // loop controller
+//!     let iterator = /* ... */;                           // iterator object
+//!     let next = iterator.get("next")?                    // iterator's `next` method
+//!         .downcast_or_throw::<JsFunction, _>(&mut cx)?;
+//!     let mut numbers = vec![];                           // results vector
+//!     let mut done = false;                               // loop controller
 //!
 //!     while !done {
 //!         done = cx.execute_scoped(|mut cx| {                   // temporary scope
-//!             let obj = next.call(&mut cx, iterator, vec![])?;  // temporary object
+//!             let args: Vec<Handle<JsValue>> = vec![];
+//!             let obj = next.call(&mut cx, iterator, args)?;    // temporary object
 //!             let number = obj.get(&mut cx, "value")?           // temporary number
-//!                 .downcast::<JsNumber, _>(&mut cx)?
+//!                 .downcast_or_throw::<JsNumber, _>(&mut cx)?
 //!                 .value(&mut cx);
 //!             numbers.push(number);
 //!             Ok(obj.get(&mut cx, "done")?                      // temporary boolean
-//!                 .downcast::<JsBoolean, _>(&mut cx)?
+//!                 .downcast_or_throw::<JsBoolean, _>(&mut cx)?
 //!                 value(&mut cx));
 //!         })?;
 //!     }
