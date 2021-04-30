@@ -16,7 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [10.x, 12.x, 14.x, 16.x]
+        node-version: [12.x, 14.x, 16.x]
         rust-toolchain: [stable, beta, nightly]
 
     steps:
@@ -43,7 +43,7 @@ jobs:
     #   run: npm install -g node-gyp@latest
     - run: npm config set msvs_version 2019
     - name: run cargo test
-      run: cargo test --release
+      run: cargo neon-test
       env:
         LIBCLANG_PATH: ${{ runner.temp }}/llvm/bin
     - name: run CLI test

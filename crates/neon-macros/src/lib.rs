@@ -21,9 +21,8 @@ use legacy as macros;
 /// be called each time the module is initialized in a context.
 ///
 /// ```ignore
-/// # use neon::prelude::*;
 /// #[neon::main]
-/// fn my_module(mut cx: ModuleContext) -> NeonResult<()> {
+/// fn main(mut cx: ModuleContext) -> NeonResult<()> {
 ///     let version = cx.string("1.0.0");
 ///
 ///     cx.export_value("version", version)?;

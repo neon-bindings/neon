@@ -16,7 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [10.x, 12.x, 14.x, 16.x]
+        node-version: [12.x, 14.x, 16.x]
         rust-toolchain: [stable, beta, nightly]
 
     steps:
@@ -32,7 +32,7 @@ jobs:
     - name: install build-essential
       run: sudo apt-get install -y build-essential
     - name: run cargo test
-      run: xvfb-run --auto-servernum cargo test --release -- --nocapture
+      run: xvfb-run --auto-servernum cargo neon-test -- --nocapture
     - name: run CLI test
       working-directory: ./create-neon
       run: npm test

@@ -16,9 +16,15 @@
 //! type `Handle<T>`. For example, we can call
 //! [`JsNumber::value()`](crate::types::JsNumber::value) on a `Handle<JsNumber>`:
 //!
-//! ```ignore
-//!     let n: Handle<JsNumber> = cx.argument(0)?;
-//!     let v = n.value(&mut cx); // JsNumber::value()
+//! ```
+//! # #[cfg(feature = "napi-1")] {
+//! # use neon::prelude::*;
+//! # fn run(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+//! let n: Handle<JsNumber> = cx.argument(0)?;
+//! let v = n.value(&mut cx); // JsNumber::value()
+//! # Ok(cx.undefined())
+//! # }
+//! # }
 //! ```
 //!
 //! ## Example
@@ -27,22 +33,25 @@
 //! `width` and `height`, and multiplies them together as numbers. Each JavaScript
 //! value in the calculation is stored locally in a `Handle`.
 //!
-//! ```ignore
+//! ```
+//! # #[cfg(feature = "napi-1")] {
+//! # use neon::prelude::*;
 //! fn area(mut cx: FunctionContext) -> JsResult<JsNumber> {
 //!     let rect: Handle<JsObject> = cx.argument(0)?;
 //!
 //!     let width: Handle<JsNumber> = rect
 //!         .get(&mut cx, "width")?
-//!         .downcast(&mut cx)?;
+//!         .downcast_or_throw(&mut cx)?;
 //!     let w: f64 = width.value(&mut cx);
 //!
 //!     let height: Handle<JsNumber> = rect
 //!         .get(&mut cx, "height")?
-//!         .downcast(&mut cx)?;
+//!         .downcast_or_throw(&mut cx)?;
 //!     let h: f64 = height.value(&mut cx);
 //!
 //!     Ok(cx.number(w * h))
 //! }
+//! # }
 //! ```
 
 pub(crate) mod internal;

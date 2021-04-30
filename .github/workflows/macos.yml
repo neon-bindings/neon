@@ -16,7 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [10.x, 12.x, 14.x, 16.x]
+        node-version: [12.x, 14.x, 16.x]
         rust-toolchain: [stable, beta, nightly]
 
     steps:
@@ -34,7 +34,7 @@ jobs:
     #   # https://github.com/nodejs/node-gyp/issues/1933#issuecomment-586915535
     #   run: npm install -g node-gyp@latest
     - name: run cargo test
-      run: cargo test --release
+      run: cargo neon-test
     - name: run CLI test
       working-directory: ./create-neon
       run: npm test
