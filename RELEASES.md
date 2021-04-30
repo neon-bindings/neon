@@ -1,3 +1,8 @@
+# Version 0.8.1
+
+* Fix `legacy-backend` for Node 16 (https://github.com/neon-bindings/neon/pull/715)
+* Various docs improvements
+
 # Version 0.8.0
 
 ## Fixes
