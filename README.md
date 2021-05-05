@@ -13,11 +13,12 @@ Rust bindings for writing safe and fast native Node.js modules.
 Once you have the [platform dependencies](https://neon-bindings.com/docs/getting-started#install-node-build-tools/) installed, getting started is as simple as:
 
 ```
-$ npm install -g neon-cli
-$ neon new my-project
+$ npm init neon my-project
 ```
 
 Then see the [Hello World guide](https://neon-bindings.com/docs/hello-world/) for writing your first Hello World in Neon!
+
+_**Note:** This will create a new project with the `napi-backend` and some documentation may not be up to date._
 
 # Docs
 

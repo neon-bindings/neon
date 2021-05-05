@@ -99,6 +99,11 @@ interface Answers {
 }
 
 export default async function wizard(pwd: string, name: string, neon: string | null, features: string | null, noDefaultFeatures: boolean) {
+  let warning = "WARN: `neon new` is deprecated. To create a new project use `npm init neon my-project`.";
+  let banner = "".padStart(warning.length + 4, "#");
+
+  console.warn(`${banner}\n# ${warning} #\n${banner}\n`);
+
   let its = validateName(name);
   if (!its.validForNewPackages) {
     let errors = (its.errors || []).concat(its.warnings || []);
