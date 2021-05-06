@@ -14,7 +14,7 @@
     "command-line-commands": "^2.0.0",
     "command-line-usage": "^4.0.0",
     "git-config": "0.0.7",
-    "handlebars": "^4.5.3",
+    "handlebars": "^4.7.7",
     "inquirer": "^3.0.6",
     "mkdirp": "^0.5.1",
     "quickly-copy-file": "^1.0.0",
