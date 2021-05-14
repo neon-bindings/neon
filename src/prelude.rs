@@ -10,21 +10,21 @@ pub use crate::{
     handle::Root,
     types::boxed::{Finalize, JsBox},
 };
-pub use borrow::{Borrow, BorrowMut};
-pub use context::{
+pub use crate::borrow::{Borrow, BorrowMut};
+pub use crate::context::{
     CallContext, CallKind, ComputeContext, Context, ExecuteContext, FunctionContext, MethodContext,
     ModuleContext, TaskContext,
 };
 #[cfg(all(not(feature = "napi-1"), feature = "event-handler-api"))]
-pub use event::EventHandler;
-pub use handle::Handle;
+pub use crate::event::EventHandler;
+pub use crate::handle::Handle;
 #[cfg(feature = "legacy-runtime")]
-pub use object::Class;
-pub use object::Object;
-pub use result::{JsResult, JsResultExt, NeonResult};
+pub use crate::object::Class;
+pub use crate::object::Object;
+pub use crate::result::{JsResult, JsResultExt, NeonResult};
 #[cfg(feature = "legacy-runtime")]
-pub use task::Task;
-pub use types::{
+pub use crate::task::Task;
+pub use crate::types::{
     BinaryData, JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsError, JsFunction, JsNull, JsNumber,
     JsObject, JsString, JsUndefined, JsValue, Value,
 };

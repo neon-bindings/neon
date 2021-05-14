@@ -148,18 +148,18 @@
 
 pub(crate) mod internal;
 
-use borrow::internal::Ledger;
-use borrow::{Borrow, BorrowMut, Ref, RefMut};
-use context::internal::Env;
+use crate::borrow::internal::Ledger;
+use crate::borrow::{Borrow, BorrowMut, Ref, RefMut};
+use crate::context::internal::Env;
 #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
-use event::EventQueue;
-use handle::{Handle, Managed};
+use crate::event::EventQueue;
+use crate::handle::{Handle, Managed};
 use neon_runtime;
 use neon_runtime::raw;
 #[cfg(feature = "legacy-runtime")]
-use object::class::Class;
-use object::{Object, This};
-use result::{JsResult, NeonResult, Throw};
+use crate::object::class::Class;
+use crate::object::{Object, This};
+use crate::result::{JsResult, NeonResult, Throw};
 #[cfg(feature = "napi-1")]
 use smallvec::SmallVec;
 use std;
@@ -168,13 +168,13 @@ use std::convert::Into;
 use std::marker::PhantomData;
 use std::os::raw::c_void;
 use std::panic::UnwindSafe;
-use types::binary::{JsArrayBuffer, JsBuffer};
+use crate::types::binary::{JsArrayBuffer, JsBuffer};
 #[cfg(feature = "napi-1")]
-use types::boxed::{Finalize, JsBox};
+use crate::types::boxed::{Finalize, JsBox};
 #[cfg(feature = "napi-5")]
-use types::date::{DateError, JsDate};
-use types::error::JsError;
-use types::{
+use crate::types::date::{DateError, JsDate};
+use crate::types::error::JsError;
+use crate::types::{
     JsArray, JsBoolean, JsFunction, JsNull, JsNumber, JsObject, JsString, JsUndefined, JsValue,
     StringResult, Value,
 };

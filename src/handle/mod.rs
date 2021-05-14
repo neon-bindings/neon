@@ -63,16 +63,16 @@ pub(crate) mod root;
 pub use self::root::Root;
 
 use self::internal::SuperType;
-use context::internal::Env;
-use context::Context;
+use crate::context::internal::Env;
+use crate::context::Context;
 use neon_runtime;
 use neon_runtime::raw;
-use result::{JsResult, JsResultExt};
+use crate::result::{JsResult, JsResultExt};
 use std::error::Error;
 use std::fmt::{self, Debug, Display};
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
-use types::Value;
+use crate::types::Value;
 
 /// The trait of data owned by the JavaScript engine and that can only be accessed via handles.
 pub trait Managed: Copy {

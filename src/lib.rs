@@ -79,18 +79,6 @@
 //! [addons]: https://nodejs.org/api/addons.html
 //! [supported]: https://github.com/neon-bindings/neon#platform-support
 
-extern crate cslice;
-extern crate neon_runtime;
-extern crate semver;
-extern crate smallvec;
-
-#[cfg(feature = "proc-macros")]
-extern crate neon_macros;
-
-#[cfg(test)]
-#[macro_use]
-extern crate lazy_static;
-
 pub mod borrow;
 pub mod context;
 #[cfg(any(
@@ -366,7 +354,6 @@ macro_rules! impl_managed {
 /// Example:
 ///
 /// ```rust
-/// # #[macro_use] extern crate neon;
 /// # use neon::prelude::*;
 /// # fn main() {}
 /// pub struct Greeter {
@@ -454,11 +441,11 @@ macro_rules! neon_stringify {
 
 #[cfg(test)]
 mod tests {
-    extern crate rustversion;
     use semver::Version;
     use std::path::{Path, PathBuf};
     use std::process::Command;
     use std::sync::Mutex;
+    use lazy_static::lazy_static;
 
     // Create a mutex to enforce sequential running of the tests.
     lazy_static! {

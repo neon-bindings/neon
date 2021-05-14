@@ -1,8 +1,8 @@
 use neon_runtime::raw::Env;
 use neon_runtime::tsfn::ThreadsafeFunction;
 
-use context::{Context, TaskContext};
-use result::NeonResult;
+use crate::context::{Context, TaskContext};
+use crate::result::NeonResult;
 
 type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 

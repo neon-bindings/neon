@@ -1,21 +1,21 @@
 //! Types and traits representing binary JavaScript data.
 
-use borrow::internal::Pointer;
-use borrow::{Borrow, BorrowMut, LoanError, Ref, RefMut};
-use context::internal::Env;
-use context::{Context, Lock};
+use crate::borrow::internal::Pointer;
+use crate::borrow::{Borrow, BorrowMut, LoanError, Ref, RefMut};
+use crate::context::internal::Env;
+use crate::context::{Context, Lock};
 #[cfg(feature = "napi-1")]
-use handle::Handle;
-use handle::Managed;
+use crate::handle::Handle;
+use crate::handle::Managed;
 use neon_runtime;
 use neon_runtime::raw;
-use result::JsResult;
+use crate::result::JsResult;
 use std::marker::PhantomData;
 use std::mem::{self, MaybeUninit};
 use std::os::raw::c_void;
 use std::slice;
-use types::internal::ValueInternal;
-use types::{build, Object, Value};
+use crate::types::internal::ValueInternal;
+use crate::types::{build, Object, Value};
 
 /// The Node [`Buffer`](https://nodejs.org/api/buffer.html) type.
 #[repr(C)]

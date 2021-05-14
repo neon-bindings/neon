@@ -1,9 +1,9 @@
 //! Exposes JavaScript's reflection API to Rust.
 
-use context::Context;
-use handle::{Handle, Managed};
-use result::JsResult;
-use types::{build, JsString, JsValue};
+use crate::context::Context;
+use crate::handle::{Handle, Managed};
+use crate::result::JsResult;
+use crate::types::{build, JsString, JsValue};
 
 pub fn eval<'a, 'b, C: Context<'a>>(
     cx: &mut C,

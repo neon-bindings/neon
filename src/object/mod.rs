@@ -9,12 +9,12 @@ pub use self::traits::*;
 
 #[cfg(feature = "legacy-runtime")]
 mod traits {
-    use context::Context;
-    use handle::{Handle, Managed};
+    use crate::context::Context;
+    use crate::handle::{Handle, Managed};
     use neon_runtime::raw;
-    use result::{JsResult, NeonResult, Throw};
-    use types::utf8::Utf8;
-    use types::{build, JsArray, JsValue, Value};
+    use crate::result::{JsResult, NeonResult, Throw};
+    use crate::types::utf8::Utf8;
+    use crate::types::{build, JsArray, JsValue, Value};
 
     /// A property key in a JavaScript object.
     pub trait PropertyKey {
@@ -95,18 +95,18 @@ mod traits {
 
 #[cfg(feature = "napi-1")]
 mod traits {
-    use context::internal::Env;
-    use context::Context;
-    use handle::{Handle, Managed, Root};
+    use crate::context::internal::Env;
+    use crate::context::Context;
+    use crate::handle::{Handle, Managed, Root};
     use neon_runtime::raw;
-    use result::{NeonResult, Throw};
-    use types::utf8::Utf8;
-    use types::{build, JsValue, Value};
+    use crate::result::{NeonResult, Throw};
+    use crate::types::utf8::Utf8;
+    use crate::types::{build, JsValue, Value};
 
     #[cfg(feature = "napi-6")]
-    use result::JsResult;
+    use crate::result::JsResult;
     #[cfg(feature = "napi-6")]
-    use types::JsArray;
+    use crate::types::JsArray;
 
     /// A property key in a JavaScript object.
     pub trait PropertyKey {

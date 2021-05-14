@@ -61,10 +61,7 @@
 //! callback and the event queue to notify the main thread of the result:
 //!
 //! ```
-//! # extern crate psd;
-//! # extern crate failure;
-//! #
-//! # #[cfg(feature = "napi-1")] fn main() {
+//! # #[cfg(feature = "napi-1")] {
 //! # use neon::prelude::*;
 //! # use psd::Psd;
 //! # use failure::Error;

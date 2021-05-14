@@ -5,21 +5,21 @@ pub(crate) mod internal;
 use self::internal::{
     AllocateCallback, ClassMetadata, ConstructCallback, ConstructorCallCallback, MethodCallback,
 };
-use borrow::{Borrow, BorrowMut, LoanError, Ref, RefMut};
-use context::internal::Env;
-use context::{Context, Lock};
-use handle::{Handle, Managed};
+use crate::borrow::{Borrow, BorrowMut, LoanError, Ref, RefMut};
+use crate::context::internal::Env;
+use crate::context::{Context, Lock};
+use crate::handle::{Handle, Managed};
 use neon_runtime;
 use neon_runtime::raw;
-use object::{Object, This};
-use result::{JsResult, NeonResult, Throw};
+use crate::object::{Object, This};
+use crate::result::{JsResult, NeonResult, Throw};
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
 use std::mem;
 use std::os::raw::c_void;
 use std::slice;
-use types::internal::{Callback, ValueInternal};
-use types::{build, JsFunction, JsValue, Value};
+use crate::types::internal::{Callback, ValueInternal};
+use crate::types::{build, JsFunction, JsValue, Value};
 
 pub(crate) struct ClassMap {
     map: HashMap<TypeId, ClassMetadata>,

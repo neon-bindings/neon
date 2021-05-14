@@ -2,13 +2,13 @@
 
 use std::os::raw::c_void;
 
-use context::internal::ContextInternal;
-use context::Context;
-use handle::{Handle, Managed};
+use crate::context::internal::ContextInternal;
+use crate::context::Context;
+use crate::handle::{Handle, Managed};
 use neon_runtime;
 use neon_runtime::raw;
 use std::sync::Arc;
-use types::*;
+use crate::types::*;
 
 type EventContext<'a> = crate::context::TaskContext<'a>;
 
