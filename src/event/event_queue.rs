@@ -6,7 +6,7 @@ use result::NeonResult;
 
 type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 
-/// Queue for scheduling Rust closures to execute on tge JavaScript main thread
+/// Queue for scheduling Rust closures to execute on the JavaScript main thread.
 ///
 /// # Example
 ///
