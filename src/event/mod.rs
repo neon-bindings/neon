@@ -14,7 +14,7 @@
 //! The event loop processes completed events one at a time in the JavaScript
 //! execution thread by calling the registered callback function with its result
 //! value as an argument.
-//! 
+//!
 //! ## Creating Custom Events
 //!
 //! This module allows Neon programs to create new types of concurrent events
@@ -31,7 +31,7 @@
 //! # use neon::prelude::*;
 //! #
 //! # fn parse(filename: String, callback: Root<JsFunction>, queue: EventQueue) { }
-//! # 
+//! #
 //! fn parse_async(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 //!     // The types `String`, `Root<JsFunction>`, and `EventQueue` can all be
 //!     // sent across threads.
@@ -66,7 +66,7 @@
 //! # use neon::prelude::*;
 //! # use psd::Psd;
 //! # use failure::Error;
-//! # 
+//! #
 //! fn psd_from_filename(filename: String) -> Result<Psd, Error> {
 //!     Psd::from_bytes(&std::fs::read(&filename)?)
 //! }
