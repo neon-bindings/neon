@@ -1,9 +1,11 @@
 //! Exposes the JavaScript event loop for scheduling asynchronous events.
 //!
+//! ## The Event Loop
+//!
 //! The [_event loop_][event-loop] is how Node.js provides JavaScript programs
-//! access to concurrent events such as the completion of [file][fs] or
-//! [network][net] operations, scheduled [timers][timer], or receiving messages
-//! from other [processes][process].
+//! access to concurrent events such as completion of [file][fs] or
+//! [network][net] operations, notification of scheduled [timers][timer], or
+//! receiving of messages from other [processes][process].
 //!
 //! When an asynchronous operation is started from JavaScript, it registers
 //! a JavaScript callback function to wait for the operation to complete. When
