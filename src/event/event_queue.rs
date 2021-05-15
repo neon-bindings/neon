@@ -21,7 +21,7 @@ type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 ///     // across threads.
 ///     let n = cx.argument::<JsNumber>(0)?.value(&mut cx);
 ///     let callback = cx.argument::<JsFunction>(1)?.root(&mut cx);
-///     let queue = cx.queue();
+///     let channel = cx.channel();
 ///
 ///     // Spawn a thread to complete the execution. This will _not_ block the
 ///     // JavaScript event loop.
@@ -29,8 +29,8 @@ type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 ///         let result = fibonacci(n);
 ///
 ///         // Send a closure as a task to be executed by the JavaScript event
-///         // queue. This _will_ block the event queue while executing.
-///         queue.send(move |mut cx| {
+///         // loop. This _will_ block the event loop while executing.
+///         channel.send(move |mut cx| {
 ///             let callback = callback.into_inner(&mut cx);
 ///             let this = cx.undefined();
 ///             let null = cx.null();
@@ -61,7 +61,7 @@ impl std::fmt::Debug for Channel {
 }
 
 impl Channel {
-    /// Creates an unbounded queue for scheduling closures on the JavaScript
+    /// Creates an unbounded channel for scheduling closures on the JavaScript
     /// main thread
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Self {
         let tsfn = unsafe { ThreadsafeFunction::new(cx.env().to_raw(), Self::callback) };
@@ -121,7 +121,7 @@ impl Channel {
     }
 
     /// Returns a boolean indicating if this `Channel` will prevent the Node event
-    /// queue from exiting.
+    /// loop from exiting.
     pub fn has_ref(&self) -> bool {
         self.has_ref
     }
@@ -138,7 +138,7 @@ impl Channel {
     }
 }
 
-/// Error indicating that a closure was unable to be scheduled to execute on the event queue
+/// Error indicating that a closure was unable to be scheduled to execute on the event loop.
 pub struct SendError;
 
 impl std::fmt::Display for SendError {

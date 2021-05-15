@@ -32,20 +32,20 @@
 //! # #[cfg(feature = "napi-1")] {
 //! # use neon::prelude::*;
 //! #
-//! # fn parse(filename: String, callback: Root<JsFunction>, queue: EventQueue) { }
+//! # fn parse(filename: String, callback: Root<JsFunction>, channel: Channel) { }
 //! #
 //! fn parse_async(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-//!     // The types `String`, `Root<JsFunction>`, and `EventQueue` can all be
+//!     // The types `String`, `Root<JsFunction>`, and `Channel` can all be
 //!     // sent across threads.
 //!     let filename = cx.argument::<JsString>(0)?.value(&mut cx);
 //!     let callback = cx.argument::<JsFunction>(1)?.root(&mut cx);
-//!     let queue = cx.queue();
+//!     let channel = cx.channel();
 //!
-//!     // Spawn a thread to complete the execution. This will _not_ block the
-//!     // JavaScript event loop.
+//!     // Spawn a background thread to complete the execution. The background
+//!     // execution will _not_ block the JavaScript event loop.
 //!     std::thread::spawn(move || {
 //!         // Do the heavy lifting inside the background thread.
-//!         parse(filename, callback, queue);
+//!         parse(filename, callback, channel);
 //!     });
 //!
 //!     Ok(cx.undefined())
@@ -58,7 +58,7 @@
 //! thread.)
 //!
 //! Upon completion of its task, the background thread can use the JavaScript
-//! callback and the event queue to notify the main thread of the result:
+//! callback and the channel to notify the main thread of the result:
 //!
 //! ```
 //! # #[cfg(feature = "napi-1")] {
@@ -70,12 +70,12 @@
 //!     Psd::from_bytes(&std::fs::read(&filename)?)
 //! }
 //!
-//! fn parse(filename: String, callback: Root<JsFunction>, queue: EventQueue) {
+//! fn parse(filename: String, callback: Root<JsFunction>, channel: Channel) {
 //!     let result = psd_from_filename(filename);
 //!
 //!     // Send a closure as a task to be executed by the JavaScript event
-//!     // queue. This _will_ block the event queue while executing.
-//!     queue.send(move |mut cx| {
+//!     // loop. This _will_ block the event loop while executing.
+//!     channel.send(move |mut cx| {
 //!         let callback = callback.into_inner(&mut cx);
 //!         let this = cx.undefined();
 //!         let null = cx.null();
