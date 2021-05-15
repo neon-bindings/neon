@@ -13,10 +13,10 @@ pub fn useless_root(mut cx: FunctionContext) -> JsResult<JsObject> {
 
 pub fn thread_callback(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let callback = cx.argument::<JsFunction>(0)?.root(&mut cx);
-    let queue = cx.queue();
+    let channel = cx.channel();
 
     std::thread::spawn(move || {
-        queue.send(move |mut cx| {
+        channel.send(move |mut cx| {
             let callback = callback.into_inner(&mut cx);
             let this = cx.undefined();
             let args = Vec::<Handle<JsValue>>::new();
@@ -33,14 +33,14 @@ pub fn thread_callback(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 pub fn multi_threaded_callback(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let n = cx.argument::<JsNumber>(0)?.value(&mut cx);
     let callback = cx.argument::<JsFunction>(1)?.root(&mut cx);
-    let queue = Arc::new(cx.queue());
+    let channel = Arc::new(cx.channel());
 
     for i in 0..(n as usize) {
         let callback = callback.clone(&mut cx);
-        let queue = Arc::clone(&queue);
+        let channel = Arc::clone(&channel);
 
         std::thread::spawn(move || {
-            queue.send(move |mut cx| {
+            channel.send(move |mut cx| {
                 let callback = callback.into_inner(&mut cx);
                 let this = cx.undefined();
                 let args = vec![cx.number(i as f64)];
@@ -63,17 +63,17 @@ pub struct AsyncGreeter {
     greeting: String,
     callback: Root<JsFunction>,
     shutdown: Option<Root<JsFunction>>,
-    queue: Arc<EventQueue>,
+    channel: Arc<Channel>,
 }
 
 impl AsyncGreeter {
     fn greet<'a, C: Context<'a>>(&self, mut cx: C) -> JsResult<'a, JsUndefined> {
         let greeting = self.greeting.clone();
         let callback = self.callback.clone(&mut cx);
-        let queue = Arc::clone(&self.queue);
+        let channel = Arc::clone(&self.channel);
 
         std::thread::spawn(move || {
-            queue.send(|mut cx| {
+            channel.send(|mut cx| {
                 let callback = callback.into_inner(&mut cx);
                 let this = cx.undefined();
                 let args = vec![cx.string(greeting)];
@@ -110,7 +110,7 @@ pub fn greeter_new(mut cx: FunctionContext) -> JsResult<BoxedGreeter> {
     let callback = cx.argument::<JsFunction>(1)?.root(&mut cx);
     let shutdown = cx.argument_opt(2);
 
-    let queue = cx.queue();
+    let channel = cx.channel();
     let shutdown = shutdown
         .map(|v| v.downcast_or_throw::<JsFunction, _>(&mut cx))
         .transpose()?
@@ -120,7 +120,7 @@ pub fn greeter_new(mut cx: FunctionContext) -> JsResult<BoxedGreeter> {
         greeting,
         callback,
         shutdown,
-        queue: Arc::new(queue),
+        channel: Arc::new(channel),
     }));
 
     Ok(greeter)
@@ -133,14 +133,14 @@ pub fn greeter_greet(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     greeter.greet(cx)
 }
 
-pub fn leak_event_queue(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    let queue = Box::new({
-        let mut queue = cx.queue();
-        queue.unref(&mut cx);
-        queue
+pub fn leak_channel(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let channel = Box::new({
+        let mut channel = cx.channel();
+        channel.unref(&mut cx);
+        channel
     });
 
-    Box::leak(queue);
+    Box::leak(channel);
 
     Ok(cx.undefined())
 }
@@ -148,7 +148,7 @@ pub fn leak_event_queue(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 pub fn drop_global_queue(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     struct Wrapper {
         callback: Option<Root<JsFunction>>,
-        queue: EventQueue,
+        channel: Channel,
     }
 
     impl Finalize for Wrapper {}
@@ -158,7 +158,7 @@ pub fn drop_global_queue(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     impl Drop for Wrapper {
         fn drop(&mut self) {
             if let Some(callback) = self.callback.take() {
-                self.queue.send(|mut cx| {
+                self.channel.send(|mut cx| {
                     let callback = callback.into_inner(&mut cx);
                     let this = cx.undefined();
                     let args = vec![cx.undefined()];
@@ -172,11 +172,11 @@ pub fn drop_global_queue(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     }
 
     let callback = cx.argument::<JsFunction>(0)?.root(&mut cx);
-    let queue = cx.queue();
+    let channel = cx.channel();
 
     let wrapper = cx.boxed(Wrapper {
         callback: Some(callback),
-        queue,
+        channel,
     });
 
     // Put the `Wrapper` instance in a `Root` and drop it
