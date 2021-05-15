@@ -130,18 +130,12 @@ mod event_queue;
 pub use self::event_queue::{Channel, SendError};
 
 #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
-#[deprecated(
-    since = "0.9.0",
-    note = "Please use the Channel type instead"
-)]
+#[deprecated(since = "0.9.0", note = "Please use the Channel type instead")]
 #[doc(hidden)]
 pub type EventQueue = self::event_queue::Channel;
 
 #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
-#[deprecated(
-    since = "0.9.0",
-    note = "Please use the SendError type instead"
-)]
+#[deprecated(since = "0.9.0", note = "Please use the SendError type instead")]
 #[doc(hidden)]
 pub type EventQueueError = self::event_queue::SendError;
 

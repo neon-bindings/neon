@@ -556,10 +556,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
-    #[deprecated(
-        since = "0.9.0",
-        note = "Please use the channel() method instead"
-    )]
+    #[deprecated(since = "0.9.0", note = "Please use the channel() method instead")]
     #[doc(hidden)]
     fn queue(&mut self) -> Channel {
         self.channel()
