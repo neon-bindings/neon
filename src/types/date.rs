@@ -1,11 +1,11 @@
 use super::{Value, ValueInternal};
-use context::internal::Env;
-use context::Context;
-use handle::{Handle, Managed};
+use crate::context::internal::Env;
+use crate::context::Context;
+use crate::handle::{Handle, Managed};
+use crate::object::Object;
+use crate::result::{JsResult, JsResultExt};
 use neon_runtime;
 use neon_runtime::raw;
-use object::Object;
-use result::{JsResult, JsResultExt};
 use std::error::Error;
 use std::fmt;
 use std::fmt::Debug;

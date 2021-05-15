@@ -1,12 +1,12 @@
 use neon_runtime::raw::Env;
 use neon_runtime::tsfn::ThreadsafeFunction;
 
-use context::{Context, TaskContext};
-use result::NeonResult;
+use crate::context::{Context, TaskContext};
+use crate::result::NeonResult;
 
 type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 
-/// Queue for scheduling Rust closures to execute on tge JavaScript main thread
+/// Queue for scheduling Rust closures to execute on the JavaScript main thread.
 ///
 /// # Example
 ///

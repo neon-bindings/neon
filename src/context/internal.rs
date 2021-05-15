@@ -1,13 +1,14 @@
 use super::ModuleContext;
-use handle::Handle;
+use crate::handle::Handle;
+#[cfg(feature = "legacy-runtime")]
+use crate::object::class::ClassMap;
+use crate::result::NeonResult;
+use crate::types::{JsObject, JsValue};
 use neon_runtime;
 use neon_runtime::raw;
 use neon_runtime::scope::Root;
 #[cfg(feature = "legacy-runtime")]
 use neon_runtime::try_catch::TryCatchControl;
-#[cfg(feature = "legacy-runtime")]
-use object::class::ClassMap;
-use result::NeonResult;
 #[cfg(feature = "legacy-runtime")]
 use std::any::Any;
 use std::cell::{Cell, RefCell};
@@ -16,7 +17,6 @@ use std::mem::MaybeUninit;
 use std::os::raw::c_void;
 #[cfg(feature = "legacy-runtime")]
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
-use types::{JsObject, JsValue};
 
 #[cfg(feature = "legacy-runtime")]
 #[repr(C)]

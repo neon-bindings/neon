@@ -1,14 +1,14 @@
 use super::Value;
-use context::internal::Env;
-use context::{CallbackInfo, FunctionContext};
+use crate::context::internal::Env;
+use crate::context::{CallbackInfo, FunctionContext};
+use crate::result::JsResult;
+use crate::types::error::convert_panics;
+use crate::types::{Handle, JsObject, Managed};
 use neon_runtime;
 use neon_runtime::call::CCallback;
 use neon_runtime::raw;
-use result::JsResult;
 use std::mem;
 use std::os::raw::c_void;
-use types::error::convert_panics;
-use types::{Handle, JsObject, Managed};
 
 pub trait ValueInternal: Managed + 'static {
     fn name() -> String;

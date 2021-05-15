@@ -38,7 +38,7 @@ use std::ops::{Deref, DerefMut, Drop};
 use std::os::raw::c_void;
 
 use self::internal::Pointer;
-use context::Lock;
+use crate::context::Lock;
 
 /// A trait for JS values whose internal contents can be borrowed immutably by Rust while the JS engine is locked.
 pub trait Borrow: Sized {

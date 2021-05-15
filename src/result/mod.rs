@@ -33,10 +33,10 @@
 //!
 //! [question-mark]: https://doc.rust-lang.org/edition-guide/rust-2018/error-handling-and-panics/the-question-mark-operator-for-easier-error-handling.html
 
-use context::Context;
-use handle::Handle;
+use crate::context::Context;
+use crate::handle::Handle;
+use crate::types::Value;
 use std::fmt::{Display, Formatter, Result as FmtResult};
-use types::Value;
 
 /// A [unit type][unit] indicating that the JavaScript thread is throwing an exception.
 ///

@@ -7,12 +7,12 @@ use neon_runtime::reference;
 #[cfg(feature = "napi-6")]
 use neon_runtime::tsfn::ThreadsafeFunction;
 
-use context::Context;
-use handle::Handle;
+use crate::context::Context;
+use crate::handle::Handle;
 #[cfg(feature = "napi-6")]
-use lifecycle::InstanceData;
-use object::Object;
-use types::boxed::Finalize;
+use crate::lifecycle::InstanceData;
+use crate::object::Object;
+use crate::types::boxed::Finalize;
 
 #[repr(transparent)]
 #[derive(Clone)]

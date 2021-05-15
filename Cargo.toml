@@ -9,6 +9,7 @@ repository = "https://github.com/neon-bindings/neon"
 license = "MIT/Apache-2.0"
 exclude = ["neon.jpg"]
 build = "build.rs"
+edition = "2018"
 
 [build-dependencies]
 neon-build = { version = "=0.8.1", path = "crates/neon-build" }
@@ -17,6 +18,8 @@ neon-build = { version = "=0.8.1", path = "crates/neon-build" }
 lazy_static = "1.4.0"
 rustversion = "0.1.4"
 semver = "0.9"
+psd = "0.1.9"     # used for a doc example
+failure = "0.1.5" # used for a doc example
 
 [dependencies]
 cslice = "0.2"

@@ -1,4 +1,4 @@
-use borrow::LoanError;
+use crate::borrow::LoanError;
 use std;
 use std::collections::HashSet;
 use std::os::raw::c_void;

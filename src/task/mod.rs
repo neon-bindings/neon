@@ -3,12 +3,12 @@
 use std::marker::{Send, Sized};
 use std::os::raw::c_void;
 
-use context::TaskContext;
-use handle::{Handle, Managed};
+use crate::context::TaskContext;
+use crate::handle::{Handle, Managed};
+use crate::result::JsResult;
+use crate::types::{JsFunction, Value};
 use neon_runtime;
 use neon_runtime::raw;
-use result::JsResult;
-use types::{JsFunction, Value};
 
 /// A Rust task that can be executed in the background on the Node thread pool.
 pub trait Task: Send + Sized + 'static {
