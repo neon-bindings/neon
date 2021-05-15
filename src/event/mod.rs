@@ -127,7 +127,23 @@
 mod event_queue;
 
 #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
-pub use self::event_queue::{EventQueue, EventQueueError};
+pub use self::event_queue::{Channel, SendError};
+
+#[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
+#[deprecated(
+    since = "0.9.0",
+    note = "Please use the Channel type instead"
+)]
+#[doc(hidden)]
+pub type EventQueue = self::event_queue::Channel;
+
+#[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
+#[deprecated(
+    since = "0.9.0",
+    note = "Please use the SendError type instead"
+)]
+#[doc(hidden)]
+pub type EventQueueError = self::event_queue::SendError;
 
 #[cfg(all(not(feature = "napi-1"), feature = "event-handler-api"))]
 mod event_handler;
@@ -138,5 +154,5 @@ pub use self::event_handler::EventHandler;
 #[cfg(all(feature = "napi-1", feature = "event-handler-api"))]
 compile_error!(
     "The `EventHandler` API is not supported with the N-API \
-    backend. Use `EventQueue` instead."
+    backend. Use `Channel` instead."
 );

@@ -6,7 +6,7 @@ use crate::result::NeonResult;
 
 type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 
-/// Queue for scheduling Rust closures to execute on the JavaScript main thread.
+/// Channel for scheduling Rust closures to execute on the JavaScript main thread.
 ///
 /// # Example
 ///
@@ -17,7 +17,7 @@ type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 /// # use neon::prelude::*;
 /// # fn fibonacci(_: f64) -> f64 { todo!() }
 /// fn async_fibonacci(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-///     // These types (`f64`, `Root<JsFunction>`, `EventQueue`) may all be sent
+///     // These types (`f64`, `Root<JsFunction>`, `Channel`) may all be sent
 ///     // across threads.
 ///     let n = cx.argument::<JsNumber>(0)?.value(&mut cx);
 ///     let callback = cx.argument::<JsFunction>(1)?.root(&mut cx);
@@ -49,18 +49,18 @@ type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 /// }
 /// ```
 
-pub struct EventQueue {
+pub struct Channel {
     tsfn: ThreadsafeFunction<Callback>,
     has_ref: bool,
 }
 
-impl std::fmt::Debug for EventQueue {
+impl std::fmt::Debug for Channel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("EventQueue")
+        f.write_str("Channel")
     }
 }
 
-impl EventQueue {
+impl Channel {
     /// Creates an unbounded queue for scheduling closures on the JavaScript
     /// main thread
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Self {
@@ -72,7 +72,7 @@ impl EventQueue {
         }
     }
 
-    /// Allow the Node event loop to exit while this `EventQueue` exists.
+    /// Allow the Node event loop to exit while this `Channel` exists.
     /// _Idempotent_
     pub fn unref<'a, C: Context<'a>>(&mut self, cx: &mut C) -> &mut Self {
         self.has_ref = false;
@@ -82,7 +82,7 @@ impl EventQueue {
         self
     }
 
-    /// Prevent the Node event loop from exiting while this `EventQueue` exists. (Default)
+    /// Prevent the Node event loop from exiting while this `Channel` exists. (Default)
     /// _Idempotent_
     pub fn reference<'a, C: Context<'a>>(&mut self, cx: &mut C) -> &mut Self {
         self.has_ref = true;
@@ -92,7 +92,7 @@ impl EventQueue {
         self
     }
 
-    /// Schedules a closure to execute on the JavaScript thread that created this EventQueue
+    /// Schedules a closure to execute on the JavaScript thread that created this Channel
     /// Panics if there is a libuv error
     pub fn send<F>(&self, f: F)
     where
@@ -101,9 +101,9 @@ impl EventQueue {
         self.try_send(f).unwrap()
     }
 
-    /// Schedules a closure to execute on the JavaScript thread that created this EventQueue
+    /// Schedules a closure to execute on the JavaScript thread that created this Channel
     /// Returns an `Error` if the task could not be scheduled.
-    pub fn try_send<F>(&self, f: F) -> Result<(), EventQueueError>
+    pub fn try_send<F>(&self, f: F) -> Result<(), SendError>
     where
         F: FnOnce(TaskContext) -> NeonResult<()> + Send + 'static,
     {
@@ -117,10 +117,10 @@ impl EventQueue {
             });
         });
 
-        self.tsfn.call(callback, None).map_err(|_| EventQueueError)
+        self.tsfn.call(callback, None).map_err(|_| SendError)
     }
 
-    /// Returns a boolean indicating if this `EventQueue` will prevent the Node event
+    /// Returns a boolean indicating if this `Channel` will prevent the Node event
     /// queue from exiting.
     pub fn has_ref(&self) -> bool {
         self.has_ref
@@ -139,18 +139,18 @@ impl EventQueue {
 }
 
 /// Error indicating that a closure was unable to be scheduled to execute on the event queue
-pub struct EventQueueError;
+pub struct SendError;
 
-impl std::fmt::Display for EventQueueError {
+impl std::fmt::Display for SendError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "EventQueueError")
+        write!(f, "SendError")
     }
 }
 
-impl std::fmt::Debug for EventQueueError {
+impl std::fmt::Debug for SendError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Display::fmt(self, f)
     }
 }
 
-impl std::error::Error for EventQueueError {}
+impl std::error::Error for SendError {}

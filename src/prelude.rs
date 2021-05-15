@@ -10,7 +10,7 @@ pub use crate::declare_types;
 #[cfg(all(not(feature = "napi-1"), feature = "event-handler-api"))]
 pub use crate::event::EventHandler;
 #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
-pub use crate::event::{EventQueue, EventQueueError};
+pub use crate::event::{Channel, SendError};
 pub use crate::handle::Handle;
 #[cfg(feature = "legacy-runtime")]
 pub use crate::object::Class;
