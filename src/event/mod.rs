@@ -94,10 +94,8 @@
 //!                     obj.upcast(),
 //!                 ]
 //!             }
-//!             Err(_) => {
-//!                 // A full implementation would provide
-//!                 // more detailed error diagnostics.
-//!                 let err = cx.string("PSD parse error");
+//!             Err(err) => {
+//!                 let err = cx.string(err.to_string());
 //!                 vec![
 //!                     err.upcast::<JsValue>(),
 //!                 ]
