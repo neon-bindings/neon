@@ -35,8 +35,8 @@
 
 use crate::context::Context;
 use crate::handle::Handle;
-use std::fmt::{Display, Formatter, Result as FmtResult};
 use crate::types::Value;
+use std::fmt::{Display, Formatter, Result as FmtResult};
 
 /// A [unit type][unit] indicating that the JavaScript thread is throwing an exception.
 ///

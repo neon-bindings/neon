@@ -7,15 +7,15 @@ use crate::context::{Context, Lock};
 #[cfg(feature = "napi-1")]
 use crate::handle::Handle;
 use crate::handle::Managed;
+use crate::result::JsResult;
+use crate::types::internal::ValueInternal;
+use crate::types::{build, Object, Value};
 use neon_runtime;
 use neon_runtime::raw;
-use crate::result::JsResult;
 use std::marker::PhantomData;
 use std::mem::{self, MaybeUninit};
 use std::os::raw::c_void;
 use std::slice;
-use crate::types::internal::ValueInternal;
-use crate::types::{build, Object, Value};
 
 /// The Node [`Buffer`](https://nodejs.org/api/buffer.html) type.
 #[repr(C)]

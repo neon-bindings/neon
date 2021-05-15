@@ -2,14 +2,14 @@ use super::{Callback, Class, ClassInternal};
 use crate::context::internal::{ContextInternal, Env};
 use crate::context::{CallContext, CallbackInfo, Context};
 use crate::handle::{Handle, Managed};
+use crate::result::{JsResult, NeonResult, Throw};
+use crate::types::error::convert_panics;
+use crate::types::{build, JsFunction, JsObject, JsUndefined, JsValue};
 use neon_runtime;
 use neon_runtime::raw;
-use crate::result::{JsResult, NeonResult, Throw};
 use std::mem;
 use std::os::raw::c_void;
 use std::ptr::null_mut;
-use crate::types::error::convert_panics;
-use crate::types::{build, JsFunction, JsObject, JsUndefined, JsValue};
 
 #[repr(C)]
 pub struct MethodCallback<T: Class>(pub fn(CallContext<T>) -> JsResult<JsValue>);

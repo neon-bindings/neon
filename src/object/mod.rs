@@ -11,10 +11,10 @@ pub use self::traits::*;
 mod traits {
     use crate::context::Context;
     use crate::handle::{Handle, Managed};
-    use neon_runtime::raw;
     use crate::result::{JsResult, NeonResult, Throw};
     use crate::types::utf8::Utf8;
     use crate::types::{build, JsArray, JsValue, Value};
+    use neon_runtime::raw;
 
     /// A property key in a JavaScript object.
     pub trait PropertyKey {
@@ -98,10 +98,10 @@ mod traits {
     use crate::context::internal::Env;
     use crate::context::Context;
     use crate::handle::{Handle, Managed, Root};
-    use neon_runtime::raw;
     use crate::result::{NeonResult, Throw};
     use crate::types::utf8::Utf8;
     use crate::types::{build, JsValue, Value};
+    use neon_runtime::raw;
 
     #[cfg(feature = "napi-6")]
     use crate::result::JsResult;

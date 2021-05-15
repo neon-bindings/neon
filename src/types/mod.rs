@@ -16,16 +16,16 @@ use crate::context::internal::Env;
 use crate::context::{Context, FunctionContext};
 use crate::handle::internal::SuperType;
 use crate::handle::{Handle, Managed};
-use neon_runtime;
-use neon_runtime::raw;
 use crate::object::{Object, This};
 use crate::result::{JsResult, JsResultExt, NeonResult, Throw};
+use crate::types::internal::Callback;
+use neon_runtime;
+use neon_runtime::raw;
 use smallvec::SmallVec;
 use std::fmt;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::os::raw::c_void;
-use crate::types::internal::Callback;
 
 pub use self::binary::{BinaryData, BinaryViewType, JsArrayBuffer, JsBuffer};
 #[cfg(feature = "napi-1")]

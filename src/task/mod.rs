@@ -5,10 +5,10 @@ use std::os::raw::c_void;
 
 use crate::context::TaskContext;
 use crate::handle::{Handle, Managed};
-use neon_runtime;
-use neon_runtime::raw;
 use crate::result::JsResult;
 use crate::types::{JsFunction, Value};
+use neon_runtime;
+use neon_runtime::raw;
 
 /// A Rust task that can be executed in the background on the Node thread pool.
 pub trait Task: Send + Sized + 'static {

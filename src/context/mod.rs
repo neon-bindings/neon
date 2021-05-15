@@ -154,20 +154,10 @@ use crate::context::internal::Env;
 #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
 use crate::event::EventQueue;
 use crate::handle::{Handle, Managed};
-use neon_runtime;
-use neon_runtime::raw;
 #[cfg(feature = "legacy-runtime")]
 use crate::object::class::Class;
 use crate::object::{Object, This};
 use crate::result::{JsResult, NeonResult, Throw};
-#[cfg(feature = "napi-1")]
-use smallvec::SmallVec;
-use std;
-use std::cell::RefCell;
-use std::convert::Into;
-use std::marker::PhantomData;
-use std::os::raw::c_void;
-use std::panic::UnwindSafe;
 use crate::types::binary::{JsArrayBuffer, JsBuffer};
 #[cfg(feature = "napi-1")]
 use crate::types::boxed::{Finalize, JsBox};
@@ -178,6 +168,16 @@ use crate::types::{
     JsArray, JsBoolean, JsFunction, JsNull, JsNumber, JsObject, JsString, JsUndefined, JsValue,
     StringResult, Value,
 };
+use neon_runtime;
+use neon_runtime::raw;
+#[cfg(feature = "napi-1")]
+use smallvec::SmallVec;
+use std;
+use std::cell::RefCell;
+use std::convert::Into;
+use std::marker::PhantomData;
+use std::os::raw::c_void;
+use std::panic::UnwindSafe;
 
 use self::internal::{ContextInternal, Scope, ScopeMetadata};
 

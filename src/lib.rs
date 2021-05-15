@@ -441,11 +441,11 @@ macro_rules! neon_stringify {
 
 #[cfg(test)]
 mod tests {
+    use lazy_static::lazy_static;
     use semver::Version;
     use std::path::{Path, PathBuf};
     use std::process::Command;
     use std::sync::Mutex;
-    use lazy_static::lazy_static;
 
     // Create a mutex to enforce sequential running of the tests.
     lazy_static! {

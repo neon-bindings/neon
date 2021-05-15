@@ -5,10 +5,10 @@ use std::os::raw::c_void;
 use crate::context::internal::ContextInternal;
 use crate::context::Context;
 use crate::handle::{Handle, Managed};
+use crate::types::*;
 use neon_runtime;
 use neon_runtime::raw;
 use std::sync::Arc;
-use crate::types::*;
 
 type EventContext<'a> = crate::context::TaskContext<'a>;
 
