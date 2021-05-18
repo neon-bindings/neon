@@ -1,6 +1,6 @@
 {
   "name": "neon-cli",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "description": "Build and load native Rust/Neon modules.",
   "author": "Dave Herman <david.herman@gmail.com>",
   "repository": {
