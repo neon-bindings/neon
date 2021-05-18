@@ -1,3 +1,8 @@
+# Version 0.8.2
+
+* More docs improvements
+* Added a deprecation warning to `neon new` (https://github.com/neon-bindings/neon/pull/722)
+
 # Version 0.8.1
 
 * Fix `legacy-backend` for Node 16 (https://github.com/neon-bindings/neon/pull/715)

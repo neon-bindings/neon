@@ -1,6 +1,6 @@
 [package]
 name = "neon-build"
-version = "0.8.1"
+version = "0.8.2"
 authors = ["Dave Herman <david.herman@gmail.com>"]
 description = "Build logic required for Neon projects."
 repository = "https://github.com/neon-bindings/neon"
@@ -9,4 +9,4 @@ edition = "2018"
 build = "build.rs"
 
 [dependencies]
-neon-sys = { version = "=0.8.1", path = "../neon-sys", optional = true }
+neon-sys = { version = "=0.8.2", path = "../neon-sys", optional = true }
