@@ -173,6 +173,8 @@ mod napi1 {
 
             fn reference_unref(env: Env, reference: Ref, result: *mut u32) -> Status;
 
+            fn delete_reference(env: Env, reference: Ref) -> Status;
+
             fn get_reference_value(env: Env, reference: Ref, result: *mut Value) -> Status;
 
             fn strict_equals(env: Env, lhs: Value, rhs: Value, result: *mut bool) -> Status;

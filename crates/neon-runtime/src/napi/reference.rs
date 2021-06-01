@@ -26,7 +26,7 @@ pub unsafe fn reference(env: Env, value: napi::Ref) -> usize {
     result.assume_init() as usize
 }
 
-pub unsafe fn unreference(env: Env, value: napi::Ref) -> usize {
+pub unsafe fn unreference(env: Env, value: napi::Ref) {
     let mut result = MaybeUninit::uninit();
 
     assert_eq!(
@@ -34,7 +34,9 @@ pub unsafe fn unreference(env: Env, value: napi::Ref) -> usize {
         napi::Status::Ok,
     );
 
-    result.assume_init() as usize
+    if result.assume_init() == 0 {
+        assert_eq!(napi::delete_reference(env, value), napi::Status::Ok);
+    }
 }
 
 pub unsafe fn get(env: Env, value: napi::Ref) -> Local {
