@@ -1,6 +1,6 @@
 [package]
 name = "neon-runtime"
-version = "0.8.2"
+version = "0.8.3"
 authors = ["Dave Herman <david.herman@gmail.com>"]
 description = "Bindings to the Node.js native addon API, used by the Neon implementation."
 repository = "https://github.com/neon-bindings/neon"
@@ -10,7 +10,7 @@ edition = "2018"
 [dependencies]
 cfg-if = "1.0.0"
 libloading = { version = "0.6.5", optional = true }
-neon-sys = { version = "=0.8.2", path = "../neon-sys", optional = true }
+neon-sys = { version = "=0.8.3", path = "../neon-sys", optional = true }
 smallvec = "1.4.2"
 
 [dev-dependencies]

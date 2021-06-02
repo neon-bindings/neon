@@ -41,7 +41,7 @@ As a rule, you should choose the **oldest version of N-API that has the APIs you
 
 ```toml
 [dependencies.neon]
-version = "0.8.2"
+version = "0.8.3"
 default-features = false
 features = ["napi-4"]
 ```

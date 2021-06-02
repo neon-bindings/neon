@@ -1,3 +1,8 @@
+# Version 0.8.3
+
+* Fix crash caused by non-thread safety in napi_threadsafefunction on early termination (https://github.com/neon-bindings/neon/pull/744)
+* Fix memory leak in `Root` (https://github.com/neon-bindings/neon/pull/750)
+
 # Version 0.8.2
 
 * More docs improvements
