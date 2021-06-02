@@ -22,6 +22,7 @@ Neon owes its existence to the contributions of these fine people.
 * [Himself65](https://github.com/Himself65)
 * [Maciej Hirsz](https://github.com/maciejhirsz)
 * [Amal Hussein](https://github.com/nomadtechie)
+* [Fedor Indutny](https://github.com/indutny)
 * [Usagi Ito](https://github.com/usagi)
 * [Jeroen (jrd-rocks)](https://github.com/jrd-rocks)
 * [Keegan (mhsjlw)](https://github.com/mhsjlw)
