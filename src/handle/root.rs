@@ -1,6 +1,6 @@
 use std::ffi::c_void;
 use std::marker::PhantomData;
-use std::mem::ManuallyDrop;
+#[cfg(feature = "napi-6")]
 use std::sync::Arc;
 
 use neon_runtime::reference;
@@ -32,7 +32,9 @@ unsafe impl Sync for NapiRef {}
 /// A `Root<T>` may be sent across threads, but the referenced object may
 /// only be accessed on the JavaScript thread that created it.
 pub struct Root<T> {
-    internal: NapiRef,
+    // `Option` is used to skip `Drop` when `Root::drop` or `Root::into_inner` is used.
+    // It will *always* be `Some` when a user is interacting with `Root`.
+    internal: Option<NapiRef>,
     #[cfg(feature = "napi-6")]
     drop_queue: Arc<ThreadsafeFunction<NapiRef>>,
     _phantom: PhantomData<T>,
@@ -65,7 +67,7 @@ impl<T: Object> Root<T> {
         let internal = unsafe { reference::new(env, value.to_raw()) };
 
         Self {
-            internal: NapiRef(internal as *mut _),
+            internal: Some(NapiRef(internal as *mut _)),
             #[cfg(feature = "napi-6")]
             drop_queue: InstanceData::drop_queue(cx),
             _phantom: PhantomData,
@@ -86,7 +88,7 @@ impl<T: Object> Root<T> {
     /// ```
     pub fn clone<'a, C: Context<'a>>(&self, cx: &mut C) -> Self {
         let env = cx.env();
-        let internal = self.internal.0 as *mut _;
+        let internal = self.as_napi_ref().0 as *mut _;
 
         unsafe {
             reference::reference(env.to_raw(), internal);
@@ -104,7 +106,7 @@ impl<T: Object> Root<T> {
     /// object.
     pub fn drop<'a, C: Context<'a>>(self, cx: &mut C) {
         let env = cx.env().to_raw();
-        let internal = ManuallyDrop::new(self).internal.0 as *mut _;
+        let internal = self.into_napi_ref().0 as *mut _;
 
         unsafe {
             reference::unreference(env, internal);
@@ -114,7 +116,7 @@ impl<T: Object> Root<T> {
     /// Return the referenced JavaScript object and allow it to be garbage collected
     pub fn into_inner<'a, C: Context<'a>>(self, cx: &mut C) -> Handle<'a, T> {
         let env = cx.env();
-        let internal = ManuallyDrop::new(self).internal.0 as *mut _;
+        let internal = self.into_napi_ref().0 as *mut _;
 
         let local = unsafe { reference::get(env.to_raw(), internal) };
 
@@ -130,9 +132,25 @@ impl<T: Object> Root<T> {
     /// can be used in place of a clone immediately followed by a call to `into_inner`.
     pub fn to_inner<'a, C: Context<'a>>(&self, cx: &mut C) -> Handle<'a, T> {
         let env = cx.env();
-        let local = unsafe { reference::get(env.to_raw(), self.internal.0 as *mut _) };
+        let local = unsafe { reference::get(env.to_raw(), self.as_napi_ref().0 as *mut _) };
 
         Handle::new_internal(T::from_raw(env, local))
+    }
+
+    fn as_napi_ref(&self) -> &NapiRef {
+        self.internal
+            .as_ref()
+            // `unwrap` will not `panic` because `internal` will always be `Some`
+            // until the `Root` is consumed.
+            .unwrap()
+    }
+
+    fn into_napi_ref(mut self) -> NapiRef {
+        self.internal
+            .take()
+            // `unwrap` will not `panic` because this is the only method place
+            // `internal` is replaced with `None` and it consumes `self`.
+            .unwrap()
     }
 }
 
@@ -147,6 +165,11 @@ impl<T: Object> Finalize for Root<T> {
 impl<T> Drop for Root<T> {
     #[cfg(not(feature = "napi-6"))]
     fn drop(&mut self) {
+        // If `None`, the `NapiRef` has already been manually dropped
+        if self.internal.is_none() {
+            return;
+        }
+
         // Destructors are called during stack unwinding, prevent a double
         // panic and instead prefer to leak.
         if std::thread::panicking() {
@@ -165,6 +188,9 @@ impl<T> Drop for Root<T> {
 
     #[cfg(feature = "napi-6")]
     fn drop(&mut self) {
-        let _ = self.drop_queue.call(self.internal.clone(), None);
+        // If `None`, the `NapiRef` has already been manually dropped
+        if let Some(internal) = self.internal.take() {
+            let _ = self.drop_queue.call(internal.clone(), None);
+        }
     }
 }
