@@ -16,6 +16,7 @@ use neon_runtime::reference;
 use neon_runtime::tsfn::ThreadsafeFunction;
 
 use crate::context::Context;
+use crate::event::Channel;
 use crate::handle::root::NapiRef;
 
 /// `InstanceData` holds Neon data associated with a particular instance of a
@@ -30,6 +31,9 @@ pub(crate) struct InstanceData {
     /// given the cost of FFI, this optimization is omitted until the cost of an
     /// `Arc` is demonstrated as significant.
     drop_queue: Arc<ThreadsafeFunction<NapiRef>>,
+
+    /// Shared `Channel` that is cloned to be returned by the `cx.channel()` method
+    shared_channel: Channel,
 }
 
 fn drop_napi_ref(env: Option<Env>, data: NapiRef) {
@@ -58,12 +62,19 @@ impl InstanceData {
 
         let drop_queue = unsafe {
             let mut queue = ThreadsafeFunction::new(env, drop_napi_ref);
-            queue.unref(env);
+            queue.unref(env).unwrap();
             queue
+        };
+
+        let shared_channel = {
+            let mut channel = Channel::new(cx);
+            channel.unref(cx);
+            channel
         };
 
         let data = InstanceData {
             drop_queue: Arc::new(drop_queue),
+            shared_channel,
         };
 
         unsafe { &mut *neon_runtime::lifecycle::set_instance_data(env, data) }
@@ -72,5 +83,13 @@ impl InstanceData {
     /// Helper to return a reference to the `drop_queue` field of `InstanceData`
     pub(crate) fn drop_queue<'a, C: Context<'a>>(cx: &mut C) -> Arc<ThreadsafeFunction<NapiRef>> {
         Arc::clone(&InstanceData::get(cx).drop_queue)
+    }
+
+    /// Clones the shared channel and references it since new channels should start
+    /// referenced, but the shared channel is unreferenced.
+    pub(crate) fn channel<'a, C: Context<'a>>(cx: &mut C) -> Channel {
+        let mut channel = InstanceData::get(cx).shared_channel.clone();
+        channel.reference(cx);
+        channel
     }
 }

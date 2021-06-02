@@ -1,3 +1,5 @@
+use std::sync::{Arc, RwLock};
+
 use neon_runtime::raw::Env;
 use neon_runtime::tsfn::ThreadsafeFunction;
 
@@ -7,6 +9,9 @@ use crate::result::NeonResult;
 type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 
 /// Channel for scheduling Rust closures to execute on the JavaScript main thread.
+///
+/// Cloning a `Channel` will create a new channel that shares a backing queue for
+/// events.
 ///
 /// # Example
 ///
@@ -50,7 +55,7 @@ type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 /// ```
 
 pub struct Channel {
-    tsfn: ThreadsafeFunction<Callback>,
+    state: Arc<RwLock<ChannelState>>,
     has_ref: bool,
 }
 
@@ -65,9 +70,10 @@ impl Channel {
     /// main thread
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Self {
         let tsfn = unsafe { ThreadsafeFunction::new(cx.env().to_raw(), Self::callback) };
+        let state = ChannelState { tsfn, ref_count: 1 };
 
         Self {
-            tsfn,
+            state: Arc::new(RwLock::new(state)),
             has_ref: true,
         }
     }
@@ -75,20 +81,28 @@ impl Channel {
     /// Allow the Node event loop to exit while this `Channel` exists.
     /// _Idempotent_
     pub fn unref<'a, C: Context<'a>>(&mut self, cx: &mut C) -> &mut Self {
+        // Already unreferenced
+        if !self.has_ref {
+            return self;
+        }
+
+        ChannelState::unref(cx, &self.state);
+
         self.has_ref = false;
-
-        unsafe { self.tsfn.unref(cx.env().to_raw()) }
-
         self
     }
 
     /// Prevent the Node event loop from exiting while this `Channel` exists. (Default)
     /// _Idempotent_
     pub fn reference<'a, C: Context<'a>>(&mut self, cx: &mut C) -> &mut Self {
+        // Already referenced
+        if self.has_ref {
+            return self;
+        }
+
+        ChannelState::reference(cx, &self.state);
+
         self.has_ref = true;
-
-        unsafe { self.tsfn.reference(cx.env().to_raw()) }
-
         self
     }
 
@@ -117,7 +131,12 @@ impl Channel {
             });
         });
 
-        self.tsfn.call(callback, None).map_err(|_| SendError)
+        self.state
+            .read()
+            .unwrap()
+            .tsfn
+            .call(callback, None)
+            .map_err(|_| SendError)
     }
 
     /// Returns a boolean indicating if this `Channel` will prevent the Node event
@@ -138,6 +157,45 @@ impl Channel {
     }
 }
 
+impl Clone for Channel {
+    fn clone(&self) -> Self {
+        // Not referenced, we can simply clone the fields
+        if !self.has_ref {
+            return Self {
+                state: Arc::clone(&self.state),
+                has_ref: false,
+            };
+        }
+
+        let mut state = self.state.write().unwrap();
+
+        // Only need to increase the ref count since the tsfn is already referenced
+        debug_assert!(state.ref_count > 0);
+        state.ref_count += 1;
+
+        Self {
+            state: Arc::clone(&self.state),
+            has_ref: true,
+        }
+    }
+}
+
+impl Drop for Channel {
+    fn drop(&mut self) {
+        // Not a referenced event queue
+        if !self.has_ref {
+            return;
+        }
+
+        let state = Arc::clone(&self.state);
+
+        self.send(move |mut cx| {
+            ChannelState::unref(&mut cx, &state);
+            Ok(())
+        });
+    }
+}
+
 /// Error indicating that a closure was unable to be scheduled to execute on the event loop.
 pub struct SendError;
 
@@ -154,3 +212,43 @@ impl std::fmt::Debug for SendError {
 }
 
 impl std::error::Error for SendError {}
+
+struct ChannelState {
+    tsfn: ThreadsafeFunction<Callback>,
+    ref_count: usize,
+}
+
+impl ChannelState {
+    fn reference<'a, C: Context<'a>>(cx: &mut C, state: &RwLock<ChannelState>) {
+        // Critical section, avoid panicking
+        {
+            let mut state = state.write().unwrap();
+
+            state.ref_count += 1;
+
+            if state.ref_count == 1 {
+                unsafe { state.tsfn.reference(cx.env().to_raw()) }
+            } else {
+                Ok(())
+            }
+        }
+        .unwrap();
+    }
+
+    fn unref<'a, C: Context<'a>>(cx: &mut C, state: &RwLock<ChannelState>) {
+        // Critical section, avoid panicking
+        {
+            let mut state = state.write().unwrap();
+
+            debug_assert!(state.ref_count >= 1);
+            state.ref_count -= 1;
+
+            if state.ref_count == 0 {
+                unsafe { state.tsfn.unref(cx.env().to_raw()) }
+            } else {
+                Ok(())
+            }
+        }
+        .unwrap();
+    }
+}

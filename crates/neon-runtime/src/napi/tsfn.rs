@@ -153,20 +153,26 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
 
     /// References a threadsafe function to prevent exiting the event loop until it has been dropped. (Default)
     /// Safety: `Env` must be valid for the current thread
-    pub unsafe fn reference(&mut self, env: Env) {
-        assert_eq!(
-            napi::ref_threadsafe_function(env, self.tsfn.0,),
-            napi::Status::Ok,
-        );
+    pub unsafe fn reference(&mut self, env: Env) -> Result<(), napi::Status> {
+        let status = napi::ref_threadsafe_function(env, self.tsfn.0);
+
+        if status == napi::Status::Ok {
+            Ok(())
+        } else {
+            Err(status)
+        }
     }
 
     /// Unreferences a threadsafe function to allow exiting the event loop before it has been dropped.
     /// Safety: `Env` must be valid for the current thread
-    pub unsafe fn unref(&mut self, env: Env) {
-        assert_eq!(
-            napi::unref_threadsafe_function(env, self.tsfn.0,),
-            napi::Status::Ok,
-        );
+    pub unsafe fn unref(&mut self, env: Env) -> Result<(), napi::Status> {
+        let status = napi::unref_threadsafe_function(env, self.tsfn.0);
+
+        if status == napi::Status::Ok {
+            Ok(())
+        } else {
+            Err(status)
+        }
     }
 
     // Provides a C ABI wrapper for a napi callback notifying us about tsfn
