@@ -152,7 +152,7 @@ use crate::borrow::internal::Ledger;
 use crate::borrow::{Borrow, BorrowMut, Ref, RefMut};
 use crate::context::internal::Env;
 #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
-use crate::event::EventQueue;
+use crate::event::Channel;
 use crate::handle::{Handle, Managed};
 #[cfg(feature = "legacy-runtime")]
 use crate::object::class::Class;
@@ -550,9 +550,16 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
-    /// Creates an unbounded queue of events to be executed on a JavaScript thread
-    fn queue(&mut self) -> EventQueue {
-        EventQueue::new(self)
+    /// Creates an unbounded channel for scheduling events to be executed on the JavaScript thread.
+    fn channel(&mut self) -> Channel {
+        Channel::new(self)
+    }
+
+    #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
+    #[deprecated(since = "0.9.0", note = "Please use the channel() method instead")]
+    #[doc(hidden)]
+    fn queue(&mut self) -> Channel {
+        self.channel()
     }
 }
 

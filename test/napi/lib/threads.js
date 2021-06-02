@@ -6,7 +6,7 @@ const assert = require('chai').assert;
   return typeof global.gc === 'function' ? describe : describe.skip;
 })()('sync', function() {
   afterEach(() => {
-    // Force garbage collection to shutdown `EventQueue`
+    // Force garbage collection to shutdown `Channel`
     global.gc();
   });
 
@@ -60,9 +60,9 @@ const assert = require('chai').assert;
     global.gc();
   });
 
-  it('should be able to unref event queue', function () {
-    // If the EventQueue is not unreferenced, the test runner will not cleanly exit
-    addon.leak_event_queue();
+  it('should be able to unref channel', function () {
+    // If the Channel is not unreferenced, the test runner will not cleanly exit
+    addon.leak_channel();
   });
 
   it('should drop leaked Root from the global queue', function (cb) {
