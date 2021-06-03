@@ -1,3 +1,4 @@
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, RwLock};
 
 use neon_runtime::raw::Env;
@@ -55,8 +56,10 @@ type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 /// ```
 
 pub struct Channel {
-    state: Arc<RwLock<ChannelState>>,
-    has_ref: bool,
+    // We hold an extra reference to `state` in `try_send` so that we could
+    // unref the tsfn during the same UV tick if the state is guaranteed to be
+    // dropped before the `try_send`'s closure invocation.
+    state: Arc<ChannelState>,
 }
 
 impl std::fmt::Debug for Channel {
@@ -69,40 +72,27 @@ impl Channel {
     /// Creates an unbounded channel for scheduling closures on the JavaScript
     /// main thread
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Self {
-        let tsfn = unsafe { ThreadsafeFunction::new(cx.env().to_raw(), Self::callback) };
-        let state = ChannelState { tsfn, ref_count: 1 };
+        let state = ChannelState {
+            shared: Arc::new(ChannelSharedState::new(cx)),
+            has_ref: AtomicBool::new(true),
+        };
 
         Self {
-            state: Arc::new(RwLock::new(state)),
-            has_ref: true,
+            state: Arc::new(state),
         }
     }
 
     /// Allow the Node event loop to exit while this `Channel` exists.
     /// _Idempotent_
     pub fn unref<'a, C: Context<'a>>(&mut self, cx: &mut C) -> &mut Self {
-        // Already unreferenced
-        if !self.has_ref {
-            return self;
-        }
-
-        ChannelState::unref(cx, &self.state);
-
-        self.has_ref = false;
+        self.state.unref(cx);
         self
     }
 
     /// Prevent the Node event loop from exiting while this `Channel` exists. (Default)
     /// _Idempotent_
     pub fn reference<'a, C: Context<'a>>(&mut self, cx: &mut C) -> &mut Self {
-        // Already referenced
-        if self.has_ref {
-            return self;
-        }
-
-        ChannelState::reference(cx, &self.state);
-
-        self.has_ref = true;
+        self.state.reference(cx);
         self
     }
 
@@ -121,20 +111,28 @@ impl Channel {
     where
         F: FnOnce(TaskContext) -> NeonResult<()> + Send + 'static,
     {
+        let state = self.state.clone();
+
         let callback = Box::new(move |env| {
             let env = unsafe { std::mem::transmute(env) };
 
             // Note: It is sufficient to use `TaskContext`'s `InheritedHandleScope` because
             // N-API creates a `HandleScope` before calling the callback.
-            TaskContext::with_context(env, move |cx| {
+            TaskContext::with_context(env, move |mut cx| {
+                // No one else, but us holding the state alive.
+                if Arc::strong_count(&state) == 1 {
+                    state.unref(&mut cx);
+                }
+
                 let _ = f(cx);
             });
         });
 
         self.state
+            .shared
+            .tsfn
             .read()
             .unwrap()
-            .tsfn
             .call(callback, None)
             .map_err(|_| SendError)
     }
@@ -142,57 +140,20 @@ impl Channel {
     /// Returns a boolean indicating if this `Channel` will prevent the Node event
     /// loop from exiting.
     pub fn has_ref(&self) -> bool {
-        self.has_ref
-    }
-
-    // Monomorphized trampoline funciton for calling the user provided closure
-    fn callback(env: Option<Env>, callback: Callback) {
-        if let Some(env) = env {
-            callback(env);
-        } else {
-            crate::context::internal::IS_RUNNING.with(|v| {
-                *v.borrow_mut() = false;
-            });
-        }
+        self.state.has_ref.load(Ordering::Relaxed)
     }
 }
 
 impl Clone for Channel {
+    /// Returns a clone of the Channel instance that shares the internal
+    /// unbounded queue with the original channel. Scheduling callbacks on the
+    /// same queue is faster than using separate channels, but might lead to
+    /// starvation if one of the threads posts significantly more callbacks on
+    /// the channel than the other one.
     fn clone(&self) -> Self {
-        // Not referenced, we can simply clone the fields
-        if !self.has_ref {
-            return Self {
-                state: Arc::clone(&self.state),
-                has_ref: false,
-            };
-        }
-
-        let mut state = self.state.write().unwrap();
-
-        // Only need to increase the ref count since the tsfn is already referenced
-        debug_assert!(state.ref_count > 0);
-        state.ref_count += 1;
-
-        Self {
-            state: Arc::clone(&self.state),
-            has_ref: true,
-        }
-    }
-}
-
-impl Drop for Channel {
-    fn drop(&mut self) {
-        // Not a referenced event queue
-        if !self.has_ref {
-            return;
-        }
-
-        let state = Arc::clone(&self.state);
-
-        self.send(move |mut cx| {
-            ChannelState::unref(&mut cx, &state);
-            Ok(())
-        });
+        return Self {
+            state: Arc::new((*self.state).clone()),
+        };
     }
 }
 
@@ -214,41 +175,138 @@ impl std::fmt::Debug for SendError {
 impl std::error::Error for SendError {}
 
 struct ChannelState {
-    tsfn: ThreadsafeFunction<Callback>,
-    ref_count: usize,
+    shared: Arc<ChannelSharedState>,
+    has_ref: AtomicBool,
 }
 
 impl ChannelState {
-    fn reference<'a, C: Context<'a>>(cx: &mut C, state: &RwLock<ChannelState>) {
+    fn reference<'a, C: Context<'a>>(self: &Self, cx: &mut C) {
+        // Already referenced
+        if self.has_ref.swap(true, Ordering::Relaxed) {
+            return;
+        }
+
+        self.shared.reference(cx);
+    }
+
+    fn unref<'a, C: Context<'a>>(self: &Self, cx: &mut C) {
+        // Already unreferenced
+        if !self.has_ref.swap(false, Ordering::Relaxed) {
+            return;
+        }
+
+        self.shared.unref(cx);
+    }
+}
+
+impl Clone for ChannelState {
+    fn clone(&self) -> Self {
+        // Not referenced, we can simply clone the fields
+        if !self.has_ref.load(Ordering::Relaxed) {
+            return Self {
+                shared: self.shared.clone(),
+                has_ref: AtomicBool::new(false),
+            };
+        }
+
+        let shared = Arc::clone(&self.shared);
+
+        // Only need to increase the ref count since the tsfn is already referenced
+        shared.ref_count.fetch_add(1, Ordering::Relaxed);
+
+        Self {
+            shared,
+            has_ref: AtomicBool::new(true),
+        }
+    }
+}
+
+impl Drop for ChannelState {
+    fn drop(&mut self) {
+        // It was only us who kept the `ChannelState` alive. No need to unref
+        // the `tsfn`, because it is going to be dropped once this function
+        // returns.
+        if Arc::strong_count(&self.shared) == 1 {
+            return;
+        }
+
+        // Not a referenced event queue
+        if !self.has_ref.swap(false, Ordering::Relaxed) {
+            return;
+        }
+
+        // The ChannelState is dropped on a worker thread. We have to `unref`
+        // the tsfn on the UV thread after all pending closures.
+        let shared = Arc::clone(&self.shared);
+
+        let callback = Box::new(move |env| {
+            let env = unsafe { std::mem::transmute(env) };
+
+            // Note: It is sufficient to use `TaskContext`'s `InheritedHandleScope` because
+            // N-API creates a `HandleScope` before calling the callback.
+            TaskContext::with_context(env, move |mut cx| {
+                shared.unref(&mut cx);
+            });
+        });
+
+        self.shared
+            .tsfn
+            .read()
+            .unwrap()
+            .call(callback, None)
+            .map_err(|_| SendError)
+            .unwrap();
+    }
+}
+
+struct ChannelSharedState {
+    tsfn: RwLock<ThreadsafeFunction<Callback>>,
+    ref_count: AtomicUsize,
+}
+
+impl ChannelSharedState {
+    fn new<'a, C: Context<'a>>(cx: &mut C) -> Self {
+        let tsfn = unsafe { ThreadsafeFunction::new(cx.env().to_raw(), Self::callback) };
+        Self {
+            tsfn: RwLock::new(tsfn),
+            ref_count: AtomicUsize::new(1),
+        }
+    }
+
+    fn reference<'a, C: Context<'a>>(self: &Self, cx: &mut C) {
+        if self.ref_count.fetch_add(1, Ordering::Relaxed) != 0 {
+            return;
+        }
+
         // Critical section, avoid panicking
         {
-            let mut state = state.write().unwrap();
-
-            state.ref_count += 1;
-
-            if state.ref_count == 1 {
-                unsafe { state.tsfn.reference(cx.env().to_raw()) }
-            } else {
-                Ok(())
-            }
+            let mut tsfn = self.tsfn.write().unwrap();
+            unsafe { tsfn.reference(cx.env().to_raw()) }
         }
         .unwrap();
     }
 
-    fn unref<'a, C: Context<'a>>(cx: &mut C, state: &RwLock<ChannelState>) {
+    fn unref<'a, C: Context<'a>>(self: &Self, cx: &mut C) {
+        if self.ref_count.fetch_sub(1, Ordering::Relaxed) != 1 {
+            return;
+        }
+
         // Critical section, avoid panicking
         {
-            let mut state = state.write().unwrap();
-
-            debug_assert!(state.ref_count >= 1);
-            state.ref_count -= 1;
-
-            if state.ref_count == 0 {
-                unsafe { state.tsfn.unref(cx.env().to_raw()) }
-            } else {
-                Ok(())
-            }
+            let mut tsfn = self.tsfn.write().unwrap();
+            unsafe { tsfn.unref(cx.env().to_raw()) }
         }
         .unwrap();
+    }
+
+    // Monomorphized trampoline funciton for calling the user provided closure
+    fn callback(env: Option<Env>, callback: Callback) {
+        if let Some(env) = env {
+            callback(env);
+        } else {
+            crate::context::internal::IS_RUNNING.with(|v| {
+                *v.borrow_mut() = false;
+            });
+        }
     }
 }

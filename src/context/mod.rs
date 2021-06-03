@@ -154,7 +154,7 @@ use crate::context::internal::Env;
 #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
 use crate::event::Channel;
 use crate::handle::{Handle, Managed};
-#[cfg(feature = "napi-6")]
+#[cfg(all(feature = "napi-6", feature = "event-queue-api"))]
 use crate::lifecycle::InstanceData;
 #[cfg(feature = "legacy-runtime")]
 use crate::object::class::Class;
@@ -552,7 +552,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
-    /// Creates an unbounded channel for scheduling events to be executed on the JavaScript thread.
+    /// Clones a shared unbounded channel for scheduling events to be executed on the JavaScript thread.
     ///
     /// When using N-API >= 6,the channel returned by this method is backed by a shared queue.
     /// To create a channel backed by a _new_ queue see [`Channel`](crate::event::Channel).
