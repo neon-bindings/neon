@@ -232,6 +232,8 @@ impl ChannelState {
     }
 
     fn reference<'a, C: Context<'a>>(&self, cx: &mut C) {
+        // We can use relaxed ordering because `reference()` can only be called
+        // on the Event-Loop thread.
         if self.ref_count.fetch_add(1, Ordering::Relaxed) != 0 {
             return;
         }
@@ -242,6 +244,8 @@ impl ChannelState {
     }
 
     fn unref<'a, C: Context<'a>>(&self, cx: &mut C) {
+        // We can use relaxed ordering because `unref()` can only be called
+        // on the Event-Loop thread.
         if self.ref_count.fetch_sub(1, Ordering::Relaxed) != 1 {
             return;
         }
