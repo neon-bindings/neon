@@ -155,7 +155,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     /// Safety: `Env` must be valid for the current thread
     pub unsafe fn reference(&self, env: Env) {
         assert_eq!(
-            napi::ref_threadsafe_function(env, self.tsfn.0),
+            napi::ref_threadsafe_function(env, self.tsfn.0,),
             napi::Status::Ok,
         );
     }
@@ -164,7 +164,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     /// Safety: `Env` must be valid for the current thread
     pub unsafe fn unref(&self, env: Env) {
         assert_eq!(
-            napi::unref_threadsafe_function(env, self.tsfn.0),
+            napi::unref_threadsafe_function(env, self.tsfn.0,),
             napi::Status::Ok,
         );
     }
