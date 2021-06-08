@@ -552,7 +552,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
-    /// Clones a shared unbounded channel for scheduling events to be executed on the JavaScript thread.
+    /// Returns an unbounded channel for scheduling events to be executed on the JavaScript thread.
     ///
     /// When using N-API >= 6,the channel returned by this method is backed by a shared queue.
     /// To create a channel backed by a _new_ queue see [`Channel`](crate::event::Channel).
