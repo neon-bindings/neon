@@ -63,8 +63,8 @@ impl InstanceData {
         }
 
         let drop_queue = unsafe {
-            let mut queue = ThreadsafeFunction::new(env, drop_napi_ref);
-            queue.unref(env).unwrap();
+            let queue = ThreadsafeFunction::new(env, drop_napi_ref);
+            queue.unref(env);
             queue
         };
 

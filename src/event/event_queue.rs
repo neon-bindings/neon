@@ -1,5 +1,5 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use neon_runtime::raw::Env;
 use neon_runtime::tsfn::ThreadsafeFunction;
@@ -130,12 +130,7 @@ impl Channel {
             });
         });
 
-        self.state
-            .tsfn
-            .read()
-            .unwrap()
-            .call(callback, None)
-            .map_err(|_| SendError)
+        self.state.tsfn.call(callback, None).map_err(|_| SendError)
     }
 
     /// Returns a boolean indicating if this `Channel` will prevent the Node event
@@ -215,7 +210,7 @@ impl std::fmt::Debug for SendError {
 impl std::error::Error for SendError {}
 
 struct ChannelState {
-    tsfn: RwLock<ThreadsafeFunction<Callback>>,
+    tsfn: ThreadsafeFunction<Callback>,
     ref_count: AtomicUsize,
 }
 
@@ -223,7 +218,7 @@ impl ChannelState {
     fn new<'a, C: Context<'a>>(cx: &mut C) -> Self {
         let tsfn = unsafe { ThreadsafeFunction::new(cx.env().to_raw(), Self::callback) };
         Self {
-            tsfn: RwLock::new(tsfn),
+            tsfn,
             ref_count: AtomicUsize::new(1),
         }
     }
@@ -233,12 +228,9 @@ impl ChannelState {
             return;
         }
 
-        // Critical section, avoid panicking
-        {
-            let mut tsfn = self.tsfn.write().unwrap();
-            unsafe { tsfn.reference(cx.env().to_raw()) }
+        unsafe {
+            self.tsfn.reference(cx.env().to_raw());
         }
-        .unwrap();
     }
 
     fn unref<'a, C: Context<'a>>(&self, cx: &mut C) {
@@ -246,12 +238,9 @@ impl ChannelState {
             return;
         }
 
-        // Critical section, avoid panicking
-        {
-            let mut tsfn = self.tsfn.write().unwrap();
-            unsafe { tsfn.unref(cx.env().to_raw()) }
+        unsafe {
+            self.tsfn.unref(cx.env().to_raw());
         }
-        .unwrap();
     }
 
     // Monomorphized trampoline funciton for calling the user provided closure
