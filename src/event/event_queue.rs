@@ -170,15 +170,15 @@ impl Clone for Channel {
 
 impl Drop for Channel {
     fn drop(&mut self) {
+        // Not a referenced event queue
+        if !self.has_ref {
+            return;
+        }
+
         // It was only us who kept the `ChannelState` alive. No need to unref
         // the `tsfn`, because it is going to be dropped once this function
         // returns.
         if Arc::strong_count(&self.state) == 1 {
-            return;
-        }
-
-        // Not a referenced event queue
-        if !self.has_ref {
             return;
         }
 
