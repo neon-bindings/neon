@@ -156,7 +156,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     pub unsafe fn reference(&self, env: Env) {
         assert_eq!(
             napi::ref_threadsafe_function(env, self.tsfn.0),
-            napi::Status::Ok
+            napi::Status::Ok,
         );
     }
 
@@ -165,7 +165,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     pub unsafe fn unref(&self, env: Env) {
         assert_eq!(
             napi::unref_threadsafe_function(env, self.tsfn.0),
-            napi::Status::Ok
+            napi::Status::Ok,
         );
     }
 
