@@ -56,9 +56,6 @@ type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 /// ```
 
 pub struct Channel {
-    // We hold an extra reference to `state` in `try_send` so that we could
-    // unref the tsfn during the same UV tick if the state is guaranteed to be
-    // dropped before the `try_send`'s closure invocation.
     state: Arc<ChannelState>,
     has_ref: bool,
 }
