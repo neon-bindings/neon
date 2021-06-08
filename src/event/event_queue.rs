@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, RwLock};
 
 use neon_runtime::raw::Env;
@@ -60,6 +60,7 @@ pub struct Channel {
     // unref the tsfn during the same UV tick if the state is guaranteed to be
     // dropped before the `try_send`'s closure invocation.
     state: Arc<ChannelState>,
+    has_ref: bool,
 }
 
 impl std::fmt::Debug for Channel {
@@ -72,19 +73,21 @@ impl Channel {
     /// Creates an unbounded channel for scheduling closures on the JavaScript
     /// main thread
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Self {
-        let state = ChannelState {
-            shared: Arc::new(ChannelSharedState::new(cx)),
-            has_ref: AtomicBool::new(true),
-        };
-
         Self {
-            state: Arc::new(state),
+            state: Arc::new(ChannelState::new(cx)),
+            has_ref: true,
         }
     }
 
     /// Allow the Node event loop to exit while this `Channel` exists.
     /// _Idempotent_
     pub fn unref<'a, C: Context<'a>>(&mut self, cx: &mut C) -> &mut Self {
+        // Already unreferenced
+        if !self.has_ref {
+            return self;
+        }
+
+        self.has_ref = false;
         self.state.unref(cx);
         self
     }
@@ -92,6 +95,12 @@ impl Channel {
     /// Prevent the Node event loop from exiting while this `Channel` exists. (Default)
     /// _Idempotent_
     pub fn reference<'a, C: Context<'a>>(&mut self, cx: &mut C) -> &mut Self {
+        // Already referenced
+        if self.has_ref {
+            return self;
+        }
+
+        self.has_ref = true;
         self.state.reference(cx);
         self
     }
@@ -111,25 +120,17 @@ impl Channel {
     where
         F: FnOnce(TaskContext) -> NeonResult<()> + Send + 'static,
     {
-        let state = self.state.clone();
-
         let callback = Box::new(move |env| {
             let env = unsafe { std::mem::transmute(env) };
 
             // Note: It is sufficient to use `TaskContext`'s `InheritedHandleScope` because
             // N-API creates a `HandleScope` before calling the callback.
-            TaskContext::with_context(env, move |mut cx| {
-                // No one else, but us holding the state alive.
-                if Arc::strong_count(&state) == 1 {
-                    state.unref(&mut cx);
-                }
-
+            TaskContext::with_context(env, move |cx| {
                 let _ = f(cx);
             });
         });
 
         self.state
-            .shared
             .tsfn
             .read()
             .unwrap()
@@ -140,7 +141,7 @@ impl Channel {
     /// Returns a boolean indicating if this `Channel` will prevent the Node event
     /// loop from exiting.
     pub fn has_ref(&self) -> bool {
-        self.state.has_ref.load(Ordering::Relaxed)
+        self.has_ref
     }
 }
 
@@ -151,9 +152,48 @@ impl Clone for Channel {
     /// starvation if one of the threads posts significantly more callbacks on
     /// the channel than the other one.
     fn clone(&self) -> Self {
-        return Self {
-            state: Arc::new((*self.state).clone()),
-        };
+        // Not referenced, we can simply clone the fields
+        if !self.has_ref {
+            return Self {
+                state: self.state.clone(),
+                has_ref: false,
+            };
+        }
+
+        let state = Arc::clone(&self.state);
+
+        // Only need to increase the ref count since the tsfn is already referenced
+        state.ref_count.fetch_add(1, Ordering::Relaxed);
+
+        Self {
+            state,
+            has_ref: true,
+        }
+    }
+}
+
+impl Drop for Channel {
+    fn drop(&mut self) {
+        // It was only us who kept the `ChannelState` alive. No need to unref
+        // the `tsfn`, because it is going to be dropped once this function
+        // returns.
+        if Arc::strong_count(&self.state) == 1 {
+            return;
+        }
+
+        // Not a referenced event queue
+        if !self.has_ref {
+            return;
+        }
+
+        // The ChannelState is dropped on a worker thread. We have to `unref`
+        // the tsfn on the UV thread after all pending closures.
+        let state = Arc::clone(&self.state);
+
+        self.send(move |mut cx| {
+            state.unref(&mut cx);
+            Ok(())
+        });
     }
 }
 
@@ -175,96 +215,11 @@ impl std::fmt::Debug for SendError {
 impl std::error::Error for SendError {}
 
 struct ChannelState {
-    shared: Arc<ChannelSharedState>,
-    has_ref: AtomicBool,
-}
-
-impl ChannelState {
-    fn reference<'a, C: Context<'a>>(&self, cx: &mut C) {
-        // Already referenced
-        if self.has_ref.swap(true, Ordering::Relaxed) {
-            return;
-        }
-
-        self.shared.reference(cx);
-    }
-
-    fn unref<'a, C: Context<'a>>(&self, cx: &mut C) {
-        // Already unreferenced
-        if !self.has_ref.swap(false, Ordering::Relaxed) {
-            return;
-        }
-
-        self.shared.unref(cx);
-    }
-}
-
-impl Clone for ChannelState {
-    fn clone(&self) -> Self {
-        // Not referenced, we can simply clone the fields
-        if !self.has_ref.load(Ordering::Relaxed) {
-            return Self {
-                shared: self.shared.clone(),
-                has_ref: AtomicBool::new(false),
-            };
-        }
-
-        let shared = Arc::clone(&self.shared);
-
-        // Only need to increase the ref count since the tsfn is already referenced
-        shared.ref_count.fetch_add(1, Ordering::Relaxed);
-
-        Self {
-            shared,
-            has_ref: AtomicBool::new(true),
-        }
-    }
-}
-
-impl Drop for ChannelState {
-    fn drop(&mut self) {
-        // It was only us who kept the `ChannelState` alive. No need to unref
-        // the `tsfn`, because it is going to be dropped once this function
-        // returns.
-        if Arc::strong_count(&self.shared) == 1 {
-            return;
-        }
-
-        // Not a referenced event queue
-        if !self.has_ref.swap(false, Ordering::Relaxed) {
-            return;
-        }
-
-        // The ChannelState is dropped on a worker thread. We have to `unref`
-        // the tsfn on the UV thread after all pending closures.
-        let shared = Arc::clone(&self.shared);
-
-        let callback = Box::new(move |env| {
-            let env = unsafe { std::mem::transmute(env) };
-
-            // Note: It is sufficient to use `TaskContext`'s `InheritedHandleScope` because
-            // N-API creates a `HandleScope` before calling the callback.
-            TaskContext::with_context(env, move |mut cx| {
-                shared.unref(&mut cx);
-            });
-        });
-
-        self.shared
-            .tsfn
-            .read()
-            .unwrap()
-            .call(callback, None)
-            .map_err(|_| SendError)
-            .unwrap();
-    }
-}
-
-struct ChannelSharedState {
     tsfn: RwLock<ThreadsafeFunction<Callback>>,
     ref_count: AtomicUsize,
 }
 
-impl ChannelSharedState {
+impl ChannelState {
     fn new<'a, C: Context<'a>>(cx: &mut C) -> Self {
         let tsfn = unsafe { ThreadsafeFunction::new(cx.env().to_raw(), Self::callback) };
         Self {
