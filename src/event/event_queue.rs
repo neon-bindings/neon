@@ -180,7 +180,7 @@ struct ChannelState {
 }
 
 impl ChannelState {
-    fn reference<'a, C: Context<'a>>(self: &Self, cx: &mut C) {
+    fn reference<'a, C: Context<'a>>(&self, cx: &mut C) {
         // Already referenced
         if self.has_ref.swap(true, Ordering::Relaxed) {
             return;
@@ -189,7 +189,7 @@ impl ChannelState {
         self.shared.reference(cx);
     }
 
-    fn unref<'a, C: Context<'a>>(self: &Self, cx: &mut C) {
+    fn unref<'a, C: Context<'a>>(&self, cx: &mut C) {
         // Already unreferenced
         if !self.has_ref.swap(false, Ordering::Relaxed) {
             return;
@@ -273,7 +273,7 @@ impl ChannelSharedState {
         }
     }
 
-    fn reference<'a, C: Context<'a>>(self: &Self, cx: &mut C) {
+    fn reference<'a, C: Context<'a>>(&self, cx: &mut C) {
         if self.ref_count.fetch_add(1, Ordering::Relaxed) != 0 {
             return;
         }
@@ -286,7 +286,7 @@ impl ChannelSharedState {
         .unwrap();
     }
 
-    fn unref<'a, C: Context<'a>>(self: &Self, cx: &mut C) {
+    fn unref<'a, C: Context<'a>>(&self, cx: &mut C) {
         if self.ref_count.fetch_sub(1, Ordering::Relaxed) != 1 {
             return;
         }
