@@ -143,6 +143,10 @@ impl Clone for Channel {
     /// same queue is faster than using separate channels, but might lead to
     /// starvation if one of the threads posts significantly more callbacks on
     /// the channel than the other one.
+    ///
+    /// Cloned and referenced Channel instances might trigger additional
+    /// event-loop tick when dropped. Channel can be wrapped into an Arc and
+    /// shared between different threads/callers to avoid this.
     fn clone(&self) -> Self {
         // Not referenced, we can simply clone the fields
         if !self.has_ref {
@@ -179,7 +183,14 @@ impl Drop for Channel {
         }
 
         // The ChannelState is dropped on a worker thread. We have to `unref`
-        // the tsfn on the UV thread after all pending closures.
+        // the tsfn on the UV thread after all pending closures. Note that in
+        // the most of scenarios the optimization in N-API layer would coalesce
+        // `send()` with a user-supplied closure and the unref send here into a
+        // single UV tick.
+        //
+        // If this ever has to be optimized a second `Arc` could be used to wrap
+        // the `state` and it could be cloned in `try_send` and unref'ed on the
+        // UV thread if strong reference count goes to 0.
         let state = Arc::clone(&self.state);
 
         self.send(move |mut cx| {
