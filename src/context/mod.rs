@@ -297,7 +297,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
     ///
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
-    fn lock(&self) -> Lock<'_> {
+    fn lock(&mut self) -> Lock<'_> {
         self.check_active();
         Lock::new(self.env())
     }
@@ -321,7 +321,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
     /// but while the extra `&` is a small ergonomics regression, this API is still a nice
     /// convenience.
-    fn borrow<'c, V, T, F>(&self, v: &'c Handle<V>, f: F) -> T
+    fn borrow<'c, V, T, F>(&mut self, v: &'c Handle<V>, f: F) -> T
     where
         V: Value,
         &'c V: Borrow,
@@ -353,7 +353,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
     /// but while the extra `&mut` is a small ergonomics regression, this API is still a nice
     /// convenience.
-    fn borrow_mut<'c, V, T, F>(&self, v: &'c mut Handle<V>, f: F) -> T
+    fn borrow_mut<'c, V, T, F>(&mut self, v: &'c mut Handle<V>, f: F) -> T
     where
         V: Value,
         &'c mut V: BorrowMut,
@@ -369,7 +369,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape.
     ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
-    fn execute_scoped<T, F>(&self, f: F) -> T
+    fn execute_scoped<T, F>(&mut self, f: F) -> T
     where
         F: for<'b> FnOnce(ExecuteContext<'b>) -> T,
     {
@@ -385,7 +385,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape, with the exception of the result value, which is rooted in the outer context.
     ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
-    fn compute_scoped<V, F>(&self, f: F) -> JsResult<'a, V>
+    fn compute_scoped<V, F>(&mut self, f: F) -> JsResult<'a, V>
     where
         V: Value,
         F: for<'b, 'c> FnOnce(ComputeContext<'b, 'c>) -> JsResult<'b, V>,
