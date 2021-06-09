@@ -19,6 +19,11 @@ describe('type checks', function() {
     assert(!addon.is_array_buffer('hello world'));
   });
 
+  it('is_uint32_array', function () {
+    assert(addon.is_uint32_array(new Uint32Array(0)));
+    assert(!addon.is_uint32_array(new Uint16Array(0)));
+  });
+
   it('is_boolean', function () {
     assert(addon.is_boolean(true));
     assert(addon.is_boolean(false));

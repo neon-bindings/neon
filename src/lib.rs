@@ -80,6 +80,7 @@
 //! [supported]: https://github.com/neon-bindings/neon#platform-support
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+#[cfg(feature = "legacy-runtime")]
 pub mod borrow;
 pub mod context;
 #[cfg(any(

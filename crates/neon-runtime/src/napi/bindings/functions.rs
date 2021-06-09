@@ -53,6 +53,7 @@ mod napi1 {
             fn close_handle_scope(env: Env, scope: HandleScope) -> Status;
 
             fn is_arraybuffer(env: Env, value: Value, result: *mut bool) -> Status;
+            fn is_typedarray(env: Env, value: Value, result: *mut bool) -> Status;
             fn is_buffer(env: Env, value: Value, result: *mut bool) -> Status;
             fn is_error(env: Env, value: Value, result: *mut bool) -> Status;
             fn is_array(env: Env, value: Value, result: *mut bool) -> Status;
@@ -88,6 +89,16 @@ mod napi1 {
                 arraybuffer: Value,
                 data: *mut *mut c_void,
                 byte_length: *mut usize,
+            ) -> Status;
+
+            fn get_typedarray_info(
+                env: Env,
+                typedarray: Value,
+                typ: *mut TypedArrayType,
+                length: *mut usize,
+                data: *mut *mut c_void,
+                buf: *mut Value,
+                offset: *mut usize,
             ) -> Status;
 
             fn create_buffer(

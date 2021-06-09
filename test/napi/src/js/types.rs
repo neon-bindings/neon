@@ -18,6 +18,12 @@ pub fn is_array_buffer(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     Ok(cx.boolean(result))
 }
 
+pub fn is_uint32_array(mut cx: FunctionContext) -> JsResult<JsBoolean> {
+    let val: Handle<JsValue> = cx.argument(0)?;
+    let result = val.is_a::<JsTypedArray<u32>, _>(&mut cx);
+    Ok(cx.boolean(result))
+}
+
 pub fn is_boolean(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     let val: Handle<JsValue> = cx.argument(0)?;
     let result = val.is_a::<JsBoolean, _>(&mut cx);
