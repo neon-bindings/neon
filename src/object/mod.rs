@@ -15,6 +15,7 @@
 //! as necessary:
 //!
 //! ```
+//! # #[cfg(feature = "napi-1")] {
 //! # use neon::prelude::*;
 //! fn set_and_check<'a>(
 //!     cx: &mut impl Context<'a>,
@@ -22,11 +23,12 @@
 //! ) -> JsResult<'a, JsValue> {
 //!     let value = cx.string("hello!");
 //!     // set property "17" with integer shorthand
-//!     obj.set(17, value)?;
+//!     obj.set(cx, 17, value)?;
 //!     // get property "17" with string shorthand
 //!     // returns the same value ("hello!")
-//!     obj.get("17")
+//!     obj.get(cx, "17")
 //! }
+//! # }
 //! ```
 //!
 //! [hierarchy]: crate::types#the-javascript-type-hierarchy
