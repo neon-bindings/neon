@@ -22,6 +22,15 @@ describe('JsObject', function() {
     assert.deepEqual({number: 9000, string: 'hello node'}, addon.return_js_object_with_mixed_content());
   });
 
+  it('return a JsObject with a symbol property key', function () {
+    const obj = addon.return_js_object_with_symbol_property_key();
+    const propertySymbols = Object.getOwnPropertySymbols(obj);
+    assert.equal(propertySymbols.length, 1);
+    const sym = propertySymbols[0];
+    assert.equal(typeof sym, "symbol");
+    assert.equal(obj[sym], sym);
+  })
+
   it('gets a 16-byte, zeroed ArrayBuffer', function() {
     var b = addon.return_array_buffer();
     assert.equal(b.byteLength, 16);

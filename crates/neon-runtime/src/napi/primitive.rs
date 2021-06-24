@@ -43,3 +43,9 @@ pub unsafe fn number_value(env: Env, p: Local) -> f64 {
     );
     value
 }
+
+/// Mutates the `out` argument provided to refer to a newly created `Local` containing a
+/// JavaScript symbol.
+pub unsafe fn symbol(out: &mut Local, env: Env, desc: Local) {
+    napi::create_symbol(env, desc, out as *mut Local);
+}

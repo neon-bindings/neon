@@ -168,6 +168,8 @@ use crate::types::{
     JsArray, JsBoolean, JsFunction, JsNull, JsNumber, JsObject, JsString, JsUndefined, JsValue,
     StringResult, Value,
 };
+#[cfg(all(feature = "napi-1", feature = "symbol-primitive-api"))]
+use crate::types::symbol::JsSymbol;
 use neon_runtime;
 use neon_runtime::raw;
 #[cfg(feature = "napi-1")]
@@ -436,6 +438,14 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// If the string exceeds the limits of the JS engine, this method returns an `Err` value.
     fn try_string<S: AsRef<str>>(&mut self, s: S) -> StringResult<'a> {
         JsString::try_new(self, s)
+    }
+
+    /// Convenience method for creating a `JsSymbol` value.
+    ///
+    /// If the string exceeds the limits of the JS engine, this method panics.
+    #[cfg(all(feature = "napi-1", feature = "symbol-primitive-api"))]
+    fn symbol<S: AsRef<str>>(&mut self, s: S) -> Handle<'a, JsSymbol> {
+        JsSymbol::with_description(self, s)
     }
 
     /// Convenience method for creating a `JsNull` value.

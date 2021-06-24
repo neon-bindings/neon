@@ -31,6 +31,13 @@ pub fn return_js_object_with_string(mut cx: FunctionContext) -> JsResult<JsObjec
     Ok(js_object)
 }
 
+pub fn return_js_object_with_symbol_property_key(mut cx: FunctionContext) -> JsResult<JsObject> {
+    let js_object: Handle<JsObject> = cx.empty_object();
+    let s = cx.symbol("neon:description");
+    js_object.set(&mut cx, s, s)?;
+    Ok(js_object)
+}
+
 pub fn return_array_buffer(mut cx: FunctionContext) -> JsResult<JsArrayBuffer> {
     let b: Handle<JsArrayBuffer> = cx.array_buffer(16)?;
     Ok(b)

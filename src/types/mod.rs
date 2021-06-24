@@ -67,7 +67,8 @@
 //!     of custom objects that own Rust data structures.
 //! - **Primitive types:** These are the built-in JavaScript datatypes that are not
 //!   object types: [`JsNumber`](JsNumber), [`JsBoolean`](JsBoolean),
-//!   [`JsString`](JsString), [`JsNull`](JsNull), and [`JsUndefined`](JsUndefined).
+//!   [`JsString`](JsString), [`JsNull`](JsNull), [`JsSymbol`](JsSymbol),
+//!    and [`JsUndefined`](JsUndefined).
 //!
 //! [types]: https://raw.githubusercontent.com/neon-bindings/neon/main/doc/types.jpg
 //! [unknown]: https://mariusschulz.com/blog/the-unknown-type-in-typescript#the-unknown-type
@@ -80,6 +81,8 @@ pub(crate) mod date;
 pub(crate) mod error;
 
 pub(crate) mod internal;
+#[cfg(all(feature = "napi-1", feature = "symbol-primitive-api"))]
+pub(crate) mod symbol;
 pub(crate) mod utf8;
 
 use self::internal::{FunctionCallback, ValueInternal};
@@ -434,16 +437,19 @@ impl JsString {
 
     #[cfg(feature = "napi-1")]
     pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> String {
-        let env = cx.env().to_raw();
+        unsafe { JsString::value_internal(cx.env().to_raw(), self.to_raw()) }
+    }
 
-        unsafe {
-            let capacity = neon_runtime::string::utf8_len(env, self.to_raw()) + 1;
-            let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
-            let p = buffer.as_mut_ptr();
-            std::mem::forget(buffer);
-            let len = neon_runtime::string::data(env, p, capacity, self.to_raw());
-            String::from_raw_parts(p, len as usize, capacity as usize)
-        }
+    /// Invariants:
+    /// - `local` has an underlying value type of `napi::ValueType::String`
+    #[cfg(feature = "napi-1")]
+    pub(crate) unsafe fn value_internal(env: raw::Env, local: raw::Local) -> String {
+        let capacity = neon_runtime::string::utf8_len(env, local) + 1;
+        let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
+        let p = buffer.as_mut_ptr();
+        std::mem::forget(buffer);
+        let len = neon_runtime::string::data(env, p, capacity, local);
+        String::from_raw_parts(p, len as usize, capacity as usize)
     }
 
     pub fn new<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, val: S) -> Handle<'a, JsString> {

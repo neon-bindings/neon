@@ -31,3 +31,5 @@ pub use crate::{
     handle::Root,
     types::boxed::{Finalize, JsBox},
 };
+#[cfg(all(feature = "napi-1", feature = "symbol-primitive-api"))]
+pub use crate::types::symbol::JsSymbol;

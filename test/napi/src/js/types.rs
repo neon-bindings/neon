@@ -54,6 +54,12 @@ pub fn is_object(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     Ok(cx.boolean(result))
 }
 
+pub fn is_symbol(mut cx: FunctionContext) -> JsResult<JsBoolean> {
+    let val: Handle<JsValue> = cx.argument(0)?;
+    let result = val.is_a::<JsSymbol,_>(&mut cx);
+    Ok(cx.boolean(result))
+}
+
 pub fn is_undefined(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     let val: Handle<JsValue> = cx.argument(0)?;
     let is_string = val.is_a::<JsUndefined, _>(&mut cx);
