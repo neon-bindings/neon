@@ -12,7 +12,7 @@ pub fn read_js_symbol_description(mut cx: FunctionContext) -> JsResult<JsValue> 
     let symbol: Handle<JsSymbol> = cx.argument(0)?;
     match symbol.description(&mut cx) {
         None => Ok(cx.undefined().upcast()),
-        Some(s) => Ok(cx.string(s).upcast()),
+        Some(s) => Ok(s.upcast()),
     }
 }
 

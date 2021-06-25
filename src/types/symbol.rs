@@ -15,20 +15,20 @@ impl JsSymbol {
     /// Create a new symbol.
     /// Equivalent to calling `Symbol()` in JavaScript
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsSymbol> {
-        JsSymbol::new_internal(cx.env(), None::<&str>)
+        JsSymbol::new_internal(cx.env(), None)
     }
 
     /// Create a new symbol with a description.
-    /// Equivalent to calling `Symbol(desc)` in JavaScript
-    pub fn with_description<'a, C: Context<'a>, S: AsRef<str>>(
+    /// Equivalent to calling `Symbol(description)` in JavaScript
+    pub fn with_description<'a, C: Context<'a>>(
         cx: &mut C,
-        desc: S,
+        desc: Handle<'a, JsString>,
     ) -> Handle<'a, JsSymbol> {
         JsSymbol::new_internal(cx.env(), Some(desc))
     }
 
     /// Get the optional symbol description, where `None` represents an undefined description.
-    pub fn description<'a, C: Context<'a>>(self, cx: &mut C) -> Option<String> {
+    pub fn description<'a, C: Context<'a>>(self, cx: &mut C) -> Option<Handle<'a, JsString>> {
         let env = cx.env().to_raw();
         let (desc_ptr, desc_len) = Utf8::from("description").into_small_unwrap().lower();
 
@@ -40,22 +40,22 @@ impl JsSymbol {
             }
 
             if neon_runtime::tag::is_string(env, local) {
-                Some(JsString::value_internal(env, local))
+                Some(Handle::new_internal(JsString(local)))
             } else {
                 None
             }
         }
     }
 
-    pub(crate) fn new_internal<'a, S: AsRef<str>>(
+    pub(crate) fn new_internal<'a>(
         env: Env,
-        desc: Option<S>,
+        desc: Option<Handle<'a, JsString>>,
     ) -> Handle<'a, JsSymbol> {
         unsafe {
-            let desc_local = desc
-                .and_then(|d| JsString::new_internal(env, d.as_ref()))
-                .map_or_else(|| std::mem::zeroed(), |h| h.to_raw());
-
+            let desc_local = match desc {
+                None => std::mem::zeroed(),
+                Some(h) => h.to_raw(),
+            };
             let mut sym_local = std::mem::zeroed();
             neon_runtime::primitive::symbol(&mut sym_local, env.to_raw(), desc_local);
             Handle::new_internal(JsSymbol(sym_local))

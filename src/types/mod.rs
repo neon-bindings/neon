@@ -437,19 +437,16 @@ impl JsString {
 
     #[cfg(feature = "napi-1")]
     pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> String {
-        unsafe { JsString::value_internal(cx.env().to_raw(), self.to_raw()) }
-    }
+        let env = cx.env().to_raw();
 
-    /// Invariants:
-    /// - `local` has an underlying value type of `napi::ValueType::String`
-    #[cfg(feature = "napi-1")]
-    pub(crate) unsafe fn value_internal(env: raw::Env, local: raw::Local) -> String {
-        let capacity = neon_runtime::string::utf8_len(env, local) + 1;
-        let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
-        let p = buffer.as_mut_ptr();
-        std::mem::forget(buffer);
-        let len = neon_runtime::string::data(env, p, capacity, local);
-        String::from_raw_parts(p, len as usize, capacity as usize)
+        unsafe {
+            let capacity = neon_runtime::string::utf8_len(env, self.to_raw()) + 1;
+            let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
+            let p = buffer.as_mut_ptr();
+            std::mem::forget(buffer);
+            let len = neon_runtime::string::data(env, p, capacity, self.to_raw());
+            String::from_raw_parts(p, len as usize, capacity as usize)
+        }
     }
 
     pub fn new<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, val: S) -> Handle<'a, JsString> {
