@@ -94,6 +94,7 @@ pub mod prelude;
 pub mod reflect;
 pub mod result;
 #[cfg(feature = "legacy-runtime")]
+#[doc(hidden)]
 pub mod task;
 pub mod types;
 
@@ -165,6 +166,7 @@ macro_rules! register_module {
 /// });
 /// # }
 /// ```
+#[doc(hidden)]
 #[macro_export]
 macro_rules! register_module {
     ($module:pat, $init:block) => {
@@ -391,6 +393,7 @@ macro_rules! impl_managed {
 ///
 /// }
 /// ```
+#[doc(hidden)]
 #[macro_export(local_inner_macros)]
 macro_rules! declare_types {
     { $(#[$attr:meta])* pub class $cls:ident for $typ:ident { $($body:tt)* } $($rest:tt)* } => {
