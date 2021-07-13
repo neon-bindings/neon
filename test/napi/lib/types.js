@@ -74,7 +74,7 @@ describe('type checks', function() {
     assert(addon.is_symbol(Symbol()));
     assert(addon.is_symbol(Symbol("unique symbol")));
     assert(addon.is_symbol(Symbol.for('neon:description')));
-    assert(addon.is_symbol(Symbol.toStringTag));
+    assert(addon.is_symbol(Symbol.iterator));
     assert(!addon.is_symbol(undefined));
     assert(!addon.is_symbol("anything other than symbol"));
   });

@@ -81,7 +81,7 @@ pub(crate) mod date;
 pub(crate) mod error;
 
 pub(crate) mod internal;
-#[cfg(all(feature = "napi-1", feature = "symbol-primitive-api"))]
+#[cfg(all(feature = "napi-1", feature = "symbol-api"))]
 pub(crate) mod symbol;
 pub(crate) mod utf8;
 
@@ -108,6 +108,8 @@ pub use self::boxed::JsBox;
 #[cfg(feature = "napi-5")]
 pub use self::date::{DateError, DateErrorKind, JsDate};
 pub use self::error::JsError;
+#[cfg(all(feature = "napi-1", feature = "symbol-api"))]
+pub use self::symbol::JsSymbol;
 
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(
     env: Env,

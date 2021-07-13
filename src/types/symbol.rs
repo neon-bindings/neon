@@ -53,11 +53,10 @@ impl JsSymbol {
     ) -> Handle<'a, JsSymbol> {
         unsafe {
             let desc_local = match desc {
-                None => std::mem::zeroed(),
+                None => std::ptr::null_mut(),
                 Some(h) => h.to_raw(),
             };
-            let mut sym_local = std::mem::zeroed();
-            neon_runtime::primitive::symbol(&mut sym_local, env.to_raw(), desc_local);
+            let sym_local = neon_runtime::primitive::symbol(env.to_raw(), desc_local);
             Handle::new_internal(JsSymbol(sym_local))
         }
     }

@@ -77,7 +77,7 @@ proc-macros = ["neon-macros"]
 
 # Feature flag to enable the `JsSymbol` API of RFC 38
 # https://github.com/neon-bindings/rfcs/pull/38
-symbol-primitive-api = []
+symbol-api = []
 
 [package.metadata.docs.rs]
 features = ["docs-only", "event-handler-api", "proc-macros", "try-catch-api"]

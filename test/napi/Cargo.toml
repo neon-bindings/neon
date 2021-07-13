@@ -13,4 +13,4 @@ crate-type = ["cdylib"]
 version = "*"
 path = "../.."
 default-features = false
-features = ["default-panic-hook", "napi-6", "try-catch-api", "event-queue-api", "symbol-primitive-api"]
+features = ["default-panic-hook", "napi-6", "try-catch-api", "event-queue-api", "symbol-api"]

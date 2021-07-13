@@ -26,8 +26,8 @@ describe('JsObject', function() {
     const obj = addon.return_js_object_with_symbol_property_key();
     const propertySymbols = Object.getOwnPropertySymbols(obj);
     assert.equal(propertySymbols.length, 1);
-    const sym = propertySymbols[0];
-    assert.equal(typeof sym, "symbol");
+    const [sym] = propertySymbols;
+    assert.typeOf(sym, "symbol");
     assert.equal(obj[sym], sym);
   })
 

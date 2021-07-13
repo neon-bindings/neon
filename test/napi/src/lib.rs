@@ -266,6 +266,10 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("drop_global_queue", drop_global_queue)?;
 
     cx.export_function(
+        "return_js_symbol_from_context_helper",
+        return_js_symbol_from_context_helper,
+    )?;
+    cx.export_function(
         "return_js_symbol_with_description",
         return_js_symbol_with_description,
     )?;

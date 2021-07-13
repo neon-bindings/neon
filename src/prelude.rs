@@ -22,7 +22,7 @@ pub use crate::register_module;
 pub use crate::result::{JsResult, JsResultExt, NeonResult};
 #[cfg(feature = "legacy-runtime")]
 pub use crate::task::Task;
-#[cfg(all(feature = "napi-1", feature = "symbol-primitive-api"))]
+#[cfg(all(feature = "napi-1", feature = "symbol-api"))]
 pub use crate::types::symbol::JsSymbol;
 pub use crate::types::{
     BinaryData, JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsError, JsFunction, JsNull, JsNumber,

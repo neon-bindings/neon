@@ -1,5 +1,6 @@
 use crate::napi::bindings as napi;
 use crate::raw::{Env, Local};
+use std::mem::MaybeUninit;
 
 /// Mutates the `out` argument provided to refer to the global `undefined` object.
 pub unsafe fn undefined(out: &mut Local, env: Env) {
@@ -44,8 +45,13 @@ pub unsafe fn number_value(env: Env, p: Local) -> f64 {
     value
 }
 
-/// Mutates the `out` argument provided to refer to a newly created `Local` containing a
-/// JavaScript symbol.
-pub unsafe fn symbol(out: &mut Local, env: Env, desc: Local) {
-    napi::create_symbol(env, desc, out as *mut Local);
+/// Returns a newly created `Local` containing a JavaScript symbol.
+/// Panics if `desc` is not a `Local` representing a `ValueType::String` or a null pointer.
+pub unsafe fn symbol(env: Env, desc: Local) -> Local {
+    let mut local = MaybeUninit::uninit();
+    assert_eq!(
+        napi::create_symbol(env, desc, local.as_mut_ptr()),
+        napi::Status::Ok
+    );
+    local.assume_init()
 }

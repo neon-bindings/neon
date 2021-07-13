@@ -164,7 +164,7 @@ use crate::types::boxed::{Finalize, JsBox};
 #[cfg(feature = "napi-5")]
 use crate::types::date::{DateError, JsDate};
 use crate::types::error::JsError;
-#[cfg(all(feature = "napi-1", feature = "symbol-primitive-api"))]
+#[cfg(all(feature = "napi-1", feature = "symbol-api"))]
 use crate::types::symbol::JsSymbol;
 use crate::types::{
     JsArray, JsBoolean, JsFunction, JsNull, JsNumber, JsObject, JsString, JsUndefined, JsValue,
@@ -443,7 +443,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Convenience method for creating a `JsSymbol` value.
     ///
     /// If the string exceeds the limits of the JS engine, this method panics.
-    #[cfg(all(feature = "napi-1", feature = "symbol-primitive-api"))]
+    #[cfg(all(feature = "napi-1", feature = "symbol-api"))]
     fn symbol<S: AsRef<str>>(&mut self, description: S) -> Handle<'a, JsSymbol> {
         let desc = self.string(description);
         JsSymbol::with_description(self, desc)
