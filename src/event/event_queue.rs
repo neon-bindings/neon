@@ -113,6 +113,8 @@ impl Channel {
 
     /// Schedules a closure to execute on the JavaScript thread that created this Channel
     /// Returns an `Error` if the task could not be scheduled.
+    ///
+    /// See [`SendError`] for additional details on failure causes.
     pub fn try_send<F>(&self, f: F) -> Result<(), SendError>
     where
         F: FnOnce(TaskContext) -> NeonResult<()> + Send + 'static,
@@ -201,6 +203,13 @@ impl Drop for Channel {
 }
 
 /// Error indicating that a closure was unable to be scheduled to execute on the event loop.
+///
+/// The most likely cause of a failure is that Node is shutting down. This may occur if the
+/// process is forcefully exiting even if the channel is referenced. For example, by calling
+/// `process.exit()`.
+//
+// NOTE: These docs will need to be updated to include `QueueFull` if bounded queues are
+// implemented.
 pub struct SendError;
 
 impl std::fmt::Display for SendError {
