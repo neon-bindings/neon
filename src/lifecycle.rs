@@ -16,7 +16,7 @@ use neon_runtime::reference;
 use neon_runtime::tsfn::ThreadsafeFunction;
 
 use crate::context::Context;
-#[cfg(all(feature = "event-queue-api"))]
+#[cfg(all(feature = "channel-api"))]
 use crate::event::Channel;
 use crate::handle::root::NapiRef;
 
@@ -34,7 +34,7 @@ pub(crate) struct InstanceData {
     drop_queue: Arc<ThreadsafeFunction<NapiRef>>,
 
     /// Shared `Channel` that is cloned to be returned by the `cx.channel()` method
-    #[cfg(all(feature = "event-queue-api"))]
+    #[cfg(all(feature = "channel-api"))]
     shared_channel: Channel,
 }
 
@@ -68,7 +68,7 @@ impl InstanceData {
             queue
         };
 
-        #[cfg(all(feature = "event-queue-api"))]
+        #[cfg(all(feature = "channel-api"))]
         let shared_channel = {
             let mut channel = Channel::new(cx);
             channel.unref(cx);
@@ -77,7 +77,7 @@ impl InstanceData {
 
         let data = InstanceData {
             drop_queue: Arc::new(drop_queue),
-            #[cfg(all(feature = "event-queue-api"))]
+            #[cfg(all(feature = "channel-api"))]
             shared_channel,
         };
 
@@ -91,7 +91,7 @@ impl InstanceData {
 
     /// Clones the shared channel and references it since new channels should start
     /// referenced, but the shared channel is unreferenced.
-    #[cfg(all(feature = "event-queue-api"))]
+    #[cfg(all(feature = "channel-api"))]
     pub(crate) fn channel<'a, C: Context<'a>>(cx: &mut C) -> Channel {
         let mut channel = InstanceData::get(cx).shared_channel.clone();
         channel.reference(cx);

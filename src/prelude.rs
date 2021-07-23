@@ -9,10 +9,10 @@ pub use crate::context::{
 pub use crate::declare_types;
 #[cfg(all(not(feature = "napi-1"), feature = "event-handler-api"))]
 pub use crate::event::EventHandler;
-#[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
-#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-4", feature = "event-queue-api"))))]
+#[cfg(all(feature = "napi-4", feature = "channel-api"))]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-4", feature = "channel-api"))))]
 pub use crate::event::{Channel, SendError};
-#[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
+#[cfg(all(feature = "napi-4", feature = "channel-api"))]
 #[allow(deprecated)]
 pub use crate::event::{EventQueue, EventQueueError};
 pub use crate::handle::Handle;

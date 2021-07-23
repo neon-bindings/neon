@@ -123,19 +123,19 @@
 //! [psd-crate]: https://crates.io/crates/psd
 //! [psd-file]: https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/
 
-#[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
+#[cfg(all(feature = "napi-4", feature = "channel-api"))]
 mod event_queue;
 
-#[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
-#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-4", feature = "event-queue-api"))))]
+#[cfg(all(feature = "napi-4", feature = "channel-api"))]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-4", feature = "channel-api"))))]
 pub use self::event_queue::{Channel, SendError};
 
-#[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
+#[cfg(all(feature = "napi-4", feature = "channel-api"))]
 #[deprecated(since = "0.9.0", note = "Please use the Channel type instead")]
 #[doc(hidden)]
 pub type EventQueue = self::event_queue::Channel;
 
-#[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
+#[cfg(all(feature = "napi-4", feature = "channel-api"))]
 #[deprecated(since = "0.9.0", note = "Please use the SendError type instead")]
 #[doc(hidden)]
 pub type EventQueueError = self::event_queue::SendError;

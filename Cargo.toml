@@ -70,7 +70,10 @@ try-catch-api = []
 
 # Feature flag to enable the `EventQueue` API of RFC 33.
 # https://github.com/neon-bindings/rfcs/pull/32
-event-queue-api = []
+channel-api = []
+
+# Deprecated name for `channel-api`
+event-queue-api = ["channel-api"]
 
 # Feature flag to include procedural macros
 proc-macros = ["neon-macros"]
