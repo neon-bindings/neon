@@ -198,6 +198,8 @@ mod napi1 {
             ) -> Status;
 
             fn run_script(env: Env, script: Value, result: *mut Value) -> Status;
+
+            fn create_symbol(env: Env, description: Value, result: *mut Value) -> Status;
         }
     );
 }

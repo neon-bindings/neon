@@ -67,7 +67,8 @@
 //!     of custom objects that own Rust data structures.
 //! - **Primitive types:** These are the built-in JavaScript datatypes that are not
 //!   object types: [`JsNumber`](JsNumber), [`JsBoolean`](JsBoolean),
-//!   [`JsString`](JsString), [`JsNull`](JsNull), and [`JsUndefined`](JsUndefined).
+//!   [`JsString`](JsString), [`JsNull`](JsNull), [`JsSymbol`](JsSymbol),
+//!    and [`JsUndefined`](JsUndefined).
 //!
 //! [types]: https://raw.githubusercontent.com/neon-bindings/neon/main/doc/types.jpg
 //! [unknown]: https://mariusschulz.com/blog/the-unknown-type-in-typescript#the-unknown-type
@@ -80,6 +81,8 @@ pub(crate) mod date;
 pub(crate) mod error;
 
 pub(crate) mod internal;
+#[cfg(all(feature = "napi-1", feature = "symbol-api"))]
+pub(crate) mod symbol;
 pub(crate) mod utf8;
 
 use self::internal::{FunctionCallback, ValueInternal};
@@ -105,6 +108,8 @@ pub use self::boxed::JsBox;
 #[cfg(feature = "napi-5")]
 pub use self::date::{DateError, DateErrorKind, JsDate};
 pub use self::error::JsError;
+#[cfg(all(feature = "napi-1", feature = "symbol-api"))]
+pub use self::symbol::JsSymbol;
 
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(
     env: Env,

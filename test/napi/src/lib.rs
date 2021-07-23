@@ -10,6 +10,7 @@ mod js {
     pub mod numbers;
     pub mod objects;
     pub mod strings;
+    pub mod symbols;
     pub mod threads;
     pub mod types;
 }
@@ -23,6 +24,7 @@ use js::functions::*;
 use js::numbers::*;
 use js::objects::*;
 use js::strings::*;
+use js::symbols::*;
 use js::threads::*;
 use js::types::*;
 
@@ -165,6 +167,10 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("return_js_object_with_number", return_js_object_with_number)?;
     cx.export_function("return_js_object_with_string", return_js_object_with_string)?;
     cx.export_function(
+        "return_js_object_with_symbol_property_key",
+        return_js_object_with_symbol_property_key,
+    )?;
+    cx.export_function(
         "return_js_object_with_mixed_content",
         return_js_object_with_mixed_content,
     )?;
@@ -218,6 +224,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("is_number", is_number)?;
     cx.export_function("is_object", is_object)?;
     cx.export_function("is_string", is_string)?;
+    cx.export_function("is_symbol", is_symbol)?;
     cx.export_function("is_undefined", is_undefined)?;
     cx.export_function("strict_equals", strict_equals)?;
 
@@ -257,6 +264,18 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("greeter_greet", greeter_greet)?;
     cx.export_function("leak_channel", leak_channel)?;
     cx.export_function("drop_global_queue", drop_global_queue)?;
+
+    cx.export_function(
+        "return_js_symbol_from_context_helper",
+        return_js_symbol_from_context_helper,
+    )?;
+    cx.export_function(
+        "return_js_symbol_with_description",
+        return_js_symbol_with_description,
+    )?;
+    cx.export_function("return_js_symbol", return_js_symbol)?;
+    cx.export_function("read_js_symbol_description", read_js_symbol_description)?;
+    cx.export_function("accept_and_return_js_symbol", accept_and_return_js_symbol)?;
 
     Ok(())
 }

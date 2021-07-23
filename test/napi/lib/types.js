@@ -70,6 +70,15 @@ describe('type checks', function() {
     assert(!addon.is_string(new String('1')));
   });
 
+  it('is_symbol', function () {
+    assert(addon.is_symbol(Symbol()));
+    assert(addon.is_symbol(Symbol("unique symbol")));
+    assert(addon.is_symbol(Symbol.for('neon:description')));
+    assert(addon.is_symbol(Symbol.iterator));
+    assert(!addon.is_symbol(undefined));
+    assert(!addon.is_symbol("anything other than symbol"));
+  });
+
   it('is_undefined', function () {
     assert(addon.is_undefined(undefined));
     assert(!addon.is_undefined(null));
@@ -84,5 +93,9 @@ describe('type checks', function() {
     assert(addon.strict_equals(o1, o1));
     assert(!addon.strict_equals(o1, o2));
     assert(!addon.strict_equals(o1, 17));
+    let s1 = Symbol();
+    let s2 = Symbol();
+    assert(addon.strict_equals(s1, s1));
+    assert(!addon.strict_equals(s1, s2));
   });
 });
