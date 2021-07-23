@@ -41,7 +41,7 @@ As a rule, you should choose the **oldest version of N-API that has the APIs you
 
 ```toml
 [dependencies.neon]
-version = "0.8.3"
+version = "0.9.0"
 default-features = false
 features = ["napi-4"]
 ```
@@ -189,13 +189,13 @@ class User {
 
 ### Concurrency
 
-The supported mechanism for concurrency is the Event Queue API (`neon::event::EventQueue`). This feature has not yet stabilized, so to use this API, you'll also need to enable the `"event-queue-api"` feature flag as well:
+The supported mechanism for concurrency is the Channel API (`neon::event::Channel`). This feature has not yet stabilized, so to use this API, you'll also need to enable the `"channel-api"` feature flag as well:
 
 ```toml
 [dependencies.neon]
-version = "0.8.1"
+version = "0.9.0"
 default-features = false
-features = ["napi-4", "event-queue-api"]
+features = ["napi-6", "channel-api"]
 ```
 
 #### Deprecated: Task API
