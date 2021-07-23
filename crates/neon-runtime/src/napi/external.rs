@@ -24,7 +24,7 @@ extern "C" fn finalize_external<T: Send + 'static>(
 /// Safety: `deref` must only be called with `napi_external` created by that
 /// module. Calling `deref` with an external created by another native module,
 /// even another neon module, is undefined behavior.
-/// https://github.com/neon-bindings/neon/issues/591
+/// <https://github.com/neon-bindings/neon/issues/591>
 pub unsafe fn deref<T: Send + 'static>(env: Env, local: Local) -> Option<*const T> {
     let mut result = MaybeUninit::uninit();
     let status = napi::typeof_value(env, local, result.as_mut_ptr());

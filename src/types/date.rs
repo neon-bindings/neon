@@ -69,9 +69,9 @@ impl<'a, T: Value> JsResultExt<'a, T> for Result<Handle<'a, T>, DateError> {
 }
 
 impl JsDate {
-    /// The smallest possible Date value, defined by ECMAScript. See https://www.ecma-international.org/ecma-262/5.1/#sec-15.7.3.3
+    /// The smallest possible Date value, defined by ECMAScript. See <https://www.ecma-international.org/ecma-262/5.1/#sec-15.7.3.3>
     pub const MIN_VALUE: f64 = -8.64e15;
-    /// The largest possible Date value, defined by ECMAScript. See https://www.ecma-international.org/ecma-262/5.1/#sec-15.7.3.2
+    /// The largest possible Date value, defined by ECMAScript. See <https://www.ecma-international.org/ecma-262/5.1/#sec-15.7.3.2>
     pub const MAX_VALUE: f64 = 8.64e15;
 
     /// Creates a new Date. It errors when `value` is outside the range of valid JavaScript Date values. When `value`

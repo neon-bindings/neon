@@ -76,7 +76,12 @@ event-queue-api = []
 proc-macros = ["neon-macros"]
 
 [package.metadata.docs.rs]
-features = ["docs-only", "event-handler-api", "proc-macros", "try-catch-api"]
+features = [
+    "event-queue-api",
+    "napi-experimental",
+    "proc-macros",
+    "try-catch-api",
+]
 
 [workspace]
 members = [
