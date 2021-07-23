@@ -246,6 +246,7 @@ mod traits {
         }
 
         #[cfg(feature = "napi-6")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "napi-6")))]
         fn get_own_property_names<'a, C: Context<'a>>(self, cx: &mut C) -> JsResult<'a, JsArray> {
             let env = cx.env();
 

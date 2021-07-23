@@ -103,6 +103,7 @@ pub use self::binary::{BinaryData, BinaryViewType, JsArrayBuffer, JsBuffer};
 #[cfg(feature = "napi-1")]
 pub use self::boxed::JsBox;
 #[cfg(feature = "napi-5")]
+#[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
 pub use self::date::{DateError, DateErrorKind, JsDate};
 pub use self::error::JsError;
 

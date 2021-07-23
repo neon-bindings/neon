@@ -409,6 +409,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     #[cfg(feature = "try-catch-api")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "try-catch-api")))]
     fn try_catch<T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
     where
         F: FnOnce(&mut Self) -> NeonResult<T>,
@@ -552,6 +553,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
+    #[cfg_attr(docsrs, doc(cfg(all(feature = "napi-4", feature = "event-queue-api"))))]
     /// Returns an unbounded channel for scheduling events to be executed on the JavaScript thread.
     ///
     /// When using N-API >= 6,the channel returned by this method is backed by a shared queue.

@@ -85,6 +85,13 @@ pub mod context;
     feature = "event-handler-api",
     all(feature = "napi-4", feature = "event-queue-api")
 ))]
+#[cfg_attr(
+    docsrs,
+    doc(cfg(any(
+        feature = "event-handler-api",
+        all(feature = "napi-4", feature = "event-queue-api")
+    )))
+)]
 pub mod event;
 pub mod handle;
 pub mod meta;
@@ -101,6 +108,7 @@ pub mod types;
 pub mod macro_internal;
 
 #[cfg(feature = "proc-macros")]
+#[cfg_attr(docsrs, doc(cfg(feature = "proc-macros")))]
 pub use neon_macros::*;
 
 #[cfg(feature = "napi-6")]
