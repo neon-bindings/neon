@@ -78,6 +78,7 @@
 //! [neon]: https://www.neon-bindings.com/
 //! [addons]: https://nodejs.org/api/addons.html
 //! [supported]: https://github.com/neon-bindings/neon#platform-support
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub mod borrow;
 pub mod context;
@@ -85,13 +86,7 @@ pub mod context;
     feature = "event-handler-api",
     all(feature = "napi-4", feature = "channel-api")
 ))]
-#[cfg_attr(
-    docsrs,
-    doc(cfg(any(
-        feature = "event-handler-api",
-        all(feature = "napi-4", feature = "channel-api")
-    )))
-)]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-4", feature = "channel-api"))))]
 pub mod event;
 pub mod handle;
 pub mod meta;

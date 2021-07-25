@@ -479,6 +479,7 @@ pub trait Context<'a>: ContextInternal<'a> {
 
     /// Convenience method for creating a `JsDate` value.
     #[cfg(feature = "napi-5")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
     fn date(&mut self, value: impl Into<f64>) -> Result<Handle<'a, JsDate>, DateError> {
         JsDate::new(self, value)
     }

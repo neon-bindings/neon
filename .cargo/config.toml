@@ -4,4 +4,4 @@
 clippy-legacy = "clippy --all-targets --no-default-features -p neon -p neon-runtime -p neon-build -p neon-macros -p tests -p static_tests --features event-handler-api,proc-macros,try-catch-api,legacy-runtime -- -A clippy::missing_safety_doc"
 clippy-napi = "clippy --all-targets --no-default-features -p neon -p neon-runtime -p neon-build -p neon-macros -p electron-tests -p napi-tests --features proc-macros,try-catch-api,napi-experimental -- -A clippy::missing_safety_doc"
 neon-test = "test --no-default-features --features napi-experimental"
-neon-doc = "doc --no-default-features --features channel-api,napi-experimental,proc-macros,try-catch-api"
+neon-doc = "rustdoc --no-default-features --features=channel-api,napi-experimental,proc-macros,try-catch-api -- --cfg docsrs"

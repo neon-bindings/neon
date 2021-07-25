@@ -13,6 +13,7 @@ use std::fmt::Debug;
 /// A JavaScript Date object
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
+#[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
 pub struct JsDate(raw::Local);
 
 impl Value for JsDate {}
@@ -29,6 +30,7 @@ impl Managed for JsDate {
 
 /// The Error struct for a Date
 #[derive(Debug)]
+#[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
 pub struct DateError(DateErrorKind);
 
 impl DateError {
@@ -47,6 +49,7 @@ impl Error for DateError {}
 
 /// The error kinds corresponding to `DateError`
 #[derive(Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
 pub enum DateErrorKind {
     Overflow,
     Underflow,

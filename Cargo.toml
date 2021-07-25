@@ -79,8 +79,10 @@ event-queue-api = ["channel-api"]
 proc-macros = ["neon-macros"]
 
 [package.metadata.docs.rs]
+no-default-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 features = [
-    "event-queue-api",
+    "channel-api",
     "napi-experimental",
     "proc-macros",
     "try-catch-api",

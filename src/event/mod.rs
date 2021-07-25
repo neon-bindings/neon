@@ -127,7 +127,6 @@
 mod event_queue;
 
 #[cfg(all(feature = "napi-4", feature = "channel-api"))]
-#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-4", feature = "channel-api"))))]
 pub use self::event_queue::{Channel, SendError};
 
 #[cfg(all(feature = "napi-4", feature = "channel-api"))]
