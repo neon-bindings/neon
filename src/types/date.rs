@@ -13,6 +13,7 @@ use std::fmt::Debug;
 /// A JavaScript Date object
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
+#[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
 pub struct JsDate(raw::Local);
 
 impl Value for JsDate {}
@@ -29,6 +30,7 @@ impl Managed for JsDate {
 
 /// The Error struct for a Date
 #[derive(Debug)]
+#[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
 pub struct DateError(DateErrorKind);
 
 impl DateError {
@@ -47,6 +49,7 @@ impl Error for DateError {}
 
 /// The error kinds corresponding to `DateError`
 #[derive(Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
 pub enum DateErrorKind {
     Overflow,
     Underflow,
@@ -69,9 +72,9 @@ impl<'a, T: Value> JsResultExt<'a, T> for Result<Handle<'a, T>, DateError> {
 }
 
 impl JsDate {
-    /// The smallest possible Date value, defined by ECMAScript. See https://www.ecma-international.org/ecma-262/5.1/#sec-15.7.3.3
+    /// The smallest possible Date value, defined by ECMAScript. See <https://www.ecma-international.org/ecma-262/5.1/#sec-15.7.3.3>
     pub const MIN_VALUE: f64 = -8.64e15;
-    /// The largest possible Date value, defined by ECMAScript. See https://www.ecma-international.org/ecma-262/5.1/#sec-15.7.3.2
+    /// The largest possible Date value, defined by ECMAScript. See <https://www.ecma-international.org/ecma-262/5.1/#sec-15.7.3.2>
     pub const MAX_VALUE: f64 = 8.64e15;
 
     /// Creates a new Date. It errors when `value` is outside the range of valid JavaScript Date values. When `value`

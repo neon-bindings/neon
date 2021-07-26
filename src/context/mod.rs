@@ -151,10 +151,10 @@ pub(crate) mod internal;
 use crate::borrow::internal::Ledger;
 use crate::borrow::{Borrow, BorrowMut, Ref, RefMut};
 use crate::context::internal::Env;
-#[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
+#[cfg(all(feature = "napi-4", feature = "channel-api"))]
 use crate::event::Channel;
 use crate::handle::{Handle, Managed};
-#[cfg(all(feature = "napi-6", feature = "event-queue-api"))]
+#[cfg(all(feature = "napi-6", feature = "channel-api"))]
 use crate::lifecycle::InstanceData;
 #[cfg(feature = "legacy-runtime")]
 use crate::object::class::Class;
@@ -409,6 +409,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     #[cfg(feature = "try-catch-api")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "try-catch-api")))]
     fn try_catch<T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
     where
         F: FnOnce(&mut Self) -> NeonResult<T>,
@@ -478,6 +479,7 @@ pub trait Context<'a>: ContextInternal<'a> {
 
     /// Convenience method for creating a `JsDate` value.
     #[cfg(feature = "napi-5")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
     fn date(&mut self, value: impl Into<f64>) -> Result<Handle<'a, JsDate>, DateError> {
         JsDate::new(self, value)
     }
@@ -551,7 +553,8 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsBox::new(self, v)
     }
 
-    #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
+    #[cfg(all(feature = "napi-4", feature = "channel-api"))]
+    #[cfg_attr(docsrs, doc(cfg(all(feature = "napi-4", feature = "channel-api"))))]
     /// Returns an unbounded channel for scheduling events to be executed on the JavaScript thread.
     ///
     /// When using N-API >= 6,the channel returned by this method is backed by a shared queue.
@@ -566,7 +569,7 @@ pub trait Context<'a>: ContextInternal<'a> {
         channel
     }
 
-    #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
+    #[cfg(all(feature = "napi-4", feature = "channel-api"))]
     #[deprecated(since = "0.9.0", note = "Please use the channel() method instead")]
     #[doc(hidden)]
     fn queue(&mut self) -> Channel {
@@ -815,7 +818,7 @@ impl<'a> TaskContext<'a> {
         Scope::with(env, |scope| f(TaskContext { scope }))
     }
 
-    #[cfg(all(feature = "napi-4", feature = "event-queue-api"))]
+    #[cfg(all(feature = "napi-4", feature = "channel-api"))]
     pub(crate) fn with_context<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: Env, f: F) -> T {
         Scope::with(env, |scope| f(TaskContext { scope }))
     }

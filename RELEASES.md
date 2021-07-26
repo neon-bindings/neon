@@ -1,3 +1,24 @@
+# Version 0.9.0
+
+## Performance
+
+`Channel`, formerly `EventQueue`, are now cloneable. Clones share a backing queue to take advantage of an [optimization](https://github.com/nodejs/node/pull/38506) in Node threadsafe functions. Additionally, when specifying Node API 6 or higher (`napi-6`), calling `cx.channel()` will return a shared queue (https://github.com/neon-bindings/neon/pull/739).
+
+The change may cause a performance regression in some pathological use cases (https://github.com/neon-bindings/neon/issues/762).
+
+## Deprecation
+
+`EventQueue` and `EventQueueError` have been renamed to `Channel` and `ChannelError` respectively to clarify their function and similarity to Rust channels. The types are available as deprecated aliases (https://github.com/neon-bindings/neon/pull/752).
+
+## Docs
+
+* Document error causes for `Channel::try_send` docs (https://github.com/neon-bindings/neon/pull/767)
+* Document `neon::object` (https://github.com/neon-bindings/neon/pull/740)
+
+## Fixes
+
+* Fix usage of a removed API in legacy buffers (https://github.com/neon-bindings/neon/pull/769)
+
 # Version 0.8.3
 
 * Fix crash caused by non-thread safety in napi_threadsafefunction on early termination (https://github.com/neon-bindings/neon/pull/744)
