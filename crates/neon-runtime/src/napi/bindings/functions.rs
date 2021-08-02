@@ -151,6 +151,13 @@ mod napi1 {
 
             fn get_property(env: Env, object: Value, key: Value, result: *mut Value) -> Status;
 
+            fn get_named_property(
+                env: Env,
+                object: Value,
+                utf8name: *const c_char,
+                result: *mut Value,
+            ) -> Status;
+
             fn set_element(env: Env, object: Value, index: u32, value: Value) -> Status;
 
             fn get_element(env: Env, object: Value, index: u32, result: *mut Value) -> Status;

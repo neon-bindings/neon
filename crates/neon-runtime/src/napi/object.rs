@@ -1,7 +1,7 @@
-use std::mem::MaybeUninit;
-
 use crate::napi::bindings as napi;
 use crate::raw::{Env, Local};
+use std::mem::MaybeUninit;
+use std::os::raw::c_char;
 
 /// Mutates the `out` argument to refer to a `napi_value` containing a newly created JavaScript Object.
 pub unsafe fn new(out: &mut Local, env: Env) {
@@ -130,4 +130,17 @@ pub unsafe fn set(out: &mut bool, env: Env, object: Local, key: Local, val: Loca
     *out = status == napi::Status::Ok;
 
     *out
+}
+
+/// Returns an `Option<Local>` representing the value of the property of `object` named by
+/// the `key` value, where `key` is a pointer to a null-terminated byte string. Returns `None` if
+/// the value couldn't be retrieved.
+pub unsafe fn get_named(env: Env, object: Local, key: *const u8) -> Option<Local> {
+    let mut local = MaybeUninit::uninit();
+    if napi::get_named_property(env, object, key as *const _, local.as_mut_ptr())
+        != napi::Status::Ok
+    {
+        return None;
+    }
+    Some(local.assume_init())
 }

@@ -1,7 +1,6 @@
 use crate::context::Context;
 use crate::handle::{Handle, Managed};
 use crate::types::internal::ValueInternal;
-use crate::types::utf8::Utf8;
 use crate::types::{Env, JsString, Value};
 
 use neon_runtime::raw;
@@ -30,20 +29,17 @@ impl JsSymbol {
     /// Get the optional symbol description, where `None` represents an undefined description.
     pub fn description<'a, C: Context<'a>>(self, cx: &mut C) -> Option<Handle<'a, JsString>> {
         let env = cx.env().to_raw();
-        let (desc_ptr, desc_len) = Utf8::from("description").into_small_unwrap().lower();
-
+        const DESCRIPTION_KEY: &[u8] = b"description\0";
         unsafe {
-            let mut local = std::mem::zeroed();
-            if !neon_runtime::object::get_string(env, &mut local, self.to_raw(), desc_ptr, desc_len)
-            {
-                return None;
-            }
-
-            if neon_runtime::tag::is_string(env, local) {
-                Some(Handle::new_internal(JsString(local)))
-            } else {
-                None
-            }
+            neon_runtime::object::get_named(env, self.to_raw(), DESCRIPTION_KEY.as_ptr()).and_then(
+                |local| {
+                    if neon_runtime::tag::is_string(env, local) {
+                        Some(Handle::new_internal(JsString(local)))
+                    } else {
+                        None
+                    }
+                },
+            )
         }
     }
 
