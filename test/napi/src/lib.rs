@@ -169,6 +169,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         return_js_object_with_mixed_content,
     )?;
 
+    /*
     cx.export_function("return_array_buffer", return_array_buffer)?;
     cx.export_function("read_array_buffer_with_lock", read_array_buffer_with_lock)?;
     cx.export_function(
@@ -198,6 +199,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         "increment_buffer_with_borrow_mut",
         increment_buffer_with_borrow_mut,
     )?;
+    */
 
     cx.export_function("create_date", create_date)?;
     cx.export_function("get_date_value", get_date_value)?;
@@ -210,9 +212,9 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("create_and_get_invalid_date", create_and_get_invalid_date)?;
 
     cx.export_function("is_array", is_array)?;
-    cx.export_function("is_array_buffer", is_array_buffer)?;
+    // cx.export_function("is_array_buffer", is_array_buffer)?;
     cx.export_function("is_boolean", is_boolean)?;
-    cx.export_function("is_buffer", is_buffer)?;
+    // cx.export_function("is_buffer", is_buffer)?;
     cx.export_function("is_error", is_error)?;
     cx.export_function("is_null", is_null)?;
     cx.export_function("is_number", is_number)?;

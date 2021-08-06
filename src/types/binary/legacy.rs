@@ -4,8 +4,6 @@ use crate::borrow::internal::Pointer;
 use crate::borrow::{Borrow, BorrowMut, LoanError, Ref, RefMut};
 use crate::context::internal::Env;
 use crate::context::{Context, Lock};
-#[cfg(feature = "napi-1")]
-use crate::handle::Handle;
 use crate::handle::Managed;
 use crate::result::JsResult;
 use crate::types::internal::ValueInternal;
@@ -40,19 +38,6 @@ impl JsBuffer {
         build(env, |out| {
             neon_runtime::buffer::uninitialized(env.to_raw(), out, size)
         })
-    }
-
-    #[cfg(feature = "napi-1")]
-    /// Construct a new `Buffer` from bytes allocated by Rust
-    pub fn external<'a, C, T>(cx: &mut C, data: T) -> Handle<'a, JsBuffer>
-    where
-        C: Context<'a>,
-        T: AsMut<[u8]> + Send,
-    {
-        let env = cx.env().to_raw();
-        let value = unsafe { neon_runtime::buffer::new_external(env, data) };
-
-        Handle::new_internal(JsBuffer(value))
     }
 }
 
@@ -91,19 +76,6 @@ impl JsArrayBuffer {
         build(cx.env(), |out| unsafe {
             neon_runtime::arraybuffer::new(out, mem::transmute(cx.env()), size)
         })
-    }
-
-    #[cfg(feature = "napi-1")]
-    /// Construct a new `ArrayBuffer` from bytes allocated by Rust
-    pub fn external<'a, C, T>(cx: &mut C, data: T) -> Handle<'a, JsArrayBuffer>
-    where
-        C: Context<'a>,
-        T: AsMut<[u8]> + Send,
-    {
-        let env = cx.env().to_raw();
-        let value = unsafe { neon_runtime::arraybuffer::new_external(env, data) };
-
-        Handle::new_internal(JsArrayBuffer(value))
     }
 }
 

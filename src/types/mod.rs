@@ -99,6 +99,7 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::os::raw::c_void;
 
+#[cfg(feature = "legacy-runtime")]
 pub use self::binary::{BinaryData, BinaryViewType, JsArrayBuffer, JsBuffer};
 #[cfg(feature = "napi-1")]
 pub use self::boxed::{Finalize, JsBox};

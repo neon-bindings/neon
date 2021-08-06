@@ -148,7 +148,9 @@
 
 pub(crate) mod internal;
 
+#[cfg(feature = "legacy-runtime")]
 use crate::borrow::internal::Ledger;
+#[cfg(feature = "legacy-runtime")]
 use crate::borrow::{Borrow, BorrowMut, Ref, RefMut};
 use crate::context::internal::Env;
 #[cfg(all(feature = "napi-4", feature = "channel-api"))]
@@ -160,6 +162,7 @@ use crate::lifecycle::InstanceData;
 use crate::object::class::Class;
 use crate::object::{Object, This};
 use crate::result::{JsResult, NeonResult, Throw};
+#[cfg(feature = "legacy-runtime")]
 use crate::types::binary::{JsArrayBuffer, JsBuffer};
 #[cfg(feature = "napi-1")]
 use crate::types::boxed::{Finalize, JsBox};
@@ -175,6 +178,7 @@ use neon_runtime::raw;
 #[cfg(feature = "napi-1")]
 use smallvec::SmallVec;
 use std;
+#[cfg(feature = "legacy-runtime")]
 use std::cell::RefCell;
 use std::convert::Into;
 use std::marker::PhantomData;
@@ -267,6 +271,7 @@ pub enum CallKind {
     Call,
 }
 
+#[cfg(feature = "legacy-runtime")]
 /// A temporary lock of an execution context.
 ///
 /// While a lock is alive, no JavaScript code can be executed in the execution context.
@@ -278,6 +283,7 @@ pub struct Lock<'a> {
     phantom: PhantomData<&'a ()>,
 }
 
+#[cfg(feature = "legacy-runtime")]
 impl<'a> Lock<'a> {
     fn new(env: Env) -> Self {
         Lock {
@@ -294,6 +300,7 @@ impl<'a> Lock<'a> {
 ///
 /// A context has a lifetime `'a`, which ensures the safety of handles managed by the JS garbage collector. All handles created during the lifetime of a context are kept alive for that duration and cannot outlive the context.
 pub trait Context<'a>: ContextInternal<'a> {
+    #[cfg(feature = "legacy-runtime")]
     /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
     ///
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
@@ -302,6 +309,7 @@ pub trait Context<'a>: ContextInternal<'a> {
         Lock::new(self.env())
     }
 
+    #[cfg(feature = "legacy-runtime")]
     /// Convenience method for locking the JavaScript engine and borrowing a single JS value's internals.
     ///
     /// # Example:
@@ -332,6 +340,7 @@ pub trait Context<'a>: ContextInternal<'a> {
         f(contents)
     }
 
+    #[cfg(feature = "legacy-runtime")]
     /// Convenience method for locking the JavaScript engine and mutably borrowing a single JS value's internals.
     ///
     /// # Example:
@@ -467,11 +476,13 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsArray::new(self, 0)
     }
 
+    #[cfg(feature = "legacy-runtime")]
     /// Convenience method for creating an empty `JsArrayBuffer` value.
     fn array_buffer(&mut self, size: u32) -> JsResult<'a, JsArrayBuffer> {
         JsArrayBuffer::new(self, size)
     }
 
+    #[cfg(feature = "legacy-runtime")]
     /// Convenience method for creating an empty `JsBuffer` value.
     fn buffer(&mut self, size: u32) -> JsResult<'a, JsBuffer> {
         JsBuffer::new(self, size)

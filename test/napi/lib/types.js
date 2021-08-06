@@ -10,7 +10,7 @@ describe('type checks', function() {
     assert(!addon.is_array({ 0: 'a', 1: 'b', length: 2 }));
   });
 
-  it('is_array_buffer', function () {
+  it.skip('is_array_buffer', function () {
     assert(addon.is_array_buffer(new ArrayBuffer(0)));
     assert(!addon.is_array_buffer(new DataView(new ArrayBuffer(0))));
     assert(!addon.is_array_buffer(new Uint8Array(1024)));
@@ -26,7 +26,7 @@ describe('type checks', function() {
     assert(!addon.is_boolean(new Boolean(false)));
   });
 
-  it('is_buffer', function () {
+  it.skip('is_buffer', function () {
     assert(addon.is_buffer(Buffer.alloc(64)));
     assert(addon.is_buffer(new Uint8Array(64)));
     assert(!addon.is_buffer(new ArrayBuffer(64)));

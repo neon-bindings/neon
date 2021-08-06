@@ -31,6 +31,7 @@ pub fn return_js_object_with_string(mut cx: FunctionContext) -> JsResult<JsObjec
     Ok(js_object)
 }
 
+/*
 pub fn return_array_buffer(mut cx: FunctionContext) -> JsResult<JsArrayBuffer> {
     let b: Handle<JsArrayBuffer> = cx.array_buffer(16)?;
     Ok(b)
@@ -171,3 +172,4 @@ pub fn increment_buffer_with_borrow_mut(mut cx: FunctionContext) -> JsResult<JsU
     });
     Ok(cx.undefined())
 }
+*/

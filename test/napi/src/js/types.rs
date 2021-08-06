@@ -12,11 +12,13 @@ pub fn is_array(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     Ok(cx.boolean(result))
 }
 
+/*
 pub fn is_array_buffer(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     let val: Handle<JsValue> = cx.argument(0)?;
     let result = val.is_a::<JsArrayBuffer, _>(&mut cx);
     Ok(cx.boolean(result))
 }
+*/
 
 pub fn is_boolean(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     let val: Handle<JsValue> = cx.argument(0)?;
@@ -24,11 +26,13 @@ pub fn is_boolean(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     Ok(cx.boolean(result))
 }
 
+/*
 pub fn is_buffer(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     let val: Handle<JsValue> = cx.argument(0)?;
     let result = val.is_a::<JsBuffer, _>(&mut cx);
     Ok(cx.boolean(result))
 }
+*/
 
 pub fn is_error(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     let val: Handle<JsValue> = cx.argument(0)?;
