@@ -51,6 +51,20 @@ Installs the project, including running `npm run build`.
 
 Builds the Node addon (`index.node`) from source.
 
+Additional [`cargo build`](https://doc.rust-lang.org/cargo/commands/cargo-build.html) arguments may be passed to `npm build` and `npm build-*` commands. For example, to enable a [cargo feature](https://doc.rust-lang.org/cargo/reference/features.html):
+
+```
+npm run build -- --feature=beetle
+```
+
+#### `npm build-debug`
+
+Alias for `npm build`.
+
+#### `npm build-release`
+
+Same as [`npm build`](#npm-build) but, builds the module with the [`release`](https://doc.rust-lang.org/cargo/reference/profiles.html#release) profile. Release builds will compile slower, but run faster.
+
 ### `npm test`
 
 Runs the unit tests by calling `cargo test`. You can learn more about [adding tests to your Rust code](https://doc.rust-lang.org/book/ch11-01-writing-tests.html) from the [Rust book](https://doc.rust-lang.org/book/).

@@ -39,7 +39,9 @@ export default class Package {
       main: "index.node",
       scripts: {
         "build": "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
-        "install": "npm run build",
+        "build-debug": "npm run build --",
+        "build-release": "npm run build -- --release",
+        "install": "npm run build-release",
         "test": "cargo test"
       },
       devDependencies: {
