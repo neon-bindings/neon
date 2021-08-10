@@ -57,7 +57,7 @@ pub trait Borrow: private::Sealed {
     fn try_borrow_mut<'a: 'b, 'b, C>(
         &mut self,
         lock: &'b Lock<'b, C>,
-    ) -> Result<RefMut<'b, Self::Item>, BorrowMutError>
+    ) -> Result<RefMut<'b, Self::Item>, BorrowError>
     where
         C: Context<'a>;
 }
@@ -119,20 +119,11 @@ impl<'a, T> Drop for RefMut<'a, T> {
 }
 
 #[derive(Eq, PartialEq)]
-/// An error returned by `Borrow::try_borrow` indicating that the borrow would overlap
-/// with an active mutable borrow.
+/// An error returned by [`Borrow::try_borrow`] or [`Borrow::try_borrow_mut`] indicating
+/// that a mutable borrow would overlap with another borrow.
 ///
 /// [`BorrowError`] may be converted to an exception with [`ResultExt::or_throw`].
 pub struct BorrowError {
-    _private: (),
-}
-
-#[derive(Eq, PartialEq)]
-/// An error returned by `Borrow::try_borrow_mut` indicating that the borrow would overlap
-/// with an active borrow.
-///
-/// [`BorrowError`] may be converted to an exception with [`ResultExt::or_throw`].
-pub struct BorrowMutError {
     _private: (),
 }
 
@@ -142,25 +133,11 @@ impl BorrowError {
     }
 }
 
-impl BorrowMutError {
-    fn new() -> Self {
-        BorrowMutError { _private: () }
-    }
-}
-
 impl Error for BorrowError {}
-
-impl Error for BorrowMutError {}
 
 impl Display for BorrowError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Display::fmt("Overlaps with an active mutable borrow", f)
-    }
-}
-
-impl Display for BorrowMutError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Display::fmt("Overlaps with an active borrow", f)
+        Display::fmt("Borrow overlaps with an active mutable borrow", f)
     }
 }
 
@@ -170,21 +147,9 @@ impl Debug for BorrowError {
     }
 }
 
-impl Debug for BorrowMutError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("BorrowMutError").finish()
-    }
-}
-
 impl<T> ResultExt<T> for Result<T, BorrowError> {
     fn or_throw<'a, C: Context<'a>>(self, cx: &mut C) -> NeonResult<T> {
         self.or_else(|_| cx.throw_error("BorrowError"))
-    }
-}
-
-impl<T> ResultExt<T> for Result<T, BorrowMutError> {
-    fn or_throw<'a, C: Context<'a>>(self, cx: &mut C) -> NeonResult<T> {
-        self.or_else(|_| cx.throw_error("BorrowMutError"))
     }
 }
 
@@ -225,7 +190,7 @@ where
     /// Dynamically checked mutable borrow.
     ///
     /// See [`Borrow::try_borrow_mut`].
-    pub fn try_borrow_mut<T>(&self, buf: &mut T) -> Result<RefMut<T::Item>, BorrowMutError>
+    pub fn try_borrow_mut<T>(&self, buf: &mut T) -> Result<RefMut<T::Item>, BorrowError>
     where
         T: Borrow,
     {
@@ -271,7 +236,7 @@ impl Ledger {
     fn try_borrow_mut<'a, T>(
         ledger: &'a RefCell<Self>,
         data: &'a mut [T],
-    ) -> Result<RefMut<'a, T>, BorrowMutError> {
+    ) -> Result<RefMut<'a, T>, BorrowError> {
         ledger.borrow_mut().try_add_borrow_mut(data)?;
 
         Ok(RefMut { ledger, data })
@@ -295,20 +260,20 @@ impl Ledger {
     }
 
     // Try to add a mutable borrow to the ledger
-    fn try_add_borrow_mut<T>(&mut self, data: &mut [T]) -> Result<(), BorrowMutError> {
+    fn try_add_borrow_mut<T>(&mut self, data: &mut [T]) -> Result<(), BorrowError> {
         let range = Self::slice_to_range(data);
 
         // Check if the borrow overlaps with any active mutable borrow
         for borrow in self.owned.iter() {
             if borrow.start < range.end && range.start < borrow.end {
-                return Err(BorrowMutError::new());
+                return Err(BorrowError::new());
             }
         }
 
         // Check if the borrow overlaps with any active immutable borrow
         for borrow in self.shared.iter() {
             if borrow.start < range.end && range.start < borrow.end {
-                return Err(BorrowMutError::new());
+                return Err(BorrowError::new());
             }
         }
 
@@ -419,7 +384,7 @@ impl Borrow for JsBuffer {
     fn try_borrow_mut<'a: 'b, 'b, C>(
         &mut self,
         lock: &'b Lock<'b, C>,
-    ) -> Result<RefMut<'b, Self::Item>, BorrowMutError>
+    ) -> Result<RefMut<'b, Self::Item>, BorrowError>
     where
         C: Context<'a>,
     {
@@ -519,7 +484,7 @@ impl Borrow for JsArrayBuffer {
     fn try_borrow_mut<'a: 'b, 'b, C>(
         &mut self,
         lock: &'b Lock<'b, C>,
-    ) -> Result<RefMut<'b, Self::Item>, BorrowMutError>
+    ) -> Result<RefMut<'b, Self::Item>, BorrowError>
     where
         C: Context<'a>,
     {
@@ -605,7 +570,7 @@ impl<T: Copy> Borrow for JsTypedArray<T> {
     fn try_borrow_mut<'a: 'b, 'b, C>(
         &mut self,
         lock: &'b Lock<'b, C>,
-    ) -> Result<RefMut<'b, Self::Item>, BorrowMutError>
+    ) -> Result<RefMut<'b, Self::Item>, BorrowError>
     where
         C: Context<'a>,
     {
@@ -676,7 +641,7 @@ mod tests {
     use std::mem;
     use std::slice;
 
-    use super::{BorrowError, BorrowMutError, Ledger};
+    use super::{BorrowError, BorrowError, Ledger};
 
     // Super unsafe, but we only use it for testing `Ledger`
     fn unsafe_aliased_slice<T>(data: &mut [T]) -> &'static mut [T] {
@@ -718,7 +683,7 @@ mod tests {
         // Should fail because it overlaps
         assert_eq!(
             Ledger::try_borrow_mut(&ledger, b).unwrap_err(),
-            BorrowMutError::new(),
+            BorrowError::new(),
         );
 
         // Drop the first borrow

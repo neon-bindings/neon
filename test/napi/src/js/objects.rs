@@ -107,17 +107,17 @@ pub fn read_u8_typed_array(mut cx: FunctionContext) -> JsResult<JsNumber> {
 pub fn copy_typed_array(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let source = cx.argument::<JsTypedArray<u32>>(0)?;
     let mut dest = cx.argument::<JsTypedArray<u32>>(1)?;
-    let lock = cx.lock();
+    let mut run = || {
+        let lock = cx.lock();
+        let source = source.try_borrow(&lock)?;
+        let mut dest = dest.try_borrow_mut(&lock)?;
 
-    source
-        .try_borrow(&lock)
-        .map(|source| {
-            dest.try_borrow_mut(&lock).map(|mut dest| {
-                dest.copy_from_slice(&source);
-            })
-        })
-        .or_throw(&mut cx)?
-        .or_throw(&mut cx)?;
+        dest.copy_from_slice(&source);
+
+        Ok(())
+    };
+
+    run().or_throw(&mut cx)?;
 
     Ok(cx.undefined())
 }
