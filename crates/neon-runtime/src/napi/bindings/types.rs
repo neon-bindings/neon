@@ -114,6 +114,23 @@ pub(crate) enum ValueType {
 #[allow(dead_code)]
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum TypedArrayType {
+    I8 = 0,
+    U8 = 1,
+    U8Clamped = 2,
+    I16 = 3,
+    U16 = 4,
+    I32 = 5,
+    U32 = 6,
+    F32 = 7,
+    F64 = 8,
+    I64 = 9,
+    U64 = 10,
+}
+
+#[allow(dead_code)]
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum KeyCollectionMode {
     IncludePrototypes = 0,
     OwnOnly = 1,

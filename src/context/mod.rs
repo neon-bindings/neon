@@ -162,16 +162,16 @@ use crate::lifecycle::InstanceData;
 use crate::object::class::Class;
 use crate::object::{Object, This};
 use crate::result::{JsResult, NeonResult, Throw};
-#[cfg(feature = "legacy-runtime")]
-use crate::types::binary::{JsArrayBuffer, JsBuffer};
+#[cfg(feature = "napi-1")]
+use crate::types::binary::Lock;
 #[cfg(feature = "napi-1")]
 use crate::types::boxed::{Finalize, JsBox};
 #[cfg(feature = "napi-5")]
 use crate::types::date::{DateError, JsDate};
 use crate::types::error::JsError;
 use crate::types::{
-    JsArray, JsBoolean, JsFunction, JsNull, JsNumber, JsObject, JsString, JsUndefined, JsValue,
-    StringResult, Value,
+    JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber, JsObject, JsString,
+    JsUndefined, JsValue, StringResult, Value,
 };
 use neon_runtime;
 use neon_runtime::raw;
@@ -307,6 +307,17 @@ pub trait Context<'a>: ContextInternal<'a> {
     fn lock(&mut self) -> Lock<'_> {
         self.check_active();
         Lock::new(self.env())
+    }
+
+    #[cfg(feature = "napi-1")]
+    /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
+    ///
+    /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
+    fn lock<'b>(&'b mut self) -> Lock<Self>
+    where
+        'a: 'b,
+    {
+        Lock::new(self)
     }
 
     #[cfg(feature = "legacy-runtime")]
@@ -482,12 +493,23 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsArrayBuffer::new(self, size)
     }
 
+    #[cfg(feature = "napi-1")]
+    /// Convenience method for creating an empty `JsArrayBuffer` value.
+    fn array_buffer(&mut self, size: usize) -> JsResult<'a, JsArrayBuffer> {
+        JsArrayBuffer::new(self, size)
+    }
+
     #[cfg(feature = "legacy-runtime")]
     /// Convenience method for creating an empty `JsBuffer` value.
     fn buffer(&mut self, size: u32) -> JsResult<'a, JsBuffer> {
         JsBuffer::new(self, size)
     }
 
+    #[cfg(feature = "napi-1")]
+    /// Convenience method for creating an empty `JsBuffer` value.
+    fn buffer(&mut self, size: usize) -> JsResult<'a, JsBuffer> {
+        JsBuffer::new(self, size)
+    }
     /// Convenience method for creating a `JsDate` value.
     #[cfg(feature = "napi-5")]
     #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]

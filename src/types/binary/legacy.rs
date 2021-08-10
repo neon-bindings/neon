@@ -1,5 +1,3 @@
-//! Types and traits representing binary JavaScript data.
-
 use crate::borrow::internal::Pointer;
 use crate::borrow::{Borrow, BorrowMut, LoanError, Ref, RefMut};
 use crate::context::internal::Env;
@@ -29,7 +27,7 @@ impl JsBuffer {
         })
     }
 
-    /// Constructs a new `Buffer` object, safely zero-filled.
+    /// Constructs a new `Buffer` object with uninitialized memory
     pub unsafe fn uninitialized<'a, C: Context<'a>>(
         cx: &mut C,
         size: u32,

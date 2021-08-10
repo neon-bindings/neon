@@ -31,17 +31,20 @@ pub use crate::object::Object;
 #[doc(no_inline)]
 pub use crate::register_module;
 #[doc(no_inline)]
-pub use crate::result::{JsResult, JsResultExt, NeonResult};
+pub use crate::result::{JsResult, JsResultExt, NeonResult, ResultExt};
 #[cfg(feature = "legacy-runtime")]
 pub use crate::task::Task;
-#[doc(no_inline)]
-pub use crate::types::{
-    JsArray, JsBoolean, JsError, JsFunction, JsNull, JsNumber,
-    JsObject, JsString, JsUndefined, JsValue, Value,
-};
 #[cfg(feature = "legacy-runtime")]
 #[doc(no_inline)]
-pub use crate::types::{BinaryData, JsArrayBuffer, JsBuffer};
+pub use crate::types::BinaryData;
+#[cfg(feature = "napi-1")]
+#[doc(no_inline)]
+pub use crate::types::{binary::Borrow, JsTypedArray};
+#[doc(no_inline)]
+pub use crate::types::{
+    JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsError, JsFunction, JsNull, JsNumber, JsObject,
+    JsString, JsUndefined, JsValue, Value,
+};
 #[cfg(feature = "napi-1")]
 #[doc(no_inline)]
 pub use crate::{
