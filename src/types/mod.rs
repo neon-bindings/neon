@@ -72,9 +72,12 @@
 //! [types]: https://raw.githubusercontent.com/neon-bindings/neon/main/doc/types.jpg
 //! [unknown]: https://mariusschulz.com/blog/the-unknown-type-in-typescript#the-unknown-type
 
+#[cfg(feature = "legacy-runtime")]
 pub mod binary;
 #[cfg(feature = "napi-1")]
 pub(crate) mod boxed;
+#[cfg(feature = "napi-1")]
+pub mod buffer;
 #[cfg(feature = "napi-5")]
 pub(crate) mod date;
 pub(crate) mod error;
@@ -102,9 +105,9 @@ use std::os::raw::c_void;
 #[cfg(feature = "legacy-runtime")]
 pub use self::binary::{BinaryData, BinaryViewType, JsArrayBuffer, JsBuffer};
 #[cfg(feature = "napi-1")]
-pub use self::binary::{JsArrayBuffer, JsBuffer, JsTypedArray};
-#[cfg(feature = "napi-1")]
 pub use self::boxed::{Finalize, JsBox};
+#[cfg(feature = "napi-1")]
+pub use self::buffer::types::{JsArrayBuffer, JsBuffer, JsTypedArray};
 #[cfg(feature = "napi-5")]
 pub use self::date::{DateError, DateErrorKind, JsDate};
 pub use self::error::JsError;

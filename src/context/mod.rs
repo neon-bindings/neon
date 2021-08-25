@@ -163,9 +163,9 @@ use crate::object::class::Class;
 use crate::object::{Object, This};
 use crate::result::{JsResult, NeonResult, Throw};
 #[cfg(feature = "napi-1")]
-use crate::types::binary::Lock;
-#[cfg(feature = "napi-1")]
 use crate::types::boxed::{Finalize, JsBox};
+#[cfg(feature = "napi-1")]
+pub use crate::types::buffer::lock::Lock;
 #[cfg(feature = "napi-5")]
 use crate::types::date::{DateError, JsDate};
 use crate::types::error::JsError;

@@ -39,7 +39,7 @@ pub use crate::task::Task;
 pub use crate::types::BinaryData;
 #[cfg(feature = "napi-1")]
 #[doc(no_inline)]
-pub use crate::types::{binary::Borrow, JsTypedArray};
+pub use crate::types::JsTypedArray;
 #[doc(no_inline)]
 pub use crate::types::{
     JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsError, JsFunction, JsNull, JsNumber, JsObject,
