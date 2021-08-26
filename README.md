@@ -1,6 +1,6 @@
 <img src="neon.png" alt="neon" width="100%" />
 
-[![Cargo](http://meritbadge.herokuapp.com/neon)](https://crates.io/crates/neon)
+[![Cargo](https://img.shields.io/crates/v/neon.svg)](https://crates.io/crates/neon)
 [![npm](https://img.shields.io/npm/v/neon-cli.svg)](https://www.npmjs.com/package/neon-cli)
 [![Linux Build Status](https://github.com/neon-bindings/neon/workflows/Test%20on%20Linux/badge.svg)](https://github.com/neon-bindings/neon/actions?query=workflow%3A%22Test+on+Linux%22)
 [![macOS Build Status](https://github.com/neon-bindings/neon/workflows/Test%20on%20MacOS/badge.svg)](https://github.com/neon-bindings/neon/actions?query=workflow%3A%22Test+on+MacOS%22)
