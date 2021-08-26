@@ -3,6 +3,7 @@
 Neon owes its existence to the contributions of these fine people.
 
 * [Reza Akhavan](https://github.com/jedireza)
+* [andiliu-gh](https://github.com/andiliu-gh)
 * [Nerijus Arlauskas](https://github.com/Nercury)
 * [Igor Artamonov](https://github.com/splix)
 * [Peter Atashian](https://github.com/retep998)

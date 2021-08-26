@@ -41,7 +41,7 @@ As a rule, you should choose the **oldest version of N-API that has the APIs you
 
 ```toml
 [dependencies.neon]
-version = "0.9.0"
+version = "0.9.1"
 default-features = false
 features = ["napi-4"]
 ```
@@ -193,7 +193,7 @@ The supported mechanism for concurrency is the Channel API (`neon::event::Channe
 
 ```toml
 [dependencies.neon]
-version = "0.9.0"
+version = "0.9.1"
 default-features = false
 features = ["napi-6", "channel-api"]
 ```

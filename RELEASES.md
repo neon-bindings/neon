@@ -1,3 +1,10 @@
+# Version 0.9.1
+
+* Expose the `Finalize` trait as `neon::types::Finalize` so that docs are visible
+* Improved docs and build scripts in `create-neon` to make release builds more
+  discoverable (https://github.com/neon-bindings/neon/pull/771)
+* Update `nan` to fix an Electron 13 incompatibility (https://github.com/neon-bindings/neon/pull/778)
+
 # Version 0.9.0
 
 ## Performance
