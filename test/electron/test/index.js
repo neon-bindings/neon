@@ -30,10 +30,15 @@ async function runTests() {
         console.log('Electron tests failed. :\'(');
         process.exitCode = -1;
     } finally {
-        // app.stop does not work with a secure window
-        // https://github.com/electron-userland/spectron/issues/347
-        await app.client.executeAsync(() => window.close());
-        await app.chromeDriver.stop();
+        try {
+            // app.stop does not work with a secure window
+            // https://github.com/electron-userland/spectron/issues/347
+            await app.client.executeAsync(() => window.close());
+            await app.chromeDriver.stop();
+        } catch (err) {
+            console.warn("Error stopping chrome driver", err);
+            process.exit();
+        }
     }
 }
 

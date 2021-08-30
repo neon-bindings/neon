@@ -20,6 +20,7 @@ pub mod string;
 pub mod tag;
 #[cfg(feature = "napi-4")]
 pub mod tsfn;
+pub mod typedarray;
 
 mod bindings;
 pub use bindings::*;

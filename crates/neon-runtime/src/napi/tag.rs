@@ -80,6 +80,16 @@ pub unsafe fn is_arraybuffer(env: Env, val: Local) -> bool {
     result
 }
 
+/// Is `val` a TypedArray instance?
+pub unsafe fn is_typedarray(env: Env, val: Local) -> bool {
+    let mut result = false;
+    assert_eq!(
+        napi::is_typedarray(env, val, &mut result as *mut _),
+        napi::Status::Ok
+    );
+    result
+}
+
 #[cfg(feature = "napi-5")]
 pub unsafe fn is_date(env: Env, val: Local) -> bool {
     let mut result = false;

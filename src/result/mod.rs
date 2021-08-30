@@ -66,3 +66,9 @@ pub type JsResult<'b, T> = NeonResult<Handle<'b, T>>;
 pub trait JsResultExt<'a, V: Value> {
     fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, V>;
 }
+
+/// Extension trait for converting Rust [`Result`](std::result::Result) values
+/// into [`NeonResult`](NeonResult) values by throwing JavaScript exceptions.
+pub trait ResultExt<T> {
+    fn or_throw<'a, C: Context<'a>>(self, cx: &mut C) -> NeonResult<T>;
+}

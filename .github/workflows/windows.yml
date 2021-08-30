@@ -5,10 +5,11 @@ on:
     # Prevent duplicate runs of this workflow on our own internal PRs.
     branches:
       - main
+      - next/*
   pull_request:
     branches:
       - main
-
+      - next/*
 jobs:
   build:
 
@@ -16,36 +17,36 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x, 14.x, 16.x]
-        rust-toolchain: [stable, beta, nightly]
+        node-version: [ 12.x, 14.x, 16.x ]
+        rust-toolchain: [ stable, beta, nightly ]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Use Rust ${{ matrix.rust-toolchain }}
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust-toolchain }}
-        target: x86_64-pc-windows-msvc
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: Use npm v6
-      if: ${{ matrix.node-version == '16.x' }}
-      run: npm install -g npm@6
-    - name: Install libclang
-      uses: KyleMayes/install-llvm-action@01144dc97b1e2693196c3056414a44f15180648b
-      with:
-        version: "10"
-        directory: ${{ runner.temp }}/llvm
-    # - name: update node-gyp to latest
-    #   # https://github.com/nodejs/node-gyp/issues/1933#issuecomment-586915535
-    #   run: npm install -g node-gyp@latest
-    - run: npm config set msvs_version 2019
-    - name: run cargo test
-      run: cargo neon-test
-      env:
-        LIBCLANG_PATH: ${{ runner.temp }}/llvm/bin
-    - name: run CLI test
-      working-directory: ./create-neon
-      run: npm test
+      - uses: actions/checkout@v2
+      - name: Use Rust ${{ matrix.rust-toolchain }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust-toolchain }}
+          target: x86_64-pc-windows-msvc
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Use npm v6
+        if: ${{ matrix.node-version == '16.x' }}
+        run: npm install -g npm@6
+      - name: Install libclang
+        uses: KyleMayes/install-llvm-action@01144dc97b1e2693196c3056414a44f15180648b
+        with:
+          version: "10"
+          directory: ${{ runner.temp }}/llvm
+      # - name: update node-gyp to latest
+      #   # https://github.com/nodejs/node-gyp/issues/1933#issuecomment-586915535
+      #   run: npm install -g node-gyp@latest
+      - run: npm config set msvs_version 2019
+      - name: run cargo test
+        run: cargo neon-test
+        env:
+          LIBCLANG_PATH: ${{ runner.temp }}/llvm/bin
+      - name: run CLI test
+        working-directory: ./create-neon
+        run: npm test

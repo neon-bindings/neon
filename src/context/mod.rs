@@ -148,7 +148,9 @@
 
 pub(crate) mod internal;
 
+#[cfg(feature = "legacy-runtime")]
 use crate::borrow::internal::Ledger;
+#[cfg(feature = "legacy-runtime")]
 use crate::borrow::{Borrow, BorrowMut, Ref, RefMut};
 use crate::context::internal::Env;
 #[cfg(all(feature = "napi-4", feature = "channel-api"))]
@@ -160,21 +162,23 @@ use crate::lifecycle::InstanceData;
 use crate::object::class::Class;
 use crate::object::{Object, This};
 use crate::result::{JsResult, NeonResult, Throw};
-use crate::types::binary::{JsArrayBuffer, JsBuffer};
 #[cfg(feature = "napi-1")]
 use crate::types::boxed::{Finalize, JsBox};
+#[cfg(feature = "napi-1")]
+pub use crate::types::buffer::lock::Lock;
 #[cfg(feature = "napi-5")]
 use crate::types::date::{DateError, JsDate};
 use crate::types::error::JsError;
 use crate::types::{
-    JsArray, JsBoolean, JsFunction, JsNull, JsNumber, JsObject, JsString, JsUndefined, JsValue,
-    StringResult, Value,
+    JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber, JsObject, JsString,
+    JsUndefined, JsValue, StringResult, Value,
 };
 use neon_runtime;
 use neon_runtime::raw;
 #[cfg(feature = "napi-1")]
 use smallvec::SmallVec;
 use std;
+#[cfg(feature = "legacy-runtime")]
 use std::cell::RefCell;
 use std::convert::Into;
 use std::marker::PhantomData;
@@ -267,6 +271,7 @@ pub enum CallKind {
     Call,
 }
 
+#[cfg(feature = "legacy-runtime")]
 /// A temporary lock of an execution context.
 ///
 /// While a lock is alive, no JavaScript code can be executed in the execution context.
@@ -278,6 +283,7 @@ pub struct Lock<'a> {
     phantom: PhantomData<&'a ()>,
 }
 
+#[cfg(feature = "legacy-runtime")]
 impl<'a> Lock<'a> {
     fn new(env: Env) -> Self {
         Lock {
@@ -294,14 +300,27 @@ impl<'a> Lock<'a> {
 ///
 /// A context has a lifetime `'a`, which ensures the safety of handles managed by the JS garbage collector. All handles created during the lifetime of a context are kept alive for that duration and cannot outlive the context.
 pub trait Context<'a>: ContextInternal<'a> {
+    #[cfg(feature = "legacy-runtime")]
     /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
     ///
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
-    fn lock(&self) -> Lock<'_> {
+    fn lock(&mut self) -> Lock<'_> {
         self.check_active();
         Lock::new(self.env())
     }
 
+    #[cfg(feature = "napi-1")]
+    /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
+    ///
+    /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
+    fn lock<'b>(&'b mut self) -> Lock<Self>
+    where
+        'a: 'b,
+    {
+        Lock::new(self)
+    }
+
+    #[cfg(feature = "legacy-runtime")]
     /// Convenience method for locking the JavaScript engine and borrowing a single JS value's internals.
     ///
     /// # Example:
@@ -321,7 +340,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
     /// but while the extra `&` is a small ergonomics regression, this API is still a nice
     /// convenience.
-    fn borrow<'c, V, T, F>(&self, v: &'c Handle<V>, f: F) -> T
+    fn borrow<'c, V, T, F>(&mut self, v: &'c Handle<V>, f: F) -> T
     where
         V: Value,
         &'c V: Borrow,
@@ -332,6 +351,7 @@ pub trait Context<'a>: ContextInternal<'a> {
         f(contents)
     }
 
+    #[cfg(feature = "legacy-runtime")]
     /// Convenience method for locking the JavaScript engine and mutably borrowing a single JS value's internals.
     ///
     /// # Example:
@@ -353,7 +373,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
     /// but while the extra `&mut` is a small ergonomics regression, this API is still a nice
     /// convenience.
-    fn borrow_mut<'c, V, T, F>(&self, v: &'c mut Handle<V>, f: F) -> T
+    fn borrow_mut<'c, V, T, F>(&mut self, v: &'c mut Handle<V>, f: F) -> T
     where
         V: Value,
         &'c mut V: BorrowMut,
@@ -369,7 +389,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape.
     ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
-    fn execute_scoped<T, F>(&self, f: F) -> T
+    fn execute_scoped<T, F>(&mut self, f: F) -> T
     where
         F: for<'b> FnOnce(ExecuteContext<'b>) -> T,
     {
@@ -385,7 +405,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape, with the exception of the result value, which is rooted in the outer context.
     ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
-    fn compute_scoped<V, F>(&self, f: F) -> JsResult<'a, V>
+    fn compute_scoped<V, F>(&mut self, f: F) -> JsResult<'a, V>
     where
         V: Value,
         F: for<'b, 'c> FnOnce(ComputeContext<'b, 'c>) -> JsResult<'b, V>,
@@ -467,16 +487,29 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsArray::new(self, 0)
     }
 
+    #[cfg(feature = "legacy-runtime")]
     /// Convenience method for creating an empty `JsArrayBuffer` value.
     fn array_buffer(&mut self, size: u32) -> JsResult<'a, JsArrayBuffer> {
         JsArrayBuffer::new(self, size)
     }
 
+    #[cfg(feature = "napi-1")]
+    /// Convenience method for creating an empty `JsArrayBuffer` value.
+    fn array_buffer(&mut self, size: usize) -> JsResult<'a, JsArrayBuffer> {
+        JsArrayBuffer::new(self, size)
+    }
+
+    #[cfg(feature = "legacy-runtime")]
     /// Convenience method for creating an empty `JsBuffer` value.
     fn buffer(&mut self, size: u32) -> JsResult<'a, JsBuffer> {
         JsBuffer::new(self, size)
     }
 
+    #[cfg(feature = "napi-1")]
+    /// Convenience method for creating an empty `JsBuffer` value.
+    fn buffer(&mut self, size: usize) -> JsResult<'a, JsBuffer> {
+        JsBuffer::new(self, size)
+    }
     /// Convenience method for creating a `JsDate` value.
     #[cfg(feature = "napi-5")]
     #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
