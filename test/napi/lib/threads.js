@@ -71,4 +71,26 @@ const assert = require('chai').assert;
     // Asynchronously GC to give the task queue a chance to execute
     setTimeout(() => global.gc(), 10);
   });
+
+  it('should be able to join on the result of a channel', function (cb) {
+    // `msg` is closed over by multiple functions. A function that returns the
+    // current value is passed to the Neon function `addon.channel_join`. Additionally,
+    // the value is modified after `10ms` in a timeout.
+    let msg = "Uninitialized";
+
+    // The `addon.channel_join` function will wait 100ms before fetching the current
+    // value of `msg` using the first closure. The second closure is called
+    // after fetching and processing the message. We expect the message to already
+    // have been changed.
+    addon.channel_join(() => msg, (res) => {
+      assert.strictEqual(res, "Received: Hello, World!");
+      cb();
+    });
+
+    // Change the value of `msg` after 10ms. This should happen before `addon.channel_join`
+    // fetches it.
+    setTimeout(() => {
+      msg = "Hello, World!";
+    }, 10);
+  });
 });

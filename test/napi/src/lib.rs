@@ -255,6 +255,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("greeter_greet", greeter_greet)?;
     cx.export_function("leak_channel", leak_channel)?;
     cx.export_function("drop_global_queue", drop_global_queue)?;
+    cx.export_function("channel_join", channel_join)?;
 
     Ok(())
 }
