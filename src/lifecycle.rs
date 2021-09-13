@@ -8,17 +8,17 @@
 //!
 //! [napi-docs]: https://nodejs.org/api/n-api.html#n_api_environment_life_cycle_apis
 
-use std::mem;
 use std::sync::Arc;
 
 use neon_runtime::raw::Env;
-use neon_runtime::reference;
 use neon_runtime::tsfn::ThreadsafeFunction;
 
 use crate::context::Context;
-#[cfg(all(feature = "channel-api"))]
+#[cfg(feature = "channel-api")]
 use crate::event::Channel;
 use crate::handle::root::NapiRef;
+#[cfg(feature = "promise-api")]
+use crate::types::promise::NodeApiDeferred;
 
 /// `InstanceData` holds Neon data associated with a particular instance of a
 /// native module. If a module is loaded multiple times (e.g., worker threads), this
@@ -31,17 +31,31 @@ pub(crate) struct InstanceData {
     /// could be replaced with a leaked `&'static ThreadsafeFunction<NapiRef>`. However,
     /// given the cost of FFI, this optimization is omitted until the cost of an
     /// `Arc` is demonstrated as significant.
-    drop_queue: Arc<ThreadsafeFunction<NapiRef>>,
+    drop_queue: Arc<ThreadsafeFunction<DropData>>,
 
     /// Shared `Channel` that is cloned to be returned by the `cx.channel()` method
     #[cfg(all(feature = "channel-api"))]
     shared_channel: Channel,
 }
 
-fn drop_napi_ref(env: Option<Env>, data: NapiRef) {
-    if let Some(env) = env {
-        unsafe {
-            reference::unreference(env, mem::transmute(data));
+/// Wrapper for raw Node-API values to be dropped on the main thread
+pub(crate) enum DropData {
+    #[cfg(feature = "promise-api")]
+    Deferred(NodeApiDeferred),
+    Ref(NapiRef),
+}
+
+impl DropData {
+    /// Drop a value on the main thread
+    fn drop(env: Option<Env>, data: Self) {
+        if let Some(env) = env {
+            unsafe {
+                match data {
+                    #[cfg(feature = "promise-api")]
+                    DropData::Deferred(data) => data.leaked(env),
+                    DropData::Ref(data) => data.unref(env),
+                }
+            }
         }
     }
 }
@@ -63,7 +77,7 @@ impl InstanceData {
         }
 
         let drop_queue = unsafe {
-            let queue = ThreadsafeFunction::new(env, drop_napi_ref);
+            let queue = ThreadsafeFunction::new(env, DropData::drop);
             queue.unref(env);
             queue
         };
@@ -85,7 +99,7 @@ impl InstanceData {
     }
 
     /// Helper to return a reference to the `drop_queue` field of `InstanceData`
-    pub(crate) fn drop_queue<'a, C: Context<'a>>(cx: &mut C) -> Arc<ThreadsafeFunction<NapiRef>> {
+    pub(crate) fn drop_queue<'a, C: Context<'a>>(cx: &mut C) -> Arc<ThreadsafeFunction<DropData>> {
         Arc::clone(&InstanceData::get(cx).drop_queue)
     }
 

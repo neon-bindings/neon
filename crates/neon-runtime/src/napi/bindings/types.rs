@@ -29,6 +29,7 @@ pub type CallbackInfo = *mut CallbackInfo__;
 pub struct EscapableHandleScope__ {
     _unused: [u8; 0],
 }
+
 pub type EscapableHandleScope = *mut EscapableHandleScope__;
 
 #[repr(C)]
@@ -203,3 +204,24 @@ impl std::ops::BitAndAssign for KeyFilter {
         self.0 &= rhs.0;
     }
 }
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct AsyncWork__ {
+    _unused: [u8; 0],
+}
+
+pub type AsyncWork = *mut AsyncWork__;
+
+pub type AsyncExecuteCallback = Option<unsafe extern "C" fn(env: Env, data: *mut c_void)>;
+
+pub type AsyncCompleteCallback =
+    Option<unsafe extern "C" fn(env: Env, status: Status, data: *mut c_void)>;
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct Deferred__ {
+    _unused: [u8; 0],
+}
+
+pub type Deferred = *mut Deferred__;

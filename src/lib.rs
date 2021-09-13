@@ -85,9 +85,9 @@ pub mod borrow;
 pub mod context;
 #[cfg(any(
     feature = "event-handler-api",
+    all(feature = "napi-1", feature = "task-api"),
     all(feature = "napi-4", feature = "channel-api")
 ))]
-#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-4", feature = "channel-api"))))]
 pub mod event;
 pub mod handle;
 pub mod meta;

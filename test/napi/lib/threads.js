@@ -93,4 +93,37 @@ const assert = require('chai').assert;
       msg = "Hello, World!";
     }, 10);
   });
+
+  it('should be able to sum numbers on the libuv pool', async function () {
+    const nums = new Float64Array([...new Array(10000)].map(() => Math.random()));
+    const expected = nums.reduce((y, x) => y + x, 0);
+    const actual = await addon.sum(nums);
+
+    assert.strictEqual(expected, actual);
+  });
+
+  it('should be able to resolve a promise manually', async function () {
+    const nums = new Float64Array([...new Array(10000)].map(() => Math.random()));
+    const expected = nums.reduce((y, x) => y + x, 0);
+    const actual = await addon.sum_manual_promise(nums);
+
+    assert.strictEqual(expected, actual);
+  });
+
+  it('should be able to resolve a promise from a rust thread', async function () {
+    const nums = new Float64Array([...new Array(10000)].map(() => Math.random()));
+    const expected = nums.reduce((y, x) => y + x, 0);
+    const actual = await addon.sum_rust_thread(nums);
+
+    assert.strictEqual(expected, actual);
+  });
+
+  it('should reject promise if leaked', async function () {
+    try {
+      await addon.leak_promise();
+    } catch (err) {
+      assert.instanceOf(err, Error);
+      assert.ok(/Deferred/.test(err));
+    }
+  });
 });

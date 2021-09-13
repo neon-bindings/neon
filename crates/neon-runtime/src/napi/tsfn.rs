@@ -5,24 +5,7 @@ use std::mem::MaybeUninit;
 use std::sync::{Arc, Mutex};
 
 use crate::napi::bindings as napi;
-use crate::raw::{Env, Local};
-
-unsafe fn string(env: Env, s: impl AsRef<str>) -> Local {
-    let s = s.as_ref();
-    let mut result = MaybeUninit::uninit();
-
-    assert_eq!(
-        napi::create_string_utf8(
-            env,
-            s.as_bytes().as_ptr() as *const _,
-            s.len(),
-            result.as_mut_ptr(),
-        ),
-        napi::Status::Ok,
-    );
-
-    result.assume_init()
-}
+use crate::raw::Env;
 
 #[derive(Debug)]
 struct Tsfn(napi::ThreadsafeFunction);
@@ -85,7 +68,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
                 env,
                 std::ptr::null_mut(),
                 std::ptr::null_mut(),
-                string(env, "neon threadsafe function"),
+                super::string(env, "neon threadsafe function"),
                 max_queue_size,
                 // Always set the reference count to 1. Prefer using
                 // Rust `Arc` to maintain the struct.

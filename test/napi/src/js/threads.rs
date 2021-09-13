@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use neon::prelude::*;
+use neon::types::buffer::TypedArray;
 
 pub fn useless_root(mut cx: FunctionContext) -> JsResult<JsObject> {
     let object = cx.argument::<JsObject>(0)?;
@@ -228,4 +229,50 @@ pub fn channel_join(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     });
 
     Ok(cx.undefined())
+}
+
+pub fn sum(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    let nums = cx.argument::<JsTypedArray<f64>>(0)?.as_slice(&cx).to_vec();
+
+    let promise = cx
+        .task(move || nums.into_iter().sum())
+        .promise(|cx, n: f64| Ok(cx.number(n)));
+
+    Ok(promise)
+}
+
+pub fn sum_manual_promise(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    let nums = cx.argument::<JsTypedArray<f64>>(0)?.as_slice(&cx).to_vec();
+
+    let (deferred, promise) = cx.promise();
+
+    cx.task(move || nums.into_iter().sum())
+        .and_then(move |cx, n: f64| {
+            let n = cx.number(n);
+            deferred.resolve(cx, n);
+            Ok(())
+        });
+
+    Ok(promise)
+}
+
+pub fn sum_rust_thread(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    let nums = cx.argument::<JsTypedArray<f64>>(0)?.as_slice(&cx).to_vec();
+
+    let channel = cx.channel();
+    let (deferred, promise) = cx.promise();
+
+    std::thread::spawn(move || {
+        let n: f64 = nums.into_iter().sum();
+
+        channel.settle_with(deferred, move |cx| Ok(cx.number(n)));
+    });
+
+    Ok(promise)
+}
+
+pub fn leak_promise(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    let (_, promise) = cx.promise();
+
+    Ok(promise)
 }
