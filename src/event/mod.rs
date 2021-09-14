@@ -127,7 +127,7 @@
 mod event_queue;
 
 #[cfg(all(feature = "napi-4", feature = "channel-api"))]
-pub use self::event_queue::{Channel, SendError};
+pub use self::event_queue::{Channel, JoinError, JoinHandle, SendError};
 
 #[cfg(all(feature = "napi-4", feature = "channel-api"))]
 #[deprecated(since = "0.9.0", note = "Please use the Channel type instead")]
