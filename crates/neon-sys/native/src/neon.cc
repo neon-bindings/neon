@@ -221,15 +221,27 @@ extern "C" bool Neon_ArrayBuffer_New(v8::Local<v8::ArrayBuffer> *out, v8::Isolat
 
 
 extern "C" size_t Neon_ArrayBuffer_Data(v8::Isolate *isolate, void **base_out, v8::Local<v8::ArrayBuffer> buffer) {
-#if (V8_MAJOR_VERSION >= 8)
-    auto contents = buffer->GetBackingStore();
-    *base_out = contents->Data();
-    return contents->ByteLength();
-#else
-    v8::ArrayBuffer::Contents contents = buffer->GetContents();
-    *base_out = contents.Data();
-    return contents.ByteLength();
-#endif
+  // HACK: `v8::ArrayBuffer::Contents` leaks `std::shared_ptr` in the function signature
+  // Since recent versions of Electron are built with `clang`, `neon-sys` will fail to compile with MSVC
+  // As a workaround, when building with MSVC on recent versions of Node, create a temporary `Buffer` to extra
+  // the contents.
+  //
+  // https://github.com/electron/electron/issues/29893
+  #if _MSC_VER && NODE_MODULE_VERSION >= 89
+    v8::Local<v8::Object> local;
+    node::Buffer::New(isolate, buffer, 0, buffer->ByteLength()).ToLocal(&local);
+    return Neon_Buffer_Data(isolate, base_out, local);
+  #else
+    #if (V8_MAJOR_VERSION >= 8)
+        auto contents = buffer->GetBackingStore();
+        *base_out = contents->Data();
+        return contents->ByteLength();
+    #else
+        v8::ArrayBuffer::Contents contents = buffer->GetContents();
+        *base_out = contents.Data();
+        return contents.ByteLength();
+    #endif
+  #endif
 }
 
 extern "C" bool Neon_Tag_IsArrayBuffer(v8::Isolate *isolate, v8::Local<v8::Value> value) {
