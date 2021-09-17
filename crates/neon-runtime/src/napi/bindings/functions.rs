@@ -57,6 +57,7 @@ mod napi1 {
             fn is_buffer(env: Env, value: Value, result: *mut bool) -> Status;
             fn is_error(env: Env, value: Value, result: *mut bool) -> Status;
             fn is_array(env: Env, value: Value, result: *mut bool) -> Status;
+            fn is_promise(env: Env, value: Value, result: *mut bool) -> Status;
 
             fn get_value_string_utf8(
                 env: Env,
@@ -209,6 +210,22 @@ mod napi1 {
             ) -> Status;
 
             fn run_script(env: Env, script: Value, result: *mut Value) -> Status;
+
+            fn create_async_work(
+                env: Env,
+                async_resource: Value,
+                async_resource_name: Value,
+                execute: AsyncExecuteCallback,
+                complete: AsyncCompleteCallback,
+                data: *mut c_void,
+                result: *mut AsyncWork,
+            ) -> Status;
+
+            fn delete_async_work(env: Env, work: AsyncWork) -> Status;
+            fn queue_async_work(env: Env, work: AsyncWork) -> Status;
+            fn create_promise(env: Env, deferred: *mut Deferred, promise: *mut Value) -> Status;
+            fn resolve_deferred(env: Env, deferred: Deferred, resolution: Value) -> Status;
+            fn reject_deferred(env: Env, deferred: Deferred, rejection: Value) -> Status;
         }
     );
 }

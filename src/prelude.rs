@@ -37,6 +37,9 @@ pub use crate::task::Task;
 #[cfg(feature = "legacy-runtime")]
 #[doc(no_inline)]
 pub use crate::types::BinaryData;
+#[cfg(all(feature = "napi-1", feature = "promise-api"))]
+#[doc(no_inline)]
+pub use crate::types::JsPromise;
 #[cfg(feature = "napi-1")]
 #[doc(no_inline)]
 pub use crate::types::JsTypedArray;

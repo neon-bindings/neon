@@ -124,20 +124,26 @@
 //! [psd-file]: https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/
 
 #[cfg(all(feature = "napi-4", feature = "channel-api"))]
-mod event_queue;
+mod channel;
+
+#[cfg(all(feature = "napi-1", feature = "task-api"))]
+mod task;
 
 #[cfg(all(feature = "napi-4", feature = "channel-api"))]
-pub use self::event_queue::{Channel, JoinError, JoinHandle, SendError};
+pub use self::channel::{Channel, JoinError, JoinHandle, SendError};
+
+#[cfg(all(feature = "napi-1", feature = "task-api"))]
+pub use self::task::TaskBuilder;
 
 #[cfg(all(feature = "napi-4", feature = "channel-api"))]
 #[deprecated(since = "0.9.0", note = "Please use the Channel type instead")]
 #[doc(hidden)]
-pub type EventQueue = self::event_queue::Channel;
+pub type EventQueue = self::channel::Channel;
 
 #[cfg(all(feature = "napi-4", feature = "channel-api"))]
 #[deprecated(since = "0.9.0", note = "Please use the SendError type instead")]
 #[doc(hidden)]
-pub type EventQueueError = self::event_queue::SendError;
+pub type EventQueueError = self::channel::SendError;
 
 #[cfg(all(not(feature = "napi-1"), feature = "event-handler-api"))]
 mod event_handler;

@@ -155,6 +155,8 @@ use crate::borrow::{Borrow, BorrowMut, Ref, RefMut};
 use crate::context::internal::Env;
 #[cfg(all(feature = "napi-4", feature = "channel-api"))]
 use crate::event::Channel;
+#[cfg(all(feature = "napi-1", feature = "task-api"))]
+use crate::event::TaskBuilder;
 use crate::handle::{Handle, Managed};
 #[cfg(all(feature = "napi-6", feature = "channel-api"))]
 use crate::lifecycle::InstanceData;
@@ -169,6 +171,8 @@ pub use crate::types::buffer::lock::Lock;
 #[cfg(feature = "napi-5")]
 use crate::types::date::{DateError, JsDate};
 use crate::types::error::JsError;
+#[cfg(all(feature = "napi-1", feature = "promise-api"))]
+use crate::types::{Deferred, JsPromise};
 use crate::types::{
     JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber, JsObject, JsString,
     JsUndefined, JsValue, StringResult, Value,
@@ -608,6 +612,57 @@ pub trait Context<'a>: ContextInternal<'a> {
     fn queue(&mut self) -> Channel {
         self.channel()
     }
+
+    #[cfg(all(feature = "napi-1", feature = "promise-api"))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "promise-api")))]
+    /// Creates a [`Deferred`] and [`JsPromise`] pair. The [`Deferred`] handle can be
+    /// used to resolve or reject the [`JsPromise`].
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "napi-1", feature = "promise-api"))] {
+    /// # use neon::prelude::*;
+    /// fn resolve_promise(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    ///     let (deferred, promise) = cx.promise();
+    ///     let msg = cx.string("Hello, World!");
+    ///
+    ///     deferred.resolve(&mut cx, msg);
+    ///
+    ///     Ok(promise)
+    /// }
+    /// # }
+    /// ```
+    fn promise(&mut self) -> (Deferred, Handle<'a, JsPromise>) {
+        JsPromise::new(self)
+    }
+
+    #[cfg(all(feature = "napi-1", feature = "task-api"))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "task-api")))]
+    /// Creates a [`TaskBuilder`] which can be used to schedule the `execute`
+    /// callback to asynchronously execute on the
+    /// [Node worker pool](https://nodejs.org/en/docs/guides/dont-block-the-event-loop/).
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "napi-1", feature = "promise-api", feature = "task-api"))] {
+    /// # use neon::prelude::*;
+    /// fn greet(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    ///     let name = cx.argument::<JsString>(0)?.value(&mut cx);
+    ///
+    ///     let promise = cx
+    ///         .task(move || format!("Hello, {}!", name))
+    ///         .promise(move |cx, greeting| Ok(cx.string(greeting)));
+    ///
+    ///     Ok(promise)
+    /// }
+    /// # }
+    /// ```
+    fn task<'cx, O, E>(&'cx mut self, execute: E) -> TaskBuilder<Self, E>
+    where
+        'a: 'cx,
+        O: Send + 'static,
+        E: FnOnce() -> O + Send + 'static,
+    {
+        TaskBuilder::new(self, execute)
+    }
 }
 
 /// An execution context of module initialization.
@@ -851,7 +906,10 @@ impl<'a> TaskContext<'a> {
         Scope::with(env, |scope| f(TaskContext { scope }))
     }
 
-    #[cfg(all(feature = "napi-4", feature = "channel-api"))]
+    #[cfg(any(
+        all(feature = "napi-1", feature = "task-api"),
+        all(feature = "napi-4", feature = "channel-api"),
+    ))]
     pub(crate) fn with_context<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: Env, f: F) -> T {
         Scope::with(env, |scope| f(TaskContext { scope }))
     }

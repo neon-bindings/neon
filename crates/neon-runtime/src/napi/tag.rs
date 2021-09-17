@@ -99,3 +99,16 @@ pub unsafe fn is_date(env: Env, val: Local) -> bool {
     );
     result
 }
+
+/// Is `val` a Promise?
+///
+/// # Safety
+/// * `env` is a valid `napi_env` for the current thread
+pub unsafe fn is_promise(env: Env, val: Local) -> bool {
+    let mut result = false;
+    assert_eq!(
+        napi::is_promise(env, val, &mut result as *mut _),
+        napi::Status::Ok
+    );
+    result
+}
