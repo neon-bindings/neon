@@ -18,7 +18,7 @@ declare_types! {
 
     constructor(mut cx) {
       let mut this = cx.this();
-      let f = this.get(&mut cx, "emit")?.downcast::<JsFunction>().or_throw(&mut cx)?;
+      let f: Handle<JsFunction> = this.get(&mut cx, "emit")?;
       let cb = EventHandler::new(&cx, this, f);
       {
         let guard = cx.lock();

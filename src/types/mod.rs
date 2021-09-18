@@ -44,7 +44,7 @@
 //!     cx: &mut impl Context<'a>,
 //!     object: Handle<'a, JsObject>
 //! ) -> JsResult<'a, JsArray> {
-//!     object.downcast(cx).or_throw(cx)
+//!     object.downcast().or_throw(cx)
 //! }
 //! ```
 //!

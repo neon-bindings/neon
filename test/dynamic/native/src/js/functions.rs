@@ -24,10 +24,8 @@ pub fn construct_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let f = cx.argument::<JsFunction>(0)?;
     let zero = cx.number(0.0);
     let o = f.construct(&mut cx, vec![zero])?;
-    let get_utc_full_year_method = o
-        .get(&mut cx, "getUTCFullYear")?
-        .downcast::<JsFunction>()
-        .or_throw(&mut cx)?;
+    let get_utc_full_year_method: Handle<JsFunction> =
+        o.get(&mut cx, "getUTCFullYear")?;
     let args: Vec<Handle<JsValue>> = vec![];
     get_utc_full_year_method
         .call(&mut cx, o.upcast::<JsValue>(), args)?
