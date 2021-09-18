@@ -47,7 +47,7 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 ///
 /// [unit]: https://doc.rust-lang.org/book/ch05-01-defining-structs.html#unit-like-structs-without-any-fields
 #[derive(Debug)]
-pub struct Throw;
+pub struct Throw(pub(crate) ());
 
 impl Display for Throw {
     fn fmt(&self, fmt: &mut Formatter) -> FmtResult {

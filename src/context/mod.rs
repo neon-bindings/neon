@@ -494,7 +494,7 @@ pub trait Context<'a>: ContextInternal<'a> {
         unsafe {
             neon_runtime::error::throw(self.env().to_raw(), v.to_raw());
         }
-        Err(Throw)
+        Err(Throw(()))
     }
 
     /// Creates a direct instance of the [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error) class.

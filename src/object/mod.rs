@@ -115,7 +115,7 @@ mod traits {
             if unsafe { key.set_from(&mut result, self.to_raw(), val.to_raw()) } {
                 Ok(result)
             } else {
-                Err(Throw)
+                Err(Throw(()))
             }
         }
     }
@@ -265,7 +265,7 @@ mod traits {
             if unsafe { key.set_from(cx, &mut result, self.to_raw(), val.to_raw()) } {
                 Ok(result)
             } else {
-                Err(Throw)
+                Err(Throw(()))
             }
         }
 
