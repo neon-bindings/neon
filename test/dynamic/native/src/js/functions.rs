@@ -168,7 +168,7 @@ pub fn unexpected_throw_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> 
     // It's hard to forge a bogus throw token, but you can still do it by
     // forcing a real throw, saving the token for later, and catching the
     // throw to return the VM back out of its throwing state.
-    let _ = cx.try_catch::<(), _>(|cx| {
+    let _ = cx.try_catch(|cx| {
         let forge: Handle<JsFunction> = JsFunction::new(cx, forge_throw)?;
         let null: Handle<JsValue> = cx.null().upcast();
         let args: Vec<Handle<JsValue>> = vec![];
