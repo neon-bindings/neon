@@ -44,7 +44,7 @@
 //!     cx: &mut impl Context<'a>,
 //!     object: Handle<'a, JsObject>
 //! ) -> JsResult<'a, JsArray> {
-//!     object.downcast(cx).or_throw(cx)
+//!     object.downcast().or_throw(cx)
 //! }
 //! ```
 //!
@@ -716,6 +716,16 @@ impl JsFunction {
     }
 }
 
+impl<'a> Handle<'a, JsFunction> {
+    pub fn with(self) -> Arguments<'a> {
+        Arguments {
+            callee: self,
+            this: None,
+            args: vec![],
+        }
+    }
+}
+
 impl<CL: Object> JsFunction<CL> {
     pub fn call<'a, 'b, C: Context<'a>, T, A, AS>(
         self,
@@ -772,5 +782,56 @@ impl<T: Object> ValueInternal for JsFunction<T> {
 
     fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
         unsafe { neon_runtime::tag::is_function(env.to_raw(), other.to_raw()) }
+    }
+}
+
+#[derive(Clone)]
+pub struct Arguments<'a> {
+    callee: Handle<'a, JsFunction>,
+    this: Option<Handle<'a, JsValue>>,
+    args: Vec<Handle<'a, JsValue>>,
+}
+
+impl<'a> Arguments<'a> {
+    pub fn this<V: Value>(mut self, this: Handle<'a, V>) -> Self {
+        self.this = Some(this.upcast());
+        self
+    }
+
+    pub fn arg<V: Value>(mut self, arg: Handle<'a, V>) -> Self {
+        self.args.push(arg.upcast());
+        self
+    }
+
+    pub fn args<V: Value, I: IntoIterator<Item=Handle<'a, V>>>(mut self, args: I) -> Self {
+        for arg in args {
+            self.args.push(arg.upcast());
+        }
+        self
+    }
+
+    /// Call the function with the signature represented by `self` as a normal function call.
+    /// If the function returns without throwing, the result value is downcast to the type
+    /// `V`, throwing a `TypeError` if the downcast fails.
+    pub fn call<'b, C: Context<'b>, V: Value>(self, cx: &mut C) -> JsResult<'b, V> {
+        let this: Handle<JsValue> = self.this.unwrap_or_else(|| cx.undefined().upcast());
+        let v = self.callee.call(cx, this, self.args)?;
+        v.downcast_or_throw(cx)
+    }
+
+    /// Call the function with the signature represented by `self` as a `new` expression.
+    /// If the function returns without throwing, returns the resulting object.
+    pub fn new<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'b, JsObject> {
+        self.callee.construct(cx, self.args)
+    }
+
+    /// Call the function with the signature represented by `self` as a normal function call
+    /// for side effect, discarding the result value. This method is preferable to the use
+    /// of `Arguments::call()` when the result value is not needed, since it does not require
+    /// specifying a result type.
+    pub fn exec<'b, C: Context<'b>>(self, cx: &mut C) -> NeonResult<()> {
+        let this: Handle<JsValue> = self.this.unwrap_or_else(|| cx.undefined().upcast());
+        let _ = self.callee.call(cx, this, self.args)?;
+        Ok(())
     }
 }

@@ -94,9 +94,9 @@
 //!
 //!     while !done {
 //!         done = cx.execute_scoped(|mut cx| {                   // temporary scope
-//!             let args: Vec<Handle<JsValue>> = vec![];
-//!             let obj = next.call(&mut cx, iterator, args)?     // temporary object
-//!                 .downcast_or_throw::<JsObject, _>(&mut cx)?;
+//!             let obj: Handle<JsObject> = next.bind()           // temporary object
+//!                 .this(iterator)
+//!                 .call(&mut cx)?;
 //!             let number = obj.get(&mut cx, "value")?           // temporary number
 //!                 .downcast_or_throw::<JsNumber, _>(&mut cx)?
 //!                 .value(&mut cx);
