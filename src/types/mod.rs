@@ -806,7 +806,8 @@ impl<T: Object> ValueInternal for JsFunction<T> {
     }
 }
 
-/// A builder for making a JavaScript function call (e.g. `parseInt("42")` or `array.push(x)`).
+/// A builder for making a JavaScript function call (e.g., `parseInt("42")`).
+///
 /// The builder methods make it convenient to assemble the call from parts:
 /// ```
 /// # use neon::prelude::*;
@@ -827,8 +828,9 @@ pub struct FunctionCall<'a> {
     args: Vec<Handle<'a, JsValue>>,
 }
 
-/// A builder for making either a JavaScript function call (e.g. `parseInt("42")` or
-/// `array.push(x)`) or constructor call (e.g. `new URL("https://neon-bindings.com")`).
+/// A builder for making either a JavaScript function call (e.g., `parseInt("42")`)
+/// or constructor call (e.g., `new Array(16)`).
+///
 /// The builder methods make it convenient to assemble the call from parts:
 /// ```
 /// # use neon::prelude::*;
@@ -875,8 +877,8 @@ impl<'a> FunctionCall<'a> {
     }
 
     /// Make the function call for side effect, discarding the result value. This method is
-    /// preferable to [`FunctionCall::call()`](crate::types::FunctionCall::call) when the
-    /// result value is not needed, since it does not require specifying a result type.
+    /// preferable to [`call()`](crate::types::FunctionCall::call) when the result value is
+    /// not needed, since it does not require specifying a result type.
     pub fn exec<'b, C: Context<'b>>(self, cx: &mut C) -> NeonResult<()> {
         let _ = self.callee.call(cx, self.this, self.args)?;
         Ok(())
@@ -921,7 +923,7 @@ impl<'a> Call<'a> {
     }
 
     /// Make the function call for side effect, discarding the result value. This method is
-    /// preferable to [`Call::call()`](crate::types::Call::call) when the result value is not
+    /// preferable to [`call()`](crate::types::Call::call) when the result value is not
     /// needed, since it does not require specifying a result type.
     pub fn exec<'b, C: Context<'b>>(self, cx: &mut C) -> NeonResult<()> {
         let undefined: Handle<JsValue> = cx.undefined().upcast();
