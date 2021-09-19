@@ -722,6 +722,7 @@ impl JsFunction {
 }
 
 impl JsFunction {
+    /// Build a [`Call`](crate::types::Call) with an initial arguments list.
     pub fn args<'a, A: Arguments<'a>>(self, args: A) -> Call<'a> {
         let builder = Call {
             callee: Handle::new_internal(self),
@@ -730,6 +731,7 @@ impl JsFunction {
         builder.args(args)
     }
 
+    /// Build a [`Call`](crate::types::Call) with an initial single argument.
     pub fn arg<'a, V: Value>(self, v: Handle<'a, V>) -> Call<'a> {
         let builder = Call {
             callee: Handle::new_internal(self),
@@ -738,6 +740,7 @@ impl JsFunction {
         builder.arg(v)
     }
 
+    /// Build a [`FunctionCall`](crate::types::FunctionCall) with a `this` binding.
     pub fn this<'a, V: Value>(self, this: Handle<'a, V>) -> FunctionCall<'a> {
         FunctionCall {
             callee: Handle::new_internal(self),
