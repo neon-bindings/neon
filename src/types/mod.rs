@@ -45,9 +45,7 @@
 //!     object: Handle<'a, JsObject>
 //! ) -> JsResult<'a, JsArray> {
 //! #   #[cfg(feature = "legacy-runtime")]
-//! #   return
-//! #   object.downcast().or_throw(cx)
-//! #   ;
+//! #   return object.downcast().or_throw(cx);
 //! #   #[cfg(feature = "napi-1")]
 //! #   return
 //!     object.downcast(cx).or_throw(cx)
@@ -723,26 +721,26 @@ impl JsFunction {
     }
 }
 
-impl<'a> Handle<'a, JsFunction> {
-    pub fn args<A: Arguments<'a>>(self, args: A) -> CallOrNewBuilder<'a> {
-        let builder = CallOrNewBuilder {
-            callee: self,
+impl JsFunction {
+    pub fn args<'a, A: Arguments<'a>>(self, args: A) -> Call<'a> {
+        let builder = Call {
+            callee: Handle::new_internal(self),
             args: vec![],
         };
         builder.args(args)
     }
 
-    pub fn arg<V: Value>(self, v: Handle<'a, V>) -> CallOrNewBuilder<'a> {
-        let builder = CallOrNewBuilder {
-            callee: self,
+    pub fn arg<'a, V: Value>(self, v: Handle<'a, V>) -> Call<'a> {
+        let builder = Call {
+            callee: Handle::new_internal(self),
             args: vec![],
         };
         builder.arg(v)
     }
 
-    pub fn this<V: Value>(self, this: Handle<'a, V>) -> CallBuilder<'a> {
-        CallBuilder {
-            callee: self,
+    pub fn this<'a, V: Value>(self, this: Handle<'a, V>) -> FunctionCall<'a> {
+        FunctionCall {
+            callee: Handle::new_internal(self),
             this: this.upcast(),
             args: vec![],
         }
@@ -808,91 +806,123 @@ impl<T: Object> ValueInternal for JsFunction<T> {
     }
 }
 
+/// A builder for making a JavaScript function call (e.g. `parseInt("42")` or `array.push(x)`).
+/// The builder methods make it convenient to assemble the call from parts:
+/// ```
+/// # use neon::prelude::*;
+/// # fn foo(mut cx: FunctionContext) -> JsResult<JsNumber> {
+/// # let global = cx.global();
+/// # let parseInt = global.get(&mut cx, "parseInt")?;
+/// # let parseInt: Handle<JsFunction> = parseInt.downcast_or_throw(&mut cx)?;
+/// let x: Handle<JsNumber> = parseInt
+///     .arg(cx.string("42"))
+///     .call(&mut cx)?;
+/// # Ok(x)
+/// # }
+/// ```
 #[derive(Clone)]
-pub struct CallBuilder<'a> {
+pub struct FunctionCall<'a> {
     callee: Handle<'a, JsFunction>,
     this: Handle<'a, JsValue>,
     args: Vec<Handle<'a, JsValue>>,
 }
 
+/// A builder for making either a JavaScript function call (e.g. `parseInt("42") or
+/// `array.push(x)`) or constructor call (e.g. `new URL("https://neon-bindings.com")`).
+/// The builder methods make it convenient to assemble the call from parts:
+/// ```
+/// # use neon::prelude::*;
+/// # fn foo(mut cx: FunctionContext) -> JsResult<JsObject> {
+/// # let global = cx.global();
+/// # let url = global.get(&mut cx, "URL")?;
+/// # let url: Handle<JsFunction> = url.downcast_or_throw(&mut cx)?;
+/// let obj = url
+///     .arg(cx.string("https://neon-bindings.com"))
+///     .new(&mut cx)?;
+/// # Ok(obj)
+/// # }
+/// ```
 #[derive(Clone)]
-pub struct CallOrNewBuilder<'a> {
+pub struct Call<'a> {
     callee: Handle<'a, JsFunction>,
     args: Vec<Handle<'a, JsValue>>,
 }
 
-impl<'a> CallBuilder<'a> {
+impl<'a> FunctionCall<'a> {
+    /// Set the value of `this` for the function call.
     pub fn this<V: Value>(mut self, this: Handle<'a, V>) -> Self {
         self.this = this.upcast();
         self
     }
 
+    /// Add an argument to the arguments list.
     pub fn arg<V: Value>(mut self, arg: Handle<'a, V>) -> Self {
         self.args.push(arg.upcast());
         self
     }
 
+    /// Add multiple arguments to the arguments list.
     pub fn args<A: Arguments<'a>>(mut self, args: A) -> Self {
         args.append(&mut self.args);
         self
     }
 
-    /// Call the function with the signature represented by `self` as a normal function call.
-    /// If the function returns without throwing, the result value is downcast to the type
-    /// `V`, throwing a `TypeError` if the downcast fails.
+    /// Make the function call. If the function returns without throwing, the result value
+    /// is downcast to the type `V`, throwing a `TypeError` if the downcast fails.
     pub fn call<'b, C: Context<'b>, V: Value>(self, cx: &mut C) -> JsResult<'b, V> {
         let v = self.callee.call(cx, self.this, self.args)?;
         v.downcast_or_throw(cx)
     }
 
-    /// Call the function with the signature represented by `self` as a normal function call
-    /// for side effect, discarding the result value. This method is preferable to the use
-    /// of `Arguments::call()` when the result value is not needed, since it does not require
-    /// specifying a result type.
+    /// Make the function call for side effect, discarding the result value. This method is
+    /// preferable to [`FunctionCall::call()`](crate::types::FunctionCall::call) when the
+    /// result value is not needed, since it does not require specifying a result type.
     pub fn exec<'b, C: Context<'b>>(self, cx: &mut C) -> NeonResult<()> {
         let _ = self.callee.call(cx, self.this, self.args)?;
         Ok(())
     }
 }
 
-impl<'a> CallOrNewBuilder<'a> {
-    pub fn this<V: Value>(self, this: Handle<'a, V>) -> CallBuilder<'a> {
-        CallBuilder {
+impl<'a> Call<'a> {
+    /// Set the value of `this` for the function call. Once a call has a `this` binding
+    /// specified, it is required to be a [`FunctionCall`](crate::types::FunctionCall).
+    pub fn this<V: Value>(self, this: Handle<'a, V>) -> FunctionCall<'a> {
+        FunctionCall {
             callee: self.callee,
             this: this.upcast(),
             args: self.args,
         }
     }
 
+    /// Add an argument to the arguments list.
     pub fn arg<V: Value>(mut self, arg: Handle<'a, V>) -> Self {
         self.args.push(arg.upcast());
         self
     }
 
+    /// Add multiple arguments to the arguments list.
     pub fn args<A: Arguments<'a>>(mut self, args: A) -> Self {
         args.append(&mut self.args);
         self
     }
 
-    /// Call the function with the signature represented by `self` as a `new` expression.
+    /// Call the function as a constructor (like a JavaScript `new` expression).
     /// If the function returns without throwing, returns the resulting object.
     pub fn new<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'b, JsObject> {
         self.callee.construct(cx, self.args)
     }
 
-    /// Call the function with the signature represented by `self` as a normal function call.
-    /// If the function returns without throwing, the result value is downcast to the type
-    /// `V`, throwing a `TypeError` if the downcast fails.
+    /// Make the function call. If the function returns without throwing, the result value
+    /// is downcast to the type `V`, throwing a `TypeError` if the downcast fails.
     pub fn call<'b, C: Context<'b>, V: Value>(self, cx: &mut C) -> JsResult<'b, V> {
         let undefined: Handle<JsValue> = cx.undefined().upcast();
         let v = self.callee.call(cx, undefined, self.args)?;
         v.downcast_or_throw(cx)
     }
 
-    /// Call the function with the signature represented by `self` as a normal function call
-    /// for side effect, discarding the result value. This method is preferable to the use
-    /// of `Arguments::call()` when the result value is not needed, since it does not require
-    /// specifying a result type.
+    /// Make the function call for side effect, discarding the result value. This method is
+    /// preferable to [`Call::call()`](crate::types::Call::call) when the result value is not
+    /// needed, since it does not require specifying a result type.
     pub fn exec<'b, C: Context<'b>>(self, cx: &mut C) -> NeonResult<()> {
         let undefined: Handle<JsValue> = cx.undefined().upcast();
         let _ = self.callee.call(cx, undefined, self.args)?;
@@ -900,7 +930,10 @@ impl<'a> CallOrNewBuilder<'a> {
     }
 }
 
+/// The trait for specifying arguments in a [`Call`](crate::types::Call) or
+/// [`FunctionCall`](crate::types::FunctionCall).
 pub trait Arguments<'a> {
+    /// Append the arguments to an arguments vector.
     fn append(self, args: &mut Vec<Handle<'a, JsValue>>);
 }
 
