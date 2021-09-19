@@ -95,7 +95,8 @@ mod traits {
             cx: &mut C,
             key: K,
         ) -> NeonResult<Handle<'a, V>> {
-            let v: Handle<JsValue> = build(cx.env(), |out| unsafe { key.get_from(out, self.to_raw()) })?;
+            let v: Handle<JsValue> =
+                build(cx.env(), |out| unsafe { key.get_from(out, self.to_raw()) })?;
             v.downcast_or_throw(cx)
         }
 
