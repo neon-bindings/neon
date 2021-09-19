@@ -827,7 +827,7 @@ pub struct FunctionCall<'a> {
     args: Vec<Handle<'a, JsValue>>,
 }
 
-/// A builder for making either a JavaScript function call (e.g. `parseInt("42") or
+/// A builder for making either a JavaScript function call (e.g. `parseInt("42")` or
 /// `array.push(x)`) or constructor call (e.g. `new URL("https://neon-bindings.com")`).
 /// The builder methods make it convenient to assemble the call from parts:
 /// ```
