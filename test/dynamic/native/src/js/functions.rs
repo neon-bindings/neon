@@ -176,9 +176,7 @@ pub fn unexpected_throw_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> 
         Ok(())
     });
 
-    let retrieved_throw = FORGED_THROW.with(|forged_throw| {
-        forged_throw.borrow_mut().take()
-    });
+    let retrieved_throw = FORGED_THROW.with(|forged_throw| forged_throw.borrow_mut().take());
 
     match retrieved_throw {
         Some(throw) => Ok(cx.try_catch(|_| Err(throw)).unwrap_or_else(|err| err)),
