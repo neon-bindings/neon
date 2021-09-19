@@ -717,10 +717,26 @@ impl JsFunction {
 }
 
 impl<'a> Handle<'a, JsFunction> {
-    pub fn with(self) -> Arguments<'a> {
-        Arguments {
+    pub fn args<A: Arguments<'a>>(self, args: A) -> CallOrNewBuilder<'a> {
+        let builder = CallOrNewBuilder {
             callee: self,
-            this: None,
+            args: vec![],
+        };
+        builder.args(args)
+    }
+
+    pub fn arg<V: Value>(self, v: Handle<'a, V>) -> CallOrNewBuilder<'a> {
+        let builder = CallOrNewBuilder {
+            callee: self,
+            args: vec![],
+        };
+        builder.arg(v)
+    }
+
+    pub fn this<V: Value>(self, this: Handle<'a, V>) -> CallBuilder<'a> {
+        CallBuilder {
+            callee: self,
+            this: this.upcast(),
             args: vec![],
         }
     }
@@ -786,15 +802,21 @@ impl<T: Object> ValueInternal for JsFunction<T> {
 }
 
 #[derive(Clone)]
-pub struct Arguments<'a> {
+pub struct CallBuilder<'a> {
     callee: Handle<'a, JsFunction>,
-    this: Option<Handle<'a, JsValue>>,
+    this: Handle<'a, JsValue>,
     args: Vec<Handle<'a, JsValue>>,
 }
 
-impl<'a> Arguments<'a> {
+#[derive(Clone)]
+pub struct CallOrNewBuilder<'a> {
+    callee: Handle<'a, JsFunction>,
+    args: Vec<Handle<'a, JsValue>>,
+}
+
+impl<'a> CallBuilder<'a> {
     pub fn this<V: Value>(mut self, this: Handle<'a, V>) -> Self {
-        self.this = Some(this.upcast());
+        self.this = this.upcast();
         self
     }
 
@@ -803,10 +825,8 @@ impl<'a> Arguments<'a> {
         self
     }
 
-    pub fn args<V: Value, I: IntoIterator<Item=Handle<'a, V>>>(mut self, args: I) -> Self {
-        for arg in args {
-            self.args.push(arg.upcast());
-        }
+    pub fn args<A: Arguments<'a>>(mut self, args: A) -> Self {
+        args.append(&mut self.args);
         self
     }
 
@@ -814,9 +834,37 @@ impl<'a> Arguments<'a> {
     /// If the function returns without throwing, the result value is downcast to the type
     /// `V`, throwing a `TypeError` if the downcast fails.
     pub fn call<'b, C: Context<'b>, V: Value>(self, cx: &mut C) -> JsResult<'b, V> {
-        let this: Handle<JsValue> = self.this.unwrap_or_else(|| cx.undefined().upcast());
-        let v = self.callee.call(cx, this, self.args)?;
+        let v = self.callee.call(cx, self.this, self.args)?;
         v.downcast_or_throw(cx)
+    }
+
+    /// Call the function with the signature represented by `self` as a normal function call
+    /// for side effect, discarding the result value. This method is preferable to the use
+    /// of `Arguments::call()` when the result value is not needed, since it does not require
+    /// specifying a result type.
+    pub fn exec<'b, C: Context<'b>>(self, cx: &mut C) -> NeonResult<()> {
+        let _ = self.callee.call(cx, self.this, self.args)?;
+        Ok(())
+    }
+}
+
+impl<'a> CallOrNewBuilder<'a> {
+    pub fn this<V: Value>(self, this: Handle<'a, V>) -> CallBuilder<'a> {
+        CallBuilder {
+            callee: self.callee,
+            this: this.upcast(),
+            args: self.args
+        }
+    }
+
+    pub fn arg<V: Value>(mut self, arg: Handle<'a, V>) -> Self {
+        self.args.push(arg.upcast());
+        self
+    }
+
+    pub fn args<A: Arguments<'a>>(mut self, args: A) -> Self {
+        args.append(&mut self.args);
+        self
     }
 
     /// Call the function with the signature represented by `self` as a `new` expression.
@@ -825,13 +873,61 @@ impl<'a> Arguments<'a> {
         self.callee.construct(cx, self.args)
     }
 
+    /// Call the function with the signature represented by `self` as a normal function call.
+    /// If the function returns without throwing, the result value is downcast to the type
+    /// `V`, throwing a `TypeError` if the downcast fails.
+    pub fn call<'b, C: Context<'b>, V: Value>(self, cx: &mut C) -> JsResult<'b, V> {
+        let undefined: Handle<JsValue> = cx.undefined().upcast();
+        let v = self.callee.call(cx, undefined, self.args)?;
+        v.downcast_or_throw(cx)
+    }
+
     /// Call the function with the signature represented by `self` as a normal function call
     /// for side effect, discarding the result value. This method is preferable to the use
     /// of `Arguments::call()` when the result value is not needed, since it does not require
     /// specifying a result type.
     pub fn exec<'b, C: Context<'b>>(self, cx: &mut C) -> NeonResult<()> {
-        let this: Handle<JsValue> = self.this.unwrap_or_else(|| cx.undefined().upcast());
-        let _ = self.callee.call(cx, this, self.args)?;
+        let undefined: Handle<JsValue> = cx.undefined().upcast();
+        let _ = self.callee.call(cx, undefined, self.args)?;
         Ok(())
     }
+}
+
+pub trait Arguments<'a> {
+    fn append(self, args: &mut Vec<Handle<'a, JsValue>>);
+}
+
+macro_rules! impl_arguments {
+    { (); (); } => {
+        impl<'a> Arguments<'a> for () {
+            fn append(self, _args: &mut Vec<Handle<'a, JsValue>>) { }
+        }
+    };
+
+    { ($tname1:ident,$($tnames:ident,)*); ($vname1:ident,$($vnames:ident,)*); } => {
+        impl<'a, $tname1: Value, $($tnames: Value,)*> Arguments<'a> for (Handle<'a, $tname1>, $(Handle<'a, $tnames>,)*) {
+            fn append(self, args: &mut Vec<Handle<'a, JsValue>>) {
+                let ($vname1, $($vnames,)*) = self;
+                args.push($vname1.upcast());
+                $(args.push($vnames.upcast());)*
+            }
+        }
+
+        impl_arguments! {
+            ($($tnames,)*);
+            ($($vnames,)*);
+        }
+    };
+}
+
+impl_arguments! {
+    (V1, V2, V3, V4, V5, V6, V7, V8,
+     V9, V10, V11, V12, V13, V14, V15, V16,
+     V17, V18, V19, V20, V21, V22, V23, V24,
+     V25, V26, V27, V28, V29, V30, V31, V32,);
+
+    (v1, v2, v3, v4, v5, v6, v7, v8,
+     v9, v10, v11, v12, v13, v14, v15, v16,
+     v17, v18, v19, v20, v21, v22, v23, v24,
+     v25, v26, v27, v28, v29, v30, v31, v32,);
 }

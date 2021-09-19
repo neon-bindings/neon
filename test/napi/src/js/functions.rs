@@ -11,21 +11,21 @@ pub fn return_js_function(mut cx: FunctionContext) -> JsResult<JsFunction> {
 }
 
 pub fn call_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
-    cx.argument::<JsFunction>(0)?.with()
+    cx.argument::<JsFunction>(0)?
         .this(cx.null())
         .arg(cx.number(16.0))
         .call(&mut cx)
 }
 
 pub fn construct_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
-    let o = cx.argument::<JsFunction>(0)?.with()
+    let o = cx.argument::<JsFunction>(0)?
         .arg(cx.number(0.0))
         .new(&mut cx)?;
     let get_utc_full_year_method = o
         .get(&mut cx, "getUTCFullYear")?
         .downcast::<JsFunction, _>(&mut cx)
         .or_throw(&mut cx)?;
-    get_utc_full_year_method.with()
+    get_utc_full_year_method
         .this(o)
         .call(&mut cx)
 }
@@ -121,7 +121,7 @@ pub fn call_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
     let f: Handle<JsFunction> = cx.argument(0)?;
     Ok(cx
         .try_catch(|cx| {
-            f.with()
+            f.args(())
                 .this(cx.global())
                 .call(cx)
         })
