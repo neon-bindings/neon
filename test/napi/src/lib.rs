@@ -111,10 +111,10 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     let forty_two = unsafe {
         TaskContext::with_raw_env(raw_env, |mut cx| {
             let forty_two = cx.number(42);
-            forty_two.value(&mut cx)
+            forty_two.value(&mut cx) as u8
         })
     };
-    assert_eq!(forty_two, 42f64);
+    assert_eq!(forty_two, 42);
 
     cx.export_value("rustCreated", rust_created)?;
 
