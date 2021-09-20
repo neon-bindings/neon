@@ -39,18 +39,15 @@
 //! a [`DowncastError`](crate::handle::DowncastError):
 //!
 //! ```
+//! # #[cfg(feature = "napi-1")] {
 //! # use neon::prelude::*;
 //! fn as_array<'a>(
 //!     cx: &mut impl Context<'a>,
 //!     object: Handle<'a, JsObject>
 //! ) -> JsResult<'a, JsArray> {
-//! #   #[cfg(feature = "legacy-runtime")]
-//! #   return object.downcast().or_throw(cx);
-//! #   #[cfg(feature = "napi-1")]
-//! #   return
 //!     object.downcast(cx).or_throw(cx)
-//! #   ;
 //! }
+//! # }
 //! ```
 //!
 //! ### The JavaScript Type Hierarchy
