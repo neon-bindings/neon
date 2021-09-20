@@ -107,6 +107,15 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         .collect::<Result<Vec<_>, _>>()?;
     assert_eq!(property_names, &["0", "a", "whatever"]);
 
+    let raw_env = cx.to_raw_env();
+    let forty_two = unsafe {
+        TaskContext::with_raw_env(raw_env, |mut cx| {
+            let forty_two = cx.number(42);
+            forty_two.value(&mut cx)
+        })
+    };
+    assert_eq!(forty_two, 42f64);
+
     cx.export_value("rustCreated", rust_created)?;
 
     fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {

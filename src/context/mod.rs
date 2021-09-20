@@ -294,6 +294,12 @@ impl<'a> Lock<'a> {
 ///
 /// A context has a lifetime `'a`, which ensures the safety of handles managed by the JS garbage collector. All handles created during the lifetime of a context are kept alive for that duration and cannot outlive the context.
 pub trait Context<'a>: ContextInternal<'a> {
+
+    #[cfg(feature = "napi-1")]
+    fn to_raw_env(&self) -> *mut c_void {
+        self.env().to_raw() as *mut c_void
+    }
+
     /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
     ///
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
@@ -818,7 +824,13 @@ impl<'a> TaskContext<'a> {
         Scope::with(env, |scope| f(TaskContext { scope }))
     }
 
-    #[cfg(all(feature = "napi-4", feature = "channel-api"))]
+    #[cfg(all(feature = "napi-1"))]
+    pub unsafe fn with_raw_env<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: *mut c_void, f: F) -> T {
+        let env = std::mem::transmute(env);
+        Self::with_context(env, f)
+    }
+
+    #[cfg(all(feature = "napi-1"))]
     pub(crate) fn with_context<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: Env, f: F) -> T {
         Scope::with(env, |scope| f(TaskContext { scope }))
     }
