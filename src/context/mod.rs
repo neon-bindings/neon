@@ -296,7 +296,7 @@ impl<'a> Lock<'a> {
 pub trait Context<'a>: ContextInternal<'a> {
     /// Get the underlying `napi-env` of the context
     #[cfg(feature = "napi-1")]
-    fn to_raw_env(&self) -> *mut c_void {
+    fn as_mut_ptr(&mut self) -> *mut c_void {
         self.env().to_raw() as *mut c_void
     }
 

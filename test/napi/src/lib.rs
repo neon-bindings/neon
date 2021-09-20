@@ -107,7 +107,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         .collect::<Result<Vec<_>, _>>()?;
     assert_eq!(property_names, &["0", "a", "whatever"]);
 
-    let raw_env = cx.to_raw_env();
+    let raw_env = cx.as_mut_ptr();
     let forty_two = unsafe {
         TaskContext::with_raw_env(raw_env, |mut cx| {
             let forty_two = cx.number(42);
