@@ -294,7 +294,6 @@ impl<'a> Lock<'a> {
 ///
 /// A context has a lifetime `'a`, which ensures the safety of handles managed by the JS garbage collector. All handles created during the lifetime of a context are kept alive for that duration and cannot outlive the context.
 pub trait Context<'a>: ContextInternal<'a> {
-
     /// Get the underlying `napi-env` of the context
     #[cfg(feature = "napi-1")]
     fn to_raw_env(&self) -> *mut c_void {
