@@ -146,6 +146,8 @@
 //! [iterator]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators
 //! [question-mark]: https://doc.rust-lang.org/edition-guide/rust-2018/error-handling-and-panics/the-question-mark-operator-for-easier-error-handling.html
 
+#[cfg(feature = "napi-1")]
+pub mod ffi;
 pub(crate) mod internal;
 
 use crate::borrow::internal::Ledger;
@@ -181,6 +183,8 @@ use std::marker::PhantomData;
 use std::os::raw::c_void;
 use std::panic::UnwindSafe;
 
+#[cfg(feature = "napi-1")]
+use self::ffi::RawEnv;
 use self::internal::{ContextInternal, Scope, ScopeMetadata};
 
 #[repr(C)]
@@ -294,10 +298,26 @@ impl<'a> Lock<'a> {
 ///
 /// A context has a lifetime `'a`, which ensures the safety of handles managed by the JS garbage collector. All handles created during the lifetime of a context are kept alive for that duration and cannot outlive the context.
 pub trait Context<'a>: ContextInternal<'a> {
-    /// Get the underlying `napi-env` of the context
+    /// Gets the underlying env of the context.
+    ///
+    /// This method is useful for creating contexts across FFI boundaries.
+    ///
+    /// # Safety
+    /// `&mut RawEnv` can be converted to `*mut void`, passed across FFI boundaries, and then
+    //  converted back to `&mut RawEnv`.
+    /// Mutable aliasing is allowed because `RawEnv` is zero-sized (https://github.com/rust-lang/rust-memory-model/issues/44),
+    /// but callers are still responsible for upholding other borrowing rules.
     #[cfg(feature = "napi-1")]
-    fn as_mut_ptr(&mut self) -> *mut c_void {
-        self.env().to_raw() as *mut c_void
+    fn with_raw_env<T, F>(&mut self, f: F) -> T
+    where
+        F: for<'b> FnOnce(&'b mut RawEnv) -> T,
+    {
+        self.check_active();
+        self.deactivate();
+        let raw_env = unsafe { &mut *(self.env().to_raw().cast::<RawEnv>()) };
+        let result = f(raw_env);
+        self.activate();
+        result
     }
 
     /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
@@ -824,20 +844,7 @@ impl<'a> TaskContext<'a> {
         Scope::with(env, |scope| f(TaskContext { scope }))
     }
 
-    /// Constructs a context from a raw pointer.
-    ///
-    /// # Safety
-    /// The raw pointer `env` must be a `napi_env` that remains valid during the call of this method.
-    #[cfg(feature = "napi-1")]
-    pub unsafe fn with_raw_env<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(
-        env: *mut c_void,
-        f: F,
-    ) -> T {
-        let env = std::mem::transmute(env);
-        Self::with_context(env, f)
-    }
-
-    #[cfg(feature = "napi-1")]
+    #[cfg(all(feature = "napi-4", feature = "channel-api"))]
     pub(crate) fn with_context<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: Env, f: F) -> T {
         Scope::with(env, |scope| f(TaskContext { scope }))
     }
