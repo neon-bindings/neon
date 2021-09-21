@@ -25,6 +25,8 @@ use js::objects::*;
 use js::strings::*;
 use js::threads::*;
 use js::types::*;
+use neon::context::ffi::RawEnv;
+use std::os::raw::c_void;
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
@@ -107,13 +109,15 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         .collect::<Result<Vec<_>, _>>()?;
     assert_eq!(property_names, &["0", "a", "whatever"]);
 
-    let raw_env = cx.as_mut_ptr();
-    let forty_two = unsafe {
-        TaskContext::with_raw_env(raw_env, |mut cx| {
-            let forty_two = cx.number(42);
-            forty_two.value(&mut cx) as u8
+    let forty_two = cx.with_raw_env(|mut env| {
+        let env_ptr = env as *mut RawEnv as *mut c_void;
+        let env = unsafe { &mut *(env_ptr.cast::<RawEnv>()) };
+        env.with_context(|mut cx| {
+            let num = cx.number(42);
+            num.value(&mut cx) as u8
         })
-    };
+    });
+
     assert_eq!(forty_two, 42);
 
     cx.export_value("rustCreated", rust_created)?;
