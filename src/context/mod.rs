@@ -304,8 +304,8 @@ pub trait Context<'a>: ContextInternal<'a> {
     ///
     /// # Safety
     /// `&mut RawEnv` can be converted to `*mut void`, passed across FFI boundaries, and then
-    //  converted back to `&mut RawEnv`.
-    /// Mutable aliasing is allowed because `RawEnv` is zero-sized (https://github.com/rust-lang/rust-memory-model/issues/44),
+    ///  converted back to `&mut RawEnv`.
+    /// Mutable aliasing is allowed because `RawEnv` is zero-sized (https://rust-lang.github.io/unsafe-code-guidelines/glossary.html),
     /// but callers are still responsible for upholding other borrowing rules.
     #[cfg(feature = "napi-1")]
     fn with_raw_env<T, F>(&mut self, f: F) -> T
