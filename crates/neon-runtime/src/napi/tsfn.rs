@@ -2,6 +2,7 @@
 
 use std::ffi::c_void;
 use std::mem::MaybeUninit;
+use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::{Arc, Mutex};
 
 use crate::napi::bindings as napi;
@@ -28,6 +29,7 @@ unsafe fn string(env: Env, s: impl AsRef<str>) -> Local {
 struct Tsfn(napi::ThreadsafeFunction);
 
 unsafe impl Send for Tsfn {}
+
 unsafe impl Sync for Tsfn {}
 
 #[derive(Debug)]
@@ -155,7 +157,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     /// Safety: `Env` must be valid for the current thread
     pub unsafe fn reference(&self, env: Env) {
         assert_eq!(
-            napi::ref_threadsafe_function(env, self.tsfn.0,),
+            napi::ref_threadsafe_function(env, self.tsfn.0),
             napi::Status::Ok,
         );
     }
@@ -164,7 +166,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     /// Safety: `Env` must be valid for the current thread
     pub unsafe fn unref(&self, env: Env) {
         assert_eq!(
-            napi::unref_threadsafe_function(env, self.tsfn.0,),
+            napi::unref_threadsafe_function(env, self.tsfn.0),
             napi::Status::Ok,
         );
     }
@@ -186,10 +188,38 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     ) {
         let Callback { callback, data } = *Box::from_raw(data as *mut Callback<T>);
 
-        // Event loop has terminated
+        // Event loop has terminated if `null`
         let env = if env.is_null() { None } else { Some(env) };
 
-        callback(env, data);
+        // Run the user supplied callback, catching panics
+        // This is unwind safe because control is never yielded back to the caller
+        let result = catch_unwind(AssertUnwindSafe(move || callback(env, data)));
+
+        // A panic occurred
+        let panic = if let Err(panic) = result {
+            panic
+        } else {
+            return;
+        };
+
+        // Try to get the panic message from common types
+        let msg = if let Some(msg) = panic.downcast_ref::<&str>() {
+            msg
+        } else if let Some(msg) = panic.downcast_ref::<String>() {
+            &msg
+        } else {
+            "Panic occurred while executing a native function scheduled by Neon"
+        };
+
+        // Try to throw an uncaught exception
+        if let Some(env) = env {
+            if super::error::fatal_exception_from_utf8(env, msg).is_ok() {
+                return;
+            }
+        }
+
+        // Failed to trigger an `uncaughtException`; fallback to print
+        eprintln!("Failed to throw an exception for panic: {}", msg);
     }
 }
 

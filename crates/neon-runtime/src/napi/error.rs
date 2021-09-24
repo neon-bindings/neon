@@ -88,3 +88,28 @@ pub unsafe fn throw_error_from_utf8(env: Env, msg: *const u8, len: i32) {
 
     throw(env, err.assume_init());
 }
+
+pub unsafe fn fatal_exception_from_utf8(env: Env, msg: &str) -> Result<(), napi::Status> {
+    let mut out = MaybeUninit::uninit();
+
+    let status = napi::create_string_utf8(env, msg.as_ptr().cast(), msg.len(), out.as_mut_ptr());
+    let msg = match status {
+        napi::Status::Ok => out.assume_init(),
+        _ => return Err(status),
+    };
+
+    let mut err = MaybeUninit::uninit();
+
+    let status = napi::create_error(env, ptr::null_mut(), msg, err.as_mut_ptr());
+    let err = match status {
+        napi::Status::Ok => err.assume_init(),
+        _ => return Err(status),
+    };
+
+    let status = napi::fatal_exception(env, err);
+    if status != napi::Status::Ok {
+        return Err(status);
+    }
+
+    Ok(())
+}

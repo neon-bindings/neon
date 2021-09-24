@@ -5,9 +5,19 @@ const assert = require('chai').assert;
   // These tests require GC exposed to shutdown properly; skip if it is not
   return typeof global.gc === 'function' ? describe : describe.skip;
 })()('sync', function() {
+  let uncaughtExceptionListeners = [];
+
+  beforeEach(() => {
+    uncaughtExceptionListeners = process.listeners("uncaughtException");
+  });
+
   afterEach(() => {
     // Force garbage collection to shutdown `Channel`
     global.gc();
+
+    // Restore listeners
+    process.removeAllListeners("uncaughtException");
+    uncaughtExceptionListeners.forEach(listener => process.on("uncaughtException", listener));
   });
 
   it('can create and deref a root', function () {
@@ -70,5 +80,24 @@ const assert = require('chai').assert;
 
     // Asynchronously GC to give the task queue a chance to execute
     setTimeout(() => global.gc(), 10);
+  });
+
+  it('should handle panic in channel callback', function (cb) {
+    process.removeAllListeners("uncaughtException");
+    process.once("uncaughtException", (err) => {
+      try {
+        assert.instanceOf(err, Error);
+        assert.ok(/channel/i.test(err));
+        cb();
+      } catch (err) {
+        cb(err);
+      }
+    });
+
+    try {
+      addon.panic_in_channel();
+    } catch (err) {
+      cb(err);
+    }
   });
 });

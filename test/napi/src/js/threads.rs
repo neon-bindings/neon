@@ -185,3 +185,10 @@ pub fn drop_global_queue(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
     Ok(cx.undefined())
 }
+
+pub fn panic_in_channel(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    cx.channel()
+        .send(|_| panic!("Panicked in channel callback"));
+
+    Ok(cx.undefined())
+}
