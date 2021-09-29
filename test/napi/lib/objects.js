@@ -22,6 +22,18 @@ describe('JsObject', function() {
     assert.deepEqual({number: 9000, string: 'hello node'}, addon.return_js_object_with_mixed_content());
   });
 
+  it('do object freeze', function() {
+    var obj = { test: true };
+    addon.object_freeze(obj);
+    assert.equal(Object.isFrozen(obj), true);
+  });
+
+  it('make object seal', function() {
+    var obj = { test: true };
+    addon.object_seal(obj);
+    assert.equal(Object.isSealed(obj), true);
+  });
+
   it('gets a 16-byte, zeroed ArrayBuffer', function() {
     var b = addon.return_array_buffer();
     assert.equal(b.byteLength, 16);

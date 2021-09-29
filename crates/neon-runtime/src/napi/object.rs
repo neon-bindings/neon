@@ -8,6 +8,25 @@ pub unsafe fn new(out: &mut Local, env: Env) {
     napi::create_object(env, out as *mut _);
 }
 
+#[cfg(feature = "napi-8")]
+// This method freezes a given object. This prevents new properties from being added to it, existing properties from being removed,
+// prevents changing the enumerability, configurability, or writability of existing properties, and prevents the values of existing properties from being changed.
+// It also prevents the object's prototype from being changed. This is described in Section 19.1.2.6 of the ECMA-262 specification.
+pub unsafe fn freeze(env: Env, object: Local) -> bool {
+    let status = napi::object_freeze(env, object);
+
+    status == napi::Status::Ok
+}
+
+#[cfg(feature = "napi-8")]
+/// This method seals a given object. This prevents new properties from being added to it, as well as marking all existing properties as non-configurable.
+// This is described in Section 19.1.2.20 of the ECMA-262 specification.
+pub unsafe fn seal(env: Env, object: Local) -> bool {
+    let status = napi::object_seal(env, object);
+
+    status == napi::Status::Ok
+}
+
 #[cfg(feature = "napi-6")]
 /// Mutates the `out` argument to refer to a `napi_value` containing the own property names of the
 /// `object` as a JavaScript Array.

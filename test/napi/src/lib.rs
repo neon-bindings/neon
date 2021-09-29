@@ -160,6 +160,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     cx.export_function("to_string", to_string)?;
 
+    cx.export_function("object_freeze", object_freeze)?;
+    cx.export_function("object_seal", object_seal)?;
     cx.export_function("return_js_global_object", return_js_global_object)?;
     cx.export_function("return_js_object", return_js_object)?;
     cx.export_function("return_js_object_with_number", return_js_object_with_number)?;

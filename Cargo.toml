@@ -58,8 +58,10 @@ napi-3 = ["napi-2", "neon-runtime/napi-3"]
 napi-4 = ["napi-3", "neon-runtime/napi-4"]
 napi-5 = ["napi-4", "neon-runtime/napi-5"]
 napi-6 = ["napi-5", "neon-runtime/napi-6"]
-napi-latest = ["napi-6"]
-napi-experimental = ["napi-6", "neon-runtime/napi-experimental"]
+napi-7 = ["napi-6", "neon-runtime/napi-7"]
+napi-8 = ["napi-7", "neon-runtime/napi-8"]
+napi-latest = ["napi-8"]
+napi-experimental = ["napi-8", "neon-runtime/napi-experimental"]
 
 # Feature flag to disable external dependencies on docs build
 docs-only = ["neon-runtime/docs-only"]

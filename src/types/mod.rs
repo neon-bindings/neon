@@ -587,6 +587,16 @@ impl JsObject {
             Handle::new_internal(JsObject(local))
         }
     }
+
+    #[cfg(feature = "napi-8")]
+    pub fn freeze<'a, C: Context<'a>>(self, cx: &mut C) -> bool {
+        unsafe { neon_runtime::object::freeze(cx.env().to_raw(), self.to_raw()) }
+    }
+
+    #[cfg(feature = "napi-8")]
+    pub fn seal<'a, C: Context<'a>>(self, cx: &mut C) -> bool {
+        unsafe { neon_runtime::object::seal(cx.env().to_raw(), self.to_raw()) }
+    }
 }
 
 /// A JavaScript array object, i.e. a value for which `Array.isArray`

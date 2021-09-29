@@ -8,6 +8,20 @@ pub fn return_js_object(mut cx: FunctionContext) -> JsResult<JsObject> {
     Ok(cx.empty_object())
 }
 
+pub fn object_freeze(mut cx: FunctionContext) -> JsResult<JsObject> {
+    let object = cx.argument::<JsObject>(0)?;
+    object.freeze(&mut cx);
+
+    Ok(object)
+}
+
+pub fn object_seal(mut cx: FunctionContext) -> JsResult<JsObject> {
+    let object = cx.argument::<JsObject>(0)?;
+    object.seal(&mut cx);
+
+    Ok(object)
+}
+
 pub fn return_js_object_with_mixed_content(mut cx: FunctionContext) -> JsResult<JsObject> {
     let js_object: Handle<JsObject> = cx.empty_object();
     let n = cx.number(9000.0);

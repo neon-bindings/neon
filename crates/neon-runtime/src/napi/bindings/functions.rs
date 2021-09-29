@@ -284,6 +284,19 @@ mod napi6 {
     );
 }
 
+#[cfg(feature = "napi-8")]
+mod napi8 {
+    use super::super::types::*;
+
+    generate!(
+        extern "C" {
+            fn object_freeze(env: Env, value: Value) -> Status;
+
+            fn object_seal(env: Env, value: Value) -> Status;
+        }
+    );
+}
+
 pub(crate) use napi1::*;
 #[cfg(feature = "napi-4")]
 pub(crate) use napi4::*;
@@ -291,6 +304,8 @@ pub(crate) use napi4::*;
 pub(crate) use napi5::*;
 #[cfg(feature = "napi-6")]
 pub(crate) use napi6::*;
+#[cfg(feature = "napi-8")]
+pub(crate) use napi8::*;
 
 use super::{Env, Status};
 
@@ -324,6 +339,9 @@ pub(crate) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
 
     #[cfg(feature = "napi-6")]
     napi6::load(&host, version, 6)?;
+
+    #[cfg(feature = "napi-8")]
+    napi8::load(&host, version, 8)?;
 
     Ok(())
 }
