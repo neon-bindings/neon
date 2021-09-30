@@ -260,6 +260,14 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("sum_manual_promise", sum_manual_promise)?;
     cx.export_function("sum_rust_thread", sum_rust_thread)?;
     cx.export_function("leak_promise", leak_promise)?;
+    cx.export_function("channel_panic", channel_panic)?;
+    cx.export_function("channel_throw", channel_throw)?;
+    cx.export_function("channel_panic_throw", channel_panic_throw)?;
+    cx.export_function("channel_custom_panic", channel_custom_panic)?;
+    cx.export_function(
+        "channel_custom_panic_downcast",
+        channel_custom_panic_downcast,
+    )?;
 
     Ok(())
 }

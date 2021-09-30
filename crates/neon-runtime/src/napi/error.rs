@@ -1,4 +1,5 @@
 use std::mem::MaybeUninit;
+use std::panic::Location;
 use std::ptr;
 
 use crate::napi::bindings as napi;
@@ -87,4 +88,18 @@ pub unsafe fn throw_error_from_utf8(env: Env, msg: *const u8, len: i32) {
     assert_eq!(status, napi::Status::Ok);
 
     throw(env, err.assume_init());
+}
+
+#[track_caller]
+pub(super) unsafe fn fatal_error(message: &str) -> ! {
+    let location = Location::caller().to_string();
+
+    napi::fatal_error(
+        location.as_ptr().cast(),
+        location.len(),
+        message.as_ptr().cast(),
+        message.len(),
+    );
+
+    unreachable!("Expected napi_fatal_error to exit the process")
 }
