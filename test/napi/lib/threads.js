@@ -5,7 +5,17 @@ const assert = require('chai').assert;
   // These tests require GC exposed to shutdown properly; skip if it is not
   return typeof global.gc === 'function' ? describe : describe.skip;
 })()('sync', function() {
+  let uncaughtExceptionListeners = [];
+
+  beforeEach(() => {
+    uncaughtExceptionListeners = process.listeners("uncaughtException");
+  });
+
   afterEach(() => {
+    // Restore listeners
+    process.removeAllListeners("uncaughtException");
+    uncaughtExceptionListeners.forEach(listener => process.on("uncaughtException", listener));
+
     // Force garbage collection to shutdown `Channel`
     global.gc();
   });
@@ -125,5 +135,91 @@ const assert = require('chai').assert;
       assert.instanceOf(err, Error);
       assert.ok(/Deferred/.test(err));
     }
+  });
+
+  it('should throw an uncaughtException when panicking in a channel', function (cb) {
+    const msg = "Hello, Panic!";
+
+    process.removeAllListeners("uncaughtException");
+    process.once("uncaughtException", (err) => {
+      try {
+        assert.instanceOf(err, Error);
+        assert.ok(/panic/i.test(err.message), "Expected error message to indicate a panic");
+        assert.ok(!/exception/i.test(err.message), "Expected error message not to indicate an exception");
+        assert.strictEqual(err.cause, undefined);
+        assert.instanceOf(err.panic, Error);
+        assert.strictEqual(err.panic.message, msg);
+        assert.strictEqual(err.panic.cause, undefined);
+
+        cb();
+      } catch (err) {
+        cb(err);
+      }
+    });
+
+    addon.channel_panic(msg);
+  });
+
+  it('should throw an uncaughtException when throwing in a channel', function (cb) {
+    const msg = "Hello, Throw!";
+
+    process.removeAllListeners("uncaughtException");
+    process.once("uncaughtException", (err) => {
+      try {
+        assert.instanceOf(err, Error);
+        assert.ok(!/panic/i.test(err.message), "Expected error message not to indicate a panic");
+        assert.ok(/exception/i.test(err.message), "Expected error message to indicate an exception");
+        assert.strictEqual(err.panic, undefined);
+        assert.instanceOf(err.cause, Error);
+        assert.strictEqual(err.cause.message, msg);
+
+        cb();
+      } catch (err) {
+        cb(err);
+      }
+    });
+
+    addon.channel_throw(msg);
+  });
+
+  it('should throw an uncaughtException when panicking and throwing in a channel', function (cb) {
+    const msg = "Oh, no!";
+
+    process.removeAllListeners("uncaughtException");
+    process.once("uncaughtException", (err) => {
+      try {
+        assert.instanceOf(err, Error);
+        assert.ok(/panic/i.test(err.message), "Expected error message to indicate a panic");
+        assert.ok(/exception/i.test(err.message), "Expected error message to indicate an exception");
+        assert.instanceOf(err.panic, Error);
+        assert.instanceOf(err.cause, Error);
+        assert.strictEqual(err.cause.message, msg);
+
+        cb();
+      } catch (err) {
+        cb(err);
+      }
+    });
+
+    addon.channel_panic_throw(msg);
+  });
+
+  it('should be able to downcast a panic in a channel', function (cb) {
+    const msg = "Hello, Secret Panic!";
+
+    process.removeAllListeners("uncaughtException");
+    process.once("uncaughtException", (err) => {
+      try {
+        assert.instanceOf(err.panic, Error);
+        assert.ok(/panic/i.test(err.message), "Expected error message to indicate a panic");
+        assert.strictEqual(addon.channel_custom_panic_downcast(err.panic.cause), msg);
+
+        cb();
+      } catch (err) {
+        cb(err);
+      }
+    });
+
+    addon.channel_custom_panic(msg);
   });
 });

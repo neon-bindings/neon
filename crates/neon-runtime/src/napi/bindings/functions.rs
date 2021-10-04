@@ -226,6 +226,24 @@ mod napi1 {
             fn create_promise(env: Env, deferred: *mut Deferred, promise: *mut Value) -> Status;
             fn resolve_deferred(env: Env, deferred: Deferred, resolution: Value) -> Status;
             fn reject_deferred(env: Env, deferred: Deferred, rejection: Value) -> Status;
+
+            fn fatal_error(
+                location: *const c_char,
+                location_len: usize,
+                message: *const c_char,
+                message_len: usize,
+            );
+        }
+    );
+}
+
+#[cfg(feature = "napi-3")]
+mod napi3 {
+    use super::super::types::*;
+
+    generate!(
+        extern "C" {
+            fn fatal_exception(env: Env, err: Value) -> Status;
         }
     );
 }
@@ -313,6 +331,8 @@ mod napi6 {
 }
 
 pub(crate) use napi1::*;
+#[cfg(feature = "napi-3")]
+pub(crate) use napi3::*;
 #[cfg(feature = "napi-4")]
 pub(crate) use napi4::*;
 #[cfg(feature = "napi-5")]
@@ -343,6 +363,9 @@ pub(crate) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
     let version = get_version(&host, env).expect("Failed to find N-API version");
 
     napi1::load(&host, version, 1)?;
+
+    #[cfg(feature = "napi-3")]
+    napi3::load(&host, version, 3)?;
 
     #[cfg(feature = "napi-4")]
     napi4::load(&host, version, 4)?;

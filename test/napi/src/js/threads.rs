@@ -276,3 +276,69 @@ pub fn leak_promise(mut cx: FunctionContext) -> JsResult<JsPromise> {
 
     Ok(promise)
 }
+
+pub fn channel_panic(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+    let channel = cx.channel();
+
+    std::thread::spawn(move || {
+        channel.send(move |_| -> NeonResult<()> {
+            panic!("{}", msg);
+        })
+    });
+
+    Ok(cx.undefined())
+}
+
+pub fn channel_throw(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+    let channel = cx.channel();
+
+    std::thread::spawn(move || {
+        channel.send(move |mut cx| {
+            cx.throw_error(msg)?;
+            Ok(())
+        })
+    });
+
+    Ok(cx.undefined())
+}
+
+pub fn channel_panic_throw(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+    let channel = cx.channel();
+
+    std::thread::spawn(move || {
+        channel.send(move |mut cx| {
+            // Throw an exception, but ignore the `Err(Throw)`
+            let _ = cx.throw_error::<_, ()>(msg);
+            // Attempting to throw another error while already throwing should `panic`
+            let _ = cx.throw_error("Unreachable")?;
+
+            Ok(())
+        })
+    });
+
+    Ok(cx.undefined())
+}
+
+struct CustomPanic(String);
+
+pub fn channel_custom_panic(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+    let channel = cx.channel();
+
+    std::thread::spawn(move || {
+        channel.send(move |_| -> NeonResult<()> {
+            std::panic::panic_any(CustomPanic(msg));
+        })
+    });
+
+    Ok(cx.undefined())
+}
+
+pub fn channel_custom_panic_downcast(mut cx: FunctionContext) -> JsResult<JsString> {
+    let panic = cx.argument::<JsBox<CustomPanic>>(0)?;
+
+    Ok(cx.string(&panic.0))
+}
