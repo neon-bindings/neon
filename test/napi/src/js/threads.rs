@@ -236,7 +236,7 @@ pub fn sum(mut cx: FunctionContext) -> JsResult<JsPromise> {
 
     let promise = cx
         .task(move || nums.into_iter().sum())
-        .promise(|cx, n: f64| Ok(cx.number(n)));
+        .promise(|mut cx, n: f64| Ok(cx.number(n)));
 
     Ok(promise)
 }
@@ -247,9 +247,9 @@ pub fn sum_manual_promise(mut cx: FunctionContext) -> JsResult<JsPromise> {
     let (deferred, promise) = cx.promise();
 
     cx.task(move || nums.into_iter().sum())
-        .and_then(move |cx, n: f64| {
+        .and_then(move |mut cx, n: f64| {
             let n = cx.number(n);
-            deferred.resolve(cx, n);
+            deferred.resolve(&mut cx, n);
             Ok(())
         });
 

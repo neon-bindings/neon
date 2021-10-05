@@ -1,7 +1,5 @@
 use neon_runtime::{async_work, raw};
 
-#[cfg(feature = "promise-api")]
-use crate::context::internal::ContextInternal;
 use crate::context::{internal::Env, Context, TaskContext};
 #[cfg(feature = "promise-api")]
 use crate::handle::Handle;
@@ -52,7 +50,7 @@ where
     /// of the `execute` callback
     pub fn and_then<F>(self, complete: F)
     where
-        F: FnOnce(&mut TaskContext, O) -> NeonResult<()> + Send + 'static,
+        F: FnOnce(TaskContext, O) -> NeonResult<()> + Send + 'static,
     {
         let env = self.cx.env();
         let execute = self.execute;
@@ -71,7 +69,7 @@ where
     pub fn promise<V, F>(self, complete: F) -> Handle<'a, JsPromise>
     where
         V: Value,
-        for<'b> F: FnOnce(&mut TaskContext<'b>, O) -> JsResult<'b, V> + Send + 'static,
+        F: FnOnce(TaskContext, O) -> JsResult<V> + Send + 'static,
     {
         let env = self.cx.env();
         let (deferred, promise) = JsPromise::new(self.cx);
@@ -88,7 +86,7 @@ fn schedule<I, O, D>(env: Env, input: I, data: D)
 where
     I: FnOnce() -> O + Send + 'static,
     O: Send + 'static,
-    D: FnOnce(&mut TaskContext, O) -> NeonResult<()> + Send + 'static,
+    D: FnOnce(TaskContext, O) -> NeonResult<()> + Send + 'static,
 {
     unsafe {
         async_work::schedule(env.to_raw(), input, execute::<I, O>, complete::<O, D>, data);
@@ -108,10 +106,10 @@ where
 fn complete<O, D>(env: raw::Env, output: O, callback: D)
 where
     O: Send + 'static,
-    D: FnOnce(&mut TaskContext, O) -> NeonResult<()> + Send + 'static,
+    D: FnOnce(TaskContext, O) -> NeonResult<()> + Send + 'static,
 {
-    TaskContext::with_context(env.into(), move |mut cx| {
-        let _ = callback(&mut cx, output);
+    TaskContext::with_context(env.into(), move |cx| {
+        let _ = callback(cx, output);
     });
 }
 
@@ -121,7 +119,7 @@ fn schedule_promise<I, O, D, V>(env: Env, input: I, complete: D, deferred: Defer
 where
     I: FnOnce() -> O + Send + 'static,
     O: Send + 'static,
-    for<'b> D: FnOnce(&mut TaskContext<'b>, O) -> JsResult<'b, V> + Send + 'static,
+    D: FnOnce(TaskContext, O) -> JsResult<V> + Send + 'static,
     V: Value,
 {
     unsafe {
@@ -141,13 +139,19 @@ where
 fn complete_promise<O, D, V>(env: raw::Env, output: O, (complete, deferred): (D, Deferred))
 where
     O: Send + 'static,
-    for<'b> D: FnOnce(&mut TaskContext<'b>, O) -> JsResult<'b, V> + Send + 'static,
+    D: FnOnce(TaskContext, O) -> JsResult<V> + Send + 'static,
     V: Value,
 {
-    TaskContext::with_context(env.into(), move |mut cx| {
-        match cx.try_catch_internal(move |cx| complete(cx, output)) {
-            Ok(value) => deferred.resolve(&mut cx, value),
-            Err(err) => deferred.reject(&mut cx, err),
+    let env = env.into();
+
+    TaskContext::with_context(env, move |cx| unsafe {
+        match env.try_catch(move || complete(cx, output)) {
+            Ok(value) => {
+                neon_runtime::promise::resolve(env.to_raw(), deferred.into_inner(), value.to_raw());
+            }
+            Err(err) => {
+                neon_runtime::promise::reject(env.to_raw(), deferred.into_inner(), err);
+            }
         }
     });
 }
