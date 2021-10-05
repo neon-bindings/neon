@@ -110,9 +110,7 @@ where
     O: Send + 'static,
     D: FnOnce(&mut TaskContext, O) -> NeonResult<()> + Send + 'static,
 {
-    let env = unsafe { std::mem::transmute(env) };
-
-    TaskContext::with_context(env, move |mut cx| {
+    TaskContext::with_context(env.into(), move |mut cx| {
         let _ = callback(&mut cx, output);
     });
 }
@@ -146,9 +144,7 @@ where
     for<'b> D: FnOnce(&mut TaskContext<'b>, O) -> JsResult<'b, V> + Send + 'static,
     V: Value,
 {
-    let env = unsafe { std::mem::transmute(env) };
-
-    TaskContext::with_context(env, move |mut cx| {
+    TaskContext::with_context(env.into(), move |mut cx| {
         match cx.try_catch_internal(move |cx| complete(cx, output)) {
             Ok(value) => deferred.resolve(&mut cx, value),
             Err(err) => deferred.reject(&mut cx, err),

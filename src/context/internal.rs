@@ -28,6 +28,12 @@ pub struct Env(raw::Isolate);
 #[derive(Clone, Copy)]
 pub struct Env(raw::Env);
 
+impl From<raw::Env> for Env {
+    fn from(env: raw::Env) -> Self {
+        Self(env)
+    }
+}
+
 thread_local! {
     #[allow(unused)]
     pub(crate) static IS_RUNNING: RefCell<bool> = RefCell::new(false);
