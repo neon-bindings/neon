@@ -13,10 +13,6 @@ use crate::types::Value;
 #[cfg(feature = "promise-api")]
 use crate::types::{Deferred, JsPromise};
 
-type ExecuteOutput<O, F> = (O, F);
-#[cfg(feature = "promise-api")]
-type PromiseOutput<O, F> = (O, F, Deferred);
-
 #[cfg_attr(docsrs, doc(cfg(feature = "task-api")))]
 /// Node asynchronous task builder
 ///
@@ -61,12 +57,7 @@ where
         let env = self.cx.env();
         let execute = self.execute;
 
-        // Wrap the user provided `execute` callback with a callback that
-        // runs it but, also passes the user's `complete` callback to the
-        // static `complete` function.
-        let execute = move || (execute(), complete);
-
-        schedule(env, execute);
+        schedule(env, execute, complete);
     }
 
     #[cfg_attr(docsrs, doc(cfg(feature = "promise-api")))]
@@ -86,31 +77,21 @@ where
         let (deferred, promise) = JsPromise::new(self.cx);
         let execute = self.execute;
 
-        // Wrap the user provided `execute` callback with a callback that runs it
-        // but, also passes the user's `complete` callback and `Deferred` into the
-        // static `complete` function.
-        let execute = move || (execute(), complete, deferred);
-
-        schedule_promise(env, execute);
+        schedule_promise(env, execute, complete, deferred);
 
         promise
     }
 }
 
 // Schedule a task to execute on the Node worker pool
-fn schedule<O, F, I>(env: Env, input: I)
+fn schedule<I, O, D>(env: Env, input: I, data: D)
 where
+    I: FnOnce() -> O + Send + 'static,
     O: Send + 'static,
-    F: FnOnce(&mut TaskContext, O) -> NeonResult<()> + Send + 'static,
-    I: FnOnce() -> ExecuteOutput<O, F> + Send + 'static,
+    D: FnOnce(&mut TaskContext, O) -> NeonResult<()> + Send + 'static,
 {
     unsafe {
-        async_work::schedule(
-            env.to_raw(),
-            input,
-            execute::<I, ExecuteOutput<O, F>>,
-            complete::<O, F>,
-        );
+        async_work::schedule(env.to_raw(), input, execute::<I, O>, complete::<O, D>, data);
     }
 }
 
@@ -124,33 +105,34 @@ where
 
 // Unpack an `(output, complete)` tuple returned by `execute` and execute
 // `complete` with the `output` argument
-fn complete<O, F>(env: raw::Env, (output, complete): ExecuteOutput<O, F>)
+fn complete<O, D>(env: raw::Env, output: O, callback: D)
 where
     O: Send + 'static,
-    F: FnOnce(&mut TaskContext, O) -> NeonResult<()> + Send + 'static,
+    D: FnOnce(&mut TaskContext, O) -> NeonResult<()> + Send + 'static,
 {
     let env = unsafe { std::mem::transmute(env) };
 
     TaskContext::with_context(env, move |mut cx| {
-        let _ = complete(&mut cx, output);
+        let _ = callback(&mut cx, output);
     });
 }
 
 #[cfg(feature = "promise-api")]
 // Schedule a task to execute on the Node worker pool and settle a `Promise` with the result
-fn schedule_promise<O, V, F, I>(env: Env, input: I)
+fn schedule_promise<I, O, D, V>(env: Env, input: I, complete: D, deferred: Deferred)
 where
+    I: FnOnce() -> O + Send + 'static,
     O: Send + 'static,
+    for<'b> D: FnOnce(&mut TaskContext<'b>, O) -> JsResult<'b, V> + Send + 'static,
     V: Value,
-    for<'b> F: FnOnce(&mut TaskContext<'b>, O) -> JsResult<'b, V> + Send + 'static,
-    I: FnOnce() -> PromiseOutput<O, F> + Send + 'static,
 {
     unsafe {
         async_work::schedule(
             env.to_raw(),
             input,
-            execute::<I, PromiseOutput<O, F>>,
-            complete_promise::<O, V, F>,
+            execute::<I, O>,
+            complete_promise::<O, D, V>,
+            (complete, deferred),
         );
     }
 }
@@ -158,11 +140,11 @@ where
 #[cfg(feature = "promise-api")]
 // Unpack an `(output, complete, deferred)` tuple returned by `execute` and settle the
 // deferred with the result of passing `output` to the `complete` callback
-fn complete_promise<O, V, F>(env: raw::Env, (output, complete, deferred): PromiseOutput<O, F>)
+fn complete_promise<O, D, V>(env: raw::Env, output: O, (complete, deferred): (D, Deferred))
 where
     O: Send + 'static,
+    for<'b> D: FnOnce(&mut TaskContext<'b>, O) -> JsResult<'b, V> + Send + 'static,
     V: Value,
-    for<'b> F: FnOnce(&mut TaskContext<'b>, O) -> JsResult<'b, V> + Send + 'static,
 {
     let env = unsafe { std::mem::transmute(env) };
 

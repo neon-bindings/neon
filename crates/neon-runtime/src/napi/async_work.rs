@@ -14,22 +14,29 @@ use std::ptr;
 use crate::napi::bindings as napi;
 use crate::raw::Env;
 
-type Execute<T, O> = fn(input: T) -> O;
-type Complete<O> = fn(env: Env, output: O);
+type Execute<I, O> = fn(input: I) -> O;
+type Complete<O, D> = fn(env: Env, output: O, data: D);
 
 /// Schedule work to execute on the libuv thread pool
 ///
 /// # Safety
 /// * `env` must be a valid `napi_env` for the current thread
-pub unsafe fn schedule<T, O>(env: Env, input: T, execute: Execute<T, O>, complete: Complete<O>)
-where
-    T: Send + 'static,
+pub unsafe fn schedule<I, O, D>(
+    env: Env,
+    input: I,
+    execute: Execute<I, O>,
+    complete: Complete<O, D>,
+    data: D,
+) where
+    I: Send + 'static,
     O: Send + 'static,
+    D: Send + 'static,
 {
     let mut data = Box::new(Data {
         state: State::Input(input),
         execute,
         complete,
+        data,
         // Work is initialized as a null pointer, but set by `create_async_work`
         // `data` must not be used until this value has been set.
         work: ptr::null_mut(),
@@ -44,8 +51,8 @@ where
             env,
             ptr::null_mut(),
             super::string(env, "neon_async_work"),
-            Some(call_execute::<T, O>),
-            Some(call_complete::<T, O>),
+            Some(call_execute::<I, O, D>),
+            Some(call_complete::<I, O, D>),
             Box::into_raw(data).cast(),
             work,
         ),
@@ -64,26 +71,27 @@ where
 }
 
 /// A pointer to data is passed to the `execute` and `complete` callbacks
-struct Data<T, O> {
-    state: State<T, O>,
-    execute: Execute<T, O>,
-    complete: Complete<O>,
+struct Data<I, O, D> {
+    state: State<I, O>,
+    execute: Execute<I, O>,
+    complete: Complete<O, D>,
+    data: D,
     work: napi::AsyncWork,
 }
 
 /// State of the task that is transitioned by `execute` and `complete`
-enum State<T, O> {
+enum State<I, O> {
     /// Initial data input passed to `execute`
-    Input(T),
+    Input(I),
     /// Transient state while `execute` is running
     Executing,
     /// Return data of `execute` passed to `complete`
     Output(O),
 }
 
-impl<T, O> State<T, O> {
+impl<I, O> State<I, O> {
     /// Return the input if `State::Input`, replacing with `State::Executing`
-    fn take_execute_input(&mut self) -> Option<T> {
+    fn take_execute_input(&mut self) -> Option<I> {
         match mem::replace(self, Self::Executing) {
             Self::Input(input) => Some(input),
             _ => None,
@@ -103,9 +111,9 @@ impl<T, O> State<T, O> {
 ///
 /// # Safety
 /// * `Env` should not be used because it could attempt to call JavaScript
-/// * `data` is expected to be a pointer to `Data<T, O>`
-unsafe extern "C" fn call_execute<T, O>(_: Env, data: *mut c_void) {
-    let data = &mut *data.cast::<Data<T, O>>();
+/// * `data` is expected to be a pointer to `Data<I, O, D>`
+unsafe extern "C" fn call_execute<I, O, D>(_: Env, data: *mut c_void) {
+    let data = &mut *data.cast::<Data<I, O, D>>();
     // `unwrap` is ok because `call_execute` should be called exactly once
     // after initialization
     let input = data.state.take_execute_input().unwrap();
@@ -117,21 +125,22 @@ unsafe extern "C" fn call_execute<T, O>(_: Env, data: *mut c_void) {
 /// Callback executed on the JavaScript main thread
 ///
 /// # Safety
-/// * `data` is expected to be a pointer to `Data<T, O>`
-unsafe extern "C" fn call_complete<T, O>(env: Env, status: napi::Status, data: *mut c_void) {
+/// * `data` is expected to be a pointer to `Data<I, O, D>`
+unsafe extern "C" fn call_complete<I, O, D>(env: Env, status: napi::Status, data: *mut c_void) {
     let Data {
         state,
         complete,
+        data,
         work,
         ..
-    } = *Box::<Data<T, O>>::from_raw(data.cast());
+    } = *Box::<Data<I, O, D>>::from_raw(data.cast());
 
     napi::delete_async_work(env, work);
 
     match status {
         // `unwrap` is okay because `call_complete` should be called exactly once
         // if and only if `call_execute` has completed successfully
-        napi::Status::Ok => complete(env, state.into_output().unwrap()),
+        napi::Status::Ok => complete(env, state.into_output().unwrap(), data),
         napi::Status::Cancelled => {}
         _ => assert_eq!(status, napi::Status::Ok),
     }
