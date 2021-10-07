@@ -5,11 +5,7 @@ use neon_runtime::raw::Env;
 use neon_runtime::tsfn::ThreadsafeFunction;
 
 use crate::context::{Context, TaskContext};
-#[cfg(feature = "promise-api")]
-use crate::result::JsResult;
 use crate::result::NeonResult;
-#[cfg(feature = "promise-api")]
-use crate::types::{Deferred, Value};
 
 type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 
@@ -149,58 +145,6 @@ impl Channel {
     /// loop from exiting.
     pub fn has_ref(&self) -> bool {
         self.has_ref
-    }
-
-    #[cfg_attr(docsrs, doc(cfg(feature = "promise-api")))]
-    #[cfg(feature = "promise-api")]
-    /// Settle a [`JsPromise`](crate::types::JsPromise) from [`Deferred`] by sending a
-    /// closure to be executed on the main JavaScript thread.
-    ///
-    /// The `JsPromise` will be resolved with the value returned by the `complete`
-    /// closure. If an exception is thrown, the promise will be rejected with the exception.
-    ///
-    /// Panics if there is a libuv error.
-    ///
-    /// ```
-    /// # #[cfg(feature = "promise-api")] {
-    /// # use neon::prelude::*;
-    /// # fn example(mut cx: FunctionContext) -> JsResult<JsPromise> {
-    /// let channel = cx.channel();
-    /// let (deferred, promise) = cx.promise();
-    ///
-    /// channel.settle_with(deferred, move |cx| Ok(cx.number(42)));
-    ///
-    /// # Ok(promise)
-    /// # }
-    /// # }
-    /// ```
-    pub fn settle_with<V, F>(&self, deferred: Deferred, complete: F) -> JoinHandle<()>
-    where
-        V: Value,
-        for<'a> F: FnOnce(&mut TaskContext<'a>) -> JsResult<'a, V> + Send + 'static,
-    {
-        self.send(move |mut cx| Ok(deferred.settle_with(&mut cx, complete)))
-    }
-
-    #[cfg_attr(docsrs, doc(cfg(feature = "promise-api")))]
-    #[cfg(feature = "promise-api")]
-    /// Settle a [`JsPromise`](crate::types::JsPromise) from [`Deferred`](crate::types::Deferred) by
-    /// sending a closure to be executed on the main JavaScript thread.
-    ///
-    /// Usage is identical to [`Channel::settle_with`].
-    ///
-    /// Returns a `SendError` if sending the closure to the main JavaScript thread fails.
-    /// See [`Channel::try_send`] and [`SendError`] for more details.
-    pub fn try_settle_with<V, F>(
-        &self,
-        deferred: Deferred,
-        complete: F,
-    ) -> Result<JoinHandle<()>, SendError>
-    where
-        V: Value,
-        for<'a> F: FnOnce(&mut TaskContext<'a>) -> JsResult<'a, V> + Send + 'static,
-    {
-        self.try_send(move |mut cx| Ok(deferred.settle_with(&mut cx, complete)))
     }
 }
 

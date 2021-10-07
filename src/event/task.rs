@@ -144,14 +144,7 @@ where
 {
     let env = env.into();
 
-    TaskContext::with_context(env, move |cx| unsafe {
-        match env.try_catch(move || complete(cx, output)) {
-            Ok(value) => {
-                neon_runtime::promise::resolve(env.to_raw(), deferred.into_inner(), value.to_raw());
-            }
-            Err(err) => {
-                neon_runtime::promise::reject(env.to_raw(), deferred.into_inner(), err);
-            }
-        }
+    TaskContext::with_context(env, move |cx| {
+        deferred.try_catch_settle(cx, move |cx| complete(cx, output))
     });
 }

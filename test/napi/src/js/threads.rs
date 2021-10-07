@@ -265,7 +265,7 @@ pub fn sum_rust_thread(mut cx: FunctionContext) -> JsResult<JsPromise> {
     std::thread::spawn(move || {
         let n: f64 = nums.into_iter().sum();
 
-        channel.settle_with(deferred, move |cx| Ok(cx.number(n)));
+        deferred.settle_with(&channel, move |mut cx| Ok(cx.number(n)));
     });
 
     Ok(promise)
