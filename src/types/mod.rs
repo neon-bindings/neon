@@ -94,7 +94,7 @@ use crate::object::{Object, This};
 use crate::result::{JsResult, JsResultExt, NeonResult, Throw};
 use neon_runtime;
 use neon_runtime::raw;
-use smallvec::SmallVec;
+use smallvec::{SmallVec, smallvec};
 use std::fmt;
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -683,19 +683,52 @@ impl<T: Object> Object for JsFunction<T> {}
 // Maximum number of function arguments in V8.
 const V8_ARGC_LIMIT: usize = 65535;
 
-unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(
+fn prepare_call<'a, 'b, C: Context<'a>, A>(
     cx: &mut C,
-    args: &mut [Handle<'b, A>],
-) -> NeonResult<(i32, *mut c_void)>
+    args: &[Handle<'b, A>],
+) -> NeonResult<(i32, *const c_void)>
 where
     A: Value + 'b,
 {
-    let argv = args.as_mut_ptr();
+    let argv = args.as_ptr();
     let argc = args.len();
     if argc > V8_ARGC_LIMIT {
         return cx.throw_range_error("too many arguments");
     }
-    Ok((argc as i32, argv as *mut c_void))
+    Ok((argc as i32, argv as *const c_void))
+}
+
+fn do_call<'a, 'b: 'a, C, T, A>(
+    cx: &mut C,
+    f: raw::Local,
+    this: Handle<'a, T>,
+    args: &[Handle<'a, A>])
+    -> JsResult<'b, JsValue>
+    where C: Context<'b>,
+          T: Value,
+          A: Value
+{
+    let (argc, argv) = prepare_call(cx, args)?;
+    let env = cx.env().to_raw();
+    build(cx.env(), |out| unsafe {
+        neon_runtime::fun::call(out, env, f, this.to_raw(), argc, argv)
+    })
+}
+
+fn do_construct<'a, 'b: 'a, C, A, CL>(
+    cx: &mut C,
+    f: raw::Local,
+    args: &[Handle<'a, A>])
+    -> JsResult<'b, CL>
+    where C: Context<'b>,
+          A: Value,
+          CL: Object,
+{
+    let (argc, argv) = prepare_call(cx, args)?;
+    let env = cx.env().to_raw();
+    build(cx.env(), |out| unsafe {
+        neon_runtime::fun::construct(out, env, f, argc, argv)
+    })
 }
 
 impl JsFunction {
@@ -720,20 +753,22 @@ impl JsFunction {
 impl JsFunction {
     /// Build a [`Call`](crate::types::Call) with an initial arguments list.
     pub fn args<'a, A: Arguments<'a>>(self, args: A) -> Call<'a> {
-        let builder = Call {
+        let mut builder = Call {
             callee: Handle::new_internal(self),
-            args: vec![],
+            args: smallvec![],
         };
-        builder.args(args)
+        builder.args(args);
+        builder
     }
 
     /// Build a [`Call`](crate::types::Call) with an initial single argument.
     pub fn arg<'a, V: Value>(self, v: Handle<'a, V>) -> Call<'a> {
-        let builder = Call {
+        let mut builder = Call {
             callee: Handle::new_internal(self),
-            args: vec![],
+            args: smallvec![],
         };
-        builder.arg(v)
+        builder.arg(v);
+        builder
     }
 
     /// Build a [`FunctionCall`](crate::types::FunctionCall) with a `this` binding.
@@ -741,7 +776,7 @@ impl JsFunction {
         FunctionCall {
             callee: Handle::new_internal(self),
             this: this.upcast(),
-            args: vec![],
+            args: smallvec![],
         }
     }
 }
@@ -758,12 +793,8 @@ impl<CL: Object> JsFunction<CL> {
         A: Value + 'b,
         AS: IntoIterator<Item = Handle<'b, A>>,
     {
-        let mut args = args.into_iter().collect::<SmallVec<[_; 8]>>();
-        let (argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
-        let env = cx.env().to_raw();
-        build(cx.env(), |out| unsafe {
-            neon_runtime::fun::call(out, env, self.to_raw(), this.to_raw(), argc, argv)
-        })
+        let args = args.into_iter().collect::<SmallVec<[_; 8]>>();
+        do_call(cx, self.to_raw(), this, &args)
     }
 
     pub fn construct<'a, 'b, C: Context<'a>, A, AS>(self, cx: &mut C, args: AS) -> JsResult<'a, CL>
@@ -771,12 +802,8 @@ impl<CL: Object> JsFunction<CL> {
         A: Value + 'b,
         AS: IntoIterator<Item = Handle<'b, A>>,
     {
-        let mut args = args.into_iter().collect::<SmallVec<[_; 8]>>();
-        let (argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
-        let env = cx.env().to_raw();
-        build(cx.env(), |out| unsafe {
-            neon_runtime::fun::construct(out, env, self.to_raw(), argc, argv)
-        })
+        let args = args.into_iter().collect::<SmallVec<[_; 8]>>();
+        do_construct(cx, self.to_raw(), &args)
     }
 }
 
@@ -805,6 +832,8 @@ impl<T: Object> ValueInternal for JsFunction<T> {
     }
 }
 
+type ArgsVec<'a> = SmallVec<[Handle<'a, JsValue>; 8]>;
+
 /// A builder for making a JavaScript function call (e.g., `parseInt("42")`).
 ///
 /// The builder methods make it convenient to assemble the call from parts:
@@ -824,7 +853,7 @@ impl<T: Object> ValueInternal for JsFunction<T> {
 pub struct FunctionCall<'a> {
     callee: Handle<'a, JsFunction>,
     this: Handle<'a, JsValue>,
-    args: Vec<Handle<'a, JsValue>>,
+    args: ArgsVec<'a>,
 }
 
 /// A builder for making either a JavaScript function call (e.g., `parseInt("42")`)
@@ -846,40 +875,40 @@ pub struct FunctionCall<'a> {
 #[derive(Clone)]
 pub struct Call<'a> {
     callee: Handle<'a, JsFunction>,
-    args: Vec<Handle<'a, JsValue>>,
+    args: ArgsVec<'a>,
 }
 
 impl<'a> FunctionCall<'a> {
     /// Set the value of `this` for the function call.
-    pub fn this<V: Value>(mut self, this: Handle<'a, V>) -> Self {
+    pub fn this<V: Value>(&mut self, this: Handle<'a, V>) -> &mut Self {
         self.this = this.upcast();
         self
     }
 
     /// Add an argument to the arguments list.
-    pub fn arg<V: Value>(mut self, arg: Handle<'a, V>) -> Self {
+    pub fn arg<V: Value>(&mut self, arg: Handle<'a, V>) -> &mut Self {
         self.args.push(arg.upcast());
         self
     }
 
     /// Add multiple arguments to the arguments list.
-    pub fn args<A: Arguments<'a>>(mut self, args: A) -> Self {
+    pub fn args<A: Arguments<'a>>(&mut self, args: A) -> &mut Self {
         args.append(&mut self.args);
         self
     }
 
     /// Make the function call. If the function returns without throwing, the result value
     /// is downcast to the type `V`, throwing a `TypeError` if the downcast fails.
-    pub fn call<'b, C: Context<'b>, V: Value>(self, cx: &mut C) -> JsResult<'b, V> {
-        let v = self.callee.call(cx, self.this, self.args)?;
+    pub fn call<'b, C: Context<'b>, V: Value>(&self, cx: &mut C) -> JsResult<'b, V> {
+        let v: Handle<JsValue> = do_call(cx, self.callee.to_raw(), self.this, &self.args)?;
         v.downcast_or_throw(cx)
     }
 
     /// Make the function call for side effect, discarding the result value. This method is
     /// preferable to [`call()`](crate::types::FunctionCall::call) when the result value is
     /// not needed, since it does not require specifying a result type.
-    pub fn exec<'b, C: Context<'b>>(self, cx: &mut C) -> NeonResult<()> {
-        let _ = self.callee.call(cx, self.this, self.args)?;
+    pub fn exec<'b, C: Context<'b>>(&self, cx: &mut C) -> NeonResult<()> {
+        let _: Handle<JsValue> = do_call(cx, self.callee.to_raw(), self.this, &self.args)?;
         Ok(())
     }
 }
@@ -896,37 +925,37 @@ impl<'a> Call<'a> {
     }
 
     /// Add an argument to the arguments list.
-    pub fn arg<V: Value>(mut self, arg: Handle<'a, V>) -> Self {
+    pub fn arg<V: Value>(&mut self, arg: Handle<'a, V>) -> &mut Self {
         self.args.push(arg.upcast());
         self
     }
 
     /// Add multiple arguments to the arguments list.
-    pub fn args<A: Arguments<'a>>(mut self, args: A) -> Self {
+    pub fn args<A: Arguments<'a>>(&mut self, args: A) -> &mut Self {
         args.append(&mut self.args);
         self
     }
 
     /// Call the function as a constructor (like a JavaScript `new` expression).
     /// If the function returns without throwing, returns the resulting object.
-    pub fn new<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'b, JsObject> {
-        self.callee.construct(cx, self.args)
+    pub fn new<'b, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, JsObject> {
+        do_construct(cx, self.callee.to_raw(), &self.args)
     }
 
     /// Make the function call. If the function returns without throwing, the result value
     /// is downcast to the type `V`, throwing a `TypeError` if the downcast fails.
-    pub fn call<'b, C: Context<'b>, V: Value>(self, cx: &mut C) -> JsResult<'b, V> {
+    pub fn call<'b: 'a, C: Context<'b>, V: Value>(&self, cx: &mut C) -> JsResult<'b, V> {
         let undefined: Handle<JsValue> = cx.undefined().upcast();
-        let v = self.callee.call(cx, undefined, self.args)?;
+        let v: Handle<JsValue> = do_call(cx, self.callee.to_raw(), undefined, &self.args)?;
         v.downcast_or_throw(cx)
     }
 
     /// Make the function call for side effect, discarding the result value. This method is
     /// preferable to [`call()`](crate::types::Call::call) when the result value is not
     /// needed, since it does not require specifying a result type.
-    pub fn exec<'b, C: Context<'b>>(self, cx: &mut C) -> NeonResult<()> {
+    pub fn exec<'b: 'a, C: Context<'b>>(&self, cx: &mut C) -> NeonResult<()> {
         let undefined: Handle<JsValue> = cx.undefined().upcast();
-        let _ = self.callee.call(cx, undefined, self.args)?;
+        let _: Handle<JsValue> = do_call(cx, self.callee.to_raw(), undefined, &self.args)?;
         Ok(())
     }
 }
@@ -936,7 +965,7 @@ impl<'a> Call<'a> {
 /// be implemented by types outside of the Neon crate.
 pub trait Arguments<'a>: ArgumentsInternal {
     #[doc(hidden)]
-    fn append(self, args: &mut Vec<Handle<'a, JsValue>>);
+    fn append(self, args: &mut ArgsVec<'a>);
 }
 
 macro_rules! impl_arguments {
@@ -944,7 +973,7 @@ macro_rules! impl_arguments {
         impl ArgumentsInternal for () { }
 
         impl<'a> Arguments<'a> for () {
-            fn append(self, _args: &mut Vec<Handle<'a, JsValue>>) { }
+            fn append(self, _args: &mut ArgsVec<'a>) { }
         }
     };
 
@@ -952,7 +981,7 @@ macro_rules! impl_arguments {
         impl<'a, $tname1: Value, $($tnames: Value,)*> ArgumentsInternal for (Handle<'a, $tname1>, $(Handle<'a, $tnames>,)*) { }
 
         impl<'a, $tname1: Value, $($tnames: Value,)*> Arguments<'a> for (Handle<'a, $tname1>, $(Handle<'a, $tnames>,)*) {
-            fn append(self, args: &mut Vec<Handle<'a, JsValue>>) {
+            fn append(self, args: &mut ArgsVec<'a>) {
                 let ($vname1, $($vnames,)*) = self;
                 args.push($vname1.upcast());
                 $(args.push($vnames.upcast());)*
