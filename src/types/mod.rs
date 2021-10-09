@@ -84,7 +84,7 @@ pub(crate) mod error;
 pub(crate) mod internal;
 pub(crate) mod utf8;
 
-use self::internal::{FunctionCallback, ValueInternal};
+use self::internal::{ArgumentsInternal, Callback, FunctionCallback, ValueInternal};
 use self::utf8::Utf8;
 use crate::context::internal::Env;
 use crate::context::{Context, FunctionContext};
@@ -92,7 +92,6 @@ use crate::handle::internal::SuperType;
 use crate::handle::{Handle, Managed};
 use crate::object::{Object, This};
 use crate::result::{JsResult, JsResultExt, NeonResult, Throw};
-use crate::types::internal::Callback;
 use neon_runtime;
 use neon_runtime::raw;
 use smallvec::SmallVec;
@@ -933,20 +932,25 @@ impl<'a> Call<'a> {
 }
 
 /// The trait for specifying arguments in a [`Call`](crate::types::Call) or
-/// [`FunctionCall`](crate::types::FunctionCall).
-pub trait Arguments<'a> {
-    /// Append the arguments to an arguments vector.
+/// [`FunctionCall`](crate::types::FunctionCall). This trait is sealed and cannot
+/// be implemented by types outside of the Neon crate.
+pub trait Arguments<'a>: ArgumentsInternal {
+    #[doc(hidden)]
     fn append(self, args: &mut Vec<Handle<'a, JsValue>>);
 }
 
 macro_rules! impl_arguments {
     { (); (); } => {
+        impl ArgumentsInternal for () { }
+
         impl<'a> Arguments<'a> for () {
             fn append(self, _args: &mut Vec<Handle<'a, JsValue>>) { }
         }
     };
 
     { ($tname1:ident,$($tnames:ident,)*); ($vname1:ident,$($vnames:ident,)*); } => {
+        impl<'a, $tname1: Value, $($tnames: Value,)*> ArgumentsInternal for (Handle<'a, $tname1>, $(Handle<'a, $tnames>,)*) { }
+
         impl<'a, $tname1: Value, $($tnames: Value,)*> Arguments<'a> for (Handle<'a, $tname1>, $(Handle<'a, $tnames>,)*) {
             fn append(self, args: &mut Vec<Handle<'a, JsValue>>) {
                 let ($vname1, $($vnames,)*) = self;
