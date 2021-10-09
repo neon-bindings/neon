@@ -94,7 +94,7 @@ use crate::object::{Object, This};
 use crate::result::{JsResult, JsResultExt, NeonResult, Throw};
 use neon_runtime;
 use neon_runtime::raw;
-use smallvec::{SmallVec, smallvec};
+use smallvec::{smallvec, SmallVec};
 use std::fmt;
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -751,11 +751,12 @@ impl<CL: Object> JsFunction<CL> {
         self,
         cx: &mut C,
         this: Handle<'a, T>,
-        args: &[Handle<'a, A>])
-        -> JsResult<'b, JsValue>
-        where C: Context<'b>,
-              T: Value,
-              A: Value
+        args: &[Handle<'a, A>],
+    ) -> JsResult<'b, JsValue>
+    where
+        C: Context<'b>,
+        T: Value,
+        A: Value,
     {
         let (argc, argv) = prepare_call(cx, args)?;
         let env = cx.env().to_raw();
@@ -764,13 +765,10 @@ impl<CL: Object> JsFunction<CL> {
         })
     }
 
-    fn do_construct<'a, 'b: 'a, C, A>(
-        self,
-        cx: &mut C,
-        args: &[Handle<'a, A>])
-        -> JsResult<'b, CL>
-        where C: Context<'b>,
-              A: Value,
+    fn do_construct<'a, 'b: 'a, C, A>(self, cx: &mut C, args: &[Handle<'a, A>]) -> JsResult<'b, CL>
+    where
+        C: Context<'b>,
+        A: Value,
     {
         let (argc, argv) = prepare_call(cx, args)?;
         let env = cx.env().to_raw();

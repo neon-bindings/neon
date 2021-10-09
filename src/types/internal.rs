@@ -115,4 +115,4 @@ pub(crate) trait Callback<T: Clone + Copy + Sized>: Sized {
 }
 
 /// This type marks the `Arguments` trait as sealed.
-pub trait ArgumentsInternal { }
+pub trait ArgumentsInternal {}
