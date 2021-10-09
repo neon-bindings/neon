@@ -698,39 +698,6 @@ where
     Ok((argc as i32, argv as *const c_void))
 }
 
-fn do_call<'a, 'b: 'a, C, T, A>(
-    cx: &mut C,
-    f: raw::Local,
-    this: Handle<'a, T>,
-    args: &[Handle<'a, A>])
-    -> JsResult<'b, JsValue>
-    where C: Context<'b>,
-          T: Value,
-          A: Value
-{
-    let (argc, argv) = prepare_call(cx, args)?;
-    let env = cx.env().to_raw();
-    build(cx.env(), |out| unsafe {
-        neon_runtime::fun::call(out, env, f, this.to_raw(), argc, argv)
-    })
-}
-
-fn do_construct<'a, 'b: 'a, C, A, CL>(
-    cx: &mut C,
-    f: raw::Local,
-    args: &[Handle<'a, A>])
-    -> JsResult<'b, CL>
-    where C: Context<'b>,
-          A: Value,
-          CL: Object,
-{
-    let (argc, argv) = prepare_call(cx, args)?;
-    let env = cx.env().to_raw();
-    build(cx.env(), |out| unsafe {
-        neon_runtime::fun::construct(out, env, f, argc, argv)
-    })
-}
-
 impl JsFunction {
     pub fn new<'a, C, U>(
         cx: &mut C,
@@ -748,9 +715,7 @@ impl JsFunction {
             }
         })
     }
-}
 
-impl JsFunction {
     /// Build a [`Call`](crate::types::Call) with an initial arguments list.
     pub fn args<'a, A: Arguments<'a>>(self, args: A) -> Call<'a> {
         let mut builder = Call {
@@ -782,6 +747,38 @@ impl JsFunction {
 }
 
 impl<CL: Object> JsFunction<CL> {
+    fn do_call<'a, 'b: 'a, C, T, A>(
+        self,
+        cx: &mut C,
+        this: Handle<'a, T>,
+        args: &[Handle<'a, A>])
+        -> JsResult<'b, JsValue>
+        where C: Context<'b>,
+              T: Value,
+              A: Value
+    {
+        let (argc, argv) = prepare_call(cx, args)?;
+        let env = cx.env().to_raw();
+        build(cx.env(), |out| unsafe {
+            neon_runtime::fun::call(out, env, self.to_raw(), this.to_raw(), argc, argv)
+        })
+    }
+
+    fn do_construct<'a, 'b: 'a, C, A>(
+        self,
+        cx: &mut C,
+        args: &[Handle<'a, A>])
+        -> JsResult<'b, CL>
+        where C: Context<'b>,
+              A: Value,
+    {
+        let (argc, argv) = prepare_call(cx, args)?;
+        let env = cx.env().to_raw();
+        build(cx.env(), |out| unsafe {
+            neon_runtime::fun::construct(out, env, self.to_raw(), argc, argv)
+        })
+    }
+
     pub fn call<'a, 'b, C: Context<'a>, T, A, AS>(
         self,
         cx: &mut C,
@@ -794,7 +791,7 @@ impl<CL: Object> JsFunction<CL> {
         AS: IntoIterator<Item = Handle<'b, A>>,
     {
         let args = args.into_iter().collect::<SmallVec<[_; 8]>>();
-        do_call(cx, self.to_raw(), this, &args)
+        self.do_call(cx, this, &args)
     }
 
     pub fn construct<'a, 'b, C: Context<'a>, A, AS>(self, cx: &mut C, args: AS) -> JsResult<'a, CL>
@@ -803,7 +800,7 @@ impl<CL: Object> JsFunction<CL> {
         AS: IntoIterator<Item = Handle<'b, A>>,
     {
         let args = args.into_iter().collect::<SmallVec<[_; 8]>>();
-        do_construct(cx, self.to_raw(), &args)
+        self.do_construct(cx, &args)
     }
 }
 
@@ -900,7 +897,7 @@ impl<'a> FunctionCall<'a> {
     /// Make the function call. If the function returns without throwing, the result value
     /// is downcast to the type `V`, throwing a `TypeError` if the downcast fails.
     pub fn call<'b, C: Context<'b>, V: Value>(&self, cx: &mut C) -> JsResult<'b, V> {
-        let v: Handle<JsValue> = do_call(cx, self.callee.to_raw(), self.this, &self.args)?;
+        let v: Handle<JsValue> = self.callee.do_call(cx, self.this, &self.args)?;
         v.downcast_or_throw(cx)
     }
 
@@ -908,7 +905,7 @@ impl<'a> FunctionCall<'a> {
     /// preferable to [`call()`](crate::types::FunctionCall::call) when the result value is
     /// not needed, since it does not require specifying a result type.
     pub fn exec<'b, C: Context<'b>>(&self, cx: &mut C) -> NeonResult<()> {
-        let _: Handle<JsValue> = do_call(cx, self.callee.to_raw(), self.this, &self.args)?;
+        let _: Handle<JsValue> = self.callee.do_call(cx, self.this, &self.args)?;
         Ok(())
     }
 }
@@ -939,14 +936,14 @@ impl<'a> Call<'a> {
     /// Call the function as a constructor (like a JavaScript `new` expression).
     /// If the function returns without throwing, returns the resulting object.
     pub fn new<'b, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, JsObject> {
-        do_construct(cx, self.callee.to_raw(), &self.args)
+        self.callee.do_construct(cx, &self.args)
     }
 
     /// Make the function call. If the function returns without throwing, the result value
     /// is downcast to the type `V`, throwing a `TypeError` if the downcast fails.
     pub fn call<'b: 'a, C: Context<'b>, V: Value>(&self, cx: &mut C) -> JsResult<'b, V> {
         let undefined: Handle<JsValue> = cx.undefined().upcast();
-        let v: Handle<JsValue> = do_call(cx, self.callee.to_raw(), undefined, &self.args)?;
+        let v: Handle<JsValue> = self.callee.do_call(cx, undefined, &self.args)?;
         v.downcast_or_throw(cx)
     }
 
@@ -955,7 +952,7 @@ impl<'a> Call<'a> {
     /// needed, since it does not require specifying a result type.
     pub fn exec<'b: 'a, C: Context<'b>>(&self, cx: &mut C) -> NeonResult<()> {
         let undefined: Handle<JsValue> = cx.undefined().upcast();
-        let _: Handle<JsValue> = do_call(cx, self.callee.to_raw(), undefined, &self.args)?;
+        let _: Handle<JsValue> = self.callee.do_call(cx, undefined, &self.args)?;
         Ok(())
     }
 }
