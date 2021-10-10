@@ -671,6 +671,82 @@ impl ValueInternal for JsArray {
 impl Object for JsArray {}
 
 /// A JavaScript function object.
+///
+/// A `JsFunction` may come from an existing JavaScript function, for example
+/// by extracting it from the property of another object such as the
+/// [global object](crate::context::Context::global), or it may be defined in Rust
+/// with [`JsFunction::new()`](JsFunction::new).
+///
+/// ## Calling functions
+///
+/// Neon provides convenient
+/// [builders](https://doc.rust-lang.org/1.0.0/style/ownership/builders.html)
+/// for calling JavaScript functions. A function call can be built using the
+/// [`args()`](JsFunction::args), [`arg()`](JsFunction::arg), and
+/// [`this()`](JsFunction::this) builder methods, and ultimately called with the
+/// `call` method (which will either be [`Call::call()`](Call::call) or
+/// [`FunctionCall::call()`](FunctionCall::call), depending on which builder methods
+/// were used):
+/// ```
+/// # use neon::prelude::*;
+/// # fn foo(mut cx: FunctionContext) -> JsResult<JsNumber> {
+/// # let global = cx.global();
+/// // Extract the parseInt function from the global object
+/// let parse_int: Handle<JsFunction> = global
+///     .get(&mut cx, "parseInt")?
+///     .downcast_or_throw(&mut cx)?;
+///
+/// // Call parseInt("42")
+/// let x: Handle<JsNumber> = parse_int
+///     .arg(cx.string("42"))
+///     .call(&mut cx)?;
+/// # Ok(x)
+/// # }
+/// ```
+///
+/// ## Calling functions as constructors
+///
+/// A `JsFunction` can be called as a constructor (like `new Array(16)` or
+/// `new URL("https://neon-bindings.com")`) with the [`new()`](Call::new)
+/// method of the [`Call`](Call) builder:
+/// ```
+/// # use neon::prelude::*;
+/// # fn foo(mut cx: FunctionContext) -> JsResult<JsObject> {
+/// # let global = cx.global();
+/// // Extract the URL constructor from the global object
+/// let url = global
+///     .get(&mut cx, "URL")?
+///     .downcast_or_throw(&mut cx)?;
+///
+/// // Call new URL("https://neon-bindings.com")
+/// let obj = url
+///     .arg(cx.string("https://neon-bindings.com"))
+///     .new(&mut cx)?;
+/// # Ok(obj)
+/// # }
+/// ```
+///
+/// ## Defining functions
+///
+/// JavaScript functions can be defined in Rust with the
+/// [`JsFunction::new()`](JsFunction::new) constructor, which takes
+/// a Rust implementation function and produces a JavaScript function.
+///
+/// ```
+/// # use neon::prelude::*;
+/// // A function implementation that adds 1 to its first argument
+/// fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
+///     let x: Handle<JsNumber> = cx.argument(0)?;
+///     let v = x.value(&mut cx);
+///     Ok(cx.number(v + 1))
+/// }
+///
+/// # fn foo(mut cx: FunctionContext) -> JsResult<JsFunction> {
+/// // Define a new JsFunction implemented with the add1 function
+/// let f = JsFunction::new(&mut cx, add1)?;
+/// # Ok(f)
+/// # }
+/// ```
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct JsFunction<T: Object = JsObject> {
@@ -829,16 +905,16 @@ impl<T: Object> ValueInternal for JsFunction<T> {
 
 type ArgsVec<'a> = SmallVec<[Handle<'a, JsValue>; 8]>;
 
-/// A builder for making a JavaScript function call (e.g., `parseInt("42")`).
+/// A builder for making a JavaScript function call (like `parseInt("42")`).
 ///
 /// The builder methods make it convenient to assemble the call from parts:
 /// ```
 /// # use neon::prelude::*;
 /// # fn foo(mut cx: FunctionContext) -> JsResult<JsNumber> {
 /// # let global = cx.global();
-/// # let parseInt = global.get(&mut cx, "parseInt")?;
-/// # let parseInt: Handle<JsFunction> = parseInt.downcast_or_throw(&mut cx)?;
-/// let x: Handle<JsNumber> = parseInt
+/// # let parse_int = global.get(&mut cx, "parseInt")?;
+/// # let parse_int: Handle<JsFunction> = parse_int.downcast_or_throw(&mut cx)?;
+/// let x: Handle<JsNumber> = parse_int
 ///     .arg(cx.string("42"))
 ///     .call(&mut cx)?;
 /// # Ok(x)
@@ -851,8 +927,8 @@ pub struct FunctionCall<'a, T: Object = JsObject> {
     args: ArgsVec<'a>,
 }
 
-/// A builder for making either a JavaScript function call (e.g., `parseInt("42")`)
-/// or constructor call (e.g., `new Array(16)`).
+/// A builder for making either a JavaScript function call (like `parseInt("42")`)
+/// or constructor call (like `new Array(16)`).
 ///
 /// The builder methods make it convenient to assemble the call from parts:
 /// ```
