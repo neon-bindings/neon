@@ -715,35 +715,6 @@ impl JsFunction {
             }
         })
     }
-
-    /// Build a [`Call`](crate::types::Call) with an initial arguments list.
-    pub fn args<'a, A: Arguments<'a>>(self, args: A) -> Call<'a> {
-        let mut builder = Call {
-            callee: Handle::new_internal(self),
-            args: smallvec![],
-        };
-        builder.args(args);
-        builder
-    }
-
-    /// Build a [`Call`](crate::types::Call) with an initial single argument.
-    pub fn arg<'a, V: Value>(self, v: Handle<'a, V>) -> Call<'a> {
-        let mut builder = Call {
-            callee: Handle::new_internal(self),
-            args: smallvec![],
-        };
-        builder.arg(v);
-        builder
-    }
-
-    /// Build a [`FunctionCall`](crate::types::FunctionCall) with a `this` binding.
-    pub fn this<'a, V: Value>(self, this: Handle<'a, V>) -> FunctionCall<'a> {
-        FunctionCall {
-            callee: Handle::new_internal(self),
-            this: this.upcast(),
-            args: smallvec![],
-        }
-    }
 }
 
 impl<CL: Object> JsFunction<CL> {
@@ -775,6 +746,35 @@ impl<CL: Object> JsFunction<CL> {
         build(cx.env(), |out| unsafe {
             neon_runtime::fun::construct(out, env, self.to_raw(), argc, argv)
         })
+    }
+
+    /// Build a [`Call`](crate::types::Call) with an initial arguments list.
+    pub fn args<'a, A: Arguments<'a>>(self, args: A) -> Call<'a, CL> {
+        let mut builder = Call {
+            callee: Handle::new_internal(self),
+            args: smallvec![],
+        };
+        builder.args(args);
+        builder
+    }
+
+    /// Build a [`Call`](crate::types::Call) with an initial single argument.
+    pub fn arg<'a, V: Value>(self, v: Handle<'a, V>) -> Call<'a, CL> {
+        let mut builder = Call {
+            callee: Handle::new_internal(self),
+            args: smallvec![],
+        };
+        builder.arg(v);
+        builder
+    }
+
+    /// Build a [`FunctionCall`](crate::types::FunctionCall) with a `this` binding.
+    pub fn this<'a, V: Value>(self, this: Handle<'a, V>) -> FunctionCall<'a, CL> {
+        FunctionCall {
+            callee: Handle::new_internal(self),
+            this: this.upcast(),
+            args: smallvec![],
+        }
     }
 
     pub fn call<'a, 'b, C: Context<'a>, T, A, AS>(
@@ -845,8 +845,8 @@ type ArgsVec<'a> = SmallVec<[Handle<'a, JsValue>; 8]>;
 /// # }
 /// ```
 #[derive(Clone)]
-pub struct FunctionCall<'a> {
-    callee: Handle<'a, JsFunction>,
+pub struct FunctionCall<'a, T: Object = JsObject> {
+    callee: Handle<'a, JsFunction<T>>,
     this: Handle<'a, JsValue>,
     args: ArgsVec<'a>,
 }
@@ -868,12 +868,12 @@ pub struct FunctionCall<'a> {
 /// # }
 /// ```
 #[derive(Clone)]
-pub struct Call<'a> {
-    callee: Handle<'a, JsFunction>,
+pub struct Call<'a, T: Object = JsObject> {
+    callee: Handle<'a, JsFunction<T>>,
     args: ArgsVec<'a>,
 }
 
-impl<'a> FunctionCall<'a> {
+impl<'a, T: Object> FunctionCall<'a, T> {
     /// Set the value of `this` for the function call.
     pub fn this<V: Value>(&mut self, this: Handle<'a, V>) -> &mut Self {
         self.this = this.upcast();
@@ -908,10 +908,10 @@ impl<'a> FunctionCall<'a> {
     }
 }
 
-impl<'a> Call<'a> {
+impl<'a, T: Object> Call<'a, T> {
     /// Set the value of `this` for the function call. Once a call has a `this` binding
     /// specified, it is required to be a [`FunctionCall`](crate::types::FunctionCall).
-    pub fn this<V: Value>(self, this: Handle<'a, V>) -> FunctionCall<'a> {
+    pub fn this<V: Value>(self, this: Handle<'a, V>) -> FunctionCall<'a, T> {
         FunctionCall {
             callee: self.callee,
             this: this.upcast(),
@@ -933,7 +933,7 @@ impl<'a> Call<'a> {
 
     /// Call the function as a constructor (like a JavaScript `new` expression).
     /// If the function returns without throwing, returns the resulting object.
-    pub fn new<'b, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, JsObject> {
+    pub fn new<'b, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, T> {
         self.callee.do_construct(cx, &self.args)
     }
 
