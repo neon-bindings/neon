@@ -714,7 +714,7 @@ impl Object for JsArray {}
 /// # fn foo(mut cx: FunctionContext) -> JsResult<JsObject> {
 /// # let global = cx.global();
 /// // Extract the URL constructor from the global object
-/// let url = global
+/// let url: Handle<JsFunction> = global
 ///     .get(&mut cx, "URL")?
 ///     .downcast_or_throw(&mut cx)?;
 ///
@@ -738,7 +738,7 @@ impl Object for JsArray {}
 /// fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
 ///     let x: Handle<JsNumber> = cx.argument(0)?;
 ///     let v = x.value(&mut cx);
-///     Ok(cx.number(v + 1))
+///     Ok(cx.number(v + 1.0))
 /// }
 ///
 /// # fn foo(mut cx: FunctionContext) -> JsResult<JsFunction> {
