@@ -1,5 +1,9 @@
+use std::panic::resume_unwind;
+use std::thread;
+
 use neon_runtime::{async_work, raw};
 
+use crate::context::internal::ContextInternal;
 use crate::context::{internal::Env, Context, TaskContext};
 #[cfg(feature = "promise-api")]
 use crate::handle::Handle;
@@ -101,13 +105,13 @@ where
     input()
 }
 
-// Unpack an `(output, complete)` tuple returned by `execute` and execute
-// `complete` with the `output` argument
-fn complete<O, D>(env: raw::Env, output: O, callback: D)
+fn complete<O, D>(env: raw::Env, output: thread::Result<O>, callback: D)
 where
     O: Send + 'static,
     D: FnOnce(TaskContext, O) -> NeonResult<()> + Send + 'static,
 {
+    let output = output.unwrap_or_else(|panic| resume_unwind(panic));
+
     TaskContext::with_context(env.into(), move |cx| {
         let _ = callback(cx, output);
     });
@@ -134,17 +138,37 @@ where
 }
 
 #[cfg(feature = "promise-api")]
-// Unpack an `(output, complete, deferred)` tuple returned by `execute` and settle the
-// deferred with the result of passing `output` to the `complete` callback
-fn complete_promise<O, D, V>(env: raw::Env, output: O, (complete, deferred): (D, Deferred))
-where
+fn complete_promise<O, D, V>(
+    env: raw::Env,
+    output: thread::Result<O>,
+    (complete, deferred): (D, Deferred),
+) where
     O: Send + 'static,
     D: FnOnce(TaskContext, O) -> JsResult<V> + Send + 'static,
     V: Value,
 {
     let env = env.into();
 
+    // FIXME: NEED TO HANDLE PANIC IN COMPLETE
     TaskContext::with_context(env, move |cx| {
+        let output = match output {
+            Ok(output) => output,
+            Err(panic) => {
+                unsafe {
+                    let env = cx.env().to_raw();
+                    let err = neon_runtime::no_panic::create_panic_error(
+                        env,
+                        "A panic occurred while executing a Neon task",
+                        panic,
+                    );
+
+                    neon_runtime::promise::reject(env, deferred.into_inner(), err);
+                }
+
+                return;
+            }
+        };
+
         deferred.try_catch_settle(cx, move |cx| complete(cx, output))
     });
 }

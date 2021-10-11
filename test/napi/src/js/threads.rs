@@ -337,8 +337,59 @@ pub fn channel_custom_panic(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     Ok(cx.undefined())
 }
 
-pub fn channel_custom_panic_downcast(mut cx: FunctionContext) -> JsResult<JsString> {
+pub fn custom_panic_downcast(mut cx: FunctionContext) -> JsResult<JsString> {
     let panic = cx.argument::<JsBox<CustomPanic>>(0)?;
 
     Ok(cx.string(&panic.0))
+}
+
+pub fn task_panic_execute(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+
+    cx.task(move || panic!("{}", msg)).and_then(|_, _| Ok(()));
+
+    Ok(cx.undefined())
+}
+
+pub fn task_panic_complete(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+
+    cx.task(|| {}).and_then(move |_, _| panic!("{}", msg));
+
+    Ok(cx.undefined())
+}
+
+pub fn task_throw(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+
+    cx.task(|| {}).and_then(move |mut cx, _| {
+        cx.throw_error(msg)?;
+        Ok(())
+    });
+
+    Ok(cx.undefined())
+}
+
+pub fn task_panic_throw(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+
+    cx.task(|| {}).and_then(move |mut cx, _| {
+        // Throw an exception, but ignore the `Err(Throw)`
+        let _ = cx.throw_error::<_, ()>(msg);
+        // Attempting to throw another error while already throwing should `panic`
+        let _ = cx.throw_error("Unreachable")?;
+
+        Ok(())
+    });
+
+    Ok(cx.undefined())
+}
+
+pub fn task_custom_panic(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+
+    cx.task(move || std::panic::panic_any(CustomPanic(msg)))
+        .and_then(|_, _| Ok(()));
+
+    Ok(cx.undefined())
 }

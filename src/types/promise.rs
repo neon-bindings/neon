@@ -172,7 +172,7 @@ impl Deferred {
         }
     }
 
-    fn into_inner(mut self) -> napi::Deferred {
+    pub(crate) fn into_inner(mut self) -> napi::Deferred {
         self.internal.take().unwrap().0
     }
 }

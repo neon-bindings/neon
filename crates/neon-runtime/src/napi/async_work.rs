@@ -9,18 +9,29 @@
 
 use std::ffi::c_void;
 use std::mem;
+use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::ptr;
+use std::thread;
 
-use crate::napi::bindings as napi;
-use crate::raw::Env;
+use super::bindings as napi;
+use super::no_panic::ExceptionPanicHandler;
+use super::raw::Env;
+
+const HANDLER: ExceptionPanicHandler = ExceptionPanicHandler {
+    both: "A panic and exception occurred while executing a `neon::event::TaskBuilder` task",
+    exception: "An exception occurred while executing a `neon::event::TaskBuilder` task",
+    panic: "A panic occurred while executing a `neon::event::TaskBuilder` task",
+};
 
 type Execute<I, O> = fn(input: I) -> O;
-type Complete<O, D> = fn(env: Env, output: O, data: D);
+type Complete<O, D> = fn(env: Env, output: thread::Result<O>, data: D);
 
 /// Schedule work to execute on the libuv thread pool
 ///
 /// # Safety
 /// * `env` must be a valid `napi_env` for the current thread
+/// * The `thread::Result::Err` must only be used for resuming unwind if
+///   `execute` is not unwind safe
 pub unsafe fn schedule<I, O, D>(
     env: Env,
     input: I,
@@ -86,7 +97,7 @@ enum State<I, O> {
     /// Transient state while `execute` is running
     Executing,
     /// Return data of `execute` passed to `complete`
-    Output(O),
+    Output(thread::Result<O>),
 }
 
 impl<I, O> State<I, O> {
@@ -99,7 +110,7 @@ impl<I, O> State<I, O> {
     }
 
     /// Return the output if `State::Output`, replacing with `State::Executing`
-    fn into_output(self) -> Option<O> {
+    fn into_output(self) -> Option<thread::Result<O>> {
         match self {
             Self::Output(output) => Some(output),
             _ => None,
@@ -114,10 +125,15 @@ impl<I, O> State<I, O> {
 /// * `data` is expected to be a pointer to `Data<I, O, D>`
 unsafe extern "C" fn call_execute<I, O, D>(_: Env, data: *mut c_void) {
     let data = &mut *data.cast::<Data<I, O, D>>();
-    // `unwrap` is ok because `call_execute` should be called exactly once
-    // after initialization
-    let input = data.state.take_execute_input().unwrap();
-    let output = (data.execute)(input);
+
+    // This is unwind safe because unwinding will resume on the other side
+    let output = catch_unwind(AssertUnwindSafe(|| {
+        // `unwrap` is ok because `call_execute` should be called exactly once
+        // after initialization
+        let input = data.state.take_execute_input().unwrap();
+
+        (data.execute)(input)
+    }));
 
     data.state = State::Output(output);
 }
@@ -137,11 +153,27 @@ unsafe extern "C" fn call_complete<I, O, D>(env: Env, status: napi::Status, data
 
     napi::delete_async_work(env, work);
 
-    match status {
+    HANDLER.handle(env, move |env| {
         // `unwrap` is okay because `call_complete` should be called exactly once
         // if and only if `call_execute` has completed successfully
-        napi::Status::Ok => complete(env, state.into_output().unwrap(), data),
-        napi::Status::Cancelled => {}
-        _ => assert_eq!(status, napi::Status::Ok),
-    }
+        let output = state.into_output().unwrap();
+
+        // The event looped has stopped if we do not have an Env
+        let env = if let Some(env) = env {
+            env
+        } else {
+            // Resume panicking if necessary
+            if let Err(panic) = output {
+                resume_unwind(panic);
+            }
+
+            return;
+        };
+
+        match status {
+            napi::Status::Ok => complete(env, output, data),
+            napi::Status::Cancelled => {}
+            _ => assert_eq!(status, napi::Status::Ok),
+        }
+    });
 }

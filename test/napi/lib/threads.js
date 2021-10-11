@@ -212,7 +212,7 @@ const assert = require('chai').assert;
       try {
         assert.instanceOf(err.panic, Error);
         assert.ok(/panic/i.test(err.message), "Expected error message to indicate a panic");
-        assert.strictEqual(addon.channel_custom_panic_downcast(err.panic.cause), msg);
+        assert.strictEqual(addon.custom_panic_downcast(err.panic.cause), msg);
 
         cb();
       } catch (err) {
@@ -221,5 +221,114 @@ const assert = require('chai').assert;
     });
 
     addon.channel_custom_panic(msg);
+  });
+
+  it('should throw an uncaughtException when panicking in a task', function (cb) {
+    const msg = "Hello, Panic!";
+
+    process.removeAllListeners("uncaughtException");
+    process.once("uncaughtException", (err) => {
+      try {
+        assert.instanceOf(err, Error);
+        assert.ok(/panic/i.test(err.message), "Expected error message to indicate a panic");
+        assert.ok(!/exception/i.test(err.message), "Expected error message not to indicate an exception");
+        assert.strictEqual(err.cause, undefined);
+        assert.instanceOf(err.panic, Error);
+        assert.strictEqual(err.panic.message, msg);
+        assert.strictEqual(err.panic.cause, undefined);
+
+        cb();
+      } catch (err) {
+        cb(err);
+      }
+    });
+
+    addon.task_panic_execute(msg);
+  });
+
+  it('should throw an uncaughtException when panicking in a task complete', function (cb) {
+    const msg = "Hello, Panic!";
+
+    process.removeAllListeners("uncaughtException");
+    process.once("uncaughtException", (err) => {
+      try {
+        assert.instanceOf(err, Error);
+        assert.ok(/panic/i.test(err.message), "Expected error message to indicate a panic");
+        assert.ok(!/exception/i.test(err.message), "Expected error message not to indicate an exception");
+        assert.strictEqual(err.cause, undefined);
+        assert.instanceOf(err.panic, Error);
+        assert.strictEqual(err.panic.message, msg);
+        assert.strictEqual(err.panic.cause, undefined);
+
+        cb();
+      } catch (err) {
+        cb(err);
+      }
+    });
+
+    addon.task_panic_complete(msg);
+  });
+
+  it('should throw an uncaughtException when throwing in a task complete', function (cb) {
+    const msg = "Hello, Throw!";
+
+    process.removeAllListeners("uncaughtException");
+    process.once("uncaughtException", (err) => {
+      try {
+        assert.instanceOf(err, Error);
+        assert.ok(!/panic/i.test(err.message), "Expected error message not to indicate a panic");
+        assert.ok(/exception/i.test(err.message), "Expected error message to indicate an exception");
+        assert.strictEqual(err.panic, undefined);
+        assert.instanceOf(err.cause, Error);
+        assert.strictEqual(err.cause.message, msg);
+
+        cb();
+      } catch (err) {
+        cb(err);
+      }
+    });
+
+    addon.task_throw(msg);
+  });
+
+  it('should throw an uncaughtException when panicking and throwing in a task complete', function (cb) {
+    const msg = "Oh, no!";
+
+    process.removeAllListeners("uncaughtException");
+    process.once("uncaughtException", (err) => {
+      try {
+        assert.instanceOf(err, Error);
+        assert.ok(/panic/i.test(err.message), "Expected error message to indicate a panic");
+        assert.ok(/exception/i.test(err.message), "Expected error message to indicate an exception");
+        assert.instanceOf(err.panic, Error);
+        assert.instanceOf(err.cause, Error);
+        assert.strictEqual(err.cause.message, msg);
+
+        cb();
+      } catch (err) {
+        cb(err);
+      }
+    });
+
+    addon.task_panic_throw(msg);
+  });
+
+  it('should be able to downcast a panic in a task', function (cb) {
+    const msg = "Hello, Secret Panic!";
+
+    process.removeAllListeners("uncaughtException");
+    process.once("uncaughtException", (err) => {
+      try {
+        assert.instanceOf(err.panic, Error);
+        assert.ok(/panic/i.test(err.message), "Expected error message to indicate a panic");
+        assert.strictEqual(addon.custom_panic_downcast(err.panic.cause), msg);
+
+        cb();
+      } catch (err) {
+        cb(err);
+      }
+    });
+
+    addon.task_custom_panic(msg);
   });
 });
