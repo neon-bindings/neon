@@ -28,6 +28,7 @@ pub struct Env(raw::Isolate);
 #[derive(Clone, Copy)]
 pub struct Env(raw::Env);
 
+#[cfg(feature = "napi-1")]
 impl From<raw::Env> for Env {
     fn from(env: raw::Env) -> Self {
         Self(env)
@@ -77,6 +78,7 @@ impl Env {
         unsafe { std::mem::transmute(neon_runtime::call::current_isolate()) }
     }
 
+    #[cfg(feature = "napi-1")]
     pub(crate) unsafe fn try_catch<T, F>(self, f: F) -> Result<T, raw::Local>
     where
         F: FnOnce() -> Result<T, crate::result::Throw>,
