@@ -2,6 +2,7 @@
 
 use std::ffi::c_void;
 use std::mem::MaybeUninit;
+use std::ptr;
 use std::sync::{Arc, Mutex};
 
 use super::bindings as napi;
@@ -187,7 +188,10 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     ) {
         let Callback { callback, data } = *Box::from_raw(data as *mut Callback<T>);
 
-        HANDLER.handle(env, move |env| callback(env, data));
+        HANDLER.handle(env, None, move |env| {
+            callback(env, data);
+            ptr::null_mut()
+        });
     }
 }
 

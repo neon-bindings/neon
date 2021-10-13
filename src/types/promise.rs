@@ -1,6 +1,8 @@
+use std::ptr;
 #[cfg(feature = "napi-6")]
 use std::sync::Arc;
 
+use neon_runtime::no_panic::ExceptionPanicHandler;
 #[cfg(feature = "napi-6")]
 use neon_runtime::tsfn::ThreadsafeFunction;
 use neon_runtime::{napi, raw};
@@ -15,6 +17,12 @@ use crate::types::{Handle, Object, Value, ValueInternal};
 use crate::{
     context::TaskContext,
     event::{Channel, JoinHandle, SendError},
+};
+
+const HANDLER: ExceptionPanicHandler = ExceptionPanicHandler {
+    both: "A panic and exception occurred while resolving a `neon::types::Deferred`",
+    exception: "An exception occurred while resolving a `neon::types::Deferred`",
+    panic: "A panic occurred while resolving a `neon::types::Deferred`",
 };
 
 #[cfg_attr(docsrs, doc(cfg(feature = "promise-api")))]
@@ -158,17 +166,15 @@ impl Deferred {
         V: Value,
         F: FnOnce(C) -> JsResult<'a, V>,
     {
-        let env = cx.env();
-
         unsafe {
-            match env.try_catch(move || f(cx)) {
-                Ok(value) => {
-                    neon_runtime::promise::resolve(env.to_raw(), self.into_inner(), value.to_raw());
-                }
-                Err(err) => {
-                    neon_runtime::promise::reject(env.to_raw(), self.into_inner(), err);
-                }
-            }
+            HANDLER.handle(
+                cx.env().to_raw(),
+                Some(self.into_inner()),
+                move |_| match f(cx) {
+                    Ok(value) => value.to_raw(),
+                    Err(_) => ptr::null_mut(),
+                },
+            );
         }
     }
 

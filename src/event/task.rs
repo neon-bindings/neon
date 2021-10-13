@@ -3,7 +3,6 @@ use std::thread;
 
 use neon_runtime::{async_work, raw};
 
-use crate::context::internal::ContextInternal;
 use crate::context::{internal::Env, Context, TaskContext};
 #[cfg(feature = "promise-api")]
 use crate::handle::Handle;
@@ -149,26 +148,11 @@ fn complete_promise<O, D, V>(
 {
     let env = env.into();
 
-    // FIXME: NEED TO HANDLE PANIC IN COMPLETE
     TaskContext::with_context(env, move |cx| {
-        let output = match output {
-            Ok(output) => output,
-            Err(panic) => {
-                unsafe {
-                    let env = cx.env().to_raw();
-                    let err = neon_runtime::no_panic::create_panic_error(
-                        env,
-                        "A panic occurred while executing a Neon task",
-                        panic,
-                    );
+        deferred.try_catch_settle(cx, move |cx| {
+            let output = output.unwrap_or_else(|panic| resume_unwind(panic));
 
-                    neon_runtime::promise::reject(env, deferred.into_inner(), err);
-                }
-
-                return;
-            }
-        };
-
-        deferred.try_catch_settle(cx, move |cx| complete(cx, output))
+            complete(cx, output)
+        })
     });
 }

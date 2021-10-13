@@ -153,7 +153,7 @@ unsafe extern "C" fn call_complete<I, O, D>(env: Env, status: napi::Status, data
 
     napi::delete_async_work(env, work);
 
-    HANDLER.handle(env, move |env| {
+    HANDLER.handle(env, None, move |env| {
         // `unwrap` is okay because `call_complete` should be called exactly once
         // if and only if `call_execute` has completed successfully
         let output = state.into_output().unwrap();
@@ -167,7 +167,7 @@ unsafe extern "C" fn call_complete<I, O, D>(env: Env, status: napi::Status, data
                 resume_unwind(panic);
             }
 
-            return;
+            return ptr::null_mut();
         };
 
         match status {
@@ -175,5 +175,7 @@ unsafe extern "C" fn call_complete<I, O, D>(env: Env, status: napi::Status, data
             napi::Status::Cancelled => {}
             _ => assert_eq!(status, napi::Status::Ok),
         }
+
+        ptr::null_mut()
     });
 }

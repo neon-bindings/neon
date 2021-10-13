@@ -22,7 +22,7 @@ type Panic = Box<dyn Any + Send + 'static>;
 
 const UNKNOWN_PANIC_MESSAGE: &str = "Unknown panic";
 
-pub(super) struct ExceptionPanicHandler {
+pub struct ExceptionPanicHandler {
     pub both: &'static str,
     pub exception: &'static str,
     pub panic: &'static str,
@@ -30,20 +30,23 @@ pub(super) struct ExceptionPanicHandler {
 
 impl ExceptionPanicHandler {
     #[track_caller]
-    pub(super) unsafe fn handle(&self, env: Env, f: impl FnOnce(Option<Env>)) {
+    pub unsafe fn handle<F>(&self, env: Env, deferred: Option<napi::Deferred>, f: F)
+    where
+        F: FnOnce(Option<Env>) -> Local,
+    {
         // Event loop has terminated if `null`
         let env = if env.is_null() { None } else { Some(env) };
 
         // Run the user supplied callback, catching panics
         // This is unwind safe because control is never yielded back to the caller
-        let panic = catch_unwind(AssertUnwindSafe(move || f(env))).err();
+        let panic = catch_unwind(AssertUnwindSafe(move || f(env)));
 
         // Unwrap the `Env`
         let env = if let Some(env) = env {
             env
         } else {
             // If there was a panic and we don't have an `Env`, crash the process
-            if let Some(panic) = panic {
+            if let Err(panic) = panic {
                 let msg = panic_msg(&panic).unwrap_or(UNKNOWN_PANIC_MESSAGE);
 
                 fatal_error(msg);
@@ -57,20 +60,51 @@ impl ExceptionPanicHandler {
         let exception = catch_exception(env);
 
         // Create an error message or return if there wasn't a panic or exception
-        let msg = match (exception.is_some(), panic.is_some()) {
-            (true, true) => self.both,
-            (true, false) => self.exception,
-            (false, true) => self.panic,
+        let msg = match (exception, panic.as_ref()) {
+            // Exception and a panic
+            (Some(_), Err(_)) => self.both,
+
+            // Exception, but not a panic
+            (Some(err), Ok(_)) => {
+                // Reject the promise without wrapping
+                if let Some(deferred) = deferred {
+                    reject_deferred(env, deferred, err);
+
+                    return;
+                }
+
+                self.exception
+            }
+
+            // Panic, but not an exception
+            (None, Err(_)) => self.panic,
+
             // No errors occurred! We're done!
-            (false, false) => return,
+            (None, Ok(value)) => {
+                if let Some(deferred) = deferred {
+                    resolve_deferred(env, deferred, *value);
+                }
+
+                return;
+            }
         };
+
+        // Reject the promise
+        if let Some(deferred) = deferred {
+            let error = create_error(env, msg, exception, panic.err());
+
+            reject_deferred(env, deferred, error);
+
+            return;
+        }
 
         #[cfg(not(feature = "napi-3"))]
         // Crash the process on Node-API < 3
         {
             let msg = panic
                 .as_ref()
-                .and_then(|panic| panic_msg(&panic))
+                .err()
+                .and_then(|panic| panic_msg(panic))
                 .unwrap_or(msg);
 
             fatal_error(msg);
@@ -79,18 +113,7 @@ impl ExceptionPanicHandler {
         #[cfg(feature = "napi-3")]
         // Throw an `uncaughtException` on Node-API >= 3
         {
-            // Construct the `uncaughtException` Error object
-            let error = error_from_message(env, msg);
-
-            // Add the exception to the error
-            if let Some(exception) = exception {
-                set_property(env, error, "cause", exception);
-            };
-
-            // Add the panic to the error
-            if let Some(panic) = panic {
-                set_property(env, error, "panic", error_from_panic(env, panic));
-            }
+            let error = create_error(env, msg, exception, panic.err());
 
             // Throw an uncaught exception
             if napi::fatal_exception(env, error) != napi::Status::Ok {
@@ -101,14 +124,40 @@ impl ExceptionPanicHandler {
 }
 
 #[track_caller]
-pub unsafe fn create_panic_error(env: Env, msg: &str, panic: Panic) -> Local {
-    // Construct the Error object
+unsafe fn create_error(
+    env: Env,
+    msg: &str,
+    exception: Option<Local>,
+    panic: Option<Panic>,
+) -> Local {
+    // Construct the `uncaughtException` Error object
     let error = error_from_message(env, msg);
 
+    // Add the exception to the error
+    if let Some(exception) = exception {
+        set_property(env, error, "cause", exception);
+    };
+
     // Add the panic to the error
-    set_property(env, error, "panic", error_from_panic(env, panic));
+    if let Some(panic) = panic {
+        set_property(env, error, "panic", error_from_panic(env, panic));
+    }
 
     error
+}
+
+#[track_caller]
+unsafe fn resolve_deferred(env: Env, deferred: napi::Deferred, value: Local) {
+    if napi::resolve_deferred(env, deferred, value) != napi::Status::Ok {
+        fatal_error("Failed to resolve promise");
+    }
+}
+
+#[track_caller]
+unsafe fn reject_deferred(env: Env, deferred: napi::Deferred, value: Local) {
+    if napi::reject_deferred(env, deferred, value) != napi::Status::Ok {
+        fatal_error("Failed to reject promise");
+    }
 }
 
 #[track_caller]

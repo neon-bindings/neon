@@ -331,4 +331,102 @@ const assert = require('chai').assert;
 
     addon.task_custom_panic(msg);
   });
+
+  it('should be able to reject a promise in a task', async function() {
+    const msg = "Rejected!";
+
+    try {
+      await addon.task_reject_promise(msg);
+
+      throw new Error("Did not throw");
+    } catch (err) {
+      assert.instanceOf(err, Error);
+      assert.strictEqual(err.message, msg);
+    }
+  });
+
+  it('panic in a task should reject the promise', async function() {
+    const msg = "Rejected!";
+
+    try {
+      await addon.task_panic_execute_promise(msg);
+
+      throw new Error("Did not throw");
+    } catch (err) {
+      assert.instanceOf(err, Error);
+      assert.instanceOf(err.panic, Error);
+      assert.strictEqual(err.panic.message, msg);
+    }
+  });
+
+  it('panic in a task should reject the promise', async function() {
+    const msg = "Rejected!";
+
+    try {
+      await addon.task_panic_complete_promise(msg);
+
+      throw new Error("Did not throw");
+    } catch (err) {
+      assert.instanceOf(err, Error);
+      assert.instanceOf(err.panic, Error);
+      assert.strictEqual(err.panic.message, msg);
+    }
+  });
+
+  it('panic and exception in a task should reject the promise', async function() {
+    const msg = "Rejected!";
+
+    try {
+      await addon.task_panic_throw_promise(msg);
+
+      throw new Error("Did not throw");
+    } catch (err) {
+      assert.instanceOf(err, Error);
+      assert.ok(/panic/i.test(err.message), "Expected error message to indicate a panic");
+      assert.ok(/exception/i.test(err.message), "Expected error message to indicate an exception");
+      assert.instanceOf(err.panic, Error);
+      assert.instanceOf(err.cause, Error);
+      assert.strictEqual(err.cause.message, msg);
+    }
+  });
+
+  it('should be able to reject a promise settling with a channel', async function() {
+    const msg = "Rejected!";
+
+    try {
+      await addon.deferred_settle_with_throw(msg);
+
+      throw new Error("Did not throw");
+    } catch (err) {
+      assert.instanceOf(err, Error);
+      assert.strictEqual(err.message, msg);
+    }
+  });
+
+  it('should reject a promise when panicking while settling with a channel', async function() {
+    const msg = "Rejected!";
+
+    try {
+      await addon.deferred_settle_with_throw(msg);
+
+      throw new Error("Did not throw");
+    } catch (err) {
+      assert.instanceOf(err, Error);
+      assert.strictEqual(err.message, msg);
+    }
+  });
+
+  it('should reject a promise when panicking and throwing while settling with a channel', async function() {
+    const msg = "Rejected!";
+
+    try {
+      await addon.deferred_settle_with_panic(msg);
+
+      throw new Error("Did not throw");
+    } catch (err) {
+      assert.instanceOf(err, Error);
+      assert.ok(/panic/i.test(err.message), "Expected error message to indicate a panic");
+      assert.instanceOf(err.panic, Error);
+    }
+  });
 });
