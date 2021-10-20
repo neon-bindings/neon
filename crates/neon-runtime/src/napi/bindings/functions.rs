@@ -290,6 +290,7 @@ mod napi4 {
 #[cfg(feature = "napi-5")]
 mod napi5 {
     use super::super::types::*;
+    use std::ffi::c_void;
 
     generate!(
         extern "C" {
@@ -298,6 +299,15 @@ mod napi5 {
             fn get_date_value(env: Env, value: Value, result: *mut f64) -> Status;
 
             fn is_date(env: Env, value: Value, result: *mut bool) -> Status;
+
+            fn add_finalizer(
+                env: Env,
+                js_object: Value,
+                native_object: *mut c_void,
+                finalize_cb: Finalize,
+                finalize_hint: *mut c_void,
+                result: Ref,
+            ) -> Status;
         }
     );
 }

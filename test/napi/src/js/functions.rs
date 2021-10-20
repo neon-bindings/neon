@@ -147,3 +147,42 @@ pub fn is_construct(mut cx: FunctionContext) -> JsResult<JsObject> {
     this.set(&mut cx, "wasConstructed", construct)?;
     Ok(this)
 }
+
+pub fn caller_with_drop_callback(mut cx: FunctionContext) -> JsResult<JsFunction> {
+    struct Callback {
+        f: Root<JsFunction>,
+        drop: Option<Root<JsFunction>>,
+        channel: Channel,
+    }
+
+    impl Drop for Callback {
+        fn drop(&mut self) {
+            let callback = self.drop.take();
+
+            self.channel.send(move |mut cx| {
+                let this = cx.undefined();
+                let args: [Handle<JsValue>; 0] = [];
+
+                callback
+                    .unwrap()
+                    .into_inner(&mut cx)
+                    .call(&mut cx, this, args)?;
+
+                Ok(())
+            });
+        }
+    }
+
+    let callback = Callback {
+        f: cx.argument::<JsFunction>(0)?.root(&mut cx),
+        drop: Some(cx.argument::<JsFunction>(1)?.root(&mut cx)),
+        channel: cx.channel(),
+    };
+
+    JsFunction::new(&mut cx, move |mut cx| {
+        let this = cx.undefined();
+        let args: [Handle<JsValue>; 0] = [];
+
+        callback.f.to_inner(&mut cx).call(&mut cx, this, args)
+    })
+}

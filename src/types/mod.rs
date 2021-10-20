@@ -89,7 +89,7 @@ pub(crate) mod promise;
 pub(crate) mod internal;
 pub(crate) mod utf8;
 
-use self::internal::{FunctionCallback, ValueInternal};
+use self::internal::ValueInternal;
 use self::utf8::Utf8;
 use crate::context::internal::Env;
 use crate::context::{Context, FunctionContext};
@@ -97,7 +97,6 @@ use crate::handle::internal::SuperType;
 use crate::handle::{Handle, Managed};
 use crate::object::{Object, This};
 use crate::result::{JsResult, JsResultExt, NeonResult, Throw};
-use crate::types::internal::Callback;
 use neon_runtime;
 use neon_runtime::raw;
 use std::fmt;
@@ -709,6 +708,7 @@ unsafe fn prepare_call<'a, 'b, C: Context<'a>>(
 }
 
 impl JsFunction {
+    #[cfg(feature = "legacy-runtime")]
     pub fn new<'a, C, U>(
         cx: &mut C,
         f: fn(FunctionContext) -> JsResult<U>,
@@ -717,6 +717,9 @@ impl JsFunction {
         C: Context<'a>,
         U: Value,
     {
+        use self::internal::FunctionCallback;
+        use crate::types::internal::Callback;
+
         build(cx.env(), |out| {
             let env = cx.env().to_raw();
             unsafe {
@@ -724,6 +727,64 @@ impl JsFunction {
                 neon_runtime::fun::new(out, env, callback)
             }
         })
+    }
+
+    #[cfg(all(feature = "napi-1", not(feature = "napi-5")))]
+    pub fn new<'a, C, U>(
+        cx: &mut C,
+        f: fn(FunctionContext) -> JsResult<U>,
+    ) -> JsResult<'a, JsFunction>
+    where
+        C: Context<'a>,
+        U: Value,
+    {
+        Self::new_internal(cx, f)
+    }
+
+    #[cfg(feature = "napi-5")]
+    pub fn new<'a, C, F, V>(cx: &mut C, f: F) -> JsResult<'a, JsFunction>
+    where
+        C: Context<'a>,
+        F: Fn(FunctionContext) -> JsResult<V> + Send + 'static,
+        V: Value,
+    {
+        Self::new_internal(cx, f)
+    }
+
+    #[cfg(feature = "napi-1")]
+    fn new_internal<'a, C, F, V>(cx: &mut C, f: F) -> JsResult<'a, JsFunction>
+    where
+        C: Context<'a>,
+        F: Fn(FunctionContext) -> JsResult<V> + Send + 'static,
+        V: Value,
+    {
+        use std::any;
+        use std::panic::AssertUnwindSafe;
+        use std::ptr;
+
+        use crate::context::CallbackInfo;
+        use crate::types::error::convert_panics;
+
+        let name = any::type_name::<F>();
+        let f = move |env: raw::Env, info| {
+            let env = env.into();
+            let info = unsafe { CallbackInfo::new(info) };
+
+            FunctionContext::with(env, &info, |cx| {
+                convert_panics(env, AssertUnwindSafe(|| f(cx)))
+                    .map(|v| v.to_raw())
+                    .unwrap_or_else(|_| ptr::null_mut())
+            })
+        };
+
+        if let Ok(raw) = unsafe { neon_runtime::fun::new(cx.env().to_raw(), name, f) } {
+            Ok(Handle::new_internal(JsFunction {
+                raw,
+                marker: PhantomData,
+            }))
+        } else {
+            Err(Throw)
+        }
     }
 }
 

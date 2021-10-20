@@ -184,6 +184,7 @@ use std;
 use std::cell::RefCell;
 use std::convert::Into;
 use std::marker::PhantomData;
+#[cfg(feature = "legacy-runtime")]
 use std::os::raw::c_void;
 use std::panic::UnwindSafe;
 
@@ -196,6 +197,15 @@ pub(crate) struct CallbackInfo<'a> {
 }
 
 impl CallbackInfo<'_> {
+    #[cfg(feature = "napi-1")]
+    pub unsafe fn new(info: raw::FunctionCallbackInfo) -> Self {
+        Self {
+            info,
+            _lifetime: PhantomData,
+        }
+    }
+
+    #[cfg(feature = "legacy-runtime")]
     pub fn data(&self, env: Env) -> *mut c_void {
         unsafe {
             let mut raw_data: *mut c_void = std::mem::zeroed();
@@ -204,6 +214,7 @@ impl CallbackInfo<'_> {
         }
     }
 
+    #[cfg(feature = "legacy-runtime")]
     pub unsafe fn with_cx<T: This, U, F: for<'a> FnOnce(CallContext<'a, T>) -> U>(
         &self,
         env: Env,
@@ -695,12 +706,25 @@ impl<'a> ModuleContext<'a> {
         Scope::with(env, |scope| f(ModuleContext { scope, exports }))
     }
 
+    #[cfg(not(feature = "napi-5"))]
     /// Convenience method for exporting a Neon function from a module.
     pub fn export_function<T: Value>(
         &mut self,
         key: &str,
         f: fn(FunctionContext) -> JsResult<T>,
     ) -> NeonResult<()> {
+        let value = JsFunction::new(self, f)?.upcast::<JsValue>();
+        self.exports.set(self, key, value)?;
+        Ok(())
+    }
+
+    #[cfg(feature = "napi-5")]
+    /// Convenience method for exporting a Neon function from a module.
+    pub fn export_function<F, V>(&mut self, key: &str, f: F) -> NeonResult<()>
+    where
+        F: Fn(FunctionContext) -> JsResult<V> + Send + 'static,
+        V: Value,
+    {
         let value = JsFunction::new(self, f)?.upcast::<JsValue>();
         self.exports.set(self, key, value)?;
         Ok(())
