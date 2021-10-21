@@ -737,6 +737,9 @@ impl Object for JsArray {}
 /// // A function implementation that adds 1 to its first argument
 /// fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
 ///     let x: Handle<JsNumber> = cx.argument(0)?;
+/// #   #[cfg(feature = "legacy-runtime")]
+/// #   let v = x.value();
+/// #   #[cfg(feature = "napi-1")]
 ///     let v = x.value(&mut cx);
 ///     Ok(cx.number(v + 1.0))
 /// }
@@ -824,35 +827,6 @@ impl<CL: Object> JsFunction<CL> {
         })
     }
 
-    /// Build a [`Call`](crate::types::Call) with an initial arguments list.
-    pub fn args<'a, A: Arguments<'a>>(self, args: A) -> Call<'a, CL> {
-        let mut builder = Call {
-            callee: Handle::new_internal(self),
-            args: smallvec![],
-        };
-        builder.args(args);
-        builder
-    }
-
-    /// Build a [`Call`](crate::types::Call) with an initial single argument.
-    pub fn arg<'a, V: Value>(self, v: Handle<'a, V>) -> Call<'a, CL> {
-        let mut builder = Call {
-            callee: Handle::new_internal(self),
-            args: smallvec![],
-        };
-        builder.arg(v);
-        builder
-    }
-
-    /// Build a [`FunctionCall`](crate::types::FunctionCall) with a `this` binding.
-    pub fn this<'a, V: Value>(self, this: Handle<'a, V>) -> FunctionCall<'a, CL> {
-        FunctionCall {
-            callee: Handle::new_internal(self),
-            this: this.upcast(),
-            args: smallvec![],
-        }
-    }
-
     pub fn call<'a, 'b, C: Context<'a>, T, A, AS>(
         self,
         cx: &mut C,
@@ -875,6 +849,37 @@ impl<CL: Object> JsFunction<CL> {
     {
         let args = args.into_iter().collect::<SmallVec<[_; 8]>>();
         self.do_construct(cx, &args)
+    }
+}
+
+impl JsFunction {
+    /// Build a [`Call`](crate::types::Call) with an initial arguments list.
+    pub fn args<'a, A: Arguments<'a>>(self, args: A) -> Call<'a> {
+        let mut builder = Call {
+            callee: Handle::new_internal(self),
+            args: smallvec![],
+        };
+        builder.args(args);
+        builder
+    }
+
+    /// Build a [`Call`](crate::types::Call) with an initial single argument.
+    pub fn arg<'a, V: Value>(self, v: Handle<'a, V>) -> Call<'a> {
+        let mut builder = Call {
+            callee: Handle::new_internal(self),
+            args: smallvec![],
+        };
+        builder.arg(v);
+        builder
+    }
+
+    /// Build a [`FunctionCall`](crate::types::FunctionCall) with a `this` binding.
+    pub fn this<'a, V: Value>(self, this: Handle<'a, V>) -> FunctionCall<'a> {
+        FunctionCall {
+            callee: Handle::new_internal(self),
+            this: this.upcast(),
+            args: smallvec![],
+        }
     }
 }
 
@@ -921,8 +926,8 @@ type ArgsVec<'a> = SmallVec<[Handle<'a, JsValue>; 8]>;
 /// # }
 /// ```
 #[derive(Clone)]
-pub struct FunctionCall<'a, T: Object = JsObject> {
-    callee: Handle<'a, JsFunction<T>>,
+pub struct FunctionCall<'a> {
+    callee: Handle<'a, JsFunction>,
     this: Handle<'a, JsValue>,
     args: ArgsVec<'a>,
 }
@@ -944,12 +949,12 @@ pub struct FunctionCall<'a, T: Object = JsObject> {
 /// # }
 /// ```
 #[derive(Clone)]
-pub struct Call<'a, T: Object = JsObject> {
-    callee: Handle<'a, JsFunction<T>>,
+pub struct Call<'a> {
+    callee: Handle<'a, JsFunction>,
     args: ArgsVec<'a>,
 }
 
-impl<'a, T: Object> FunctionCall<'a, T> {
+impl<'a> FunctionCall<'a> {
     /// Set the value of `this` for the function call.
     pub fn this<V: Value>(&mut self, this: Handle<'a, V>) -> &mut Self {
         self.this = this.upcast();
@@ -984,10 +989,10 @@ impl<'a, T: Object> FunctionCall<'a, T> {
     }
 }
 
-impl<'a, T: Object> Call<'a, T> {
+impl<'a> Call<'a> {
     /// Set the value of `this` for the function call. Once a call has a `this` binding
     /// specified, it is required to be a [`FunctionCall`](crate::types::FunctionCall).
-    pub fn this<V: Value>(self, this: Handle<'a, V>) -> FunctionCall<'a, T> {
+    pub fn this<V: Value>(self, this: Handle<'a, V>) -> FunctionCall<'a> {
         FunctionCall {
             callee: self.callee,
             this: this.upcast(),
@@ -1009,7 +1014,7 @@ impl<'a, T: Object> Call<'a, T> {
 
     /// Call the function as a constructor (like a JavaScript `new` expression).
     /// If the function returns without throwing, returns the resulting object.
-    pub fn new<'b, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, T> {
+    pub fn new<'b, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, JsObject> {
         self.callee.do_construct(cx, &self.args)
     }
 
