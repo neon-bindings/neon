@@ -2,7 +2,7 @@ pub(crate) fn main(
     _attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-    let input = syn::parse_macro_input!(item as syn::ItemFn);
+    let input = syn::parse_macro_input!(item as syn_mid::ItemFn);
 
     let attrs = &input.attrs;
     let vis = &input.vis;
