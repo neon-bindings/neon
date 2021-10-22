@@ -721,7 +721,7 @@ impl Object for JsArray {}
 /// // Call new URL("https://neon-bindings.com")
 /// let obj = url
 ///     .arg(cx.string("https://neon-bindings.com"))
-///     .new(&mut cx)?;
+///     .construct(&mut cx)?;
 /// # Ok(obj)
 /// # }
 /// ```
@@ -944,7 +944,7 @@ pub struct FunctionCall<'a> {
 /// # let url: Handle<JsFunction> = url.downcast_or_throw(&mut cx)?;
 /// let obj = url
 ///     .arg(cx.string("https://neon-bindings.com"))
-///     .new(&mut cx)?;
+///     .construct(&mut cx)?;
 /// # Ok(obj)
 /// # }
 /// ```
@@ -1014,7 +1014,7 @@ impl<'a> Call<'a> {
 
     /// Call the function as a constructor (like a JavaScript `new` expression).
     /// If the function returns without throwing, returns the resulting object.
-    pub fn new<'b, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, JsObject> {
+    pub fn construct<'b, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, JsObject> {
         self.callee.do_construct(cx, &self.args)
     }
 
