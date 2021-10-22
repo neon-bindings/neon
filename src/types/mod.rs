@@ -975,7 +975,7 @@ impl<'a> FunctionCall<'a> {
 
     /// Make the function call. If the function returns without throwing, the result value
     /// is downcast to the type `V`, throwing a `TypeError` if the downcast fails.
-    pub fn call<'b, C: Context<'b>, V: Value>(&self, cx: &mut C) -> JsResult<'b, V> {
+    pub fn call<'b, V: Value, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, V> {
         let v: Handle<JsValue> = self.callee.do_call(cx, self.this, &self.args)?;
         v.downcast_or_throw(cx)
     }
@@ -1020,7 +1020,7 @@ impl<'a> Call<'a> {
 
     /// Make the function call. If the function returns without throwing, the result value
     /// is downcast to the type `V`, throwing a `TypeError` if the downcast fails.
-    pub fn call<'b: 'a, C: Context<'b>, V: Value>(&self, cx: &mut C) -> JsResult<'b, V> {
+    pub fn call<'b: 'a, V: Value, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, V> {
         let undefined: Handle<JsValue> = cx.undefined().upcast();
         let v: Handle<JsValue> = self.callee.do_call(cx, undefined, &self.args)?;
         v.downcast_or_throw(cx)
