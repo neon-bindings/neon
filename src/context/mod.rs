@@ -147,10 +147,11 @@
 //! [iterator]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators
 //! [question-mark]: https://doc.rust-lang.org/edition-guide/rust-2018/error-handling-and-panics/the-question-mark-operator-for-easier-error-handling.html
 
-pub(crate) mod private;
+pub(crate) mod internal;
 
-use crate::borrow::private::Ledger;
+use crate::borrow::internal::Ledger;
 use crate::borrow::{Borrow, BorrowMut, Ref, RefMut};
+use crate::context::internal::Env;
 #[cfg(all(feature = "napi-4", feature = "channel-api"))]
 use crate::event::Channel;
 use crate::handle::{Handle, Managed};
@@ -181,7 +182,7 @@ use std::marker::PhantomData;
 use std::os::raw::c_void;
 use std::panic::UnwindSafe;
 
-use self::private::{Env, Scope, ScopeMetadata};
+use self::internal::{ContextInternal, Scope, ScopeMetadata};
 
 #[repr(C)]
 pub(crate) struct CallbackInfo<'a> {
@@ -293,7 +294,7 @@ impl<'a> Lock<'a> {
 /// All interaction with the JavaScript engine in Neon code is mediated through instances of this trait.
 ///
 /// A context has a lifetime `'a`, which ensures the safety of handles managed by the JS garbage collector. All handles created during the lifetime of a context are kept alive for that duration and cannot outlive the context.
-pub trait Context<'a>: private::ContextInternal<'a> {
+pub trait Context<'a>: ContextInternal<'a> {
     /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
     ///
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
@@ -637,7 +638,7 @@ impl<'a> ModuleContext<'a> {
     }
 }
 
-impl<'a> private::ContextInternal<'a> for ModuleContext<'a> {
+impl<'a> ContextInternal<'a> for ModuleContext<'a> {
     fn scope_metadata(&self) -> &ScopeMetadata {
         &self.scope.metadata
     }
@@ -659,7 +660,7 @@ impl<'a> ExecuteContext<'a> {
     }
 }
 
-impl<'a> private::ContextInternal<'a> for ExecuteContext<'a> {
+impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
     fn scope_metadata(&self) -> &ScopeMetadata {
         &self.scope.metadata
     }
@@ -689,7 +690,7 @@ impl<'a, 'b> ComputeContext<'a, 'b> {
     }
 }
 
-impl<'a, 'b> private::ContextInternal<'a> for ComputeContext<'a, 'b> {
+impl<'a, 'b> ContextInternal<'a> for ComputeContext<'a, 'b> {
     fn scope_metadata(&self) -> &ScopeMetadata {
         &self.scope.metadata
     }
@@ -790,7 +791,7 @@ impl<'a, T: This> CallContext<'a, T> {
     }
 }
 
-impl<'a, T: This> private::ContextInternal<'a> for CallContext<'a, T> {
+impl<'a, T: This> ContextInternal<'a> for CallContext<'a, T> {
     fn scope_metadata(&self) -> &ScopeMetadata {
         &self.scope.metadata
     }
@@ -824,7 +825,7 @@ impl<'a> TaskContext<'a> {
     }
 }
 
-impl<'a> private::ContextInternal<'a> for TaskContext<'a> {
+impl<'a> ContextInternal<'a> for TaskContext<'a> {
     fn scope_metadata(&self) -> &ScopeMetadata {
         &self.scope.metadata
     }
@@ -846,7 +847,7 @@ impl<'a> FinalizeContext<'a> {
 }
 
 #[cfg(feature = "napi-1")]
-impl<'a> private::ContextInternal<'a> for FinalizeContext<'a> {
+impl<'a> ContextInternal<'a> for FinalizeContext<'a> {
     fn scope_metadata(&self) -> &ScopeMetadata {
         &self.scope.metadata
     }

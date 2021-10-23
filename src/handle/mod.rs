@@ -63,7 +63,7 @@ pub(crate) mod root;
 pub use self::root::Root;
 
 use self::internal::SuperType;
-use crate::context::private::Env;
+use crate::context::internal::Env;
 use crate::context::Context;
 use crate::result::{JsResult, JsResultExt};
 use crate::types::Value;

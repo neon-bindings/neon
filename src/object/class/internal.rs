@@ -1,5 +1,5 @@
 use super::{Callback, Class, ClassInternal};
-use crate::context::private::{ContextInternal, Env};
+use crate::context::internal::{ContextInternal, Env};
 use crate::context::{CallContext, CallbackInfo, Context};
 use crate::handle::{Handle, Managed};
 use crate::result::{JsResult, NeonResult, Throw};

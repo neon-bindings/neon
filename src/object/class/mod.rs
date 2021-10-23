@@ -6,7 +6,7 @@ use self::internal::{
     AllocateCallback, ClassMetadata, ConstructCallback, ConstructorCallCallback, MethodCallback,
 };
 use crate::borrow::{Borrow, BorrowMut, LoanError, Ref, RefMut};
-use crate::context::private::Env;
+use crate::context::internal::Env;
 use crate::context::{Context, Lock};
 use crate::handle::{Handle, Managed};
 use crate::object::{Object, This};

@@ -5,7 +5,7 @@ use std::panic::{catch_unwind, UnwindSafe};
 use neon_runtime;
 use neon_runtime::raw;
 
-use crate::context::private::Env;
+use crate::context::internal::Env;
 use crate::context::Context;
 use crate::result::{NeonResult, Throw};
 use crate::types::private::ValueInternal;
