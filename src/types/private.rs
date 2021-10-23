@@ -1,4 +1,4 @@
-use super::Value;
+use super::{JsValue, Value};
 use crate::context::internal::Env;
 use crate::context::{CallbackInfo, FunctionContext};
 use crate::result::JsResult;
@@ -9,6 +9,8 @@ use neon_runtime::call::CCallback;
 use neon_runtime::raw;
 use std::mem;
 use std::os::raw::c_void;
+
+use smallvec::SmallVec;
 
 pub trait ValueInternal: Managed + 'static {
     fn name() -> String;
@@ -114,5 +116,9 @@ pub(crate) trait Callback<T: Clone + Copy + Sized>: Sized {
     }
 }
 
+pub type ArgsVec<'a> = SmallVec<[Handle<'a, JsValue>; 8]>;
+
 /// This type marks the `Arguments` trait as sealed.
-pub trait ArgumentsInternal {}
+pub trait ArgumentsInternal<'a> {
+    fn append(self, args: &mut ArgsVec<'a>);
+}

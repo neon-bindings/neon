@@ -81,10 +81,10 @@ pub(crate) mod boxed;
 pub(crate) mod date;
 pub(crate) mod error;
 
-pub(crate) mod internal;
+pub(crate) mod private;
 pub(crate) mod utf8;
 
-use self::internal::{ArgumentsInternal, Callback, FunctionCallback, ValueInternal};
+use self::private::{Callback, FunctionCallback};
 use self::utf8::Utf8;
 use crate::context::internal::Env;
 use crate::context::{Context, FunctionContext};
@@ -134,7 +134,7 @@ impl<T: Object> SuperType<T> for JsObject {
 }
 
 /// The trait shared by all JavaScript values.
-pub trait Value: ValueInternal {
+pub trait Value: private::ValueInternal {
     fn to_string<'a, C: Context<'a>>(self, cx: &mut C) -> JsResult<'a, JsString> {
         let env = cx.env();
         build(env, |out| unsafe {
@@ -164,7 +164,7 @@ impl Managed for JsValue {
     }
 }
 
-impl ValueInternal for JsValue {
+impl private::ValueInternal for JsValue {
     fn name() -> String {
         "any".to_string()
     }
@@ -250,7 +250,7 @@ unsafe impl This for JsUndefined {
     }
 }
 
-impl ValueInternal for JsUndefined {
+impl private::ValueInternal for JsUndefined {
     fn name() -> String {
         "undefined".to_string()
     }
@@ -297,7 +297,7 @@ impl Managed for JsNull {
     }
 }
 
-impl ValueInternal for JsNull {
+impl private::ValueInternal for JsNull {
     fn name() -> String {
         "null".to_string()
     }
@@ -349,7 +349,7 @@ impl Managed for JsBoolean {
     }
 }
 
-impl ValueInternal for JsBoolean {
+impl private::ValueInternal for JsBoolean {
     fn name() -> String {
         "boolean".to_string()
     }
@@ -398,7 +398,7 @@ impl Managed for JsString {
     }
 }
 
-impl ValueInternal for JsString {
+impl private::ValueInternal for JsString {
     fn name() -> String {
         "string".to_string()
     }
@@ -519,7 +519,7 @@ impl Managed for JsNumber {
     }
 }
 
-impl ValueInternal for JsNumber {
+impl private::ValueInternal for JsNumber {
     fn name() -> String {
         "number".to_string()
     }
@@ -558,7 +558,7 @@ unsafe impl This for JsObject {
     }
 }
 
-impl ValueInternal for JsObject {
+impl private::ValueInternal for JsObject {
     fn name() -> String {
         "object".to_string()
     }
@@ -658,7 +658,7 @@ impl Managed for JsArray {
     }
 }
 
-impl ValueInternal for JsArray {
+impl private::ValueInternal for JsArray {
     fn name() -> String {
         "Array".to_string()
     }
@@ -898,7 +898,7 @@ impl<T: Object> Managed for JsFunction<T> {
     }
 }
 
-impl<T: Object> ValueInternal for JsFunction<T> {
+impl<T: Object> private::ValueInternal for JsFunction<T> {
     fn name() -> String {
         "function".to_string()
     }
@@ -907,8 +907,6 @@ impl<T: Object> ValueInternal for JsFunction<T> {
         unsafe { neon_runtime::tag::is_function(env.to_raw(), other.to_raw()) }
     }
 }
-
-type ArgsVec<'a> = SmallVec<[Handle<'a, JsValue>; 8]>;
 
 /// A builder for making a JavaScript function call (like `parseInt("42")`).
 ///
@@ -929,7 +927,7 @@ type ArgsVec<'a> = SmallVec<[Handle<'a, JsValue>; 8]>;
 pub struct FunctionCall<'a> {
     callee: Handle<'a, JsFunction>,
     this: Handle<'a, JsValue>,
-    args: ArgsVec<'a>,
+    args: private::ArgsVec<'a>,
 }
 
 /// A builder for making either a JavaScript function call (like `parseInt("42")`)
@@ -951,7 +949,7 @@ pub struct FunctionCall<'a> {
 #[derive(Clone)]
 pub struct Call<'a> {
     callee: Handle<'a, JsFunction>,
-    args: ArgsVec<'a>,
+    args: private::ArgsVec<'a>,
 }
 
 impl<'a> FunctionCall<'a> {
@@ -1039,30 +1037,27 @@ impl<'a> Call<'a> {
 /// The trait for specifying arguments in a [`Call`](crate::types::Call) or
 /// [`FunctionCall`](crate::types::FunctionCall). This trait is sealed and cannot
 /// be implemented by types outside of the Neon crate.
-pub trait Arguments<'a>: ArgumentsInternal {
-    #[doc(hidden)]
-    fn append(self, args: &mut ArgsVec<'a>);
-}
+pub trait Arguments<'a>: private::ArgumentsInternal<'a> {}
 
 macro_rules! impl_arguments {
     { (); (); } => {
-        impl ArgumentsInternal for () { }
-
-        impl<'a> Arguments<'a> for () {
-            fn append(self, _args: &mut ArgsVec<'a>) { }
+        impl<'a> private::ArgumentsInternal<'a> for () {
+            fn append(self, _args: &mut private::ArgsVec<'a>) {}
         }
+
+        impl<'a> Arguments<'a> for () {}
     };
 
     { ($tname1:ident,$($tnames:ident,)*); ($vname1:ident,$($vnames:ident,)*); } => {
-        impl<'a, $tname1: Value, $($tnames: Value,)*> ArgumentsInternal for (Handle<'a, $tname1>, $(Handle<'a, $tnames>,)*) { }
-
-        impl<'a, $tname1: Value, $($tnames: Value,)*> Arguments<'a> for (Handle<'a, $tname1>, $(Handle<'a, $tnames>,)*) {
-            fn append(self, args: &mut ArgsVec<'a>) {
+        impl<'a, $tname1: Value, $($tnames: Value,)*> private::ArgumentsInternal<'a> for (Handle<'a, $tname1>, $(Handle<'a, $tnames>,)*) {
+            fn append(self, args: &mut private::ArgsVec<'a>) {
                 let ($vname1, $($vnames,)*) = self;
                 args.push($vname1.upcast());
                 $(args.push($vnames.upcast());)*
             }
         }
+
+        impl<'a, $tname1: Value, $($tnames: Value,)*> Arguments<'a> for (Handle<'a, $tname1>, $(Handle<'a, $tnames>,)*) {}
 
         impl_arguments! {
             ($($tnames,)*);

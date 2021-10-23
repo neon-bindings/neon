@@ -11,7 +11,7 @@ use crate::context::{Context, Lock};
 use crate::handle::{Handle, Managed};
 use crate::object::{Object, This};
 use crate::result::{JsResult, NeonResult, Throw};
-use crate::types::internal::{Callback, ValueInternal};
+use crate::types::private::{Callback, ValueInternal};
 use crate::types::{build, JsFunction, JsValue, Value};
 use neon_runtime;
 use neon_runtime::raw;
