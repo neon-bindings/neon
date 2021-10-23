@@ -86,7 +86,7 @@ pub(crate) mod utf8;
 
 use self::private::{Callback, FunctionCallback};
 use self::utf8::Utf8;
-use crate::context::internal::Env;
+use crate::context::private::Env;
 use crate::context::{Context, FunctionContext};
 use crate::handle::internal::SuperType;
 use crate::handle::{Handle, Managed};

@@ -1,5 +1,5 @@
 use super::{JsValue, Value};
-use crate::context::internal::Env;
+use crate::context::private::Env;
 use crate::context::{CallbackInfo, FunctionContext};
 use crate::result::JsResult;
 use crate::types::error::convert_panics;
