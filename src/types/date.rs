@@ -1,4 +1,5 @@
-use super::{Value, ValueInternal};
+use super::private::ValueInternal;
+use super::Value;
 use crate::context::internal::Env;
 use crate::context::Context;
 use crate::handle::{Handle, Managed};
