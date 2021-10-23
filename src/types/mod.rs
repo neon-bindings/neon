@@ -982,7 +982,7 @@ impl<'a> FunctionCall<'a> {
     /// preferable to [`call()`](crate::types::FunctionCall::call) when the result value is
     /// not needed, since it does not require specifying a result type.
     pub fn exec<'b, C: Context<'b>>(&self, cx: &mut C) -> NeonResult<()> {
-        let _: Handle<JsValue> = self.callee.do_call(cx, self.this, &self.args)?;
+        self.callee.do_call(cx, self.this, &self.args)?;
         Ok(())
     }
 }
