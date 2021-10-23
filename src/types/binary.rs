@@ -1,6 +1,6 @@
 //! Types and traits representing binary JavaScript data.
 
-use crate::borrow::internal::Pointer;
+use crate::borrow::private::Pointer;
 use crate::borrow::{Borrow, BorrowMut, LoanError, Ref, RefMut};
 use crate::context::internal::Env;
 use crate::context::{Context, Lock};

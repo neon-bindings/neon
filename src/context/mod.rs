@@ -149,7 +149,7 @@
 
 pub(crate) mod internal;
 
-use crate::borrow::internal::Ledger;
+use crate::borrow::private::Ledger;
 use crate::borrow::{Borrow, BorrowMut, Ref, RefMut};
 use crate::context::internal::Env;
 #[cfg(all(feature = "napi-4", feature = "channel-api"))]
