@@ -707,7 +707,7 @@ impl Object for JsArray {}
 /// ## Calling functions as constructors
 ///
 /// A `JsFunction` can be called as a constructor (like `new Array(16)` or
-/// `new URL("https://neon-bindings.com")`) with the [`new()`](Call::new)
+/// `new URL("https://neon-bindings.com")`) with the [`construct()`](Call::construct)
 /// method of the [`Call`](Call) builder:
 /// ```
 /// # use neon::prelude::*;
@@ -1037,45 +1037,104 @@ impl<'a> Call<'a> {
 /// The trait for specifying arguments in a [`Call`](crate::types::Call) or
 /// [`FunctionCall`](crate::types::FunctionCall). This trait is sealed and cannot
 /// be implemented by types outside of the Neon crate.
+///
+/// **Note:** This trait is implemented for tuples of up to 32 JavaScript values,
+/// but for the sake of brevity, only tuples up to size 8 are shown in this documentation.
 pub trait Arguments<'a>: private::ArgumentsInternal<'a> {}
 
+impl<'a> private::ArgumentsInternal<'a> for () {
+    fn append(self, _args: &mut private::ArgsVec<'a>) {}
+}
+
+impl<'a> Arguments<'a> for () {}
+
 macro_rules! impl_arguments {
-    { (); (); } => {
-        impl<'a> private::ArgumentsInternal<'a> for () {
-            fn append(self, _args: &mut private::ArgsVec<'a>) {}
-        }
+    {
+        [ $(($tprefix:ident, $vprefix:ident), )* ];
+        [];
+    } => {};
 
-        impl<'a> Arguments<'a> for () {}
-    };
-
-    { ($tname1:ident,$($tnames:ident,)*); ($vname1:ident,$($vnames:ident,)*); } => {
-        #[doc(hidden)]
-        impl<'a, $tname1: Value, $($tnames: Value,)*> private::ArgumentsInternal<'a> for (Handle<'a, $tname1>, $(Handle<'a, $tnames>,)*) {
+    {
+        [ $(($tprefix:ident, $vprefix:ident), )* ];
+        [ $(#[$attr1:meta])? ($tname1:ident, $vname1:ident), $($(#[$attrs:meta])? ($tnames:ident, $vnames:ident), )* ];
+    } => {
+        $(#[$attr1])?
+        impl<'a, $($tprefix: Value, )* $tname1: Value> private::ArgumentsInternal<'a> for ($(Handle<'a, $tprefix>, )* Handle<'a, $tname1>, ) {
             fn append(self, args: &mut private::ArgsVec<'a>) {
-                let ($vname1, $($vnames,)*) = self;
+                let ($($vprefix, )* $vname1, ) = self;
+                $(args.push($vprefix.upcast());)*
                 args.push($vname1.upcast());
-                $(args.push($vnames.upcast());)*
             }
         }
 
-        #[doc(hidden)]
-        impl<'a, $tname1: Value, $($tnames: Value,)*> Arguments<'a> for (Handle<'a, $tname1>, $(Handle<'a, $tnames>,)*) {}
+        $(#[$attr1])?
+        impl<'a, $($tprefix: Value, )* $tname1: Value> Arguments<'a> for ($(Handle<'a, $tprefix>, )* Handle<'a, $tname1>, ) {}
 
         impl_arguments! {
-            ($($tnames,)*);
-            ($($vnames,)*);
+            [ $(($tprefix, $vprefix), )* ($tname1, $vname1), ];
+            [ $($(#[$attrs])? ($tnames, $vnames), )* ];
         }
     };
 }
 
 impl_arguments! {
-    (V1, V2, V3, V4, V5, V6, V7, V8,
-     V9, V10, V11, V12, V13, V14, V15, V16,
-     V17, V18, V19, V20, V21, V22, V23, V24,
-     V25, V26, V27, V28, V29, V30, V31, V32,);
-
-    (v1, v2, v3, v4, v5, v6, v7, v8,
-     v9, v10, v11, v12, v13, v14, v15, v16,
-     v17, v18, v19, v20, v21, v22, v23, v24,
-     v25, v26, v27, v28, v29, v30, v31, v32,);
+    [];
+    [
+        (V1, v1),
+        (V2, v2),
+        (V3, v3),
+        (V4, v4),
+        (V5, v5),
+        (V6, v6),
+        (V7, v7),
+        (V8, v8),
+        #[doc(hidden)]
+        (V9, v9),
+        #[doc(hidden)]
+        (V10, v10),
+        #[doc(hidden)]
+        (V11, v11),
+        #[doc(hidden)]
+        (V12, v12),
+        #[doc(hidden)]
+        (V13, v13),
+        #[doc(hidden)]
+        (V14, v14),
+        #[doc(hidden)]
+        (V15, v15),
+        #[doc(hidden)]
+        (V16, v16),
+        #[doc(hidden)]
+        (V17, v17),
+        #[doc(hidden)]
+        (V18, v18),
+        #[doc(hidden)]
+        (V19, v19),
+        #[doc(hidden)]
+        (V20, v20),
+        #[doc(hidden)]
+        (V21, v21),
+        #[doc(hidden)]
+        (V22, v22),
+        #[doc(hidden)]
+        (V23, v23),
+        #[doc(hidden)]
+        (V24, v24),
+        #[doc(hidden)]
+        (V25, v25),
+        #[doc(hidden)]
+        (V26, v26),
+        #[doc(hidden)]
+        (V27, v27),
+        #[doc(hidden)]
+        (V28, v28),
+        #[doc(hidden)]
+        (V29, v29),
+        #[doc(hidden)]
+        (V30, v30),
+        #[doc(hidden)]
+        (V31, v31),
+        #[doc(hidden)]
+        (V32, v32),
+    ];
 }
