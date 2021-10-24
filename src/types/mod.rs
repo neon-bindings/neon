@@ -1049,6 +1049,7 @@ macro_rules! impl_arguments {
     };
 
     { ($tname1:ident,$($tnames:ident,)*); ($vname1:ident,$($vnames:ident,)*); } => {
+        #[doc(hidden)]
         impl<'a, $tname1: Value, $($tnames: Value,)*> private::ArgumentsInternal<'a> for (Handle<'a, $tname1>, $(Handle<'a, $tnames>,)*) {
             fn append(self, args: &mut private::ArgsVec<'a>) {
                 let ($vname1, $($vnames,)*) = self;
@@ -1057,6 +1058,7 @@ macro_rules! impl_arguments {
             }
         }
 
+        #[doc(hidden)]
         impl<'a, $tname1: Value, $($tnames: Value,)*> Arguments<'a> for (Handle<'a, $tname1>, $(Handle<'a, $tnames>,)*) {}
 
         impl_arguments! {
