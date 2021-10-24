@@ -119,7 +119,7 @@ pub fn throw_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
 pub fn call_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
     let f: Handle<JsFunction> = cx.argument(0)?;
     Ok(cx
-        .try_catch(|cx| f.args(()).this(cx.global()).call(cx))
+        .try_catch(|cx| f.this(cx.global()).call(cx))
         .unwrap_or_else(|err| err))
 }
 
