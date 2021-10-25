@@ -677,13 +677,12 @@ impl Object for JsArray {}
 /// [global object](crate::context::Context::global), or it may be defined in Rust
 /// with [`JsFunction::new()`](JsFunction::new).
 ///
-/// ## Invoking functions
+/// ## Calling functions
 ///
-/// Neon provides convenient
-/// [builders](https://doc.rust-lang.org/1.0.0/style/ownership/builders.html)
-/// for invoking JavaScript functions, via the [`apply()`](JsFunction::apply) method.
-/// These builders can be used to specify the arguments (and, optionally, the
-/// binding for `this`) before calling the function:
+/// Neon provides a convenient syntax for calling JavaScript functions with the
+/// [`call_with()`](JsFunction::call_with) method, which produces a [`CallOptions`](CallOptions)
+/// struct that can be used to provide the function arguments (and optionally, the binding for
+/// `this`) before calling the function:
 /// ```
 /// # use neon::prelude::*;
 /// # fn foo(mut cx: FunctionContext) -> JsResult<JsNumber> {
@@ -695,18 +694,18 @@ impl Object for JsArray {}
 ///
 /// // Call parseInt("42")
 /// let x: Handle<JsNumber> = parse_int
-///     .apply()
+///     .call_with()
 ///     .arg(cx.string("42"))
-///     .call(&mut cx)?;
+///     .apply(&mut cx)?;
 /// # Ok(x)
 /// # }
 /// ```
 ///
-/// ## Invoking functions as constructors
+/// ## Calling functions as constructors
 ///
 /// A `JsFunction` can be called as a constructor (like `new Array(16)` or
-/// `new URL("https://neon-bindings.com")`) with the [`construct()`](InvocationBuilder::construct)
-/// method of an [`InvocationBuilder`](InvocationBuilder):
+/// `new URL("https://neon-bindings.com")`) with the
+/// [`construct_with()`](JsFunction::construct_with) method:
 /// ```
 /// # use neon::prelude::*;
 /// # fn foo(mut cx: FunctionContext) -> JsResult<JsObject> {
@@ -718,9 +717,9 @@ impl Object for JsArray {}
 ///
 /// // Call new URL("https://neon-bindings.com")
 /// let obj = url
-///     .apply()
+///     .construct_with()
 ///     .arg(cx.string("https://neon-bindings.com"))
-///     .construct(&mut cx)?;
+///     .apply(&mut cx)?;
 /// # Ok(obj)
 /// # }
 /// ```
@@ -852,10 +851,19 @@ impl<CL: Object> JsFunction<CL> {
 }
 
 impl JsFunction {
-    /// Create an [`InvocationBuilder`](crate::types::InvocationBuilder) for calling this
-    /// function.
-    pub fn apply<'a>(self) -> InvocationBuilder<'a> {
-        InvocationBuilder {
+    /// Create a [`CallOptions`](crate::types::CallOptions) for calling this function.
+    pub fn call_with<'a>(self) -> CallOptions<'a> {
+        CallOptions {
+            this: None,
+            callee: Handle::new_internal(self),
+            args: smallvec![],
+        }
+    }
+
+    /// Create a [`ConstructOptions`](crate::types::ConstructOptions) for calling this function
+    /// as a constructor.
+    pub fn construct_with<'a>(self) -> ConstructOptions<'a> {
+        ConstructOptions {
             callee: Handle::new_internal(self),
             args: smallvec![],
         }
@@ -887,7 +895,7 @@ impl<T: Object> private::ValueInternal for JsFunction<T> {
     }
 }
 
-/// A builder for making a JavaScript function call (like `parseInt("42")`).
+/// A builder for making a JavaScript function call like `parseInt("42")`.
 ///
 /// The builder methods make it convenient to assemble the call from parts:
 /// ```
@@ -897,21 +905,57 @@ impl<T: Object> private::ValueInternal for JsFunction<T> {
 /// # let parse_int = global.get(&mut cx, "parseInt")?;
 /// # let parse_int: Handle<JsFunction> = parse_int.downcast_or_throw(&mut cx)?;
 /// let x: Handle<JsNumber> = parse_int
-///     .apply()
+///     .call_with()
 ///     .arg(cx.string("42"))
-///     .call(&mut cx)?;
+///     .apply(&mut cx)?;
 /// # Ok(x)
 /// # }
 /// ```
 #[derive(Clone)]
-pub struct CallBuilder<'a> {
+pub struct CallOptions<'a> {
     callee: Handle<'a, JsFunction>,
-    this: Handle<'a, JsValue>,
+    this: Option<Handle<'a, JsValue>>,
     args: private::ArgsVec<'a>,
 }
 
-/// A builder for making either a JavaScript function call (like `parseInt("42")`)
-/// or constructor call (like `new Array(16)`).
+impl<'a> CallOptions<'a> {
+    /// Set the value of `this` for the function call.
+    pub fn this<V: Value>(&mut self, this: Handle<'a, V>) -> &mut Self {
+        self.this = Some(this.upcast());
+        self
+    }
+
+    /// Add an argument to the arguments list.
+    pub fn arg<V: Value>(&mut self, arg: Handle<'a, V>) -> &mut Self {
+        self.args.push(arg.upcast());
+        self
+    }
+
+    /// Add multiple arguments to the arguments list.
+    pub fn args<A: Arguments<'a>>(&mut self, args: A) -> &mut Self {
+        args.append(&mut self.args);
+        self
+    }
+
+    /// Make the function call. If the function returns without throwing, the result value
+    /// is downcast to the type `V`, throwing a `TypeError` if the downcast fails.
+    pub fn apply<'b, V: Value, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, V> {
+        let this = self.this.unwrap_or_else(|| cx.null().upcast());
+        let v: Handle<JsValue> = self.callee.do_call(cx, this, &self.args)?;
+        v.downcast_or_throw(cx)
+    }
+
+    /// Make the function call for side effect, discarding the result value. This method is
+    /// preferable to [`apply()`](crate::types::CallOptions::apply) when the result value is
+    /// not needed, since it does not require specifying a result type.
+    pub fn exec<'b, C: Context<'b>>(&self, cx: &mut C) -> NeonResult<()> {
+        let this = self.this.unwrap_or_else(|| cx.null().upcast());
+        self.callee.do_call(cx, this, &self.args)?;
+        Ok(())
+    }
+}
+
+/// A builder for making a JavaScript constructor call like `new Array(16)`.
 ///
 /// The builder methods make it convenient to assemble the call from parts:
 /// ```
@@ -921,25 +965,19 @@ pub struct CallBuilder<'a> {
 /// # let url = global.get(&mut cx, "URL")?;
 /// # let url: Handle<JsFunction> = url.downcast_or_throw(&mut cx)?;
 /// let obj = url
-///     .apply()
+///     .construct_with()
 ///     .arg(cx.string("https://neon-bindings.com"))
-///     .construct(&mut cx)?;
+///     .apply(&mut cx)?;
 /// # Ok(obj)
 /// # }
 /// ```
 #[derive(Clone)]
-pub struct InvocationBuilder<'a> {
+pub struct ConstructOptions<'a> {
     callee: Handle<'a, JsFunction>,
     args: private::ArgsVec<'a>,
 }
 
-impl<'a> CallBuilder<'a> {
-    /// Set the value of `this` for the function call.
-    pub fn this<V: Value>(&mut self, this: Handle<'a, V>) -> &mut Self {
-        self.this = this.upcast();
-        self
-    }
-
+impl<'a> ConstructOptions<'a> {
     /// Add an argument to the arguments list.
     pub fn arg<V: Value>(&mut self, arg: Handle<'a, V>) -> &mut Self {
         self.args.push(arg.upcast());
@@ -952,71 +990,15 @@ impl<'a> CallBuilder<'a> {
         self
     }
 
-    /// Make the function call. If the function returns without throwing, the result value
-    /// is downcast to the type `V`, throwing a `TypeError` if the downcast fails.
-    pub fn call<'b, V: Value, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, V> {
-        let v: Handle<JsValue> = self.callee.do_call(cx, self.this, &self.args)?;
-        v.downcast_or_throw(cx)
-    }
-
-    /// Make the function call for side effect, discarding the result value. This method is
-    /// preferable to [`call()`](crate::types::CallBuilder::call) when the result value is
-    /// not needed, since it does not require specifying a result type.
-    pub fn exec<'b, C: Context<'b>>(&self, cx: &mut C) -> NeonResult<()> {
-        self.callee.do_call(cx, self.this, &self.args)?;
-        Ok(())
-    }
-}
-
-impl<'a> InvocationBuilder<'a> {
-    /// Set the value of `this` for the function call. Once a call has a `this` binding
-    /// specified, it is required to be a [`CallBuilder`](crate::types::CallBuilder).
-    pub fn this<V: Value>(self, this: Handle<'a, V>) -> CallBuilder<'a> {
-        CallBuilder {
-            callee: self.callee,
-            this: this.upcast(),
-            args: self.args,
-        }
-    }
-
-    /// Add an argument to the arguments list.
-    pub fn arg<V: Value>(&mut self, arg: Handle<'a, V>) -> &mut Self {
-        self.args.push(arg.upcast());
-        self
-    }
-
-    /// Add multiple arguments to the arguments list.
-    pub fn args<A: Arguments<'a>>(&mut self, args: A) -> &mut Self {
-        args.append(&mut self.args);
-        self
-    }
-
-    /// Invoke the function as a constructor (like a JavaScript `new` expression).
-    /// If the function returns without throwing, returns the resulting object.
-    pub fn construct<'b, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, JsObject> {
+    /// Make the constructor call. If the function returns without throwing, returns
+    /// the resulting object.
+    pub fn apply<'b, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, JsObject> {
         self.callee.do_construct(cx, &self.args)
     }
-
-    /// Make the function call. If the function returns without throwing, the result value
-    /// is downcast to the type `V`, throwing a `TypeError` if the downcast fails.
-    pub fn call<'b: 'a, V: Value, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, V> {
-        let undefined: Handle<JsValue> = cx.undefined().upcast();
-        let v: Handle<JsValue> = self.callee.do_call(cx, undefined, &self.args)?;
-        v.downcast_or_throw(cx)
-    }
-
-    /// Make the function call for side effect, discarding the result value. This method is
-    /// preferable to [`call()`](crate::types::InvocationBuilder::call) when the result value is
-    /// not needed, since it does not require specifying a result type.
-    pub fn exec<'b: 'a, C: Context<'b>>(&self, cx: &mut C) -> NeonResult<()> {
-        let undefined: Handle<JsValue> = cx.undefined().upcast();
-        let _: Handle<JsValue> = self.callee.do_call(cx, undefined, &self.args)?;
-        Ok(())
-    }
 }
 
-/// The trait for specifying arguments in a [`InvocationBuilder`](crate::types::InvocationBuilder)
-/// or [`CallBuilder`](crate::types::CallBuilder). This trait is sealed and cannot
+/// The trait for specifying arguments in a [`CallOptions`](crate::types::CallOptions)
+/// or [`ConstructOptions`](crate::types::ConstructOptions). This trait is sealed and cannot
 /// be implemented by types outside of the Neon crate.
 ///
 /// **Note:** This trait is implemented for tuples of up to 32 JavaScript values,

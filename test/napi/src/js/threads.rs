@@ -16,7 +16,7 @@ pub fn thread_callback(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let channel = cx.channel();
 
     std::thread::spawn(move || {
-        channel.send(move |mut cx| callback.into_inner(&mut cx).apply().exec(&mut cx))
+        channel.send(move |mut cx| callback.into_inner(&mut cx).call_with().exec(&mut cx))
     });
 
     Ok(cx.undefined())
@@ -35,7 +35,7 @@ pub fn multi_threaded_callback(mut cx: FunctionContext) -> JsResult<JsUndefined>
             channel.send(move |mut cx| {
                 callback
                     .into_inner(&mut cx)
-                    .apply()
+                    .call_with()
                     .arg(cx.number(i as f64))
                     .exec(&mut cx)
             })
@@ -66,7 +66,7 @@ impl AsyncGreeter {
             channel.send(|mut cx| {
                 callback
                     .into_inner(&mut cx)
-                    .apply()
+                    .call_with()
                     .arg(cx.string(greeting))
                     .exec(&mut cx)
             })
@@ -83,7 +83,7 @@ impl Finalize for AsyncGreeter {
         } = self;
 
         if let Some(shutdown) = shutdown {
-            let _ = shutdown.into_inner(cx).apply().exec(cx);
+            let _ = shutdown.into_inner(cx).call_with().exec(cx);
         }
 
         callback.drop(cx);
@@ -146,7 +146,7 @@ pub fn drop_global_queue(mut cx: FunctionContext) -> JsResult<JsUndefined> {
                 self.channel.send(|mut cx| {
                     callback
                         .into_inner(&mut cx)
-                        .apply()
+                        .call_with()
                         .arg(cx.undefined())
                         .exec(&mut cx)
                 });

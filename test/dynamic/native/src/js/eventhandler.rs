@@ -112,10 +112,10 @@ declare_types! {
         thread::spawn(move || {
           cb.schedule_with(move |cx, this, callback| {
             let result: JsResult<JsValue> = callback
-              .apply()
+              .call_with()
               .this(this)
               .arg(cx.string("number"))
-              .call(cx);
+              .apply(cx);
             let cmd = match result {
               Ok(v) => {
                 if let Ok(number) = v.downcast::<JsNumber>() {
@@ -130,7 +130,7 @@ declare_types! {
               },
               Err(e) => format!("threw {}", e)
             };
-            let _result = callback.apply().this(this).arg(cx.string(cmd)).exec(cx);
+            let _result = callback.call_with().this(this).arg(cx.string(cmd)).exec(cx);
           });
         });
       }
