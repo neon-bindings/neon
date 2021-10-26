@@ -15,4 +15,5 @@ napi = []
 
 [dependencies]
 quote = "1"
-syn = { version = "1", features = ["full"] }
+syn = "1"
+syn-mid = "0.5"

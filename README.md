@@ -10,7 +10,7 @@ Rust bindings for writing safe and fast native Node.js modules.
 
 ## Getting started
 
-Once you have the [platform dependencies](https://neon-bindings.com/docs/getting-started#install-node-build-tools/) installed, getting started is as simple as:
+Once you have the [platform dependencies](https://neon-bindings.com/docs/quick-start) installed, getting started is as simple as:
 
 ```
 $ npm init neon my-project
