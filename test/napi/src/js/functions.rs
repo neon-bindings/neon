@@ -21,7 +21,7 @@ pub fn call_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
 pub fn construct_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let o = cx
         .argument::<JsFunction>(0)?
-        .construct_with()
+        .construct_with(&cx)
         .arg(cx.number(0.0))
         .apply(&mut cx)?;
     let get_utc_full_year_method = o

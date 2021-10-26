@@ -717,7 +717,7 @@ impl Object for JsArray {}
 ///
 /// // Call new URL("https://neon-bindings.com")
 /// let obj = url
-///     .construct_with()
+///     .construct_with(&cx)
 ///     .arg(cx.string("https://neon-bindings.com"))
 ///     .apply(&mut cx)?;
 /// # Ok(obj)
@@ -852,7 +852,7 @@ impl<CL: Object> JsFunction<CL> {
 
 impl JsFunction {
     /// Create a [`CallOptions`](crate::types::CallOptions) for calling this function.
-    pub fn call_with<'a, C: Context<'a>>(self, _cx: &mut C) -> CallOptions<'a> {
+    pub fn call_with<'a, C: Context<'a>>(self, _cx: &C) -> CallOptions<'a> {
         CallOptions {
             this: None,
             callee: Handle::new_internal(self),
@@ -862,7 +862,7 @@ impl JsFunction {
 
     /// Create a [`ConstructOptions`](crate::types::ConstructOptions) for calling this function
     /// as a constructor.
-    pub fn construct_with<'a>(self) -> ConstructOptions<'a> {
+    pub fn construct_with<'a, C: Context<'a>>(self, _cx: &C) -> ConstructOptions<'a> {
         ConstructOptions {
             callee: Handle::new_internal(self),
             args: smallvec![],
@@ -905,7 +905,7 @@ impl<T: Object> private::ValueInternal for JsFunction<T> {
 /// # let parse_int = global.get(&mut cx, "parseInt")?;
 /// # let parse_int: Handle<JsFunction> = parse_int.downcast_or_throw(&mut cx)?;
 /// let x: Handle<JsNumber> = parse_int
-///     .call_with(&mut cx))
+///     .call_with(&cx)
 ///     .arg(cx.string("42"))
 ///     .apply(&mut cx)?;
 /// # Ok(x)
@@ -965,7 +965,7 @@ impl<'a> CallOptions<'a> {
 /// # let url = global.get(&mut cx, "URL")?;
 /// # let url: Handle<JsFunction> = url.downcast_or_throw(&mut cx)?;
 /// let obj = url
-///     .construct_with()
+///     .construct_with(&cx)
 ///     .arg(cx.string("https://neon-bindings.com"))
 ///     .apply(&mut cx)?;
 /// # Ok(obj)
