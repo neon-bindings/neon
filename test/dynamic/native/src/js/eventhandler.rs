@@ -112,7 +112,7 @@ declare_types! {
         thread::spawn(move || {
           cb.schedule_with(move |cx, this, callback| {
             let result: JsResult<JsValue> = callback
-              .call_with()
+              .call_with(cx)
               .this(this)
               .arg(cx.string("number"))
               .apply(cx);
@@ -130,7 +130,7 @@ declare_types! {
               },
               Err(e) => format!("threw {}", e)
             };
-            let _result = callback.call_with().this(this).arg(cx.string(cmd)).exec(cx);
+            let _result = callback.call_with(cx).this(this).arg(cx.string(cmd)).exec(cx);
           });
         });
       }

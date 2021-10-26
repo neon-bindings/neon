@@ -694,7 +694,7 @@ impl Object for JsArray {}
 ///
 /// // Call parseInt("42")
 /// let x: Handle<JsNumber> = parse_int
-///     .call_with()
+///     .call_with(&mut cx)
 ///     .arg(cx.string("42"))
 ///     .apply(&mut cx)?;
 /// # Ok(x)
@@ -852,7 +852,7 @@ impl<CL: Object> JsFunction<CL> {
 
 impl JsFunction {
     /// Create a [`CallOptions`](crate::types::CallOptions) for calling this function.
-    pub fn call_with<'a>(self) -> CallOptions<'a> {
+    pub fn call_with<'a, C: Context<'a>>(self, _cx: &mut C) -> CallOptions<'a> {
         CallOptions {
             this: None,
             callee: Handle::new_internal(self),
@@ -905,7 +905,7 @@ impl<T: Object> private::ValueInternal for JsFunction<T> {
 /// # let parse_int = global.get(&mut cx, "parseInt")?;
 /// # let parse_int: Handle<JsFunction> = parse_int.downcast_or_throw(&mut cx)?;
 /// let x: Handle<JsNumber> = parse_int
-///     .call_with()
+///     .call_with(&mut cx))
 ///     .arg(cx.string("42"))
 ///     .apply(&mut cx)?;
 /// # Ok(x)
