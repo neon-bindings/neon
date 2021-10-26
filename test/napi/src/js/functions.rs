@@ -12,7 +12,7 @@ pub fn return_js_function(mut cx: FunctionContext) -> JsResult<JsFunction> {
 
 pub fn call_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     cx.argument::<JsFunction>(0)?
-        .call_with(&mut cx)
+        .call_with(&cx)
         .this(cx.null())
         .arg(cx.number(16.0))
         .apply(&mut cx)
@@ -28,7 +28,10 @@ pub fn construct_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
         .get(&mut cx, "getUTCFullYear")?
         .downcast::<JsFunction, _>(&mut cx)
         .or_throw(&mut cx)?;
-    get_utc_full_year_method.call_with(&mut cx).this(o).apply(&mut cx)
+    get_utc_full_year_method
+        .call_with(&cx)
+        .this(o)
+        .apply(&mut cx)
 }
 
 trait CheckArgument<'a> {
