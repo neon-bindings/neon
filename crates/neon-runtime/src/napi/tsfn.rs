@@ -6,10 +6,10 @@ use std::ptr;
 use std::sync::{Arc, Mutex};
 
 use super::bindings as napi;
-use super::no_panic::ExceptionPanicHandler;
+use super::no_panic::FailureBoundary;
 use super::raw::Env;
 
-const HANDLER: ExceptionPanicHandler = ExceptionPanicHandler {
+const BOUNDARY: FailureBoundary = FailureBoundary {
     both: "A panic and exception occurred while executing a `neon::event::Channel::send` callback",
     exception: "An exception occurred while executing a `neon::event::Channel::send` callback",
     panic: "A panic occurred while executing a `neon::event::Channel::send` callback",
@@ -188,7 +188,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     ) {
         let Callback { callback, data } = *Box::from_raw(data as *mut Callback<T>);
 
-        HANDLER.handle(env, None, move |env| {
+        BOUNDARY.catch_failure(env, None, move |env| {
             callback(env, data);
             ptr::null_mut()
         });

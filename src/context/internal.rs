@@ -79,7 +79,7 @@ impl Env {
     }
 
     #[cfg(feature = "napi-1")]
-    pub(crate) unsafe fn try_catch<T, F>(self, f: F) -> Result<T, raw::Local>
+    unsafe fn try_catch<T, F>(self, f: F) -> Result<T, raw::Local>
     where
         F: FnOnce() -> Result<T, crate::result::Throw>,
     {

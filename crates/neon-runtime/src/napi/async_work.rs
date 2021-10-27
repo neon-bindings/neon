@@ -14,10 +14,10 @@ use std::ptr;
 use std::thread;
 
 use super::bindings as napi;
-use super::no_panic::ExceptionPanicHandler;
+use super::no_panic::FailureBoundary;
 use super::raw::Env;
 
-const HANDLER: ExceptionPanicHandler = ExceptionPanicHandler {
+const BOUNDARY: FailureBoundary = FailureBoundary {
     both: "A panic and exception occurred while executing a `neon::event::TaskBuilder` task",
     exception: "An exception occurred while executing a `neon::event::TaskBuilder` task",
     panic: "A panic occurred while executing a `neon::event::TaskBuilder` task",
@@ -153,7 +153,7 @@ unsafe extern "C" fn call_complete<I, O, D>(env: Env, status: napi::Status, data
 
     napi::delete_async_work(env, work);
 
-    HANDLER.handle(env, None, move |env| {
+    BOUNDARY.catch_failure(env, None, move |env| {
         // `unwrap` is okay because `call_complete` should be called exactly once
         // if and only if `call_execute` has completed successfully
         let output = state.into_output().unwrap();

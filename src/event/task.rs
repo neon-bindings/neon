@@ -109,7 +109,11 @@ where
     O: Send + 'static,
     D: FnOnce(TaskContext, O) -> NeonResult<()> + Send + 'static,
 {
-    let output = output.unwrap_or_else(|panic| resume_unwind(panic));
+    let output = output.unwrap_or_else(|panic| {
+        // If a panic was caught while executing the task on the Node Worker
+        // pool, resume panicking on the main JavaScript thread
+        resume_unwind(panic)
+    });
 
     TaskContext::with_context(env.into(), move |cx| {
         let _ = callback(cx, output);

@@ -2,7 +2,7 @@ use std::ptr;
 #[cfg(feature = "napi-6")]
 use std::sync::Arc;
 
-use neon_runtime::no_panic::ExceptionPanicHandler;
+use neon_runtime::no_panic::FailureBoundary;
 #[cfg(feature = "napi-6")]
 use neon_runtime::tsfn::ThreadsafeFunction;
 use neon_runtime::{napi, raw};
@@ -19,7 +19,7 @@ use crate::{
     event::{Channel, JoinHandle, SendError},
 };
 
-const HANDLER: ExceptionPanicHandler = ExceptionPanicHandler {
+const BOUNDARY: FailureBoundary = FailureBoundary {
     both: "A panic and exception occurred while resolving a `neon::types::Deferred`",
     exception: "An exception occurred while resolving a `neon::types::Deferred`",
     panic: "A panic occurred while resolving a `neon::types::Deferred`",
@@ -167,7 +167,7 @@ impl Deferred {
         F: FnOnce(C) -> JsResult<'a, V>,
     {
         unsafe {
-            HANDLER.handle(
+            BOUNDARY.catch_failure(
                 cx.env().to_raw(),
                 Some(self.into_inner()),
                 move |_| match f(cx) {

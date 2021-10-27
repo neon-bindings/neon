@@ -22,15 +22,23 @@ type Panic = Box<dyn Any + Send + 'static>;
 
 const UNKNOWN_PANIC_MESSAGE: &str = "Unknown panic";
 
-pub struct ExceptionPanicHandler {
+/// `FailureBoundary`] acts as boundary between Rust and FFI code, protecting
+/// a critical section of code from unhandled failure. It will catch both Rust
+/// panics and JavaScript exceptions. Attempts to handle failures are executed
+/// in order of ascending severity:
+///
+/// 1. Reject a `Promise` if a `Deferred` was provided
+/// 2. Emit an `uncaughtException` on Node-API >= 3
+/// 3. Abort the process with a message and location
+pub struct FailureBoundary {
     pub both: &'static str,
     pub exception: &'static str,
     pub panic: &'static str,
 }
 
-impl ExceptionPanicHandler {
+impl FailureBoundary {
     #[track_caller]
-    pub unsafe fn handle<F>(&self, env: Env, deferred: Option<napi::Deferred>, f: F)
+    pub unsafe fn catch_failure<F>(&self, env: Env, deferred: Option<napi::Deferred>, f: F)
     where
         F: FnOnce(Option<Env>) -> Local,
     {
