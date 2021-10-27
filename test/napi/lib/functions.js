@@ -14,6 +14,34 @@ describe('JsFunction', function() {
     assert.equal(addon.call_js_function(function(x) { return x + 1 }), 17);
   });
 
+  it('call a JsFunction with zero args', function() {
+    assert.equal(addon.call_js_function_with_zero_args(), -Infinity);
+  });
+
+  it('call a JsFunction with one arg', function() {
+    assert.equal(addon.call_js_function_with_one_arg(), 1.0);
+  });
+
+  it('call a JsFunction with two args', function() {
+    assert.equal(addon.call_js_function_with_two_args(), 2.0);
+  });
+
+  it('call a JsFunction with three args', function() {
+    assert.equal(addon.call_js_function_with_three_args(), 3.0);
+  });
+
+  it('call a JsFunction with four args', function() {
+    assert.equal(addon.call_js_function_with_four_args(), 4.0);
+  });
+
+  it('call a JsFunction with a custom this', function() {
+    assert.equal(addon.call_js_function_with_custom_this(function() { return this }).secret, 42);
+  });
+
+  it('call a JsFunction with a heterogeneously typed tuple', function() {
+    assert.deepEqual(addon.call_js_function_with_heterogeneous_tuple(), [1, "hello", true]);
+  });
+
   it('new a JsFunction', function () {
     assert.equal(addon.construct_js_function(Date), 1970);
   });

@@ -143,6 +143,13 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     cx.export_function("return_js_function", return_js_function)?;
     cx.export_function("call_js_function", call_js_function)?;
+    cx.export_function("call_js_function_with_zero_args", call_js_function_with_zero_args)?;
+    cx.export_function("call_js_function_with_one_arg", call_js_function_with_one_arg)?;
+    cx.export_function("call_js_function_with_two_args", call_js_function_with_two_args)?;
+    cx.export_function("call_js_function_with_three_args", call_js_function_with_three_args)?;
+    cx.export_function("call_js_function_with_four_args", call_js_function_with_four_args)?;
+    cx.export_function("call_js_function_with_custom_this", call_js_function_with_custom_this)?;
+    cx.export_function("call_js_function_with_heterogeneous_tuple", call_js_function_with_heterogeneous_tuple)?;
     cx.export_function("construct_js_function", construct_js_function)?;
     cx.export_function("num_arguments", num_arguments)?;
     cx.export_function("return_this", return_this)?;
