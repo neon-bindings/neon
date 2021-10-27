@@ -19,7 +19,8 @@ pub fn call_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
 }
 
 fn get_math_max<'a>(cx: &mut FunctionContext<'a>) -> JsResult<'a, JsFunction> {
-    let math = cx.global()
+    let math = cx
+        .global()
         .get(cx, "Math")?
         .downcast_or_throw::<JsObject, _>(cx)?;
     let max = math
@@ -29,9 +30,7 @@ fn get_math_max<'a>(cx: &mut FunctionContext<'a>) -> JsResult<'a, JsFunction> {
 }
 
 pub fn call_js_function_with_zero_args(mut cx: FunctionContext) -> JsResult<JsNumber> {
-    get_math_max(&mut cx)?
-        .call_with(&cx)
-        .apply(&mut cx)
+    get_math_max(&mut cx)?.call_with(&cx).apply(&mut cx)
 }
 
 pub fn call_js_function_with_one_arg(mut cx: FunctionContext) -> JsResult<JsNumber> {
