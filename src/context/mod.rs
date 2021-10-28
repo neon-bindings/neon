@@ -579,7 +579,10 @@ pub trait Context<'a>: ContextInternal<'a> {
 
 /// An execution context of module initialization.
 pub struct ModuleContext<'a> {
+    #[cfg(feature = "legacy-runtime")]
     scope: Scope<'a, raw::HandleScope>,
+    #[cfg(feature = "napi-1")]
+    scope: Scope<'a, raw::InheritedHandleScope>,
     exports: Handle<'a, JsObject>,
 }
 
@@ -701,7 +704,10 @@ impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> {}
 ///
 /// The type parameter `T` is the type of the `this`-binding.
 pub struct CallContext<'a, T: This> {
+    #[cfg(feature = "legacy-runtime")]
     scope: Scope<'a, raw::HandleScope>,
+    #[cfg(feature = "napi-1")]
+    scope: Scope<'a, raw::InheritedHandleScope>,
     info: &'a CallbackInfo<'a>,
     #[cfg(feature = "napi-1")]
     arguments: Option<SmallVec<[raw::Local; 8]>>,
@@ -835,7 +841,7 @@ impl<'a> Context<'a> for TaskContext<'a> {}
 /// A view of the JS engine in the context of a finalize method on garbage collection
 #[cfg(feature = "napi-1")]
 pub(crate) struct FinalizeContext<'a> {
-    scope: Scope<'a, raw::HandleScope>,
+    scope: Scope<'a, raw::InheritedHandleScope>,
 }
 
 #[cfg(feature = "napi-1")]
