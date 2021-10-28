@@ -12,6 +12,7 @@ pub mod fun;
 #[cfg(feature = "napi-6")]
 pub mod lifecycle;
 pub mod mem;
+pub mod no_panic;
 pub mod object;
 pub mod primitive;
 pub mod promise;

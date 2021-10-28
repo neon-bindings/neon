@@ -236,7 +236,7 @@ pub fn sum(mut cx: FunctionContext) -> JsResult<JsPromise> {
 
     let promise = cx
         .task(move || nums.into_iter().sum())
-        .promise(|cx, n: f64| Ok(cx.number(n)));
+        .promise(|mut cx, n: f64| Ok(cx.number(n)));
 
     Ok(promise)
 }
@@ -247,9 +247,9 @@ pub fn sum_manual_promise(mut cx: FunctionContext) -> JsResult<JsPromise> {
     let (deferred, promise) = cx.promise();
 
     cx.task(move || nums.into_iter().sum())
-        .and_then(move |cx, n: f64| {
+        .and_then(move |mut cx, n: f64| {
             let n = cx.number(n);
-            deferred.resolve(cx, n);
+            deferred.resolve(&mut cx, n);
             Ok(())
         });
 
@@ -265,7 +265,7 @@ pub fn sum_rust_thread(mut cx: FunctionContext) -> JsResult<JsPromise> {
     std::thread::spawn(move || {
         let n: f64 = nums.into_iter().sum();
 
-        channel.settle_with(deferred, move |cx| Ok(cx.number(n)));
+        deferred.settle_with(&channel, move |mut cx| Ok(cx.number(n)));
     });
 
     Ok(promise)
@@ -337,8 +337,149 @@ pub fn channel_custom_panic(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     Ok(cx.undefined())
 }
 
-pub fn channel_custom_panic_downcast(mut cx: FunctionContext) -> JsResult<JsString> {
+pub fn custom_panic_downcast(mut cx: FunctionContext) -> JsResult<JsString> {
     let panic = cx.argument::<JsBox<CustomPanic>>(0)?;
 
     Ok(cx.string(&panic.0))
+}
+
+pub fn task_panic_execute(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+
+    cx.task(move || panic!("{}", msg)).and_then(|_, _| Ok(()));
+
+    Ok(cx.undefined())
+}
+
+pub fn task_panic_complete(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+
+    cx.task(|| {}).and_then(move |_, _| panic!("{}", msg));
+
+    Ok(cx.undefined())
+}
+
+pub fn task_throw(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+
+    cx.task(|| {}).and_then(move |mut cx, _| {
+        cx.throw_error(msg)?;
+        Ok(())
+    });
+
+    Ok(cx.undefined())
+}
+
+pub fn task_panic_throw(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+
+    cx.task(|| {}).and_then(move |mut cx, _| {
+        // Throw an exception, but ignore the `Err(Throw)`
+        let _ = cx.throw_error::<_, ()>(msg);
+        // Attempting to throw another error while already throwing should `panic`
+        let _ = cx.throw_error("Unreachable")?;
+
+        Ok(())
+    });
+
+    Ok(cx.undefined())
+}
+
+pub fn task_custom_panic(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+
+    cx.task(move || std::panic::panic_any(CustomPanic(msg)))
+        .and_then(|_, _| Ok(()));
+
+    Ok(cx.undefined())
+}
+
+pub fn task_reject_promise(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+    let promise = cx
+        .task(move || {})
+        .promise::<JsValue, _>(move |mut cx, _| cx.throw_error(msg));
+
+    Ok(promise)
+}
+
+pub fn task_panic_execute_promise(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+    let promise = cx
+        .task(move || panic!("{}", msg))
+        .promise(|mut cx, _| Ok(cx.undefined()));
+
+    Ok(promise)
+}
+
+pub fn task_panic_complete_promise(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+    let promise = cx
+        .task(|| ())
+        .promise::<JsValue, _>(move |_, _| panic!("{}", msg));
+
+    Ok(promise)
+}
+
+pub fn task_panic_throw_promise(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+    let promise = cx.task(|| ()).promise(move |mut cx, _| {
+        // Throw an exception, but ignore the `Err(Throw)`
+        let _ = cx.throw_error::<_, ()>(msg);
+        // Attempting to throw another error while already throwing should `panic`
+        let _ = cx.throw_error("Unreachable")?;
+
+        Ok(cx.undefined())
+    });
+
+    Ok(promise)
+}
+
+pub fn deferred_settle_with_throw(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+    let (deferred, promise) = cx.promise();
+    let channel = cx.channel();
+
+    std::thread::spawn(move || {
+        deferred.try_settle_with(&channel, move |mut cx| {
+            cx.throw_error(msg)?;
+
+            Ok(cx.undefined())
+        })
+    });
+
+    Ok(promise)
+}
+
+pub fn deferred_settle_with_panic(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+    let (deferred, promise) = cx.promise();
+    let channel = cx.channel();
+
+    std::thread::spawn(move || {
+        deferred.try_settle_with::<JsValue, _>(&channel, move |_| {
+            panic!("{}", msg);
+        })
+    });
+
+    Ok(promise)
+}
+
+pub fn deferred_settle_with_panic_throw(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+    let (deferred, promise) = cx.promise();
+    let channel = cx.channel();
+
+    std::thread::spawn(move || {
+        deferred.try_settle_with(&channel, move |mut cx| {
+            // Throw an exception, but ignore the `Err(Throw)`
+            let _ = cx.throw_error::<_, ()>(msg);
+            // Attempting to throw another error while already throwing should `panic`
+            let _ = cx.throw_error("Unreachable")?;
+
+            Ok(cx.undefined())
+        })
+    });
+
+    Ok(promise)
 }

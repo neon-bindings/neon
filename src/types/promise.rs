@@ -1,6 +1,8 @@
+use std::ptr;
 #[cfg(feature = "napi-6")]
 use std::sync::Arc;
 
+use neon_runtime::no_panic::FailureBoundary;
 #[cfg(feature = "napi-6")]
 use neon_runtime::tsfn::ThreadsafeFunction;
 use neon_runtime::{napi, raw};
@@ -11,6 +13,17 @@ use crate::handle::Managed;
 use crate::lifecycle::{DropData, InstanceData};
 use crate::result::JsResult;
 use crate::types::{Handle, Object, Value, ValueInternal};
+#[cfg(feature = "channel-api")]
+use crate::{
+    context::TaskContext,
+    event::{Channel, JoinHandle, SendError},
+};
+
+const BOUNDARY: FailureBoundary = FailureBoundary {
+    both: "A panic and exception occurred while resolving a `neon::types::Deferred`",
+    exception: "An exception occurred while resolving a `neon::types::Deferred`",
+    panic: "A panic occurred while resolving a `neon::types::Deferred`",
+};
 
 #[cfg_attr(docsrs, doc(cfg(feature = "promise-api")))]
 #[repr(C)]
@@ -95,22 +108,77 @@ impl Deferred {
         }
     }
 
-    /// Resolve or reject a [`JsPromise`] with the result of a closure
+    #[cfg_attr(docsrs, doc(cfg(feature = "channel-api")))]
+    #[cfg(feature = "channel-api")]
+    /// Settle the [`JsPromise`] by sending a closure across a [`Channel`][`crate::event::Channel`]
+    /// to be executed on the main JavaScript thread.
     ///
-    /// If the closure throws, the promise will be rejected with the promise
-    pub fn settle_with<'a, V, F, C>(self, cx: &mut C, f: F)
+    /// Usage is identical to [`Deferred::settle_with`].
+    ///
+    /// Returns a [`SendError`][crate::event::SendError] if sending the closure to the main JavaScript thread fails.
+    /// See [`Channel::try_send`][crate::event::Channel::try_send] for more details.
+    pub fn try_settle_with<V, F>(
+        self,
+        channel: &Channel,
+        complete: F,
+    ) -> Result<JoinHandle<()>, SendError>
     where
         V: Value,
-        F: FnOnce(&mut C) -> JsResult<'a, V> + 'static,
-        C: Context<'a>,
+        F: FnOnce(TaskContext) -> JsResult<V> + Send + 'static,
     {
-        match cx.try_catch_internal(f) {
-            Ok(value) => self.resolve(cx, value),
-            Err(err) => self.reject(cx, err),
+        channel.try_send(move |cx| {
+            self.try_catch_settle(cx, move |cx| complete(cx));
+            Ok(())
+        })
+    }
+
+    #[cfg_attr(docsrs, doc(cfg(feature = "channel-api")))]
+    #[cfg(feature = "channel-api")]
+    /// Settle the [`JsPromise`] by sending a closure across a [`Channel`][crate::event::Channel]
+    /// to be executed on the main JavaScript thread.
+    ///
+    /// Panics if there is a libuv error.
+    ///
+    /// ```
+    /// # #[cfg(feature = "channel-api")] {
+    /// # use neon::prelude::*;
+    /// # fn example(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    /// let channel = cx.channel();
+    /// let (deferred, promise) = cx.promise();
+    ///
+    /// deferred.settle_with(&channel, move |cx| Ok(cx.number(42)));
+    ///
+    /// # Ok(promise)
+    /// # }
+    /// # }
+    /// ```
+    pub fn settle_with<V, F>(self, channel: &Channel, complete: F) -> JoinHandle<()>
+    where
+        V: Value,
+        F: FnOnce(TaskContext) -> JsResult<V> + Send + 'static,
+    {
+        self.try_settle_with(channel, complete).unwrap()
+    }
+
+    pub(crate) fn try_catch_settle<'a, C, V, F>(self, cx: C, f: F)
+    where
+        C: Context<'a>,
+        V: Value,
+        F: FnOnce(C) -> JsResult<'a, V>,
+    {
+        unsafe {
+            BOUNDARY.catch_failure(
+                cx.env().to_raw(),
+                Some(self.into_inner()),
+                move |_| match f(cx) {
+                    Ok(value) => value.to_raw(),
+                    Err(_) => ptr::null_mut(),
+                },
+            );
         }
     }
 
-    fn into_inner(mut self) -> napi::Deferred {
+    pub(crate) fn into_inner(mut self) -> napi::Deferred {
         self.internal.take().unwrap().0
     }
 }

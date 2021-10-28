@@ -264,9 +264,21 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("channel_throw", channel_throw)?;
     cx.export_function("channel_panic_throw", channel_panic_throw)?;
     cx.export_function("channel_custom_panic", channel_custom_panic)?;
+    cx.export_function("custom_panic_downcast", custom_panic_downcast)?;
+    cx.export_function("task_panic_execute", task_panic_execute)?;
+    cx.export_function("task_panic_complete", task_panic_complete)?;
+    cx.export_function("task_throw", task_throw)?;
+    cx.export_function("task_panic_throw", task_panic_throw)?;
+    cx.export_function("task_custom_panic", task_custom_panic)?;
+    cx.export_function("task_reject_promise", task_reject_promise)?;
+    cx.export_function("task_panic_execute_promise", task_panic_execute_promise)?;
+    cx.export_function("task_panic_complete_promise", task_panic_complete_promise)?;
+    cx.export_function("task_panic_throw_promise", task_panic_throw_promise)?;
+    cx.export_function("deferred_settle_with_throw", deferred_settle_with_throw)?;
+    cx.export_function("deferred_settle_with_panic", deferred_settle_with_panic)?;
     cx.export_function(
-        "channel_custom_panic_downcast",
-        channel_custom_panic_downcast,
+        "deferred_settle_with_panic_throw",
+        deferred_settle_with_panic_throw,
     )?;
 
     Ok(())
