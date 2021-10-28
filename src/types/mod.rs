@@ -695,7 +695,7 @@ const V8_ARGC_LIMIT: usize = 65535;
 
 fn prepare_call<'a, 'b, C: Context<'a>, A>(
     cx: &mut C,
-    args: &mut [Handle<'b, A>],
+    args: &[Handle<'b, A>],
 ) -> NeonResult<(i32, *const c_void)>
 where
     A: Value + 'b,
@@ -728,6 +728,36 @@ impl JsFunction {
 }
 
 impl<CL: Object> JsFunction<CL> {
+    fn do_call<'a, 'b: 'a, C, T, A>(
+        self,
+        cx: &mut C,
+        this: Handle<'a, T>,
+        args: &[Handle<'a, A>],
+    ) -> JsResult<'b, JsValue>
+    where
+        C: Context<'b>,
+        T: Value,
+        A: Value,
+    {
+        let (argc, argv) = prepare_call(cx, args)?;
+        let env = cx.env().to_raw();
+        build(cx.env(), |out| unsafe {
+            neon_runtime::fun::call(out, env, self.to_raw(), this.to_raw(), argc, argv)
+        })
+    }
+
+    fn do_construct<'a, 'b: 'a, C, A>(self, cx: &mut C, args: &[Handle<'a, A>]) -> JsResult<'b, CL>
+    where
+        C: Context<'b>,
+        A: Value,
+    {
+        let (argc, argv) = prepare_call(cx, args)?;
+        let env = cx.env().to_raw();
+        build(cx.env(), |out| unsafe {
+            neon_runtime::fun::construct(out, env, self.to_raw(), argc, argv)
+        })
+    }
+
     pub fn call<'a, 'b, C: Context<'a>, T, A, AS>(
         self,
         cx: &mut C,
@@ -739,12 +769,8 @@ impl<CL: Object> JsFunction<CL> {
         A: Value + 'b,
         AS: IntoIterator<Item = Handle<'b, A>>,
     {
-        let mut args = args.into_iter().collect::<SmallVec<[_; 8]>>();
-        let (argc, argv) = prepare_call(cx, &mut args)?;
-        let env = cx.env().to_raw();
-        build(cx.env(), |out| unsafe {
-            neon_runtime::fun::call(out, env, self.to_raw(), this.to_raw(), argc, argv)
-        })
+        let args = args.into_iter().collect::<SmallVec<[_; 8]>>();
+        self.do_call(cx, this, &args)
     }
 
     pub fn construct<'a, 'b, C: Context<'a>, A, AS>(self, cx: &mut C, args: AS) -> JsResult<'a, CL>
@@ -752,12 +778,8 @@ impl<CL: Object> JsFunction<CL> {
         A: Value + 'b,
         AS: IntoIterator<Item = Handle<'b, A>>,
     {
-        let mut args = args.into_iter().collect::<SmallVec<[_; 8]>>();
-        let (argc, argv) = prepare_call(cx, &mut args)?;
-        let env = cx.env().to_raw();
-        build(cx.env(), |out| unsafe {
-            neon_runtime::fun::construct(out, env, self.to_raw(), argc, argv)
-        })
+        let args = args.into_iter().collect::<SmallVec<[_; 8]>>();
+        self.do_construct(cx, &args)
     }
 }
 
