@@ -30,6 +30,10 @@ const UNKNOWN_PANIC_MESSAGE: &str = "Unknown panic";
 /// 1. Reject a `Promise` if a `Deferred` was provided
 /// 2. Emit an `uncaughtException` on Node-API >= 3
 /// 3. Abort the process with a message and location
+///
+/// This process will be aborted if any step unrecoverably fails. For example,
+/// if a `napi::Env` is unavailable, it is impossible to reject a `Promise` or
+/// emit an `uncaughtException`.
 pub struct FailureBoundary {
     pub both: &'static str,
     pub exception: &'static str,
