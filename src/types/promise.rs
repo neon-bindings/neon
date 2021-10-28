@@ -12,7 +12,7 @@ use crate::handle::Managed;
 #[cfg(feature = "napi-6")]
 use crate::lifecycle::{DropData, InstanceData};
 use crate::result::JsResult;
-use crate::types::{Handle, Object, Value, ValueInternal};
+use crate::types::{private::ValueInternal, Handle, Object, Value};
 #[cfg(feature = "channel-api")]
 use crate::{
     context::TaskContext,
