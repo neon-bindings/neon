@@ -172,8 +172,6 @@ use crate::types::{
 };
 use neon_runtime;
 use neon_runtime::raw;
-#[cfg(feature = "napi-1")]
-use smallvec::SmallVec;
 use std;
 use std::cell::RefCell;
 use std::convert::Into;
@@ -246,7 +244,7 @@ impl CallbackInfo<'_> {
     }
 
     #[cfg(feature = "napi-1")]
-    pub fn argv<'b, C: Context<'b>>(&self, cx: &mut C) -> SmallVec<[raw::Local; 8]> {
+    pub fn argv<'b, C: Context<'b>>(&self, cx: &mut C) -> neon_runtime::call::Arguments {
         unsafe { neon_runtime::call::argv(cx.env().to_raw(), self.info) }
     }
 
@@ -710,7 +708,7 @@ pub struct CallContext<'a, T: This> {
     scope: Scope<'a, raw::InheritedHandleScope>,
     info: &'a CallbackInfo<'a>,
     #[cfg(feature = "napi-1")]
-    arguments: Option<SmallVec<[raw::Local; 8]>>,
+    arguments: Option<neon_runtime::call::Arguments>,
     phantom_type: PhantomData<T>,
 }
 
@@ -763,17 +761,15 @@ impl<'a, T: This> CallContext<'a, T> {
 
         #[cfg(feature = "napi-1")]
         {
-            let local = if let Some(arguments) = &self.arguments {
-                arguments.get(i as usize).cloned()
+            let argv = if let Some(argv) = self.arguments.as_ref() {
+                argv
             } else {
-                let arguments = self.info.argv(self);
-                let local = arguments.get(i as usize).cloned();
-
-                self.arguments = Some(arguments);
-                local
+                let argv = self.info.argv(self);
+                self.arguments.insert(argv)
             };
 
-            local.map(|local| Handle::new_internal(JsValue::from_raw(self.env(), local)))
+            argv.get(i as usize)
+                .map(|v| Handle::new_internal(JsValue::from_raw(self.env(), v)))
         }
     }
 

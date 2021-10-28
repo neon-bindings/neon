@@ -2,10 +2,45 @@ use std::mem::MaybeUninit;
 use std::os::raw::c_void;
 use std::ptr::null_mut;
 
-use smallvec::{smallvec, SmallVec};
+use smallvec::SmallVec;
 
 use crate::napi::bindings as napi;
 use crate::raw::{Env, FunctionCallbackInfo, Local};
+
+// Number of arguments to allocate on the stack. This should be large enough
+// to cover most use cases without being wasteful.
+//
+// * If the number is too large, too much space is allocated and then filled
+//   with `undefined`.
+// * If the number is too small, getting arguments frequently takes two tries
+//   and requires heap allocation.
+const ARGV_SIZE: usize = 4;
+
+#[repr(transparent)]
+/// List of JavaScript arguments to a function
+// `Arguments` is intended to be a small abstraction to hide the usage of
+// `SmallVec` allowing changes to `ARGV_SIZE` in a single location
+pub struct Arguments(SmallVec<[Local; ARGV_SIZE]>);
+
+impl Arguments {
+    #[inline]
+    /// Get an argument at a specific position
+    pub fn get(&self, i: usize) -> Option<Local> {
+        self.0.get(i).cloned()
+    }
+
+    #[inline]
+    /// Returns the number of arguments
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    #[inline]
+    /// `true` if there are no arguments
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
 
 #[repr(C)]
 pub struct CCallback {
@@ -61,6 +96,7 @@ pub unsafe fn data(env: Env, info: FunctionCallbackInfo, out: &mut *mut c_void) 
 }
 
 /// Gets the number of arguments passed to the function.
+// TODO: Remove this when `CallContext` is refactored to get call info upfront.
 pub unsafe fn len(env: Env, info: FunctionCallbackInfo) -> i32 {
     let mut argc = 0usize;
     let status = napi::get_cb_info(
@@ -75,19 +111,51 @@ pub unsafe fn len(env: Env, info: FunctionCallbackInfo) -> i32 {
     argc as i32
 }
 
-/// Returns the function arguments as a `SmallVec<[Local; 8]>`
-pub unsafe fn argv(env: Env, info: FunctionCallbackInfo) -> SmallVec<[Local; 8]> {
-    let len = len(env, info);
-    let mut args = smallvec![null_mut(); len as usize];
-    let mut num_args = args.len();
-    let status = napi::get_cb_info(
-        env,
-        info,
-        &mut num_args as *mut _,
-        args.as_mut_ptr(),
-        null_mut(),
-        null_mut(),
+/// Returns the function arguments for a call
+pub unsafe fn argv(env: Env, info: FunctionCallbackInfo) -> Arguments {
+    // Allocate space on the stack for up to `ARGV_SIZE` values
+    let mut argv = MaybeUninit::<[Local; ARGV_SIZE]>::uninit();
+
+    // Starts as the size allocated; after `get_cb_info` it is the number of arguments
+    let mut argc = ARGV_SIZE;
+
+    assert_eq!(
+        napi::get_cb_info(
+            env,
+            info,
+            &mut argc as *mut _,
+            argv.as_mut_ptr().cast(),
+            null_mut(),
+            null_mut(),
+        ),
+        napi::Status::Ok,
     );
-    assert_eq!(status, napi::Status::Ok);
-    args
+
+    // We did not allocate enough space; allocate on the heap and try again
+    let argv = if argc > ARGV_SIZE {
+        // We know exactly how much space to reserve
+        let mut argv = Vec::with_capacity(argc);
+
+        assert_eq!(
+            napi::get_cb_info(
+                env,
+                info,
+                &mut argc as *mut _,
+                argv.as_mut_ptr(),
+                null_mut(),
+                null_mut(),
+            ),
+            napi::Status::Ok,
+        );
+
+        // Set the size of `argv` to the number of initialized elements
+        argv.set_len(argc);
+        SmallVec::from_vec(argv)
+
+    // There were `ARGV_SIZE` or fewer arguments, use the stack allocated space
+    } else {
+        SmallVec::from_buf_and_len(argv.assume_init(), argc)
+    };
+
+    Arguments(argv)
 }
