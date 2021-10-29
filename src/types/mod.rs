@@ -760,18 +760,34 @@ impl<CL: Object> JsFunction<CL> {
         })
     }
 
-    pub fn call<'a, 'b, C: Context<'a>, T, A>(
+    pub fn call<'a, 'b, V, C: Context<'a>, T, A>(
         self,
         cx: &mut C,
         this: Handle<'b, T>,
         args: A,
-    ) -> JsResult<'a, JsValue>
+    ) -> JsResult<'a, V>
+    where
+        V: Value,
+        T: Value,
+        A: Arguments<'b>,
+    {
+        let args = args.into_args_vec();
+        self.do_call(cx, this, &args)?.downcast_or_throw::<V, _>(cx)
+    }
+
+    pub fn exec<'a, 'b, C: Context<'a>, T, A>(
+        self,
+        cx: &mut C,
+        this: Handle<'b, T>,
+        args: A,
+    ) -> NeonResult<()>
     where
         T: Value,
         A: Arguments<'b>,
     {
         let args = args.into_args_vec();
-        self.do_call(cx, this, &args)
+        self.do_call(cx, this, &args)?;
+        Ok(())
     }
 
     pub fn construct<'a, 'b, C: Context<'a>, A>(self, cx: &mut C, args: A) -> JsResult<'a, CL>

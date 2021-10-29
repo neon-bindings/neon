@@ -48,7 +48,7 @@ impl EventHandler {
     {
         self.schedule_with(move |cx, this, callback| {
             let args = arg_cb(cx);
-            let _result = callback.call(cx, this, args);
+            let _result = callback.exec(cx, this, args);
         })
     }
 

@@ -39,7 +39,9 @@ impl<'a, T: Value, const N: usize> private::ArgumentsInternal<'a> for [Handle<'a
 impl<'a, T: Value, const N: usize> Arguments<'a> for [Handle<'a, T>; N] {}
 
 impl<'a> private::ArgumentsInternal<'a> for () {
-    fn into_args_vec(self) -> private::ArgsVec<'a> { smallvec![] }
+    fn into_args_vec(self) -> private::ArgsVec<'a> {
+        smallvec![]
+    }
 }
 
 impl<'a> Arguments<'a> for () {}
