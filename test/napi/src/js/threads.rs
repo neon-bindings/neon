@@ -207,7 +207,7 @@ pub fn channel_join(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
                 get_message
                     .into_inner(&mut cx)
-                    .call::<_, _, JsValue, _>(&mut cx, this, [])?
+                    .call(&mut cx, this, ())?
                     .downcast_or_throw::<JsString, _>(&mut cx)
                     .map(|v| v.value(&mut cx))
             })

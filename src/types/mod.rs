@@ -89,6 +89,9 @@ pub(crate) mod promise;
 pub(crate) mod private;
 pub(crate) mod utf8;
 
+pub mod function;
+
+use self::function::Arguments;
 use self::private::{Callback, FunctionCallback};
 use self::utf8::Utf8;
 use crate::context::internal::Env;
@@ -99,7 +102,6 @@ use crate::object::{Object, This};
 use crate::result::{JsResult, JsResultExt, NeonResult, Throw};
 use neon_runtime;
 use neon_runtime::raw;
-use smallvec::SmallVec;
 use std::fmt;
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -758,27 +760,25 @@ impl<CL: Object> JsFunction<CL> {
         })
     }
 
-    pub fn call<'a, 'b, C: Context<'a>, T, A, AS>(
+    pub fn call<'a, 'b, C: Context<'a>, T, A>(
         self,
         cx: &mut C,
         this: Handle<'b, T>,
-        args: AS,
+        args: A,
     ) -> JsResult<'a, JsValue>
     where
         T: Value,
-        A: Value + 'b,
-        AS: IntoIterator<Item = Handle<'b, A>>,
+        A: Arguments<'b>,
     {
-        let args = args.into_iter().collect::<SmallVec<[_; 8]>>();
+        let args = args.into_args_vec();
         self.do_call(cx, this, &args)
     }
 
-    pub fn construct<'a, 'b, C: Context<'a>, A, AS>(self, cx: &mut C, args: AS) -> JsResult<'a, CL>
+    pub fn construct<'a, 'b, C: Context<'a>, A>(self, cx: &mut C, args: A) -> JsResult<'a, CL>
     where
-        A: Value + 'b,
-        AS: IntoIterator<Item = Handle<'b, A>>,
+        A: Arguments<'b>,
     {
-        let args = args.into_iter().collect::<SmallVec<[_; 8]>>();
+        let args = args.into_args_vec();
         self.do_construct(cx, &args)
     }
 }
