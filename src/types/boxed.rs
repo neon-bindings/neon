@@ -294,7 +294,7 @@ impl<'a, T: Send + 'static> Deref for JsBox<T> {
 ///             cx.number(self.1).upcast(),
 ///         ];
 ///
-///         emit.call(cx, global, args).unwrap();
+///         emit.exec(cx, global, args).unwrap();
 ///     }
 /// }
 /// ```
