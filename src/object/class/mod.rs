@@ -11,6 +11,7 @@ use crate::context::{Context, Lock};
 use crate::handle::{Handle, Managed};
 use crate::object::{Object, This};
 use crate::result::{JsResult, NeonResult, Throw};
+use crate::types::function::Arguments;
 use crate::types::private::{Callback, ValueInternal};
 use crate::types::{build, JsFunction, JsValue, Value};
 use neon_runtime;
@@ -103,10 +104,9 @@ pub trait Class: Managed + Any {
     }
 
     /// Convenience method for constructing new instances of this class without having to extract the constructor function.
-    fn new<'a, 'b, C: Context<'a>, A, AS>(cx: &mut C, args: AS) -> JsResult<'a, Self>
+    fn new<'a, 'b, C: Context<'a>, A>(cx: &mut C, args: A) -> JsResult<'a, Self>
     where
-        A: Value + 'b,
-        AS: IntoIterator<Item = Handle<'b, A>>,
+        A: Arguments<'b>,
     {
         let constructor = Self::constructor(cx)?;
         constructor.construct(cx, args)
