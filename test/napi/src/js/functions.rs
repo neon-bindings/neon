@@ -12,26 +12,21 @@ pub fn return_js_function(mut cx: FunctionContext) -> JsResult<JsFunction> {
 
 pub fn call_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let f = cx.argument::<JsFunction>(0)?;
-    let args: Vec<Handle<JsNumber>> = vec![cx.number(16.0)];
+    let arg = cx.number(16.0);
     let null = cx.null();
-    f.call(&mut cx, null, args)?
-        .downcast::<JsNumber, _>(&mut cx)
-        .or_throw(&mut cx)
+    f.call::<JsNumber, _, _, _>(&mut cx, null, [arg])
 }
 
 pub fn construct_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let f = cx.argument::<JsFunction>(0)?;
     let zero = cx.number(0.0);
-    let o = f.construct(&mut cx, vec![zero])?;
+    let o = f.construct(&mut cx, [zero])?;
     let get_utc_full_year_method = o
         .get(&mut cx, "getUTCFullYear")?
         .downcast::<JsFunction, _>(&mut cx)
         .or_throw(&mut cx)?;
     let args: Vec<Handle<JsValue>> = vec![];
-    get_utc_full_year_method
-        .call(&mut cx, o.upcast::<JsValue>(), args)?
-        .downcast::<JsNumber, _>(&mut cx)
-        .or_throw(&mut cx)
+    get_utc_full_year_method.call::<JsNumber, _, _, _>(&mut cx, o, ())
 }
 
 trait CheckArgument<'a> {
