@@ -8,7 +8,7 @@ use neon_runtime::raw;
 use crate::context::internal::Env;
 use crate::context::Context;
 use crate::result::{NeonResult, Throw};
-use crate::types::internal::ValueInternal;
+use crate::types::private::ValueInternal;
 use crate::types::utf8::Utf8;
 use crate::types::{build, Handle, Managed, Object, Value};
 

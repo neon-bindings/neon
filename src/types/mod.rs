@@ -86,10 +86,10 @@ pub(crate) mod error;
 #[cfg(all(feature = "napi-1", feature = "promise-api"))]
 pub(crate) mod promise;
 
-pub(crate) mod internal;
+pub(crate) mod private;
 pub(crate) mod utf8;
 
-use self::internal::{FunctionCallback, ValueInternal};
+use self::private::{Callback, FunctionCallback};
 use self::utf8::Utf8;
 use crate::context::internal::Env;
 use crate::context::{Context, FunctionContext};
@@ -97,7 +97,6 @@ use crate::handle::internal::SuperType;
 use crate::handle::{Handle, Managed};
 use crate::object::{Object, This};
 use crate::result::{JsResult, JsResultExt, NeonResult, Throw};
-use crate::types::internal::Callback;
 use neon_runtime;
 use neon_runtime::raw;
 use smallvec::SmallVec;
@@ -145,7 +144,7 @@ impl<T: Object> SuperType<T> for JsObject {
 }
 
 /// The trait shared by all JavaScript values.
-pub trait Value: ValueInternal {
+pub trait Value: private::ValueInternal {
     fn to_string<'a, C: Context<'a>>(self, cx: &mut C) -> JsResult<'a, JsString> {
         let env = cx.env();
         build(env, |out| unsafe {
@@ -175,7 +174,7 @@ impl Managed for JsValue {
     }
 }
 
-impl ValueInternal for JsValue {
+impl private::ValueInternal for JsValue {
     fn name() -> String {
         "any".to_string()
     }
@@ -261,7 +260,7 @@ unsafe impl This for JsUndefined {
     }
 }
 
-impl ValueInternal for JsUndefined {
+impl private::ValueInternal for JsUndefined {
     fn name() -> String {
         "undefined".to_string()
     }
@@ -308,7 +307,7 @@ impl Managed for JsNull {
     }
 }
 
-impl ValueInternal for JsNull {
+impl private::ValueInternal for JsNull {
     fn name() -> String {
         "null".to_string()
     }
@@ -360,7 +359,7 @@ impl Managed for JsBoolean {
     }
 }
 
-impl ValueInternal for JsBoolean {
+impl private::ValueInternal for JsBoolean {
     fn name() -> String {
         "boolean".to_string()
     }
@@ -409,7 +408,7 @@ impl Managed for JsString {
     }
 }
 
-impl ValueInternal for JsString {
+impl private::ValueInternal for JsString {
     fn name() -> String {
         "string".to_string()
     }
@@ -530,7 +529,7 @@ impl Managed for JsNumber {
     }
 }
 
-impl ValueInternal for JsNumber {
+impl private::ValueInternal for JsNumber {
     fn name() -> String {
         "number".to_string()
     }
@@ -569,7 +568,7 @@ unsafe impl This for JsObject {
     }
 }
 
-impl ValueInternal for JsObject {
+impl private::ValueInternal for JsObject {
     fn name() -> String {
         "object".to_string()
     }
@@ -669,7 +668,7 @@ impl Managed for JsArray {
     }
 }
 
-impl ValueInternal for JsArray {
+impl private::ValueInternal for JsArray {
     fn name() -> String {
         "Array".to_string()
     }
@@ -777,7 +776,7 @@ impl<T: Object> Managed for JsFunction<T> {
     }
 }
 
-impl<T: Object> ValueInternal for JsFunction<T> {
+impl<T: Object> private::ValueInternal for JsFunction<T> {
     fn name() -> String {
         "function".to_string()
     }

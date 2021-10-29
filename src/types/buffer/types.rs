@@ -6,7 +6,7 @@ use neon_runtime::{raw, TypedArrayType};
 use crate::context::{internal::Env, Context};
 use crate::handle::{Handle, Managed};
 use crate::result::{JsResult, Throw};
-use crate::types::{internal::ValueInternal, Object, Value};
+use crate::types::{private::ValueInternal, Object, Value};
 
 use super::lock::{Ledger, Lock};
 use super::{private, BorrowError, Ref, RefMut, TypedArray};

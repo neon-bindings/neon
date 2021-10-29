@@ -4,7 +4,7 @@ use crate::context::internal::Env;
 use crate::context::{Context, Lock};
 use crate::handle::Managed;
 use crate::result::JsResult;
-use crate::types::internal::ValueInternal;
+use crate::types::private::ValueInternal;
 use crate::types::{build, Object, Value};
 use neon_runtime;
 use neon_runtime::raw;
