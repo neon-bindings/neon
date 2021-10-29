@@ -693,19 +693,19 @@ impl<T: Object> Object for JsFunction<T> {}
 // Maximum number of function arguments in V8.
 const V8_ARGC_LIMIT: usize = 65535;
 
-unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(
+fn prepare_call<'a, 'b, C: Context<'a>, A>(
     cx: &mut C,
-    args: &mut [Handle<'b, A>],
-) -> NeonResult<(i32, *mut c_void)>
+    args: &[Handle<'b, A>],
+) -> NeonResult<(i32, *const c_void)>
 where
     A: Value + 'b,
 {
-    let argv = args.as_mut_ptr();
+    let argv = args.as_ptr();
     let argc = args.len();
     if argc > V8_ARGC_LIMIT {
         return cx.throw_range_error("too many arguments");
     }
-    Ok((argc as i32, argv as *mut c_void))
+    Ok((argc as i32, argv as *const c_void))
 }
 
 impl JsFunction {
@@ -740,7 +740,7 @@ impl<CL: Object> JsFunction<CL> {
         AS: IntoIterator<Item = Handle<'b, A>>,
     {
         let mut args = args.into_iter().collect::<SmallVec<[_; 8]>>();
-        let (argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
+        let (argc, argv) = prepare_call(cx, &mut args)?;
         let env = cx.env().to_raw();
         build(cx.env(), |out| unsafe {
             neon_runtime::fun::call(out, env, self.to_raw(), this.to_raw(), argc, argv)
@@ -753,7 +753,7 @@ impl<CL: Object> JsFunction<CL> {
         AS: IntoIterator<Item = Handle<'b, A>>,
     {
         let mut args = args.into_iter().collect::<SmallVec<[_; 8]>>();
-        let (argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
+        let (argc, argv) = prepare_call(cx, &mut args)?;
         let env = cx.env().to_raw();
         build(cx.env(), |out| unsafe {
             neon_runtime::fun::construct(out, env, self.to_raw(), argc, argv)

@@ -32,7 +32,7 @@ pub unsafe fn call(
     fun: Local,
     this: Local,
     argc: i32,
-    argv: *mut c_void,
+    argv: *const c_void,
 ) -> bool {
     let status = napi::call_function(
         env,
@@ -51,7 +51,7 @@ pub unsafe fn construct(
     env: Env,
     fun: Local,
     argc: i32,
-    argv: *mut c_void,
+    argv: *const c_void,
 ) -> bool {
     let status = napi::new_instance(env, fun, argc as usize, argv as *const _, out as *mut _);
 

@@ -206,14 +206,14 @@ extern "C" {
         fun: Local,
         this: Local,
         argc: i32,
-        argv: *mut c_void,
+        argv: *const c_void,
     ) -> bool;
     pub fn Neon_Fun_Construct(
         out: &mut Local,
         isolate: Isolate,
         fun: Local,
         argc: i32,
-        argv: *mut c_void,
+        argv: *const c_void,
     ) -> bool;
 
     pub fn Neon_Mem_SameHandle(h1: Local, h2: Local) -> bool;
