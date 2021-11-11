@@ -722,7 +722,7 @@ impl<'a> ModuleContext<'a> {
     /// Convenience method for exporting a Neon function from a module.
     pub fn export_function<F, V>(&mut self, key: &str, f: F) -> NeonResult<()>
     where
-        F: Fn(FunctionContext) -> JsResult<V> + Send + 'static,
+        F: Fn(FunctionContext) -> JsResult<V> + 'static,
         V: Value,
     {
         let value = JsFunction::new(self, f)?.upcast::<JsValue>();

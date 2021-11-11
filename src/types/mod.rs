@@ -745,7 +745,7 @@ impl JsFunction {
     pub fn new<'a, C, F, V>(cx: &mut C, f: F) -> JsResult<'a, JsFunction>
     where
         C: Context<'a>,
-        F: Fn(FunctionContext) -> JsResult<V> + Send + 'static,
+        F: Fn(FunctionContext) -> JsResult<V> + 'static,
         V: Value,
     {
         Self::new_internal(cx, f)
@@ -755,7 +755,7 @@ impl JsFunction {
     fn new_internal<'a, C, F, V>(cx: &mut C, f: F) -> JsResult<'a, JsFunction>
     where
         C: Context<'a>,
-        F: Fn(FunctionContext) -> JsResult<V> + Send + 'static,
+        F: Fn(FunctionContext) -> JsResult<V> + 'static,
         V: Value,
     {
         use std::any;

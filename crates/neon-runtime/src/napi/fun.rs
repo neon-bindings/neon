@@ -9,7 +9,7 @@ use crate::raw::{Env, Local};
 
 pub unsafe fn new<F>(env: Env, name: &str, callback: F) -> Result<Local, napi::Status>
 where
-    F: Fn(Env, napi::CallbackInfo) -> Local + Send + 'static,
+    F: Fn(Env, napi::CallbackInfo) -> Local + 'static,
 {
     let mut out = MaybeUninit::uninit();
     let data = Box::into_raw(Box::new(callback));
@@ -59,7 +59,7 @@ where
 
 unsafe extern "C" fn call_boxed<F>(env: Env, info: napi::CallbackInfo) -> Local
 where
-    F: Fn(Env, napi::CallbackInfo) -> Local + Send + 'static,
+    F: Fn(Env, napi::CallbackInfo) -> Local + 'static,
 {
     let mut data = MaybeUninit::uninit();
     let status = napi::get_cb_info(
