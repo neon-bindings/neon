@@ -109,6 +109,11 @@ pub trait Class: Managed + Any {
         AS: IntoIterator<Item = Handle<'b, A>>,
     {
         let constructor = Self::constructor(cx)?;
+        let args = args
+            .into_iter()
+            .map(|v| v.upcast())
+            .collect::<smallvec::SmallVec<[_; 4]>>();
+
         constructor.construct(cx, args)
     }
 

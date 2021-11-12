@@ -45,7 +45,7 @@ pub fn multi_threaded_callback(mut cx: FunctionContext) -> JsResult<JsUndefined>
             channel.send(move |mut cx| {
                 let callback = callback.into_inner(&mut cx);
                 let this = cx.undefined();
-                let args = vec![cx.number(i as f64)];
+                let args = [cx.number(i as f64).upcast()];
 
                 callback.call(&mut cx, this, args)?;
 
@@ -78,7 +78,7 @@ impl AsyncGreeter {
             channel.send(|mut cx| {
                 let callback = callback.into_inner(&mut cx);
                 let this = cx.undefined();
-                let args = vec![cx.string(greeting)];
+                let args = [cx.string(greeting).upcast()];
 
                 callback.call(&mut cx, this, args)?;
 
@@ -163,7 +163,7 @@ pub fn drop_global_queue(mut cx: FunctionContext) -> JsResult<JsUndefined> {
                 self.channel.send(|mut cx| {
                     let callback = callback.into_inner(&mut cx);
                     let this = cx.undefined();
-                    let args = vec![cx.undefined()];
+                    let args = [cx.undefined().upcast()];
 
                     callback.call(&mut cx, this, args)?;
 
@@ -207,7 +207,7 @@ pub fn channel_join(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
                 get_message
                     .into_inner(&mut cx)
-                    .call::<_, _, JsValue, _>(&mut cx, this, [])?
+                    .call(&mut cx, this, [])?
                     .downcast_or_throw::<JsString, _>(&mut cx)
                     .map(|v| v.value(&mut cx))
             })
@@ -220,7 +220,7 @@ pub fn channel_join(mut cx: FunctionContext) -> JsResult<JsUndefined> {
         // Call back to JavaScript with the response
         channel.send(move |mut cx| {
             let this = cx.undefined();
-            let args = [cx.string(response)];
+            let args = [cx.string(response).upcast()];
 
             callback.into_inner(&mut cx).call(&mut cx, this, args)?;
 

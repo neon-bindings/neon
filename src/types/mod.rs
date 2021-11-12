@@ -100,7 +100,6 @@ use crate::result::{JsResult, JsResultExt, NeonResult, Throw};
 use crate::types::internal::Callback;
 use neon_runtime;
 use neon_runtime::raw;
-use smallvec::SmallVec;
 use std::fmt;
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -694,19 +693,19 @@ impl<T: Object> Object for JsFunction<T> {}
 // Maximum number of function arguments in V8.
 const V8_ARGC_LIMIT: usize = 65535;
 
-unsafe fn prepare_call<'a, 'b, C: Context<'a>, A>(
+unsafe fn prepare_call<'a, 'b, C: Context<'a>>(
     cx: &mut C,
-    args: &mut [Handle<'b, A>],
-) -> NeonResult<(i32, *mut c_void)>
-where
-    A: Value + 'b,
-{
-    let argv = args.as_mut_ptr();
+    args: &[Handle<'b, JsValue>],
+) -> NeonResult<(i32, *const c_void)> {
+    // Note: This cast is only save because `Handle<'_, JsValue>` is
+    // guaranteed to have the same layout as a pointer because `Handle`
+    // and `JsValue` are both `repr(C)` newtypes.
+    let argv = args.as_ptr().cast();
     let argc = args.len();
     if argc > V8_ARGC_LIMIT {
         return cx.throw_range_error("too many arguments");
     }
-    Ok((argc as i32, argv as *mut c_void))
+    Ok((argc as i32, argv))
 }
 
 impl JsFunction {
@@ -729,7 +728,7 @@ impl JsFunction {
 }
 
 impl<CL: Object> JsFunction<CL> {
-    pub fn call<'a, 'b, C: Context<'a>, T, A, AS>(
+    pub fn call<'a, 'b, C: Context<'a>, T, AS>(
         self,
         cx: &mut C,
         this: Handle<'b, T>,
@@ -737,24 +736,20 @@ impl<CL: Object> JsFunction<CL> {
     ) -> JsResult<'a, JsValue>
     where
         T: Value,
-        A: Value + 'b,
-        AS: IntoIterator<Item = Handle<'b, A>>,
+        AS: AsRef<[Handle<'b, JsValue>]>,
     {
-        let mut args = args.into_iter().collect::<SmallVec<[_; 8]>>();
-        let (argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
+        let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
         let env = cx.env().to_raw();
         build(cx.env(), |out| unsafe {
             neon_runtime::fun::call(out, env, self.to_raw(), this.to_raw(), argc, argv)
         })
     }
 
-    pub fn construct<'a, 'b, C: Context<'a>, A, AS>(self, cx: &mut C, args: AS) -> JsResult<'a, CL>
+    pub fn construct<'a, 'b, C: Context<'a>, AS>(self, cx: &mut C, args: AS) -> JsResult<'a, CL>
     where
-        A: Value + 'b,
-        AS: IntoIterator<Item = Handle<'b, A>>,
+        AS: AsRef<[Handle<'b, JsValue>]>,
     {
-        let mut args = args.into_iter().collect::<SmallVec<[_; 8]>>();
-        let (argc, argv) = unsafe { prepare_call(cx, &mut args) }?;
+        let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
         let env = cx.env().to_raw();
         build(cx.env(), |out| unsafe {
             neon_runtime::fun::construct(out, env, self.to_raw(), argc, argv)
