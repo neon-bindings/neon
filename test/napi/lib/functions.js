@@ -114,4 +114,21 @@ describe('JsFunction', function() {
     assert.equal(addon.is_construct.call({}).wasConstructed, false);
     assert.equal((new addon.is_construct()).wasConstructed, true);
   });
+
+  it('should be able to call a function from a closure', function() {
+    assert.strictEqual(addon.count_called() + 1, addon.count_called());
+  });
+
+  (global.gc ? it : it.skip)('should drop function when going out of scope', function(cb) {
+    // Run from an `IIFE` to ensure that `f` is out of scope and eligible for garbage
+    // collection when `global.gc()` is executed.
+    (() => {
+      const msg = "Hello, World!";
+      const f = addon.caller_with_drop_callback(() => msg, cb);
+
+      assert.strictEqual(f(), msg);
+    })();
+
+    global.gc();
+  });
 });

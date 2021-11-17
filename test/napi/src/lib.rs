@@ -232,6 +232,17 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("call_and_catch", call_and_catch)?;
     cx.export_function("get_number_or_default", get_number_or_default)?;
     cx.export_function("is_construct", is_construct)?;
+    cx.export_function("caller_with_drop_callback", caller_with_drop_callback)?;
+
+    cx.export_function("count_called", {
+        let n = std::cell::RefCell::new(0);
+
+        move |mut cx| {
+            *n.borrow_mut() += 1;
+
+            Ok(cx.number(*n.borrow()))
+        }
+    })?;
 
     fn call_get_own_property_names(mut cx: FunctionContext) -> JsResult<JsArray> {
         let object = cx.argument::<JsObject>(0)?;

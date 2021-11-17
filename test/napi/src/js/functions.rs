@@ -147,3 +147,53 @@ pub fn is_construct(mut cx: FunctionContext) -> JsResult<JsObject> {
     this.set(&mut cx, "wasConstructed", construct)?;
     Ok(this)
 }
+
+// `function caller_with_drop_callback(wrappedCallback, dropCallback)`
+//
+// `wrappedCallback` will be called each time the returned function is
+// called to verify we have successfully dynamically created a function
+// from a closure.
+//
+// `dropCallback` will be called when the closure is dropped to test that
+// closures are not leaking. The unit test should pass the test callback here.
+pub fn caller_with_drop_callback(mut cx: FunctionContext) -> JsResult<JsFunction> {
+    struct Callback {
+        f: Root<JsFunction>,
+        drop: Option<Root<JsFunction>>,
+        channel: Channel,
+    }
+
+    // Call `dropCallback` when `Callback` is dropped as a sentinel to observe
+    // the closure isn't leaked when the function is garbage collected
+    impl Drop for Callback {
+        fn drop(&mut self) {
+            let callback = self.drop.take();
+
+            self.channel.send(move |mut cx| {
+                let this = cx.undefined();
+                let args: [Handle<JsValue>; 0] = [];
+
+                // Execute the unit test callback to end the test successfully
+                callback
+                    .unwrap()
+                    .into_inner(&mut cx)
+                    .call(&mut cx, this, args)?;
+
+                Ok(())
+            });
+        }
+    }
+
+    let callback = Callback {
+        f: cx.argument::<JsFunction>(0)?.root(&mut cx),
+        drop: Some(cx.argument::<JsFunction>(1)?.root(&mut cx)),
+        channel: cx.channel(),
+    };
+
+    JsFunction::new(&mut cx, move |mut cx| {
+        let this = cx.undefined();
+        let args: [Handle<JsValue>; 0] = [];
+
+        callback.f.to_inner(&mut cx).call(&mut cx, this, args)
+    })
+}
