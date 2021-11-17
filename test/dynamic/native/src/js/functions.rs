@@ -150,17 +150,12 @@ thread_local! {
 }
 
 fn forge_throw(mut cx: FunctionContext) -> JsResult<JsValue> {
-    // Force a random JS error to temporarily enter the throwing state.
-    let v: Handle<JsValue> = cx.null().upcast();
-    match v.downcast_or_throw::<JsNumber, _>(&mut cx) {
-        Ok(_) => panic!("failed to forge throw"),
-        Err(throw) => {
-            // Save the throw token in thread-local storage.
-            FORGED_THROW.with(|forged_throw| {
-                *forged_throw.borrow_mut() = Some(throw);
-            })
-        }
-    }
+    // Force an arbitrary JS error to temporarily enter the throwing state.
+    let throw = cx.throw_error::<_, ()>("forced error").unwrap_err();
+    // Save the throw token in thread-local storage.
+    FORGED_THROW.with(|forged_throw| {
+        *forged_throw.borrow_mut() = Some(throw);
+    });
     panic!("get us out of here");
 }
 

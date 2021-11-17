@@ -65,7 +65,7 @@ impl ConstructorCallCallback {
                     );
                 }
             }
-            Err(Throw(()))
+            Err(Throw::new())
         }
 
         ConstructorCallCallback(callback::<T>)
