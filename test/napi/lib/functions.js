@@ -120,6 +120,8 @@ describe('JsFunction', function() {
   });
 
   (global.gc ? it : it.skip)('should drop function when going out of scope', function(cb) {
+    // Run from an `IIFE` to ensure that `f` is out of scope and eligible for garbage
+    // collection when `global.gc()` is executed.
     (() => {
       const msg = "Hello, World!";
       const f = addon.caller_with_drop_callback(() => msg, cb);

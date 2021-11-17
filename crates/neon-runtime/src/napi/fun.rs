@@ -51,12 +51,17 @@ where
             ptr::null_mut(),
         );
 
+        // If adding the finalizer fails the closure will leak, but it would
+        // be unsafe to drop it because there's no guarantee V8 won't use the
+        // pointer.
         assert_eq!(status, napi::Status::Ok);
     }
 
     Ok(out)
 }
 
+// C ABI compatible function for invoking a boxed closure from the data field
+// of a Node-API JavaScript function
 unsafe extern "C" fn call_boxed<F>(env: Env, info: napi::CallbackInfo) -> Local
 where
     F: Fn(Env, napi::CallbackInfo) -> Local + 'static,
