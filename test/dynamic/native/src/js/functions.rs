@@ -13,7 +13,7 @@ pub fn return_js_function(mut cx: FunctionContext) -> JsResult<JsFunction> {
 
 pub fn call_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let f = cx.argument::<JsFunction>(0)?;
-    let args: Vec<Handle<JsNumber>> = vec![cx.number(16.0)];
+    let args = [cx.number(16.0).upcast()];
     let null = cx.null();
     f.call(&mut cx, null, args)?
         .downcast::<JsNumber>()
@@ -23,7 +23,7 @@ pub fn call_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
 pub fn construct_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let f = cx.argument::<JsFunction>(0)?;
     let zero = cx.number(0.0);
-    let o = f.construct(&mut cx, vec![zero])?;
+    let o = f.construct(&mut cx, [zero.upcast()])?;
     let get_utc_full_year_method = o
         .get(&mut cx, "getUTCFullYear")?
         .downcast::<JsFunction>()
