@@ -811,6 +811,20 @@ impl<CL: Object> JsFunction<CL> {
         })
     }
 
+    pub fn exec<'a, 'b, C: Context<'a>, T, AS>(
+        self,
+        cx: &mut C,
+        this: Handle<'b, T>,
+        args: AS,
+    ) -> NeonResult<()>
+    where
+        T: Value,
+        AS: AsRef<[Handle<'b, JsValue>]>,
+    {
+        self.call(cx, this, args)?;
+        Ok(())
+    }
+
     pub fn construct<'a, 'b, C: Context<'a>, AS>(self, cx: &mut C, args: AS) -> JsResult<'a, CL>
     where
         AS: AsRef<[Handle<'b, JsValue>]>,
