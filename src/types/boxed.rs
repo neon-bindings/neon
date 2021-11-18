@@ -8,7 +8,7 @@ use crate::context::internal::Env;
 use crate::context::{Context, FinalizeContext};
 use crate::handle::{Handle, Managed};
 use crate::object::Object;
-use crate::types::internal::ValueInternal;
+use crate::types::private::ValueInternal;
 use crate::types::Value;
 
 type BoxAny = Box<dyn Any + Send + 'static>;
