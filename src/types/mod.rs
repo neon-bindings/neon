@@ -83,6 +83,7 @@ pub mod buffer;
 #[cfg(feature = "napi-5")]
 pub(crate) mod date;
 pub(crate) mod error;
+pub mod function;
 #[cfg(all(feature = "napi-1", feature = "promise-api"))]
 pub(crate) mod promise;
 
