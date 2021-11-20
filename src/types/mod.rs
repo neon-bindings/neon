@@ -90,6 +90,7 @@ pub(crate) mod promise;
 pub(crate) mod private;
 pub(crate) mod utf8;
 
+use self::function::{CallOptions, ConstructOptions};
 use self::utf8::Utf8;
 use crate::context::internal::Env;
 use crate::context::{Context, FunctionContext};
@@ -99,6 +100,7 @@ use crate::object::{Object, This};
 use crate::result::{JsResult, JsResultExt, NeonResult, Throw};
 use neon_runtime;
 use neon_runtime::raw;
+use smallvec::smallvec;
 use std::fmt;
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -680,6 +682,83 @@ impl private::ValueInternal for JsArray {
 impl Object for JsArray {}
 
 /// A JavaScript function object.
+///
+/// A `JsFunction` may come from an existing JavaScript function, for example
+/// by extracting it from the property of another object such as the
+/// [global object](crate::context::Context::global), or it may be defined in Rust
+/// with [`JsFunction::new()`](JsFunction::new).
+///
+/// ## Calling functions
+///
+/// Neon provides a convenient syntax for calling JavaScript functions with the
+/// [`call_with()`](JsFunction::call_with) method, which produces a [`CallOptions`](CallOptions)
+/// struct that can be used to provide the function arguments (and optionally, the binding for
+/// `this`) before calling the function:
+/// ```
+/// # use neon::prelude::*;
+/// # fn foo(mut cx: FunctionContext) -> JsResult<JsNumber> {
+/// # let global = cx.global();
+/// // Extract the parseInt function from the global object
+/// let parse_int: Handle<JsFunction> = global
+///     .get(&mut cx, "parseInt")?
+///     .downcast_or_throw(&mut cx)?;
+///
+/// // Call parseInt("42")
+/// let x: Handle<JsNumber> = parse_int
+///     .call_with(&mut cx)
+///     .arg(cx.string("42"))
+///     .apply(&mut cx)?;
+/// # Ok(x)
+/// # }
+/// ```
+///
+/// ## Calling functions as constructors
+///
+/// A `JsFunction` can be called as a constructor (like `new Array(16)` or
+/// `new URL("https://neon-bindings.com")`) with the
+/// [`construct_with()`](JsFunction::construct_with) method:
+/// ```
+/// # use neon::prelude::*;
+/// # fn foo(mut cx: FunctionContext) -> JsResult<JsObject> {
+/// # let global = cx.global();
+/// // Extract the URL constructor from the global object
+/// let url: Handle<JsFunction> = global
+///     .get(&mut cx, "URL")?
+///     .downcast_or_throw(&mut cx)?;
+///
+/// // Call new URL("https://neon-bindings.com")
+/// let obj = url
+///     .construct_with(&cx)
+///     .arg(cx.string("https://neon-bindings.com"))
+///     .apply(&mut cx)?;
+/// # Ok(obj)
+/// # }
+/// ```
+///
+/// ## Defining functions
+///
+/// JavaScript functions can be defined in Rust with the
+/// [`JsFunction::new()`](JsFunction::new) constructor, which takes
+/// a Rust implementation function and produces a JavaScript function.
+///
+/// ```
+/// # use neon::prelude::*;
+/// // A function implementation that adds 1 to its first argument
+/// fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
+///     let x: Handle<JsNumber> = cx.argument(0)?;
+/// #   #[cfg(feature = "legacy-runtime")]
+/// #   let v = x.value();
+/// #   #[cfg(feature = "napi-1")]
+///     let v = x.value(&mut cx);
+///     Ok(cx.number(v + 1.0))
+/// }
+///
+/// # fn foo(mut cx: FunctionContext) -> JsResult<JsFunction> {
+/// // Define a new JsFunction implemented with the add1 function
+/// let f = JsFunction::new(&mut cx, add1)?;
+/// # Ok(f)
+/// # }
+/// ```
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct JsFunction<T: Object = JsObject> {
@@ -833,6 +912,26 @@ impl<CL: Object> JsFunction<CL> {
         build(cx.env(), |out| unsafe {
             neon_runtime::fun::construct(out, env, self.to_raw(), argc, argv)
         })
+    }
+}
+
+impl JsFunction {
+    /// Create a [`CallOptions`](function::CallOptions) for calling this function.
+    pub fn call_with<'a, C: Context<'a>>(self, _cx: &C) -> CallOptions<'a> {
+        CallOptions {
+            this: None,
+            callee: Handle::new_internal(self),
+            args: smallvec![],
+        }
+    }
+
+    /// Create a [`ConstructOptions`](function::ConstructOptions) for calling this function
+    /// as a constructor.
+    pub fn construct_with<'a, C: Context<'a>>(self, _cx: &C) -> ConstructOptions<'a> {
+        ConstructOptions {
+            callee: Handle::new_internal(self),
+            args: smallvec![],
+        }
     }
 }
 
