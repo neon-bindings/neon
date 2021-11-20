@@ -18,15 +18,7 @@ pub fn thread_callback(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let channel = cx.channel();
 
     std::thread::spawn(move || {
-        channel.send(move |mut cx| {
-            let callback = callback.into_inner(&mut cx);
-            let this = cx.undefined();
-            let args = Vec::<Handle<JsValue>>::new();
-
-            callback.call(&mut cx, this, args)?;
-
-            Ok(())
-        })
+        channel.send(move |mut cx| callback.into_inner(&mut cx).call_with(&cx).exec(&mut cx))
     });
 
     Ok(cx.undefined())
@@ -43,13 +35,11 @@ pub fn multi_threaded_callback(mut cx: FunctionContext) -> JsResult<JsUndefined>
 
         std::thread::spawn(move || {
             channel.send(move |mut cx| {
-                let callback = callback.into_inner(&mut cx);
-                let this = cx.undefined();
-                let args = [cx.number(i as f64).upcast()];
-
-                callback.call(&mut cx, this, args)?;
-
-                Ok(())
+                callback
+                    .into_inner(&mut cx)
+                    .call_with(&cx)
+                    .arg(cx.number(i as f64))
+                    .exec(&mut cx)
             })
         });
     }
@@ -76,13 +66,11 @@ impl AsyncGreeter {
 
         std::thread::spawn(move || {
             channel.send(|mut cx| {
-                let callback = callback.into_inner(&mut cx);
-                let this = cx.undefined();
-                let args = [cx.string(greeting).upcast()];
-
-                callback.call(&mut cx, this, args)?;
-
-                Ok(())
+                callback
+                    .into_inner(&mut cx)
+                    .call_with(&cx)
+                    .arg(cx.string(greeting))
+                    .exec(&mut cx)
             })
         });
 
@@ -97,10 +85,7 @@ impl Finalize for AsyncGreeter {
         } = self;
 
         if let Some(shutdown) = shutdown {
-            let shutdown = shutdown.into_inner(cx);
-            let this = cx.undefined();
-            let args = Vec::<Handle<JsValue>>::new();
-            let _ = shutdown.call(cx, this, args);
+            let _ = shutdown.into_inner(cx).call_with(cx).exec(cx);
         }
 
         callback.drop(cx);
@@ -161,13 +146,11 @@ pub fn drop_global_queue(mut cx: FunctionContext) -> JsResult<JsUndefined> {
         fn drop(&mut self) {
             if let Some(callback) = self.callback.take() {
                 self.channel.send(|mut cx| {
-                    let callback = callback.into_inner(&mut cx);
-                    let this = cx.undefined();
-                    let args = [cx.undefined().upcast()];
-
-                    callback.call(&mut cx, this, args)?;
-
-                    Ok(())
+                    callback
+                        .into_inner(&mut cx)
+                        .call_with(&cx)
+                        .arg(cx.undefined())
+                        .exec(&mut cx)
                 });
             }
         }
