@@ -62,40 +62,38 @@ You can find instructions for installing Rust and Cargo at:
 
 function processCargoBuildLine(options, copied, line) {
   const data = JSON.parse(line);
+  const { filenames, reason, target } = data;
 
-  if (!data || data.reason !== "compiler-artifact" || !data.target) {
+  if (!data || reason !== "compiler-artifact" || !target) {
     return;
   }
 
   const { kind: kinds, name } = data.target;
 
-  if (!Array.isArray(kinds) || !kinds.length) {
+  if (!Array.isArray(kinds) || !Array.isArray(filenames)) {
     return;
   }
 
-  const [kind] = kinds;
-  const key = getArtifactName({ artifactType: kind, crateName: name });
-  const outputFiles = options.artifacts[key];
+  // `kind` and `filenames` zip up as key/value pairs
+  kinds.forEach((kind, i) => {
+    const filename = filenames[i];
+    const key = getArtifactName({ artifactType: kind, crateName: name });
+    const outputFiles = options.artifacts[key];
 
-  if (!outputFiles || !Array.isArray(data.filenames)) {
-    return;
-  }
+    if (!outputFiles || !filename) {
+      return;
+    }
 
-  const [filename] = data.filenames;
-
-  if (!filename) {
-    return;
-  }
-
-  Promise
-    .all(outputFiles.map(outputFile => copyArtifact(filename, outputFile)))
-    .then(() => {
-      copied[key] = true;
-    })
-    .catch((err) => {
-      process.exitCode = 1;
-      console.error(err);
-    });
+    Promise
+        .all(outputFiles.map(outputFile => copyArtifact(filename, outputFile)))
+        .then(() => {
+          copied[key] = true;
+        })
+        .catch((err) => {
+          process.exitCode = 1;
+          console.error(err);
+        });
+  });
 }
 
 async function isNewer(filename, outputFile) {
