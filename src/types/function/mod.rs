@@ -154,7 +154,7 @@ macro_rules! impl_arguments {
      };
  }
 
- impl_arguments! {
+impl_arguments! {
     [];
     [
         (V1, v1),
