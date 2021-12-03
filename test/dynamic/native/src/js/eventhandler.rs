@@ -111,8 +111,11 @@ declare_types! {
       if let Some(cb) = cb {
         thread::spawn(move || {
           cb.schedule_with(move |cx, this, callback| {
-            let args : Vec<Handle<JsValue>> = vec![cx.string("number").upcast()];
-            let result = callback.call(cx, this, args);
+            let result: JsResult<JsValue> = callback
+              .call_with(cx)
+              .this(this)
+              .arg(cx.string("number"))
+              .apply(cx);
             let cmd = match result {
               Ok(v) => {
                 if let Ok(number) = v.downcast::<JsNumber>() {
@@ -127,8 +130,7 @@ declare_types! {
               },
               Err(e) => format!("threw {}", e)
             };
-            let args : Vec<Handle<JsValue>> = vec![cx.string(cmd).upcast()];
-            let _result = callback.call(cx, this, args);
+            let _result = callback.call_with(cx).this(this).arg(cx.string(cmd)).exec(cx);
           });
         });
       }
