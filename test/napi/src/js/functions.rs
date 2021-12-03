@@ -86,6 +86,21 @@ pub fn call_js_function_with_custom_this(mut cx: FunctionContext) -> JsResult<Js
         .apply(&mut cx)
 }
 
+pub fn call_js_function_with_implicit_this(mut cx: FunctionContext) -> JsResult<JsValue> {
+    cx.argument::<JsFunction>(0)?
+        .call_with(&cx)
+        .arg(cx.number(42))
+        .apply(&mut cx)
+}
+
+pub fn exec_js_function_with_implicit_this(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    cx.argument::<JsFunction>(0)?
+        .call_with(&cx)
+        .arg(cx.number(42))
+        .exec(&mut cx)?;
+    Ok(cx.undefined())
+}
+
 pub fn call_js_function_with_heterogeneous_tuple(mut cx: FunctionContext) -> JsResult<JsArray> {
     cx.global()
         .get(&mut cx, "Array")?
@@ -111,7 +126,7 @@ pub fn construct_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
 }
 
 pub fn construct_js_function_idiomatically(mut cx: FunctionContext) -> JsResult<JsNumber> {
-    let o = cx
+    let o: Handle<JsObject> = cx
         .argument::<JsFunction>(0)?
         .construct_with(&cx)
         .arg(cx.number(0.0))
@@ -123,6 +138,16 @@ pub fn construct_js_function_idiomatically(mut cx: FunctionContext) -> JsResult<
     get_utc_full_year_method
         .call_with(&cx)
         .this(o)
+        .apply(&mut cx)
+}
+
+pub fn construct_js_function_with_overloaded_result(mut cx: FunctionContext) -> JsResult<JsArray> {
+    let global = cx.global();
+    let f: Handle<JsFunction> = global.get(&mut cx, "Array")?.downcast_or_throw(&mut cx)?;
+    f.construct_with(&cx)
+        .arg(cx.number(1))
+        .arg(cx.number(2))
+        .arg(cx.number(3))
         .apply(&mut cx)
 }
 

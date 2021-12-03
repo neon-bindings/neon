@@ -42,6 +42,20 @@ describe('JsFunction', function() {
     assert.equal(addon.call_js_function_with_custom_this(function() { return this }).secret, 42);
   });
 
+  it('call a JsFunction with the default this', function() {
+    addon.call_js_function_with_implicit_this(function() {
+      'use strict'; // ensure the undefined this isn't replaced with the global object
+      assert.strictEqual(this, undefined);
+    });
+  });
+
+  it('exec a JsFunction with the default this', function() {
+    addon.exec_js_function_with_implicit_this(function() {
+      'use strict'; // ensure the undefined this isn't replaced with the global object
+      assert.strictEqual(this, undefined);
+    });
+  })
+
   it('call a JsFunction with a heterogeneously typed tuple', function() {
     assert.deepEqual(addon.call_js_function_with_heterogeneous_tuple(), [1, "hello", true]);
   });
@@ -52,6 +66,10 @@ describe('JsFunction', function() {
 
   it('new a JsFunction with construct_with', function () {
     assert.equal(addon.construct_js_function_idiomatically(Date), 1970);
+  });
+
+  it('new a JsFunction with construct_with to create an array', function() {
+    assert.deepEqual(addon.construct_js_function_with_overloaded_result(), [1, 2, 3]);
   });
 
   it('got two parameters, a string and a number', function() {

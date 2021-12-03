@@ -2,6 +2,7 @@
 
 use crate::context::Context;
 use crate::handle::Handle;
+use crate::object::Object;
 use crate::result::{JsResult, NeonResult};
 use crate::types::{JsFunction, JsObject, JsValue, Value};
 
@@ -54,7 +55,7 @@ impl<'a> CallOptions<'a> {
     /// Make the function call. If the function returns without throwing, the result value
     /// is downcast to the type `V`, throwing a `TypeError` if the downcast fails.
     pub fn apply<'b: 'a, V: Value, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, V> {
-        let this = self.this.unwrap_or_else(|| cx.null().upcast());
+        let this = self.this.unwrap_or_else(|| cx.undefined().upcast());
         let v: Handle<JsValue> = self.callee.call(cx, this, &self.args)?;
         v.downcast_or_throw(cx)
     }
@@ -63,7 +64,7 @@ impl<'a> CallOptions<'a> {
     /// preferable to [`apply()`](CallOptions::apply) when the result value isn't needed,
     /// since it doesn't require specifying a result type.
     pub fn exec<'b: 'a, C: Context<'b>>(&self, cx: &mut C) -> NeonResult<()> {
-        let this = self.this.unwrap_or_else(|| cx.null().upcast());
+        let this = self.this.unwrap_or_else(|| cx.undefined().upcast());
         self.callee.call(cx, this, &self.args)?;
         Ok(())
     }
@@ -106,8 +107,9 @@ impl<'a> ConstructOptions<'a> {
 
     /// Make the constructor call. If the function returns without throwing, returns
     /// the resulting object.
-    pub fn apply<'b: 'a, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, JsObject> {
-        self.callee.construct(cx, &self.args)
+    pub fn apply<'b: 'a, O: Object, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'b, O> {
+        let v: Handle<JsObject> = self.callee.construct(cx, &self.args)?;
+        v.downcast_or_throw(cx)
     }
 }
 

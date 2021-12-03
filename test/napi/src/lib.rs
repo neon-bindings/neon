@@ -172,6 +172,14 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         call_js_function_with_custom_this,
     )?;
     cx.export_function(
+        "call_js_function_with_implicit_this",
+        call_js_function_with_implicit_this,
+    )?;
+    cx.export_function(
+        "exec_js_function_with_implicit_this",
+        exec_js_function_with_implicit_this,
+    )?;
+    cx.export_function(
         "call_js_function_with_heterogeneous_tuple",
         call_js_function_with_heterogeneous_tuple,
     )?;
@@ -179,6 +187,10 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function(
         "construct_js_function_idiomatically",
         construct_js_function_idiomatically,
+    )?;
+    cx.export_function(
+        "construct_js_function_with_overloaded_result",
+        construct_js_function_with_overloaded_result,
     )?;
     cx.export_function("num_arguments", num_arguments)?;
     cx.export_function("return_this", return_this)?;
