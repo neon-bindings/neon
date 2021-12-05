@@ -49,6 +49,6 @@
   },
   "scripts": {
     "test": "npm run transpile && mocha --timeout 5000 lib/**/*.js",
-    "transpile": "tsc --skipLibCheck"
+    "transpile": "tsc"
   }
 }

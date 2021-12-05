@@ -40,7 +40,7 @@
     "typescript": "^4.5.5"
   },
   "scripts": {
-    "transpile": "tsc --skipLibCheck",
+    "transpile": "tsc",
     "prepare": "npm run transpile"
   },
   "bugs": {
