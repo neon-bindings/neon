@@ -8,12 +8,13 @@
   "scripts": {
     "install": "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
     "start": "electron .",
-    "test": "node test"
+    "test": "playwright test"
   },
   "repository": "https://github.com/electron/electron-quick-start",
   "devDependencies": {
-    "cargo-cp-artifact": "^0.1.0 ",
-    "electron": "^11.5.0",
-    "spectron": "^13.0.0"
+    "@playwright/test": "^1.17.1",
+    "cargo-cp-artifact": "^0.1.0",
+    "electron": "^16.0.0",
+    "playwright": "^1.17.1"
   }
 }
