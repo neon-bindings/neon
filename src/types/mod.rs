@@ -699,9 +699,7 @@ impl Object for JsArray {}
 /// # fn foo(mut cx: FunctionContext) -> JsResult<JsNumber> {
 /// # let global = cx.global();
 /// // Extract the parseInt function from the global object
-/// let parse_int: Handle<JsFunction> = global
-///     .get(&mut cx, "parseInt")?
-///     .downcast_or_throw(&mut cx)?;
+/// let parse_int: Handle<JsFunction> = global.get(&mut cx, "parseInt")?;
 ///
 /// // Call parseInt("42")
 /// let x: Handle<JsNumber> = parse_int
@@ -722,9 +720,7 @@ impl Object for JsArray {}
 /// # fn foo(mut cx: FunctionContext) -> JsResult<JsObject> {
 /// # let global = cx.global();
 /// // Extract the URL constructor from the global object
-/// let url: Handle<JsFunction> = global
-///     .get(&mut cx, "URL")?
-///     .downcast_or_throw(&mut cx)?;
+/// let url: Handle<JsFunction> = global.get(&mut cx, "URL")?;
 ///
 /// // Call new URL("https://neon-bindings.com")
 /// let obj = url

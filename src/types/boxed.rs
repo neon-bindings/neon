@@ -282,10 +282,8 @@ impl<'a, T: Send + 'static> Deref for JsBox<T> {
 /// impl Finalize for Point {
 ///     fn finalize<'a, C: Context<'a>>(self, cx: &mut C) {
 ///         let global = cx.global();
-///         let emit = global
+///         let emit: Handle<JsFunction> = global
 ///             .get(cx, "emit")
-///             .unwrap()
-///             .downcast::<JsFunction, _>(cx)
 ///             .unwrap();
 ///
 ///         let args = vec![

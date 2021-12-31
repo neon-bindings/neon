@@ -90,12 +90,14 @@ mod traits {
 
     /// The trait of all object types.
     pub trait Object: Value {
-        fn get<'a, C: Context<'a>, K: PropertyKey>(
+        fn get<'a, V: Value, C: Context<'a>, K: PropertyKey>(
             self,
             cx: &mut C,
             key: K,
-        ) -> NeonResult<Handle<'a, JsValue>> {
-            build(cx.env(), |out| unsafe { key.get_from(out, self.to_raw()) })
+        ) -> NeonResult<Handle<'a, V>> {
+            let v: Handle<JsValue> =
+                build(cx.env(), |out| unsafe { key.get_from(out, self.to_raw()) })?;
+            v.downcast_or_throw(cx)
         }
 
         fn get_own_property_names<'a, C: Context<'a>>(self, cx: &mut C) -> JsResult<'a, JsArray> {
@@ -235,14 +237,15 @@ mod traits {
 
     /// The trait of all object types.
     pub trait Object: Value {
-        fn get<'a, C: Context<'a>, K: PropertyKey>(
+        fn get<'a, V: Value, C: Context<'a>, K: PropertyKey>(
             self,
             cx: &mut C,
             key: K,
-        ) -> NeonResult<Handle<'a, JsValue>> {
-            build(cx.env(), |out| unsafe {
+        ) -> NeonResult<Handle<'a, V>> {
+            let v: Handle<JsValue> = build(cx.env(), |out| unsafe {
                 key.get_from(cx, out, self.to_raw())
-            })
+            })?;
+            v.downcast_or_throw(cx)
         }
 
         #[cfg(feature = "napi-6")]

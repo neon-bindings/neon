@@ -17,8 +17,7 @@ pub(crate) mod private;
 /// # use neon::prelude::*;
 /// # fn foo(mut cx: FunctionContext) -> JsResult<JsNumber> {
 /// # let global = cx.global();
-/// # let parse_int = global.get(&mut cx, "parseInt")?;
-/// # let parse_int: Handle<JsFunction> = parse_int.downcast_or_throw(&mut cx)?;
+/// # let parse_int: Handle<JsFunction> = global.get(&mut cx, "parseInt")?;
 /// let x: Handle<JsNumber> = parse_int
 ///     .call_with(&cx)
 ///     .arg(cx.string("42"))
@@ -77,8 +76,7 @@ impl<'a> CallOptions<'a> {
 /// # use neon::prelude::*;
 /// # fn foo(mut cx: FunctionContext) -> JsResult<JsObject> {
 /// # let global = cx.global();
-/// # let url = global.get(&mut cx, "URL")?;
-/// # let url: Handle<JsFunction> = url.downcast_or_throw(&mut cx)?;
+/// # let url: Handle<JsFunction> = global.get(&mut cx, "URL")?;
 /// let obj = url
 ///     .construct_with(&cx)
 ///     .arg(cx.string("https://neon-bindings.com"))

@@ -87,8 +87,8 @@
 //! # use neon::prelude::*;
 //! # fn iterate(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 //!     let iterator = cx.argument::<JsObject>(0)?;         // iterator object
-//!     let next = iterator.get(&mut cx, "next")?           // iterator's `next` method
-//!         .downcast_or_throw::<JsFunction, _>(&mut cx)?;
+//!     let next: Handle<JsFunction> =                      // iterator's `next` method
+//!         iterator.get(&mut cx, "next")?;
 //!     let mut numbers = vec![];                           // results vector
 //!     let mut done = false;                               // loop controller
 //!
@@ -98,13 +98,12 @@
 //!                 .call_with(&cx)
 //!                 .this(iterator)
 //!                 .apply(&mut cx)?;
-//!             let number = obj.get(&mut cx, "value")?           // temporary number
-//!                 .downcast_or_throw::<JsNumber, _>(&mut cx)?
-//!                 .value(&mut cx);
-//!             numbers.push(number);
-//!             Ok(obj.get(&mut cx, "done")?                      // temporary boolean
-//!                 .downcast_or_throw::<JsBoolean, _>(&mut cx)?
-//!                 .value(&mut cx))
+//!             let number: Handle<JsNumber> =                    // temporary number
+//!                 obj.get(&mut cx, "value")?;
+//!             numbers.push(number.value(&mut cx));
+//!             let done: Handle<JsBoolean> =                     // temporary boolean
+//!                 obj.get(&mut cx, "done")?;
+//!             Ok(done.value(&mut cx))
 //!         })?;
 //!     }
 //! #   Ok(cx.undefined())
