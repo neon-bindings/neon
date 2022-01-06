@@ -6,6 +6,7 @@ import die from '../die';
 import Package from '../package';
 import expand, { Versions } from '../expand';
 import versions from '../../data/versions.json';
+import { tmpdir } from 'os'
 
 const TEMPLATES: Record<string, string> = {
   '.gitignore.hbs': '.gitignore',
@@ -30,7 +31,12 @@ function inferVersions(): Versions {
 }
 
 async function main(name: string) {
+  let workingDirPath: string = process.cwd()
+  let tmpDirPath: string = tmpdir()
+
   try {
+    //change PWD to temp
+    process.chdir(tmpDirPath)
     await fs.mkdir(name);
   } catch (err) {
     die(`Could not create \`${name}\`: ${err.message}`);
@@ -40,7 +46,9 @@ async function main(name: string) {
 
   try {
     pkg = await Package.create(name);
+
   } catch (err) {
+    await fs.rm(process.argv[2], { recursive: true, force: true })
     die("Could not create `package.json`: " + err.message);
   }
 
@@ -53,7 +61,14 @@ async function main(name: string) {
       versions: inferVersions()
     });
   }
-
+  try{
+    // setting PWD back to working directory shouldn't be required
+    await fs.rename(tmpDirPath +'/'+name, workingDirPath+'/'+name)
+  }
+  catch(e){
+    await fs.rm(process.argv[2], { recursive: true, force: true })
+    throw new Error(e)
+  }
   console.log(`✨ Created Neon project \`${name}\`. Happy 🦀 hacking! ✨`);
 }
 
