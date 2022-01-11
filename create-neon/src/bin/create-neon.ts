@@ -45,7 +45,8 @@ async function main(name: string) {
     await fs.mkdir(name);
     await fs.rmdir(name);
 
-    tmpFolderName = await fs.mkdtemp(path.join(os.tmpdir(), `${name}-`))
+    // tmpFolderName = await fs.mkdtemp(path.join(os.tmpdir(), `${name}-`))
+    tmpFolderName = await fs.mkdtemp(`${name}-`)
 
   } catch (err) {
     if (tmpFolderName) {
