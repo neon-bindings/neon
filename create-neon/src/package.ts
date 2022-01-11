@@ -21,7 +21,7 @@ function sort(json: any): any {
 
   // Then copy any remaining keys in the original order.
   return Object.assign(next, json);
-}
+};
 
 export default class Package {
   name: string;
@@ -74,5 +74,6 @@ export default class Package {
     this.license = json.license;
     this.description = json.description;
     this.quotedDescription = JSON.stringify(json.description);
-  }
-}
+  };
+};
+

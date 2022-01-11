@@ -28,44 +28,41 @@ function inferVersions(): Versions {
     neon: versions.neon,
     napi: napi
   };
-}
+};
 
-function deleteNeonDir(dir:string): Promise<void> {
+function deleteNeonDir(dir: string): Promise<void> {
   return fs.rm(dir, { force: true, recursive: true });
-}
+};
 
 async function main(name: string) {
-  let workingDirPath: string = process.cwd()
-  let tmpDirPath: string = os.tmpdir()
+  let workingDirPath: string = process.cwd();
+  let tmpDirPath: string = os.tmpdir();
   let tmpFolderName:string|undefined;
 
   try {
-    //check if folder or file with same name exists
-    await fs.mkdir(name)
-    await fs.rmdir(name)
+    //pretty lightweight way to check both that folder doesn't exist and
+    // that the user has write permissions.
+    await fs.mkdir(name);
+    await fs.rmdir(name);
 
-    //change current working directory to /temp
-    process.chdir(path.join(tmpDirPath))
-    tmpFolderName = await fs.mkdtemp(`${name}-`)
-    // //change current working directory to /temp/<tmpFolderName>
-    // process.chdir(path.join(tmpDirPath,tmpFolderName))
+    tmpFolderName = await fs.mkdtemp(path.join(os.tmpdir(), `${name}-`))
 
   } catch (err) {
     if (tmpFolderName) {
-     await deleteNeonDir(path.join(tmpDirPath,tmpFolderName))
-    }
+     await deleteNeonDir(tmpFolderName)
+    };
     die(`Could not create \`${name}\`: ${err.message}`);
-  }
+  };
 
   let pkg: Package;
 
   try {
-      pkg = await Package.create(name,path.join(tmpDirPath,tmpFolderName,'/'));
+      pkg = await Package.create(name,tmpFolderName);
 
   } catch (err) {
-     await deleteNeonDir(path.join(tmpDirPath,tmpFolderName))
+     await deleteNeonDir(tmpFolderName)
      die("Could not create `package.json`: " + err.message);
-  }
+  };
 
   await fs.mkdir(path.join(tmpFolderName, 'src'));
 
@@ -75,7 +72,7 @@ async function main(name: string) {
       package: pkg,
       versions: inferVersions()
     });
-  }
+  };
   try{
     // setting working directory back from tmpDirPath to workingDirPath shouldn't be required
     await fs.rename(tmpFolderName, path.join(workingDirPath,name))
@@ -83,9 +80,9 @@ async function main(name: string) {
   catch(err){
     await deleteNeonDir(path.join(tmpDirPath,tmpFolderName))
     die(`Could not create \`${name}\`: ${err.message}`);
-  }
+  };
   console.log(`✨ Created Neon project \`${name}\`. Happy 🦀 hacking! ✨`);
-}
+};
 
 if (process.argv.length < 3) {
   console.error("✨ create-neon: Create a new Neon project with zero configuration. ✨");
@@ -95,6 +92,6 @@ if (process.argv.length < 3) {
   console.error("  name   The name of your Neon project, placed in a new directory of the same name.");
   console.error();
   process.exit(1);
-}
+};
 
 main(process.argv[2]);

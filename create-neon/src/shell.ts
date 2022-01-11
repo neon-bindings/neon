@@ -19,10 +19,10 @@ export default function shell(cmd: string, args: string[], cwd: string): Promise
   child.on("exit", async (code) => {
     if (code == null) {
 	reject(Error(`error code: ${code}`))
-    }
+    };
     if (code !== 0) {
 	reject(Error(`error code: ${code}`))
-    }
+    };
 
     if (code === 0) {
       try {
@@ -33,8 +33,8 @@ export default function shell(cmd: string, args: string[], cwd: string): Promise
                }
         } catch (e) {
               reject(e)
-      }
-    }
+      };
+    };
 
     resolve(undefined);
   });
@@ -43,4 +43,4 @@ export default function shell(cmd: string, args: string[], cwd: string): Promise
       reject(error);
   });
   return result;
-}
+};
