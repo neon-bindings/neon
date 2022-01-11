@@ -60,7 +60,7 @@ async function main(name: string) {
   let pkg: Package;
 
   try {
-    pkg = await Package.create(tmpFolderName);
+      pkg = await Package.create(name,path.join(tmpDirPath,tmpFolderName,'/'));
 
   } catch (err) {
      await deleteNeonDir(path.join(tmpDirPath,tmpFolderName))
