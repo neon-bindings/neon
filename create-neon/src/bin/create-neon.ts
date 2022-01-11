@@ -6,7 +6,7 @@ import die from '../die';
 import Package from '../package';
 import expand, { Versions } from '../expand';
 import versions from '../../data/versions.json';
-import { tmpdir } from 'os'
+import os from 'os';
 
 const TEMPLATES: Record<string, string> = {
   '.gitignore.hbs': '.gitignore',
@@ -30,44 +30,59 @@ function inferVersions(): Versions {
   };
 }
 
+function deleteNeonDir(dir:string): Promise<void> {
+  return fs.rm(dir, { force: true, recursive: true });
+}
+
 async function main(name: string) {
   let workingDirPath: string = process.cwd()
-  let tmpDirPath: string = tmpdir()
+  let tmpDirPath: string = os.tmpdir()
+  let tmpFolderName:string|undefined;
 
   try {
-    //change PWD to temp
-    process.chdir(tmpDirPath)
-    await fs.mkdir(name);
+    //check if folder or file with same name exists
+    await fs.mkdir(name)
+    await fs.rmdir(name)
+
+    //change current working directory to /temp
+    process.chdir(path.join(tmpDirPath))
+    tmpFolderName = await fs.mkdtemp(`${name}-`)
+    // //change current working directory to /temp/<tmpFolderName>
+    // process.chdir(path.join(tmpDirPath,tmpFolderName))
+
   } catch (err) {
+    if (tmpFolderName) {
+     await deleteNeonDir(path.join(tmpDirPath,tmpFolderName))
+    }
     die(`Could not create \`${name}\`: ${err.message}`);
   }
 
   let pkg: Package;
 
   try {
-    pkg = await Package.create(name);
+    pkg = await Package.create(tmpFolderName);
 
   } catch (err) {
-    await fs.rm(process.argv[2], { recursive: true, force: true })
-    die("Could not create `package.json`: " + err.message);
+     await deleteNeonDir(path.join(tmpDirPath,tmpFolderName))
+     die("Could not create `package.json`: " + err.message);
   }
 
-  await fs.mkdir(path.join(name, 'src'));
+  await fs.mkdir(path.join(tmpFolderName, 'src'));
 
   for (let source of Object.keys(TEMPLATES)) {
-    let target = path.join(name, TEMPLATES[source]);
+    let target = path.join(tmpFolderName, TEMPLATES[source]);
     await expand(source, target, {
       package: pkg,
       versions: inferVersions()
     });
   }
   try{
-    // setting PWD back to working directory shouldn't be required
-    await fs.rename(tmpDirPath +'/'+name, workingDirPath+'/'+name)
+    // setting working directory back from tmpDirPath to workingDirPath shouldn't be required
+    await fs.rename(tmpFolderName, path.join(workingDirPath,name))
   }
-  catch(e){
-    await fs.rm(process.argv[2], { recursive: true, force: true })
-    throw new Error(e)
+  catch(err){
+    await deleteNeonDir(path.join(tmpDirPath,tmpFolderName))
+    die(`Could not create \`${name}\`: ${err.message}`);
   }
   console.log(`✨ Created Neon project \`${name}\`. Happy 🦀 hacking! ✨`);
 }
