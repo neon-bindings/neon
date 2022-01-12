@@ -6,7 +6,6 @@ import die from '../die';
 import Package from '../package';
 import expand, { Versions } from '../expand';
 import versions from '../../data/versions.json';
-import os from 'os';
 
 const TEMPLATES: Record<string, string> = {
   '.gitignore.hbs': '.gitignore',
@@ -30,39 +29,27 @@ function inferVersions(): Versions {
   };
 };
 
-function deleteNeonDir(dir: string): Promise<void> {
-  return fs.rm(dir, { force: true, recursive: true });
-};
-
 async function main(name: string) {
-  let workingDirPath: string = process.cwd();
-  let tmpDirPath: string = os.tmpdir();
   let tmpFolderName:string|undefined;
 
   try {
-    //pretty lightweight way to check both that folder doesn't exist and
+    // pretty lightweight way to check both that folder doesn't exist and
     // that the user has write permissions.
     await fs.mkdir(name);
     await fs.rmdir(name);
 
-    // tmpFolderName = await fs.mkdtemp(path.join(os.tmpdir(), `${name}-`))
     tmpFolderName = await fs.mkdtemp(`${name}-`)
 
   } catch (err) {
-    if (tmpFolderName) {
-     await deleteNeonDir(tmpFolderName)
-    };
-    die(`Could not create \`${name}\`: ${err.message}`);
+     die(`Could not create \`${name}\`: ${err.message}`, tmpFolderName);
   };
 
   let pkg: Package;
 
   try {
       pkg = await Package.create(name,tmpFolderName);
-
   } catch (err) {
-     await deleteNeonDir(tmpFolderName)
-     die("Could not create `package.json`: " + err.message);
+     die("Could not create `package.json`: " + err.message, tmpFolderName);
   };
 
   await fs.mkdir(path.join(tmpFolderName, 'src'));
@@ -75,12 +62,10 @@ async function main(name: string) {
     });
   };
   try{
-    // setting working directory back from tmpDirPath to workingDirPath shouldn't be required
-    await fs.rename(tmpFolderName, path.join(workingDirPath,name))
+    await fs.rename(tmpFolderName, name)
   }
   catch(err){
-    await deleteNeonDir(path.join(tmpDirPath,tmpFolderName))
-    die(`Could not create \`${name}\`: ${err.message}`);
+    die(`Could not create \`${name}\`: ${err.message}`, tmpFolderName);
   };
   console.log(`✨ Created Neon project \`${name}\`. Happy 🦀 hacking! ✨`);
 };
