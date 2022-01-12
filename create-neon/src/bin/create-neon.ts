@@ -30,7 +30,7 @@ function inferVersions(): Versions {
 };
 
 async function main(name: string) {
-  let tmpFolderName:string|undefined;
+  let tmpFolderName:string = '';
 
   try {
     // pretty lightweight way to check both that folder doesn't exist and
@@ -44,14 +44,13 @@ async function main(name: string) {
      die(`Could not create \`${name}\`: ${err.message}`, tmpFolderName);
   };
 
-  let pkg: Package;
+  let pkg: Package
 
   try {
       pkg = await Package.create(name,tmpFolderName);
   } catch (err) {
      die("Could not create `package.json`: " + err.message, tmpFolderName);
-  };
-
+  }
   await fs.mkdir(path.join(tmpFolderName, 'src'));
 
   for (let source of Object.keys(TEMPLATES)) {
