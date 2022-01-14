@@ -21,12 +21,15 @@ export default function shell(cmd: string, args: string[], cwd: string): Promise
 	reject(Error(`error code: ${code}`))
     };
     if (code !== 0) {
+	//This will catch answering no and many other failures
 	reject(Error(`error code: ${code}`))
     };
 
     if (code === 0) {
       try {
           let data = await fs.readFile(path.join(cwd,'package.json'),'utf8')
+	  //Testing whether npm init was successful.
+	  //It will catch Ctrl+C and many other failures
           let { description, author, license } = JSON.parse(data);
           if ([description, author, license].includes(undefined)) {
         	reject(Error(`error code: ${code}`))
