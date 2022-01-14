@@ -72,7 +72,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     assert!(
         ({
-            let v: Handle<JsNumber> = rust_created.get(&mut cx, "a")?.downcast_or_throw(&mut cx)?;
+            let v: Handle<JsNumber> = rust_created.get(&mut cx, "a")?;
             v.value(&mut cx)
         } - 1.0f64)
             .abs()
@@ -80,7 +80,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     );
     assert!(
         ({
-            let v: Handle<JsNumber> = rust_created.get(&mut cx, 0)?.downcast_or_throw(&mut cx)?;
+            let v: Handle<JsNumber> = rust_created.get(&mut cx, 0)?;
             v.value(&mut cx)
         } - 1.0f64)
             .abs()
@@ -88,9 +88,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     );
     assert_eq!(
         {
-            let v: Handle<JsBoolean> = rust_created
-                .get(&mut cx, "whatever")?
-                .downcast_or_throw(&mut cx)?;
+            let v: Handle<JsBoolean> = rust_created.get(&mut cx, "whatever")?;
             v.value(&mut cx)
         },
         true

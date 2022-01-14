@@ -28,13 +28,8 @@ pub fn call_js_function_idiomatically(mut cx: FunctionContext) -> JsResult<JsNum
 }
 
 fn get_math_max<'a>(cx: &mut FunctionContext<'a>) -> JsResult<'a, JsFunction> {
-    let math = cx
-        .global()
-        .get(cx, "Math")?
-        .downcast_or_throw::<JsObject, _>(cx)?;
-    let max = math
-        .get(cx, "max")?
-        .downcast_or_throw::<JsFunction, _>(cx)?;
+    let math: Handle<JsObject> = cx.global().get(cx, "Math")?;
+    let max: Handle<JsFunction> = math.get(cx, "max")?;
     Ok(max)
 }
 
@@ -103,8 +98,7 @@ pub fn exec_js_function_with_implicit_this(mut cx: FunctionContext) -> JsResult<
 
 pub fn call_js_function_with_heterogeneous_tuple(mut cx: FunctionContext) -> JsResult<JsArray> {
     cx.global()
-        .get(&mut cx, "Array")?
-        .downcast_or_throw::<JsFunction, _>(&mut cx)?
+        .get::<JsFunction, _, _>(&mut cx, "Array")?
         .call_with(&cx)
         .args((cx.number(1.0), cx.string("hello"), cx.boolean(true)))
         .apply(&mut cx)
@@ -114,10 +108,7 @@ pub fn construct_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let f = cx.argument::<JsFunction>(0)?;
     let zero = cx.number(0.0);
     let o = f.construct(&mut cx, [zero.upcast()])?;
-    let get_utc_full_year_method = o
-        .get(&mut cx, "getUTCFullYear")?
-        .downcast::<JsFunction, _>(&mut cx)
-        .or_throw(&mut cx)?;
+    let get_utc_full_year_method: Handle<JsFunction> = o.get(&mut cx, "getUTCFullYear")?;
     let args: Vec<Handle<JsValue>> = vec![];
     get_utc_full_year_method
         .call(&mut cx, o.upcast::<JsValue>(), args)?
@@ -131,10 +122,7 @@ pub fn construct_js_function_idiomatically(mut cx: FunctionContext) -> JsResult<
         .construct_with(&cx)
         .arg(cx.number(0.0))
         .apply(&mut cx)?;
-    let get_utc_full_year_method = o
-        .get(&mut cx, "getUTCFullYear")?
-        .downcast::<JsFunction, _>(&mut cx)
-        .or_throw(&mut cx)?;
+    let get_utc_full_year_method: Handle<JsFunction> = o.get(&mut cx, "getUTCFullYear")?;
     get_utc_full_year_method
         .call_with(&cx)
         .this(o)
@@ -143,7 +131,7 @@ pub fn construct_js_function_idiomatically(mut cx: FunctionContext) -> JsResult<
 
 pub fn construct_js_function_with_overloaded_result(mut cx: FunctionContext) -> JsResult<JsArray> {
     let global = cx.global();
-    let f: Handle<JsFunction> = global.get(&mut cx, "Array")?.downcast_or_throw(&mut cx)?;
+    let f: Handle<JsFunction> = global.get(&mut cx, "Array")?;
     f.construct_with(&cx)
         .arg(cx.number(1))
         .arg(cx.number(2))

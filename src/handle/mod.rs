@@ -39,14 +39,10 @@
 //! fn area(mut cx: FunctionContext) -> JsResult<JsNumber> {
 //!     let rect: Handle<JsObject> = cx.argument(0)?;
 //!
-//!     let width: Handle<JsNumber> = rect
-//!         .get(&mut cx, "width")?
-//!         .downcast_or_throw(&mut cx)?;
+//!     let width: Handle<JsNumber> = rect.get(&mut cx, "width")?;
 //!     let w: f64 = width.value(&mut cx);
 //!
-//!     let height: Handle<JsNumber> = rect
-//!         .get(&mut cx, "height")?
-//!         .downcast_or_throw(&mut cx)?;
+//!     let height: Handle<JsNumber> = rect.get(&mut cx, "height")?;
 //!     let h: f64 = height.value(&mut cx);
 //!
 //!     Ok(cx.number(w * h))
