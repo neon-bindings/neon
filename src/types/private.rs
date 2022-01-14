@@ -17,9 +17,9 @@ use std::os::raw::c_void;
 pub trait ValueInternal: Managed + 'static {
     fn name() -> String;
 
-    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool;
+    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool;
 
-    fn downcast<Other: Value>(env: Env, other: Other) -> Option<Self> {
+    fn downcast<Other: Value>(env: Env, other: &Other) -> Option<Self> {
         if Self::is_typeof(env, other) {
             Some(Self::from_raw(env, other.to_raw()))
         } else {

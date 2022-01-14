@@ -4,7 +4,7 @@ use std::slice;
 use neon_runtime::{raw, TypedArrayType};
 
 use crate::context::{internal::Env, Context};
-use crate::handle::{Handle, Managed};
+use crate::handle::{internal::TransparentNoCopyWrapper, Handle, Managed};
 use crate::result::{JsResult, Throw};
 use crate::types::{private::ValueInternal, Object, Value};
 
@@ -12,8 +12,8 @@ use super::lock::{Ledger, Lock};
 use super::{private, BorrowError, Ref, RefMut, TypedArray};
 
 /// The Node [`Buffer`](https://nodejs.org/api/buffer.html) type.
-#[repr(C)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
+#[repr(transparent)]
 pub struct JsBuffer(raw::Local);
 
 impl JsBuffer {
@@ -52,8 +52,16 @@ impl JsBuffer {
     }
 }
 
+unsafe impl TransparentNoCopyWrapper for JsBuffer {
+    type Inner = raw::Local;
+
+    fn into_inner(self) -> Self::Inner {
+        self.0
+    }
+}
+
 impl Managed for JsBuffer {
-    fn to_raw(self) -> raw::Local {
+    fn to_raw(&self) -> raw::Local {
         self.0
     }
 
@@ -67,7 +75,7 @@ impl ValueInternal for JsBuffer {
         "Buffer".to_string()
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
         unsafe { neon_runtime::tag::is_buffer(env.to_raw(), other.to_raw()) }
     }
 }
@@ -123,8 +131,8 @@ impl TypedArray for JsBuffer {
 }
 
 /// The standard JS [`ArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) type.
-#[repr(C)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
+#[repr(transparent)]
 pub struct JsArrayBuffer(raw::Local);
 
 impl JsArrayBuffer {
@@ -148,12 +156,20 @@ impl JsArrayBuffer {
         let env = cx.env().to_raw();
         let value = unsafe { neon_runtime::arraybuffer::new_external(env, data) };
 
-        Handle::new_internal(JsArrayBuffer(value))
+        Handle::new_internal(Self(value))
+    }
+}
+
+unsafe impl TransparentNoCopyWrapper for JsArrayBuffer {
+    type Inner = raw::Local;
+
+    fn into_inner(self) -> Self::Inner {
+        self.0
     }
 }
 
 impl Managed for JsArrayBuffer {
-    fn to_raw(self) -> raw::Local {
+    fn to_raw(&self) -> raw::Local {
         self.0
     }
 
@@ -167,7 +183,7 @@ impl ValueInternal for JsArrayBuffer {
         "JsArrayBuffer".to_string()
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
         unsafe { neon_runtime::tag::is_arraybuffer(env.to_raw(), other.to_raw()) }
     }
 }
@@ -223,8 +239,8 @@ impl TypedArray for JsArrayBuffer {
 }
 
 /// The standard JS [`TypedArray`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray) type.
-#[repr(C)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
+#[repr(transparent)]
 pub struct JsTypedArray<T> {
     local: raw::Local,
     _type: PhantomData<T>,
@@ -232,8 +248,16 @@ pub struct JsTypedArray<T> {
 
 impl<T> private::Sealed for JsTypedArray<T> {}
 
-impl<T: Copy> Managed for JsTypedArray<T> {
-    fn to_raw(self) -> raw::Local {
+unsafe impl<T> TransparentNoCopyWrapper for JsTypedArray<T> {
+    type Inner = raw::Local;
+
+    fn into_inner(self) -> Self::Inner {
+        self.local
+    }
+}
+
+impl<T> Managed for JsTypedArray<T> {
+    fn to_raw(&self) -> raw::Local {
         self.local
     }
 
@@ -326,7 +350,7 @@ macro_rules! impl_typed_array {
                 $name.to_string()
             }
 
-            fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+            fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
                 let env = env.to_raw();
                 let other = other.to_raw();
 

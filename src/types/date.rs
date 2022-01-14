@@ -1,7 +1,7 @@
 use super::{private::ValueInternal, Value};
 use crate::context::internal::Env;
 use crate::context::Context;
-use crate::handle::{Handle, Managed};
+use crate::handle::{internal::TransparentNoCopyWrapper, Handle, Managed};
 use crate::object::Object;
 use crate::result::{JsResult, JsResultExt};
 use neon_runtime;
@@ -11,15 +11,23 @@ use std::fmt;
 use std::fmt::Debug;
 
 /// A JavaScript Date object
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
 #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
+#[derive(Debug)]
+#[repr(transparent)]
 pub struct JsDate(raw::Local);
 
 impl Value for JsDate {}
 
+unsafe impl TransparentNoCopyWrapper for JsDate {
+    type Inner = raw::Local;
+
+    fn into_inner(self) -> Self::Inner {
+        self.0
+    }
+}
+
 impl Managed for JsDate {
-    fn to_raw(self) -> raw::Local {
+    fn to_raw(&self) -> raw::Local {
         self.0
     }
 
@@ -106,14 +114,14 @@ impl JsDate {
     }
 
     /// Gets the Date's value. An invalid Date will return `std::f64::NaN`
-    pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> f64 {
+    pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> f64 {
         let env = cx.env().to_raw();
         unsafe { neon_runtime::date::value(env, self.to_raw()) }
     }
 
     /// Checks if the Date's value is valid. A Date is valid if its value is between
     /// `JsDate::MIN_VALUE` and `JsDate::MAX_VALUE` or if it is `NaN`
-    pub fn is_valid<'a, C: Context<'a>>(self, cx: &mut C) -> bool {
+    pub fn is_valid<'a, C: Context<'a>>(&self, cx: &mut C) -> bool {
         let value = self.value(cx);
         (JsDate::MIN_VALUE..=JsDate::MAX_VALUE).contains(&value)
     }
@@ -124,7 +132,7 @@ impl ValueInternal for JsDate {
         "object".to_string()
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
         unsafe { neon_runtime::tag::is_date(env.to_raw(), other.to_raw()) }
     }
 }

@@ -8,7 +8,7 @@ use neon_runtime::tsfn::ThreadsafeFunction;
 use neon_runtime::{napi, raw};
 
 use crate::context::{internal::Env, Context};
-use crate::handle::Managed;
+use crate::handle::{internal::TransparentNoCopyWrapper, Managed};
 #[cfg(feature = "napi-6")]
 use crate::lifecycle::{DropData, InstanceData};
 use crate::result::JsResult;
@@ -26,8 +26,8 @@ const BOUNDARY: FailureBoundary = FailureBoundary {
 };
 
 #[cfg_attr(docsrs, doc(cfg(feature = "promise-api")))]
-#[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Debug)]
+#[repr(transparent)]
 /// The JavaScript [`Promise`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) value.
 ///
 /// [`JsPromise`] may be constructed with [`Context::promise`].
@@ -46,8 +46,16 @@ impl JsPromise {
     }
 }
 
+unsafe impl TransparentNoCopyWrapper for JsPromise {
+    type Inner = raw::Local;
+
+    fn into_inner(self) -> Self::Inner {
+        self.0
+    }
+}
+
 impl Managed for JsPromise {
-    fn to_raw(self) -> raw::Local {
+    fn to_raw(&self) -> raw::Local {
         self.0
     }
 
@@ -61,7 +69,7 @@ impl ValueInternal for JsPromise {
         "Promise".to_string()
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
         unsafe { neon_runtime::tag::is_promise(env.to_raw(), other.to_raw()) }
     }
 }

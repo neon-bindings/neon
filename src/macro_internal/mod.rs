@@ -1,5 +1,7 @@
 //! Internals needed by macros. These have to be exported for the macros to work
 pub use crate::context::internal::{initialize_module, Env};
+#[cfg(feature = "legacy-runtime")]
+pub use crate::handle::internal::TransparentNoCopyWrapper;
 /// but are subject to change and should never be explicitly used.
 
 #[cfg(feature = "legacy-runtime")]
