@@ -7,7 +7,7 @@ use std::ptr::null_mut;
 /// `Local` handles get associated to a V8 `HandleScope` container. Note: Node.js creates a
 /// `HandleScope` right before calling functions in native addons.
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Local {
     pub handle: *mut c_void,
 }

@@ -240,7 +240,7 @@ impl<T: Class> ValueInternal for T {
         }
     }
 
-    fn is_typeof<Other: Value>(mut env: Env, value: Other) -> bool {
+    fn is_typeof<Other: Value>(mut env: Env, value: &Other) -> bool {
         let map = env.class_map();
         match map.get(&TypeId::of::<T>()) {
             None => false,
