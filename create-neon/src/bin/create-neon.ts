@@ -41,30 +41,33 @@ async function main(name: string) {
     tmpFolderName = await fs.mkdtemp(`${name}-`)
 
   } catch (err) {
-     die(`Could not create \`${name}\`: ${err.message}`, tmpFolderName);
+     await die(`Could not create \`${name}\`: ${err.message}`, tmpFolderName);
   };
 
-  let pkg: Package
+  let pkg: Package|undefined
 
   try {
       pkg = await Package.create(name,tmpFolderName);
-  } catch (err) {
-     die("Could not create `package.json`: " + err.message, tmpFolderName);
-  }
-  await fs.mkdir(path.join(tmpFolderName, 'src'));
+      await fs.mkdir(path.join(tmpFolderName, 'src'));
 
-  for (let source of Object.keys(TEMPLATES)) {
+  } catch (err) {
+      await die("Could not create `package.json`: " + err.message, tmpFolderName);
+  }
+  if(pkg){
+    for (let source of Object.keys(TEMPLATES)) {
     let target = path.join(tmpFolderName, TEMPLATES[source]);
     await expand(source, target, {
-      package: pkg,
-      versions: inferVersions()
-    });
-  };
+        package: pkg,
+        versions: inferVersions()
+      });
+    }
+   }
+
   try{
     await fs.rename(tmpFolderName, name)
   }
   catch(err){
-    die(`Could not create \`${name}\`: ${err.message}`, tmpFolderName);
+    await die(`Could not create \`${name}\`: ${err.message}`, tmpFolderName);
   };
   console.log(`✨ Created Neon project \`${name}\`. Happy 🦀 hacking! ✨`);
 };
