@@ -1,0 +1,14 @@
+{
+  "name": "futures-example",
+  "version": "0.1.0",
+  "description": "Example of using Neon with futures",
+  "author": "The Neon Community",
+  "license": "MIT",
+  "scripts": {
+    "build": "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
+    "install": "npm run build -- --release"
+  },
+  "devDependencies": {
+    "cargo-cp-artifact": "^0.1.0"
+  }
+}

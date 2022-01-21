@@ -72,3 +72,12 @@ pub trait JsResultExt<'a, V: Value> {
 pub trait ResultExt<T> {
     fn or_throw<'a, C: Context<'a>>(self, cx: &mut C) -> NeonResult<T>;
 }
+
+impl<'a, T: Value, E: Value> JsResultExt<'a, T> for Result<Handle<'a, T>, Handle<'a, E>> {
+    fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, T> {
+        match self {
+            Ok(v) => Ok(v),
+            Err(err) => cx.throw(err),
+        }
+    }
+}

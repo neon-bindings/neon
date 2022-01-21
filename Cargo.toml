@@ -22,6 +22,7 @@ psd = "0.1.9"     # used for a doc example
 failure = "0.1.5" # used for a doc example
 
 [dependencies]
+futures-rs = { package = "futures", version = "0.3", optional = true }
 semver = "0.9.0"
 smallvec = "1.4.2"
 neon-runtime = { version = "=0.9.1", path = "crates/neon-runtime" }
@@ -84,6 +85,8 @@ promise-api = []
 # https://github.com/neon-bindings/rfcs/pull/35
 task-api = []
 
+futures = ["futures-rs"]
+
 [package.metadata.docs.rs]
 no-default-features = true
 rustdoc-args = ["--cfg", "docsrs"]
@@ -102,6 +105,7 @@ members = [
     "crates/neon-macros",
     "crates/neon-runtime",
     "crates/neon-sys",
+    "test/futures",
     "test/static",
     "test/electron",
     "test/dynamic/native",

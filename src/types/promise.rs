@@ -19,6 +19,19 @@ use crate::{
     event::{Channel, JoinHandle, SendError},
 };
 
+#[cfg(feature = "futures")]
+use {
+    crate::context::FunctionContext,
+    crate::event::JoinError,
+    crate::result::NeonResult,
+    crate::types::{JsFunction, JsValue},
+    futures_rs::channel::oneshot,
+    std::future::Future,
+    std::pin::Pin,
+    std::sync::Mutex,
+    std::task::{self, Poll},
+};
+
 const BOUNDARY: FailureBoundary = FailureBoundary {
     both: "A panic and exception occurred while resolving a `neon::types::Deferred`",
     exception: "An exception occurred while resolving a `neon::types::Deferred`",
@@ -43,6 +56,80 @@ impl JsPromise {
         };
 
         (deferred, Handle::new_internal(JsPromise(promise)))
+    }
+
+    #[cfg(feature = "futures")]
+    pub fn to_future<'a, O, C, F>(&self, cx: &mut C, f: F) -> NeonResult<JsFuture<O>>
+    where
+        O: Send + 'static,
+        C: Context<'a>,
+        for<'cx> F: FnOnce(
+                &mut FunctionContext<'cx>,
+                Result<Handle<'cx, JsValue>, Handle<'cx, JsValue>>,
+            ) -> NeonResult<O>
+            + Send
+            + 'static,
+    {
+        let then = self.get::<JsFunction, _, _>(cx, "then")?;
+        let catch = self.get::<JsFunction, _, _>(cx, "catch")?;
+
+        let (tx, rx) = oneshot::channel();
+        let state = Arc::new(Mutex::new(Some((f, tx))));
+
+        let resolve = JsFunction::new(cx, {
+            let state = state.clone();
+
+            move |mut cx| {
+                if let Ok(mut guard) = state.lock() {
+                    if let Some((f, tx)) = guard.take() {
+                        let v = cx.argument::<JsValue>(0)?;
+
+                        let _ = tx.send(f(&mut cx, Ok(v)));
+                    }
+                };
+
+                Ok(cx.undefined())
+            }
+        })?;
+
+        let reject = JsFunction::new(cx, {
+            let state = state.clone();
+
+            move |mut cx| {
+                if let Ok(mut guard) = state.lock() {
+                    if let Some((f, tx)) = guard.take() {
+                        let v = cx.argument::<JsValue>(0)?;
+
+                        let _ = tx.send(f(&mut cx, Err(v)));
+                    }
+                };
+
+                Ok(cx.undefined())
+            }
+        })?;
+
+        then.exec(cx, Handle::new_internal(Self(self.0)), [resolve.upcast()])?;
+        catch.exec(cx, Handle::new_internal(Self(self.0)), [reject.upcast()])?;
+
+        Ok(JsFuture { rx })
+    }
+}
+
+#[cfg(feature = "futures")]
+/// A [`Future`](std::future::Future) created from a [`JsPromise`].
+///
+/// Unlike typical `Future`, `JsFuture` are eagerly executed because they
+/// are backed by a `Promise`.
+pub struct JsFuture<T> {
+    rx: oneshot::Receiver<NeonResult<T>>,
+}
+
+#[cfg(feature = "futures")]
+impl<T> Future for JsFuture<T> {
+    type Output = Result<T, JoinError>;
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut task::Context) -> Poll<Self::Output> {
+        JoinError::map_poll(&mut self.rx, cx)
     }
 }
 

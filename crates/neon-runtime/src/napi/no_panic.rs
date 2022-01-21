@@ -129,10 +129,25 @@ impl FailureBoundary {
 
             // Throw an uncaught exception
             if napi::fatal_exception(env, error) != napi::Status::Ok {
+                // if fatal_exception(env, error) != napi::Status::Ok {
                 fatal_error("Failed to throw an uncaughtException");
             }
         }
     }
+}
+
+#[track_caller]
+fn fatal_exception(env: Env, error: Local) -> napi::Status {
+    unsafe {
+        let mut output = MaybeUninit::uninit();
+        napi::run_script(
+            env,
+            create_string(env, "throw new Error('test')"),
+            output.as_mut_ptr(),
+        );
+    }
+
+    napi::Status::Ok
 }
 
 #[track_caller]

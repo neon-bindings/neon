@@ -124,7 +124,7 @@
 //! [psd-file]: https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/
 
 #[cfg(all(feature = "napi-4", feature = "channel-api"))]
-mod channel;
+pub(crate) mod channel;
 
 #[cfg(all(feature = "napi-1", feature = "task-api"))]
 mod task;

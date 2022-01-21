@@ -2,6 +2,7 @@
 # Neon defines mutually exclusive feature flags which prevents using `cargo clippy --all-features`
 # The following aliases simplify linting the entire workspace
 check-napi = "check --all-targets --no-default-features -p neon -p neon-runtime -p neon-build -p neon-macros -p electron-tests -p napi-tests --features proc-macros,try-catch-api,napi-experimental,promise-api,task-api"
+check-napi-futures = "check --all-targets --no-default-features -p neon -p neon-runtime -p neon-build -p neon-macros -p electron-tests -p napi-tests --features proc-macros,try-catch-api,napi-experimental,promise-api,task-api,futures"
 check-legacy = "check --all-targets --no-default-features -p neon -p neon-runtime -p neon-build -p neon-macros -p tests -p static_tests --features event-handler-api,proc-macros,try-catch-api,legacy-runtime"
 clippy-legacy = "clippy --all-targets --no-default-features -p neon -p neon-runtime -p neon-build -p neon-macros -p tests -p static_tests --features event-handler-api,proc-macros,try-catch-api,legacy-runtime -- -A clippy::missing_safety_doc"
 clippy-napi = "clippy --all-targets --no-default-features -p neon -p neon-runtime -p neon-build -p neon-macros -p electron-tests -p napi-tests --features proc-macros,try-catch-api,napi-experimental,promise-api,task-api -- -A clippy::missing_safety_doc"

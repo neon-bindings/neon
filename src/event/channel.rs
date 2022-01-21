@@ -1,11 +1,29 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{mpsc, Arc};
+use std::sync::Arc;
 
 use neon_runtime::raw::Env;
 use neon_runtime::tsfn::ThreadsafeFunction;
 
 use crate::context::{Context, TaskContext};
 use crate::result::NeonResult;
+
+#[cfg(feature = "futures")]
+use {
+    futures_rs::channel::oneshot,
+    std::future::Future,
+    std::pin::Pin,
+    std::task::{self, Poll},
+};
+
+#[cfg(not(feature = "futures"))]
+mod oneshot {
+    use std::sync::mpsc;
+    pub(super) use std::sync::mpsc::Receiver;
+
+    pub(super) fn channel<T>() -> (mpsc::SyncSender<T>, mpsc::Receiver<T>) {
+        mpsc::sync_channel(1)
+    }
+}
 
 type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 
@@ -121,7 +139,7 @@ impl Channel {
         T: Send + 'static,
         F: FnOnce(TaskContext) -> NeonResult<T> + Send + 'static,
     {
-        let (tx, rx) = mpsc::sync_channel(1);
+        let (tx, rx) = oneshot::channel();
         let callback = Box::new(move |env| {
             let env = unsafe { std::mem::transmute(env) };
 
@@ -214,20 +232,25 @@ impl Drop for Channel {
 /// An owned permission to join on the result of a closure sent to the JavaScript main
 /// thread with [`Channel::send`].
 pub struct JoinHandle<T> {
-    rx: mpsc::Receiver<NeonResult<T>>,
+    rx: oneshot::Receiver<NeonResult<T>>,
 }
 
+#[cfg(not(feature = "futures"))]
 impl<T> JoinHandle<T> {
     /// Waits for the associated closure to finish executing
     ///
     /// If the closure panics or throws an exception, `Err` is returned
     pub fn join(self) -> Result<T, JoinError> {
-        self.rx
-            .recv()
-            // If the sending side dropped without sending, it must have panicked
-            .map_err(|_| JoinError(JoinErrorType::Panic))?
-            // If the closure returned `Err`, a JavaScript exception was thrown
-            .map_err(|_| JoinError(JoinErrorType::Throw))
+        JoinError::map_res(self.rx.recv())
+    }
+}
+
+#[cfg(feature = "futures")]
+impl<T> Future for JoinHandle<T> {
+    type Output = Result<T, JoinError>;
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut task::Context) -> Poll<Self::Output> {
+        JoinError::map_poll(&mut self.rx, cx)
     }
 }
 
@@ -235,6 +258,27 @@ impl<T> JoinHandle<T> {
 /// Error returned by [`JoinHandle::join`] indicating the associated closure panicked
 /// or threw an exception.
 pub struct JoinError(JoinErrorType);
+
+impl JoinError {
+    #[cfg(feature = "futures")]
+    pub(crate) fn map_poll<T, E>(
+        f: &mut (impl Future<Output = Result<NeonResult<T>, E>> + Unpin),
+        cx: &mut task::Context,
+    ) -> Poll<Result<T, Self>> {
+        match Pin::new(f).poll(cx) {
+            Poll::Ready(result) => Poll::Ready(Self::map_res(result)),
+            Poll::Pending => Poll::Pending,
+        }
+    }
+
+    pub(crate) fn map_res<T, E>(res: Result<NeonResult<T>, E>) -> Result<T, Self> {
+        res
+            // If the sending side dropped without sending, it must have panicked
+            .map_err(|_| Self(JoinErrorType::Panic))?
+            // If the closure returned `Err`, a JavaScript exception was thrown
+            .map_err(|_| Self(JoinErrorType::Throw))
+    }
+}
 
 #[derive(Debug)]
 enum JoinErrorType {

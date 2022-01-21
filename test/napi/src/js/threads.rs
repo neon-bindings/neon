@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 use std::sync::Arc;
-use std::time::Duration;
+// use std::time::Duration;
 
 use neon::prelude::*;
 use neon::types::buffer::TypedArray;
@@ -171,6 +171,7 @@ pub fn drop_global_queue(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     Ok(cx.undefined())
 }
 
+/*
 pub fn channel_join(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     // Function to fetch a message for processing
     let get_message = cx.argument::<JsFunction>(0)?.root(&mut cx);
@@ -213,6 +214,7 @@ pub fn channel_join(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
     Ok(cx.undefined())
 }
+*/
 
 pub fn sum(mut cx: FunctionContext) -> JsResult<JsPromise> {
     let nums = cx.argument::<JsTypedArray<f64>>(0)?.as_slice(&cx).to_vec();
