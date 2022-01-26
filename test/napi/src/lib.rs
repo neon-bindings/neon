@@ -12,6 +12,7 @@ mod js {
     pub mod strings;
     pub mod threads;
     pub mod types;
+    pub mod workers;
 }
 
 use js::arrays::*;
@@ -337,6 +338,9 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         "deferred_settle_with_panic_throw",
         deferred_settle_with_panic_throw,
     )?;
+    cx.export_function("get_and_replace", js::workers::get_and_replace)?;
+    cx.export_function("get_or_init", js::workers::get_or_init)?;
+    cx.export_function("get_or_init_clone", js::workers::get_or_init_clone)?;
 
     Ok(())
 }

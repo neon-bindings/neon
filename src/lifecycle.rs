@@ -8,6 +8,7 @@
 //!
 //! [napi-docs]: https://nodejs.org/api/n-api.html#n_api_environment_life_cycle_apis
 
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use neon_runtime::raw::Env;
@@ -20,10 +21,28 @@ use crate::handle::root::NapiRef;
 #[cfg(feature = "promise-api")]
 use crate::types::promise::NodeApiDeferred;
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(transparent)]
+/// Uniquely identifies an instance of the module
+///
+/// _Note_: Since `InstanceData` is created lazily, the order of `id` may not
+/// reflect the order that instances were created.
+pub(crate) struct InstanceId(u64);
+
+impl InstanceId {
+    fn next() -> Self {
+        static NEXT_ID: AtomicU64 = AtomicU64::new(0);
+
+        Self(NEXT_ID.fetch_add(1, Ordering::SeqCst))
+    }
+}
+
 /// `InstanceData` holds Neon data associated with a particular instance of a
 /// native module. If a module is loaded multiple times (e.g., worker threads), this
 /// data will be unique per instance.
 pub(crate) struct InstanceData {
+    id: InstanceId,
+
     /// Used to free `Root` in the same JavaScript environment that created it
     ///
     /// _Design Note_: An `Arc` ensures the `ThreadsafeFunction` outlives the unloading
@@ -90,6 +109,7 @@ impl InstanceData {
         };
 
         let data = InstanceData {
+            id: InstanceId::next(),
             drop_queue: Arc::new(drop_queue),
             #[cfg(all(feature = "channel-api"))]
             shared_channel,
@@ -110,5 +130,10 @@ impl InstanceData {
         let mut channel = InstanceData::get(cx).shared_channel.clone();
         channel.reference(cx);
         channel
+    }
+
+    /// Unique identifier for this instance of the module
+    pub(crate) fn id<'a, C: Context<'a>>(cx: &mut C) -> InstanceId {
+        InstanceData::get(cx).id
     }
 }
