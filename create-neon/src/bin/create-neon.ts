@@ -27,35 +27,50 @@ function inferVersions(): Versions {
     neon: versions.neon,
     napi: napi
   };
-}
+};
 
 async function main(name: string) {
+  let tmpFolderName:string = '';
+
   try {
+    // pretty lightweight way to check both that folder doesn't exist and
+    // that the user has write permissions.
     await fs.mkdir(name);
-  } catch (err) {
-    die(`Could not create \`${name}\`: ${err.message}`);
-  }
+    await fs.rmdir(name);
 
-  let pkg: Package;
+    tmpFolderName = await fs.mkdtemp(`${name}-`)
+
+  } catch (err) {
+     await die(`Could not create \`${name}\`: ${err.message}`, tmpFolderName);
+  };
+
+  let pkg: Package|undefined
 
   try {
-    pkg = await Package.create(name);
+      pkg = await Package.create(name,tmpFolderName);
+      await fs.mkdir(path.join(tmpFolderName, 'src'));
+
   } catch (err) {
-    die("Could not create `package.json`: " + err.message);
+      await die("Could not create `package.json`: " + err.message, tmpFolderName);
   }
-
-  await fs.mkdir(path.join(name, 'src'));
-
-  for (let source of Object.keys(TEMPLATES)) {
-    let target = path.join(name, TEMPLATES[source]);
+  if(pkg){
+    for (let source of Object.keys(TEMPLATES)) {
+    let target = path.join(tmpFolderName, TEMPLATES[source]);
     await expand(source, target, {
-      package: pkg,
-      versions: inferVersions()
-    });
-  }
+        package: pkg,
+        versions: inferVersions()
+      });
+    }
+   }
 
+  try{
+    await fs.rename(tmpFolderName, name)
+  }
+  catch(err){
+    await die(`Could not create \`${name}\`: ${err.message}`, tmpFolderName);
+  };
   console.log(`✨ Created Neon project \`${name}\`. Happy 🦀 hacking! ✨`);
-}
+};
 
 if (process.argv.length < 3) {
   console.error("✨ create-neon: Create a new Neon project with zero configuration. ✨");
@@ -65,6 +80,6 @@ if (process.argv.length < 3) {
   console.error("  name   The name of your Neon project, placed in a new directory of the same name.");
   console.error();
   process.exit(1);
-}
+};
 
 main(process.argv[2]);

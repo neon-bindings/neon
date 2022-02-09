@@ -21,4 +21,4 @@ export default async function expand(source: string, target: string, metadata: M
   let expanded = compiled(metadata);
   // The 'wx' flag creates the file but fails if it already exists.
   await fs.writeFile(target, expanded, { flag: 'wx' });
-}
+};
