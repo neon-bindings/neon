@@ -29,6 +29,8 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
+      - name: Use npm v8
+        run: npm install -g npm@8
       - name: npm install workspace
         run: npm install
       - name: run tests

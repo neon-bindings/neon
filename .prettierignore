@@ -1,5 +1,7 @@
 .git/
 cli/lib/
+test/cli/lib/
 node_modules/
 create-neon/dist/
 target/
+artifacts.json

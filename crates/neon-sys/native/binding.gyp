@@ -17,6 +17,7 @@
             'Debug': {
                 'msvs_settings': {
                     'VCCLCompilerTool': {
+                        'WholeProgramOptimization': 'false',
                         'RuntimeLibrary': '0',
                         'UndefinePreprocessorDefinitions': ['DEBUG', '_DEBUG'],
                         'PreprocessorDefinitions': ['NDEBUG']

@@ -29,18 +29,22 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Use npm v6
-        if: ${{ matrix.node-version == '16.x' }}
-        run: npm install -g npm@6
       - name: Install libclang
         uses: KyleMayes/install-llvm-action@01144dc97b1e2693196c3056414a44f15180648b
         with:
           version: "10"
           directory: ${{ runner.temp }}/llvm
-      - run: npm config set msvs_version 2019
+      - name: Use npm v8
+        # Windows bug in npm 8.4
+        # https://github.com/npm/cli/issues/4341
+        run: npm -g i npm@~8.3
+      - name: Update header files
+        run: npx node-gyp install
+      - name: Configure MSVS version
+        run: npm config set msvs_version 2022
       - name: npm install workspace
         run: npm install
-      - name: run tests
-        run: npm test
         env:
           LIBCLANG_PATH: ${{ runner.temp }}/llvm/bin
+      - name: run tests
+        run: npm test
