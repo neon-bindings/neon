@@ -446,7 +446,6 @@ macro_rules! neon_stringify {
 #[cfg(test)]
 mod tests {
     use lazy_static::lazy_static;
-    use semver::Version;
     use std::path::{Path, PathBuf};
     use std::process::Command;
     use std::sync::Mutex;
@@ -484,25 +483,6 @@ mod tests {
                 shell, command_flag, cmd
             ))
             .success());
-    }
-
-    fn cli_setup() {
-        let cli = project_root().join("cli");
-
-        run("npm run transpile", &cli);
-    }
-
-    #[test]
-    fn cli_test() {
-        let _guard = TEST_MUTEX.lock();
-
-        log("cli_test");
-
-        cli_setup();
-
-        let test_cli = project_root().join("test").join("cli");
-        run("npm run transpile", &test_cli);
-        run("npm test", &test_cli);
     }
 
     fn static_test_impl() {
@@ -544,40 +524,6 @@ mod tests {
         static_test_impl()
     }
 
-    #[test]
-    fn dynamic_test() {
-        let _guard = TEST_MUTEX.lock();
-
-        log("dynamic_test");
-
-        cli_setup();
-
-        let test_dynamic = project_root().join("test").join("dynamic");
-        run("npm test", &test_dynamic);
-    }
-
-    #[test]
-    fn dynamic_cargo_test() {
-        let _guard = TEST_MUTEX.lock();
-
-        log("dynamic_cargo_test");
-
-        let test_dynamic_cargo = project_root().join("test").join("dynamic").join("native");
-        run("cargo test", &test_dynamic_cargo);
-    }
-
-    #[test]
-    fn electron_test() {
-        let _guard = TEST_MUTEX.lock();
-
-        log("electron_test");
-
-        cli_setup();
-
-        let test_electron = project_root().join("test").join("electron");
-        run("npm test", &test_electron);
-    }
-
     // Once we publish versions of neon-sys that match the versions of the other
     // neon crates, `cargo package` can succeed again.
     #[test]
@@ -595,35 +541,5 @@ mod tests {
         } else {
             run("cargo package --allow-dirty", &test_package);
         }
-    }
-
-    #[test]
-    fn napi_test() {
-        let _guard = TEST_MUTEX.lock();
-
-        log("napi_test");
-
-        cli_setup();
-
-        let node_version_output = Command::new("node")
-            .arg("--version")
-            .output()
-            .expect("failed to get Node version")
-            .stdout;
-
-        // Chop off the 'v' prefix.
-        let node_version_bytes = &node_version_output[1..];
-        let node_version_str = std::str::from_utf8(node_version_bytes).unwrap();
-        let node_version = Version::parse(node_version_str).unwrap();
-
-        let v10 = Version::parse("10.0.0").unwrap();
-
-        if node_version <= v10 {
-            eprintln!("N-API tests only run on Node 10 or later.");
-            return;
-        }
-
-        let test_napi = project_root().join("test").join("napi");
-        run("npm test", &test_napi);
     }
 }

@@ -4,7 +4,7 @@
   "scripts": {
     "test": "npm run test:neon && npm run test:workspace",
     "test:neon": "cargo neon-test",
-    "test:workspace": "npm test --workspace=create-neon"
+    "test:workspace": "npm test --workspace=*"
   },
   "workspaces": [
     "cli",

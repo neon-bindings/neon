@@ -41,7 +41,7 @@
   },
   "scripts": {
     "transpile": "tsc --skipLibCheck",
-    "prepublishOnly": "npm run transpile"
+    "prepare": "npm run transpile"
   },
   "bugs": {
     "url": "https://github.com/neon-bindings/neon/issues"
