@@ -1,11 +1,15 @@
 import { spawn } from "child_process";
-import {promises as fs} from "fs";
-import path from 'path';
+import { promises as fs } from "fs";
+import path from "path";
 /**
  * Transparently shell out to an executable with a list of arguments.
  * All stdio is inherited directly from the current process.
  */
-export default function shell(cmd: string, args: string[], cwd: string): Promise<undefined> {
+export default function shell(
+  cmd: string,
+  args: string[],
+  cwd: string
+): Promise<undefined> {
   let child = spawn(cmd, args, { stdio: "inherit", shell: true, cwd });
 
   let resolve: (result: undefined) => void;
@@ -18,32 +22,32 @@ export default function shell(cmd: string, args: string[], cwd: string): Promise
 
   child.on("exit", async (code) => {
     if (code == null) {
-	reject(Error(`error code: ${code}`))
-    };
+      reject(Error(`error code: ${code}`));
+    }
     if (code !== 0) {
-	//This will catch answering no and many other failures
-	reject(Error(`error code: ${code}`))
-    };
+      //This will catch answering no and many other failures
+      reject(Error(`error code: ${code}`));
+    }
 
     if (code === 0) {
       try {
-          let data = await fs.readFile(path.join(cwd,'package.json'),'utf8')
-	  //Testing whether npm init was successful.
-	  //It will catch Ctrl+C and many other failures
-          let { description, author, license } = JSON.parse(data);
-          if ([description, author, license].includes(undefined)) {
-        	reject(Error(`error code: ${code}`))
-               }
-        } catch (e) {
-              reject(e)
-      };
-    };
+        let data = await fs.readFile(path.join(cwd, "package.json"), "utf8");
+        //Testing whether npm init was successful.
+        //It will catch Ctrl+C and many other failures
+        let { description, author, license } = JSON.parse(data);
+        if ([description, author, license].includes(undefined)) {
+          reject(Error(`error code: ${code}`));
+        }
+      } catch (e) {
+        reject(e);
+      }
+    }
 
     resolve(undefined);
   });
 
   child.on("error", async (error) => {
-      reject(error);
+    reject(error);
   });
   return result;
-};
+}

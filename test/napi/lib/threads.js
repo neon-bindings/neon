@@ -1,27 +1,27 @@
-const addon = require('..');
-const assert = require('chai').assert;
+const addon = require("..");
+const assert = require("chai").assert;
 
 (function () {
   // These tests require GC exposed to shutdown properly; skip if it is not
-  return typeof global.gc === 'function' ? describe : describe.skip;
-})()('sync', function() {
+  return typeof global.gc === "function" ? describe : describe.skip;
+})()("sync", function () {
   afterEach(() => {
     // Force garbage collection to shutdown `Channel`
     global.gc();
   });
 
-  it('can create and deref a root', function () {
+  it("can create and deref a root", function () {
     const expected = {};
     const result = addon.useless_root(expected);
 
     assert.strictEqual(expected, result);
   });
 
-  it('should be able to callback from another thread', function (cb) {
+  it("should be able to callback from another thread", function (cb) {
     addon.thread_callback(cb);
   });
 
-  it('should be able to callback from multiple threads', function (cb) {
+  it("should be able to callback from multiple threads", function (cb) {
     const n = 4;
     const set = new Set([...new Array(n)].map((_, i) => i));
 
@@ -36,36 +36,40 @@ const assert = require('chai').assert;
     });
   });
 
-  it('should be able to use an async greeter', function (cb) {
-    const greeter = addon.greeter_new('Hello, World!', function (greeting) {
-      if (greeting === 'Hello, World!') {
+  it("should be able to use an async greeter", function (cb) {
+    const greeter = addon.greeter_new("Hello, World!", function (greeting) {
+      if (greeting === "Hello, World!") {
         cb();
       } else {
-        new Error('Greeting did not match');
+        new Error("Greeting did not match");
       }
     });
 
     addon.greeter_greet(greeter);
   });
 
-  it('should run callback on drop', function (cb) {
+  it("should run callback on drop", function (cb) {
     // IIFE to allow GC
     (function () {
-      addon.greeter_new('Hello, World!', function () {}, function () {
-        // No assert needed; test will timeout
-        cb();
-      })
+      addon.greeter_new(
+        "Hello, World!",
+        function () {},
+        function () {
+          // No assert needed; test will timeout
+          cb();
+        }
+      );
     })();
 
     global.gc();
   });
 
-  it('should be able to unref channel', function () {
+  it("should be able to unref channel", function () {
     // If the Channel is not unreferenced, the test runner will not cleanly exit
     addon.leak_channel();
   });
 
-  it('should drop leaked Root from the global queue', function (cb) {
+  it("should drop leaked Root from the global queue", function (cb) {
     addon.drop_global_queue(cb);
 
     // Asynchronously GC to give the task queue a chance to execute

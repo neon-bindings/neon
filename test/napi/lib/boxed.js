@@ -1,6 +1,6 @@
-const addon = require('..');
-const { expect } = require('chai');
-const assert = require('chai').assert;
+const addon = require("..");
+const { expect } = require("chai");
+const assert = require("chai").assert;
 
 class Person {
   constructor(name) {
@@ -32,39 +32,42 @@ class RefPerson {
   }
 }
 
-describe('boxed', function() {
-  it('can call methods', function () {
-    const person = new Person('World');
+describe("boxed", function () {
+  it("can call methods", function () {
+    const person = new Person("World");
     const greeting = person.greet();
 
-    assert.strictEqual(greeting, 'Hello, World!');
+    assert.strictEqual(greeting, "Hello, World!");
   });
 
-  it('can call methods wrapped in a RefCell', function () {
-    const person = new RefPerson('World');
+  it("can call methods wrapped in a RefCell", function () {
+    const person = new RefPerson("World");
     const greeting = person.greet();
 
-    assert.strictEqual(greeting, 'Hello, World!');
+    assert.strictEqual(greeting, "Hello, World!");
   });
 
-  it('can mutate with ref cell', function () {
-    const person = (new RefPerson('World')).setName('Universe');
+  it("can mutate with ref cell", function () {
+    const person = new RefPerson("World").setName("Universe");
     const greeting = person.greet();
 
-    assert.strictEqual(greeting, 'Hello, Universe!');
+    assert.strictEqual(greeting, "Hello, Universe!");
   });
 
-  it('should dynamically check borrowing rules', function () {
-    assert.throws(() => (new RefPerson('World')).fail(), /BorrowMutError/);
+  it("should dynamically check borrowing rules", function () {
+    assert.throws(() => new RefPerson("World").fail(), /BorrowMutError/);
   });
 
-  it('should type check externals', function () {
+  it("should type check externals", function () {
     // `any::type_name` does not guarantee exact format
     // failed downcast to neon::types::boxed::JsBox<napi::js::boxed::Person>
-    assert.throws(() => addon.person_greet({}), /failed to downcast.*JsBox.*Person/);
+    assert.throws(
+      () => addon.person_greet({}),
+      /failed to downcast.*JsBox.*Person/
+    );
   });
 
-  it('should type check dynamic type', function () {
+  it("should type check dynamic type", function () {
     const unit = addon.external_unit();
 
     assert.throws(() => addon.person_greet(unit), /failed to downcast/);

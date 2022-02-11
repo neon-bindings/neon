@@ -11,7 +11,6 @@ on:
 
 jobs:
   lint:
-
     runs-on: ubuntu-latest
 
     strategy:
@@ -20,20 +19,23 @@ jobs:
         rust-toolchain: [nightly]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Use Rust ${{ matrix.rust-toolchain }}
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust-toolchain }}
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: install build-essential
-      run: sudo apt-get install -y build-essential
-    - name: Formatting
-      run: cargo fmt --all -- --check
-    - name: Clippy (N-API)
-      run: cargo clippy-napi
-    - name: Clippy (Legacy)
-      run: cargo clippy-legacy
+      - uses: actions/checkout@v2
+      - name: Use Rust ${{ matrix.rust-toolchain }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust-toolchain }}
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: install build-essential
+        run: sudo apt-get install -y build-essential
+      - run: npm install
+      - name: Prettier Formatting
+        run: npm run prettier:check
+      - name: Rust Formatting
+        run: cargo fmt --all -- --check
+      - name: Clippy (N-API)
+        run: cargo clippy-napi
+      - name: Clippy (Legacy)
+        run: cargo clippy-legacy

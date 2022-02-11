@@ -11,13 +11,12 @@ on:
 
 jobs:
   build:
-
     runs-on: windows-latest
 
     strategy:
       matrix:
-        node-version: [ 12.x, 14.x, 16.x ]
-        rust-toolchain: [ stable, beta, nightly ]
+        node-version: [12.x, 14.x, 16.x]
+        rust-toolchain: [stable, beta, nightly]
 
     steps:
       - uses: actions/checkout@v2

@@ -2,14 +2,19 @@
   "name": "neon-workspace",
   "private": true,
   "scripts": {
+    "prettier": "prettier -w \"**/*.{js,json,ts,yml}\"",
+    "prettier:check": "prettier -c \"**/*.{js,json,ts,yml}\"",
     "test": "npm run test:neon && npm run test:workspace",
     "test:neon": "cargo neon-test",
-    "test:workspace": "npm test --workspace=*"
+    "test:workspace": "npm test --workspaces --if-present"
   },
   "workspaces": [
     "cli",
     "crates/neon-sys/native",
     "create-neon",
     "test/*"
-  ]
+  ],
+  "devDependencies": {
+    "prettier": "^2.5.1"
+  }
 }
