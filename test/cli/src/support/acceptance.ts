@@ -16,6 +16,7 @@ const NEON = path.join(
 
 export interface Spawnable {
   cwd: string;
+
   spawn(args: string[]): SpawnChain;
 }
 
@@ -28,9 +29,7 @@ function isSpawnable<T>(x: T): x is T & Spawnable {
   );
 }
 
-export function spawnable(
-  obj: Mocha.ITestCallbackContext
-): Mocha.ITestCallbackContext & Spawnable {
+export function spawnable(obj: Mocha.Context): Mocha.Context & Spawnable {
   if (!isSpawnable(obj)) {
     throw new TypeError("mocha callback run without running setup()");
   }

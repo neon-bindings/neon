@@ -18,7 +18,7 @@ type SpawnNeonNewOptions = {
 };
 
 function spawnNeonNew(
-  cx: Mocha.ITestCallbackContext,
+  cx: Mocha.Context,
   name: string,
   opts: SpawnNeonNewOptions = {},
   cb: () => void
