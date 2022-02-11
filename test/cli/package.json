@@ -23,7 +23,7 @@
     "semver": "^5.1.0",
     "toml": "^2.3.0",
     "ts-typed-json": "^0.2.2",
-    "typescript": "^3.9.6",
+    "typescript": "^4.5.5",
     "validate-npm-package-license": "^3.0.1",
     "validate-npm-package-name": "^3.0.0"
   },
@@ -49,6 +49,6 @@
   },
   "scripts": {
     "test": "npm run transpile && mocha --timeout 5000 lib/**/*.js",
-    "transpile": "tsc"
+    "transpile": "tsc --skipLibCheck"
   }
 }

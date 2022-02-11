@@ -16,23 +16,22 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x, 14.x, 16.x]
-        rust-toolchain: [stable, beta, nightly]
+        node-version: [ 12.x, 14.x, 16.x ]
+        rust-toolchain: [ stable, beta, nightly ]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Use Rust ${{ matrix.rust-toolchain }}
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust-toolchain }}
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: install build-essential
-      run: sudo apt-get install -y build-essential
-    - name: run cargo test
-      run: xvfb-run --auto-servernum cargo neon-test -- --nocapture
-    - name: run CLI test
-      working-directory: ./create-neon
-      run: npm test
+      - uses: actions/checkout@v2
+      - name: Use Rust ${{ matrix.rust-toolchain }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust-toolchain }}
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: install build-essential
+        run: sudo apt-get install -y build-essential
+      - name: npm install workspace
+        run: npm install
+      - name: run tests
+        run: xvfb-run --auto-servernum npm test -- --nocapture

@@ -489,7 +489,6 @@ mod tests {
     fn cli_setup() {
         let cli = project_root().join("cli");
 
-        run("npm install", &cli);
         run("npm run transpile", &cli);
     }
 
@@ -502,7 +501,6 @@ mod tests {
         cli_setup();
 
         let test_cli = project_root().join("test").join("cli");
-        run("npm install", &test_cli);
         run("npm run transpile", &test_cli);
         run("npm test", &test_cli);
     }
@@ -555,7 +553,6 @@ mod tests {
         cli_setup();
 
         let test_dynamic = project_root().join("test").join("dynamic");
-        run("npm install", &test_dynamic);
         run("npm test", &test_dynamic);
     }
 
@@ -578,7 +575,6 @@ mod tests {
         cli_setup();
 
         let test_electron = project_root().join("test").join("electron");
-        run("npm install", &test_electron);
         run("npm test", &test_electron);
     }
 
@@ -628,7 +624,6 @@ mod tests {
         }
 
         let test_napi = project_root().join("test").join("napi");
-        run("npm install", &test_napi);
         run("npm test", &test_napi);
     }
 }
