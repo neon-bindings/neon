@@ -5,17 +5,17 @@ const assert = require("chai").assert;
   // These tests require GC exposed to shutdown properly; skip if it is not
   return typeof global.gc === "function" ? describe : describe.skip;
 })()("sync", function () {
-  let uncaughtExceptionListeners = [];
+  let unhandledRejectionListeners = [];
 
   beforeEach(() => {
-    uncaughtExceptionListeners = process.listeners("uncaughtException");
+    unhandledRejectionListeners = process.listeners("unhandledRejection");
   });
 
   afterEach(() => {
     // Restore listeners
-    process.removeAllListeners("uncaughtException");
-    uncaughtExceptionListeners.forEach((listener) =>
-      process.on("uncaughtException", listener)
+    process.removeAllListeners("unhandledRejection");
+    unhandledRejectionListeners.forEach((listener) =>
+      process.on("unhandledRejection", listener)
     );
 
     // Force garbage collection to shutdown `Channel`
@@ -152,11 +152,11 @@ const assert = require("chai").assert;
     }
   });
 
-  it("should throw an uncaughtException when panicking in a channel", function (cb) {
+  it("should throw an unhandledRejection when panicking in a channel", function (cb) {
     const msg = "Hello, Panic!";
 
-    process.removeAllListeners("uncaughtException");
-    process.once("uncaughtException", (err) => {
+    process.removeAllListeners("unhandledRejection");
+    process.once("unhandledRejection", (err) => {
       try {
         assert.instanceOf(err, Error);
         assert.ok(
@@ -181,11 +181,11 @@ const assert = require("chai").assert;
     addon.channel_panic(msg);
   });
 
-  it("should throw an uncaughtException when throwing in a channel", function (cb) {
+  it("should throw an unhandledRejection when throwing in a channel", function (cb) {
     const msg = "Hello, Throw!";
 
-    process.removeAllListeners("uncaughtException");
-    process.once("uncaughtException", (err) => {
+    process.removeAllListeners("unhandledRejection");
+    process.once("unhandledRejection", (err) => {
       try {
         assert.instanceOf(err, Error);
         assert.ok(
@@ -209,11 +209,11 @@ const assert = require("chai").assert;
     addon.channel_throw(msg);
   });
 
-  it("should throw an uncaughtException when panicking and throwing in a channel", function (cb) {
+  it("should throw an unhandledRejection when panicking and throwing in a channel", function (cb) {
     const msg = "Oh, no!";
 
-    process.removeAllListeners("uncaughtException");
-    process.once("uncaughtException", (err) => {
+    process.removeAllListeners("unhandledRejection");
+    process.once("unhandledRejection", (err) => {
       try {
         assert.instanceOf(err, Error);
         assert.ok(
@@ -240,8 +240,8 @@ const assert = require("chai").assert;
   it("should be able to downcast a panic in a channel", function (cb) {
     const msg = "Hello, Secret Panic!";
 
-    process.removeAllListeners("uncaughtException");
-    process.once("uncaughtException", (err) => {
+    process.removeAllListeners("unhandledRejection");
+    process.once("unhandledRejection", (err) => {
       try {
         assert.instanceOf(err.panic, Error);
         assert.ok(
@@ -259,11 +259,11 @@ const assert = require("chai").assert;
     addon.channel_custom_panic(msg);
   });
 
-  it("should throw an uncaughtException when panicking in a task", function (cb) {
+  it("should throw an unhandledRejection when panicking in a task", function (cb) {
     const msg = "Hello, Panic!";
 
-    process.removeAllListeners("uncaughtException");
-    process.once("uncaughtException", (err) => {
+    process.removeAllListeners("unhandledRejection");
+    process.once("unhandledRejection", (err) => {
       try {
         assert.instanceOf(err, Error);
         assert.ok(
@@ -288,11 +288,11 @@ const assert = require("chai").assert;
     addon.task_panic_execute(msg);
   });
 
-  it("should throw an uncaughtException when panicking in a task complete", function (cb) {
+  it("should throw an unhandledRejection when panicking in a task complete", function (cb) {
     const msg = "Hello, Panic!";
 
-    process.removeAllListeners("uncaughtException");
-    process.once("uncaughtException", (err) => {
+    process.removeAllListeners("unhandledRejection");
+    process.once("unhandledRejection", (err) => {
       try {
         assert.instanceOf(err, Error);
         assert.ok(
@@ -317,11 +317,11 @@ const assert = require("chai").assert;
     addon.task_panic_complete(msg);
   });
 
-  it("should throw an uncaughtException when throwing in a task complete", function (cb) {
+  it("should throw an unhandledRejection when throwing in a task complete", function (cb) {
     const msg = "Hello, Throw!";
 
-    process.removeAllListeners("uncaughtException");
-    process.once("uncaughtException", (err) => {
+    process.removeAllListeners("unhandledRejection");
+    process.once("unhandledRejection", (err) => {
       try {
         assert.instanceOf(err, Error);
         assert.ok(
@@ -345,11 +345,11 @@ const assert = require("chai").assert;
     addon.task_throw(msg);
   });
 
-  it("should throw an uncaughtException when panicking and throwing in a task complete", function (cb) {
+  it("should throw an unhandledRejection when panicking and throwing in a task complete", function (cb) {
     const msg = "Oh, no!";
 
-    process.removeAllListeners("uncaughtException");
-    process.once("uncaughtException", (err) => {
+    process.removeAllListeners("unhandledRejection");
+    process.once("unhandledRejection", (err) => {
       try {
         assert.instanceOf(err, Error);
         assert.ok(
@@ -376,8 +376,8 @@ const assert = require("chai").assert;
   it("should be able to downcast a panic in a task", function (cb) {
     const msg = "Hello, Secret Panic!";
 
-    process.removeAllListeners("uncaughtException");
-    process.once("uncaughtException", (err) => {
+    process.removeAllListeners("unhandledRejection");
+    process.once("unhandledRejection", (err) => {
       try {
         assert.instanceOf(err.panic, Error);
         assert.ok(

@@ -28,12 +28,12 @@ const UNKNOWN_PANIC_MESSAGE: &str = "Unknown panic";
 /// in order of ascending severity:
 ///
 /// 1. Reject a `Promise` if a `Deferred` was provided
-/// 2. Emit an `uncaughtException` on Node-API >= 3
+/// 2. Emit a fatal exception
 /// 3. Abort the process with a message and location
 ///
 /// This process will be aborted if any step unrecoverably fails. For example,
 /// if a `napi::Env` is unavailable, it is impossible to reject a `Promise` or
-/// emit an `uncaughtException`.
+/// emit a fatal exception.
 pub struct FailureBoundary {
     pub both: &'static str,
     pub exception: &'static str,
@@ -110,28 +110,27 @@ impl FailureBoundary {
             return;
         }
 
-        #[cfg(not(feature = "napi-3"))]
-        // Crash the process on Node-API < 3
-        {
-            let msg = panic
-                .as_ref()
-                .err()
-                .and_then(|panic| panic_msg(panic))
-                .unwrap_or(msg);
+        let error = create_error(env, msg, exception, panic.err());
 
-            fatal_error(msg);
-        }
+        // Trigger a fatal exception
+        fatal_exception(env, error);
+    }
+}
 
-        #[cfg(feature = "napi-3")]
-        // Throw an `uncaughtException` on Node-API >= 3
-        {
-            let error = create_error(env, msg, exception, panic.err());
+// We cannot use `napi_fatal_exception` because of this bug; instead, cause an
+// unhandled rejection which has similar behavior on recent versions of Node.
+// https://github.com/nodejs/node/issues/33771
+unsafe fn fatal_exception(env: Env, error: Local) {
+    let mut deferred = MaybeUninit::uninit();
+    let mut promise = MaybeUninit::uninit();
 
-            // Throw an uncaught exception
-            if napi::fatal_exception(env, error) != napi::Status::Ok {
-                fatal_error("Failed to throw an uncaughtException");
-            }
-        }
+    let deferred = match napi::create_promise(env, deferred.as_mut_ptr(), promise.as_mut_ptr()) {
+        napi::Status::Ok => deferred.assume_init(),
+        _ => fatal_error("Failed to create a promise"),
+    };
+
+    if napi::reject_deferred(env, deferred, error) != napi::Status::Ok {
+        fatal_error("Failed to reject a promise");
     }
 }
 

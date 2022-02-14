@@ -170,7 +170,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     }
 
     // Provides a C ABI wrapper for invoking the user supplied function pointer
-    // On panic or exception, creates an `uncaughtException` of the form:
+    // On panic or exception, creates a fatal exception of the form:
     // Error(msg: string) {
     //     // Exception thrown
     //     cause?: Error,
