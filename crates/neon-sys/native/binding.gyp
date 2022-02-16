@@ -7,6 +7,9 @@
             'Release': {
                 'msvs_settings': {
                     'VCCLCompilerTool': {
+                        # Optimization adds the `/GL` flag which causes an undocumented
+                        # private object file representation instead of a standard COFF
+                        # that Rust can link.
                         'WholeProgramOptimization': 'false'
                     },
                     'VCLinkerTool': {
