@@ -11,7 +11,6 @@ on:
 
 jobs:
   build:
-
     runs-on: macos-latest
 
     strategy:
@@ -20,21 +19,19 @@ jobs:
         rust-toolchain: [stable, beta, nightly]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Use Rust ${{ matrix.rust-toolchain }}
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust-toolchain }}
-        target: x86_64-apple-darwin
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
-    # - name: update node-gyp to latest
-    #   # https://github.com/nodejs/node-gyp/issues/1933#issuecomment-586915535
-    #   run: npm install -g node-gyp@latest
-    - name: run cargo test
-      run: cargo neon-test
-    - name: run CLI test
-      working-directory: ./create-neon
-      run: npm test
+      - uses: actions/checkout@v2
+      - name: Use Rust ${{ matrix.rust-toolchain }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust-toolchain }}
+          target: x86_64-apple-darwin
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Use npm v8
+        run: npm install -g npm@8
+      - name: npm install workspace
+        run: npm install
+      - name: run tests
+        run: npm test

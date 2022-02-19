@@ -1,32 +1,25 @@
 {
-    "compilerOptions": {
-        "module": "commonjs",
-        "target": "es6",
-        "lib": [
-            "es6",
-            "es7"
-        ],
-        "allowJs": false,
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es6",
+    "lib": ["es6", "es7"],
+    "allowJs": false,
 
-        "sourceMap": false,
-        "outDir": "lib",
+    "sourceMap": false,
+    "outDir": "lib",
 
-        "declaration": true,
+    "declaration": true,
 
-        "esModuleInterop": true,
-        "noImplicitAny": true,
-        "suppressImplicitAnyIndexErrors": true,
-        "strictNullChecks": true,
-        "noImplicitReturns": true,
-        "noImplicitThis": true,
-        "allowUnreachableCode": false,
-        "noUnusedLocals": true,
-        "noUnusedParameters": true
-    },
-    "include": [
-        "src/**/*"
-    ],
-    "exclude": [
-        "node_modules"
-    ]
+    "esModuleInterop": true,
+    "noImplicitAny": true,
+    "suppressImplicitAnyIndexErrors": true,
+    "strictNullChecks": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "allowUnreachableCode": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
 }
