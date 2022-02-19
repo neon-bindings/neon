@@ -21,7 +21,7 @@ function sort(json: any): any {
 
   // Then copy any remaining keys in the original order.
   return Object.assign(next, json);
-}
+};
 
 export default class Package {
   name: string;
@@ -32,7 +32,7 @@ export default class Package {
   description: string;
   quotedDescription: string;
 
-  static async create(name: string): Promise<Package> {
+    static async create(name: string, dir:string): Promise<Package> {
     let seed = {
       name: name,
       version: "0.1.0",
@@ -49,13 +49,13 @@ export default class Package {
       }
     };
   
-    let filename = path.join(name, 'package.json');
+    let filename = path.join(dir, 'package.json');
   
     // 1. Write initial values to prevent `npm init` from asking unnecessary questions.
     await fs.writeFile(filename, JSON.stringify(seed));
   
     // 2. Call `npm init` to ask the user remaining questions.
-    await shell('npm', ['init'], name);
+    await shell('npm', ['init'], dir);
   
     // 3. Sort the values in idiomatic `npm init` order.
     let sorted = sort(JSON.parse(await fs.readFile(filename, 'utf8')));
@@ -74,5 +74,6 @@ export default class Package {
     this.license = json.license;
     this.description = json.description;
     this.quotedDescription = JSON.stringify(json.description);
-  }
-}
+  };
+};
+
