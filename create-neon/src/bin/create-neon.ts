@@ -39,7 +39,7 @@ async function main(name: string) {
     await fs.rmdir(name);
 
     tmpFolderName = await fs.mkdtemp(`${name}-`);
-  } catch (err) {
+  } catch (err: any) {
     await die(`Could not create \`${name}\`: ${err.message}`, tmpFolderName);
   }
 
@@ -48,7 +48,7 @@ async function main(name: string) {
   try {
     pkg = await Package.create(name, tmpFolderName);
     await fs.mkdir(path.join(tmpFolderName, "src"));
-  } catch (err) {
+  } catch (err: any) {
     await die("Could not create `package.json`: " + err.message, tmpFolderName);
   }
   if (pkg) {
@@ -63,7 +63,7 @@ async function main(name: string) {
 
   try {
     await fs.rename(tmpFolderName, name);
-  } catch (err) {
+  } catch (err: any) {
     await die(`Could not create \`${name}\`: ${err.message}`, tmpFolderName);
   }
   console.log(`✨ Created Neon project \`${name}\`. Happy 🦀 hacking! ✨`);

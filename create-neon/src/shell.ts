@@ -1,6 +1,7 @@
 import { spawn } from "child_process";
 import { promises as fs } from "fs";
 import path from "path";
+
 /**
  * Transparently shell out to an executable with a list of arguments.
  * All stdio is inherited directly from the current process.
@@ -38,7 +39,7 @@ export default function shell(
         if ([description, author, license].includes(undefined)) {
           reject(Error(`error code: ${code}`));
         }
-      } catch (e) {
+      } catch (e: any) {
         reject(e);
       }
     }

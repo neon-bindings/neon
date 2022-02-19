@@ -56,7 +56,7 @@ describe("Project creation", () => {
         "license:": "",
         "Is this OK?": "",
       });
-    } catch (error) {
+    } catch (error: any) {
       assert.fail("create-neon unexpectedly failed: " + error.message);
     }
 

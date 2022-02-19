@@ -16,7 +16,7 @@
     "dist/data/**/*"
   ],
   "scripts": {
-    "build": "tsc && cp -r data/templates dist/data",
+    "build": "tsc --skipLibCheck && cp -r data/templates dist/data",
     "prepublishOnly": "npm run build",
     "pretest": "npm install && npm run build",
     "test": "mocha",
