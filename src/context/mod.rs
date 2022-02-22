@@ -658,7 +658,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     ///
     ///     let promise = cx
     ///         .task(move || format!("Hello, {}!", name))
-    ///         .promise(move |cx, greeting| Ok(cx.string(greeting)));
+    ///         .promise(move |mut cx, greeting| Ok(cx.string(greeting)));
     ///
     ///     Ok(promise)
     /// }
