@@ -1,6 +1,6 @@
-import BuildSettings from './build-settings';
-import { writeFileSync } from 'fs';
-import * as JSON from 'ts-typed-json';
+import BuildSettings from "./build-settings";
+import { writeFileSync } from "fs";
+import * as JSON from "ts-typed-json";
 
 /**
  * The current state of build artifacts, for all targets.
@@ -38,9 +38,10 @@ export default class Artifacts {
    */
   private targets: Record<string, BuildSettings>;
 
-  constructor(active: string | null = null,
-              targets: Record<string, BuildSettings> = {})
-  {
+  constructor(
+    active: string | null = null,
+    targets: Record<string, BuildSettings> = {}
+  ) {
     this.active = active;
     this.targets = targets;
   }
@@ -56,7 +57,7 @@ export default class Artifacts {
   static fromJSON(json: JSON.Value): Artifacts {
     json = JSON.asObject(json, "json");
     const active = json.active;
-    if (typeof active !== 'string' && active !== null) {
+    if (typeof active !== "string" && active !== null) {
       throw new TypeError("json.active is not a string or null");
     }
     const jsonTargets = JSON.asObject(json.targets, "json.targets");
@@ -75,7 +76,7 @@ export default class Artifacts {
 
     return {
       active: this.active,
-      targets: targets
+      targets: targets,
     };
   }
 

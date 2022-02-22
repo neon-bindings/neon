@@ -10,25 +10,30 @@ Rust bindings for writing safe and fast native Node.js modules.
 
 ## Getting started
 
-Once you have the [platform dependencies](https://neon-bindings.com/docs/quick-start) installed, getting started is as simple as:
+Once you have the [platform dependencies](https://neon-bindings.com/docs/quick-start) installed, getting started is as
+simple as:
 
 ```
 $ npm init neon my-project
 ```
 
-Then see the [Hello World guide](https://neon-bindings.com/docs/hello-world/) for writing your first Hello World in Neon!
+Then see the [Hello World guide](https://neon-bindings.com/docs/hello-world/) for writing your first Hello World in
+Neon!
 
 _**Note:** This will create a new project with the `napi-backend` and some documentation may not be up to date._
 
 ## Docs
 
-See our [Neon fundamentals docs](https://neon-bindings.com/docs/intro) and our [API docs](https://docs.rs/neon/latest/neon).
+See our [Neon fundamentals docs](https://neon-bindings.com/docs/intro) and
+our [API docs](https://docs.rs/neon/latest/neon).
 
 ## Node-API (formerly N-API) Migration Guide
 
-We've ported Neon to a new backend based on [Node-API (formerly N-API)](https://nodejs.org/api/n-api.html), which will be the basis for Neon 1.0.
+We've ported Neon to a new backend based on [Node-API (formerly N-API)](https://nodejs.org/api/n-api.html), which will
+be the basis for Neon 1.0.
 
-**Read the new [migration guide](https://github.com/neon-bindings/neon/blob/main/MIGRATION_GUIDE.md)** to learn how to port your Neon projects to N-API!
+**Read the new [migration guide](https://github.com/neon-bindings/neon/blob/main/MIGRATION_GUIDE.md)** to learn how to
+port your Neon projects to N-API!
 
 ## Platform Support
 
@@ -44,7 +49,8 @@ We've ported Neon to a new backend based on [Node-API (formerly N-API)](https://
 | ------- | ------- | ------- |
 | ✓       | ✓       | ✓       |
 
-Support for [LTS versions of Node](https://github.com/nodejs/LTS#release-schedule) and current are expected. If you're using a different version of Node and believe it should be supported, let us know.
+Support for [LTS versions of Node](https://github.com/nodejs/LTS#release-schedule) and current are expected. If you're
+using a different version of Node and believe it should be supported, let us know.
 
 ### Rust
 
@@ -82,13 +88,37 @@ For more examples, see our [examples repo](https://github.com/neon-bindings/exam
 
 The Neon community is just getting started and there's tons of fun to be had. Come play! :)
 
-The [Rust Bindings community Slack](https://rust-bindings.slack.com) is open to all; use [the Slackin app](https://rust-bindings-slackin.herokuapp.com) to receive an invitation.
+The [Rust Bindings community Slack](https://rust-bindings.slack.com) is open to all;
+use [the Slackin app](https://rust-bindings-slackin.herokuapp.com) to receive an invitation.
+
+### Testing Neon
+
+The Neon project is both an [NPM workspace](https://docs.npmjs.com/cli/v8/using-npm/workspaces) and
+a [Cargo workspace](https://doc.rust-lang.org/cargo/reference/workspaces.html). The full suite of tests may be executed
+by installing and testing the NPM workspace.
+
+```sh
+npm install
+npm test
+```
+
+Individual JavaScript packages may be tested with an `npm` workspace command:
+
+```
+npm --workspace=create-neon test
+```
+
+Individual Rust crates may be tested with a `cargo` workspace command:
+
+```
+cargo test -p neon-build
+```
 
 ## License
 
 Licensed under either of
 
- * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
- * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+* Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+* MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
 
 at your option.

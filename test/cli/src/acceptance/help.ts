@@ -1,15 +1,16 @@
-import { setup, spawnable } from '../support/acceptance';
-import { SpawnChain } from 'suspicion';
+import { setup, spawnable } from "../support/acceptance";
+import { SpawnChain } from "suspicion";
 
-function describeHelp(cmd: string,
-                      should: string,
-                      test: (proc: unknown, done: () => void) => void,
-                      args: string[]): void
-{
-  describe(cmd, function() {
-    setup('stderr');
+function describeHelp(
+  cmd: string,
+  should: string,
+  test: (proc: unknown, done: () => void) => void,
+  args: string[]
+): void {
+  describe(cmd, function () {
+    setup("stderr");
 
-    it(should, function(done) {
+    it(should, function (done) {
       test(spawnable(this).spawn(args), done);
     });
   });
@@ -27,15 +28,15 @@ function testHelp(proc: SpawnChain, done: () => void) {
     .wait("clean")
     .wait("version")
     .wait("help")
-    .run(err => {
+    .run((err) => {
       if (err) throw err;
       done();
     });
 }
 
-describeHelp("neon help",   "should print neon usage", testHelp, ['help']);
-describeHelp("neon --help", "should print neon usage", testHelp, ['--help']);
-describeHelp("neon -h",     "should print neon usage", testHelp, ['-h']);
+describeHelp("neon help", "should print neon usage", testHelp, ["help"]);
+describeHelp("neon --help", "should print neon usage", testHelp, ["--help"]);
+describeHelp("neon -h", "should print neon usage", testHelp, ["-h"]);
 
 function testHelpClean(proc: SpawnChain, done: () => void) {
   return proc
@@ -46,17 +47,42 @@ function testHelpClean(proc: SpawnChain, done: () => void) {
     .wait("$ neon clean [options] module ...")
     .wait("Options")
     .wait("-p, --path")
-    .run(err => {
+    .run((err) => {
       if (err) throw err;
       done();
     });
 }
 
-describeHelp("neon help clean",   "should print `neon clean` usage", testHelpClean, ['help', 'clean']);
-describeHelp("neon clean --help", "should print `neon clean` usage", testHelpClean, ['clean', '--help']);
-describeHelp("neon clean -h",     "should print `neon clean` usage", testHelpClean, ['clean', '-h']);
-describeHelp("neon --help clean", "should print `neon clean` usage", testHelpClean, ['--help', 'clean']);
-describeHelp("neon -h clean",     "should print `neon clean` usage", testHelpClean, ['-h', 'clean']);
+describeHelp(
+  "neon help clean",
+  "should print `neon clean` usage",
+  testHelpClean,
+  ["help", "clean"]
+);
+describeHelp(
+  "neon clean --help",
+  "should print `neon clean` usage",
+  testHelpClean,
+  ["clean", "--help"]
+);
+describeHelp(
+  "neon clean -h",
+  "should print `neon clean` usage",
+  testHelpClean,
+  ["clean", "-h"]
+);
+describeHelp(
+  "neon --help clean",
+  "should print `neon clean` usage",
+  testHelpClean,
+  ["--help", "clean"]
+);
+describeHelp(
+  "neon -h clean",
+  "should print `neon clean` usage",
+  testHelpClean,
+  ["-h", "clean"]
+);
 
 function testHelpVersion(proc: SpawnChain, done: () => void) {
   return proc
@@ -64,17 +90,42 @@ function testHelpVersion(proc: SpawnChain, done: () => void) {
     .wait("Display the Neon version.")
     .wait("Synopsis")
     .wait("$ neon version")
-    .run(err => {
+    .run((err) => {
       if (err) throw err;
       done();
     });
 }
 
-describeHelp("neon help version",   "should print `neon version` usage", testHelpVersion, ['help', 'version']);
-describeHelp("neon version --help", "should print `neon version` usage", testHelpVersion, ['version', '--help']);
-describeHelp("neon version -h",     "should print `neon version` usage", testHelpVersion, ['version', '-h']);
-describeHelp("neon --help version", "should print `neon version` usage", testHelpVersion, ['--help', 'version']);
-describeHelp("neon -h version",     "should print `neon version` usage", testHelpVersion, ['-h', 'version']);
+describeHelp(
+  "neon help version",
+  "should print `neon version` usage",
+  testHelpVersion,
+  ["help", "version"]
+);
+describeHelp(
+  "neon version --help",
+  "should print `neon version` usage",
+  testHelpVersion,
+  ["version", "--help"]
+);
+describeHelp(
+  "neon version -h",
+  "should print `neon version` usage",
+  testHelpVersion,
+  ["version", "-h"]
+);
+describeHelp(
+  "neon --help version",
+  "should print `neon version` usage",
+  testHelpVersion,
+  ["--help", "version"]
+);
+describeHelp(
+  "neon -h version",
+  "should print `neon version` usage",
+  testHelpVersion,
+  ["-h", "version"]
+);
 
 function testHelpNew(proc: SpawnChain, done: () => void) {
   return proc
@@ -82,17 +133,32 @@ function testHelpNew(proc: SpawnChain, done: () => void) {
     .wait("Create a new Neon project")
     .wait("Synopsis")
     .wait("$ neon new [options] [@<scope>/]<name>")
-    .run(err => {
+    .run((err) => {
       if (err) throw err;
       done();
     });
 }
 
-describeHelp("neon help new",   "should print `neon new` usage", testHelpNew, ['help', 'new']);
-describeHelp("neon new --help", "should print `neon new` usage", testHelpNew, ['new', '--help']);
-describeHelp("neon new -h",     "should print `neon new` usage", testHelpNew, ['new', '-h']);
-describeHelp("neon --help new", "should print `neon new` usage", testHelpNew, ['--help', 'new']);
-describeHelp("neon -h new",     "should print `neon new` usage", testHelpNew, ['-h', 'new']);
+describeHelp("neon help new", "should print `neon new` usage", testHelpNew, [
+  "help",
+  "new",
+]);
+describeHelp("neon new --help", "should print `neon new` usage", testHelpNew, [
+  "new",
+  "--help",
+]);
+describeHelp("neon new -h", "should print `neon new` usage", testHelpNew, [
+  "new",
+  "-h",
+]);
+describeHelp("neon --help new", "should print `neon new` usage", testHelpNew, [
+  "--help",
+  "new",
+]);
+describeHelp("neon -h new", "should print `neon new` usage", testHelpNew, [
+  "-h",
+  "new",
+]);
 
 function testHelpBuild(proc: SpawnChain, done: () => void) {
   return proc
@@ -104,17 +170,42 @@ function testHelpBuild(proc: SpawnChain, done: () => void) {
     .wait("Options")
     .wait("-r, --release")
     .wait("-p, --path")
-    .run(err => {
+    .run((err) => {
       if (err) throw err;
       done();
     });
 }
 
-describeHelp("neon help build",   "should print `neon build` usage", testHelpBuild, ['help', 'build']);
-describeHelp("neon build --help", "should print `neon build` usage", testHelpBuild, ['build', '--help']);
-describeHelp("neon build -h",     "should print `neon build` usage", testHelpBuild, ['build', '-h']);
-describeHelp("neon --help build", "should print `neon build` usage", testHelpBuild, ['--help', 'build']);
-describeHelp("neon -h build",     "should print `neon build` usage", testHelpBuild, ['-h', 'build']);
+describeHelp(
+  "neon help build",
+  "should print `neon build` usage",
+  testHelpBuild,
+  ["help", "build"]
+);
+describeHelp(
+  "neon build --help",
+  "should print `neon build` usage",
+  testHelpBuild,
+  ["build", "--help"]
+);
+describeHelp(
+  "neon build -h",
+  "should print `neon build` usage",
+  testHelpBuild,
+  ["build", "-h"]
+);
+describeHelp(
+  "neon --help build",
+  "should print `neon build` usage",
+  testHelpBuild,
+  ["--help", "build"]
+);
+describeHelp(
+  "neon -h build",
+  "should print `neon build` usage",
+  testHelpBuild,
+  ["-h", "build"]
+);
 
 function testHelpHelp(proc: SpawnChain, done: () => void) {
   return proc
@@ -122,14 +213,33 @@ function testHelpHelp(proc: SpawnChain, done: () => void) {
     .wait("Get help about a Neon command")
     .wait("Synopsis")
     .wait("$ neon help [command]")
-    .run(err => {
+    .run((err) => {
       if (err) throw err;
       done();
     });
 }
 
-describeHelp("neon help help",   "should print `neon help` usage", testHelpHelp, ['help', 'help']);
-describeHelp("neon help --help", "should print `neon help` usage", testHelpHelp, ['help', '--help']);
-describeHelp("neon help -h",     "should print `neon help` usage", testHelpHelp, ['help', '-h']);
-describeHelp("neon --help help", "should print `neon help` usage", testHelpHelp, ['--help', 'help']);
-describeHelp("neon -h help",     "should print `neon help` usage", testHelpHelp, ['-h', 'help']);
+describeHelp("neon help help", "should print `neon help` usage", testHelpHelp, [
+  "help",
+  "help",
+]);
+describeHelp(
+  "neon help --help",
+  "should print `neon help` usage",
+  testHelpHelp,
+  ["help", "--help"]
+);
+describeHelp("neon help -h", "should print `neon help` usage", testHelpHelp, [
+  "help",
+  "-h",
+]);
+describeHelp(
+  "neon --help help",
+  "should print `neon help` usage",
+  testHelpHelp,
+  ["--help", "help"]
+);
+describeHelp("neon -h help", "should print `neon help` usage", testHelpHelp, [
+  "-h",
+  "help",
+]);

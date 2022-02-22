@@ -1,18 +1,19 @@
-import { setup, spawnable } from '../support/acceptance';
-import { readFile } from '../support/fs';
+import { setup, spawnable } from "../support/acceptance";
+import { readFile } from "../support/fs";
 
-const pkg = JSON.parse(readFile(__dirname, '../../../../cli/package.json'));
+const pkg = JSON.parse(readFile(__dirname, "../../../../cli/package.json"));
 
-describe('neon version', function() {
+describe("neon version", function () {
   setup();
 
-  it('should print neon usage', function(done) {
+  it("should print neon usage", function (done) {
     let self = spawnable(this);
-    self.spawn(['version'])
-        .wait(pkg.version)
-        .run(err => {
-          if (err) throw err;
-          done();
-        });
+    self
+      .spawn(["version"])
+      .wait(pkg.version)
+      .run((err) => {
+        if (err) throw err;
+        done();
+      });
   });
 });

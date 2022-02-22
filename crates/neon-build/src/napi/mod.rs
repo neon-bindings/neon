@@ -134,6 +134,7 @@ fn test_absolute_output_file_defaults() {
 }
 
 #[test]
+#[cfg_attr(windows, ignore)]
 fn test_absolute_output_file_absolute_file() {
     let expected = PathBuf::from("/tmp/hello.node");
     let actual = Setup::options()
@@ -145,6 +146,7 @@ fn test_absolute_output_file_absolute_file() {
 }
 
 #[test]
+#[cfg_attr(windows, ignore)]
 fn test_absolute_output_file_absolute_dir() {
     let expected = PathBuf::from("/tmp/index.node");
     let actual = Setup::options().output_dir("/tmp").absolute_output_file();

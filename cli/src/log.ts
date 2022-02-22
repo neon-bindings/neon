@@ -1,6 +1,6 @@
 export type Logger = (msg: string) => void;
 
-let logger: Logger = () => { };
+let logger: Logger = () => {};
 
 export function setup(newLogger: Logger) {
   logger = newLogger;

@@ -10,15 +10,15 @@ on:
     branches:
       - main
       - next/*
+
 jobs:
   lint:
-
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [ 14.x ]
-        rust-toolchain: [ nightly ]
+        node-version: [14.x]
+        rust-toolchain: [nightly]
 
     steps:
       - uses: actions/checkout@v2
@@ -32,7 +32,10 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: install build-essential
         run: sudo apt-get install -y build-essential
-      - name: Formatting
+      - run: npm install
+      - name: Prettier Formatting
+        run: npm run prettier:check
+      - name: Rust Formatting
         run: cargo fmt --all -- --check
       - name: Clippy (N-API)
         run: cargo clippy-napi
