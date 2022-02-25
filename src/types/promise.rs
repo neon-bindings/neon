@@ -154,7 +154,7 @@ impl Deferred {
     /// let channel = cx.channel();
     /// let (deferred, promise) = cx.promise();
     ///
-    /// deferred.settle_with(&channel, move |cx| Ok(cx.number(42)));
+    /// deferred.settle_with(&channel, move |mut cx| Ok(cx.number(42)));
     ///
     /// # Ok(promise)
     /// # }

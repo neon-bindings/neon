@@ -1,13 +1,13 @@
-import TOML from 'toml';
-import path from 'path';
-import { readFileSync, promises as fs } from 'fs';
-import Artifacts from './artifacts';
-import Project from './project';
-import { rimraf } from './async/rimraf';
+import TOML from "toml";
+import path from "path";
+import { readFileSync, promises as fs } from "fs";
+import Artifacts from "./artifacts";
+import Project from "./project";
+import { rimraf } from "./async/rimraf";
 
 export type CrateOptions = {
-  subdirectory?: string,
-  nodefile?: string
+  subdirectory?: string;
+  nodefile?: string;
 };
 
 // Represents the native crate inside a Neon project.
@@ -30,15 +30,14 @@ export default class Crate {
   readonly artifacts: Artifacts;
 
   constructor(project: Project, options: CrateOptions = {}) {
-    let { subdirectory = 'native', nodefile = 'index.node' } = options;
+    let { subdirectory = "native", nodefile = "index.node" } = options;
     this.project = project;
     this.subdirectory = subdirectory;
     this.nodefile = nodefile;
     this.root = path.resolve(project.root, subdirectory);
     this.addon = path.resolve(this.root, nodefile);
-    this.name = loadLibName(path.resolve(this.root, 'Cargo.toml'))
-    this.artifactsfile =
-      path.resolve(this.root, 'artifacts.json');
+    this.name = loadLibName(path.resolve(this.root, "Cargo.toml"));
+    this.artifactsfile = path.resolve(this.root, "artifacts.json");
     this.artifacts = Artifacts.load(this.artifactsfile);
   }
 
@@ -58,21 +57,22 @@ export default class Crate {
   saveArtifacts() {
     this.artifacts.save(this.artifactsfile);
   }
-
 }
 
 type Metadata = {
   lib?: {
-    name?: string
-  }
-}
+    name?: string;
+  };
+};
 
 function loadLibName(file: string): string {
-  let metadata = TOML.parse<Metadata>(readFileSync(file, 'utf8'));
-  if (!metadata) throw new Error(`Failed to parse TOML file "${file}"`)
+  let metadata = TOML.parse<Metadata>(readFileSync(file, "utf8"));
+  if (!metadata) throw new Error(`Failed to parse TOML file "${file}"`);
 
-  if (!metadata || typeof metadata !== 'object' || !metadata?.lib?.name) {
-    throw new Error("Cargo.toml does not contain a [lib] section with a 'name' field");
+  if (!metadata || typeof metadata !== "object" || !metadata?.lib?.name) {
+    throw new Error(
+      "Cargo.toml does not contain a [lib] section with a 'name' field"
+    );
   }
 
   return metadata.lib.name;

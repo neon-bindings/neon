@@ -18,7 +18,7 @@
   "scripts": {
     "build": "tsc && cp -r data/templates dist/data",
     "prepublishOnly": "npm run build",
-    "pretest": "npm install && npm run build",
+    "pretest": "npm run build",
     "test": "mocha",
     "manual-test": "npm run build && rm -rf create-neon-manual-test-project && node ./dist/src/bin/create-neon.js create-neon-manual-test-project"
   },
@@ -31,12 +31,12 @@
   ],
   "devDependencies": {
     "@types/chai": "^4.2.15",
-    "@types/mocha": "^8.2.1",
+    "@types/mocha": "^9.1.0",
     "@types/node": "^14.14.31",
     "@types/rimraf": "^3.0.0",
     "chai": "^4.3.3",
     "execa": "^5.0.0",
-    "mocha": "^8.3.1",
+    "mocha": "^9.1.0",
     "rimraf": "^3.0.2",
     "stream-to-string": "^1.2.0",
     "toml": "^3.0.0",

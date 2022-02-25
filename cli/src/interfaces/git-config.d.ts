@@ -1,12 +1,12 @@
-declare module 'git-config' {
+declare module "git-config" {
   export type Config = {
     user: {
-      name?: string,
-      email?: string
-    },
+      name?: string;
+      email?: string;
+    };
     github: {
-      user?: string
-    }
-  }
+      user?: string;
+    };
+  };
   export function sync(gitFile?: string): Config;
 }
