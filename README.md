@@ -20,8 +20,6 @@ $ npm init neon my-project
 Then see the [Hello World guide](https://neon-bindings.com/docs/hello-world/) for writing your first Hello World in
 Neon!
 
-_**Note:** This will create a new project with the `napi-backend` and some documentation may not be up to date._
-
 ## Docs
 
 See our [Neon fundamentals docs](https://neon-bindings.com/docs/intro) and
