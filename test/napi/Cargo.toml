@@ -9,6 +9,9 @@ edition = "2018"
 [lib]
 crate-type = ["cdylib"]
 
+[dependencies]
+once_cell = "1"
+
 [dependencies.neon]
 version = "*"
 path = "../.."

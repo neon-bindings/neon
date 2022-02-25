@@ -2,6 +2,8 @@ use std::ffi::c_void;
 use std::marker::PhantomData;
 #[cfg(feature = "napi-6")]
 use std::sync::Arc;
+#[cfg(not(feature = "napi-6"))]
+use std::thread::{self, ThreadId};
 
 #[cfg(feature = "napi-6")]
 use neon_runtime::tsfn::ThreadsafeFunction;
@@ -10,15 +12,20 @@ use neon_runtime::{raw, reference};
 use crate::context::Context;
 use crate::handle::Handle;
 #[cfg(feature = "napi-6")]
-use crate::lifecycle::{DropData, InstanceData};
+use crate::lifecycle::{DropData, InstanceData, InstanceId};
 use crate::object::Object;
 use crate::types::boxed::Finalize;
+
+#[cfg(not(feature = "napi-6"))]
+type InstanceId = ThreadId;
 
 #[repr(transparent)]
 #[derive(Clone)]
 pub(crate) struct NapiRef(*mut c_void);
 
 impl NapiRef {
+    /// # Safety
+    /// Must only be used from the same module context that created the reference
     pub(crate) unsafe fn unref(self, env: raw::Env) {
         reference::unreference(env, self.0.cast());
     }
@@ -42,6 +49,7 @@ pub struct Root<T> {
     // `Option` is used to skip `Drop` when `Root::drop` or `Root::into_inner` is used.
     // It will *always* be `Some` when a user is interacting with `Root`.
     internal: Option<NapiRef>,
+    instance_id: InstanceId,
     #[cfg(feature = "napi-6")]
     drop_queue: Arc<ThreadsafeFunction<DropData>>,
     _phantom: PhantomData<T>,
@@ -60,6 +68,16 @@ unsafe impl<T> Send for Root<T> {}
 
 unsafe impl<T> Sync for Root<T> {}
 
+#[cfg(feature = "napi-6")]
+fn instance_id<'a, C: Context<'a>>(cx: &mut C) -> InstanceId {
+    InstanceData::id(cx)
+}
+
+#[cfg(not(feature = "napi-6"))]
+fn instance_id<'a, C: Context<'a>>(_: &mut C) -> InstanceId {
+    thread::current().id()
+}
+
 impl<T: Object> Root<T> {
     /// Create a reference to a JavaScript object. The object will not be
     /// garbage collected until the `Root` is dropped. A `Root<T>` may only
@@ -76,6 +94,7 @@ impl<T: Object> Root<T> {
 
         Self {
             internal: Some(NapiRef(internal as *mut _)),
+            instance_id: instance_id(cx),
             #[cfg(feature = "napi-6")]
             drop_queue: InstanceData::drop_queue(cx),
             _phantom: PhantomData,
@@ -96,7 +115,7 @@ impl<T: Object> Root<T> {
     /// ```
     pub fn clone<'a, C: Context<'a>>(&self, cx: &mut C) -> Self {
         let env = cx.env();
-        let internal = self.as_napi_ref().0 as *mut _;
+        let internal = self.as_napi_ref(cx).0 as *mut _;
 
         unsafe {
             reference::reference(env.to_raw(), internal);
@@ -104,6 +123,7 @@ impl<T: Object> Root<T> {
 
         Self {
             internal: self.internal.clone(),
+            instance_id: instance_id(cx),
             #[cfg(feature = "napi-6")]
             drop_queue: Arc::clone(&self.drop_queue),
             _phantom: PhantomData,
@@ -116,14 +136,14 @@ impl<T: Object> Root<T> {
         let env = cx.env().to_raw();
 
         unsafe {
-            self.into_napi_ref().unref(env);
+            self.into_napi_ref(cx).unref(env);
         }
     }
 
     /// Return the referenced JavaScript object and allow it to be garbage collected
     pub fn into_inner<'a, C: Context<'a>>(self, cx: &mut C) -> Handle<'a, T> {
         let env = cx.env();
-        let internal = self.into_napi_ref();
+        let internal = self.into_napi_ref(cx);
         let local = unsafe { reference::get(env.to_raw(), internal.0.cast()) };
 
         unsafe {
@@ -138,12 +158,16 @@ impl<T: Object> Root<T> {
     /// can be used in place of a clone immediately followed by a call to `into_inner`.
     pub fn to_inner<'a, C: Context<'a>>(&self, cx: &mut C) -> Handle<'a, T> {
         let env = cx.env();
-        let local = unsafe { reference::get(env.to_raw(), self.as_napi_ref().0 as *mut _) };
+        let local = unsafe { reference::get(env.to_raw(), self.as_napi_ref(cx).0 as *mut _) };
 
         Handle::new_internal(T::from_raw(env, local))
     }
 
-    fn as_napi_ref(&self) -> &NapiRef {
+    fn as_napi_ref<'a, C: Context<'a>>(&self, cx: &mut C) -> &NapiRef {
+        if self.instance_id != instance_id(cx) {
+            panic!("Attempted to dereference a `neon::handle::Root` from the wrong module ");
+        }
+
         self.internal
             .as_ref()
             // `unwrap` will not `panic` because `internal` will always be `Some`
@@ -151,12 +175,11 @@ impl<T: Object> Root<T> {
             .unwrap()
     }
 
-    fn into_napi_ref(mut self) -> NapiRef {
-        self.internal
-            .take()
-            // `unwrap` will not `panic` because this is the only method place
-            // `internal` is replaced with `None` and it consumes `self`.
-            .unwrap()
+    fn into_napi_ref<'a, C: Context<'a>>(mut self, cx: &mut C) -> NapiRef {
+        let reference = self.as_napi_ref(cx).clone();
+        // This uses `as_napi_ref` instead of `Option::take` for the instance id safety check
+        self.internal = None;
+        reference
     }
 }
 
