@@ -171,7 +171,7 @@ pub use crate::types::buffer::lock::Lock;
 #[cfg(feature = "napi-5")]
 use crate::types::date::{DateError, JsDate};
 #[cfg(feature = "napi-6")]
-use crate::types::bigint::{JsBigInt};
+use crate::types::bigint::JsBigInt;
 use crate::types::error::JsError;
 #[cfg(all(feature = "napi-1", feature = "promise-api"))]
 use crate::types::{Deferred, JsPromise};

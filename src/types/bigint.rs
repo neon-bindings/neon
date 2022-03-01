@@ -2,11 +2,8 @@ use super::{private::ValueInternal, Value};
 use crate::context::internal::Env;
 use crate::context::Context;
 use crate::handle::{internal::TransparentNoCopyWrapper, Handle, Managed};
-use crate::object::Object;
-use crate::result::{JsResult, JsResultExt};
 use neon_runtime;
 use neon_runtime::raw;
-use std::error::Error;
 use std::fmt;
 use std::fmt::Debug;
 
@@ -35,9 +32,36 @@ impl Managed for JsBigInt {
     }
 }
 
+#[derive(Debug)]
+pub struct GetBigIntLossyValueResult<T> {
+    pub value: T,
+    /// Indicates whether the BigInt value was converted losslessly
+    pub lossless: bool,
+}
+
+impl<T> fmt::Display for GetBigIntLossyValueResult<T>
+where
+    T: fmt::Display
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
+impl Into<i64> for GetBigIntLossyValueResult<i64> {
+    fn into(self) -> i64 {
+        self.value
+    }
+}
+
+impl Into<u64> for GetBigIntLossyValueResult<u64> {
+    fn into(self) -> u64 {
+        self.value
+    }
+}
+
 impl JsBigInt {
     pub fn new<'a, C: Context<'a>, T: Into<i64>>(cx: &mut C, x: T) -> Handle<'a, JsBigInt> {
-        // JsBigInt::new_internal(cx.env(), x.into())
         let env = cx.env().to_raw();
         let value = x.into();
         let local = unsafe { neon_runtime::bigint::new_bigint(env, value) };
@@ -45,19 +69,30 @@ impl JsBigInt {
         bigint
     }
 
-    /*
-    pub(crate) fn new_internal<'a>(env: Env, v: i64) -> Handle<'a, JsBigInt> {
-        unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::bigint(&mut local, env.to_raw(), v);
-            Handle::new_internal(JsBigInt(local))
+    pub fn from_u64<'a, C: Context<'a>, T: Into<u64>>(cx: &mut C, x: T) -> Handle<'a, JsBigInt> {
+        let env = cx.env().to_raw();
+        let value = x.into();
+        let local = unsafe { neon_runtime::bigint::new_bigint_from_u64(env, value) };
+        let bigint = Handle::new_internal(JsBigInt(local));
+        bigint
+    }
+
+    pub fn value_i64<'a, C: Context<'a>>(self, cx: &mut C) -> GetBigIntLossyValueResult<i64> {
+        let env = cx.env().to_raw();
+        let result = unsafe { neon_runtime::bigint::value_i64(env, self.to_raw()) };
+        GetBigIntLossyValueResult {
+            value: result.0,
+            lossless: result.1,
         }
     }
-    */
 
-    pub fn value<'a, C: Context<'a>>(self, cx: &mut C) -> i64 {
+    pub fn value_u64<'a, C: Context<'a>>(self, cx: &mut C) -> GetBigIntLossyValueResult<u64> {
         let env = cx.env().to_raw();
-        unsafe { neon_runtime::bigint::value_i64(env, self.to_raw()) }
+        let result = unsafe { neon_runtime::bigint::value_u64(env, self.to_raw()) };
+        GetBigIntLossyValueResult {
+            value: result.0,
+            lossless: result.1,
+        }
     }
 
 }
