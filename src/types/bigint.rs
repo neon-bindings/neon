@@ -41,7 +41,7 @@ pub struct GetBigIntLossyValueResult<T> {
 
 impl<T> fmt::Display for GetBigIntLossyValueResult<T>
 where
-    T: fmt::Display
+    T: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.value)
@@ -94,7 +94,6 @@ impl JsBigInt {
             lossless: result.1,
         }
     }
-
 }
 
 impl ValueInternal for JsBigInt {

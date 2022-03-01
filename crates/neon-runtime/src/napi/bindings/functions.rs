@@ -341,13 +341,33 @@ mod napi6 {
 
             fn create_bigint_uint64(env: Env, value: u64, result: *mut Value) -> Status;
 
-            fn create_bigint_words(env: Env, sign_bit: isize, word_count: usize, words: *mut u64) -> Status;
+            fn create_bigint_words(
+                env: Env,
+                sign_bit: isize,
+                word_count: usize,
+                words: *mut u64,
+            ) -> Status;
 
-            fn get_value_bigint_int64(env: Env, value: Value, result: *mut i64, lossless: *mut bool) -> Status;
+            fn get_value_bigint_int64(
+                env: Env,
+                value: Value,
+                result: *mut i64,
+                lossless: *mut bool,
+            ) -> Status;
 
-            fn get_value_bigint_uint64(env: Env, value: Value, result: *mut u64, lossless: *mut bool) -> Status;
+            fn get_value_bigint_uint64(
+                env: Env,
+                value: Value,
+                result: *mut u64,
+                lossless: *mut bool,
+            ) -> Status;
 
-            fn get_value_bigint_words(env: Env, value: Value, sign_bit: *mut isize, words: *mut u64) -> Status;
+            fn get_value_bigint_words(
+                env: Env,
+                value: Value,
+                sign_bit: *mut isize,
+                words: *mut u64,
+            ) -> Status;
         }
     );
 }

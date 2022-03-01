@@ -108,6 +108,8 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::os::raw::c_void;
 
+#[cfg(feature = "napi-6")]
+pub use self::bigint::JsBigInt;
 #[cfg(feature = "legacy-runtime")]
 pub use self::binary::{BinaryData, BinaryViewType, JsArrayBuffer, JsBuffer};
 #[cfg(feature = "napi-1")]
@@ -119,8 +121,6 @@ pub use self::date::{DateError, DateErrorKind, JsDate};
 pub use self::error::JsError;
 #[cfg(all(feature = "napi-1", feature = "promise-api"))]
 pub use self::promise::{Deferred, JsPromise};
-#[cfg(feature = "napi-6")]
-pub use self::bigint::{JsBigInt};
 
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(
     env: Env,

@@ -164,14 +164,14 @@ use crate::lifecycle::InstanceData;
 use crate::object::class::Class;
 use crate::object::{Object, This};
 use crate::result::{JsResult, NeonResult, Throw};
+#[cfg(feature = "napi-6")]
+use crate::types::bigint::JsBigInt;
 #[cfg(feature = "napi-1")]
 use crate::types::boxed::{Finalize, JsBox};
 #[cfg(feature = "napi-1")]
 pub use crate::types::buffer::lock::Lock;
 #[cfg(feature = "napi-5")]
 use crate::types::date::{DateError, JsDate};
-#[cfg(feature = "napi-6")]
-use crate::types::bigint::JsBigInt;
 use crate::types::error::JsError;
 #[cfg(all(feature = "napi-1", feature = "promise-api"))]
 use crate::types::{Deferred, JsPromise};

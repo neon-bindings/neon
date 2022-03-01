@@ -37,6 +37,8 @@ pub use crate::task::Task;
 #[cfg(feature = "legacy-runtime")]
 #[doc(no_inline)]
 pub use crate::types::BinaryData;
+#[cfg(feature = "napi-6")]
+pub use crate::types::JsBigInt;
 #[cfg(all(feature = "napi-1", feature = "promise-api"))]
 #[doc(no_inline)]
 pub use crate::types::JsPromise;
@@ -48,8 +50,6 @@ pub use crate::types::{
     JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsError, JsFunction, JsNull, JsNumber, JsObject,
     JsString, JsUndefined, JsValue, Value,
 };
-#[cfg(feature = "napi-6")]
-pub use crate::types::{JsBigInt};
 #[cfg(feature = "napi-1")]
 #[doc(no_inline)]
 pub use crate::{

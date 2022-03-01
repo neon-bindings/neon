@@ -1,6 +1,8 @@
 pub mod array;
 pub mod arraybuffer;
 pub mod async_work;
+#[cfg(feature = "napi-6")]
+pub mod bigint;
 pub mod buffer;
 pub mod call;
 pub mod convert;
@@ -11,8 +13,6 @@ pub mod external;
 pub mod fun;
 #[cfg(feature = "napi-6")]
 pub mod lifecycle;
-#[cfg(feature = "napi-6")]
-pub mod bigint;
 pub mod mem;
 pub mod no_panic;
 pub mod object;

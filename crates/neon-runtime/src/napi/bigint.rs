@@ -35,7 +35,8 @@ pub unsafe fn new_bigint_from_u64(env: Env, value: u64) -> Local {
 pub unsafe fn value_i64(env: Env, p: Local) -> (i64, bool) {
     let mut value: i64 = 0;
     let mut lossless = false;
-    let status = napi::get_value_bigint_int64(env, p, &mut value as *mut _, &mut lossless as *mut _);
+    let status =
+        napi::get_value_bigint_int64(env, p, &mut value as *mut _, &mut lossless as *mut _);
     assert_eq!(status, napi::Status::Ok);
     (value, lossless)
 }
@@ -49,7 +50,8 @@ pub unsafe fn value_i64(env: Env, p: Local) -> (i64, bool) {
 pub unsafe fn value_u64(env: Env, p: Local) -> (u64, bool) {
     let mut value: u64 = 0;
     let mut lossless = false;
-    let status = napi::get_value_bigint_uint64(env, p, &mut value as *mut _, &mut lossless as *mut _);
+    let status =
+        napi::get_value_bigint_uint64(env, p, &mut value as *mut _, &mut lossless as *mut _);
     assert_eq!(status, napi::Status::Ok);
     (value, lossless)
 }
