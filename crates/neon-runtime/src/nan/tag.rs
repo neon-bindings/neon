@@ -9,6 +9,9 @@ pub use neon_sys::Neon_Tag_IsNull as is_null;
 /// Indicates if the value type is `Number`.
 pub use neon_sys::Neon_Tag_IsNumber as is_number;
 
+/// Indicates if the value type is `BigInt`.
+pub use neon_sys::Neon_Tag_IsBigInt as is_bigint;
+
 /// Indicates if the value type is `Boolean`.
 pub use neon_sys::Neon_Tag_IsBoolean as is_boolean;
 

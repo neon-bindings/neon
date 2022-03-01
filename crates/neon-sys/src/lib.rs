@@ -260,6 +260,9 @@ extern "C" {
     pub fn Neon_Primitive_Number(out: &mut Local, isolate: Isolate, v: f64);
     pub fn Neon_Primitive_NumberValue(p: Local) -> f64;
 
+    pub fn Neon_Primitive_BigInt(out: &mut Local, isolate: Isolate, v: i64);
+    pub fn Neon_Primitive_BigIntValue(out: &mut Local, isolate: Isolate, v: i64);
+
     pub fn Neon_Scope_Escape(
         isolate: Isolate,
         out: &mut Local,
@@ -295,6 +298,7 @@ extern "C" {
     pub fn Neon_Tag_IsUndefined(isolate: Isolate, val: Local) -> bool;
     pub fn Neon_Tag_IsNull(isolate: Isolate, val: Local) -> bool;
     pub fn Neon_Tag_IsNumber(isolate: Isolate, val: Local) -> bool;
+    pub fn Neon_Tag_IsBigInt(isolate: Isolate, val: Local) -> bool;
     pub fn Neon_Tag_IsBoolean(isolate: Isolate, val: Local) -> bool;
     pub fn Neon_Tag_IsString(isolate: Isolate, val: Local) -> bool;
     pub fn Neon_Tag_IsObject(isolate: Isolate, val: Local) -> bool;

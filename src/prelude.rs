@@ -48,6 +48,8 @@ pub use crate::types::{
     JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsError, JsFunction, JsNull, JsNumber, JsObject,
     JsString, JsUndefined, JsValue, Value,
 };
+#[cfg(feature = "napi-6")]
+pub use crate::types::{JsBigInt};
 #[cfg(feature = "napi-1")]
 #[doc(no_inline)]
 pub use crate::{

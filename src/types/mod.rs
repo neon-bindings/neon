@@ -87,6 +87,8 @@ pub mod function;
 #[cfg(all(feature = "napi-1", feature = "promise-api"))]
 pub(crate) mod promise;
 
+#[cfg(feature = "napi-6")]
+pub(crate) mod bigint;
 pub(crate) mod private;
 pub(crate) mod utf8;
 
@@ -117,6 +119,8 @@ pub use self::date::{DateError, DateErrorKind, JsDate};
 pub use self::error::JsError;
 #[cfg(all(feature = "napi-1", feature = "promise-api"))]
 pub use self::promise::{Deferred, JsPromise};
+#[cfg(feature = "napi-6")]
+pub use self::bigint::{JsBigInt};
 
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(
     env: Env,

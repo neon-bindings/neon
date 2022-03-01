@@ -31,3 +31,7 @@ pub use neon_sys::Neon_Primitive_Number as number;
 
 /// Gets the underlying value of a `v8::Number` object.
 pub use neon_sys::Neon_Primitive_NumberValue as number_value;
+
+pub use neon_sys::Neon_Primitive_BigInt as bigint;
+
+pub use neon_sys::Neon_Primitive_BigIntValue as bigint_value;

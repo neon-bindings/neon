@@ -54,6 +54,12 @@ pub fn is_number(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     Ok(cx.boolean(result))
 }
 
+pub fn is_bigint(mut cx: FunctionContext) -> JsResult<JsBoolean> {
+    let val: Handle<JsValue> = cx.argument(0)?;
+    let result = val.is_a::<JsBigInt, _>(&mut cx);
+    Ok(cx.boolean(result))
+}
+
 pub fn is_object(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     let val: Handle<JsValue> = cx.argument(0)?;
     let result = val.is_a::<JsObject, _>(&mut cx);

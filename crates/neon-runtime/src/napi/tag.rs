@@ -38,6 +38,10 @@ pub unsafe fn is_object(env: Env, val: Local) -> bool {
     is_type(env, val, napi::ValueType::Object)
 }
 
+pub unsafe fn is_bigint(env: Env, val: Local) -> bool {
+    is_type(env, val, napi::ValueType::BigInt)
+}
+
 pub unsafe fn is_array(env: Env, val: Local) -> bool {
     let mut result = false;
     assert_eq!(
