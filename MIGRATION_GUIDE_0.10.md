@@ -136,7 +136,7 @@ let b2: Handle<JsArrayBuffer> = ...;
 
 ```rust
 let src_buf: Handle<JsTypedArray<u32>> = ...;
-let dst_buf: Handle<JsTypedArray<h32>> = ...;
+let dst_buf: Handle<JsTypedArray<u32>> = ...;
 {
     let lock = cx.lock();
     let src = src_buf.as_slice(&lock).unwrap();
