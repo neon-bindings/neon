@@ -47,8 +47,8 @@ f.call(&mut cx, this, args)
 **After (low-level API):**
 
 ```rust
-let s: Handle<JsString> = ...;
-let n: Handle<JsNumber> = ...;
+let s: Handle<JsString> = cx.string("hello");
+let n: Handle<JsNumber> = cx.number(42);
 let this = cx.global();
 f.call(&mut cx, this, [s.upcast(), n.upcast()])
 ```
@@ -56,10 +56,8 @@ f.call(&mut cx, this, [s.upcast(), n.upcast()])
 **After (high-level API):**
 
 ```rust
-let s: Handle<JsString> = ...;
-let n: Handle<JsNumber> = ...;
 f.call_with(&cx)
- .args((s, n))
+ .args((cx.string("hello"), cx.number(42)))
  .apply(&mut cx)
 ```
 
