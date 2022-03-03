@@ -169,7 +169,7 @@ use bytemuck::cast_slice;
 
 let b: Handle<JsArrayBuffer> = ...;
 let u8_slice = b.as_slice(&cx);
-let f32_slice = cast_slice(u8_slice);
+let f32_slice: &[f32] = cast_slice(u8_slice);
 ```
 
 # Minor changes
