@@ -48,7 +48,7 @@ use std::marker::PhantomData;
 ///
 /// [unit]: https://doc.rust-lang.org/book/ch05-01-defining-structs.html#unit-like-structs-without-any-fields
 #[derive(Debug)]
-pub struct Throw(PhantomData<*mut ()>); // *mut is !Send + !Sync, making it harder to forge
+pub struct Throw(PhantomData<*mut ()>); // *mut is !Send + !Sync, making it harder to accidentally store
 
 impl Throw {
     pub(crate) fn new() -> Self {
