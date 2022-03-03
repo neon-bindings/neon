@@ -242,3 +242,7 @@ fn helper<'a, C: Context<'a>>(cx: &mut C, s: Handle<JsString>) -> ... {
 ## Context methods now all take `&mut self`
 
 Context methods such as [`execute_scoped`](https://docs.rs/neon/0.10.0-alpha.3/neon/context/trait.Context.html#method.execute_scoped), [`compute_scoped`](https://docs.rs/neon/0.10.0-alpha.3/neon/context/trait.Context.html#method.compute_scoped), and [`lock`](https://docs.rs/neon/0.10.0-alpha.3/neon/context/trait.Context.html#method.lock) all take `&mut self` instead of the previous `&self`. This was necessary for safety and is more consistent with other `Context` methods. In normal usage, this should not require code changes.
+
+## `Throw` is unconstructable
+
+The [`Throw`](https://docs.rs/neon/0.10.0-alpha.3/neon/result/struct.Throw.html) type can no longer be explicitly constructed, and cannot be shared across threads. This makes it harder to accidentally mis-report a [`NeonResult`](https://docs.rs/neon/0.10.0-alpha.3/neon/result/type.NeonResult.html) value by reusing a stale `Throw` value. Existing code that uses `Throw` for application-specific use cases should use a custom struct or enum instead.
