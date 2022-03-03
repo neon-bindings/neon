@@ -176,7 +176,7 @@ let f32_slice: &[f32] = cast_slice(u8_slice);
 
 ## Uncaught errors in tasks
 
-Starting with 0.10, uncaught errors (whether Rust panics or JavaScript exceptions) in a task are now captured and reported to Node as an [`uncaughtException` event](https://nodejs.org/api/process.html#event-uncaughtexception). Previously, an uncaught JavaScript exception would be ignored. To handle uncaught exceptions, either wrap the body of a task with [`try_catch`](https://docs.rs/neon/0.10.0-alpha.3/neon/context/trait.Context.html#method.try_catch) or, alternatively, capture all uncaught exceptions in Node with [`process.setUncaughtExceptionCaptureCallback()`](https://nodejs.org/api/process.html#processsetuncaughtexceptioncapturecallbackfn).
+Starting with 0.10, uncaught errors (whether Rust panics or JavaScript exceptions) in a task are now captured and reported to Node as an [`unhandledRejection ` event](https://nodejs.org/api/process.html#event-unhandledrejection). Previously, an uncaught JavaScript exception would be ignored. To handle uncaught exceptions, either wrap the body of a task with [`try_catch`](https://docs.rs/neon/0.10.0-alpha.3/neon/context/trait.Context.html#method.try_catch) or, alternatively, capture all uncaught rejections in Node with `process.on("unhandledRejection, (err) => {})`.
 
 **Before:**
 
