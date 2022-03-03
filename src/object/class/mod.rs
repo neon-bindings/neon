@@ -173,7 +173,7 @@ pub(crate) trait ClassInternal: Class {
             );
 
             if metadata_pointer.is_null() {
-                return Err(Throw);
+                return Err(Throw::new());
             }
 
             // NOTE: None of the error cases below need to delete the ClassMetadata object, since the
@@ -186,7 +186,7 @@ pub(crate) trait ClassInternal: Class {
                 class_name.as_ptr(),
                 class_name.len() as u32,
             ) {
-                return Err(Throw);
+                return Err(Throw::new());
             }
 
             for (name, method) in descriptor.methods {
@@ -201,7 +201,7 @@ pub(crate) trait ClassInternal: Class {
                     name.len() as u32,
                     method.to_raw(),
                 ) {
-                    return Err(Throw);
+                    return Err(Throw::new());
                 }
             }
 

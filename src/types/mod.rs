@@ -45,7 +45,14 @@
 //!     cx: &mut impl Context<'a>,
 //!     object: Handle<'a, JsObject>
 //! ) -> JsResult<'a, JsArray> {
+//! #   #[cfg(feature = "legacy-runtime")]
+//! #   return
+//! #   object.downcast().or_throw(cx)
+//! #   ;
+//! #   #[cfg(feature = "napi-1")]
+//! #   return
 //!     object.downcast(cx).or_throw(cx)
+//! #   ;
 //! }
 //! # }
 //! ```
@@ -127,7 +134,7 @@ pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(
         if init(&mut local) {
             Ok(Handle::new_internal(T::from_raw(env, local)))
         } else {
-            Err(Throw)
+            Err(Throw::new())
         }
     }
 }

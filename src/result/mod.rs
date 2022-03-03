@@ -37,6 +37,7 @@ use crate::context::Context;
 use crate::handle::Handle;
 use crate::types::Value;
 use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::marker::PhantomData;
 
 /// A [unit type][unit] indicating that the JavaScript thread is throwing an exception.
 ///
@@ -47,7 +48,13 @@ use std::fmt::{Display, Formatter, Result as FmtResult};
 ///
 /// [unit]: https://doc.rust-lang.org/book/ch05-01-defining-structs.html#unit-like-structs-without-any-fields
 #[derive(Debug)]
-pub struct Throw;
+pub struct Throw(PhantomData<*mut ()>); // *mut is !Send + !Sync, making it harder to accidentally store
+
+impl Throw {
+    pub(crate) fn new() -> Self {
+        Self(PhantomData)
+    }
+}
 
 impl Display for Throw {
     fn fmt(&self, fmt: &mut Formatter) -> FmtResult {
