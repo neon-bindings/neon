@@ -30,7 +30,7 @@ let v: Handle<V> = obj.get(&mut cx, "name")?
 
 ## Layered APIs for function calls
 
-The API for calling (or constructing, i.e. the Neon equivalent of the JavaScript new operator) a JS function has been split into two layered alternatives. The existing `.call()` and `.construct()` functions are now a lower-level primitive, which no longer offers automatic downcasting of arguments or result. But Neon 0.10 now offers a more convenient API for calling functions with an options object and method chaining, with the introduction of the `.call_with()` and `.construct_with()` methods.
+The API for calling (or constructing, i.e. the Neon equivalent of the JavaScript `new` operator) a JS function has been split into two layered alternatives. The existing `.call()` and `.construct()` functions are now a lower-level primitive, which no longer offers automatic downcasting of arguments or result. But Neon 0.10 now offers a more convenient API for calling functions with an options object and method chaining, with the introduction of the `.call_with()` and `.construct_with()` methods.
 
 ### Example: Calling a function
 
