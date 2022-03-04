@@ -933,7 +933,7 @@ impl JsFunction {
                 marker: PhantomData,
             }))
         } else {
-            Err(Throw)
+            Err(Throw::new())
         }
     }
 }

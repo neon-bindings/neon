@@ -24,7 +24,7 @@ impl JsBuffer {
         if let Ok(buf) = result {
             Ok(Handle::new_internal(Self(buf)))
         } else {
-            Err(Throw)
+            Err(Throw::new())
         }
     }
 
@@ -35,7 +35,7 @@ impl JsBuffer {
         if let Ok((buf, _)) = result {
             Ok(Handle::new_internal(Self(buf)))
         } else {
-            Err(Throw)
+            Err(Throw::new())
         }
     }
 
@@ -143,7 +143,7 @@ impl JsArrayBuffer {
         if let Ok(buf) = result {
             Ok(Handle::new_internal(Self(buf)))
         } else {
-            Err(Throw)
+            Err(Throw::new())
         }
     }
 
