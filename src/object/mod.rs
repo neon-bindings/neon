@@ -237,6 +237,8 @@ mod traits {
 
     /// The trait of all object types.
     pub trait Object: Value {
+        /// Gets a property from a JavaScript object that may be `undefined` and
+        /// attempts to downcast the value if it existed.
         fn get_opt<'a, V: Value, C: Context<'a>, K: PropertyKey>(
             &self,
             cx: &mut C,
@@ -251,6 +253,10 @@ mod traits {
             v.downcast_or_throw(cx).map(Some)
         }
 
+        /// Gets a property from a JavaScript object as a [`JsValue`].
+        ///
+        /// If a [`getter`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get)
+        /// is defined on the object, it will be called.
         fn get_value<'a, C: Context<'a>, K: PropertyKey>(
             &self,
             cx: &mut C,
@@ -261,6 +267,10 @@ mod traits {
             })
         }
 
+        /// Gets a property from a JavaScript object and attempts to downcast as a specific type.
+        /// Equivalent to calling `obj.get(&mut cx)?.downcast_or_throw(&mut cx)`.
+        ///
+        /// Throws an exception if the value is a different type.
         fn get<'a, V: Value, C: Context<'a>, K: PropertyKey>(
             &self,
             cx: &mut C,
