@@ -25,13 +25,11 @@ Neon!
 See our [Neon fundamentals docs](https://neon-bindings.com/docs/intro) and
 our [API docs](https://docs.rs/neon/latest/neon).
 
-## Node-API (formerly N-API) Migration Guide
+## Neon 0.10 Migration Guide
 
-We've ported Neon to a new backend based on [Node-API (formerly N-API)](https://nodejs.org/api/n-api.html), which will
-be the basis for Neon 1.0.
+The latest version of Neon, 0.10, includes a few small breaking changes in order to clean up and improve the usability of our APIs.
 
-**Read the new [migration guide](https://github.com/neon-bindings/neon/blob/main/MIGRATION_GUIDE.md)** to learn how to
-port your Neon projects to N-API!
+**Read the new [migration guide](https://github.com/neon-bindings/neon/blob/main/MIGRATION_GUIDE_0.10.md)** to learn how to port your Neon projects to 0.10!
 
 ## Platform Support
 

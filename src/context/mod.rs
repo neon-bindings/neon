@@ -87,23 +87,23 @@
 //! # use neon::prelude::*;
 //! # fn iterate(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 //!     let iterator = cx.argument::<JsObject>(0)?;         // iterator object
-//!     let next = iterator.get(&mut cx, "next")?           // iterator's `next` method
-//!         .downcast_or_throw::<JsFunction, _>(&mut cx)?;
+//!     let next: Handle<JsFunction> =                      // iterator's `next` method
+//!         iterator.get(&mut cx, "next")?;
 //!     let mut numbers = vec![];                           // results vector
 //!     let mut done = false;                               // loop controller
 //!
 //!     while !done {
 //!         done = cx.execute_scoped(|mut cx| {                   // temporary scope
-//!             let args: Vec<Handle<JsValue>> = vec![];
-//!             let obj = next.call(&mut cx, iterator, args)?     // temporary object
-//!                 .downcast_or_throw::<JsObject, _>(&mut cx)?;
-//!             let number = obj.get(&mut cx, "value")?           // temporary number
-//!                 .downcast_or_throw::<JsNumber, _>(&mut cx)?
-//!                 .value(&mut cx);
-//!             numbers.push(number);
-//!             Ok(obj.get(&mut cx, "done")?                      // temporary boolean
-//!                 .downcast_or_throw::<JsBoolean, _>(&mut cx)?
-//!                 .value(&mut cx))
+//!             let obj: Handle<JsObject> = next                  // temporary object
+//!                 .call_with(&cx)
+//!                 .this(iterator)
+//!                 .apply(&mut cx)?;
+//!             let number: Handle<JsNumber> =                    // temporary number
+//!                 obj.get(&mut cx, "value")?;
+//!             numbers.push(number.value(&mut cx));
+//!             let done: Handle<JsBoolean> =                     // temporary boolean
+//!                 obj.get(&mut cx, "done")?;
+//!             Ok(done.value(&mut cx))
 //!         })?;
 //!     }
 //! #   Ok(cx.undefined())
@@ -148,11 +148,15 @@
 
 pub(crate) mod internal;
 
+#[cfg(feature = "legacy-runtime")]
 use crate::borrow::internal::Ledger;
+#[cfg(feature = "legacy-runtime")]
 use crate::borrow::{Borrow, BorrowMut, Ref, RefMut};
 use crate::context::internal::Env;
 #[cfg(all(feature = "napi-4", feature = "channel-api"))]
 use crate::event::Channel;
+#[cfg(all(feature = "napi-1", feature = "task-api"))]
+use crate::event::TaskBuilder;
 use crate::handle::{Handle, Managed};
 #[cfg(all(feature = "napi-6", feature = "channel-api"))]
 use crate::lifecycle::InstanceData;
@@ -160,22 +164,27 @@ use crate::lifecycle::InstanceData;
 use crate::object::class::Class;
 use crate::object::{Object, This};
 use crate::result::{JsResult, NeonResult, Throw};
-use crate::types::binary::{JsArrayBuffer, JsBuffer};
 #[cfg(feature = "napi-1")]
 use crate::types::boxed::{Finalize, JsBox};
+#[cfg(feature = "napi-1")]
+pub use crate::types::buffer::lock::Lock;
 #[cfg(feature = "napi-5")]
 use crate::types::date::{DateError, JsDate};
 use crate::types::error::JsError;
+#[cfg(all(feature = "napi-1", feature = "promise-api"))]
+use crate::types::{Deferred, JsPromise};
 use crate::types::{
-    JsArray, JsBoolean, JsFunction, JsNull, JsNumber, JsObject, JsString, JsUndefined, JsValue,
-    StringResult, Value,
+    JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber, JsObject, JsString,
+    JsUndefined, JsValue, StringResult, Value,
 };
 use neon_runtime;
 use neon_runtime::raw;
 use std;
+#[cfg(feature = "legacy-runtime")]
 use std::cell::RefCell;
 use std::convert::Into;
 use std::marker::PhantomData;
+#[cfg(feature = "legacy-runtime")]
 use std::os::raw::c_void;
 use std::panic::UnwindSafe;
 
@@ -188,6 +197,15 @@ pub(crate) struct CallbackInfo<'a> {
 }
 
 impl CallbackInfo<'_> {
+    #[cfg(feature = "napi-1")]
+    pub unsafe fn new(info: raw::FunctionCallbackInfo) -> Self {
+        Self {
+            info,
+            _lifetime: PhantomData,
+        }
+    }
+
+    #[cfg(feature = "legacy-runtime")]
     pub fn data(&self, env: Env) -> *mut c_void {
         unsafe {
             let mut raw_data: *mut c_void = std::mem::zeroed();
@@ -196,6 +214,7 @@ impl CallbackInfo<'_> {
         }
     }
 
+    #[cfg(feature = "legacy-runtime")]
     pub unsafe fn with_cx<T: This, U, F: for<'a> FnOnce(CallContext<'a, T>) -> U>(
         &self,
         env: Env,
@@ -265,6 +284,7 @@ pub enum CallKind {
     Call,
 }
 
+#[cfg(feature = "legacy-runtime")]
 /// A temporary lock of an execution context.
 ///
 /// While a lock is alive, no JavaScript code can be executed in the execution context.
@@ -276,6 +296,7 @@ pub struct Lock<'a> {
     phantom: PhantomData<&'a ()>,
 }
 
+#[cfg(feature = "legacy-runtime")]
 impl<'a> Lock<'a> {
     fn new(env: Env) -> Self {
         Lock {
@@ -292,14 +313,27 @@ impl<'a> Lock<'a> {
 ///
 /// A context has a lifetime `'a`, which ensures the safety of handles managed by the JS garbage collector. All handles created during the lifetime of a context are kept alive for that duration and cannot outlive the context.
 pub trait Context<'a>: ContextInternal<'a> {
+    #[cfg(feature = "legacy-runtime")]
     /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
     ///
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
-    fn lock(&self) -> Lock<'_> {
+    fn lock(&mut self) -> Lock<'_> {
         self.check_active();
         Lock::new(self.env())
     }
 
+    #[cfg(feature = "napi-1")]
+    /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
+    ///
+    /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
+    fn lock<'b>(&'b mut self) -> Lock<Self>
+    where
+        'a: 'b,
+    {
+        Lock::new(self)
+    }
+
+    #[cfg(feature = "legacy-runtime")]
     /// Convenience method for locking the JavaScript engine and borrowing a single JS value's internals.
     ///
     /// # Example:
@@ -319,7 +353,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
     /// but while the extra `&` is a small ergonomics regression, this API is still a nice
     /// convenience.
-    fn borrow<'c, V, T, F>(&self, v: &'c Handle<V>, f: F) -> T
+    fn borrow<'c, V, T, F>(&mut self, v: &'c Handle<V>, f: F) -> T
     where
         V: Value,
         &'c V: Borrow,
@@ -330,6 +364,7 @@ pub trait Context<'a>: ContextInternal<'a> {
         f(contents)
     }
 
+    #[cfg(feature = "legacy-runtime")]
     /// Convenience method for locking the JavaScript engine and mutably borrowing a single JS value's internals.
     ///
     /// # Example:
@@ -351,7 +386,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
     /// but while the extra `&mut` is a small ergonomics regression, this API is still a nice
     /// convenience.
-    fn borrow_mut<'c, V, T, F>(&self, v: &'c mut Handle<V>, f: F) -> T
+    fn borrow_mut<'c, V, T, F>(&mut self, v: &'c mut Handle<V>, f: F) -> T
     where
         V: Value,
         &'c mut V: BorrowMut,
@@ -367,7 +402,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape.
     ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
-    fn execute_scoped<T, F>(&self, f: F) -> T
+    fn execute_scoped<T, F>(&mut self, f: F) -> T
     where
         F: for<'b> FnOnce(ExecuteContext<'b>) -> T,
     {
@@ -383,7 +418,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape, with the exception of the result value, which is rooted in the outer context.
     ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
-    fn compute_scoped<V, F>(&self, f: F) -> JsResult<'a, V>
+    fn compute_scoped<V, F>(&mut self, f: F) -> JsResult<'a, V>
     where
         V: Value,
         F: for<'b, 'c> FnOnce(ComputeContext<'b, 'c>) -> JsResult<'b, V>,
@@ -465,16 +500,29 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsArray::new(self, 0)
     }
 
+    #[cfg(feature = "legacy-runtime")]
     /// Convenience method for creating an empty `JsArrayBuffer` value.
     fn array_buffer(&mut self, size: u32) -> JsResult<'a, JsArrayBuffer> {
         JsArrayBuffer::new(self, size)
     }
 
+    #[cfg(feature = "napi-1")]
+    /// Convenience method for creating an empty `JsArrayBuffer` value.
+    fn array_buffer(&mut self, size: usize) -> JsResult<'a, JsArrayBuffer> {
+        JsArrayBuffer::new(self, size)
+    }
+
+    #[cfg(feature = "legacy-runtime")]
     /// Convenience method for creating an empty `JsBuffer` value.
     fn buffer(&mut self, size: u32) -> JsResult<'a, JsBuffer> {
         JsBuffer::new(self, size)
     }
 
+    #[cfg(feature = "napi-1")]
+    /// Convenience method for creating an empty `JsBuffer` value.
+    fn buffer(&mut self, size: usize) -> JsResult<'a, JsBuffer> {
+        JsBuffer::new(self, size)
+    }
     /// Convenience method for creating a `JsDate` value.
     #[cfg(feature = "napi-5")]
     #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
@@ -494,7 +542,7 @@ pub trait Context<'a>: ContextInternal<'a> {
         unsafe {
             neon_runtime::error::throw(self.env().to_raw(), v.to_raw());
         }
-        Err(Throw)
+        Err(Throw::new())
     }
 
     /// Creates a direct instance of the [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error) class.
@@ -573,6 +621,57 @@ pub trait Context<'a>: ContextInternal<'a> {
     fn queue(&mut self) -> Channel {
         self.channel()
     }
+
+    #[cfg(all(feature = "napi-1", feature = "promise-api"))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "promise-api")))]
+    /// Creates a [`Deferred`] and [`JsPromise`] pair. The [`Deferred`] handle can be
+    /// used to resolve or reject the [`JsPromise`].
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "napi-1", feature = "promise-api"))] {
+    /// # use neon::prelude::*;
+    /// fn resolve_promise(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    ///     let (deferred, promise) = cx.promise();
+    ///     let msg = cx.string("Hello, World!");
+    ///
+    ///     deferred.resolve(&mut cx, msg);
+    ///
+    ///     Ok(promise)
+    /// }
+    /// # }
+    /// ```
+    fn promise(&mut self) -> (Deferred, Handle<'a, JsPromise>) {
+        JsPromise::new(self)
+    }
+
+    #[cfg(all(feature = "napi-1", feature = "task-api"))]
+    #[cfg_attr(docsrs, doc(cfg(feature = "task-api")))]
+    /// Creates a [`TaskBuilder`] which can be used to schedule the `execute`
+    /// callback to asynchronously execute on the
+    /// [Node worker pool](https://nodejs.org/en/docs/guides/dont-block-the-event-loop/).
+    ///
+    /// ```
+    /// # #[cfg(all(feature = "napi-1", feature = "promise-api", feature = "task-api"))] {
+    /// # use neon::prelude::*;
+    /// fn greet(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    ///     let name = cx.argument::<JsString>(0)?.value(&mut cx);
+    ///
+    ///     let promise = cx
+    ///         .task(move || format!("Hello, {}!", name))
+    ///         .promise(move |mut cx, greeting| Ok(cx.string(greeting)));
+    ///
+    ///     Ok(promise)
+    /// }
+    /// # }
+    /// ```
+    fn task<'cx, O, E>(&'cx mut self, execute: E) -> TaskBuilder<Self, E>
+    where
+        'a: 'cx,
+        O: Send + 'static,
+        E: FnOnce() -> O + Send + 'static,
+    {
+        TaskBuilder::new(self, execute)
+    }
 }
 
 /// An execution context of module initialization.
@@ -607,6 +706,7 @@ impl<'a> ModuleContext<'a> {
         Scope::with(env, |scope| f(ModuleContext { scope, exports }))
     }
 
+    #[cfg(not(feature = "napi-5"))]
     /// Convenience method for exporting a Neon function from a module.
     pub fn export_function<T: Value>(
         &mut self,
@@ -614,7 +714,21 @@ impl<'a> ModuleContext<'a> {
         f: fn(FunctionContext) -> JsResult<T>,
     ) -> NeonResult<()> {
         let value = JsFunction::new(self, f)?.upcast::<JsValue>();
-        self.exports.set(self, key, value)?;
+        self.exports.clone().set(self, key, value)?;
+        Ok(())
+    }
+
+    #[cfg(feature = "napi-5")]
+    /// Convenience method for exporting a Neon function from a module.
+    pub fn export_function<F, V>(&mut self, key: &str, f: F) -> NeonResult<()>
+    where
+        F: Fn(FunctionContext) -> JsResult<V> + 'static,
+        V: Value,
+    {
+        let value = JsFunction::new(self, f)?.upcast::<JsValue>();
+        // Note: Cloning `exports` is necessary to avoid holding a shared reference to
+        // `self` while attempting to use it mutably in `set`.
+        self.exports.clone().set(self, key, value)?;
         Ok(())
     }
 
@@ -622,13 +736,13 @@ impl<'a> ModuleContext<'a> {
     /// Convenience method for exporting a Neon class constructor from a module.
     pub fn export_class<T: Class>(&mut self, key: &str) -> NeonResult<()> {
         let constructor = T::constructor(self)?;
-        self.exports.set(self, key, constructor)?;
+        self.exports.clone().set(self, key, constructor)?;
         Ok(())
     }
 
     /// Exports a JavaScript value from a Neon module.
     pub fn export_value<T: Value>(&mut self, key: &str, val: Handle<T>) -> NeonResult<()> {
-        self.exports.set(self, key, val)?;
+        self.exports.clone().set(self, key, val)?;
         Ok(())
     }
 
@@ -820,7 +934,10 @@ impl<'a> TaskContext<'a> {
         Scope::with(env, |scope| f(TaskContext { scope }))
     }
 
-    #[cfg(all(feature = "napi-4", feature = "channel-api"))]
+    #[cfg(any(
+        all(feature = "napi-1", feature = "task-api"),
+        all(feature = "napi-4", feature = "channel-api"),
+    ))]
     pub(crate) fn with_context<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: Env, f: F) -> T {
         Scope::with(env, |scope| f(TaskContext { scope }))
     }

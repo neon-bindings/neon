@@ -7,7 +7,7 @@ use std::ptr::null_mut;
 /// `Local` handles get associated to a V8 `HandleScope` container. Note: Node.js creates a
 /// `HandleScope` right before calling functions in native addons.
 #[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct Local {
     pub handle: *mut c_void,
 }
@@ -206,14 +206,14 @@ extern "C" {
         fun: Local,
         this: Local,
         argc: i32,
-        argv: *mut c_void,
+        argv: *const c_void,
     ) -> bool;
     pub fn Neon_Fun_Construct(
         out: &mut Local,
         isolate: Isolate,
         fun: Local,
         argc: i32,
-        argv: *mut c_void,
+        argv: *const c_void,
     ) -> bool;
 
     pub fn Neon_Mem_SameHandle(h1: Local, h2: Local) -> bool;

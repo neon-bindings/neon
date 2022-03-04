@@ -8,22 +8,41 @@
 //!
 //! [napi-docs]: https://nodejs.org/api/n-api.html#n_api_environment_life_cycle_apis
 
-use std::mem;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use neon_runtime::raw::Env;
-use neon_runtime::reference;
 use neon_runtime::tsfn::ThreadsafeFunction;
 
 use crate::context::Context;
-#[cfg(all(feature = "channel-api"))]
+#[cfg(feature = "channel-api")]
 use crate::event::Channel;
 use crate::handle::root::NapiRef;
+#[cfg(feature = "promise-api")]
+use crate::types::promise::NodeApiDeferred;
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[repr(transparent)]
+/// Uniquely identifies an instance of the module
+///
+/// _Note_: Since `InstanceData` is created lazily, the order of `id` may not
+/// reflect the order that instances were created.
+pub(crate) struct InstanceId(u64);
+
+impl InstanceId {
+    fn next() -> Self {
+        static NEXT_ID: AtomicU64 = AtomicU64::new(0);
+
+        Self(NEXT_ID.fetch_add(1, Ordering::SeqCst))
+    }
+}
 
 /// `InstanceData` holds Neon data associated with a particular instance of a
 /// native module. If a module is loaded multiple times (e.g., worker threads), this
 /// data will be unique per instance.
 pub(crate) struct InstanceData {
+    id: InstanceId,
+
     /// Used to free `Root` in the same JavaScript environment that created it
     ///
     /// _Design Note_: An `Arc` ensures the `ThreadsafeFunction` outlives the unloading
@@ -31,17 +50,31 @@ pub(crate) struct InstanceData {
     /// could be replaced with a leaked `&'static ThreadsafeFunction<NapiRef>`. However,
     /// given the cost of FFI, this optimization is omitted until the cost of an
     /// `Arc` is demonstrated as significant.
-    drop_queue: Arc<ThreadsafeFunction<NapiRef>>,
+    drop_queue: Arc<ThreadsafeFunction<DropData>>,
 
     /// Shared `Channel` that is cloned to be returned by the `cx.channel()` method
     #[cfg(all(feature = "channel-api"))]
     shared_channel: Channel,
 }
 
-fn drop_napi_ref(env: Option<Env>, data: NapiRef) {
-    if let Some(env) = env {
-        unsafe {
-            reference::unreference(env, mem::transmute(data));
+/// Wrapper for raw Node-API values to be dropped on the main thread
+pub(crate) enum DropData {
+    #[cfg(feature = "promise-api")]
+    Deferred(NodeApiDeferred),
+    Ref(NapiRef),
+}
+
+impl DropData {
+    /// Drop a value on the main thread
+    fn drop(env: Option<Env>, data: Self) {
+        if let Some(env) = env {
+            unsafe {
+                match data {
+                    #[cfg(feature = "promise-api")]
+                    DropData::Deferred(data) => data.leaked(env),
+                    DropData::Ref(data) => data.unref(env),
+                }
+            }
         }
     }
 }
@@ -63,7 +96,7 @@ impl InstanceData {
         }
 
         let drop_queue = unsafe {
-            let queue = ThreadsafeFunction::new(env, drop_napi_ref);
+            let queue = ThreadsafeFunction::new(env, DropData::drop);
             queue.unref(env);
             queue
         };
@@ -76,6 +109,7 @@ impl InstanceData {
         };
 
         let data = InstanceData {
+            id: InstanceId::next(),
             drop_queue: Arc::new(drop_queue),
             #[cfg(all(feature = "channel-api"))]
             shared_channel,
@@ -85,7 +119,7 @@ impl InstanceData {
     }
 
     /// Helper to return a reference to the `drop_queue` field of `InstanceData`
-    pub(crate) fn drop_queue<'a, C: Context<'a>>(cx: &mut C) -> Arc<ThreadsafeFunction<NapiRef>> {
+    pub(crate) fn drop_queue<'a, C: Context<'a>>(cx: &mut C) -> Arc<ThreadsafeFunction<DropData>> {
         Arc::clone(&InstanceData::get(cx).drop_queue)
     }
 
@@ -96,5 +130,10 @@ impl InstanceData {
         let mut channel = InstanceData::get(cx).shared_channel.clone();
         channel.reference(cx);
         channel
+    }
+
+    /// Unique identifier for this instance of the module
+    pub(crate) fn id<'a, C: Context<'a>>(cx: &mut C) -> InstanceId {
+        InstanceData::get(cx).id
     }
 }

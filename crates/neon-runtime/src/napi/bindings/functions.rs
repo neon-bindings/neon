@@ -53,9 +53,11 @@ mod napi1 {
             fn close_handle_scope(env: Env, scope: HandleScope) -> Status;
 
             fn is_arraybuffer(env: Env, value: Value, result: *mut bool) -> Status;
+            fn is_typedarray(env: Env, value: Value, result: *mut bool) -> Status;
             fn is_buffer(env: Env, value: Value, result: *mut bool) -> Status;
             fn is_error(env: Env, value: Value, result: *mut bool) -> Status;
             fn is_array(env: Env, value: Value, result: *mut bool) -> Status;
+            fn is_promise(env: Env, value: Value, result: *mut bool) -> Status;
 
             fn get_value_string_utf8(
                 env: Env,
@@ -88,6 +90,16 @@ mod napi1 {
                 arraybuffer: Value,
                 data: *mut *mut c_void,
                 byte_length: *mut usize,
+            ) -> Status;
+
+            fn get_typedarray_info(
+                env: Env,
+                typedarray: Value,
+                typ: *mut TypedArrayType,
+                length: *mut usize,
+                data: *mut *mut c_void,
+                buf: *mut Value,
+                offset: *mut usize,
             ) -> Status;
 
             fn create_buffer(
@@ -198,6 +210,29 @@ mod napi1 {
             ) -> Status;
 
             fn run_script(env: Env, script: Value, result: *mut Value) -> Status;
+
+            fn create_async_work(
+                env: Env,
+                async_resource: Value,
+                async_resource_name: Value,
+                execute: AsyncExecuteCallback,
+                complete: AsyncCompleteCallback,
+                data: *mut c_void,
+                result: *mut AsyncWork,
+            ) -> Status;
+
+            fn delete_async_work(env: Env, work: AsyncWork) -> Status;
+            fn queue_async_work(env: Env, work: AsyncWork) -> Status;
+            fn create_promise(env: Env, deferred: *mut Deferred, promise: *mut Value) -> Status;
+            fn resolve_deferred(env: Env, deferred: Deferred, resolution: Value) -> Status;
+            fn reject_deferred(env: Env, deferred: Deferred, rejection: Value) -> Status;
+
+            fn fatal_error(
+                location: *const c_char,
+                location_len: usize,
+                message: *const c_char,
+                message_len: usize,
+            );
         }
     );
 }
@@ -244,6 +279,7 @@ mod napi4 {
 #[cfg(feature = "napi-5")]
 mod napi5 {
     use super::super::types::*;
+    use std::ffi::c_void;
 
     generate!(
         extern "C" {
@@ -252,6 +288,15 @@ mod napi5 {
             fn get_date_value(env: Env, value: Value, result: *mut f64) -> Status;
 
             fn is_date(env: Env, value: Value, result: *mut bool) -> Status;
+
+            fn add_finalizer(
+                env: Env,
+                js_object: Value,
+                native_object: *mut c_void,
+                finalize_cb: Finalize,
+                finalize_hint: *mut c_void,
+                result: Ref,
+            ) -> Status;
         }
     );
 }

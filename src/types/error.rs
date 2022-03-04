@@ -7,18 +7,27 @@ use neon_runtime::raw;
 
 use crate::context::internal::Env;
 use crate::context::Context;
+use crate::handle::{internal::TransparentNoCopyWrapper, Handle, Managed};
 use crate::result::{NeonResult, Throw};
-use crate::types::internal::ValueInternal;
+use crate::types::private::ValueInternal;
 use crate::types::utf8::Utf8;
-use crate::types::{build, Handle, Managed, Object, Value};
+use crate::types::{build, Object, Value};
 
 /// A JS `Error` object.
-#[repr(C)]
-#[derive(Clone, Copy)]
+#[repr(transparent)]
+#[derive(Debug)]
 pub struct JsError(raw::Local);
 
+unsafe impl TransparentNoCopyWrapper for JsError {
+    type Inner = raw::Local;
+
+    fn into_inner(self) -> Self::Inner {
+        self.0
+    }
+}
+
 impl Managed for JsError {
-    fn to_raw(self) -> raw::Local {
+    fn to_raw(&self) -> raw::Local {
         self.0
     }
 
@@ -32,7 +41,7 @@ impl ValueInternal for JsError {
         "Error".to_string()
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
         unsafe { neon_runtime::tag::is_error(env.to_raw(), other.to_raw()) }
     }
 }
@@ -98,7 +107,7 @@ pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> NeonResult<T>>(
                 #[cfg(feature = "napi-1")]
                 neon_runtime::error::clear_exception(env.to_raw());
                 neon_runtime::error::throw_error_from_utf8(env.to_raw(), data, len);
-                Err(Throw)
+                Err(Throw::new())
             }
         }
     }

@@ -9,8 +9,11 @@ edition = "2018"
 [lib]
 crate-type = ["cdylib"]
 
+[dependencies]
+once_cell = "1"
+
 [dependencies.neon]
 version = "*"
 path = "../.."
 default-features = false
-features = ["default-panic-hook", "napi-6", "try-catch-api", "channel-api"]
+features = ["default-panic-hook", "napi-6", "try-catch-api", "channel-api", "promise-api", "task-api"]

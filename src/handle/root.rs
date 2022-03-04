@@ -2,21 +2,34 @@ use std::ffi::c_void;
 use std::marker::PhantomData;
 #[cfg(feature = "napi-6")]
 use std::sync::Arc;
+#[cfg(not(feature = "napi-6"))]
+use std::thread::{self, ThreadId};
 
-use neon_runtime::reference;
 #[cfg(feature = "napi-6")]
 use neon_runtime::tsfn::ThreadsafeFunction;
+use neon_runtime::{raw, reference};
 
 use crate::context::Context;
 use crate::handle::Handle;
 #[cfg(feature = "napi-6")]
-use crate::lifecycle::InstanceData;
+use crate::lifecycle::{DropData, InstanceData, InstanceId};
 use crate::object::Object;
 use crate::types::boxed::Finalize;
+
+#[cfg(not(feature = "napi-6"))]
+type InstanceId = ThreadId;
 
 #[repr(transparent)]
 #[derive(Clone)]
 pub(crate) struct NapiRef(*mut c_void);
+
+impl NapiRef {
+    /// # Safety
+    /// Must only be used from the same module context that created the reference
+    pub(crate) unsafe fn unref(self, env: raw::Env) {
+        reference::unreference(env, self.0.cast());
+    }
+}
 
 // # Safety
 // `NapiRef` are reference counted types that allow references to JavaScript objects
@@ -24,6 +37,7 @@ pub(crate) struct NapiRef(*mut c_void);
 // `Context`, they are both `Send` and `Sync`.
 // https://nodejs.org/api/n-api.html#n_api_references_to_objects_with_a_lifespan_longer_than_that_of_the_native_method
 unsafe impl Send for NapiRef {}
+
 unsafe impl Sync for NapiRef {}
 
 /// A thread-safe handle that holds a reference to a JavaScript object and
@@ -35,8 +49,9 @@ pub struct Root<T> {
     // `Option` is used to skip `Drop` when `Root::drop` or `Root::into_inner` is used.
     // It will *always* be `Some` when a user is interacting with `Root`.
     internal: Option<NapiRef>,
+    instance_id: InstanceId,
     #[cfg(feature = "napi-6")]
-    drop_queue: Arc<ThreadsafeFunction<NapiRef>>,
+    drop_queue: Arc<ThreadsafeFunction<DropData>>,
     _phantom: PhantomData<T>,
 }
 
@@ -50,7 +65,18 @@ impl<T> std::fmt::Debug for Root<T> {
 // Safety: `Root` contains two types. A `NapiRef` which is `Send` and `Sync` and a
 // `PhantomData` that does not impact the safety.
 unsafe impl<T> Send for Root<T> {}
+
 unsafe impl<T> Sync for Root<T> {}
+
+#[cfg(feature = "napi-6")]
+fn instance_id<'a, C: Context<'a>>(cx: &mut C) -> InstanceId {
+    InstanceData::id(cx)
+}
+
+#[cfg(not(feature = "napi-6"))]
+fn instance_id<'a, C: Context<'a>>(_: &mut C) -> InstanceId {
+    thread::current().id()
+}
 
 impl<T: Object> Root<T> {
     /// Create a reference to a JavaScript object. The object will not be
@@ -68,6 +94,7 @@ impl<T: Object> Root<T> {
 
         Self {
             internal: Some(NapiRef(internal as *mut _)),
+            instance_id: instance_id(cx),
             #[cfg(feature = "napi-6")]
             drop_queue: InstanceData::drop_queue(cx),
             _phantom: PhantomData,
@@ -88,7 +115,7 @@ impl<T: Object> Root<T> {
     /// ```
     pub fn clone<'a, C: Context<'a>>(&self, cx: &mut C) -> Self {
         let env = cx.env();
-        let internal = self.as_napi_ref().0 as *mut _;
+        let internal = self.as_napi_ref(cx).0 as *mut _;
 
         unsafe {
             reference::reference(env.to_raw(), internal);
@@ -96,6 +123,7 @@ impl<T: Object> Root<T> {
 
         Self {
             internal: self.internal.clone(),
+            instance_id: instance_id(cx),
             #[cfg(feature = "napi-6")]
             drop_queue: Arc::clone(&self.drop_queue),
             _phantom: PhantomData,
@@ -106,22 +134,20 @@ impl<T: Object> Root<T> {
     /// object.
     pub fn drop<'a, C: Context<'a>>(self, cx: &mut C) {
         let env = cx.env().to_raw();
-        let internal = self.into_napi_ref().0 as *mut _;
 
         unsafe {
-            reference::unreference(env, internal);
+            self.into_napi_ref(cx).unref(env);
         }
     }
 
     /// Return the referenced JavaScript object and allow it to be garbage collected
     pub fn into_inner<'a, C: Context<'a>>(self, cx: &mut C) -> Handle<'a, T> {
         let env = cx.env();
-        let internal = self.into_napi_ref().0 as *mut _;
-
-        let local = unsafe { reference::get(env.to_raw(), internal) };
+        let internal = self.into_napi_ref(cx);
+        let local = unsafe { reference::get(env.to_raw(), internal.0.cast()) };
 
         unsafe {
-            reference::unreference(env.to_raw(), internal);
+            internal.unref(env.to_raw());
         }
 
         Handle::new_internal(T::from_raw(env, local))
@@ -132,12 +158,16 @@ impl<T: Object> Root<T> {
     /// can be used in place of a clone immediately followed by a call to `into_inner`.
     pub fn to_inner<'a, C: Context<'a>>(&self, cx: &mut C) -> Handle<'a, T> {
         let env = cx.env();
-        let local = unsafe { reference::get(env.to_raw(), self.as_napi_ref().0 as *mut _) };
+        let local = unsafe { reference::get(env.to_raw(), self.as_napi_ref(cx).0 as *mut _) };
 
         Handle::new_internal(T::from_raw(env, local))
     }
 
-    fn as_napi_ref(&self) -> &NapiRef {
+    fn as_napi_ref<'a, C: Context<'a>>(&self, cx: &mut C) -> &NapiRef {
+        if self.instance_id != instance_id(cx) {
+            panic!("Attempted to dereference a `neon::handle::Root` from the wrong module ");
+        }
+
         self.internal
             .as_ref()
             // `unwrap` will not `panic` because `internal` will always be `Some`
@@ -145,12 +175,11 @@ impl<T: Object> Root<T> {
             .unwrap()
     }
 
-    fn into_napi_ref(mut self) -> NapiRef {
-        self.internal
-            .take()
-            // `unwrap` will not `panic` because this is the only method place
-            // `internal` is replaced with `None` and it consumes `self`.
-            .unwrap()
+    fn into_napi_ref<'a, C: Context<'a>>(mut self, cx: &mut C) -> NapiRef {
+        let reference = self.as_napi_ref(cx).clone();
+        // This uses `as_napi_ref` instead of `Option::take` for the instance id safety check
+        self.internal = None;
+        reference
     }
 }
 
@@ -173,16 +202,13 @@ impl<T> Drop for Root<T> {
         // Destructors are called during stack unwinding, prevent a double
         // panic and instead prefer to leak.
         if std::thread::panicking() {
-            eprintln!("Warning: neon::sync::Root leaked during a panic");
+            eprintln!("Warning: neon::handle::Root leaked during a panic");
             return;
         }
 
         // Only panic if the event loop is still running
         if let Ok(true) = crate::context::internal::IS_RUNNING.try_with(|v| *v.borrow()) {
-            panic!(
-                "Must call `into_inner` or `drop` on `Root` \
-                https://docs.rs/neon/latest/neon/sync/index.html#drop-safety"
-            );
+            panic!("Must call `into_inner` or `drop` on `neon::handle::Root`");
         }
     }
 
@@ -190,7 +216,7 @@ impl<T> Drop for Root<T> {
     fn drop(&mut self) {
         // If `None`, the `NapiRef` has already been manually dropped
         if let Some(internal) = self.internal.take() {
-            let _ = self.drop_queue.call(internal.clone(), None);
+            let _ = self.drop_queue.call(DropData::Ref(internal), None);
         }
     }
 }

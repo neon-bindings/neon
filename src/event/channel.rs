@@ -1,5 +1,5 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{mpsc, Arc};
 
 use neon_runtime::raw::Env;
 use neon_runtime::tsfn::ThreadsafeFunction;
@@ -54,7 +54,7 @@ type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 ///     Ok(cx.undefined())
 /// }
 /// ```
-
+#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-4", feature = "task-api"))))]
 pub struct Channel {
     state: Arc<ChannelState>,
     has_ref: bool,
@@ -104,9 +104,10 @@ impl Channel {
 
     /// Schedules a closure to execute on the JavaScript thread that created this Channel
     /// Panics if there is a libuv error
-    pub fn send<F>(&self, f: F)
+    pub fn send<T, F>(&self, f: F) -> JoinHandle<T>
     where
-        F: FnOnce(TaskContext) -> NeonResult<()> + Send + 'static,
+        T: Send + 'static,
+        F: FnOnce(TaskContext) -> NeonResult<T> + Send + 'static,
     {
         self.try_send(f).unwrap()
     }
@@ -115,21 +116,29 @@ impl Channel {
     /// Returns an `Error` if the task could not be scheduled.
     ///
     /// See [`SendError`] for additional details on failure causes.
-    pub fn try_send<F>(&self, f: F) -> Result<(), SendError>
+    pub fn try_send<T, F>(&self, f: F) -> Result<JoinHandle<T>, SendError>
     where
-        F: FnOnce(TaskContext) -> NeonResult<()> + Send + 'static,
+        T: Send + 'static,
+        F: FnOnce(TaskContext) -> NeonResult<T> + Send + 'static,
     {
+        let (tx, rx) = mpsc::sync_channel(1);
         let callback = Box::new(move |env| {
             let env = unsafe { std::mem::transmute(env) };
 
             // Note: It is sufficient to use `TaskContext`'s `InheritedHandleScope` because
             // N-API creates a `HandleScope` before calling the callback.
             TaskContext::with_context(env, move |cx| {
-                let _ = f(cx);
+                // Error can be ignored; it only means the user didn't join
+                let _ = tx.send(f(cx).map_err(|_| ()));
             });
         });
 
-        self.state.tsfn.call(callback, None).map_err(|_| SendError)
+        self.state
+            .tsfn
+            .call(callback, None)
+            .map_err(|_| SendError)?;
+
+        Ok(JoinHandle { rx })
     }
 
     /// Returns a boolean indicating if this `Channel` will prevent the Node event
@@ -202,6 +211,49 @@ impl Drop for Channel {
     }
 }
 
+/// An owned permission to join on the result of a closure sent to the JavaScript main
+/// thread with [`Channel::send`].
+pub struct JoinHandle<T> {
+    // `Err` is always `Throw`, but `Throw` cannot be sent across threads
+    rx: mpsc::Receiver<Result<T, ()>>,
+}
+
+impl<T> JoinHandle<T> {
+    /// Waits for the associated closure to finish executing
+    ///
+    /// If the closure panics or throws an exception, `Err` is returned
+    pub fn join(self) -> Result<T, JoinError> {
+        self.rx
+            .recv()
+            // If the sending side dropped without sending, it must have panicked
+            .map_err(|_| JoinError(JoinErrorType::Panic))?
+            // If the closure returned `Err`, a JavaScript exception was thrown
+            .map_err(|_| JoinError(JoinErrorType::Throw))
+    }
+}
+
+#[derive(Debug)]
+/// Error returned by [`JoinHandle::join`] indicating the associated closure panicked
+/// or threw an exception.
+pub struct JoinError(JoinErrorType);
+
+#[derive(Debug)]
+enum JoinErrorType {
+    Panic,
+    Throw,
+}
+
+impl std::fmt::Display for JoinError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.0 {
+            JoinErrorType::Panic => f.write_str("Closure panicked before returning"),
+            JoinErrorType::Throw => f.write_str("Closure threw an exception"),
+        }
+    }
+}
+
+impl std::error::Error for JoinError {}
+
 /// Error indicating that a closure was unable to be scheduled to execute on the event loop.
 ///
 /// The most likely cause of a failure is that Node is shutting down. This may occur if the
@@ -210,6 +262,7 @@ impl Drop for Channel {
 //
 // NOTE: These docs will need to be updated to include `QueueFull` if bounded queues are
 // implemented.
+#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-4", feature = "task-api"))))]
 pub struct SendError;
 
 impl std::fmt::Display for SendError {

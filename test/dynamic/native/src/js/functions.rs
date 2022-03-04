@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use neon::object::This;
 use neon::prelude::*;
 use neon::result::Throw;
@@ -13,7 +15,7 @@ pub fn return_js_function(mut cx: FunctionContext) -> JsResult<JsFunction> {
 
 pub fn call_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let f = cx.argument::<JsFunction>(0)?;
-    let args: Vec<Handle<JsNumber>> = vec![cx.number(16.0)];
+    let args = [cx.number(16.0).upcast()];
     let null = cx.null();
     f.call(&mut cx, null, args)?
         .downcast::<JsNumber>()
@@ -23,11 +25,8 @@ pub fn call_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
 pub fn construct_js_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let f = cx.argument::<JsFunction>(0)?;
     let zero = cx.number(0.0);
-    let o = f.construct(&mut cx, vec![zero])?;
-    let get_utc_full_year_method = o
-        .get(&mut cx, "getUTCFullYear")?
-        .downcast::<JsFunction>()
-        .or_throw(&mut cx)?;
+    let o = f.construct(&mut cx, [zero.upcast()])?;
+    let get_utc_full_year_method: Handle<JsFunction> = o.get(&mut cx, "getUTCFullYear")?;
     let args: Vec<Handle<JsValue>> = vec![];
     get_utc_full_year_method
         .call(&mut cx, o.upcast::<JsValue>(), args)?
@@ -143,8 +142,38 @@ pub fn panic_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
     Ok(cx.try_catch(|_| panic!("oh no")).unwrap_or_else(|err| err))
 }
 
+thread_local! {
+    static FORGED_THROW: RefCell<Option<Throw>> = RefCell::new(None);
+}
+
+fn forge_throw(mut cx: FunctionContext) -> JsResult<JsValue> {
+    // Force an arbitrary JS error to temporarily enter the throwing state.
+    let throw = cx.throw_error::<_, ()>("forced error").unwrap_err();
+    // Save the throw token in thread-local storage.
+    FORGED_THROW.with(|forged_throw| {
+        *forged_throw.borrow_mut() = Some(throw);
+    });
+    panic!("get us out of here");
+}
+
 pub fn unexpected_throw_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
-    Ok(cx.try_catch(|_| Err(Throw)).unwrap_or_else(|err| err))
+    // It's hard to forge a bogus throw token, but you can still do it by
+    // forcing a real throw, saving the token for later, and catching the
+    // throw to return the VM back out of its throwing state.
+    let _ = cx.try_catch(|cx| {
+        let forge: Handle<JsFunction> = JsFunction::new(cx, forge_throw)?;
+        let null: Handle<JsValue> = cx.null().upcast();
+        let args: Vec<Handle<JsValue>> = vec![];
+        forge.call(cx, null, args)?;
+        Ok(())
+    });
+
+    let retrieved_throw = FORGED_THROW.with(|forged_throw| forged_throw.borrow_mut().take());
+
+    match retrieved_throw {
+        Some(throw) => Ok(cx.try_catch(|_| Err(throw)).unwrap_or_else(|err| err)),
+        None => Ok(cx.string("failed to retrieve forged throw").upcast()),
+    }
 }
 
 pub fn downcast_error(mut cx: FunctionContext) -> JsResult<JsString> {

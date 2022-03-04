@@ -1,14 +1,10 @@
-//! Types and traits representing binary JavaScript data.
-
 use crate::borrow::internal::Pointer;
 use crate::borrow::{Borrow, BorrowMut, LoanError, Ref, RefMut};
 use crate::context::internal::Env;
 use crate::context::{Context, Lock};
-#[cfg(feature = "napi-1")]
-use crate::handle::Handle;
-use crate::handle::Managed;
+use crate::handle::{internal::TransparentNoCopyWrapper, Managed};
 use crate::result::JsResult;
-use crate::types::internal::ValueInternal;
+use crate::types::private::ValueInternal;
 use crate::types::{build, Object, Value};
 use neon_runtime;
 use neon_runtime::raw;
@@ -18,9 +14,17 @@ use std::os::raw::c_void;
 use std::slice;
 
 /// The Node [`Buffer`](https://nodejs.org/api/buffer.html) type.
-#[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Debug)]
+#[repr(transparent)]
 pub struct JsBuffer(raw::Local);
+
+unsafe impl TransparentNoCopyWrapper for JsBuffer {
+    type Inner = raw::Local;
+
+    fn into_inner(self) -> Self::Inner {
+        self.0
+    }
+}
 
 impl JsBuffer {
     /// Constructs a new `Buffer` object, safely zero-filled.
@@ -31,7 +35,7 @@ impl JsBuffer {
         })
     }
 
-    /// Constructs a new `Buffer` object, safely zero-filled.
+    /// Constructs a new `Buffer` object with uninitialized memory
     pub unsafe fn uninitialized<'a, C: Context<'a>>(
         cx: &mut C,
         size: u32,
@@ -41,23 +45,10 @@ impl JsBuffer {
             neon_runtime::buffer::uninitialized(env.to_raw(), out, size)
         })
     }
-
-    #[cfg(feature = "napi-1")]
-    /// Construct a new `Buffer` from bytes allocated by Rust
-    pub fn external<'a, C, T>(cx: &mut C, data: T) -> Handle<'a, JsBuffer>
-    where
-        C: Context<'a>,
-        T: AsMut<[u8]> + Send,
-    {
-        let env = cx.env().to_raw();
-        let value = unsafe { neon_runtime::buffer::new_external(env, data) };
-
-        Handle::new_internal(JsBuffer(value))
-    }
 }
 
 impl Managed for JsBuffer {
-    fn to_raw(self) -> raw::Local {
+    fn to_raw(&self) -> raw::Local {
         self.0
     }
 
@@ -71,7 +62,7 @@ impl ValueInternal for JsBuffer {
         "Buffer".to_string()
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
         unsafe { neon_runtime::tag::is_buffer(env.to_raw(), other.to_raw()) }
     }
 }
@@ -81,8 +72,8 @@ impl Value for JsBuffer {}
 impl Object for JsBuffer {}
 
 /// The standard JS [`ArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) type.
-#[repr(C)]
-#[derive(Clone, Copy)]
+#[derive(Debug)]
+#[repr(transparent)]
 pub struct JsArrayBuffer(raw::Local);
 
 impl JsArrayBuffer {
@@ -92,23 +83,18 @@ impl JsArrayBuffer {
             neon_runtime::arraybuffer::new(out, mem::transmute(cx.env()), size)
         })
     }
+}
 
-    #[cfg(feature = "napi-1")]
-    /// Construct a new `ArrayBuffer` from bytes allocated by Rust
-    pub fn external<'a, C, T>(cx: &mut C, data: T) -> Handle<'a, JsArrayBuffer>
-    where
-        C: Context<'a>,
-        T: AsMut<[u8]> + Send,
-    {
-        let env = cx.env().to_raw();
-        let value = unsafe { neon_runtime::arraybuffer::new_external(env, data) };
+unsafe impl TransparentNoCopyWrapper for JsArrayBuffer {
+    type Inner = raw::Local;
 
-        Handle::new_internal(JsArrayBuffer(value))
+    fn into_inner(self) -> Self::Inner {
+        self.0
     }
 }
 
 impl Managed for JsArrayBuffer {
-    fn to_raw(self) -> raw::Local {
+    fn to_raw(&self) -> raw::Local {
         self.0
     }
 
@@ -122,7 +108,7 @@ impl ValueInternal for JsArrayBuffer {
         "ArrayBuffer".to_string()
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
         unsafe { neon_runtime::tag::is_arraybuffer(env.to_raw(), other.to_raw()) }
     }
 }

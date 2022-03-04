@@ -77,6 +77,13 @@ event-queue-api = ["channel-api"]
 # Feature flag to include procedural macros
 proc-macros = ["neon-macros"]
 
+# Enable `JsPromise` and `Deferred`
+# https://github.com/neon-bindings/rfcs/pull/35
+promise-api = []
+# Enable `TaskBuilder`
+# https://github.com/neon-bindings/rfcs/pull/35
+task-api = []
+
 [package.metadata.docs.rs]
 no-default-features = true
 rustdoc-args = ["--cfg", "docsrs"]
@@ -85,6 +92,8 @@ features = [
     "napi-experimental",
     "proc-macros",
     "try-catch-api",
+    "promise-api",
+    "task-api",
 ]
 
 [workspace]

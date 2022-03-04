@@ -12,6 +12,7 @@ mod js {
     pub mod strings;
     pub mod threads;
     pub mod types;
+    pub mod workers;
 }
 
 use js::arrays::*;
@@ -72,7 +73,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     assert!(
         ({
-            let v: Handle<JsNumber> = rust_created.get(&mut cx, "a")?.downcast_or_throw(&mut cx)?;
+            let v: Handle<JsNumber> = rust_created.get(&mut cx, "a")?;
             v.value(&mut cx)
         } - 1.0f64)
             .abs()
@@ -80,7 +81,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     );
     assert!(
         ({
-            let v: Handle<JsNumber> = rust_created.get(&mut cx, 0)?.downcast_or_throw(&mut cx)?;
+            let v: Handle<JsNumber> = rust_created.get(&mut cx, 0)?;
             v.value(&mut cx)
         } - 1.0f64)
             .abs()
@@ -88,9 +89,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     );
     assert_eq!(
         {
-            let v: Handle<JsBoolean> = rust_created
-                .get(&mut cx, "whatever")?
-                .downcast_or_throw(&mut cx)?;
+            let v: Handle<JsBoolean> = rust_created.get(&mut cx, "whatever")?;
             v.value(&mut cx)
         },
         true
@@ -143,7 +142,55 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     cx.export_function("return_js_function", return_js_function)?;
     cx.export_function("call_js_function", call_js_function)?;
+    cx.export_function(
+        "call_js_function_idiomatically",
+        call_js_function_idiomatically,
+    )?;
+    cx.export_function(
+        "call_js_function_with_zero_args",
+        call_js_function_with_zero_args,
+    )?;
+    cx.export_function(
+        "call_js_function_with_one_arg",
+        call_js_function_with_one_arg,
+    )?;
+    cx.export_function(
+        "call_js_function_with_two_args",
+        call_js_function_with_two_args,
+    )?;
+    cx.export_function(
+        "call_js_function_with_three_args",
+        call_js_function_with_three_args,
+    )?;
+    cx.export_function(
+        "call_js_function_with_four_args",
+        call_js_function_with_four_args,
+    )?;
+    cx.export_function(
+        "call_js_function_with_custom_this",
+        call_js_function_with_custom_this,
+    )?;
+    cx.export_function(
+        "call_js_function_with_implicit_this",
+        call_js_function_with_implicit_this,
+    )?;
+    cx.export_function(
+        "exec_js_function_with_implicit_this",
+        exec_js_function_with_implicit_this,
+    )?;
+    cx.export_function(
+        "call_js_function_with_heterogeneous_tuple",
+        call_js_function_with_heterogeneous_tuple,
+    )?;
     cx.export_function("construct_js_function", construct_js_function)?;
+    cx.export_function(
+        "construct_js_function_idiomatically",
+        construct_js_function_idiomatically,
+    )?;
+    cx.export_function(
+        "construct_js_function_with_overloaded_result",
+        construct_js_function_with_overloaded_result,
+    )?;
     cx.export_function("num_arguments", num_arguments)?;
     cx.export_function("return_this", return_this)?;
     cx.export_function("require_object_this", require_object_this)?;
@@ -175,29 +222,26 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         "read_array_buffer_with_borrow",
         read_array_buffer_with_borrow,
     )?;
-    cx.export_function("sum_array_buffer_with_borrow", sum_array_buffer_with_borrow)?;
     cx.export_function("write_array_buffer_with_lock", write_array_buffer_with_lock)?;
     cx.export_function(
         "write_array_buffer_with_borrow_mut",
         write_array_buffer_with_borrow_mut,
     )?;
+    cx.export_function("read_typed_array_with_borrow", read_typed_array_with_borrow)?;
     cx.export_function(
-        "increment_array_buffer_with_borrow_mut",
-        increment_array_buffer_with_borrow_mut,
+        "write_typed_array_with_borrow_mut",
+        write_typed_array_with_borrow_mut,
     )?;
+    cx.export_function("read_u8_typed_array", read_u8_typed_array)?;
+    cx.export_function("copy_typed_array", copy_typed_array)?;
     cx.export_function("return_uninitialized_buffer", return_uninitialized_buffer)?;
     cx.export_function("return_buffer", return_buffer)?;
     cx.export_function("return_external_buffer", return_external_buffer)?;
     cx.export_function("return_external_array_buffer", return_external_array_buffer)?;
     cx.export_function("read_buffer_with_lock", read_buffer_with_lock)?;
     cx.export_function("read_buffer_with_borrow", read_buffer_with_borrow)?;
-    cx.export_function("sum_buffer_with_borrow", sum_buffer_with_borrow)?;
     cx.export_function("write_buffer_with_lock", write_buffer_with_lock)?;
     cx.export_function("write_buffer_with_borrow_mut", write_buffer_with_borrow_mut)?;
-    cx.export_function(
-        "increment_buffer_with_borrow_mut",
-        increment_buffer_with_borrow_mut,
-    )?;
 
     cx.export_function("create_date", create_date)?;
     cx.export_function("get_date_value", get_date_value)?;
@@ -211,6 +255,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     cx.export_function("is_array", is_array)?;
     cx.export_function("is_array_buffer", is_array_buffer)?;
+    cx.export_function("is_uint32_array", is_uint32_array)?;
     cx.export_function("is_boolean", is_boolean)?;
     cx.export_function("is_buffer", is_buffer)?;
     cx.export_function("is_error", is_error)?;
@@ -234,6 +279,17 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("call_and_catch", call_and_catch)?;
     cx.export_function("get_number_or_default", get_number_or_default)?;
     cx.export_function("is_construct", is_construct)?;
+    cx.export_function("caller_with_drop_callback", caller_with_drop_callback)?;
+
+    cx.export_function("count_called", {
+        let n = std::cell::RefCell::new(0);
+
+        move |mut cx| {
+            *n.borrow_mut() += 1;
+
+            Ok(cx.number(*n.borrow()))
+        }
+    })?;
 
     fn call_get_own_property_names(mut cx: FunctionContext) -> JsResult<JsArray> {
         let object = cx.argument::<JsObject>(0)?;
@@ -257,6 +313,34 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("greeter_greet", greeter_greet)?;
     cx.export_function("leak_channel", leak_channel)?;
     cx.export_function("drop_global_queue", drop_global_queue)?;
+    cx.export_function("channel_join", channel_join)?;
+    cx.export_function("sum", sum)?;
+    cx.export_function("sum_manual_promise", sum_manual_promise)?;
+    cx.export_function("sum_rust_thread", sum_rust_thread)?;
+    cx.export_function("leak_promise", leak_promise)?;
+    cx.export_function("channel_panic", channel_panic)?;
+    cx.export_function("channel_throw", channel_throw)?;
+    cx.export_function("channel_panic_throw", channel_panic_throw)?;
+    cx.export_function("channel_custom_panic", channel_custom_panic)?;
+    cx.export_function("custom_panic_downcast", custom_panic_downcast)?;
+    cx.export_function("task_panic_execute", task_panic_execute)?;
+    cx.export_function("task_panic_complete", task_panic_complete)?;
+    cx.export_function("task_throw", task_throw)?;
+    cx.export_function("task_panic_throw", task_panic_throw)?;
+    cx.export_function("task_custom_panic", task_custom_panic)?;
+    cx.export_function("task_reject_promise", task_reject_promise)?;
+    cx.export_function("task_panic_execute_promise", task_panic_execute_promise)?;
+    cx.export_function("task_panic_complete_promise", task_panic_complete_promise)?;
+    cx.export_function("task_panic_throw_promise", task_panic_throw_promise)?;
+    cx.export_function("deferred_settle_with_throw", deferred_settle_with_throw)?;
+    cx.export_function("deferred_settle_with_panic", deferred_settle_with_panic)?;
+    cx.export_function(
+        "deferred_settle_with_panic_throw",
+        deferred_settle_with_panic_throw,
+    )?;
+    cx.export_function("get_and_replace", js::workers::get_and_replace)?;
+    cx.export_function("get_or_init", js::workers::get_or_init)?;
+    cx.export_function("get_or_init_clone", js::workers::get_or_init_clone)?;
 
     Ok(())
 }

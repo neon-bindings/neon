@@ -28,6 +28,13 @@ pub struct Env(raw::Isolate);
 #[derive(Clone, Copy)]
 pub struct Env(raw::Env);
 
+#[cfg(feature = "napi-1")]
+impl From<raw::Env> for Env {
+    fn from(env: raw::Env) -> Self {
+        Self(env)
+    }
+}
+
 thread_local! {
     #[allow(unused)]
     pub(crate) static IS_RUNNING: RefCell<bool> = RefCell::new(false);
@@ -69,6 +76,23 @@ impl Env {
     #[cfg(feature = "legacy-runtime")]
     pub(crate) fn current() -> Env {
         unsafe { std::mem::transmute(neon_runtime::call::current_isolate()) }
+    }
+
+    #[cfg(feature = "napi-1")]
+    unsafe fn try_catch<T, F>(self, f: F) -> Result<T, raw::Local>
+    where
+        F: FnOnce() -> Result<T, crate::result::Throw>,
+    {
+        let result = f();
+        let mut local: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
+
+        if neon_runtime::error::catch_error(self.to_raw(), local.as_mut_ptr()) {
+            Err(local.assume_init())
+        } else if let Ok(result) = result {
+            Ok(result)
+        } else {
+            panic!("try_catch: unexpected Err(Throw) when VM is not in a throwing state");
+        }
     }
 }
 
@@ -176,16 +200,10 @@ pub trait ContextInternal<'a>: Sized {
     where
         F: FnOnce(&mut Self) -> NeonResult<T>,
     {
-        let result = f(self);
-        let mut local: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
         unsafe {
-            if neon_runtime::error::catch_error(self.env().to_raw(), local.as_mut_ptr()) {
-                Err(JsValue::new_internal(local.assume_init()))
-            } else if let Ok(result) = result {
-                Ok(result)
-            } else {
-                panic!("try_catch: unexpected Err(Throw) when VM is not in a throwing state");
-            }
+            self.env()
+                .try_catch(move || f(self))
+                .map_err(JsValue::new_internal)
         }
     }
 }

@@ -42,21 +42,6 @@ impl Arguments {
     }
 }
 
-#[repr(C)]
-pub struct CCallback {
-    pub static_callback: *mut c_void,
-    pub dynamic_callback: *mut c_void,
-}
-
-impl Default for CCallback {
-    fn default() -> Self {
-        CCallback {
-            static_callback: null_mut(),
-            dynamic_callback: null_mut(),
-        }
-    }
-}
-
 pub unsafe fn is_construct(env: Env, info: FunctionCallbackInfo) -> bool {
     let mut target: MaybeUninit<Local> = MaybeUninit::zeroed();
 

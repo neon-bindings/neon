@@ -29,6 +29,7 @@ pub type CallbackInfo = *mut CallbackInfo__;
 pub struct EscapableHandleScope__ {
     _unused: [u8; 0],
 }
+
 pub type EscapableHandleScope = *mut EscapableHandleScope__;
 
 #[repr(C)]
@@ -114,6 +115,23 @@ pub(crate) enum ValueType {
 #[allow(dead_code)]
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum TypedArrayType {
+    I8 = 0,
+    U8 = 1,
+    U8Clamped = 2,
+    I16 = 3,
+    U16 = 4,
+    I32 = 5,
+    U32 = 6,
+    F32 = 7,
+    F64 = 8,
+    I64 = 9,
+    U64 = 10,
+}
+
+#[allow(dead_code)]
+#[repr(u32)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum KeyCollectionMode {
     IncludePrototypes = 0,
     OwnOnly = 1,
@@ -186,3 +204,24 @@ impl std::ops::BitAndAssign for KeyFilter {
         self.0 &= rhs.0;
     }
 }
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct AsyncWork__ {
+    _unused: [u8; 0],
+}
+
+pub type AsyncWork = *mut AsyncWork__;
+
+pub type AsyncExecuteCallback = Option<unsafe extern "C" fn(env: Env, data: *mut c_void)>;
+
+pub type AsyncCompleteCallback =
+    Option<unsafe extern "C" fn(env: Env, status: Status, data: *mut c_void)>;
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct Deferred__ {
+    _unused: [u8; 0],
+}
+
+pub type Deferred = *mut Deferred__;

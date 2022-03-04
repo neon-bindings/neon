@@ -39,14 +39,10 @@
 //! fn area(mut cx: FunctionContext) -> JsResult<JsNumber> {
 //!     let rect: Handle<JsObject> = cx.argument(0)?;
 //!
-//!     let width: Handle<JsNumber> = rect
-//!         .get(&mut cx, "width")?
-//!         .downcast_or_throw(&mut cx)?;
+//!     let width: Handle<JsNumber> = rect.get(&mut cx, "width")?;
 //!     let w: f64 = width.value(&mut cx);
 //!
-//!     let height: Handle<JsNumber> = rect
-//!         .get(&mut cx, "height")?
-//!         .downcast_or_throw(&mut cx)?;
+//!     let height: Handle<JsNumber> = rect.get(&mut cx, "height")?;
 //!     let h: f64 = height.value(&mut cx);
 //!
 //!     Ok(cx.number(w * h))
@@ -62,7 +58,7 @@ pub(crate) mod root;
 #[cfg(feature = "napi-1")]
 pub use self::root::Root;
 
-use self::internal::SuperType;
+use self::internal::{SuperType, TransparentNoCopyWrapper};
 use crate::context::internal::Env;
 use crate::context::Context;
 use crate::result::{JsResult, JsResultExt};
@@ -72,20 +68,23 @@ use neon_runtime::raw;
 use std::error::Error;
 use std::fmt::{self, Debug, Display};
 use std::marker::PhantomData;
+use std::mem;
 use std::ops::{Deref, DerefMut};
 
 /// The trait of data owned by the JavaScript engine and that can only be accessed via handles.
-pub trait Managed: Copy {
-    fn to_raw(self) -> raw::Local;
+pub trait Managed: TransparentNoCopyWrapper {
+    fn to_raw(&self) -> raw::Local;
 
     fn from_raw(env: Env, h: raw::Local) -> Self;
 }
 
 /// A handle to a JavaScript value that is owned by the JavaScript engine.
-#[repr(C)]
-#[derive(Clone, Copy, Debug)]
+#[derive(Debug)]
+#[repr(transparent)]
 pub struct Handle<'a, T: Managed + 'a> {
-    value: T,
+    // Contains the actual `Copy` JavaScript value data. It will be wrapped in
+    // in a `!Copy` type when dereferencing. Only `T` should be visible to the user.
+    value: <T as TransparentNoCopyWrapper>::Inner,
     phantom: PhantomData<&'a T>,
 }
 
@@ -99,10 +98,21 @@ impl<'a, T: Managed + 'a> PartialEq for Handle<'a, T> {
 #[cfg(feature = "legacy-runtime")]
 impl<'a, T: Managed + 'a> Eq for Handle<'a, T> {}
 
+impl<'a, T: Managed> Clone for Handle<'a, T> {
+    fn clone(&self) -> Self {
+        Self {
+            value: self.value.clone(),
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<'a, T: Managed> Copy for Handle<'a, T> {}
+
 impl<'a, T: Managed + 'a> Handle<'a, T> {
     pub(crate) fn new_internal(value: T) -> Handle<'a, T> {
         Handle {
-            value,
+            value: value.into_inner(),
             phantom: PhantomData,
         }
     }
@@ -155,7 +165,7 @@ impl<'a, T: Value> Handle<'a, T> {
     ///
     /// This method does not require an execution context because it only copies a handle.
     pub fn upcast<U: Value + SuperType<T>>(&self) -> Handle<'a, U> {
-        Handle::new_internal(SuperType::upcast_internal(self.value))
+        Handle::new_internal(SuperType::upcast_internal(self.deref()))
     }
 
     #[cfg(feature = "legacy-runtime")]
@@ -174,7 +184,7 @@ impl<'a, T: Value> Handle<'a, T> {
     /// # }
     /// ```
     pub fn is_a<U: Value>(&self) -> bool {
-        U::is_typeof(Env::current(), self.value)
+        U::is_typeof(Env::current(), self.deref())
     }
 
     #[cfg(feature = "napi-1")]
@@ -193,7 +203,7 @@ impl<'a, T: Value> Handle<'a, T> {
     /// # }
     /// ```
     pub fn is_a<'b, U: Value, C: Context<'b>>(&self, cx: &mut C) -> bool {
-        U::is_typeof(cx.env(), self.value)
+        U::is_typeof(cx.env(), self.deref())
     }
 
     #[cfg(feature = "legacy-runtime")]
@@ -202,7 +212,7 @@ impl<'a, T: Value> Handle<'a, T> {
     /// continue interacting with the JS engine if this method produces an `Err`
     /// result.
     pub fn downcast<U: Value>(&self) -> DowncastResult<'a, T, U> {
-        match U::downcast(Env::current(), self.value) {
+        match U::downcast(Env::current(), self.deref()) {
             Some(v) => Ok(Handle::new_internal(v)),
             None => Err(DowncastError::new()),
         }
@@ -214,7 +224,7 @@ impl<'a, T: Value> Handle<'a, T> {
     /// continue interacting with the JS engine if this method produces an `Err`
     /// result.
     pub fn downcast<'b, U: Value, C: Context<'b>>(&self, cx: &mut C) -> DowncastResult<'a, T, U> {
-        match U::downcast(cx.env(), self.value) {
+        match U::downcast(cx.env(), self.deref()) {
             Some(v) => Ok(Handle::new_internal(v)),
             None => Err(DowncastError::new()),
         }
@@ -251,12 +261,12 @@ impl<'a, T: Value> Handle<'a, T> {
 impl<'a, T: Managed> Deref for Handle<'a, T> {
     type Target = T;
     fn deref(&self) -> &T {
-        &self.value
+        unsafe { mem::transmute(&self.value) }
     }
 }
 
 impl<'a, T: Managed> DerefMut for Handle<'a, T> {
     fn deref_mut(&mut self) -> &mut T {
-        &mut self.value
+        unsafe { mem::transmute(&mut self.value) }
     }
 }

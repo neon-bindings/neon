@@ -5,9 +5,11 @@ on:
     # Prevent duplicate runs of this workflow on our own internal PRs.
     branches:
       - main
+      - next/*
   pull_request:
     branches:
       - main
+      - next/*
 
 jobs:
   lint:

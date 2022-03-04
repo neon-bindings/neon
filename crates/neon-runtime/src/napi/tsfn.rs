@@ -2,32 +2,24 @@
 
 use std::ffi::c_void;
 use std::mem::MaybeUninit;
+use std::ptr;
 use std::sync::{Arc, Mutex};
 
-use crate::napi::bindings as napi;
-use crate::raw::{Env, Local};
+use super::bindings as napi;
+use super::no_panic::FailureBoundary;
+use super::raw::Env;
 
-unsafe fn string(env: Env, s: impl AsRef<str>) -> Local {
-    let s = s.as_ref();
-    let mut result = MaybeUninit::uninit();
-
-    assert_eq!(
-        napi::create_string_utf8(
-            env,
-            s.as_bytes().as_ptr() as *const _,
-            s.len(),
-            result.as_mut_ptr(),
-        ),
-        napi::Status::Ok,
-    );
-
-    result.assume_init()
-}
+const BOUNDARY: FailureBoundary = FailureBoundary {
+    both: "A panic and exception occurred while executing a `neon::event::Channel::send` callback",
+    exception: "An exception occurred while executing a `neon::event::Channel::send` callback",
+    panic: "A panic occurred while executing a `neon::event::Channel::send` callback",
+};
 
 #[derive(Debug)]
 struct Tsfn(napi::ThreadsafeFunction);
 
 unsafe impl Send for Tsfn {}
+
 unsafe impl Sync for Tsfn {}
 
 #[derive(Debug)]
@@ -85,7 +77,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
                 env,
                 std::ptr::null_mut(),
                 std::ptr::null_mut(),
-                string(env, "neon threadsafe function"),
+                super::string(env, "neon threadsafe function"),
                 max_queue_size,
                 // Always set the reference count to 1. Prefer using
                 // Rust `Arc` to maintain the struct.
@@ -155,7 +147,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     /// Safety: `Env` must be valid for the current thread
     pub unsafe fn reference(&self, env: Env) {
         assert_eq!(
-            napi::ref_threadsafe_function(env, self.tsfn.0,),
+            napi::ref_threadsafe_function(env, self.tsfn.0),
             napi::Status::Ok,
         );
     }
@@ -164,7 +156,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     /// Safety: `Env` must be valid for the current thread
     pub unsafe fn unref(&self, env: Env) {
         assert_eq!(
-            napi::unref_threadsafe_function(env, self.tsfn.0,),
+            napi::unref_threadsafe_function(env, self.tsfn.0),
             napi::Status::Ok,
         );
     }
@@ -178,6 +170,16 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     }
 
     // Provides a C ABI wrapper for invoking the user supplied function pointer
+    // On panic or exception, creates a fatal exception of the form:
+    // Error(msg: string) {
+    //     // Exception thrown
+    //     cause?: Error,
+    //     // Panic occurred
+    //     panic?: Error(msg: string) {
+    //         // Opaque panic type if it wasn't a string
+    //         cause?: JsBox<Panic>
+    //     }
+    // }
     unsafe extern "C" fn callback(
         env: Env,
         _js_callback: napi::Value,
@@ -186,10 +188,10 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     ) {
         let Callback { callback, data } = *Box::from_raw(data as *mut Callback<T>);
 
-        // Event loop has terminated
-        let env = if env.is_null() { None } else { Some(env) };
-
-        callback(env, data);
+        BOUNDARY.catch_failure(env, None, move |env| {
+            callback(env, data);
+            ptr::null_mut()
+        });
     }
 }
 
@@ -197,8 +199,7 @@ impl<T> Drop for ThreadsafeFunction<T> {
     fn drop(&mut self) {
         let is_finalized = self.is_finalized.lock().unwrap();
 
-        // tsfn was already finalized by `Environment::CleanupHandles()` in
-        // Node.js
+        // tsfn was already finalized by `Environment::CleanupHandles()` in Node.js
         if *is_finalized {
             return;
         }

@@ -47,7 +47,11 @@ impl EventHandler {
         F: Send + 'static,
     {
         self.schedule_with(move |cx, this, callback| {
-            let args = arg_cb(cx);
+            let args = arg_cb(cx)
+                .into_iter()
+                .map(|v| v.upcast())
+                .collect::<smallvec::SmallVec<[_; 4]>>();
+
             let _result = callback.call(cx, this, args);
         })
     }

@@ -6,12 +6,29 @@ use neon_runtime::raw;
 
 use crate::context::internal::Env;
 use crate::context::{Context, FinalizeContext};
-use crate::handle::{Handle, Managed};
+use crate::handle::{internal::TransparentNoCopyWrapper, Handle, Managed};
 use crate::object::Object;
-use crate::types::internal::ValueInternal;
+use crate::types::private::ValueInternal;
 use crate::types::Value;
+use private::JsBoxInner;
 
 type BoxAny = Box<dyn Any + Send + 'static>;
+
+mod private {
+    pub struct JsBoxInner<T: Send + 'static> {
+        pub(super) local: neon_runtime::raw::Local,
+        // Cached raw pointer to the data contained in the `JsBox`. This value is
+        // required to implement `Deref` for `JsBox`. Unlike most `Js` types, `JsBox`
+        // is not a transparent wrapper around a `napi_value` and cannot implement `This`.
+        //
+        // Safety: `JsBox` cannot verify the lifetime. Store a raw pointer to force
+        // uses to be marked unsafe. In practice, it can be treated as `'static` but
+        // should only be exposed as part of a `Handle` tied to a `Context` lifetime.
+        // Safety: The value must not move on the heap; we must never give a mutable
+        // reference to the data until the `JsBox` is no longer accessible.
+        pub(super) raw_data: *const T,
+    }
+}
 
 /// A smart pointer for Rust data managed by the JavaScript engine.
 ///
@@ -124,23 +141,18 @@ type BoxAny = Box<dyn Any + Send + 'static>;
 ///
 ///     Ok(cx.string(greeting))
 /// }
-pub struct JsBox<T: Send + 'static> {
-    local: raw::Local,
-    // Cached raw pointer to the data contained in the `JsBox`. This value is
-    // required to implement `Deref` for `JsBox`. Unlike most `Js` types, `JsBox`
-    // is not a transparent wrapper around a `napi_value` and cannot implement `This`.
-    //
-    // Safety: `JsBox` cannot verify the lifetime. Store a raw pointer to force
-    // uses to be marked unsafe. In practice, it can be treated as `'static` but
-    // should only be exposed as part of a `Handle` tied to a `Context` lifetime.
-    // Safety: The value must not move on the heap; we must never give a mutable
-    // reference to the data until the `JsBox` is no longer accessible.
-    raw_data: *const T,
+#[repr(transparent)]
+pub struct JsBox<T: Send + 'static>(JsBoxInner<T>);
+
+impl<T: Send + 'static> std::fmt::Debug for JsBoxInner<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "JsBox<{}>", std::any::type_name::<T>())
+    }
 }
 
 impl<T: Send + 'static> std::fmt::Debug for JsBox<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "JsBox<{}>", std::any::type_name::<T>())
+        std::fmt::Debug::fmt(&self.0, f)
     }
 }
 
@@ -151,9 +163,9 @@ unsafe fn maybe_external_deref<'a>(env: Env, local: raw::Local) -> Option<&'a Bo
 }
 
 // Custom `Clone` implementation since `T` might not be `Clone`
-impl<T: Send + 'static> Clone for JsBox<T> {
+impl<T: Send + 'static> Clone for JsBoxInner<T> {
     fn clone(&self) -> Self {
-        JsBox {
+        Self {
             local: self.local,
             raw_data: self.raw_data,
         }
@@ -162,13 +174,21 @@ impl<T: Send + 'static> Clone for JsBox<T> {
 
 impl<T: Send + 'static> Object for JsBox<T> {}
 
-impl<T: Send + 'static> Copy for JsBox<T> {}
+impl<T: Send + 'static> Copy for JsBoxInner<T> {}
 
 impl<T: Send + 'static> Value for JsBox<T> {}
 
+unsafe impl<T: Send + 'static> TransparentNoCopyWrapper for JsBox<T> {
+    type Inner = JsBoxInner<T>;
+
+    fn into_inner(self) -> Self::Inner {
+        self.0
+    }
+}
+
 impl<T: Send + 'static> Managed for JsBox<T> {
-    fn to_raw(self) -> raw::Local {
-        self.local
+    fn to_raw(&self) -> raw::Local {
+        self.0.local
     }
 
     fn from_raw(env: Env, local: raw::Local) -> Self {
@@ -177,7 +197,7 @@ impl<T: Send + 'static> Managed for JsBox<T> {
             .downcast_ref()
             .expect("Failed to downcast Any");
 
-        Self { local, raw_data }
+        Self(JsBoxInner { local, raw_data })
     }
 }
 
@@ -186,19 +206,19 @@ impl<T: Send + 'static> ValueInternal for JsBox<T> {
         any::type_name::<Self>().to_string()
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: Other) -> bool {
+    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
         let data = unsafe { maybe_external_deref(env, other.to_raw()) };
 
         data.map(|v| v.is::<T>()).unwrap_or(false)
     }
 
-    fn downcast<Other: Value>(env: Env, other: Other) -> Option<Self> {
+    fn downcast<Other: Value>(env: Env, other: &Other) -> Option<Self> {
         let local = other.to_raw();
         let data = unsafe { maybe_external_deref(env, local) };
 
         // Attempt to downcast the `Option<&BoxAny>` to `Option<*const T>`
         data.and_then(|v| v.downcast_ref())
-            .map(|raw_data| Self { local, raw_data })
+            .map(|raw_data| Self(JsBoxInner { local, raw_data }))
     }
 }
 
@@ -243,7 +263,7 @@ impl<T: Finalize + Send + 'static> JsBox<T> {
         let raw_data = &*v as *const dyn Any as *const T;
         let local = unsafe { external::create(cx.env().to_raw(), v, finalizer::<T>) };
 
-        Handle::new_internal(Self { local, raw_data })
+        Handle::new_internal(Self(JsBoxInner { local, raw_data }))
     }
 }
 
@@ -253,7 +273,7 @@ impl<'a, T: Send + 'static> Deref for JsBox<T> {
     fn deref(&self) -> &Self::Target {
         // Safety: This depends on a `Handle<'a, JsBox<T>>` wrapper to provide
         // a proper lifetime.
-        unsafe { &*self.raw_data }
+        unsafe { &*self.0.raw_data }
     }
 }
 
@@ -282,10 +302,8 @@ impl<'a, T: Send + 'static> Deref for JsBox<T> {
 /// impl Finalize for Point {
 ///     fn finalize<'a, C: Context<'a>>(self, cx: &mut C) {
 ///         let global = cx.global();
-///         let emit = global
+///         let emit: Handle<JsFunction> = global
 ///             .get(cx, "emit")
-///             .unwrap()
-///             .downcast::<JsFunction, _>(cx)
 ///             .unwrap();
 ///
 ///         let args = vec![

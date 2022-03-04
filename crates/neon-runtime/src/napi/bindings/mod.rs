@@ -107,13 +107,13 @@ macro_rules! napi_name {
 /// ```
 macro_rules! generate {
     (extern "C" {
-        $(fn $name:ident($($param:ident: $ptype:ty$(,)?)*) -> $rtype:ty;)+
+        $(fn $name:ident($($param:ident: $ptype:ty$(,)?)*)$( -> $rtype:ty)?;)+
     }) => {
         pub(crate) struct Napi {
             $(
                 $name: unsafe extern "C" fn(
                     $($param: $ptype,)*
-                ) -> $rtype,
+                )$( -> $rtype)*,
             )*
         }
 
@@ -124,7 +124,7 @@ macro_rules! generate {
 
         static mut NAPI: Napi = {
             $(
-                unsafe extern "C" fn $name($(_: $ptype,)*) -> $rtype {
+                unsafe extern "C" fn $name($(_: $ptype,)*)$( -> $rtype)* {
                     panic_load()
                 }
             )*
@@ -159,7 +159,7 @@ macro_rules! generate {
 
         $(
             #[inline]
-            pub(crate) unsafe fn $name($($param: $ptype,)*) -> $rtype {
+            pub(crate) unsafe fn $name($($param: $ptype,)*)$( -> $rtype)* {
                 (NAPI.$name)($($param,)*)
             }
         )*
@@ -170,6 +170,7 @@ use std::sync::Once;
 
 pub(crate) use functions::*;
 pub(crate) use types::*;
+pub use types::{Deferred, TypedArrayType};
 
 mod functions;
 mod types;

@@ -80,13 +80,14 @@
 //! [supported]: https://github.com/neon-bindings/neon#platform-support
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
+#[cfg(feature = "legacy-runtime")]
 pub mod borrow;
 pub mod context;
 #[cfg(any(
     feature = "event-handler-api",
+    all(feature = "napi-1", feature = "task-api"),
     all(feature = "napi-4", feature = "channel-api")
 ))]
-#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-4", feature = "channel-api"))))]
 pub mod event;
 pub mod handle;
 pub mod meta;
@@ -336,10 +337,17 @@ macro_rules! class_definition {
 #[macro_export(local_inner_macros)]
 macro_rules! impl_managed {
     ($cls:ident) => {
+        unsafe impl $crate::macro_internal::TransparentNoCopyWrapper for $cls {
+            type Inner = $crate::macro_internal::runtime::raw::Local;
+
+            fn into_inner(self) -> Self::Inner {
+                self.0
+            }
+        }
+
         impl $crate::handle::Managed for $cls {
-            fn to_raw(self) -> $crate::macro_internal::runtime::raw::Local {
-                let $cls(raw) = self;
-                raw
+            fn to_raw(&self) -> $crate::macro_internal::runtime::raw::Local {
+                self.0
             }
 
             fn from_raw(
@@ -406,8 +414,8 @@ macro_rules! declare_types {
     };
 
     { $(#[$attr:meta])* pub class $cls:ident as $cname:ident for $typ:ty { $($body:tt)* } $($rest:tt)* } => {
-        #[derive(Copy, Clone)]
-        #[repr(C)]
+        #[derive(Debug)]
+        #[repr(transparent)]
         $(#[$attr])*
         pub struct $cls($crate::macro_internal::runtime::raw::Local);
 

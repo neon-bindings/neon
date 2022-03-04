@@ -11,7 +11,7 @@ use crate::context::{Context, Lock};
 use crate::handle::{Handle, Managed};
 use crate::object::{Object, This};
 use crate::result::{JsResult, NeonResult, Throw};
-use crate::types::internal::{Callback, ValueInternal};
+use crate::types::private::{Callback, ValueInternal};
 use crate::types::{build, JsFunction, JsValue, Value};
 use neon_runtime;
 use neon_runtime::raw;
@@ -109,6 +109,11 @@ pub trait Class: Managed + Any {
         AS: IntoIterator<Item = Handle<'b, A>>,
     {
         let constructor = Self::constructor(cx)?;
+        let args = args
+            .into_iter()
+            .map(|v| v.upcast())
+            .collect::<smallvec::SmallVec<[_; 4]>>();
+
         constructor.construct(cx, args)
     }
 
@@ -168,7 +173,7 @@ pub(crate) trait ClassInternal: Class {
             );
 
             if metadata_pointer.is_null() {
-                return Err(Throw);
+                return Err(Throw::new());
             }
 
             // NOTE: None of the error cases below need to delete the ClassMetadata object, since the
@@ -181,7 +186,7 @@ pub(crate) trait ClassInternal: Class {
                 class_name.as_ptr(),
                 class_name.len() as u32,
             ) {
-                return Err(Throw);
+                return Err(Throw::new());
             }
 
             for (name, method) in descriptor.methods {
@@ -196,7 +201,7 @@ pub(crate) trait ClassInternal: Class {
                     name.len() as u32,
                     method.to_raw(),
                 ) {
-                    return Err(Throw);
+                    return Err(Throw::new());
                 }
             }
 
@@ -235,7 +240,7 @@ impl<T: Class> ValueInternal for T {
         }
     }
 
-    fn is_typeof<Other: Value>(mut env: Env, value: Other) -> bool {
+    fn is_typeof<Other: Value>(mut env: Env, value: &Other) -> bool {
         let map = env.class_map();
         match map.get(&TypeId::of::<T>()) {
             None => false,
