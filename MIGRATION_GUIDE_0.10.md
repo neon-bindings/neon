@@ -28,6 +28,46 @@ obj.get::<V, _, _>(&mut cx, "name")?
 let v: Handle<V> = obj.get(&mut cx, "name")?
 ```
 
+Since `Object::get()` throws an exception when types don't match, use the new `Object::get_value()` or `Object::get_opt()` methods for cases that accept a wider range of allowable types.
+
+**Before:**
+
+```rust
+let field: Option<Handle<JsBoolean>> = obj
+    .get(&mut cx, "optionalField")?
+    .downcast(&mut cx)
+    .ok();
+```
+
+**After:**
+
+```rust
+let field: Option<Handle<JsBoolean>> = obj.get_opt(&mut cx, "optionalField")?;
+```
+
+**Before:**
+
+```rust
+let length = obj.get(&mut cx, "length")?;
+let length: Option<Handle<JsNumber>> = if length.is_a::<JsNull, _>(&mut cx) {
+    None
+} else {
+    Some(length.downcast_or_throw(&mut cx)?)
+};
+```
+
+**After:**
+
+```rust
+let length = obj.get_value(&mut cx, "length")?;
+let length: Option<Handle<JsNumber>> = if length.is_a::<JsNull, _>(&mut cx) {
+    None
+} else {
+    Some(length.downcast_or_throw(&mut cx)?)
+};
+```
+
+
 ## Layered APIs for function calls
 
 The API for calling (or constructing, i.e. the Neon equivalent of the JavaScript `new` operator) a JS function has been split into two layered alternatives. The existing `.call()` and `.construct()` functions are now a lower-level primitive, which no longer offers automatic downcasting of arguments or result. But Neon 0.10 now offers a more convenient API for calling functions with an options object and method chaining, with the introduction of the `.call_with()` and `.construct_with()` methods.
