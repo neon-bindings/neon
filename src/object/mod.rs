@@ -136,7 +136,7 @@ mod traits {
     use crate::handle::{Handle, Managed, Root};
     use crate::result::{NeonResult, Throw};
     use crate::types::utf8::Utf8;
-    use crate::types::{build, JsValue, Value};
+    use crate::types::{build, JsUndefined, JsValue, Value};
     use neon_runtime::raw;
 
     #[cfg(feature = "napi-6")]
@@ -237,15 +237,46 @@ mod traits {
 
     /// The trait of all object types.
     pub trait Object: Value {
+        /// Gets a property from a JavaScript object that may be `undefined` and
+        /// attempts to downcast the value if it existed.
+        fn get_opt<'a, V: Value, C: Context<'a>, K: PropertyKey>(
+            &self,
+            cx: &mut C,
+            key: K,
+        ) -> NeonResult<Option<Handle<'a, V>>> {
+            let v = self.get_value(cx, key)?;
+
+            if v.is_a::<JsUndefined, _>(cx) {
+                return Ok(None);
+            }
+
+            v.downcast_or_throw(cx).map(Some)
+        }
+
+        /// Gets a property from a JavaScript object as a [`JsValue`].
+        ///
+        /// If a [`getter`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get)
+        /// is defined on the object, it will be called.
+        fn get_value<'a, C: Context<'a>, K: PropertyKey>(
+            &self,
+            cx: &mut C,
+            key: K,
+        ) -> NeonResult<Handle<'a, JsValue>> {
+            build(cx.env(), |out| unsafe {
+                key.get_from(cx, out, self.to_raw())
+            })
+        }
+
+        /// Gets a property from a JavaScript object and attempts to downcast as a specific type.
+        /// Equivalent to calling `obj.get(&mut cx)?.downcast_or_throw(&mut cx)`.
+        ///
+        /// Throws an exception if the value is a different type.
         fn get<'a, V: Value, C: Context<'a>, K: PropertyKey>(
             &self,
             cx: &mut C,
             key: K,
         ) -> NeonResult<Handle<'a, V>> {
-            let v: Handle<JsValue> = build(cx.env(), |out| unsafe {
-                key.get_from(cx, out, self.to_raw())
-            })?;
-            v.downcast_or_throw(cx)
+            self.get_value(cx, key)?.downcast_or_throw(cx)
         }
 
         #[cfg(feature = "napi-6")]
