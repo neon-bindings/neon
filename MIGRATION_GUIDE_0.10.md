@@ -52,7 +52,7 @@ let length = obj.get(&mut cx, "length")?;
 let length: Option<Handle<JsNumber>> = if length.is_a::<JsNull, _>(&mut cx) {
     None
 } else {
-    Some(length.downcast_or_throw(&mut cx)?);
+    Some(length.downcast_or_throw(&mut cx)?)
 };
 ```
 
@@ -63,7 +63,7 @@ let length = obj.get_value(&mut cx, "length")?;
 let length: Option<Handle<JsNumber>> = if length.is_a::<JsNull, _>(&mut cx) {
     None
 } else {
-    Some(length.downcast_or_throw(&mut cx)?);
+    Some(length.downcast_or_throw(&mut cx)?)
 };
 ```
 
