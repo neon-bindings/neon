@@ -129,7 +129,7 @@ impl Channel {
             // N-API creates a `HandleScope` before calling the callback.
             TaskContext::with_context(env, move |cx| {
                 // Error can be ignored; it only means the user didn't join
-                let _ = tx.send(f(cx));
+                let _ = tx.send(f(cx).map_err(|_| ()));
             });
         });
 
@@ -214,7 +214,8 @@ impl Drop for Channel {
 /// An owned permission to join on the result of a closure sent to the JavaScript main
 /// thread with [`Channel::send`].
 pub struct JoinHandle<T> {
-    rx: mpsc::Receiver<NeonResult<T>>,
+    // `Err` is always `Throw`, but `Throw` cannot be sent across threads
+    rx: mpsc::Receiver<Result<T, ()>>,
 }
 
 impl<T> JoinHandle<T> {
