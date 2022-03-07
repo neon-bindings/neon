@@ -1,3 +1,44 @@
+# Version 0.10
+
+See the [Neon 0.10 Migration Guide](MIGRATION_GUIDE_0.10.md) for more details about new features and breaking changes.
+
+## Features
+
+* New [buffer borrowing API](https://github.com/neon-bindings/neon/pull/780)
+* Added [JoinHandle](https://github.com/neon-bindings/neon/pull/787) for `Channel::send`
+* [`JsPromise` and `TaskBuilder`](https://github.com/neon-bindings/neon/pull/789)
+* Handle [panics and exceptions](https://github.com/neon-bindings/neon/pull/808) in Channels and Tasks
+* [Function call / construct builders](https://github.com/neon-bindings/neon/pull/829)
+  and [simplify low level call](https://github.com/neon-bindings/neon/pull/825)
+* Create [functions from closures](https://github.com/neon-bindings/neon/pull/811)
+
+## Minor Improvements
+
+* [Performance improvements](https://github.com/neon-bindings/neon/pull/815)
+* [Rename N-API to Node-API](https://github.com/neon-bindings/neon/pull/753) in docs to match Node changes
+* Remove unused [cslice dependency](https://github.com/neon-bindings/neon/pull/794)
+* Switch to [`syn-mid`](https://github.com/neon-bindings/neon/pull/814) for faster compile times
+* Downcast in [`Object::get`](https://github.com/neon-bindings/neon/pull/839)
+* Added [migration guide](https://github.com/neon-bindings/neon/pull/859)
+* Added [`Object::get_opt` and `Object::get_value`](https://github.com/neon-bindings/neon/pull/867)
+
+## Fixes
+
+* [Safety] Make it harder to store and forge [Throw](https://github.com/neon-bindings/neon/pull/797)
+* [Soundness] [Make `JsValue` types `!Copy`](https://github.com/neon-bindings/neon/pull/832)
+* [Soundness] [Tag `Root`](https://github.com/neon-bindings/neon/pull/847) with instance id
+* `create-neon` no longer [leaves partial project on disk](https://github.com/neon-bindings/neon/pull/840)
+* Fix legacy backend on [Electron and Windows](https://github.com/neon-bindings/neon/pull/785)
+* [FreeBSD support](https://github.com/neon-bindings/neon/pull/856) on legacy backend
+
+## Internal Improvements
+
+* Replace Electron tests [with Playwright](https://github.com/neon-bindings/neon/pull/835)
+* Re-organize Neon into an [npm workspace](https://github.com/neon-bindings/neon/pull/852)
+* [Fix crates.io badge](https://github.com/neon-bindings/neon/pull/781)
+* [Doc test fixes](https://github.com/neon-bindings/neon/pull/800)
+* Fix [broken link](https://github.com/neon-bindings/neon/pull/804) in the README
+
 # Version 0.9.1
 
 * Expose the `Finalize` trait as `neon::types::Finalize` so that docs are visible

@@ -1,8 +1,8 @@
 [package]
 name = "neon-sys"
-version = "0.9.1"
+version = "0.10.0"
 authors = ["David Herman <david.herman@gmail.com>"]
-description  = "Exposes the low-level V8/NAN C/C++ APIs. Will be superseded by N-API."
+description = "Exposes the low-level V8/NAN C/C++ APIs. Will be superseded by N-API."
 edition = "2018"
 license = "MIT/Apache-2.0"
 links = "neon"     # libneon.{a,obj} gets linked in with this package
