@@ -72,17 +72,12 @@ docs-only = ["neon-runtime/docs-only"]
 # DEPRECATED: Will be removed with `legacy-runtime` since it is enabled by default in Node-API backend.
 proc-macros = ["neon-macros"]
 
-# Enable `TaskBuilder`
-# https://github.com/neon-bindings/rfcs/pull/35
-task-api = []
-
 [package.metadata.docs.rs]
 no-default-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 features = [
     "napi-experimental",
     "proc-macros",
-    "task-api",
 ]
 
 [workspace]

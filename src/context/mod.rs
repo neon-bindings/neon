@@ -155,7 +155,7 @@ use crate::borrow::{Borrow, BorrowMut, Ref, RefMut};
 use crate::context::internal::Env;
 #[cfg(feature = "napi-4")]
 use crate::event::Channel;
-#[cfg(all(feature = "napi-1", feature = "task-api"))]
+#[cfg(feature = "napi-1")]
 use crate::event::TaskBuilder;
 use crate::handle::{Handle, Managed};
 #[cfg(feature = "napi-6")]
@@ -634,14 +634,13 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsPromise::new(self)
     }
 
-    #[cfg(all(feature = "napi-1", feature = "task-api"))]
-    #[cfg_attr(docsrs, doc(cfg(feature = "task-api")))]
+    #[cfg(feature = "napi-1")]
     /// Creates a [`TaskBuilder`] which can be used to schedule the `execute`
     /// callback to asynchronously execute on the
     /// [Node worker pool](https://nodejs.org/en/docs/guides/dont-block-the-event-loop/).
     ///
     /// ```
-    /// # #[cfg(all(feature = "napi-1", feature = "task-api"))] {
+    /// # #[cfg(feature = "napi-1")] {
     /// # use neon::prelude::*;
     /// fn greet(mut cx: FunctionContext) -> JsResult<JsPromise> {
     ///     let name = cx.argument::<JsString>(0)?.value(&mut cx);
@@ -924,7 +923,7 @@ impl<'a> TaskContext<'a> {
         Scope::with(env, |scope| f(TaskContext { scope }))
     }
 
-    #[cfg(any(all(feature = "napi-1", feature = "task-api"), feature = "napi-4"))]
+    #[cfg(feature = "napi-1")]
     pub(crate) fn with_context<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: Env, f: F) -> T {
         Scope::with(env, |scope| f(TaskContext { scope }))
     }

@@ -16,4 +16,4 @@ once_cell = "1"
 version = "*"
 path = "../.."
 default-features = false
-features = ["napi-6", "task-api"]
+features = ["napi-6"]

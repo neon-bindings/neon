@@ -126,13 +126,13 @@
 #[cfg(feature = "napi-4")]
 mod channel;
 
-#[cfg(all(feature = "napi-1", feature = "task-api"))]
+#[cfg(feature = "napi-1")]
 mod task;
 
 #[cfg(feature = "napi-4")]
 pub use self::channel::{Channel, JoinError, JoinHandle, SendError};
 
-#[cfg(all(feature = "napi-1", feature = "task-api"))]
+#[cfg(feature = "napi-1")]
 pub use self::task::TaskBuilder;
 
 #[cfg(all(not(feature = "napi-1"), feature = "event-handler-api"))]

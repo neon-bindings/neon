@@ -54,7 +54,7 @@ type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 ///     Ok(cx.undefined())
 /// }
 /// ```
-#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-4", feature = "task-api"))))]
+#[cfg_attr(docsrs, doc(cfg(feature = "napi-4")))]
 pub struct Channel {
     state: Arc<ChannelState>,
     has_ref: bool,
@@ -262,7 +262,7 @@ impl std::error::Error for JoinError {}
 //
 // NOTE: These docs will need to be updated to include `QueueFull` if bounded queues are
 // implemented.
-#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-4", feature = "task-api"))))]
+#[cfg_attr(docsrs, doc(cfg(feature = "napi-4")))]
 pub struct SendError;
 
 impl std::fmt::Display for SendError {

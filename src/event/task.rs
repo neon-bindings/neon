@@ -8,7 +8,6 @@ use crate::handle::Handle;
 use crate::result::{JsResult, NeonResult};
 use crate::types::{Deferred, JsPromise, Value};
 
-#[cfg_attr(docsrs, doc(cfg(feature = "task-api")))]
 /// Node asynchronous task builder
 ///
 /// ```
