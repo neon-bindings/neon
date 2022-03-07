@@ -68,9 +68,6 @@ napi-experimental = ["napi-6", "neon-runtime/napi-experimental"]
 # DEPRECATED: Will be removed with `legacy-runtime`
 docs-only = ["neon-runtime/docs-only"]
 
-# Feature flag to enable the try_catch API of RFC 29.
-try-catch-api = []
-
 # Feature flag to enable the `EventQueue` API of RFC 33.
 # https://github.com/neon-bindings/rfcs/pull/32
 channel-api = []
@@ -96,7 +93,6 @@ features = [
     "channel-api",
     "napi-experimental",
     "proc-macros",
-    "try-catch-api",
     "promise-api",
     "task-api",
 ]
