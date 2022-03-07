@@ -4,21 +4,14 @@ use std::thread;
 use neon_runtime::{async_work, raw};
 
 use crate::context::{internal::Env, Context, TaskContext};
-#[cfg(feature = "promise-api")]
 use crate::handle::Handle;
-#[cfg(feature = "promise-api")]
-use crate::result::JsResult;
-use crate::result::NeonResult;
-#[cfg(feature = "promise-api")]
-use crate::types::Value;
-#[cfg(feature = "promise-api")]
-use crate::types::{Deferred, JsPromise};
+use crate::result::{JsResult, NeonResult};
+use crate::types::{Deferred, JsPromise, Value};
 
 #[cfg_attr(docsrs, doc(cfg(feature = "task-api")))]
 /// Node asynchronous task builder
 ///
 /// ```
-/// # #[cfg(feature = "promise-api")] {
 /// # use neon::prelude::*;
 /// fn greet(mut cx: FunctionContext) -> JsResult<JsPromise> {
 ///     let name = cx.argument::<JsString>(0)?.value(&mut cx);
@@ -29,7 +22,6 @@ use crate::types::{Deferred, JsPromise};
 ///
 ///     Ok(promise)
 /// }
-/// # }
 /// ```
 pub struct TaskBuilder<'cx, C, E> {
     cx: &'cx mut C,
@@ -61,8 +53,6 @@ where
         schedule(env, execute, complete);
     }
 
-    #[cfg_attr(docsrs, doc(cfg(feature = "promise-api")))]
-    #[cfg(feature = "promise-api")]
     /// Schedules a task to execute on the Node worker pool and returns a
     /// promise that is resolved with the value from the `complete` callback.
     ///
@@ -120,7 +110,6 @@ where
     });
 }
 
-#[cfg(feature = "promise-api")]
 // Schedule a task to execute on the Node worker pool and settle a `Promise` with the result
 fn schedule_promise<I, O, D, V>(env: Env, input: I, complete: D, deferred: Deferred)
 where
@@ -140,7 +129,6 @@ where
     }
 }
 
-#[cfg(feature = "promise-api")]
 fn complete_promise<O, D, V>(
     env: raw::Env,
     output: thread::Result<O>,

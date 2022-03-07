@@ -17,7 +17,6 @@ use neon_runtime::tsfn::ThreadsafeFunction;
 use crate::context::Context;
 use crate::event::Channel;
 use crate::handle::root::NapiRef;
-#[cfg(feature = "promise-api")]
 use crate::types::promise::NodeApiDeferred;
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -57,7 +56,6 @@ pub(crate) struct InstanceData {
 
 /// Wrapper for raw Node-API values to be dropped on the main thread
 pub(crate) enum DropData {
-    #[cfg(feature = "promise-api")]
     Deferred(NodeApiDeferred),
     Ref(NapiRef),
 }
@@ -68,7 +66,6 @@ impl DropData {
         if let Some(env) = env {
             unsafe {
                 match data {
-                    #[cfg(feature = "promise-api")]
                     DropData::Deferred(data) => data.leaked(env),
                     DropData::Ref(data) => data.unref(env),
                 }

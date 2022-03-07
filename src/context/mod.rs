@@ -171,7 +171,7 @@ pub use crate::types::buffer::lock::Lock;
 #[cfg(feature = "napi-5")]
 use crate::types::date::{DateError, JsDate};
 use crate::types::error::JsError;
-#[cfg(all(feature = "napi-1", feature = "promise-api"))]
+#[cfg(feature = "napi-1")]
 use crate::types::{Deferred, JsPromise};
 use crate::types::{
     JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber, JsObject, JsString,
@@ -613,13 +613,12 @@ pub trait Context<'a>: ContextInternal<'a> {
         channel
     }
 
-    #[cfg(all(feature = "napi-1", feature = "promise-api"))]
-    #[cfg_attr(docsrs, doc(cfg(feature = "promise-api")))]
+    #[cfg(feature = "napi-1")]
     /// Creates a [`Deferred`] and [`JsPromise`] pair. The [`Deferred`] handle can be
     /// used to resolve or reject the [`JsPromise`].
     ///
     /// ```
-    /// # #[cfg(all(feature = "napi-1", feature = "promise-api"))] {
+    /// # #[cfg(feature = "napi-1")] {
     /// # use neon::prelude::*;
     /// fn resolve_promise(mut cx: FunctionContext) -> JsResult<JsPromise> {
     ///     let (deferred, promise) = cx.promise();
@@ -642,7 +641,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// [Node worker pool](https://nodejs.org/en/docs/guides/dont-block-the-event-loop/).
     ///
     /// ```
-    /// # #[cfg(all(feature = "napi-1", feature = "promise-api", feature = "task-api"))] {
+    /// # #[cfg(all(feature = "napi-1", feature = "task-api"))] {
     /// # use neon::prelude::*;
     /// fn greet(mut cx: FunctionContext) -> JsResult<JsPromise> {
     ///     let name = cx.argument::<JsString>(0)?.value(&mut cx);

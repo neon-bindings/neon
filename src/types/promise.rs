@@ -21,7 +21,6 @@ const BOUNDARY: FailureBoundary = FailureBoundary {
     panic: "A panic occurred while resolving a `neon::types::Deferred`",
 };
 
-#[cfg_attr(docsrs, doc(cfg(feature = "promise-api")))]
 #[derive(Debug)]
 #[repr(transparent)]
 /// The JavaScript [`Promise`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) value.
@@ -74,7 +73,6 @@ impl Value for JsPromise {}
 
 impl Object for JsPromise {}
 
-#[cfg_attr(docsrs, doc(cfg(feature = "promise-api")))]
 /// [`Deferred`] is a handle that can be used to resolve or reject a [`JsPromise`]
 ///
 /// It is recommended to settle a [`Deferred`] with [`Deferred::settle_with`] to ensure

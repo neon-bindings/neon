@@ -91,7 +91,7 @@ pub mod buffer;
 pub(crate) mod date;
 pub(crate) mod error;
 pub mod function;
-#[cfg(all(feature = "napi-1", feature = "promise-api"))]
+#[cfg(feature = "napi-1")]
 pub(crate) mod promise;
 
 pub(crate) mod private;
@@ -122,7 +122,7 @@ pub use self::buffer::types::{JsArrayBuffer, JsBuffer, JsTypedArray};
 #[cfg(feature = "napi-5")]
 pub use self::date::{DateError, DateErrorKind, JsDate};
 pub use self::error::JsError;
-#[cfg(all(feature = "napi-1", feature = "promise-api"))]
+#[cfg(feature = "napi-1")]
 pub use self::promise::{Deferred, JsPromise};
 
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(
