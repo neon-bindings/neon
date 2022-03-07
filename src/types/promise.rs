@@ -7,17 +7,13 @@ use neon_runtime::no_panic::FailureBoundary;
 use neon_runtime::tsfn::ThreadsafeFunction;
 use neon_runtime::{napi, raw};
 
-use crate::context::{internal::Env, Context};
+use crate::context::{internal::Env, Context, TaskContext};
+use crate::event::{Channel, JoinHandle, SendError};
 use crate::handle::{internal::TransparentNoCopyWrapper, Managed};
 #[cfg(feature = "napi-6")]
 use crate::lifecycle::{DropData, InstanceData};
 use crate::result::JsResult;
 use crate::types::{private::ValueInternal, Handle, Object, Value};
-#[cfg(feature = "channel-api")]
-use crate::{
-    context::TaskContext,
-    event::{Channel, JoinHandle, SendError},
-};
 
 const BOUNDARY: FailureBoundary = FailureBoundary {
     both: "A panic and exception occurred while resolving a `neon::types::Deferred`",
@@ -116,8 +112,6 @@ impl Deferred {
         }
     }
 
-    #[cfg_attr(docsrs, doc(cfg(feature = "channel-api")))]
-    #[cfg(feature = "channel-api")]
     /// Settle the [`JsPromise`] by sending a closure across a [`Channel`][`crate::event::Channel`]
     /// to be executed on the main JavaScript thread.
     ///
@@ -140,15 +134,12 @@ impl Deferred {
         })
     }
 
-    #[cfg_attr(docsrs, doc(cfg(feature = "channel-api")))]
-    #[cfg(feature = "channel-api")]
     /// Settle the [`JsPromise`] by sending a closure across a [`Channel`][crate::event::Channel]
     /// to be executed on the main JavaScript thread.
     ///
     /// Panics if there is a libuv error.
     ///
     /// ```
-    /// # #[cfg(feature = "channel-api")] {
     /// # use neon::prelude::*;
     /// # fn example(mut cx: FunctionContext) -> JsResult<JsPromise> {
     /// let channel = cx.channel();
@@ -157,7 +148,6 @@ impl Deferred {
     /// deferred.settle_with(&channel, move |mut cx| Ok(cx.number(42)));
     ///
     /// # Ok(promise)
-    /// # }
     /// # }
     /// ```
     pub fn settle_with<V, F>(self, channel: &Channel, complete: F) -> JoinHandle<()>

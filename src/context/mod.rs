@@ -153,12 +153,12 @@ use crate::borrow::internal::Ledger;
 #[cfg(feature = "legacy-runtime")]
 use crate::borrow::{Borrow, BorrowMut, Ref, RefMut};
 use crate::context::internal::Env;
-#[cfg(all(feature = "napi-4", feature = "channel-api"))]
+#[cfg(feature = "napi-4")]
 use crate::event::Channel;
 #[cfg(all(feature = "napi-1", feature = "task-api"))]
 use crate::event::TaskBuilder;
 use crate::handle::{Handle, Managed};
-#[cfg(all(feature = "napi-6", feature = "channel-api"))]
+#[cfg(feature = "napi-6")]
 use crate::lifecycle::InstanceData;
 #[cfg(feature = "legacy-runtime")]
 use crate::object::class::Class;
@@ -597,8 +597,8 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsBox::new(self, v)
     }
 
-    #[cfg(all(feature = "napi-4", feature = "channel-api"))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "napi-4", feature = "channel-api"))))]
+    #[cfg(feature = "napi-4")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "napi-4")))]
     /// Returns an unbounded channel for scheduling events to be executed on the JavaScript thread.
     ///
     /// When using N-API >= 6,the channel returned by this method is backed by a shared queue.
@@ -611,13 +611,6 @@ pub trait Context<'a>: ContextInternal<'a> {
         let channel = Channel::new(self);
 
         channel
-    }
-
-    #[cfg(all(feature = "napi-4", feature = "channel-api"))]
-    #[deprecated(since = "0.9.0", note = "Please use the channel() method instead")]
-    #[doc(hidden)]
-    fn queue(&mut self) -> Channel {
-        self.channel()
     }
 
     #[cfg(all(feature = "napi-1", feature = "promise-api"))]
@@ -932,10 +925,7 @@ impl<'a> TaskContext<'a> {
         Scope::with(env, |scope| f(TaskContext { scope }))
     }
 
-    #[cfg(any(
-        all(feature = "napi-1", feature = "task-api"),
-        all(feature = "napi-4", feature = "channel-api"),
-    ))]
+    #[cfg(any(all(feature = "napi-1", feature = "task-api"), feature = "napi-4"))]
     pub(crate) fn with_context<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: Env, f: F) -> T {
         Scope::with(env, |scope| f(TaskContext { scope }))
     }

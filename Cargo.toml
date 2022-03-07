@@ -68,13 +68,6 @@ napi-experimental = ["napi-6", "neon-runtime/napi-experimental"]
 # DEPRECATED: Will be removed with `legacy-runtime`
 docs-only = ["neon-runtime/docs-only"]
 
-# Feature flag to enable the `EventQueue` API of RFC 33.
-# https://github.com/neon-bindings/rfcs/pull/32
-channel-api = []
-
-# Deprecated name for `channel-api`
-event-queue-api = ["channel-api"]
-
 # Feature flag to include procedural macros
 # DEPRECATED: Will be removed with `legacy-runtime` since it is enabled by default in Node-API backend.
 proc-macros = ["neon-macros"]
@@ -90,7 +83,6 @@ task-api = []
 no-default-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 features = [
-    "channel-api",
     "napi-experimental",
     "proc-macros",
     "promise-api",
