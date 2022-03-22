@@ -135,6 +135,16 @@ pub use self::channel::{Channel, JoinError, JoinHandle, SendError};
 #[cfg(feature = "napi-1")]
 pub use self::task::TaskBuilder;
 
+#[cfg(feature = "napi-4")]
+#[deprecated(since = "0.9.0", note = "Please use the Channel type instead")]
+#[doc(hidden)]
+pub type EventQueue = self::channel::Channel;
+
+#[cfg(feature = "napi-4")]
+#[deprecated(since = "0.9.0", note = "Please use the SendError type instead")]
+#[doc(hidden)]
+pub type EventQueueError = self::channel::SendError;
+
 #[cfg(all(not(feature = "napi-1"), feature = "event-handler-api"))]
 mod event_handler;
 

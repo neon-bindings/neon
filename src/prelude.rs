@@ -17,6 +17,10 @@ pub use crate::event::EventHandler;
 #[cfg(feature = "napi-4")]
 #[doc(no_inline)]
 pub use crate::event::{Channel, SendError};
+#[cfg(feature = "napi-4")]
+#[doc(no_inline)]
+#[allow(deprecated)]
+pub use crate::event::{EventQueue, EventQueueError};
 #[doc(no_inline)]
 pub use crate::handle::Handle;
 #[cfg(feature = "legacy-runtime")]

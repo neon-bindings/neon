@@ -64,6 +64,13 @@ napi-6 = ["napi-5", "neon-runtime/napi-6"]
 napi-latest = ["napi-6"]
 napi-experimental = ["napi-6", "neon-runtime/napi-experimental"]
 
+# DEPRECATED: These perform no action and will be removed in 1.0
+try-catch-api = []
+channel-api = []
+event-queue-api = []
+promise-api = []
+task-api = []
+
 # Feature flag to disable external dependencies on docs build
 # DEPRECATED: Will be removed with `legacy-runtime`
 docs-only = ["neon-runtime/docs-only"]
