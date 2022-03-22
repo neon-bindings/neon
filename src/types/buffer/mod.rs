@@ -22,17 +22,17 @@ pub trait TypedArray: private::Sealed {
     ///
     /// This may not be used if a mutable borrow is in scope. For the dynamically
     /// checked variant see [`TypedArray::try_borrow`].
-    fn as_slice<'a: 'b, 'b, C>(&'b self, cx: &'b C) -> &'b [Self::Item]
+    fn as_slice<'cx, 'a, C>(&self, cx: &'a C) -> &'a [Self::Item]
     where
-        C: Context<'a>;
+        C: Context<'cx>;
 
     /// Statically checked mutable borrow of binary data.
     ///
     /// This may not be used if any other borrow is in scope. For the dynamically
     /// checked variant see [`TypedArray::try_borrow_mut`].
-    fn as_mut_slice<'a: 'b, 'b, C>(&'b mut self, cx: &'b mut C) -> &'b mut [Self::Item]
+    fn as_mut_slice<'cx, 'a, C>(&mut self, cx: &'a mut C) -> &'a mut [Self::Item]
     where
-        C: Context<'a>;
+        C: Context<'cx>;
 
     /// Dynamically checked immutable borrow of binary data, returning an error if the
     /// the borrow would overlap with a mutable borrow.
@@ -40,12 +40,9 @@ pub trait TypedArray: private::Sealed {
     /// The borrow lasts until [`Ref`] exits scope.
     ///
     /// This is the dynamically checked version of [`TypedArray::as_slice`].
-    fn try_borrow<'a: 'b, 'b, C>(
-        &self,
-        lock: &'b Lock<'b, C>,
-    ) -> Result<Ref<'b, Self::Item>, BorrowError>
+    fn try_borrow<'cx, 'a, C>(&self, lock: &'a Lock<C>) -> Result<Ref<'a, Self::Item>, BorrowError>
     where
-        C: Context<'a>;
+        C: Context<'cx>;
 
     /// Dynamically checked mutable borrow of binary data, returning an error if the
     /// the borrow would overlap with an active borrow.
@@ -53,12 +50,12 @@ pub trait TypedArray: private::Sealed {
     /// The borrow lasts until [`RefMut`] exits scope.
     ///
     /// This is the dynamically checked version of [`TypedArray::as_mut_slice`].
-    fn try_borrow_mut<'a: 'b, 'b, C>(
+    fn try_borrow_mut<'cx, 'a, C>(
         &mut self,
-        lock: &'b Lock<'b, C>,
-    ) -> Result<RefMut<'b, Self::Item>, BorrowError>
+        lock: &'a Lock<C>,
+    ) -> Result<RefMut<'a, Self::Item>, BorrowError>
     where
-        C: Context<'a>;
+        C: Context<'cx>;
 }
 
 #[derive(Debug)]

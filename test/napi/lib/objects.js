@@ -233,4 +233,12 @@ describe("JsObject", function () {
     );
     assert.equal(addon.get_own_property_names(object).length, 1);
   });
+
+  it("data borrowed on the heap can be held longer than the handle", function () {
+    const msg = "Hello, World!";
+    const buf = Buffer.from(msg);
+
+    assert.strictEqual(addon.byte_length(msg), buf.length);
+    assert.strictEqual(addon.byte_length(buf), buf.length);
+  });
 });

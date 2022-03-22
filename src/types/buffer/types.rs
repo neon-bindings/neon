@@ -89,26 +89,31 @@ impl private::Sealed for JsBuffer {}
 impl TypedArray for JsBuffer {
     type Item = u8;
 
-    fn as_slice<'a: 'b, 'b, C>(&'b self, cx: &'b C) -> &'b [Self::Item]
+    fn as_slice<'cx, 'a, C>(&self, cx: &'a C) -> &'a [Self::Item]
     where
-        C: Context<'a>,
+        C: Context<'cx>,
     {
+        // # Safety
+        // Only the `Context` with the *most* narrow scope is accessible because `compute_scoped`
+        // and `execute_scope` take an exclusive reference to `Context`. A handle is always
+        // associated with a `Context` and the value will not be garbage collected while that
+        // `Context` is in scope. This means that the referenced data is valid *at least* as long
+        // as `Context`, even if the `Handle` is dropped.
         unsafe { neon_runtime::buffer::as_mut_slice(cx.env().to_raw(), self.to_raw()) }
     }
 
-    fn as_mut_slice<'a: 'b, 'b, C>(&'b mut self, cx: &'b mut C) -> &'b mut [Self::Item]
+    fn as_mut_slice<'cx, 'a, C>(&mut self, cx: &'a mut C) -> &'a mut [Self::Item]
     where
-        C: Context<'a>,
+        C: Context<'cx>,
     {
+        // # Safety
+        // See `as_slice`
         unsafe { neon_runtime::buffer::as_mut_slice(cx.env().to_raw(), self.to_raw()) }
     }
 
-    fn try_borrow<'a: 'b, 'b, C>(
-        &self,
-        lock: &'b Lock<'b, C>,
-    ) -> Result<Ref<'b, Self::Item>, BorrowError>
+    fn try_borrow<'cx, 'a, C>(&self, lock: &'a Lock<C>) -> Result<Ref<'a, Self::Item>, BorrowError>
     where
-        C: Context<'a>,
+        C: Context<'cx>,
     {
         // The borrowed data must be guarded by `Ledger` before returning
         Ledger::try_borrow(&lock.ledger, unsafe {
@@ -116,12 +121,12 @@ impl TypedArray for JsBuffer {
         })
     }
 
-    fn try_borrow_mut<'a: 'b, 'b, C>(
+    fn try_borrow_mut<'cx, 'a, C>(
         &mut self,
-        lock: &'b Lock<'b, C>,
-    ) -> Result<RefMut<'b, Self::Item>, BorrowError>
+        lock: &'a Lock<C>,
+    ) -> Result<RefMut<'a, Self::Item>, BorrowError>
     where
-        C: Context<'a>,
+        C: Context<'cx>,
     {
         // The borrowed data must be guarded by `Ledger` before returning
         Ledger::try_borrow_mut(&lock.ledger, unsafe {
@@ -197,26 +202,23 @@ impl private::Sealed for JsArrayBuffer {}
 impl TypedArray for JsArrayBuffer {
     type Item = u8;
 
-    fn as_slice<'a: 'b, 'b, C>(&'b self, cx: &'b C) -> &'b [Self::Item]
+    fn as_slice<'cx, 'a, C>(&self, cx: &'a C) -> &'a [Self::Item]
     where
-        C: Context<'a>,
+        C: Context<'cx>,
     {
         unsafe { neon_runtime::arraybuffer::as_mut_slice(cx.env().to_raw(), self.to_raw()) }
     }
 
-    fn as_mut_slice<'a: 'b, 'b, C>(&'b mut self, cx: &'b mut C) -> &'b mut [Self::Item]
+    fn as_mut_slice<'cx, 'a, C>(&mut self, cx: &'a mut C) -> &'a mut [Self::Item]
     where
-        C: Context<'a>,
+        C: Context<'cx>,
     {
         unsafe { neon_runtime::arraybuffer::as_mut_slice(cx.env().to_raw(), self.to_raw()) }
     }
 
-    fn try_borrow<'a: 'b, 'b, C>(
-        &self,
-        lock: &'b Lock<'b, C>,
-    ) -> Result<Ref<'b, Self::Item>, BorrowError>
+    fn try_borrow<'cx, 'a, C>(&self, lock: &'a Lock<C>) -> Result<Ref<'a, Self::Item>, BorrowError>
     where
-        C: Context<'a>,
+        C: Context<'cx>,
     {
         // The borrowed data must be guarded by `Ledger` before returning
         Ledger::try_borrow(&lock.ledger, unsafe {
@@ -224,12 +226,12 @@ impl TypedArray for JsArrayBuffer {
         })
     }
 
-    fn try_borrow_mut<'a: 'b, 'b, C>(
+    fn try_borrow_mut<'cx, 'a, C>(
         &mut self,
-        lock: &'b Lock<'b, C>,
-    ) -> Result<RefMut<'b, Self::Item>, BorrowError>
+        lock: &'a Lock<C>,
+    ) -> Result<RefMut<'a, Self::Item>, BorrowError>
     where
-        C: Context<'a>,
+        C: Context<'cx>,
     {
         // The borrowed data must be guarded by `Ledger` before returning
         Ledger::try_borrow_mut(&lock.ledger, unsafe {
@@ -272,9 +274,9 @@ impl<T> Managed for JsTypedArray<T> {
 impl<T: Copy> TypedArray for JsTypedArray<T> {
     type Item = T;
 
-    fn as_slice<'a: 'b, 'b, C>(&'b self, cx: &'b C) -> &'b [Self::Item]
+    fn as_slice<'cx, 'a, C>(&self, cx: &'a C) -> &'a [Self::Item]
     where
-        C: Context<'a>,
+        C: Context<'cx>,
     {
         unsafe {
             let env = cx.env().to_raw();
@@ -285,9 +287,9 @@ impl<T: Copy> TypedArray for JsTypedArray<T> {
         }
     }
 
-    fn as_mut_slice<'a: 'b, 'b, C>(&'b mut self, cx: &'b mut C) -> &'b mut [Self::Item]
+    fn as_mut_slice<'cx, 'a, C>(&mut self, cx: &'a mut C) -> &'a mut [Self::Item]
     where
-        C: Context<'a>,
+        C: Context<'cx>,
     {
         unsafe {
             let env = cx.env().to_raw();
@@ -298,12 +300,12 @@ impl<T: Copy> TypedArray for JsTypedArray<T> {
         }
     }
 
-    fn try_borrow<'a: 'b, 'b, C>(
+    fn try_borrow<'cx, 'b, C>(
         &self,
         lock: &'b Lock<'b, C>,
     ) -> Result<Ref<'b, Self::Item>, BorrowError>
     where
-        C: Context<'a>,
+        C: Context<'cx>,
     {
         unsafe {
             let env = lock.cx.env().to_raw();
@@ -318,12 +320,12 @@ impl<T: Copy> TypedArray for JsTypedArray<T> {
         }
     }
 
-    fn try_borrow_mut<'a: 'b, 'b, C>(
+    fn try_borrow_mut<'cx, 'a, C>(
         &mut self,
-        lock: &'b Lock<'b, C>,
-    ) -> Result<RefMut<'b, Self::Item>, BorrowError>
+        lock: &'a Lock<'a, C>,
+    ) -> Result<RefMut<'a, Self::Item>, BorrowError>
     where
-        C: Context<'a>,
+        C: Context<'cx>,
     {
         unsafe {
             let env = lock.cx.env().to_raw();
