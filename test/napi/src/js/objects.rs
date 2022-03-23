@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use neon::prelude::*;
 use neon::types::buffer::TypedArray;
 
@@ -188,4 +190,32 @@ pub fn write_buffer_with_borrow_mut(mut cx: FunctionContext) -> JsResult<JsUndef
     buf.as_mut_slice(&mut cx)[i] = n;
 
     Ok(cx.undefined())
+}
+
+// Accepts either a `JsString` or `JsBuffer` and returns the contents as
+// as bytes; avoids copying.
+fn get_bytes<'cx, 'a, C>(cx: &'a mut C, v: Handle<JsValue>) -> NeonResult<Cow<'a, [u8]>>
+where
+    C: Context<'cx>,
+{
+    if let Ok(v) = v.downcast::<JsString, _>(cx) {
+        return Ok(Cow::Owned(v.value(cx).into_bytes()));
+    }
+
+    if let Ok(v) = v.downcast::<JsBuffer, _>(cx) {
+        return Ok(Cow::Borrowed(v.as_slice(cx)));
+    }
+
+    cx.throw_type_error("Value must be a string or Buffer")
+}
+
+pub fn byte_length(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let v = cx.argument::<JsValue>(0)?;
+    let bytes = get_bytes(&mut cx, v)?;
+
+    // `v` is dropped here, but `bytes` is still valid since the data is on the V8 heap
+
+    let len = bytes.len();
+
+    Ok(cx.number(len as f64))
 }
