@@ -14,10 +14,10 @@ pub use crate::declare_types;
 #[cfg(all(not(feature = "napi-1"), feature = "event-handler-api"))]
 #[doc(no_inline)]
 pub use crate::event::EventHandler;
-#[cfg(all(feature = "napi-4", feature = "channel-api"))]
+#[cfg(feature = "napi-4")]
 #[doc(no_inline)]
 pub use crate::event::{Channel, SendError};
-#[cfg(all(feature = "napi-4", feature = "channel-api"))]
+#[cfg(feature = "napi-4")]
 #[doc(no_inline)]
 #[allow(deprecated)]
 pub use crate::event::{EventQueue, EventQueueError};
@@ -37,7 +37,7 @@ pub use crate::task::Task;
 #[cfg(feature = "legacy-runtime")]
 #[doc(no_inline)]
 pub use crate::types::BinaryData;
-#[cfg(all(feature = "napi-1", feature = "promise-api"))]
+#[cfg(feature = "napi-1")]
 #[doc(no_inline)]
 pub use crate::types::JsPromise;
 #[cfg(feature = "napi-1")]

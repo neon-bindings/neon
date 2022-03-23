@@ -32,7 +32,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - name: Use npm v8
-        run: npm install -g npm@8
+        # https://github.com/npm/cli/issues/4552
+        run: npm -g i npm@~8.3
       - name: npm install workspace
         run: npm install
       - name: run tests

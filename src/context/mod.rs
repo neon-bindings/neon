@@ -153,12 +153,12 @@ use crate::borrow::internal::Ledger;
 #[cfg(feature = "legacy-runtime")]
 use crate::borrow::{Borrow, BorrowMut, Ref, RefMut};
 use crate::context::internal::Env;
-#[cfg(all(feature = "napi-4", feature = "channel-api"))]
+#[cfg(feature = "napi-4")]
 use crate::event::Channel;
-#[cfg(all(feature = "napi-1", feature = "task-api"))]
+#[cfg(feature = "napi-1")]
 use crate::event::TaskBuilder;
 use crate::handle::{Handle, Managed};
-#[cfg(all(feature = "napi-6", feature = "channel-api"))]
+#[cfg(feature = "napi-6")]
 use crate::lifecycle::InstanceData;
 #[cfg(feature = "legacy-runtime")]
 use crate::object::class::Class;
@@ -171,7 +171,7 @@ pub use crate::types::buffer::lock::Lock;
 #[cfg(feature = "napi-5")]
 use crate::types::date::{DateError, JsDate};
 use crate::types::error::JsError;
-#[cfg(all(feature = "napi-1", feature = "promise-api"))]
+#[cfg(feature = "napi-1")]
 use crate::types::{Deferred, JsPromise};
 use crate::types::{
     JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber, JsObject, JsString,
@@ -441,8 +441,10 @@ pub trait Context<'a>: ContextInternal<'a> {
         result
     }
 
-    #[cfg(feature = "try-catch-api")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "try-catch-api")))]
+    #[cfg_attr(
+        feature = "try-catch-api",
+        deprecated = "`try-catch-api` feature has no impact and may be removed"
+    )]
     fn try_catch<T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
     where
         F: FnOnce(&mut Self) -> NeonResult<T>,
@@ -599,8 +601,23 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsBox::new(self, v)
     }
 
-    #[cfg(all(feature = "napi-4", feature = "channel-api"))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "napi-4", feature = "channel-api"))))]
+    #[cfg(feature = "napi-4")]
+    #[deprecated(since = "0.9.0", note = "Please use the channel() method instead")]
+    #[doc(hidden)]
+    fn queue(&mut self) -> Channel {
+        self.channel()
+    }
+
+    #[cfg(feature = "napi-4")]
+    #[cfg_attr(
+        feature = "channel-api",
+        deprecated = "`channel-api` feature has no impact and may be removed"
+    )]
+    #[cfg_attr(
+        all(not(feature = "channel-api"), feature = "event-queue-api"),
+        deprecated = "`event-queue-api` feature has no impact and may be removed"
+    )]
+    #[cfg_attr(docsrs, doc(cfg(feature = "napi-4")))]
     /// Returns an unbounded channel for scheduling events to be executed on the JavaScript thread.
     ///
     /// When using N-API >= 6,the channel returned by this method is backed by a shared queue.
@@ -615,20 +632,16 @@ pub trait Context<'a>: ContextInternal<'a> {
         channel
     }
 
-    #[cfg(all(feature = "napi-4", feature = "channel-api"))]
-    #[deprecated(since = "0.9.0", note = "Please use the channel() method instead")]
-    #[doc(hidden)]
-    fn queue(&mut self) -> Channel {
-        self.channel()
-    }
-
-    #[cfg(all(feature = "napi-1", feature = "promise-api"))]
-    #[cfg_attr(docsrs, doc(cfg(feature = "promise-api")))]
+    #[cfg(feature = "napi-1")]
+    #[cfg_attr(
+        feature = "promise-api",
+        deprecated = "`promise-api` feature has no impact and may be removed"
+    )]
     /// Creates a [`Deferred`] and [`JsPromise`] pair. The [`Deferred`] handle can be
     /// used to resolve or reject the [`JsPromise`].
     ///
     /// ```
-    /// # #[cfg(all(feature = "napi-1", feature = "promise-api"))] {
+    /// # #[cfg(feature = "napi-1")] {
     /// # use neon::prelude::*;
     /// fn resolve_promise(mut cx: FunctionContext) -> JsResult<JsPromise> {
     ///     let (deferred, promise) = cx.promise();
@@ -644,14 +657,17 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsPromise::new(self)
     }
 
-    #[cfg(all(feature = "napi-1", feature = "task-api"))]
-    #[cfg_attr(docsrs, doc(cfg(feature = "task-api")))]
+    #[cfg(feature = "napi-1")]
+    #[cfg_attr(
+        feature = "task-api",
+        deprecated = "`task-api` feature has no impact and may be removed"
+    )]
     /// Creates a [`TaskBuilder`] which can be used to schedule the `execute`
     /// callback to asynchronously execute on the
     /// [Node worker pool](https://nodejs.org/en/docs/guides/dont-block-the-event-loop/).
     ///
     /// ```
-    /// # #[cfg(all(feature = "napi-1", feature = "promise-api", feature = "task-api"))] {
+    /// # #[cfg(feature = "napi-1")] {
     /// # use neon::prelude::*;
     /// fn greet(mut cx: FunctionContext) -> JsResult<JsPromise> {
     ///     let name = cx.argument::<JsString>(0)?.value(&mut cx);
@@ -934,10 +950,7 @@ impl<'a> TaskContext<'a> {
         Scope::with(env, |scope| f(TaskContext { scope }))
     }
 
-    #[cfg(any(
-        all(feature = "napi-1", feature = "task-api"),
-        all(feature = "napi-4", feature = "channel-api"),
-    ))]
+    #[cfg(feature = "napi-1")]
     pub(crate) fn with_context<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: Env, f: F) -> T {
         Scope::with(env, |scope| f(TaskContext { scope }))
     }

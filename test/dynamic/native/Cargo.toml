@@ -11,9 +11,9 @@ name = "tests"
 crate-type = ["cdylib"]
 
 [build-dependencies]
-neon-build = {version = "*", path = "../../../crates/neon-build"}
+neon-build = { version = "*", path = "../../../crates/neon-build" }
 
 [dependencies.neon]
 version = "*"
 path = "../../../"
-features = ["event-handler-api", "proc-macros", "try-catch-api"]
+features = ["event-handler-api", "proc-macros"]

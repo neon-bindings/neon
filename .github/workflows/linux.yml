@@ -31,7 +31,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - name: Use npm v8
-        run: npm install -g npm@8
+        # https://github.com/npm/cli/issues/4552
+        run: npm -g i npm@~8.3
       - name: install build-essential
         run: sudo apt-get install -y build-essential
       - name: npm install workspace

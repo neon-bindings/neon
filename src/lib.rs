@@ -83,11 +83,7 @@
 #[cfg(feature = "legacy-runtime")]
 pub mod borrow;
 pub mod context;
-#[cfg(any(
-    feature = "event-handler-api",
-    all(feature = "napi-1", feature = "task-api"),
-    all(feature = "napi-4", feature = "channel-api")
-))]
+#[cfg(any(feature = "event-handler-api", feature = "napi-1"))]
 pub mod event;
 pub mod handle;
 pub mod meta;

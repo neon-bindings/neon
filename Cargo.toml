@@ -32,12 +32,15 @@ default = ["legacy-runtime"]
 
 # Enable static tests. These can be fragile because of variations in Rust compiler
 # error message formatting from version to version, so they're disabled by default.
+# TODO: https://github.com/neon-bindings/neon/issues/871
 enable-static-tests = []
 
 # Enable the EventHandler API of RFC 25.
+# DEPRECATED: Will be removed with `legacy-runtime`
 event-handler-api = []
 
 # Enable the default panic hook. Useful for debugging neon itself.
+# DEPRECATED: Will be removed with `legacy-runtime`
 default-panic-hook = []
 
 # Feature flag to enable the legacy V8/NAN runtime. For now, this feature is
@@ -61,39 +64,27 @@ napi-6 = ["napi-5", "neon-runtime/napi-6"]
 napi-latest = ["napi-6"]
 napi-experimental = ["napi-6", "neon-runtime/napi-experimental"]
 
+# DEPRECATED: These perform no action and will be removed in 1.0
+try-catch-api = []
+channel-api = []
+event-queue-api = []
+promise-api = []
+task-api = []
+
 # Feature flag to disable external dependencies on docs build
+# DEPRECATED: Will be removed with `legacy-runtime`
 docs-only = ["neon-runtime/docs-only"]
 
-# Feature flag to enable the try_catch API of RFC 29.
-try-catch-api = []
-
-# Feature flag to enable the `EventQueue` API of RFC 33.
-# https://github.com/neon-bindings/rfcs/pull/32
-channel-api = []
-
-# Deprecated name for `channel-api`
-event-queue-api = ["channel-api"]
-
 # Feature flag to include procedural macros
+# DEPRECATED: Will be removed with `legacy-runtime` since it is enabled by default in Node-API backend.
 proc-macros = ["neon-macros"]
-
-# Enable `JsPromise` and `Deferred`
-# https://github.com/neon-bindings/rfcs/pull/35
-promise-api = []
-# Enable `TaskBuilder`
-# https://github.com/neon-bindings/rfcs/pull/35
-task-api = []
 
 [package.metadata.docs.rs]
 no-default-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 features = [
-    "channel-api",
     "napi-experimental",
     "proc-macros",
-    "try-catch-api",
-    "promise-api",
-    "task-api",
 ]
 
 [workspace]
