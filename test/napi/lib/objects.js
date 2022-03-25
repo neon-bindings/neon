@@ -241,4 +241,19 @@ describe("JsObject", function () {
     assert.strictEqual(addon.byte_length(msg), buf.length);
     assert.strictEqual(addon.byte_length(buf), buf.length);
   });
+
+  it("calling Object::call_with() properly calls object methods", function () {
+    const obj = {
+      value: 42,
+      nullary() {
+        return this.value;
+      },
+      unary(x) {
+        return this.value + x;
+      }
+    };
+
+    assert.strictEqual(addon.call_nullary_method(obj), 42);
+    assert.strictEqual(addon.call_unary_method(obj, 17), 59);
+  });
 });
