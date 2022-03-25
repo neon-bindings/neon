@@ -265,6 +265,6 @@ describe("JsObject", function () {
       },
     };
 
-    assert.stringEqual(addon.call_symbol_method(obj, sym), "hello");
+    assert.strictEqual(addon.call_symbol_method(obj, sym), "hello");
   });
 });
