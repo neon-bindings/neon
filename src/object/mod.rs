@@ -135,8 +135,9 @@ mod traits {
     use crate::context::Context;
     use crate::handle::{Handle, Managed, Root};
     use crate::result::{NeonResult, Throw};
+    use crate::types::function::CallOptions;
     use crate::types::utf8::Utf8;
-    use crate::types::{build, JsUndefined, JsValue, Value};
+    use crate::types::{build, JsUndefined, JsValue, Value, JsFunction};
     use neon_runtime::raw;
 
     #[cfg(feature = "napi-6")]
@@ -305,6 +306,16 @@ mod traits {
 
         fn root<'a, C: Context<'a>>(&self, cx: &mut C) -> Root<Self> {
             Root::new(cx, self)
+        }
+
+        fn call_with<'a, C, K>(&self, cx: &mut C, method: K) -> NeonResult<CallOptions<'a>>
+        where
+            C: Context<'a>,
+            K: PropertyKey,
+        {
+            let mut options = self.get::<JsFunction, _, _>(cx, method)?.call_with(cx);
+            options.this(Handle::new_internal(Self::from_raw(cx.env(), self.to_raw())));
+            Ok(options)
         }
     }
 
