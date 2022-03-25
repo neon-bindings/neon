@@ -250,7 +250,7 @@ describe("JsObject", function () {
       },
       unary(x) {
         return this.value + x;
-      }
+      },
     };
 
     assert.strictEqual(addon.call_nullary_method(obj), 42);
