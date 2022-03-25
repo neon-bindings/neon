@@ -256,4 +256,15 @@ describe("JsObject", function () {
     assert.strictEqual(addon.call_nullary_method(obj), 42);
     assert.strictEqual(addon.call_unary_method(obj, 17), 59);
   });
+
+  it("calling Object::call_with() with a symbol method name works", function () {
+    const sym = Symbol.for("mySymbol");
+    const obj = {
+      [sym]() {
+        return "hello";
+      },
+    };
+
+    assert.stringEqual(addon.call_symbol_method(obj, sym), "hello");
+  });
 });

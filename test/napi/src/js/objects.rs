@@ -230,3 +230,9 @@ pub fn call_unary_method(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let x: Handle<JsNumber> = cx.argument::<JsNumber>(1)?;
     obj.call_with(&mut cx, "unary")?.arg(x).apply(&mut cx)
 }
+
+pub fn call_symbol_method(mut cx: FunctionContext) -> JsResult<JsString> {
+    let obj: Handle<JsObject> = cx.argument::<JsObject>(0)?;
+    let sym: Handle<JsValue> = cx.argument::<JsValue>(1)?;
+    obj.call_with(&mut cx, sym)?.apply(&mut cx)
+}

@@ -245,6 +245,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("byte_length", byte_length)?;
     cx.export_function("call_nullary_method", call_nullary_method)?;
     cx.export_function("call_unary_method", call_unary_method)?;
+    cx.export_function("call_symbol_method", call_symbol_method)?;
 
     cx.export_function("create_date", create_date)?;
     cx.export_function("get_date_value", get_date_value)?;
