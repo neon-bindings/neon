@@ -308,7 +308,7 @@ mod traits {
             Root::new(cx, self)
         }
 
-        fn call_with<'a, C, K>(&self, cx: &mut C, method: K) -> NeonResult<CallOptions<'a>>
+        fn call_method_with<'a, C, K>(&self, cx: &mut C, method: K) -> NeonResult<CallOptions<'a>>
         where
             C: Context<'a>,
             K: PropertyKey,
