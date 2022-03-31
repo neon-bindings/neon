@@ -47,7 +47,6 @@
 //! returns a [`JsNumber`](crate::types::JsNumber):
 //!
 //! ```
-//! # #[cfg(feature = "napi-1")] {
 //! # use neon::prelude::*;
 //! fn count_whitespace(mut cx: FunctionContext) -> JsResult<JsNumber> {
 //!     let s: Handle<JsString> = cx.argument(0)?;
@@ -58,7 +57,6 @@
 //!         .count();                      // count the resulting chars
 //!     Ok(cx.number(count as f64))
 //! }
-//! # }
 //! ```
 //!
 //! In this example, `s` is assigned a handle to a string, which ensures that the string
@@ -81,7 +79,6 @@
 //! the loop:
 //!
 //! ```
-//! # #[cfg(feature = "napi-1")] {
 //! # use neon::prelude::*;
 //! # fn iterate(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 //!     let iterator = cx.argument::<JsObject>(0)?;         // iterator object
@@ -105,7 +102,6 @@
 //!         })?;
 //!     }
 //! #   Ok(cx.undefined())
-//! # }
 //! # }
 //! ```
 //!
@@ -149,21 +145,17 @@ pub(crate) mod internal;
 use crate::context::internal::Env;
 #[cfg(feature = "napi-4")]
 use crate::event::Channel;
-#[cfg(feature = "napi-1")]
 use crate::event::TaskBuilder;
 use crate::handle::{Handle, Managed};
 #[cfg(feature = "napi-6")]
 use crate::lifecycle::InstanceData;
 use crate::object::{Object, This};
 use crate::result::{JsResult, NeonResult, Throw};
-#[cfg(feature = "napi-1")]
 use crate::types::boxed::{Finalize, JsBox};
-#[cfg(feature = "napi-1")]
 pub use crate::types::buffer::lock::Lock;
 #[cfg(feature = "napi-5")]
 use crate::types::date::{DateError, JsDate};
 use crate::types::error::JsError;
-#[cfg(feature = "napi-1")]
 use crate::types::{Deferred, JsPromise};
 use crate::types::{
     JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber, JsObject, JsString,
@@ -185,7 +177,6 @@ pub(crate) struct CallbackInfo<'a> {
 }
 
 impl CallbackInfo<'_> {
-    #[cfg(feature = "napi-1")]
     pub unsafe fn new(info: raw::FunctionCallbackInfo) -> Self {
         Self {
             info,
@@ -193,7 +184,6 @@ impl CallbackInfo<'_> {
         }
     }
 
-    #[cfg(feature = "napi-1")]
     fn kind<'b, C: Context<'b>>(&self, cx: &C) -> CallKind {
         if unsafe { neon_runtime::call::is_construct(cx.env().to_raw(), self.info) } {
             CallKind::Construct
@@ -206,7 +196,6 @@ impl CallbackInfo<'_> {
         unsafe { neon_runtime::call::len(cx.env().to_raw(), self.info) }
     }
 
-    #[cfg(feature = "napi-1")]
     pub fn argv<'b, C: Context<'b>>(&self, cx: &mut C) -> neon_runtime::call::Arguments {
         unsafe { neon_runtime::call::argv(cx.env().to_raw(), self.info) }
     }
@@ -234,7 +223,6 @@ pub enum CallKind {
 ///
 /// A context has a lifetime `'a`, which ensures the safety of handles managed by the JS garbage collector. All handles created during the lifetime of a context are kept alive for that duration and cannot outlive the context.
 pub trait Context<'a>: ContextInternal<'a> {
-    #[cfg(feature = "napi-1")]
     /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
     ///
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
@@ -344,13 +332,11 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsArray::new(self, 0)
     }
 
-    #[cfg(feature = "napi-1")]
     /// Convenience method for creating an empty `JsArrayBuffer` value.
     fn array_buffer(&mut self, size: usize) -> JsResult<'a, JsArrayBuffer> {
         JsArrayBuffer::new(self, size)
     }
 
-    #[cfg(feature = "napi-1")]
     /// Convenience method for creating an empty `JsBuffer` value.
     fn buffer(&mut self, size: usize) -> JsResult<'a, JsBuffer> {
         JsBuffer::new(self, size)
@@ -410,7 +396,6 @@ pub trait Context<'a>: ContextInternal<'a> {
         self.throw(err)
     }
 
-    #[cfg(feature = "napi-1")]
     /// Convenience method for wrapping a value in a `JsBox`.
     ///
     /// # Example:
@@ -462,7 +447,6 @@ pub trait Context<'a>: ContextInternal<'a> {
         channel
     }
 
-    #[cfg(feature = "napi-1")]
     #[cfg_attr(
         feature = "promise-api",
         deprecated = "`promise-api` feature has no impact and may be removed"
@@ -471,7 +455,6 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// used to resolve or reject the [`JsPromise`].
     ///
     /// ```
-    /// # #[cfg(feature = "napi-1")] {
     /// # use neon::prelude::*;
     /// fn resolve_promise(mut cx: FunctionContext) -> JsResult<JsPromise> {
     ///     let (deferred, promise) = cx.promise();
@@ -481,13 +464,11 @@ pub trait Context<'a>: ContextInternal<'a> {
     ///
     ///     Ok(promise)
     /// }
-    /// # }
     /// ```
     fn promise(&mut self) -> (Deferred, Handle<'a, JsPromise>) {
         JsPromise::new(self)
     }
 
-    #[cfg(feature = "napi-1")]
     #[cfg_attr(
         feature = "task-api",
         deprecated = "`task-api` feature has no impact and may be removed"
@@ -497,7 +478,6 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// [Node worker pool](https://nodejs.org/en/docs/guides/dont-block-the-event-loop/).
     ///
     /// ```
-    /// # #[cfg(feature = "napi-1")] {
     /// # use neon::prelude::*;
     /// fn greet(mut cx: FunctionContext) -> JsResult<JsPromise> {
     ///     let name = cx.argument::<JsString>(0)?.value(&mut cx);
@@ -508,7 +488,6 @@ pub trait Context<'a>: ContextInternal<'a> {
     ///
     ///     Ok(promise)
     /// }
-    /// # }
     /// ```
     fn task<'cx, O, E>(&'cx mut self, execute: E) -> TaskBuilder<Self, E>
     where
@@ -522,7 +501,6 @@ pub trait Context<'a>: ContextInternal<'a> {
 
 /// An execution context of module initialization.
 pub struct ModuleContext<'a> {
-    #[cfg(feature = "napi-1")]
     scope: Scope<'a, raw::InheritedHandleScope>,
     exports: Handle<'a, JsObject>,
 }
@@ -642,10 +620,9 @@ impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> {}
 ///
 /// The type parameter `T` is the type of the `this`-binding.
 pub struct CallContext<'a, T: This> {
-    #[cfg(feature = "napi-1")]
     scope: Scope<'a, raw::InheritedHandleScope>,
     info: &'a CallbackInfo<'a>,
-    #[cfg(feature = "napi-1")]
+
     arguments: Option<neon_runtime::call::Arguments>,
     phantom_type: PhantomData<T>,
 }
@@ -667,7 +644,6 @@ impl<'a, T: This> CallContext<'a, T> {
             f(CallContext {
                 scope,
                 info,
-                #[cfg(feature = "napi-1")]
                 arguments: None,
                 phantom_type: PhantomData,
             })
@@ -735,7 +711,6 @@ pub struct TaskContext<'a> {
 }
 
 impl<'a> TaskContext<'a> {
-    #[cfg(feature = "napi-1")]
     pub(crate) fn with_context<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: Env, f: F) -> T {
         Scope::with(env, |scope| f(TaskContext { scope }))
     }
@@ -750,24 +725,20 @@ impl<'a> ContextInternal<'a> for TaskContext<'a> {
 impl<'a> Context<'a> for TaskContext<'a> {}
 
 /// A view of the JS engine in the context of a finalize method on garbage collection
-#[cfg(feature = "napi-1")]
 pub(crate) struct FinalizeContext<'a> {
     scope: Scope<'a, raw::InheritedHandleScope>,
 }
 
-#[cfg(feature = "napi-1")]
 impl<'a> FinalizeContext<'a> {
     pub(crate) fn with<T, F: for<'b> FnOnce(FinalizeContext<'b>) -> T>(env: Env, f: F) -> T {
         Scope::with(env, |scope| f(FinalizeContext { scope }))
     }
 }
 
-#[cfg(feature = "napi-1")]
 impl<'a> ContextInternal<'a> for FinalizeContext<'a> {
     fn scope_metadata(&self) -> &ScopeMetadata {
         &self.scope.metadata
     }
 }
 
-#[cfg(feature = "napi-1")]
 impl<'a> Context<'a> for FinalizeContext<'a> {}

@@ -8,12 +8,10 @@ use neon_runtime::scope::Root;
 use std::cell::{Cell, RefCell};
 use std::mem::MaybeUninit;
 
-#[cfg(feature = "napi-1")]
 #[repr(C)]
 #[derive(Clone, Copy)]
 pub struct Env(raw::Env);
 
-#[cfg(feature = "napi-1")]
 impl From<raw::Env> for Env {
     fn from(env: raw::Env) -> Self {
         Self(env)
@@ -26,13 +24,11 @@ thread_local! {
 }
 
 impl Env {
-    #[cfg(feature = "napi-1")]
     pub(crate) fn to_raw(self) -> raw::Env {
         let Self(ptr) = self;
         ptr
     }
 
-    #[cfg(feature = "napi-1")]
     unsafe fn try_catch<T, F>(self, f: F) -> Result<T, raw::Local>
     where
         F: FnOnce() -> Result<T, crate::result::Throw>,
@@ -107,7 +103,6 @@ pub trait ContextInternal<'a>: Sized {
         self.scope_metadata().active.set(false);
     }
 
-    #[cfg(feature = "napi-1")]
     fn try_catch_internal<T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
     where
         F: FnOnce(&mut Self) -> NeonResult<T>,
@@ -120,7 +115,6 @@ pub trait ContextInternal<'a>: Sized {
     }
 }
 
-#[cfg(feature = "napi-1")]
 pub fn initialize_module(
     env: raw::Env,
     exports: Handle<JsObject>,

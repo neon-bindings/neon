@@ -104,7 +104,6 @@ pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> NeonResult<T>>(
             };
             let (data, len) = Utf8::from(&msg[..]).truncate().lower();
             unsafe {
-                #[cfg(feature = "napi-1")]
                 neon_runtime::error::clear_exception(env.to_raw());
                 neon_runtime::error::throw_error_from_utf8(env.to_raw(), data, len);
                 Err(Throw::new())

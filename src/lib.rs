@@ -79,13 +79,11 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub mod context;
-#[cfg(any(feature = "event-handler-api", feature = "napi-1"))]
 pub mod event;
 pub mod handle;
 pub mod meta;
 pub mod object;
 pub mod prelude;
-#[cfg(feature = "napi-1")]
 pub mod reflect;
 pub mod result;
 pub mod types;

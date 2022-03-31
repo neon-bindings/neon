@@ -39,7 +39,6 @@
 //! a [`DowncastError`](crate::handle::DowncastError):
 //!
 //! ```
-//! # #[cfg(feature = "napi-1")] {
 //! # use neon::prelude::*;
 //! fn as_array<'a>(
 //!     cx: &mut impl Context<'a>,
@@ -47,7 +46,6 @@
 //! ) -> JsResult<'a, JsArray> {
 //!     object.downcast(cx).or_throw(cx)
 //! }
-//! # }
 //! ```
 //!
 //! ### The JavaScript Type Hierarchy
@@ -74,15 +72,12 @@
 //! [types]: https://raw.githubusercontent.com/neon-bindings/neon/main/doc/types.jpg
 //! [unknown]: https://mariusschulz.com/blog/the-unknown-type-in-typescript#the-unknown-type
 
-#[cfg(feature = "napi-1")]
 pub(crate) mod boxed;
-#[cfg(feature = "napi-1")]
 pub mod buffer;
 #[cfg(feature = "napi-5")]
 pub(crate) mod date;
 pub(crate) mod error;
 pub mod function;
-#[cfg(feature = "napi-1")]
 pub(crate) mod promise;
 
 pub(crate) mod private;
@@ -104,14 +99,11 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::os::raw::c_void;
 
-#[cfg(feature = "napi-1")]
 pub use self::boxed::{Finalize, JsBox};
-#[cfg(feature = "napi-1")]
 pub use self::buffer::types::{JsArrayBuffer, JsBuffer, JsTypedArray};
 #[cfg(feature = "napi-5")]
 pub use self::date::{DateError, DateErrorKind, JsDate};
 pub use self::error::JsError;
-#[cfg(feature = "napi-1")]
 pub use self::promise::{Deferred, JsPromise};
 
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(
@@ -190,7 +182,6 @@ impl private::ValueInternal for JsValue {
 }
 
 unsafe impl This for JsValue {
-    #[cfg(feature = "napi-1")]
     fn as_this(_env: Env, h: raw::Local) -> Self {
         JsValue(h)
     }
@@ -208,7 +199,6 @@ impl JsValue {
 pub struct JsUndefined(raw::Local);
 
 impl JsUndefined {
-    #[cfg(feature = "napi-1")]
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsUndefined> {
         JsUndefined::new_internal(cx.env())
     }
@@ -252,7 +242,6 @@ impl Managed for JsUndefined {
 }
 
 unsafe impl This for JsUndefined {
-    #[cfg(feature = "napi-1")]
     fn as_this(env: Env, h: raw::Local) -> Self {
         JsUndefined::as_this_compat(env, h)
     }
@@ -274,7 +263,6 @@ impl private::ValueInternal for JsUndefined {
 pub struct JsNull(raw::Local);
 
 impl JsNull {
-    #[cfg(feature = "napi-1")]
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsNull> {
         JsNull::new_internal(cx.env())
     }
@@ -336,7 +324,6 @@ impl JsBoolean {
         }
     }
 
-    #[cfg(feature = "napi-1")]
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> bool {
         let env = cx.env().to_raw();
         unsafe { neon_runtime::primitive::boolean_value(env, self.to_raw()) }
@@ -431,14 +418,12 @@ impl private::ValueInternal for JsString {
 }
 
 impl JsString {
-    #[cfg(feature = "napi-1")]
     pub fn size<'a, C: Context<'a>>(&self, cx: &mut C) -> isize {
         let env = cx.env().to_raw();
 
         unsafe { neon_runtime::string::utf8_len(env, self.to_raw()) }
     }
 
-    #[cfg(feature = "napi-1")]
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> String {
         let env = cx.env().to_raw();
 
@@ -500,7 +485,6 @@ impl JsNumber {
         }
     }
 
-    #[cfg(feature = "napi-1")]
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> f64 {
         let env = cx.env().to_raw();
         unsafe { neon_runtime::primitive::number_value(env, self.to_raw()) }
@@ -563,7 +547,6 @@ impl Managed for JsObject {
 }
 
 unsafe impl This for JsObject {
-    #[cfg(feature = "napi-1")]
     fn as_this(_env: Env, h: raw::Local) -> Self {
         JsObject(h)
     }
@@ -636,12 +619,10 @@ impl JsArray {
         unsafe { neon_runtime::array::len(env.to_raw(), self.to_raw()) }
     }
 
-    #[cfg(feature = "napi-1")]
     pub fn len<'a, C: Context<'a>>(&self, cx: &mut C) -> u32 {
         self.len_inner(cx.env())
     }
 
-    #[cfg(feature = "napi-1")]
     pub fn is_empty<'a, C: Context<'a>>(&self, cx: &mut C) -> bool {
         self.len(cx) == 0
     }
@@ -778,7 +759,7 @@ unsafe fn prepare_call<'a, 'b, C: Context<'a>>(
 }
 
 impl JsFunction {
-    #[cfg(all(feature = "napi-1", not(feature = "napi-5")))]
+    #[cfg(not(feature = "napi-5"))]
     pub fn new<'a, C, U>(
         cx: &mut C,
         f: fn(FunctionContext) -> JsResult<U>,
@@ -800,7 +781,6 @@ impl JsFunction {
         Self::new_internal(cx, f)
     }
 
-    #[cfg(feature = "napi-1")]
     fn new_internal<'a, C, F, V>(cx: &mut C, f: F) -> JsResult<'a, JsFunction>
     where
         C: Context<'a>,

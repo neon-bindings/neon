@@ -15,7 +15,6 @@
 //! as necessary:
 //!
 //! ```
-//! # #[cfg(feature = "napi-1")] {
 //! # use neon::prelude::*;
 //! fn set_and_check<'a>(
 //!     cx: &mut impl Context<'a>,
@@ -28,7 +27,6 @@
 //!     // returns the same value ("hello!")
 //!     obj.get(cx, "17")
 //! }
-//! # }
 //! ```
 //!
 //! [hierarchy]: crate::types#the-javascript-type-hierarchy

@@ -17,13 +17,11 @@
 //! [`JsNumber::value()`](crate::types::JsNumber::value) on a `Handle<JsNumber>`:
 //!
 //! ```
-//! # #[cfg(feature = "napi-1")] {
 //! # use neon::prelude::*;
 //! # fn run(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 //! let n: Handle<JsNumber> = cx.argument(0)?;
 //! let v = n.value(&mut cx); // JsNumber::value()
 //! # Ok(cx.undefined())
-//! # }
 //! # }
 //! ```
 //!
@@ -34,7 +32,6 @@
 //! value in the calculation is stored locally in a `Handle`.
 //!
 //! ```
-//! # #[cfg(feature = "napi-1")] {
 //! # use neon::prelude::*;
 //! fn area(mut cx: FunctionContext) -> JsResult<JsNumber> {
 //!     let rect: Handle<JsObject> = cx.argument(0)?;
@@ -47,15 +44,12 @@
 //!
 //!     Ok(cx.number(w * h))
 //! }
-//! # }
 //! ```
 
 pub(crate) mod internal;
 
-#[cfg(feature = "napi-1")]
 pub(crate) mod root;
 
-#[cfg(feature = "napi-1")]
 pub use self::root::Root;
 
 use self::internal::{SuperType, TransparentNoCopyWrapper};
@@ -158,7 +152,6 @@ impl<'a, T: Value> Handle<'a, T> {
         Handle::new_internal(SuperType::upcast_internal(self.deref()))
     }
 
-    #[cfg(feature = "napi-1")]
     /// Tests whether this value is an instance of the given type.
     ///
     /// # Example:
@@ -177,7 +170,6 @@ impl<'a, T: Value> Handle<'a, T> {
         U::is_typeof(cx.env(), self.deref())
     }
 
-    #[cfg(feature = "napi-1")]
     /// Attempts to downcast a handle to another type, which may fail. A failure
     /// to downcast **does not** throw a JavaScript exception, so it's OK to
     /// continue interacting with the JS engine if this method produces an `Err`
@@ -189,7 +181,6 @@ impl<'a, T: Value> Handle<'a, T> {
         }
     }
 
-    #[cfg(feature = "napi-1")]
     /// Attempts to downcast a handle to another type, raising a JavaScript `TypeError`
     /// exception on failure. This method is a convenient shorthand, equivalent to
     /// `self.downcast::<U>().or_throw::<C>(cx)`.
@@ -197,7 +188,6 @@ impl<'a, T: Value> Handle<'a, T> {
         self.downcast(cx).or_throw(cx)
     }
 
-    #[cfg(feature = "napi-1")]
     pub fn strict_equals<'b, U: Value, C: Context<'b>>(
         &self,
         cx: &mut C,
