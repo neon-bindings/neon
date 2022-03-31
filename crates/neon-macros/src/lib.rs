@@ -1,18 +1,5 @@
 //! Procedural macros supporting [Neon](https://docs.rs/neon/latest/neon/)
 
-#[cfg(feature = "napi")]
-mod napi;
-#[cfg(feature = "napi")]
-use napi as macros;
-
-#[cfg(not(feature = "napi"))]
-mod legacy;
-#[cfg(not(feature = "napi"))]
-use legacy as macros;
-
-// Proc macro definitions must be in the root of the crate
-// Implementations are in the backend dependent module
-
 #[proc_macro_attribute]
 /// Marks a function as the main entry point for initialization in
 /// a Neon module.
@@ -37,8 +24,36 @@ use legacy as macros;
 /// error: symbol `napi_register_module_v1` is already defined
 /// ```
 pub fn main(
-    attr: proc_macro::TokenStream,
+    _attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-    macros::main(attr, item)
+    let input = syn::parse_macro_input!(item as syn_mid::ItemFn);
+
+    let attrs = &input.attrs;
+    let vis = &input.vis;
+    let sig = &input.sig;
+    let block = &input.block;
+    let name = &sig.ident;
+
+    quote::quote!(
+        #(#attrs) *
+        #vis #sig {
+            #[no_mangle]
+            unsafe extern "C" fn napi_register_module_v1(
+                env: ::neon::macro_internal::runtime::raw::Env,
+                m: ::neon::macro_internal::runtime::raw::Local,
+            ) -> ::neon::macro_internal::runtime::raw::Local {
+                ::neon::macro_internal::initialize_module(
+                    env,
+                    ::std::mem::transmute(m),
+                    #name,
+                );
+
+                m
+            }
+
+            #block
+        }
+    )
+    .into()
 }
