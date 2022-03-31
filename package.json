@@ -9,7 +9,6 @@
     "test:js": "npm test --workspaces --if-present"
   },
   "workspaces": [
-    "cli",
     "crates/neon-sys/native",
     "create-neon",
     "test/*"
