@@ -15,8 +15,6 @@ edition = "2018"
 neon-build = { version = "=0.10.0", path = "crates/neon-build" }
 
 [dev-dependencies]
-lazy_static = "1.4.0"
-rustversion = "0.1.4"
 semver = "0.9"
 psd = "0.1.9"     # used for a doc example
 failure = "0.1.5" # used for a doc example
@@ -93,8 +91,6 @@ members = [
     "crates/neon-macros",
     "crates/neon-runtime",
     "crates/neon-sys",
-    "test/static",
     "test/electron",
-    "test/dynamic/native",
     "test/napi"
 ]
