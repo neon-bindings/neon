@@ -1,12 +1,13 @@
-use std::panic::resume_unwind;
-use std::thread;
+use std::{panic::resume_unwind, thread};
 
 use neon_runtime::{async_work, raw};
 
-use crate::context::{internal::Env, Context, TaskContext};
-use crate::handle::Handle;
-use crate::result::{JsResult, NeonResult};
-use crate::types::{Deferred, JsPromise, Value};
+use crate::{
+    context::{internal::Env, Context, TaskContext},
+    handle::Handle,
+    result::{JsResult, NeonResult},
+    types::{Deferred, JsPromise, Value},
+};
 
 #[cfg_attr(
     feature = "task-api",

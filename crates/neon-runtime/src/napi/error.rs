@@ -1,9 +1,9 @@
-use std::mem::MaybeUninit;
-use std::panic::Location;
-use std::ptr;
+use std::{mem::MaybeUninit, panic::Location, ptr};
 
-use crate::napi::bindings as napi;
-use crate::raw::{Env, Local};
+use super::{
+    bindings as napi,
+    raw::{Env, Local},
+};
 
 pub unsafe fn is_throwing(env: Env) -> bool {
     let mut b: MaybeUninit<bool> = MaybeUninit::zeroed();

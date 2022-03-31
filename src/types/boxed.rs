@@ -1,16 +1,16 @@
-use std::any::{self, Any};
-use std::ops::Deref;
+use std::{
+    any::{self, Any},
+    ops::Deref,
+};
 
-use neon_runtime::external;
-use neon_runtime::raw;
+use neon_runtime::{external, raw};
 
-use crate::context::internal::Env;
-use crate::context::{Context, FinalizeContext};
-use crate::handle::{internal::TransparentNoCopyWrapper, Handle, Managed};
-use crate::object::Object;
-use crate::types::private::ValueInternal;
-use crate::types::Value;
-use private::JsBoxInner;
+use crate::{
+    context::{internal::Env, Context, FinalizeContext},
+    handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    object::Object,
+    types::{boxed::private::JsBoxInner, private::ValueInternal, Value},
+};
 
 type BoxAny = Box<dyn Any + Send + 'static>;
 
@@ -323,23 +323,37 @@ pub trait Finalize: Sized {
 // Primitives
 
 impl Finalize for bool {}
+
 impl Finalize for char {}
+
 impl Finalize for i8 {}
+
 impl Finalize for i16 {}
+
 impl Finalize for i32 {}
+
 impl Finalize for i64 {}
+
 impl Finalize for isize {}
+
 impl Finalize for u8 {}
+
 impl Finalize for u16 {}
+
 impl Finalize for u32 {}
+
 impl Finalize for u64 {}
+
 impl Finalize for usize {}
+
 impl Finalize for f32 {}
+
 impl Finalize for f64 {}
 
 // Common types
 
 impl Finalize for String {}
+
 impl Finalize for std::path::PathBuf {}
 
 // Tuples

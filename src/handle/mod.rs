@@ -50,20 +50,24 @@ pub(crate) mod internal;
 
 pub(crate) mod root;
 
+use std::{
+    error::Error,
+    fmt::{self, Debug, Display},
+    marker::PhantomData,
+    mem,
+    ops::{Deref, DerefMut},
+};
+
+use neon_runtime::raw;
+
 pub use self::root::Root;
 
-use self::internal::{SuperType, TransparentNoCopyWrapper};
-use crate::context::internal::Env;
-use crate::context::Context;
-use crate::result::{JsResult, JsResultExt};
-use crate::types::Value;
-use neon_runtime;
-use neon_runtime::raw;
-use std::error::Error;
-use std::fmt::{self, Debug, Display};
-use std::marker::PhantomData;
-use std::mem;
-use std::ops::{Deref, DerefMut};
+use crate::{
+    context::{internal::Env, Context},
+    handle::internal::{SuperType, TransparentNoCopyWrapper},
+    result::{JsResult, JsResultExt},
+    types::Value,
+};
 
 /// The trait of data owned by the JavaScript engine and that can only be accessed via handles.
 pub trait Managed: TransparentNoCopyWrapper {

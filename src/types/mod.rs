@@ -83,28 +83,38 @@ pub(crate) mod promise;
 pub(crate) mod private;
 pub(crate) mod utf8;
 
-use self::function::{CallOptions, ConstructOptions};
-use self::utf8::Utf8;
-use crate::context::internal::Env;
-use crate::context::{Context, FunctionContext};
-use crate::handle::internal::{SuperType, TransparentNoCopyWrapper};
-use crate::handle::{Handle, Managed};
-use crate::object::{Object, This};
-use crate::result::{JsResult, JsResultExt, NeonResult, Throw};
-use neon_runtime;
+use std::{
+    fmt::{self, Debug},
+    marker::PhantomData,
+    os::raw::c_void,
+};
+
 use neon_runtime::raw;
 use smallvec::smallvec;
-use std::fmt;
-use std::fmt::Debug;
-use std::marker::PhantomData;
-use std::os::raw::c_void;
 
-pub use self::boxed::{Finalize, JsBox};
-pub use self::buffer::types::{JsArrayBuffer, JsBuffer, JsTypedArray};
+use crate::{
+    context::{internal::Env, Context, FunctionContext},
+    handle::{
+        internal::{SuperType, TransparentNoCopyWrapper},
+        Handle, Managed,
+    },
+    object::{Object, This},
+    result::{JsResult, JsResultExt, NeonResult, Throw},
+    types::{
+        function::{CallOptions, ConstructOptions},
+        utf8::Utf8,
+    },
+};
+
+pub use self::{
+    boxed::{Finalize, JsBox},
+    buffer::types::{JsArrayBuffer, JsBuffer, JsTypedArray},
+    error::JsError,
+    promise::{Deferred, JsPromise},
+};
+
 #[cfg(feature = "napi-5")]
 pub use self::date::{DateError, DateErrorKind, JsDate};
-pub use self::error::JsError;
-pub use self::promise::{Deferred, JsPromise};
 
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(
     env: Env,

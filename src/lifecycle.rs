@@ -8,16 +8,16 @@
 //!
 //! [napi-docs]: https://nodejs.org/api/n-api.html#n_api_environment_life_cycle_apis
 
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Arc,
+};
 
-use neon_runtime::raw::Env;
-use neon_runtime::tsfn::ThreadsafeFunction;
+use neon_runtime::{raw::Env, tsfn::ThreadsafeFunction};
 
-use crate::context::Context;
-use crate::event::Channel;
-use crate::handle::root::NapiRef;
-use crate::types::promise::NodeApiDeferred;
+use crate::{
+    context::Context, event::Channel, handle::root::NapiRef, types::promise::NodeApiDeferred,
+};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(transparent)]

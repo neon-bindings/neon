@@ -1,5 +1,7 @@
-use crate::napi::bindings as napi;
-use crate::raw::{Env, Local};
+use super::{
+    bindings as napi,
+    raw::{Env, Local},
+};
 
 pub unsafe fn strict_equals(env: Env, lhs: Local, rhs: Local) -> bool {
     let mut result = false;

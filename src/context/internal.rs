@@ -1,12 +1,16 @@
-use super::ModuleContext;
-use crate::handle::Handle;
-use crate::result::NeonResult;
-use crate::types::{JsObject, JsValue};
-use neon_runtime;
-use neon_runtime::raw;
-use neon_runtime::scope::Root;
-use std::cell::{Cell, RefCell};
-use std::mem::MaybeUninit;
+use std::{
+    cell::{Cell, RefCell},
+    mem::MaybeUninit,
+};
+
+use neon_runtime::{raw, scope::Root};
+
+use crate::{
+    context::ModuleContext,
+    handle::Handle,
+    result::NeonResult,
+    types::{JsObject, JsValue},
+};
 
 #[repr(C)]
 #[derive(Clone, Copy)]

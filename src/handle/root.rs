@@ -1,20 +1,18 @@
-use std::ffi::c_void;
-use std::marker::PhantomData;
-#[cfg(feature = "napi-6")]
-use std::sync::Arc;
-#[cfg(not(feature = "napi-6"))]
-use std::thread::{self, ThreadId};
+use std::{ffi::c_void, marker::PhantomData};
 
-#[cfg(feature = "napi-6")]
-use neon_runtime::tsfn::ThreadsafeFunction;
 use neon_runtime::{raw, reference};
 
-use crate::context::Context;
-use crate::handle::Handle;
+use crate::{context::Context, handle::Handle, object::Object, types::boxed::Finalize};
+
 #[cfg(feature = "napi-6")]
-use crate::lifecycle::{DropData, InstanceData, InstanceId};
-use crate::object::Object;
-use crate::types::boxed::Finalize;
+use {
+    crate::lifecycle::{DropData, InstanceData, InstanceId},
+    neon_runtime::tsfn::ThreadsafeFunction,
+    std::sync::Arc,
+};
+
+#[cfg(not(feature = "napi-6"))]
+use std::thread::{self, ThreadId};
 
 #[cfg(not(feature = "napi-6"))]
 type InstanceId = ThreadId;

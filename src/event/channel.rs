@@ -1,11 +1,14 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{mpsc, Arc};
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    mpsc, Arc,
+};
 
-use neon_runtime::raw::Env;
-use neon_runtime::tsfn::ThreadsafeFunction;
+use neon_runtime::{raw::Env, tsfn::ThreadsafeFunction};
 
-use crate::context::{Context, TaskContext};
-use crate::result::NeonResult;
+use crate::{
+    context::{Context, TaskContext},
+    result::NeonResult,
+};
 
 type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 

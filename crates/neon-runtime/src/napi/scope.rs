@@ -1,7 +1,9 @@
 use std::mem::MaybeUninit;
 
-use crate::napi::bindings as napi;
-use crate::raw::{Env, EscapableHandleScope, HandleScope, InheritedHandleScope, Local};
+use super::{
+    bindings as napi,
+    raw::{Env, EscapableHandleScope, HandleScope, InheritedHandleScope, Local},
+};
 
 // TODO: This leaves a lot of room for UB; we can have a cleaner
 // implementation for N-API.
@@ -64,8 +66,5 @@ pub unsafe fn escape(env: Env, out: &mut Local, scope: *mut EscapableHandleScope
 }
 
 pub unsafe fn get_global(env: Env, out: &mut Local) {
-    assert_eq!(
-        crate::napi::bindings::get_global(env, out as *mut _),
-        napi::Status::Ok
-    );
+    assert_eq!(super::get_global(env, out as *mut _), napi::Status::Ok);
 }

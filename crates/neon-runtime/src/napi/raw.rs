@@ -1,6 +1,6 @@
 use std::ptr;
 
-use crate::napi::bindings as napi;
+use super::bindings as napi;
 
 pub type Local = napi::Value;
 

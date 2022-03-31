@@ -32,18 +32,17 @@
 //! [hierarchy]: crate::types#the-javascript-type-hierarchy
 //! [symbol]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol
 
-use crate::context::internal::Env;
-use crate::context::Context;
-use crate::handle::{Handle, Managed, Root};
-use crate::result::{NeonResult, Throw};
-use crate::types::utf8::Utf8;
-use crate::types::{build, function::CallOptions, JsFunction, JsUndefined, JsValue, Value};
 use neon_runtime::raw;
 
+use crate::{
+    context::{internal::Env, Context},
+    handle::{Handle, Managed, Root},
+    result::{NeonResult, Throw},
+    types::{build, function::CallOptions, utf8::Utf8, JsFunction, JsUndefined, JsValue, Value},
+};
+
 #[cfg(feature = "napi-6")]
-use crate::result::JsResult;
-#[cfg(feature = "napi-6")]
-use crate::types::JsArray;
+use crate::{result::JsResult, types::JsArray};
 
 /// A property key in a JavaScript object.
 pub trait PropertyKey {

@@ -1,14 +1,18 @@
-use super::{private::ValueInternal, Value};
-use crate::context::internal::Env;
-use crate::context::Context;
-use crate::handle::{internal::TransparentNoCopyWrapper, Handle, Managed};
-use crate::object::Object;
-use crate::result::{JsResult, JsResultExt};
-use neon_runtime;
+use std::{
+    error::Error,
+    fmt::{self, Debug},
+};
+
 use neon_runtime::raw;
-use std::error::Error;
-use std::fmt;
-use std::fmt::Debug;
+
+use super::{private::ValueInternal, Value};
+
+use crate::{
+    context::{internal::Env, Context},
+    handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    object::Object,
+    result::{JsResult, JsResultExt},
+};
 
 /// A JavaScript Date object
 #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]

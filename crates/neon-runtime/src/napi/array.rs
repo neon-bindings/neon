@@ -1,8 +1,9 @@
 //! Facilities for working with Array `napi_value`s.
 
-use crate::raw::{Env, Local};
-
-use crate::napi::bindings as napi;
+use super::{
+    bindings as napi,
+    raw::{Env, Local},
+};
 
 pub unsafe fn new(out: &mut Local, env: Env, length: u32) {
     assert_eq!(

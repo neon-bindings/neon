@@ -1,8 +1,9 @@
-use std::ffi::c_void;
-use std::mem::MaybeUninit;
+use std::{ffi::c_void, mem::MaybeUninit};
 
-use crate::napi::bindings::{self as napi, TypedArrayType};
-use crate::raw::{Env, Local};
+use super::{
+    bindings::{self as napi, TypedArrayType},
+    raw::{Env, Local},
+};
 
 #[derive(Debug)]
 /// Information describing a JavaScript [`TypedArray`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray)

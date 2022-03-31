@@ -1,5 +1,7 @@
-use crate::napi::bindings as napi;
-use crate::raw::{Env, Local};
+use super::{
+    bindings as napi,
+    raw::{Env, Local},
+};
 
 /// Return true if an `napi_value` `val` has the expected value type.
 unsafe fn is_type(env: Env, val: Local, expect: napi::ValueType) -> bool {

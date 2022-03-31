@@ -1,11 +1,11 @@
 //! Facilities for working with JS functions.
 
-use std::mem::MaybeUninit;
-use std::os::raw::c_void;
-use std::ptr;
+use std::{mem::MaybeUninit, os::raw::c_void, ptr};
 
-use crate::napi::bindings as napi;
-use crate::raw::{Env, Local};
+use super::{
+    bindings as napi,
+    raw::{Env, Local},
+};
 
 pub unsafe fn new<F>(env: Env, name: &str, callback: F) -> Result<Local, napi::Status>
 where

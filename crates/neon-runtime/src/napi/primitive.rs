@@ -1,5 +1,7 @@
-use crate::napi::bindings as napi;
-use crate::raw::{Env, Local};
+use super::{
+    bindings as napi,
+    raw::{Env, Local},
+};
 
 /// Mutates the `out` argument provided to refer to the global `undefined` object.
 pub unsafe fn undefined(out: &mut Local, env: Env) {

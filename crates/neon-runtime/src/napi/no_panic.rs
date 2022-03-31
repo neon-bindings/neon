@@ -8,15 +8,19 @@
 //! `#[track_caller]` is used on these helpers to ensure `fatal_error` reports
 //! the calling location instead of the helpers defined here.
 
-use std::any::Any;
-use std::ffi::c_void;
-use std::mem::MaybeUninit;
-use std::panic::{catch_unwind, AssertUnwindSafe};
-use std::ptr;
+use std::{
+    any::Any,
+    ffi::c_void,
+    mem::MaybeUninit,
+    panic::{catch_unwind, AssertUnwindSafe},
+    ptr,
+};
 
-use super::bindings as napi;
-use super::error::fatal_error;
-use super::raw::{Env, Local};
+use super::{
+    bindings as napi,
+    error::fatal_error,
+    raw::{Env, Local},
+};
 
 type Panic = Box<dyn Any + Send + 'static>;
 

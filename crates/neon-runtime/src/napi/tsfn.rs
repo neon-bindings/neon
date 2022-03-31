@@ -1,13 +1,13 @@
 //! Idiomatic Rust wrappers for N-API threadsafe functions
 
-use std::ffi::c_void;
-use std::mem::MaybeUninit;
-use std::ptr;
-use std::sync::{Arc, Mutex};
+use std::{
+    ffi::c_void,
+    mem::MaybeUninit,
+    ptr,
+    sync::{Arc, Mutex},
+};
 
-use super::bindings as napi;
-use super::no_panic::FailureBoundary;
-use super::raw::Env;
+use super::{bindings as napi, no_panic::FailureBoundary, raw::Env};
 
 const BOUNDARY: FailureBoundary = FailureBoundary {
     both: "A panic and exception occurred while executing a `neon::event::Channel::send` callback",

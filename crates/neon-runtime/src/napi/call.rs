@@ -1,11 +1,11 @@
-use std::mem::MaybeUninit;
-use std::os::raw::c_void;
-use std::ptr::null_mut;
+use std::{mem::MaybeUninit, os::raw::c_void, ptr::null_mut};
 
 use smallvec::SmallVec;
 
-use crate::napi::bindings as napi;
-use crate::raw::{Env, FunctionCallbackInfo, Local};
+use super::{
+    bindings as napi,
+    raw::{Env, FunctionCallbackInfo, Local},
+};
 
 // Number of arguments to allocate on the stack. This should be large enough
 // to cover most use cases without being wasteful.
@@ -137,7 +137,7 @@ pub unsafe fn argv(env: Env, info: FunctionCallbackInfo) -> Arguments {
         argv.set_len(argc);
         SmallVec::from_vec(argv)
 
-    // There were `ARGV_SIZE` or fewer arguments, use the stack allocated space
+        // There were `ARGV_SIZE` or fewer arguments, use the stack allocated space
     } else {
         SmallVec::from_buf_and_len(argv.assume_init(), argc)
     };

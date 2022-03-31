@@ -1,8 +1,9 @@
-use super::Value;
-use crate::context::internal::Env;
-use crate::types::{Handle, Managed};
-use neon_runtime;
 use neon_runtime::raw;
+
+use crate::{
+    context::internal::Env,
+    types::{Handle, Managed, Value},
+};
 
 pub trait ValueInternal: Managed + 'static {
     fn name() -> String;

@@ -2,16 +2,14 @@
 
 use std::panic::{catch_unwind, UnwindSafe};
 
-use neon_runtime;
 use neon_runtime::raw;
 
-use crate::context::internal::Env;
-use crate::context::Context;
-use crate::handle::{internal::TransparentNoCopyWrapper, Handle, Managed};
-use crate::result::{NeonResult, Throw};
-use crate::types::private::ValueInternal;
-use crate::types::utf8::Utf8;
-use crate::types::{build, Object, Value};
+use crate::{
+    context::{internal::Env, Context},
+    handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    result::{NeonResult, Throw},
+    types::{build, private::ValueInternal, utf8::Utf8, Object, Value},
+};
 
 /// A JS `Error` object.
 #[repr(transparent)]

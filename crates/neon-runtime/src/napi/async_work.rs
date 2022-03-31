@@ -7,15 +7,14 @@
 //!
 //! https://nodejs.org/api/n-api.html#n_api_simple_asynchronous_operations
 
-use std::ffi::c_void;
-use std::mem;
-use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
-use std::ptr;
-use std::thread;
+use std::{
+    ffi::c_void,
+    mem,
+    panic::{catch_unwind, resume_unwind, AssertUnwindSafe},
+    ptr, thread,
+};
 
-use super::bindings as napi;
-use super::no_panic::FailureBoundary;
-use super::raw::Env;
+use super::{bindings as napi, no_panic::FailureBoundary, raw::Env};
 
 const BOUNDARY: FailureBoundary = FailureBoundary {
     both: "A panic and exception occurred while executing a `neon::event::TaskBuilder` task",

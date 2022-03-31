@@ -1,15 +1,17 @@
-use std::marker::PhantomData;
-use std::slice;
+use std::{marker::PhantomData, slice};
 
 use neon_runtime::{raw, TypedArrayType};
 
-use crate::context::{internal::Env, Context};
-use crate::handle::{internal::TransparentNoCopyWrapper, Handle, Managed};
-use crate::result::{JsResult, Throw};
-use crate::types::{private::ValueInternal, Object, Value};
-
-use super::lock::{Ledger, Lock};
-use super::{private, BorrowError, Ref, RefMut, TypedArray};
+use crate::{
+    context::{internal::Env, Context},
+    handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    result::{JsResult, Throw},
+    types::buffer::{
+        lock::{Ledger, Lock},
+        private, BorrowError, Ref, RefMut, TypedArray,
+    },
+    types::{private::ValueInternal, Object, Value},
+};
 
 /// The Node [`Buffer`](https://nodejs.org/api/buffer.html) type.
 #[derive(Debug)]

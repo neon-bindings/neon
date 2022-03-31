@@ -1,6 +1,9 @@
-use crate::napi::bindings as napi;
-use crate::raw::{Env, Local};
 use std::mem::MaybeUninit;
+
+use super::{
+    bindings as napi,
+    raw::{Env, Local},
+};
 
 /// Create a new date object
 ///

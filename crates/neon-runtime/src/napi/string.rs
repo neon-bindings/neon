@@ -1,8 +1,9 @@
-use std::mem::MaybeUninit;
-use std::ptr;
+use std::{mem::MaybeUninit, ptr};
 
-use crate::napi::bindings as napi;
-use crate::raw::{Env, Local};
+use super::{
+    bindings as napi,
+    raw::{Env, Local},
+};
 
 pub unsafe fn new(out: &mut Local, env: Env, data: *const u8, len: i32) -> bool {
     let status = napi::create_string_utf8(env, data as *const _, len as usize, out);

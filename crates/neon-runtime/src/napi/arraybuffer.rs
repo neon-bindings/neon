@@ -1,10 +1,9 @@
-use crate::raw::{Env, Local};
-use std::mem::MaybeUninit;
-use std::os::raw::c_void;
-use std::ptr::null_mut;
-use std::slice;
+use std::{mem::MaybeUninit, os::raw::c_void, ptr::null_mut, slice};
 
-use crate::napi::bindings as napi;
+use super::{
+    bindings as napi,
+    raw::{Env, Local},
+};
 
 pub unsafe fn new(env: Env, len: usize) -> Result<Local, napi::Status> {
     let mut buf = MaybeUninit::uninit();

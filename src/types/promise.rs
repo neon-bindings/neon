@@ -1,22 +1,26 @@
 use std::ptr;
-#[cfg(feature = "napi-6")]
-use std::sync::Arc;
 
-use neon_runtime::no_panic::FailureBoundary;
-#[cfg(feature = "napi-6")]
-use neon_runtime::tsfn::ThreadsafeFunction;
-use neon_runtime::{napi, raw};
+use neon_runtime::{napi, no_panic::FailureBoundary, raw};
+
+use crate::{
+    context::{internal::Env, Context},
+    handle::{internal::TransparentNoCopyWrapper, Managed},
+    result::JsResult,
+    types::{private::ValueInternal, Handle, Object, Value},
+};
 
 #[cfg(feature = "napi-4")]
-use crate::context::TaskContext;
-use crate::context::{internal::Env, Context};
-#[cfg(feature = "napi-4")]
-use crate::event::{Channel, JoinHandle, SendError};
-use crate::handle::{internal::TransparentNoCopyWrapper, Managed};
+use crate::{
+    context::TaskContext,
+    event::{Channel, JoinHandle, SendError},
+};
+
 #[cfg(feature = "napi-6")]
-use crate::lifecycle::{DropData, InstanceData};
-use crate::result::JsResult;
-use crate::types::{private::ValueInternal, Handle, Object, Value};
+use {
+    crate::lifecycle::{DropData, InstanceData},
+    neon_runtime::tsfn::ThreadsafeFunction,
+    std::sync::Arc,
+};
 
 const BOUNDARY: FailureBoundary = FailureBoundary {
     both: "A panic and exception occurred while resolving a `neon::types::Deferred`",

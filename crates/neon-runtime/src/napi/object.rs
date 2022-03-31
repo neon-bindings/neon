@@ -1,7 +1,9 @@
 use std::mem::MaybeUninit;
 
-use crate::napi::bindings as napi;
-use crate::raw::{Env, Local};
+use super::{
+    bindings as napi,
+    raw::{Env, Local},
+};
 
 /// Mutates the `out` argument to refer to a `napi_value` containing a newly created JavaScript Object.
 pub unsafe fn new(out: &mut Local, env: Env) {

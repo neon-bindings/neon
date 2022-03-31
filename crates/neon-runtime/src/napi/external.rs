@@ -1,7 +1,9 @@
 use std::mem::MaybeUninit;
 
-use crate::napi::bindings as napi;
-use crate::raw::{Env, Local};
+use super::{
+    bindings as napi,
+    raw::{Env, Local},
+};
 
 /// `finalize_external` is invoked immediately before a `napi_external` is garbage collected
 extern "C" fn finalize_external<T: Send + 'static>(

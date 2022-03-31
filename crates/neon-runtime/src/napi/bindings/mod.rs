@@ -168,8 +168,7 @@ macro_rules! generate {
 
 use std::sync::Once;
 
-pub(crate) use functions::*;
-pub(crate) use types::*;
+pub(crate) use self::{functions::*, types::*};
 pub use types::{Deferred, TypedArrayType};
 
 mod functions;

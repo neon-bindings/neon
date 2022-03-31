@@ -1,5 +1,7 @@
-use crate::napi::bindings as napi;
-use crate::raw::{Env, Local};
+use super::{
+    bindings as napi,
+    raw::{Env, Local},
+};
 
 /// This API is currently unused, see <https://github.com/neon-bindings/neon/issues/572>
 pub unsafe fn to_object(out: &mut Local, env: Env, value: Local) -> bool {

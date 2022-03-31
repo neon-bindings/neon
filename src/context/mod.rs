@@ -142,33 +142,35 @@
 
 pub(crate) mod internal;
 
-use crate::context::internal::Env;
+use std::{convert::Into, marker::PhantomData, panic::UnwindSafe};
+
+use neon_runtime::raw;
+
+pub use crate::types::buffer::lock::Lock;
+
+use crate::{
+    event::TaskBuilder,
+    handle::{Handle, Managed},
+    object::{Object, This},
+    result::{JsResult, NeonResult, Throw},
+    types::{
+        boxed::{Finalize, JsBox},
+        error::JsError,
+        Deferred, JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber,
+        JsObject, JsPromise, JsString, JsUndefined, JsValue, StringResult, Value,
+    },
+};
+
+use self::internal::{ContextInternal, Env, Scope, ScopeMetadata};
+
 #[cfg(feature = "napi-4")]
 use crate::event::Channel;
-use crate::event::TaskBuilder;
-use crate::handle::{Handle, Managed};
-#[cfg(feature = "napi-6")]
-use crate::lifecycle::InstanceData;
-use crate::object::{Object, This};
-use crate::result::{JsResult, NeonResult, Throw};
-use crate::types::boxed::{Finalize, JsBox};
-pub use crate::types::buffer::lock::Lock;
+
 #[cfg(feature = "napi-5")]
 use crate::types::date::{DateError, JsDate};
-use crate::types::error::JsError;
-use crate::types::{Deferred, JsPromise};
-use crate::types::{
-    JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber, JsObject, JsString,
-    JsUndefined, JsValue, StringResult, Value,
-};
-use neon_runtime;
-use neon_runtime::raw;
-use std;
-use std::convert::Into;
-use std::marker::PhantomData;
-use std::panic::UnwindSafe;
 
-use self::internal::{ContextInternal, Scope, ScopeMetadata};
+#[cfg(feature = "napi-6")]
+use crate::lifecycle::InstanceData;
 
 #[repr(C)]
 pub(crate) struct CallbackInfo<'a> {

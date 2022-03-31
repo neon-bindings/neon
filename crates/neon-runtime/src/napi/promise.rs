@@ -2,11 +2,9 @@
 //!
 //! https://nodejs.org/api/n-api.html#n_api_promises
 
-use std::mem::MaybeUninit;
-use std::ptr;
+use std::{mem::MaybeUninit, ptr};
 
-use crate::napi::bindings as napi;
-use crate::raw::Env;
+use super::{bindings as napi, raw::Env};
 
 /// Create a `Promise` and a `napi::Deferred` handle for resolving it
 ///

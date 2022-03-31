@@ -124,10 +124,10 @@ mod channel;
 
 mod task;
 
+pub use self::task::TaskBuilder;
+
 #[cfg(feature = "napi-4")]
 pub use self::channel::{Channel, JoinError, JoinHandle, SendError};
-
-pub use self::task::TaskBuilder;
 
 #[cfg(feature = "napi-4")]
 #[deprecated(since = "0.9.0", note = "Please use the Channel type instead")]

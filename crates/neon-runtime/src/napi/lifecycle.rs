@@ -8,12 +8,9 @@
 //!
 //! [napi-docs]: https://nodejs.org/api/n-api.html#n_api_environment_life_cycle_apis
 
-use std::mem::MaybeUninit;
-use std::os::raw::c_void;
-use std::ptr;
+use std::{mem::MaybeUninit, os::raw::c_void, ptr};
 
-use crate::napi::bindings as napi;
-use crate::raw::Env;
+use super::{bindings as napi, raw::Env};
 
 /// # Safety
 /// `env` must point to a valid `napi_env` for this thread
