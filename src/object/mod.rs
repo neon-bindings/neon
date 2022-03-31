@@ -314,10 +314,7 @@ mod traits {
             K: PropertyKey,
         {
             let mut options = self.get::<JsFunction, _, _>(cx, method)?.call_with(cx);
-            options.this(Handle::new_internal(Self::from_raw(
-                cx.env(),
-                self.to_raw(),
-            )));
+            options.this(JsValue::new_internal(self.to_raw()));
             Ok(options)
         }
     }
