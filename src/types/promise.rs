@@ -7,7 +7,10 @@ use neon_runtime::no_panic::FailureBoundary;
 use neon_runtime::tsfn::ThreadsafeFunction;
 use neon_runtime::{napi, raw};
 
-use crate::context::{internal::Env, Context, TaskContext};
+#[cfg(feature = "napi-4")]
+use crate::context::TaskContext;
+use crate::context::{internal::Env, Context};
+#[cfg(feature = "napi-4")]
 use crate::event::{Channel, JoinHandle, SendError};
 use crate::handle::{internal::TransparentNoCopyWrapper, Managed};
 #[cfg(feature = "napi-6")]
@@ -114,6 +117,8 @@ impl Deferred {
         }
     }
 
+    #[cfg(feature = "napi-4")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "napi-4")))]
     /// Settle the [`JsPromise`] by sending a closure across a [`Channel`][`crate::event::Channel`]
     /// to be executed on the main JavaScript thread.
     ///
@@ -136,6 +141,8 @@ impl Deferred {
         })
     }
 
+    #[cfg(feature = "napi-4")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "napi-4")))]
     /// Settle the [`JsPromise`] by sending a closure across a [`Channel`][crate::event::Channel]
     /// to be executed on the main JavaScript thread.
     ///

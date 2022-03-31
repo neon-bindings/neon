@@ -15,5 +15,4 @@ once_cell = "1"
 [dependencies.neon]
 version = "*"
 path = "../.."
-default-features = false
 features = ["napi-6"]

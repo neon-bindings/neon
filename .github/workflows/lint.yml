@@ -39,5 +39,3 @@ jobs:
         run: cargo fmt --all -- --check
       - name: Clippy (N-API)
         run: cargo clippy-napi
-      - name: Clippy (Legacy)
-        run: cargo clippy-legacy

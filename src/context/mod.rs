@@ -26,15 +26,13 @@
 //! with JavaScript:
 //!
 //! ```
-//! # #[cfg(feature = "neon-macros")] {
 //! # use neon::prelude::*;
 //! # fn hello(_: FunctionContext) -> JsResult<JsValue> { todo!() }
 //! #[neon::main]
-//! fn main(mut cx: ModuleContext) -> NeonResult<()> {
+//! fn lib(mut cx: ModuleContext) -> NeonResult<()> {
 //!     cx.export_function("hello", hello)?;
 //!     Ok(())
 //! }
-//! # }
 //! ```
 //!
 //! ## Memory Management
