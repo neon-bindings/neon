@@ -25,19 +25,6 @@ neon-macros = { version = "=0.10.0", path = "crates/neon-macros" }
 [features]
 default = ["napi-1"]
 
-# Enable static tests. These can be fragile because of variations in Rust compiler
-# error message formatting from version to version, so they're disabled by default.
-# TODO: https://github.com/neon-bindings/neon/issues/871
-enable-static-tests = []
-
-# Enable the EventHandler API of RFC 25.
-# DEPRECATED: Will be removed with `legacy-runtime`
-event-handler-api = []
-
-# Enable the default panic hook. Useful for debugging neon itself.
-# DEPRECATED: Will be removed with `legacy-runtime`
-default-panic-hook = []
-
 # Default N-API version. Prefer to select a minimum required version.
 # DEPRECATED: This is an alias that should be removed
 napi-runtime = ["napi-6"]
@@ -64,7 +51,7 @@ promise-api = []
 task-api = []
 
 # Feature flag to include procedural macros
-# DEPRECATED: Will be removed with `legacy-runtime` since it is enabled by default in Node-API backend.
+# DEPRECATED: This is always enabled and should be removed.
 proc-macros = []
 
 [package.metadata.docs.rs]
