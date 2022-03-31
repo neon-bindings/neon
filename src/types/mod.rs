@@ -45,14 +45,7 @@
 //!     cx: &mut impl Context<'a>,
 //!     object: Handle<'a, JsObject>
 //! ) -> JsResult<'a, JsArray> {
-//! #   #[cfg(feature = "legacy-runtime")]
-//! #   return
-//! #   object.downcast().or_throw(cx)
-//! #   ;
-//! #   #[cfg(feature = "napi-1")]
-//! #   return
 //!     object.downcast(cx).or_throw(cx)
-//! #   ;
 //! }
 //! # }
 //! ```
@@ -81,8 +74,6 @@
 //! [types]: https://raw.githubusercontent.com/neon-bindings/neon/main/doc/types.jpg
 //! [unknown]: https://mariusschulz.com/blog/the-unknown-type-in-typescript#the-unknown-type
 
-#[cfg(feature = "legacy-runtime")]
-pub mod binary;
 #[cfg(feature = "napi-1")]
 pub(crate) mod boxed;
 #[cfg(feature = "napi-1")]
@@ -113,8 +104,6 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::os::raw::c_void;
 
-#[cfg(feature = "legacy-runtime")]
-pub use self::binary::{BinaryData, BinaryViewType, JsArrayBuffer, JsBuffer};
 #[cfg(feature = "napi-1")]
 pub use self::boxed::{Finalize, JsBox};
 #[cfg(feature = "napi-1")]
@@ -201,11 +190,6 @@ impl private::ValueInternal for JsValue {
 }
 
 unsafe impl This for JsValue {
-    #[cfg(feature = "legacy-runtime")]
-    fn as_this(h: raw::Local) -> Self {
-        JsValue(h)
-    }
-
     #[cfg(feature = "napi-1")]
     fn as_this(_env: Env, h: raw::Local) -> Self {
         JsValue(h)
@@ -224,11 +208,6 @@ impl JsValue {
 pub struct JsUndefined(raw::Local);
 
 impl JsUndefined {
-    #[cfg(feature = "legacy-runtime")]
-    pub fn new<'a>() -> Handle<'a, JsUndefined> {
-        JsUndefined::new_internal(Env::current())
-    }
-
     #[cfg(feature = "napi-1")]
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsUndefined> {
         JsUndefined::new_internal(cx.env())
@@ -273,11 +252,6 @@ impl Managed for JsUndefined {
 }
 
 unsafe impl This for JsUndefined {
-    #[cfg(feature = "legacy-runtime")]
-    fn as_this(h: raw::Local) -> Self {
-        JsUndefined::as_this_compat(Env::current(), h)
-    }
-
     #[cfg(feature = "napi-1")]
     fn as_this(env: Env, h: raw::Local) -> Self {
         JsUndefined::as_this_compat(env, h)
@@ -300,11 +274,6 @@ impl private::ValueInternal for JsUndefined {
 pub struct JsNull(raw::Local);
 
 impl JsNull {
-    #[cfg(feature = "legacy-runtime")]
-    pub fn new<'a>() -> Handle<'a, JsNull> {
-        JsNull::new_internal(Env::current())
-    }
-
     #[cfg(feature = "napi-1")]
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsNull> {
         JsNull::new_internal(cx.env())
@@ -365,11 +334,6 @@ impl JsBoolean {
             neon_runtime::primitive::boolean(&mut local, env.to_raw(), b);
             Handle::new_internal(JsBoolean(local))
         }
-    }
-
-    #[cfg(feature = "legacy-runtime")]
-    pub fn value(&self) -> bool {
-        unsafe { neon_runtime::primitive::boolean_value(self.to_raw()) }
     }
 
     #[cfg(feature = "napi-1")]
@@ -467,28 +431,11 @@ impl private::ValueInternal for JsString {
 }
 
 impl JsString {
-    #[cfg(feature = "legacy-runtime")]
-    pub fn size(&self) -> isize {
-        unsafe { neon_runtime::string::utf8_len(self.to_raw()) }
-    }
-
     #[cfg(feature = "napi-1")]
     pub fn size<'a, C: Context<'a>>(&self, cx: &mut C) -> isize {
         let env = cx.env().to_raw();
 
         unsafe { neon_runtime::string::utf8_len(env, self.to_raw()) }
-    }
-
-    #[cfg(feature = "legacy-runtime")]
-    pub fn value(&self) -> String {
-        unsafe {
-            let capacity = neon_runtime::string::utf8_len(self.to_raw());
-            let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
-            let p = buffer.as_mut_ptr();
-            std::mem::forget(buffer);
-            let len = neon_runtime::string::data(p, capacity, self.to_raw());
-            String::from_raw_parts(p, len as usize, capacity as usize)
-        }
     }
 
     #[cfg(feature = "napi-1")]
@@ -551,11 +498,6 @@ impl JsNumber {
             neon_runtime::primitive::number(&mut local, env.to_raw(), v);
             Handle::new_internal(JsNumber(local))
         }
-    }
-
-    #[cfg(feature = "legacy-runtime")]
-    pub fn value(&self) -> f64 {
-        unsafe { neon_runtime::primitive::number_value(self.to_raw()) }
     }
 
     #[cfg(feature = "napi-1")]
@@ -621,11 +563,6 @@ impl Managed for JsObject {
 }
 
 unsafe impl This for JsObject {
-    #[cfg(feature = "legacy-runtime")]
-    fn as_this(h: raw::Local) -> Self {
-        JsObject(h)
-    }
-
     #[cfg(feature = "napi-1")]
     fn as_this(_env: Env, h: raw::Local) -> Self {
         JsObject(h)
@@ -699,19 +636,9 @@ impl JsArray {
         unsafe { neon_runtime::array::len(env.to_raw(), self.to_raw()) }
     }
 
-    #[cfg(feature = "legacy-runtime")]
-    pub fn len(&self) -> u32 {
-        self.len_inner(Env::current())
-    }
-
     #[cfg(feature = "napi-1")]
     pub fn len<'a, C: Context<'a>>(&self, cx: &mut C) -> u32 {
         self.len_inner(cx.env())
-    }
-
-    #[cfg(feature = "legacy-runtime")]
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
     }
 
     #[cfg(feature = "napi-1")]
@@ -815,9 +742,6 @@ impl Object for JsArray {}
 /// // A function implementation that adds 1 to its first argument
 /// fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
 ///     let x: Handle<JsNumber> = cx.argument(0)?;
-/// #   #[cfg(feature = "legacy-runtime")]
-/// #   let v = x.value();
-/// #   #[cfg(feature = "napi-1")]
 ///     let v = x.value(&mut cx);
 ///     Ok(cx.number(v + 1.0))
 /// }
@@ -854,26 +778,6 @@ unsafe fn prepare_call<'a, 'b, C: Context<'a>>(
 }
 
 impl JsFunction {
-    #[cfg(feature = "legacy-runtime")]
-    pub fn new<'a, C, U>(
-        cx: &mut C,
-        f: fn(FunctionContext) -> JsResult<U>,
-    ) -> JsResult<'a, JsFunction>
-    where
-        C: Context<'a>,
-        U: Value,
-    {
-        use self::private::{Callback, FunctionCallback};
-
-        build(cx.env(), |out| {
-            let env = cx.env().to_raw();
-            unsafe {
-                let callback = FunctionCallback(f).into_c_callback();
-                neon_runtime::fun::new(out, env, callback)
-            }
-        })
-    }
-
     #[cfg(all(feature = "napi-1", not(feature = "napi-5")))]
     pub fn new<'a, C, U>(
         cx: &mut C,

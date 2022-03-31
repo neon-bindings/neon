@@ -146,10 +146,6 @@
 
 pub(crate) mod internal;
 
-#[cfg(feature = "legacy-runtime")]
-use crate::borrow::internal::Ledger;
-#[cfg(feature = "legacy-runtime")]
-use crate::borrow::{Borrow, BorrowMut, Ref, RefMut};
 use crate::context::internal::Env;
 #[cfg(feature = "napi-4")]
 use crate::event::Channel;
@@ -158,8 +154,6 @@ use crate::event::TaskBuilder;
 use crate::handle::{Handle, Managed};
 #[cfg(feature = "napi-6")]
 use crate::lifecycle::InstanceData;
-#[cfg(feature = "legacy-runtime")]
-use crate::object::class::Class;
 use crate::object::{Object, This};
 use crate::result::{JsResult, NeonResult, Throw};
 #[cfg(feature = "napi-1")]
@@ -178,12 +172,8 @@ use crate::types::{
 use neon_runtime;
 use neon_runtime::raw;
 use std;
-#[cfg(feature = "legacy-runtime")]
-use std::cell::RefCell;
 use std::convert::Into;
 use std::marker::PhantomData;
-#[cfg(feature = "legacy-runtime")]
-use std::os::raw::c_void;
 use std::panic::UnwindSafe;
 
 use self::internal::{ContextInternal, Scope, ScopeMetadata};
@@ -203,38 +193,6 @@ impl CallbackInfo<'_> {
         }
     }
 
-    #[cfg(feature = "legacy-runtime")]
-    pub fn data(&self, env: Env) -> *mut c_void {
-        unsafe {
-            let mut raw_data: *mut c_void = std::mem::zeroed();
-            neon_runtime::call::data(env.to_raw(), self.info, &mut raw_data);
-            raw_data
-        }
-    }
-
-    #[cfg(feature = "legacy-runtime")]
-    pub unsafe fn with_cx<T: This, U, F: for<'a> FnOnce(CallContext<'a, T>) -> U>(
-        &self,
-        env: Env,
-        f: F,
-    ) -> U {
-        CallContext::<T>::with(env, self, f)
-    }
-
-    #[cfg(feature = "legacy-runtime")]
-    pub fn set_return<T: Value>(&self, value: Handle<T>) {
-        unsafe { neon_runtime::call::set_return(self.info, value.to_raw()) }
-    }
-
-    #[cfg(feature = "legacy-runtime")]
-    fn kind(&self) -> CallKind {
-        if unsafe { neon_runtime::call::is_construct(std::mem::transmute(self)) } {
-            CallKind::Construct
-        } else {
-            CallKind::Call
-        }
-    }
-
     #[cfg(feature = "napi-1")]
     fn kind<'b, C: Context<'b>>(&self, cx: &C) -> CallKind {
         if unsafe { neon_runtime::call::is_construct(cx.env().to_raw(), self.info) } {
@@ -246,18 +204,6 @@ impl CallbackInfo<'_> {
 
     pub fn len<'b, C: Context<'b>>(&self, cx: &C) -> i32 {
         unsafe { neon_runtime::call::len(cx.env().to_raw(), self.info) }
-    }
-
-    #[cfg(feature = "legacy-runtime")]
-    pub fn get<'b, C: Context<'b>>(&self, cx: &mut C, i: i32) -> Option<Handle<'b, JsValue>> {
-        if i < 0 || i >= self.len(cx) {
-            return None;
-        }
-        unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::get(cx.env().to_raw(), self.info, i, &mut local);
-            Some(Handle::new_internal(JsValue::from_raw(cx.env(), local)))
-        }
     }
 
     #[cfg(feature = "napi-1")]
@@ -282,44 +228,12 @@ pub enum CallKind {
     Call,
 }
 
-#[cfg(feature = "legacy-runtime")]
-/// A temporary lock of an execution context.
-///
-/// While a lock is alive, no JavaScript code can be executed in the execution context.
-///
-/// Objects that support the `Borrow` and `BorrowMut` traits can be inspected while the context is locked by passing a reference to a `Lock` to their methods.
-pub struct Lock<'a> {
-    pub(crate) ledger: RefCell<Ledger>,
-    pub(crate) env: Env,
-    phantom: PhantomData<&'a ()>,
-}
-
-#[cfg(feature = "legacy-runtime")]
-impl<'a> Lock<'a> {
-    fn new(env: Env) -> Self {
-        Lock {
-            ledger: RefCell::new(Ledger::new()),
-            env,
-            phantom: PhantomData,
-        }
-    }
-}
-
 /// An _execution context_, which represents the current state of a thread of execution in the JavaScript engine.
 ///
 /// All interaction with the JavaScript engine in Neon code is mediated through instances of this trait.
 ///
 /// A context has a lifetime `'a`, which ensures the safety of handles managed by the JS garbage collector. All handles created during the lifetime of a context are kept alive for that duration and cannot outlive the context.
 pub trait Context<'a>: ContextInternal<'a> {
-    #[cfg(feature = "legacy-runtime")]
-    /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
-    ///
-    /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
-    fn lock(&mut self) -> Lock<'_> {
-        self.check_active();
-        Lock::new(self.env())
-    }
-
     #[cfg(feature = "napi-1")]
     /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
     ///
@@ -329,70 +243,6 @@ pub trait Context<'a>: ContextInternal<'a> {
         'a: 'b,
     {
         Lock::new(self)
-    }
-
-    #[cfg(feature = "legacy-runtime")]
-    /// Convenience method for locking the JavaScript engine and borrowing a single JS value's internals.
-    ///
-    /// # Example:
-    ///
-    /// ```no_run
-    /// # use neon::prelude::*;
-    /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsNumber> {
-    /// let b: Handle<JsArrayBuffer> = cx.argument(0)?;
-    /// let x: u32 = cx.borrow(&b, |data| { data.as_slice()[0] });
-    /// let n: Handle<JsNumber> = cx.number(x);
-    /// # Ok(n)
-    /// # }
-    /// ```
-    ///
-    /// Note: the borrowed value is required to be a reference to a handle instead of a handle
-    /// as a workaround for a [Rust compiler bug](https://github.com/rust-lang/rust/issues/29997).
-    /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
-    /// but while the extra `&` is a small ergonomics regression, this API is still a nice
-    /// convenience.
-    fn borrow<'c, V, T, F>(&mut self, v: &'c Handle<V>, f: F) -> T
-    where
-        V: Value,
-        &'c V: Borrow,
-        F: for<'b> FnOnce(Ref<'b, <&'c V as Borrow>::Target>) -> T,
-    {
-        let lock = self.lock();
-        let contents = v.borrow(&lock);
-        f(contents)
-    }
-
-    #[cfg(feature = "legacy-runtime")]
-    /// Convenience method for locking the JavaScript engine and mutably borrowing a single JS value's internals.
-    ///
-    /// # Example:
-    ///
-    /// ```no_run
-    /// # use neon::prelude::*;
-    /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    /// let mut b: Handle<JsArrayBuffer> = cx.argument(0)?;
-    /// cx.borrow_mut(&mut b, |data| {
-    ///     let slice = data.as_mut_slice::<u32>();
-    ///     slice[0] += 1;
-    /// });
-    /// # Ok(cx.undefined())
-    /// # }
-    /// ```
-    ///
-    /// Note: the borrowed value is required to be a reference to a handle instead of a handle
-    /// as a workaround for a [Rust compiler bug](https://github.com/rust-lang/rust/issues/29997).
-    /// We may be able to generalize this compatibly in the future when the Rust bug is fixed,
-    /// but while the extra `&mut` is a small ergonomics regression, this API is still a nice
-    /// convenience.
-    fn borrow_mut<'c, V, T, F>(&mut self, v: &'c mut Handle<V>, f: F) -> T
-    where
-        V: Value,
-        &'c mut V: BorrowMut,
-        F: for<'b> FnOnce(RefMut<'b, <&'c mut V as Borrow>::Target>) -> T,
-    {
-        let lock = self.lock();
-        let contents = v.borrow_mut(&lock);
-        f(contents)
     }
 
     /// Executes a computation in a new memory management scope.
@@ -476,17 +326,11 @@ pub trait Context<'a>: ContextInternal<'a> {
 
     /// Convenience method for creating a `JsNull` value.
     fn null(&mut self) -> Handle<'a, JsNull> {
-        #[cfg(feature = "legacy-runtime")]
-        return JsNull::new();
-        #[cfg(feature = "napi-1")]
         return JsNull::new(self);
     }
 
     /// Convenience method for creating a `JsUndefined` value.
     fn undefined(&mut self) -> Handle<'a, JsUndefined> {
-        #[cfg(feature = "legacy-runtime")]
-        return JsUndefined::new();
-        #[cfg(feature = "napi-1")]
         return JsUndefined::new(self);
     }
 
@@ -500,22 +344,10 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsArray::new(self, 0)
     }
 
-    #[cfg(feature = "legacy-runtime")]
-    /// Convenience method for creating an empty `JsArrayBuffer` value.
-    fn array_buffer(&mut self, size: u32) -> JsResult<'a, JsArrayBuffer> {
-        JsArrayBuffer::new(self, size)
-    }
-
     #[cfg(feature = "napi-1")]
     /// Convenience method for creating an empty `JsArrayBuffer` value.
     fn array_buffer(&mut self, size: usize) -> JsResult<'a, JsArrayBuffer> {
         JsArrayBuffer::new(self, size)
-    }
-
-    #[cfg(feature = "legacy-runtime")]
-    /// Convenience method for creating an empty `JsBuffer` value.
-    fn buffer(&mut self, size: u32) -> JsResult<'a, JsBuffer> {
-        JsBuffer::new(self, size)
     }
 
     #[cfg(feature = "napi-1")]
@@ -690,8 +522,6 @@ pub trait Context<'a>: ContextInternal<'a> {
 
 /// An execution context of module initialization.
 pub struct ModuleContext<'a> {
-    #[cfg(feature = "legacy-runtime")]
-    scope: Scope<'a, raw::HandleScope>,
     #[cfg(feature = "napi-1")]
     scope: Scope<'a, raw::InheritedHandleScope>,
     exports: Handle<'a, JsObject>,
@@ -707,16 +537,6 @@ impl<'a> ModuleContext<'a> {
     ) -> T {
         // These assertions ensure the proper amount of space is reserved on the rust stack
         // This is only necessary in the legacy runtime.
-        #[cfg(feature = "legacy-runtime")]
-        {
-            debug_assert!(
-                unsafe { neon_runtime::scope::size() } <= std::mem::size_of::<raw::HandleScope>()
-            );
-            debug_assert!(
-                unsafe { neon_runtime::scope::alignment() }
-                    <= std::mem::align_of::<raw::HandleScope>()
-            );
-        }
         Scope::with(env, |scope| f(ModuleContext { scope, exports }))
     }
 
@@ -743,14 +563,6 @@ impl<'a> ModuleContext<'a> {
         // Note: Cloning `exports` is necessary to avoid holding a shared reference to
         // `self` while attempting to use it mutably in `set`.
         self.exports.clone().set(self, key, value)?;
-        Ok(())
-    }
-
-    #[cfg(feature = "legacy-runtime")]
-    /// Convenience method for exporting a Neon class constructor from a module.
-    pub fn export_class<T: Class>(&mut self, key: &str) -> NeonResult<()> {
-        let constructor = T::constructor(self)?;
-        self.exports.clone().set(self, key, constructor)?;
         Ok(())
     }
 
@@ -830,8 +642,6 @@ impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> {}
 ///
 /// The type parameter `T` is the type of the `this`-binding.
 pub struct CallContext<'a, T: This> {
-    #[cfg(feature = "legacy-runtime")]
-    scope: Scope<'a, raw::HandleScope>,
     #[cfg(feature = "napi-1")]
     scope: Scope<'a, raw::InheritedHandleScope>,
     info: &'a CallbackInfo<'a>,
@@ -845,13 +655,7 @@ impl<'a, T: This> UnwindSafe for CallContext<'a, T> {}
 impl<'a, T: This> CallContext<'a, T> {
     /// Indicates whether the function was called with `new`.
     pub fn kind(&self) -> CallKind {
-        #[cfg(feature = "legacy-runtime")]
-        let kind = self.info.kind();
-
-        #[cfg(feature = "napi-1")]
-        let kind = self.info.kind(self);
-
-        kind
+        self.info.kind(self)
     }
 
     pub(crate) fn with<U, F: for<'b> FnOnce(CallContext<'b, T>) -> U>(
@@ -882,23 +686,15 @@ impl<'a, T: This> CallContext<'a, T> {
 
     /// Produces the `i`th argument, or `None` if `i` is greater than or equal to `self.len()`.
     pub fn argument_opt(&mut self, i: i32) -> Option<Handle<'a, JsValue>> {
-        #[cfg(feature = "legacy-runtime")]
-        {
-            self.info.get(self, i)
-        }
+        let argv = if let Some(argv) = self.arguments.as_ref() {
+            argv
+        } else {
+            let argv = self.info.argv(self);
+            self.arguments.insert(argv)
+        };
 
-        #[cfg(feature = "napi-1")]
-        {
-            let argv = if let Some(argv) = self.arguments.as_ref() {
-                argv
-            } else {
-                let argv = self.info.argv(self);
-                self.arguments.insert(argv)
-            };
-
-            argv.get(i as usize)
-                .map(|v| Handle::new_internal(JsValue::from_raw(self.env(), v)))
-        }
+        argv.get(i as usize)
+            .map(|v| Handle::new_internal(JsValue::from_raw(self.env(), v)))
     }
 
     /// Produces the `i`th argument and casts it to the type `V`, or throws an exception if `i` is greater than or equal to `self.len()` or cannot be cast to `V`.
@@ -911,9 +707,6 @@ impl<'a, T: This> CallContext<'a, T> {
 
     /// Produces a handle to the `this`-binding.
     pub fn this(&mut self) -> Handle<'a, T> {
-        #[cfg(feature = "legacy-runtime")]
-        let this = T::as_this(self.info.this(self));
-        #[cfg(feature = "napi-1")]
         let this = T::as_this(self.env(), self.info.this(self));
 
         Handle::new_internal(this)
@@ -942,12 +735,6 @@ pub struct TaskContext<'a> {
 }
 
 impl<'a> TaskContext<'a> {
-    #[cfg(feature = "legacy-runtime")]
-    pub(crate) fn with<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(f: F) -> T {
-        let env = Env::current();
-        Scope::with(env, |scope| f(TaskContext { scope }))
-    }
-
     #[cfg(feature = "napi-1")]
     pub(crate) fn with_context<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: Env, f: F) -> T {
         Scope::with(env, |scope| f(TaskContext { scope }))

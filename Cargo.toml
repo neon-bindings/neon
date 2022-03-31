@@ -38,10 +38,6 @@ event-handler-api = []
 # DEPRECATED: Will be removed with `legacy-runtime`
 default-panic-hook = []
 
-# Feature flag to enable the legacy V8/NAN runtime. For now, this feature is
-# enabled by default.
-legacy-runtime = []
-
 # Default N-API version. Prefer to select a minimum required version.
 # DEPRECATED: This is an alias that should be removed
 napi-runtime = ["napi-6"]
