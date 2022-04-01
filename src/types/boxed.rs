@@ -55,7 +55,7 @@ mod private {
 /// you can call `T`'s method on a value of type `JsBox<T>`.
 ///
 /// ```rust
-/// # use sys::prelude::*;
+/// # use neon::prelude::*;
 /// # fn my_sys_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// let vec: Handle<JsBox<Vec<_>>> = cx.boxed(vec![1, 2, 3]);
 ///
@@ -69,7 +69,7 @@ mod private {
 /// Passing some immutable data between Rust and JavaScript.
 ///
 /// ```rust
-/// # use sys::prelude::*;
+/// # use neon::prelude::*;
 /// # use std::path::{Path, PathBuf};
 /// fn create_path(mut cx: FunctionContext) -> JsResult<JsBox<PathBuf>> {
 ///     let path = cx.argument::<JsString>(0)?.value(&mut cx);
@@ -91,7 +91,7 @@ mod private {
 /// pattern is useful for creating classes in JavaScript.
 ///
 /// ```rust
-/// # use sys::prelude::*;
+/// # use neon::prelude::*;
 /// # use std::cell::RefCell;
 ///
 /// type BoxedPerson = JsBox<RefCell<Person>>;
@@ -285,7 +285,7 @@ impl<'a, T: Send + 'static> Deref for JsBox<T> {
 /// `Finalize` provides a default implementation that does not perform any finalization.
 ///
 /// ```rust
-/// # use sys::prelude::*;
+/// # use neon::prelude::*;
 /// struct Point(f64, f64);
 ///
 /// impl Finalize for Point {}
@@ -295,7 +295,7 @@ impl<'a, T: Send + 'static> Deref for JsBox<T> {
 /// the contained value.
 ///
 /// ```rust
-/// # use sys::prelude::*;
+/// # use neon::prelude::*;
 /// struct Point(f64, f64);
 ///
 /// impl Finalize for Point {

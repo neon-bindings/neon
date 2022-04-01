@@ -38,4 +38,4 @@ jobs:
       - name: Rust Formatting
         run: cargo fmt --all -- --check
       - name: Clippy (N-API)
-        run: cargo clippy-napi
+        run: cargo neon-clippy
