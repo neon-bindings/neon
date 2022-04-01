@@ -3,12 +3,11 @@ use std::{
     ops::Deref,
 };
 
-use neon_runtime::{external, raw};
-
 use crate::{
     context::{internal::Env, Context, FinalizeContext},
     handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
     object::Object,
+    sys::{external, raw},
     types::{boxed::private::JsBoxInner, private::ValueInternal, Value},
 };
 
@@ -16,7 +15,7 @@ type BoxAny = Box<dyn Any + Send + 'static>;
 
 mod private {
     pub struct JsBoxInner<T: Send + 'static> {
-        pub(super) local: neon_runtime::raw::Local,
+        pub(super) local: crate::sys::raw::Local,
         // Cached raw pointer to the data contained in the `JsBox`. This value is
         // required to implement `Deref` for `JsBox`. Unlike most `Js` types, `JsBox`
         // is not a transparent wrapper around a `napi_value` and cannot implement `This`.
@@ -56,8 +55,8 @@ mod private {
 /// you can call `T`'s method on a value of type `JsBox<T>`.
 ///
 /// ```rust
-/// # use neon::prelude::*;
-/// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+/// # use sys::prelude::*;
+/// # fn my_sys_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// let vec: Handle<JsBox<Vec<_>>> = cx.boxed(vec![1, 2, 3]);
 ///
 /// println!("Length: {}", vec.len());
@@ -70,7 +69,7 @@ mod private {
 /// Passing some immutable data between Rust and JavaScript.
 ///
 /// ```rust
-/// # use neon::prelude::*;
+/// # use sys::prelude::*;
 /// # use std::path::{Path, PathBuf};
 /// fn create_path(mut cx: FunctionContext) -> JsResult<JsBox<PathBuf>> {
 ///     let path = cx.argument::<JsString>(0)?.value(&mut cx);
@@ -92,7 +91,7 @@ mod private {
 /// pattern is useful for creating classes in JavaScript.
 ///
 /// ```rust
-/// # use neon::prelude::*;
+/// # use sys::prelude::*;
 /// # use std::cell::RefCell;
 ///
 /// type BoxedPerson = JsBox<RefCell<Person>>;
@@ -226,7 +225,7 @@ impl<T: Send + 'static> ValueInternal for JsBox<T> {
 ///
 /// ### `Finalize`
 ///
-/// The `neon::prelude::Finalize` trait provides a `finalize` method that will be called
+/// The `sys::prelude::Finalize` trait provides a `finalize` method that will be called
 /// immediately before the `JsBox` is garbage collected.
 ///
 /// ### `Send`
@@ -286,7 +285,7 @@ impl<'a, T: Send + 'static> Deref for JsBox<T> {
 /// `Finalize` provides a default implementation that does not perform any finalization.
 ///
 /// ```rust
-/// # use neon::prelude::*;
+/// # use sys::prelude::*;
 /// struct Point(f64, f64);
 ///
 /// impl Finalize for Point {}
@@ -296,7 +295,7 @@ impl<'a, T: Send + 'static> Deref for JsBox<T> {
 /// the contained value.
 ///
 /// ```rust
-/// # use neon::prelude::*;
+/// # use sys::prelude::*;
 /// struct Point(f64, f64);
 ///
 /// impl Finalize for Point {

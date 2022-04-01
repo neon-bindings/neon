@@ -1,13 +1,19 @@
 use std::{ffi::c_void, marker::PhantomData};
 
-use neon_runtime::{raw, reference};
-
-use crate::{context::Context, handle::Handle, object::Object, types::boxed::Finalize};
+use crate::{
+    context::Context,
+    handle::Handle,
+    object::Object,
+    sys::{raw, reference},
+    types::boxed::Finalize,
+};
 
 #[cfg(feature = "napi-6")]
 use {
-    crate::lifecycle::{DropData, InstanceData, InstanceId},
-    neon_runtime::tsfn::ThreadsafeFunction,
+    crate::{
+        lifecycle::{DropData, InstanceData, InstanceId},
+        sys::tsfn::ThreadsafeFunction,
+    },
     std::sync::Arc,
 };
 

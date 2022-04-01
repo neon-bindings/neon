@@ -3,12 +3,11 @@ use std::{
     mem::MaybeUninit,
 };
 
-use neon_runtime::{raw, scope::Root};
-
 use crate::{
     context::ModuleContext,
     handle::Handle,
     result::NeonResult,
+    sys::{self, raw, scope::Root},
     types::{JsObject, JsValue},
 };
 
@@ -40,7 +39,7 @@ impl Env {
         let result = f();
         let mut local: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
 
-        if neon_runtime::error::catch_error(self.to_raw(), local.as_mut_ptr()) {
+        if sys::error::catch_error(self.to_raw(), local.as_mut_ptr()) {
             Err(local.assume_init())
         } else if let Ok(result) = result {
             Ok(result)
@@ -125,7 +124,7 @@ pub fn initialize_module(
     init: fn(ModuleContext) -> NeonResult<()>,
 ) {
     unsafe {
-        neon_runtime::setup(env);
+        sys::setup(env);
     }
 
     IS_RUNNING.with(|v| {

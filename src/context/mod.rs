@@ -144,8 +144,6 @@ pub(crate) mod internal;
 
 use std::{convert::Into, marker::PhantomData, panic::UnwindSafe};
 
-use neon_runtime::raw;
-
 pub use crate::types::buffer::lock::Lock;
 
 use crate::{
@@ -153,6 +151,7 @@ use crate::{
     handle::{Handle, Managed},
     object::{Object, This},
     result::{JsResult, NeonResult, Throw},
+    sys::{self, raw},
     types::{
         boxed::{Finalize, JsBox},
         error::JsError,
@@ -187,7 +186,7 @@ impl CallbackInfo<'_> {
     }
 
     fn kind<'b, C: Context<'b>>(&self, cx: &C) -> CallKind {
-        if unsafe { neon_runtime::call::is_construct(cx.env().to_raw(), self.info) } {
+        if unsafe { sys::call::is_construct(cx.env().to_raw(), self.info) } {
             CallKind::Construct
         } else {
             CallKind::Call
@@ -195,18 +194,18 @@ impl CallbackInfo<'_> {
     }
 
     pub fn len<'b, C: Context<'b>>(&self, cx: &C) -> i32 {
-        unsafe { neon_runtime::call::len(cx.env().to_raw(), self.info) }
+        unsafe { sys::call::len(cx.env().to_raw(), self.info) }
     }
 
-    pub fn argv<'b, C: Context<'b>>(&self, cx: &mut C) -> neon_runtime::call::Arguments {
-        unsafe { neon_runtime::call::argv(cx.env().to_raw(), self.info) }
+    pub fn argv<'b, C: Context<'b>>(&self, cx: &mut C) -> sys::call::Arguments {
+        unsafe { sys::call::argv(cx.env().to_raw(), self.info) }
     }
 
     pub fn this<'b, C: Context<'b>>(&self, cx: &mut C) -> raw::Local {
         let env = cx.env();
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::call::this(env.to_raw(), std::mem::transmute(self.info), &mut local);
+            sys::call::this(env.to_raw(), std::mem::transmute(self.info), &mut local);
             local
         }
     }
@@ -267,7 +266,7 @@ pub trait Context<'a>: ContextInternal<'a> {
             let escapable_handle_scope = cx.scope.handle_scope as *mut raw::EscapableHandleScope;
             let escapee = f(cx)?;
             let mut result_local: raw::Local = std::mem::zeroed();
-            neon_runtime::scope::escape(
+            sys::scope::escape(
                 self.env().to_raw(),
                 &mut result_local,
                 escapable_handle_scope,
@@ -353,14 +352,14 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Produces a handle to the JavaScript global object.
     fn global(&mut self) -> Handle<'a, JsObject> {
         JsObject::build(|out| unsafe {
-            neon_runtime::scope::get_global(self.env().to_raw(), out);
+            sys::scope::get_global(self.env().to_raw(), out);
         })
     }
 
     /// Throws a JS value.
     fn throw<T: Value, U>(&mut self, v: Handle<T>) -> NeonResult<U> {
         unsafe {
-            neon_runtime::error::throw(self.env().to_raw(), v.to_raw());
+            sys::error::throw(self.env().to_raw(), v.to_raw());
         }
         Err(Throw::new())
     }
@@ -625,7 +624,7 @@ pub struct CallContext<'a, T: This> {
     scope: Scope<'a, raw::InheritedHandleScope>,
     info: &'a CallbackInfo<'a>,
 
-    arguments: Option<neon_runtime::call::Arguments>,
+    arguments: Option<sys::call::Arguments>,
     phantom_type: PhantomData<T>,
 }
 

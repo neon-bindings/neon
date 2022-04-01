@@ -89,7 +89,6 @@ use std::{
     os::raw::c_void,
 };
 
-use neon_runtime::raw;
 use smallvec::smallvec;
 
 use crate::{
@@ -100,6 +99,7 @@ use crate::{
     },
     object::{Object, This},
     result::{JsResult, JsResultExt, NeonResult, Throw},
+    sys::{self, raw},
     types::{
         function::{CallOptions, ConstructOptions},
         utf8::Utf8,
@@ -147,7 +147,7 @@ pub trait Value: private::ValueInternal {
     fn to_string<'a, C: Context<'a>>(&self, cx: &mut C) -> JsResult<'a, JsString> {
         let env = cx.env();
         build(env, |out| unsafe {
-            neon_runtime::convert::to_string(out, env.to_raw(), self.to_raw())
+            sys::convert::to_string(out, env.to_raw(), self.to_raw())
         })
     }
 
@@ -216,7 +216,7 @@ impl JsUndefined {
     pub(crate) fn new_internal<'a>(env: Env) -> Handle<'a, JsUndefined> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::undefined(&mut local, env.to_raw());
+            sys::primitive::undefined(&mut local, env.to_raw());
             Handle::new_internal(JsUndefined(local))
         }
     }
@@ -225,7 +225,7 @@ impl JsUndefined {
     fn as_this_compat(env: Env, _: raw::Local) -> Self {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::undefined(&mut local, env.to_raw());
+            sys::primitive::undefined(&mut local, env.to_raw());
             JsUndefined(local)
         }
     }
@@ -263,7 +263,7 @@ impl private::ValueInternal for JsUndefined {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_undefined(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_undefined(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -280,7 +280,7 @@ impl JsNull {
     pub(crate) fn new_internal<'a>(env: Env) -> Handle<'a, JsNull> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::null(&mut local, env.to_raw());
+            sys::primitive::null(&mut local, env.to_raw());
             Handle::new_internal(JsNull(local))
         }
     }
@@ -312,7 +312,7 @@ impl private::ValueInternal for JsNull {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_null(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_null(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -329,14 +329,14 @@ impl JsBoolean {
     pub(crate) fn new_internal<'a>(env: Env, b: bool) -> Handle<'a, JsBoolean> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::boolean(&mut local, env.to_raw(), b);
+            sys::primitive::boolean(&mut local, env.to_raw(), b);
             Handle::new_internal(JsBoolean(local))
         }
     }
 
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> bool {
         let env = cx.env().to_raw();
-        unsafe { neon_runtime::primitive::boolean_value(env, self.to_raw()) }
+        unsafe { sys::primitive::boolean_value(env, self.to_raw()) }
     }
 }
 
@@ -366,7 +366,7 @@ impl private::ValueInternal for JsBoolean {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_boolean(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_boolean(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -423,7 +423,7 @@ impl private::ValueInternal for JsString {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_string(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_string(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -431,18 +431,18 @@ impl JsString {
     pub fn size<'a, C: Context<'a>>(&self, cx: &mut C) -> isize {
         let env = cx.env().to_raw();
 
-        unsafe { neon_runtime::string::utf8_len(env, self.to_raw()) }
+        unsafe { sys::string::utf8_len(env, self.to_raw()) }
     }
 
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> String {
         let env = cx.env().to_raw();
 
         unsafe {
-            let capacity = neon_runtime::string::utf8_len(env, self.to_raw()) + 1;
+            let capacity = sys::string::utf8_len(env, self.to_raw()) + 1;
             let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
             let p = buffer.as_mut_ptr();
             std::mem::forget(buffer);
-            let len = neon_runtime::string::data(env, p, capacity, self.to_raw());
+            let len = sys::string::data(env, p, capacity, self.to_raw());
             String::from_raw_parts(p, len as usize, capacity as usize)
         }
     }
@@ -468,7 +468,7 @@ impl JsString {
 
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            if neon_runtime::string::new(&mut local, env.to_raw(), ptr, len) {
+            if sys::string::new(&mut local, env.to_raw(), ptr, len) {
                 Some(Handle::new_internal(JsString(local)))
             } else {
                 None
@@ -490,14 +490,14 @@ impl JsNumber {
     pub(crate) fn new_internal<'a>(env: Env, v: f64) -> Handle<'a, JsNumber> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::number(&mut local, env.to_raw(), v);
+            sys::primitive::number(&mut local, env.to_raw(), v);
             Handle::new_internal(JsNumber(local))
         }
     }
 
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> f64 {
         let env = cx.env().to_raw();
-        unsafe { neon_runtime::primitive::number_value(env, self.to_raw()) }
+        unsafe { sys::primitive::number_value(env, self.to_raw()) }
     }
 }
 
@@ -527,7 +527,7 @@ impl private::ValueInternal for JsNumber {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_number(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_number(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -568,7 +568,7 @@ impl private::ValueInternal for JsObject {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_object(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_object(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -580,7 +580,7 @@ impl JsObject {
     }
 
     pub(crate) fn new_internal<'a>(env: Env) -> Handle<'a, JsObject> {
-        JsObject::build(|out| unsafe { neon_runtime::object::new(out, env.to_raw()) })
+        JsObject::build(|out| unsafe { sys::object::new(out, env.to_raw()) })
     }
 
     pub(crate) fn build<'a, F: FnOnce(&mut raw::Local)>(init: F) -> Handle<'a, JsObject> {
@@ -606,7 +606,7 @@ impl JsArray {
     pub(crate) fn new_internal<'a>(env: Env, len: u32) -> Handle<'a, JsArray> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::array::new(&mut local, env.to_raw(), len);
+            sys::array::new(&mut local, env.to_raw(), len);
             Handle::new_internal(JsArray(local))
         }
     }
@@ -626,7 +626,7 @@ impl JsArray {
     }
 
     fn len_inner(&self, env: Env) -> u32 {
-        unsafe { neon_runtime::array::len(env.to_raw(), self.to_raw()) }
+        unsafe { sys::array::len(env.to_raw(), self.to_raw()) }
     }
 
     pub fn len<'a, C: Context<'a>>(&self, cx: &mut C) -> u32 {
@@ -664,7 +664,7 @@ impl private::ValueInternal for JsArray {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_array(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_array(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -821,7 +821,7 @@ impl JsFunction {
             })
         };
 
-        if let Ok(raw) = unsafe { neon_runtime::fun::new(cx.env().to_raw(), name, f) } {
+        if let Ok(raw) = unsafe { sys::fun::new(cx.env().to_raw(), name, f) } {
             Ok(Handle::new_internal(JsFunction {
                 raw,
                 marker: PhantomData,
@@ -846,7 +846,7 @@ impl<CL: Object> JsFunction<CL> {
         let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
         let env = cx.env().to_raw();
         build(cx.env(), |out| unsafe {
-            neon_runtime::fun::call(out, env, self.to_raw(), this.to_raw(), argc, argv)
+            sys::fun::call(out, env, self.to_raw(), this.to_raw(), argc, argv)
         })
     }
 
@@ -871,7 +871,7 @@ impl<CL: Object> JsFunction<CL> {
         let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
         let env = cx.env().to_raw();
         build(cx.env(), |out| unsafe {
-            neon_runtime::fun::construct(out, env, self.to_raw(), argc, argv)
+            sys::fun::construct(out, env, self.to_raw(), argc, argv)
         })
     }
 }
@@ -942,6 +942,6 @@ impl<T: Object> private::ValueInternal for JsFunction<T> {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_function(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_function(env.to_raw(), other.to_raw()) }
     }
 }

@@ -32,12 +32,11 @@
 //! [hierarchy]: crate::types#the-javascript-type-hierarchy
 //! [symbol]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol
 
-use neon_runtime::raw;
-
 use crate::{
     context::{internal::Env, Context},
     handle::{Handle, Managed, Root},
     result::{NeonResult, Throw},
+    sys::{self, raw},
     types::{build, function::CallOptions, utf8::Utf8, JsFunction, JsUndefined, JsValue, Value},
 };
 
@@ -69,7 +68,7 @@ impl PropertyKey for u32 {
         out: &mut raw::Local,
         obj: raw::Local,
     ) -> bool {
-        neon_runtime::object::get_index(out, cx.env().to_raw(), obj, self)
+        sys::object::get_index(out, cx.env().to_raw(), obj, self)
     }
 
     unsafe fn set_from<'c, C: Context<'c>>(
@@ -79,7 +78,7 @@ impl PropertyKey for u32 {
         obj: raw::Local,
         val: raw::Local,
     ) -> bool {
-        neon_runtime::object::set_index(out, cx.env().to_raw(), obj, self, val)
+        sys::object::set_index(out, cx.env().to_raw(), obj, self, val)
     }
 }
 
@@ -92,7 +91,7 @@ impl<'a, K: Value> PropertyKey for Handle<'a, K> {
     ) -> bool {
         let env = cx.env().to_raw();
 
-        neon_runtime::object::get(out, env, obj, self.to_raw())
+        sys::object::get(out, env, obj, self.to_raw())
     }
 
     unsafe fn set_from<'c, C: Context<'c>>(
@@ -104,7 +103,7 @@ impl<'a, K: Value> PropertyKey for Handle<'a, K> {
     ) -> bool {
         let env = cx.env().to_raw();
 
-        neon_runtime::object::set(out, env, obj, self.to_raw(), val)
+        sys::object::set(out, env, obj, self.to_raw(), val)
     }
 }
 
@@ -118,7 +117,7 @@ impl<'a> PropertyKey for &'a str {
         let (ptr, len) = Utf8::from(self).into_small_unwrap().lower();
         let env = cx.env().to_raw();
 
-        neon_runtime::object::get_string(env, out, obj, ptr, len)
+        sys::object::get_string(env, out, obj, ptr, len)
     }
 
     unsafe fn set_from<'c, C: Context<'c>>(
@@ -131,7 +130,7 @@ impl<'a> PropertyKey for &'a str {
         let (ptr, len) = Utf8::from(self).into_small_unwrap().lower();
         let env = cx.env().to_raw();
 
-        neon_runtime::object::set_string(env, out, obj, ptr, len, val)
+        sys::object::set_string(env, out, obj, ptr, len, val)
     }
 }
 
@@ -185,7 +184,7 @@ pub trait Object: Value {
         let env = cx.env();
 
         build(cx.env(), |out| unsafe {
-            neon_runtime::object::get_own_property_names(out, env.to_raw(), self.to_raw())
+            sys::object::get_own_property_names(out, env.to_raw(), self.to_raw())
         })
     }
 

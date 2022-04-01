@@ -1,7 +1,6 @@
-use neon_runtime::raw;
-
 use crate::{
     context::internal::Env,
+    sys::raw,
     types::{Handle, Managed, Value},
 };
 

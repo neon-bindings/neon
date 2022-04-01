@@ -58,14 +58,13 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use neon_runtime::raw;
-
 pub use self::root::Root;
 
 use crate::{
     context::{internal::Env, Context},
     handle::internal::{SuperType, TransparentNoCopyWrapper},
     result::{JsResult, JsResultExt},
+    sys::{self, raw},
     types::Value,
 };
 
@@ -197,9 +196,7 @@ impl<'a, T: Value> Handle<'a, T> {
         cx: &mut C,
         other: Handle<'b, U>,
     ) -> bool {
-        unsafe {
-            neon_runtime::mem::strict_equals(cx.env().to_raw(), self.to_raw(), other.to_raw())
-        }
+        unsafe { sys::mem::strict_equals(cx.env().to_raw(), self.to_raw(), other.to_raw()) }
     }
 }
 

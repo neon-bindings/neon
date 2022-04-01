@@ -1,11 +1,10 @@
 use std::{panic::resume_unwind, thread};
 
-use neon_runtime::{async_work, raw};
-
 use crate::{
     context::{internal::Env, Context, TaskContext},
     handle::Handle,
     result::{JsResult, NeonResult},
+    sys::{async_work, raw},
     types::{Deferred, JsPromise, Value},
 };
 

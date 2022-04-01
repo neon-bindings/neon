@@ -3,11 +3,10 @@ use std::sync::{
     mpsc, Arc,
 };
 
-use neon_runtime::{raw::Env, tsfn::ThreadsafeFunction};
-
 use crate::{
     context::{Context, TaskContext},
     result::NeonResult,
+    sys::{raw::Env, tsfn::ThreadsafeFunction},
 };
 
 type Callback = Box<dyn FnOnce(Env) + Send + 'static>;

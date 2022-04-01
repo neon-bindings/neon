@@ -1,11 +1,10 @@
 use std::ptr;
 
-use neon_runtime::{napi, no_panic::FailureBoundary, raw};
-
 use crate::{
     context::{internal::Env, Context},
     handle::{internal::TransparentNoCopyWrapper, Managed},
     result::JsResult,
+    sys::{self, no_panic::FailureBoundary, raw},
     types::{private::ValueInternal, Handle, Object, Value},
 };
 
@@ -17,8 +16,10 @@ use crate::{
 
 #[cfg(feature = "napi-6")]
 use {
-    crate::lifecycle::{DropData, InstanceData},
-    neon_runtime::tsfn::ThreadsafeFunction,
+    crate::{
+        lifecycle::{DropData, InstanceData},
+        sys::tsfn::ThreadsafeFunction,
+    },
     std::sync::Arc,
 };
 
@@ -41,7 +42,7 @@ pub struct JsPromise(raw::Local);
 
 impl JsPromise {
     pub(crate) fn new<'a, C: Context<'a>>(cx: &mut C) -> (Deferred, Handle<'a, Self>) {
-        let (deferred, promise) = unsafe { napi::promise::create(cx.env().to_raw()) };
+        let (deferred, promise) = unsafe { sys::promise::create(cx.env().to_raw()) };
         let deferred = Deferred {
             internal: Some(NodeApiDeferred(deferred)),
             #[cfg(feature = "napi-6")]
@@ -76,7 +77,7 @@ impl ValueInternal for JsPromise {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_promise(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_promise(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -106,7 +107,7 @@ impl Deferred {
         C: Context<'a>,
     {
         unsafe {
-            napi::promise::resolve(cx.env().to_raw(), self.into_inner(), value.to_raw());
+            sys::promise::resolve(cx.env().to_raw(), self.into_inner(), value.to_raw());
         }
     }
 
@@ -117,7 +118,7 @@ impl Deferred {
         C: Context<'a>,
     {
         unsafe {
-            napi::promise::reject(cx.env().to_raw(), self.into_inner(), value.to_raw());
+            sys::promise::reject(cx.env().to_raw(), self.into_inner(), value.to_raw());
         }
     }
 
@@ -189,20 +190,20 @@ impl Deferred {
         }
     }
 
-    pub(crate) fn into_inner(mut self) -> napi::Deferred {
+    pub(crate) fn into_inner(mut self) -> sys::Deferred {
         self.internal.take().unwrap().0
     }
 }
 
 #[repr(transparent)]
-pub(crate) struct NodeApiDeferred(napi::Deferred);
+pub(crate) struct NodeApiDeferred(sys::Deferred);
 
 unsafe impl Send for NodeApiDeferred {}
 
 #[cfg(feature = "napi-6")]
 impl NodeApiDeferred {
     pub(crate) unsafe fn leaked(self, env: raw::Env) {
-        napi::promise::reject_err_message(
+        sys::promise::reject_err_message(
             env,
             self.0,
             "`neon::types::Deferred` was dropped without being settled",

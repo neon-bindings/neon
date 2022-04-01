@@ -3,8 +3,7 @@
 //! These types are manually copied from bindings generated from `bindgen`. To
 //! update, use the following approach:
 //!
-//! * Run `cargo test --manifest-path=crates/neon-runtime/Cargo.toml --features napi`
-//!   at least once to install `nodejs-sys`
+//! * Run `cargo test` at least once to install `nodejs-sys`
 //! * Open the generated bindings at `target/release/build/nodejs-sys-*/out/bindings.rs`
 //! * Copy the types needed into `types.rs` and `functions.rs`
 //! * Modify to match Rust naming conventions:
@@ -177,7 +176,7 @@ mod types;
 static SETUP: Once = Once::new();
 
 /// Loads N-API symbols from host process.
-/// Must be called at least once before using any functions in `neon-runtime` or
+/// Must be called at least once before using any functions in bindings or
 /// they will panic.
 /// Safety: `env` must be a valid `napi_env` for the current thread
 pub unsafe fn setup(env: Env) {
