@@ -1,7 +1,3 @@
 //! Internals needed by macros. These have to be exported for the macros to work
-pub use crate::context::internal::{initialize_module, Env};
 
-// An alias for sys so macros can refer to it.
-pub mod runtime {
-    pub use crate::sys::*;
-}
+pub use crate::context::internal::initialize_module;

@@ -1,6 +1,6 @@
 use std::mem::MaybeUninit;
 
-pub use bindings::*;
+pub(crate) use bindings::*;
 
 pub mod array;
 pub mod arraybuffer;

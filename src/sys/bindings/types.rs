@@ -146,6 +146,7 @@ pub enum KeyConversion {
 }
 
 #[cfg(feature = "napi-4")]
+#[allow(dead_code)]
 #[repr(u32)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum ThreadsafeFunctionCallMode {

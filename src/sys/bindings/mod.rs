@@ -48,7 +48,7 @@ macro_rules! napi_name {
 ///
 /// ```
 /// // Each field is a pointer to a N-API function
-/// pub(crate) struct Napi {
+/// struct Napi {
 ///     get_undefined: unsafe extern "C" fn(env: Env, result: *mut Value) -> Status,
 ///     /* ... repeat for each N-API function */
 /// }
@@ -76,7 +76,7 @@ macro_rules! napi_name {
 ///
 /// // Load N-API symbols from the host process
 /// // # Safety: Must only be called once
-/// pub(crate) unsafe fn load(
+/// pub(super) unsafe fn load(
 ///     host: &libloading::Library,
 ///     actual_napi_version: u32,
 ///     expected_napi_version: u32,
@@ -108,7 +108,7 @@ macro_rules! generate {
     (extern "C" {
         $(fn $name:ident($($param:ident: $ptype:ty$(,)?)*)$( -> $rtype:ty)?;)+
     }) => {
-        pub(crate) struct Napi {
+        struct Napi {
             $(
                 $name: unsafe extern "C" fn(
                     $($param: $ptype,)*
@@ -135,7 +135,7 @@ macro_rules! generate {
             }
         };
 
-        pub(crate) unsafe fn load(
+        pub(super) unsafe fn load(
             host: &libloading::Library,
             actual_napi_version: u32,
             expected_napi_version: u32,
@@ -168,7 +168,6 @@ macro_rules! generate {
 use std::sync::Once;
 
 pub(crate) use self::{functions::*, types::*};
-pub use types::{Deferred, TypedArrayType};
 
 mod functions;
 mod types;
@@ -179,6 +178,6 @@ static SETUP: Once = Once::new();
 /// Must be called at least once before using any functions in bindings or
 /// they will panic.
 /// Safety: `env` must be a valid `napi_env` for the current thread
-pub unsafe fn setup(env: Env) {
+pub(crate) unsafe fn setup(env: Env) {
     SETUP.call_once(|| load(env).expect("Failed to load N-API symbols"));
 }

@@ -40,15 +40,10 @@ pub fn main(
         #vis #sig {
             #[no_mangle]
             unsafe extern "C" fn napi_register_module_v1(
-                env: ::neon::macro_internal::runtime::raw::Env,
-                m: ::neon::macro_internal::runtime::raw::Local,
-            ) -> ::neon::macro_internal::runtime::raw::Local {
-                ::neon::macro_internal::initialize_module(
-                    env,
-                    ::std::mem::transmute(m),
-                    #name,
-                );
-
+                env: *mut std::ffi::c_void,
+                m: *mut std::ffi::c_void,
+            ) -> *mut std::ffi::c_void {
+                neon::macro_internal::initialize_module(env, m, #name);
                 m
             }
 

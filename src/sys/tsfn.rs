@@ -38,22 +38,7 @@ struct Callback<T> {
 }
 
 /// Error returned when scheduling a threadsafe function with some data
-pub struct CallError<T> {
-    kind: napi::Status,
-    data: T,
-}
-
-impl<T> CallError<T> {
-    /// The specific error that occurred
-    pub fn kind(&self) -> napi::Status {
-        self.kind
-    }
-
-    /// Returns the data that was sent when scheduling to allow re-scheduling
-    pub fn into_inner(self) -> T {
-        self.data
-    }
-}
+pub struct CallError;
 
 impl<T: Send + 'static> ThreadsafeFunction<T> {
     /// Creates a new unbounded N-API Threadsafe Function
@@ -103,7 +88,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
         &self,
         data: T,
         is_blocking: Option<napi::ThreadsafeFunctionCallMode>,
-    ) -> Result<(), CallError<T>> {
+    ) -> Result<(), CallError> {
         let is_blocking = is_blocking.unwrap_or(napi::ThreadsafeFunctionCallMode::Blocking);
 
         let callback = Box::into_raw(Box::new(Callback {
@@ -134,12 +119,9 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
             }
 
             // If the call failed, the callback won't execute
-            let callback = unsafe { Box::from_raw(callback) };
+            let _ = unsafe { Box::from_raw(callback) };
 
-            Err(CallError {
-                kind: status,
-                data: callback.data,
-            })
+            Err(CallError)
         }
     }
 

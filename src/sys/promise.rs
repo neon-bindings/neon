@@ -2,7 +2,7 @@
 //!
 //! https://nodejs.org/api/n-api.html#n_api_promises
 
-use std::{mem::MaybeUninit, ptr};
+use std::mem::MaybeUninit;
 
 use super::{bindings as napi, raw::Env};
 
@@ -47,6 +47,7 @@ pub unsafe fn reject(env: Env, deferred: napi::Deferred, rejection: napi::Value)
     );
 }
 
+#[cfg(feature = "napi-6")]
 /// Rejects a promise from a `napi::Deferred` handle with a string message
 ///
 /// # Safety
@@ -56,7 +57,7 @@ pub unsafe fn reject_err_message(env: Env, deferred: napi::Deferred, msg: impl A
     let mut err = MaybeUninit::uninit();
 
     assert_eq!(
-        napi::create_error(env, ptr::null_mut(), msg, err.as_mut_ptr()),
+        napi::create_error(env, std::ptr::null_mut(), msg, err.as_mut_ptr()),
         napi::Status::Ok,
     );
 

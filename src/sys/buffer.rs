@@ -52,15 +52,6 @@ where
     result.assume_init()
 }
 
-pub unsafe fn data(env: Env, base_out: &mut *mut c_void, obj: Local) -> usize {
-    let mut size = 0;
-    assert_eq!(
-        napi::get_buffer_info(env, obj, base_out as *mut _, &mut size as *mut _),
-        napi::Status::Ok,
-    );
-    size
-}
-
 unsafe extern "C" fn drop_external<T>(_env: Env, _data: *mut c_void, hint: *mut c_void) {
     Box::<T>::from_raw(hint as *mut _);
 }

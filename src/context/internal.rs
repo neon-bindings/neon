@@ -1,11 +1,12 @@
 use std::{
     cell::{Cell, RefCell},
+    ffi::c_void,
     mem::MaybeUninit,
 };
 
 use crate::{
     context::ModuleContext,
-    handle::Handle,
+    handle::{Handle, Managed},
     result::NeonResult,
     sys::{self, raw, scope::Root},
     types::{JsObject, JsValue},
@@ -118,20 +119,23 @@ pub trait ContextInternal<'a>: Sized {
     }
 }
 
-pub fn initialize_module(
-    env: raw::Env,
-    exports: Handle<JsObject>,
+pub unsafe fn initialize_module(
+    env: *mut c_void,
+    exports: *mut c_void,
     init: fn(ModuleContext) -> NeonResult<()>,
 ) {
-    unsafe {
-        sys::setup(env);
-    }
+    let env = env.cast();
+
+    sys::setup(env);
 
     IS_RUNNING.with(|v| {
         *v.borrow_mut() = true;
     });
 
-    ModuleContext::with(Env(env), exports, |cx| {
+    let env = Env(env);
+    let exports = Handle::new_internal(JsObject::from_raw(env, exports.cast()));
+
+    ModuleContext::with(env, exports, |cx| {
         let _ = init(cx);
     });
 }

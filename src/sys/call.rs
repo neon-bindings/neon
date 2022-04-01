@@ -1,4 +1,4 @@
-use std::{mem::MaybeUninit, os::raw::c_void, ptr::null_mut};
+use std::{mem::MaybeUninit, ptr::null_mut};
 
 use smallvec::SmallVec;
 
@@ -28,18 +28,6 @@ impl Arguments {
     pub fn get(&self, i: usize) -> Option<Local> {
         self.0.get(i).cloned()
     }
-
-    #[inline]
-    /// Returns the number of arguments
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    #[inline]
-    /// `true` if there are no arguments
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
 }
 
 pub unsafe fn is_construct(env: Env, info: FunctionCallbackInfo) -> bool {
@@ -61,23 +49,6 @@ pub unsafe fn is_construct(env: Env, info: FunctionCallbackInfo) -> bool {
 pub unsafe fn this(env: Env, info: FunctionCallbackInfo, out: &mut Local) {
     let status = napi::get_cb_info(env, info, null_mut(), null_mut(), out as *mut _, null_mut());
     assert_eq!(status, napi::Status::Ok);
-}
-
-/// Mutates the `out` argument provided to refer to the associated data value of the
-/// `napi_callback_info`.
-pub unsafe fn data(env: Env, info: FunctionCallbackInfo, out: &mut *mut c_void) {
-    let mut data = null_mut();
-    let status = napi::get_cb_info(
-        env,
-        info,
-        null_mut(),
-        null_mut(),
-        null_mut(),
-        &mut data as *mut _,
-    );
-    if status == napi::Status::Ok {
-        *out = data;
-    }
 }
 
 /// Gets the number of arguments passed to the function.

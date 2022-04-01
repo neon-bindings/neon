@@ -28,8 +28,6 @@ mod napi1 {
 
             fn get_new_target(env: Env, cbinfo: CallbackInfo, result: *mut Value) -> Status;
 
-            fn coerce_to_object(env: Env, value: Value, result: *mut Value) -> Status;
-
             fn coerce_to_string(env: Env, value: Value, result: *mut Value) -> Status;
 
             fn throw(env: Env, error: Value) -> Status;
@@ -349,7 +347,7 @@ unsafe fn get_version(host: &libloading::Library, env: Env) -> Result<u32, liblo
     Ok(version)
 }
 
-pub(crate) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
+pub(super) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
     #[cfg(not(windows))]
     let host = libloading::os::unix::Library::this().into();
     #[cfg(windows)]
