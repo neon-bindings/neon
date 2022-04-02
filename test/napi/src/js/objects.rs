@@ -219,3 +219,22 @@ pub fn byte_length(mut cx: FunctionContext) -> JsResult<JsNumber> {
 
     Ok(cx.number(len as f64))
 }
+
+pub fn call_nullary_method(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let obj: Handle<JsObject> = cx.argument::<JsObject>(0)?;
+    obj.call_method_with(&mut cx, "nullary")?.apply(&mut cx)
+}
+
+pub fn call_unary_method(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let obj: Handle<JsObject> = cx.argument::<JsObject>(0)?;
+    let x: Handle<JsNumber> = cx.argument::<JsNumber>(1)?;
+    obj.call_method_with(&mut cx, "unary")?
+        .arg(x)
+        .apply(&mut cx)
+}
+
+pub fn call_symbol_method(mut cx: FunctionContext) -> JsResult<JsString> {
+    let obj: Handle<JsObject> = cx.argument::<JsObject>(0)?;
+    let sym: Handle<JsValue> = cx.argument::<JsValue>(1)?;
+    obj.call_method_with(&mut cx, sym)?.apply(&mut cx)
+}
