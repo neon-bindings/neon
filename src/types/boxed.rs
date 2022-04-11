@@ -56,7 +56,7 @@ mod private {
 ///
 /// ```rust
 /// # use neon::prelude::*;
-/// # fn my_sys_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+/// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// let vec: Handle<JsBox<Vec<_>>> = cx.boxed(vec![1, 2, 3]);
 ///
 /// println!("Length: {}", vec.len());
