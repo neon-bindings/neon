@@ -8,16 +8,18 @@
 //!
 //! [napi-docs]: https://nodejs.org/api/n-api.html#n_api_environment_life_cycle_apis
 
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Arc,
+};
 
-use neon_runtime::raw::Env;
-use neon_runtime::tsfn::ThreadsafeFunction;
-
-use crate::context::Context;
-use crate::event::Channel;
-use crate::handle::root::NapiRef;
-use crate::types::promise::NodeApiDeferred;
+use crate::{
+    context::Context,
+    event::Channel,
+    handle::root::NapiRef,
+    sys::{lifecycle, raw::Env, tsfn::ThreadsafeFunction},
+    types::promise::NodeApiDeferred,
+};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(transparent)]
@@ -83,8 +85,7 @@ impl InstanceData {
     /// `Context` reference ensures serialized access.
     pub(crate) fn get<'a, C: Context<'a>>(cx: &mut C) -> &'a mut InstanceData {
         let env = cx.env().to_raw();
-        let data =
-            unsafe { neon_runtime::lifecycle::get_instance_data::<InstanceData>(env).as_mut() };
+        let data = unsafe { lifecycle::get_instance_data::<InstanceData>(env).as_mut() };
 
         if let Some(data) = data {
             return data;
@@ -108,7 +109,7 @@ impl InstanceData {
             shared_channel,
         };
 
-        unsafe { &mut *neon_runtime::lifecycle::set_instance_data(env, data) }
+        unsafe { &mut *lifecycle::set_instance_data(env, data) }
     }
 
     /// Helper to return a reference to the `drop_queue` field of `InstanceData`

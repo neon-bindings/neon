@@ -29,7 +29,6 @@
 //! background thread:
 //!
 //! ```
-//! # #[cfg(feature = "napi-1")] {
 //! # use neon::prelude::*;
 //! #
 //! # fn parse(filename: String, callback: Root<JsFunction>, channel: Channel) { }
@@ -50,7 +49,6 @@
 //!
 //!     Ok(cx.undefined())
 //! }
-//! # }
 //! ```
 //!
 //! (Note that this usage of [`spawn`](std::thread::spawn) makes use of Rust's
@@ -61,7 +59,6 @@
 //! callback and the channel to notify the main thread of the result:
 //!
 //! ```
-//! # #[cfg(feature = "napi-1")] {
 //! # use neon::prelude::*;
 //! # use psd::Psd;
 //! # use failure::Error;
@@ -107,7 +104,6 @@
 //!         Ok(())
 //!     });
 //! }
-//! # }
 //! ```
 //!
 //! ## See also
@@ -126,14 +122,12 @@
 #[cfg(feature = "napi-4")]
 mod channel;
 
-#[cfg(feature = "napi-1")]
 mod task;
+
+pub use self::task::TaskBuilder;
 
 #[cfg(feature = "napi-4")]
 pub use self::channel::{Channel, JoinError, JoinHandle, SendError};
-
-#[cfg(feature = "napi-1")]
-pub use self::task::TaskBuilder;
 
 #[cfg(feature = "napi-4")]
 #[deprecated(since = "0.9.0", note = "Please use the Channel type instead")]
@@ -144,15 +138,3 @@ pub type EventQueue = self::channel::Channel;
 #[deprecated(since = "0.9.0", note = "Please use the SendError type instead")]
 #[doc(hidden)]
 pub type EventQueueError = self::channel::SendError;
-
-#[cfg(all(not(feature = "napi-1"), feature = "event-handler-api"))]
-mod event_handler;
-
-#[cfg(all(not(feature = "napi-1"), feature = "event-handler-api"))]
-pub use self::event_handler::EventHandler;
-
-#[cfg(all(feature = "napi-1", feature = "event-handler-api"))]
-compile_error!(
-    "The `EventHandler` API is not supported with the N-API \
-    backend. Use `Channel` instead."
-);

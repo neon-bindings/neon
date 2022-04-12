@@ -39,22 +39,13 @@
 //! a [`DowncastError`](crate::handle::DowncastError):
 //!
 //! ```
-//! # #[cfg(feature = "napi-1")] {
 //! # use neon::prelude::*;
 //! fn as_array<'a>(
 //!     cx: &mut impl Context<'a>,
 //!     object: Handle<'a, JsObject>
 //! ) -> JsResult<'a, JsArray> {
-//! #   #[cfg(feature = "legacy-runtime")]
-//! #   return
-//! #   object.downcast().or_throw(cx)
-//! #   ;
-//! #   #[cfg(feature = "napi-1")]
-//! #   return
 //!     object.downcast(cx).or_throw(cx)
-//! #   ;
 //! }
-//! # }
 //! ```
 //!
 //! ### The JavaScript Type Hierarchy
@@ -81,49 +72,49 @@
 //! [types]: https://raw.githubusercontent.com/neon-bindings/neon/main/doc/types.jpg
 //! [unknown]: https://mariusschulz.com/blog/the-unknown-type-in-typescript#the-unknown-type
 
-#[cfg(feature = "legacy-runtime")]
-pub mod binary;
-#[cfg(feature = "napi-1")]
 pub(crate) mod boxed;
-#[cfg(feature = "napi-1")]
 pub mod buffer;
 #[cfg(feature = "napi-5")]
 pub(crate) mod date;
 pub(crate) mod error;
 pub mod function;
-#[cfg(feature = "napi-1")]
 pub(crate) mod promise;
 
 pub(crate) mod private;
 pub(crate) mod utf8;
 
-use self::function::{CallOptions, ConstructOptions};
-use self::utf8::Utf8;
-use crate::context::internal::Env;
-use crate::context::{Context, FunctionContext};
-use crate::handle::internal::{SuperType, TransparentNoCopyWrapper};
-use crate::handle::{Handle, Managed};
-use crate::object::{Object, This};
-use crate::result::{JsResult, JsResultExt, NeonResult, Throw};
-use neon_runtime;
-use neon_runtime::raw;
-use smallvec::smallvec;
-use std::fmt;
-use std::fmt::Debug;
-use std::marker::PhantomData;
-use std::os::raw::c_void;
+use std::{
+    fmt::{self, Debug},
+    marker::PhantomData,
+    os::raw::c_void,
+};
 
-#[cfg(feature = "legacy-runtime")]
-pub use self::binary::{BinaryData, BinaryViewType, JsArrayBuffer, JsBuffer};
-#[cfg(feature = "napi-1")]
-pub use self::boxed::{Finalize, JsBox};
-#[cfg(feature = "napi-1")]
-pub use self::buffer::types::{JsArrayBuffer, JsBuffer, JsTypedArray};
+use smallvec::smallvec;
+
+use crate::{
+    context::{internal::Env, Context, FunctionContext},
+    handle::{
+        internal::{SuperType, TransparentNoCopyWrapper},
+        Handle, Managed,
+    },
+    object::{Object, This},
+    result::{JsResult, JsResultExt, NeonResult, Throw},
+    sys::{self, raw},
+    types::{
+        function::{CallOptions, ConstructOptions},
+        utf8::Utf8,
+    },
+};
+
+pub use self::{
+    boxed::{Finalize, JsBox},
+    buffer::types::{JsArrayBuffer, JsBuffer, JsTypedArray},
+    error::JsError,
+    promise::{Deferred, JsPromise},
+};
+
 #[cfg(feature = "napi-5")]
 pub use self::date::{DateError, DateErrorKind, JsDate};
-pub use self::error::JsError;
-#[cfg(feature = "napi-1")]
-pub use self::promise::{Deferred, JsPromise};
 
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(
     env: Env,
@@ -156,7 +147,7 @@ pub trait Value: private::ValueInternal {
     fn to_string<'a, C: Context<'a>>(&self, cx: &mut C) -> JsResult<'a, JsString> {
         let env = cx.env();
         build(env, |out| unsafe {
-            neon_runtime::convert::to_string(out, env.to_raw(), self.to_raw())
+            sys::convert::to_string(out, env.to_raw(), self.to_raw())
         })
     }
 
@@ -201,12 +192,6 @@ impl private::ValueInternal for JsValue {
 }
 
 unsafe impl This for JsValue {
-    #[cfg(feature = "legacy-runtime")]
-    fn as_this(h: raw::Local) -> Self {
-        JsValue(h)
-    }
-
-    #[cfg(feature = "napi-1")]
     fn as_this(_env: Env, h: raw::Local) -> Self {
         JsValue(h)
     }
@@ -224,12 +209,6 @@ impl JsValue {
 pub struct JsUndefined(raw::Local);
 
 impl JsUndefined {
-    #[cfg(feature = "legacy-runtime")]
-    pub fn new<'a>() -> Handle<'a, JsUndefined> {
-        JsUndefined::new_internal(Env::current())
-    }
-
-    #[cfg(feature = "napi-1")]
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsUndefined> {
         JsUndefined::new_internal(cx.env())
     }
@@ -237,7 +216,7 @@ impl JsUndefined {
     pub(crate) fn new_internal<'a>(env: Env) -> Handle<'a, JsUndefined> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::undefined(&mut local, env.to_raw());
+            sys::primitive::undefined(&mut local, env.to_raw());
             Handle::new_internal(JsUndefined(local))
         }
     }
@@ -246,7 +225,7 @@ impl JsUndefined {
     fn as_this_compat(env: Env, _: raw::Local) -> Self {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::undefined(&mut local, env.to_raw());
+            sys::primitive::undefined(&mut local, env.to_raw());
             JsUndefined(local)
         }
     }
@@ -273,12 +252,6 @@ impl Managed for JsUndefined {
 }
 
 unsafe impl This for JsUndefined {
-    #[cfg(feature = "legacy-runtime")]
-    fn as_this(h: raw::Local) -> Self {
-        JsUndefined::as_this_compat(Env::current(), h)
-    }
-
-    #[cfg(feature = "napi-1")]
     fn as_this(env: Env, h: raw::Local) -> Self {
         JsUndefined::as_this_compat(env, h)
     }
@@ -290,7 +263,7 @@ impl private::ValueInternal for JsUndefined {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_undefined(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_undefined(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -300,12 +273,6 @@ impl private::ValueInternal for JsUndefined {
 pub struct JsNull(raw::Local);
 
 impl JsNull {
-    #[cfg(feature = "legacy-runtime")]
-    pub fn new<'a>() -> Handle<'a, JsNull> {
-        JsNull::new_internal(Env::current())
-    }
-
-    #[cfg(feature = "napi-1")]
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsNull> {
         JsNull::new_internal(cx.env())
     }
@@ -313,7 +280,7 @@ impl JsNull {
     pub(crate) fn new_internal<'a>(env: Env) -> Handle<'a, JsNull> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::null(&mut local, env.to_raw());
+            sys::primitive::null(&mut local, env.to_raw());
             Handle::new_internal(JsNull(local))
         }
     }
@@ -345,7 +312,7 @@ impl private::ValueInternal for JsNull {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_null(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_null(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -362,20 +329,14 @@ impl JsBoolean {
     pub(crate) fn new_internal<'a>(env: Env, b: bool) -> Handle<'a, JsBoolean> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::boolean(&mut local, env.to_raw(), b);
+            sys::primitive::boolean(&mut local, env.to_raw(), b);
             Handle::new_internal(JsBoolean(local))
         }
     }
 
-    #[cfg(feature = "legacy-runtime")]
-    pub fn value(&self) -> bool {
-        unsafe { neon_runtime::primitive::boolean_value(self.to_raw()) }
-    }
-
-    #[cfg(feature = "napi-1")]
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> bool {
         let env = cx.env().to_raw();
-        unsafe { neon_runtime::primitive::boolean_value(env, self.to_raw()) }
+        unsafe { sys::primitive::boolean_value(env, self.to_raw()) }
     }
 }
 
@@ -405,7 +366,7 @@ impl private::ValueInternal for JsBoolean {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_boolean(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_boolean(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -462,45 +423,26 @@ impl private::ValueInternal for JsString {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_string(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_string(env.to_raw(), other.to_raw()) }
     }
 }
 
 impl JsString {
-    #[cfg(feature = "legacy-runtime")]
-    pub fn size(&self) -> isize {
-        unsafe { neon_runtime::string::utf8_len(self.to_raw()) }
-    }
-
-    #[cfg(feature = "napi-1")]
     pub fn size<'a, C: Context<'a>>(&self, cx: &mut C) -> isize {
         let env = cx.env().to_raw();
 
-        unsafe { neon_runtime::string::utf8_len(env, self.to_raw()) }
+        unsafe { sys::string::utf8_len(env, self.to_raw()) }
     }
 
-    #[cfg(feature = "legacy-runtime")]
-    pub fn value(&self) -> String {
-        unsafe {
-            let capacity = neon_runtime::string::utf8_len(self.to_raw());
-            let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
-            let p = buffer.as_mut_ptr();
-            std::mem::forget(buffer);
-            let len = neon_runtime::string::data(p, capacity, self.to_raw());
-            String::from_raw_parts(p, len as usize, capacity as usize)
-        }
-    }
-
-    #[cfg(feature = "napi-1")]
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> String {
         let env = cx.env().to_raw();
 
         unsafe {
-            let capacity = neon_runtime::string::utf8_len(env, self.to_raw()) + 1;
+            let capacity = sys::string::utf8_len(env, self.to_raw()) + 1;
             let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
             let p = buffer.as_mut_ptr();
             std::mem::forget(buffer);
-            let len = neon_runtime::string::data(env, p, capacity, self.to_raw());
+            let len = sys::string::data(env, p, capacity, self.to_raw());
             String::from_raw_parts(p, len as usize, capacity as usize)
         }
     }
@@ -526,7 +468,7 @@ impl JsString {
 
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            if neon_runtime::string::new(&mut local, env.to_raw(), ptr, len) {
+            if sys::string::new(&mut local, env.to_raw(), ptr, len) {
                 Some(Handle::new_internal(JsString(local)))
             } else {
                 None
@@ -548,20 +490,14 @@ impl JsNumber {
     pub(crate) fn new_internal<'a>(env: Env, v: f64) -> Handle<'a, JsNumber> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::primitive::number(&mut local, env.to_raw(), v);
+            sys::primitive::number(&mut local, env.to_raw(), v);
             Handle::new_internal(JsNumber(local))
         }
     }
 
-    #[cfg(feature = "legacy-runtime")]
-    pub fn value(&self) -> f64 {
-        unsafe { neon_runtime::primitive::number_value(self.to_raw()) }
-    }
-
-    #[cfg(feature = "napi-1")]
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> f64 {
         let env = cx.env().to_raw();
-        unsafe { neon_runtime::primitive::number_value(env, self.to_raw()) }
+        unsafe { sys::primitive::number_value(env, self.to_raw()) }
     }
 }
 
@@ -591,7 +527,7 @@ impl private::ValueInternal for JsNumber {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_number(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_number(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -621,12 +557,6 @@ impl Managed for JsObject {
 }
 
 unsafe impl This for JsObject {
-    #[cfg(feature = "legacy-runtime")]
-    fn as_this(h: raw::Local) -> Self {
-        JsObject(h)
-    }
-
-    #[cfg(feature = "napi-1")]
     fn as_this(_env: Env, h: raw::Local) -> Self {
         JsObject(h)
     }
@@ -638,7 +568,7 @@ impl private::ValueInternal for JsObject {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_object(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_object(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -650,7 +580,7 @@ impl JsObject {
     }
 
     pub(crate) fn new_internal<'a>(env: Env) -> Handle<'a, JsObject> {
-        JsObject::build(|out| unsafe { neon_runtime::object::new(out, env.to_raw()) })
+        JsObject::build(|out| unsafe { sys::object::new(out, env.to_raw()) })
     }
 
     pub(crate) fn build<'a, F: FnOnce(&mut raw::Local)>(init: F) -> Handle<'a, JsObject> {
@@ -676,7 +606,7 @@ impl JsArray {
     pub(crate) fn new_internal<'a>(env: Env, len: u32) -> Handle<'a, JsArray> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            neon_runtime::array::new(&mut local, env.to_raw(), len);
+            sys::array::new(&mut local, env.to_raw(), len);
             Handle::new_internal(JsArray(local))
         }
     }
@@ -696,25 +626,13 @@ impl JsArray {
     }
 
     fn len_inner(&self, env: Env) -> u32 {
-        unsafe { neon_runtime::array::len(env.to_raw(), self.to_raw()) }
+        unsafe { sys::array::len(env.to_raw(), self.to_raw()) }
     }
 
-    #[cfg(feature = "legacy-runtime")]
-    pub fn len(&self) -> u32 {
-        self.len_inner(Env::current())
-    }
-
-    #[cfg(feature = "napi-1")]
     pub fn len<'a, C: Context<'a>>(&self, cx: &mut C) -> u32 {
         self.len_inner(cx.env())
     }
 
-    #[cfg(feature = "legacy-runtime")]
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    #[cfg(feature = "napi-1")]
     pub fn is_empty<'a, C: Context<'a>>(&self, cx: &mut C) -> bool {
         self.len(cx) == 0
     }
@@ -746,7 +664,7 @@ impl private::ValueInternal for JsArray {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_array(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_array(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -815,9 +733,6 @@ impl Object for JsArray {}
 /// // A function implementation that adds 1 to its first argument
 /// fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
 ///     let x: Handle<JsNumber> = cx.argument(0)?;
-/// #   #[cfg(feature = "legacy-runtime")]
-/// #   let v = x.value();
-/// #   #[cfg(feature = "napi-1")]
 ///     let v = x.value(&mut cx);
 ///     Ok(cx.number(v + 1.0))
 /// }
@@ -854,27 +769,7 @@ unsafe fn prepare_call<'a, 'b, C: Context<'a>>(
 }
 
 impl JsFunction {
-    #[cfg(feature = "legacy-runtime")]
-    pub fn new<'a, C, U>(
-        cx: &mut C,
-        f: fn(FunctionContext) -> JsResult<U>,
-    ) -> JsResult<'a, JsFunction>
-    where
-        C: Context<'a>,
-        U: Value,
-    {
-        use self::private::{Callback, FunctionCallback};
-
-        build(cx.env(), |out| {
-            let env = cx.env().to_raw();
-            unsafe {
-                let callback = FunctionCallback(f).into_c_callback();
-                neon_runtime::fun::new(out, env, callback)
-            }
-        })
-    }
-
-    #[cfg(all(feature = "napi-1", not(feature = "napi-5")))]
+    #[cfg(not(feature = "napi-5"))]
     pub fn new<'a, C, U>(
         cx: &mut C,
         f: fn(FunctionContext) -> JsResult<U>,
@@ -896,7 +791,6 @@ impl JsFunction {
         Self::new_internal(cx, f)
     }
 
-    #[cfg(feature = "napi-1")]
     fn new_internal<'a, C, F, V>(cx: &mut C, f: F) -> JsResult<'a, JsFunction>
     where
         C: Context<'a>,
@@ -927,7 +821,7 @@ impl JsFunction {
             })
         };
 
-        if let Ok(raw) = unsafe { neon_runtime::fun::new(cx.env().to_raw(), name, f) } {
+        if let Ok(raw) = unsafe { sys::fun::new(cx.env().to_raw(), name, f) } {
             Ok(Handle::new_internal(JsFunction {
                 raw,
                 marker: PhantomData,
@@ -952,7 +846,7 @@ impl<CL: Object> JsFunction<CL> {
         let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
         let env = cx.env().to_raw();
         build(cx.env(), |out| unsafe {
-            neon_runtime::fun::call(out, env, self.to_raw(), this.to_raw(), argc, argv)
+            sys::fun::call(out, env, self.to_raw(), this.to_raw(), argc, argv)
         })
     }
 
@@ -977,7 +871,7 @@ impl<CL: Object> JsFunction<CL> {
         let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
         let env = cx.env().to_raw();
         build(cx.env(), |out| unsafe {
-            neon_runtime::fun::construct(out, env, self.to_raw(), argc, argv)
+            sys::fun::construct(out, env, self.to_raw(), argc, argv)
         })
     }
 }
@@ -1048,6 +942,6 @@ impl<T: Object> private::ValueInternal for JsFunction<T> {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_function(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_function(env.to_raw(), other.to_raw()) }
     }
 }

@@ -1,5 +1,4 @@
-use std::fmt::Debug;
-use std::mem;
+use std::{fmt::Debug, mem};
 
 use crate::types::Value;
 

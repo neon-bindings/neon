@@ -17,13 +17,11 @@
 //! [`JsNumber::value()`](crate::types::JsNumber::value) on a `Handle<JsNumber>`:
 //!
 //! ```
-//! # #[cfg(feature = "napi-1")] {
 //! # use neon::prelude::*;
 //! # fn run(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 //! let n: Handle<JsNumber> = cx.argument(0)?;
 //! let v = n.value(&mut cx); // JsNumber::value()
 //! # Ok(cx.undefined())
-//! # }
 //! # }
 //! ```
 //!
@@ -34,7 +32,6 @@
 //! value in the calculation is stored locally in a `Handle`.
 //!
 //! ```
-//! # #[cfg(feature = "napi-1")] {
 //! # use neon::prelude::*;
 //! fn area(mut cx: FunctionContext) -> JsResult<JsNumber> {
 //!     let rect: Handle<JsObject> = cx.argument(0)?;
@@ -47,29 +44,29 @@
 //!
 //!     Ok(cx.number(w * h))
 //! }
-//! # }
 //! ```
 
 pub(crate) mod internal;
 
-#[cfg(feature = "napi-1")]
 pub(crate) mod root;
 
-#[cfg(feature = "napi-1")]
+use std::{
+    error::Error,
+    fmt::{self, Debug, Display},
+    marker::PhantomData,
+    mem,
+    ops::{Deref, DerefMut},
+};
+
 pub use self::root::Root;
 
-use self::internal::{SuperType, TransparentNoCopyWrapper};
-use crate::context::internal::Env;
-use crate::context::Context;
-use crate::result::{JsResult, JsResultExt};
-use crate::types::Value;
-use neon_runtime;
-use neon_runtime::raw;
-use std::error::Error;
-use std::fmt::{self, Debug, Display};
-use std::marker::PhantomData;
-use std::mem;
-use std::ops::{Deref, DerefMut};
+use crate::{
+    context::{internal::Env, Context},
+    handle::internal::{SuperType, TransparentNoCopyWrapper},
+    result::{JsResult, JsResultExt},
+    sys::{self, raw},
+    types::Value,
+};
 
 /// The trait of data owned by the JavaScript engine and that can only be accessed via handles.
 pub trait Managed: TransparentNoCopyWrapper {
@@ -87,16 +84,6 @@ pub struct Handle<'a, T: Managed + 'a> {
     value: <T as TransparentNoCopyWrapper>::Inner,
     phantom: PhantomData<&'a T>,
 }
-
-#[cfg(feature = "legacy-runtime")]
-impl<'a, T: Managed + 'a> PartialEq for Handle<'a, T> {
-    fn eq(&self, other: &Self) -> bool {
-        unsafe { neon_runtime::mem::same_handle(self.to_raw(), other.to_raw()) }
-    }
-}
-
-#[cfg(feature = "legacy-runtime")]
-impl<'a, T: Managed + 'a> Eq for Handle<'a, T> {}
 
 impl<'a, T: Managed> Clone for Handle<'a, T> {
     fn clone(&self) -> Self {
@@ -168,26 +155,6 @@ impl<'a, T: Value> Handle<'a, T> {
         Handle::new_internal(SuperType::upcast_internal(self.deref()))
     }
 
-    #[cfg(feature = "legacy-runtime")]
-    /// Tests whether this value is an instance of the given type.
-    ///
-    /// # Example:
-    ///
-    /// ```no_run
-    /// # use neon::prelude::*;
-    /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    /// let v: Handle<JsValue> = cx.number(17).upcast();
-    /// v.is_a::<JsString>(); // false
-    /// v.is_a::<JsNumber>(); // true
-    /// v.is_a::<JsValue>();  // true
-    /// # Ok(cx.undefined())
-    /// # }
-    /// ```
-    pub fn is_a<U: Value>(&self) -> bool {
-        U::is_typeof(Env::current(), self.deref())
-    }
-
-    #[cfg(feature = "napi-1")]
     /// Tests whether this value is an instance of the given type.
     ///
     /// # Example:
@@ -206,19 +173,6 @@ impl<'a, T: Value> Handle<'a, T> {
         U::is_typeof(cx.env(), self.deref())
     }
 
-    #[cfg(feature = "legacy-runtime")]
-    /// Attempts to downcast a handle to another type, which may fail. A failure
-    /// to downcast **does not** throw a JavaScript exception, so it's OK to
-    /// continue interacting with the JS engine if this method produces an `Err`
-    /// result.
-    pub fn downcast<U: Value>(&self) -> DowncastResult<'a, T, U> {
-        match U::downcast(Env::current(), self.deref()) {
-            Some(v) => Ok(Handle::new_internal(v)),
-            None => Err(DowncastError::new()),
-        }
-    }
-
-    #[cfg(feature = "napi-1")]
     /// Attempts to downcast a handle to another type, which may fail. A failure
     /// to downcast **does not** throw a JavaScript exception, so it's OK to
     /// continue interacting with the JS engine if this method produces an `Err`
@@ -230,15 +184,6 @@ impl<'a, T: Value> Handle<'a, T> {
         }
     }
 
-    #[cfg(feature = "legacy-runtime")]
-    /// Attempts to downcast a handle to another type, raising a JavaScript `TypeError`
-    /// exception on failure. This method is a convenient shorthand, equivalent to
-    /// `self.downcast::<U>().or_throw::<C>(cx)`.
-    pub fn downcast_or_throw<'b, U: Value, C: Context<'b>>(&self, cx: &mut C) -> JsResult<'a, U> {
-        self.downcast().or_throw(cx)
-    }
-
-    #[cfg(feature = "napi-1")]
     /// Attempts to downcast a handle to another type, raising a JavaScript `TypeError`
     /// exception on failure. This method is a convenient shorthand, equivalent to
     /// `self.downcast::<U>().or_throw::<C>(cx)`.
@@ -246,15 +191,12 @@ impl<'a, T: Value> Handle<'a, T> {
         self.downcast(cx).or_throw(cx)
     }
 
-    #[cfg(feature = "napi-1")]
     pub fn strict_equals<'b, U: Value, C: Context<'b>>(
         &self,
         cx: &mut C,
         other: Handle<'b, U>,
     ) -> bool {
-        unsafe {
-            neon_runtime::mem::strict_equals(cx.env().to_raw(), self.to_raw(), other.to_raw())
-        }
+        unsafe { sys::mem::strict_equals(cx.env().to_raw(), self.to_raw(), other.to_raw()) }
     }
 }
 

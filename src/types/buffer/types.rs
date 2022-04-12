@@ -1,15 +1,16 @@
-use std::marker::PhantomData;
-use std::slice;
+use std::{marker::PhantomData, slice};
 
-use neon_runtime::{raw, TypedArrayType};
-
-use crate::context::{internal::Env, Context};
-use crate::handle::{internal::TransparentNoCopyWrapper, Handle, Managed};
-use crate::result::{JsResult, Throw};
-use crate::types::{private::ValueInternal, Object, Value};
-
-use super::lock::{Ledger, Lock};
-use super::{private, BorrowError, Ref, RefMut, TypedArray};
+use crate::{
+    context::{internal::Env, Context},
+    handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    result::{JsResult, Throw},
+    sys::{self, raw, TypedArrayType},
+    types::buffer::{
+        lock::{Ledger, Lock},
+        private, BorrowError, Ref, RefMut, TypedArray,
+    },
+    types::{private::ValueInternal, Object, Value},
+};
 
 /// The Node [`Buffer`](https://nodejs.org/api/buffer.html) type.
 #[derive(Debug)]
@@ -19,7 +20,7 @@ pub struct JsBuffer(raw::Local);
 impl JsBuffer {
     /// Constructs a new `Buffer` object, safely zero-filled.
     pub fn new<'a, C: Context<'a>>(cx: &mut C, len: usize) -> JsResult<'a, Self> {
-        let result = unsafe { neon_runtime::buffer::new(cx.env().to_raw(), len) };
+        let result = unsafe { sys::buffer::new(cx.env().to_raw(), len) };
 
         if let Ok(buf) = result {
             Ok(Handle::new_internal(Self(buf)))
@@ -30,7 +31,7 @@ impl JsBuffer {
 
     /// Constructs a new `Buffer` object with uninitialized memory
     pub unsafe fn uninitialized<'a, C: Context<'a>>(cx: &mut C, len: usize) -> JsResult<'a, Self> {
-        let result = neon_runtime::buffer::uninitialized(cx.env().to_raw(), len);
+        let result = sys::buffer::uninitialized(cx.env().to_raw(), len);
 
         if let Ok((buf, _)) = result {
             Ok(Handle::new_internal(Self(buf)))
@@ -46,7 +47,7 @@ impl JsBuffer {
         T: AsMut<[u8]> + Send,
     {
         let env = cx.env().to_raw();
-        let value = unsafe { neon_runtime::buffer::new_external(env, data) };
+        let value = unsafe { sys::buffer::new_external(env, data) };
 
         Handle::new_internal(Self(value))
     }
@@ -76,7 +77,7 @@ impl ValueInternal for JsBuffer {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_buffer(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_buffer(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -99,7 +100,7 @@ impl TypedArray for JsBuffer {
         // associated with a `Context` and the value will not be garbage collected while that
         // `Context` is in scope. This means that the referenced data is valid *at least* as long
         // as `Context`, even if the `Handle` is dropped.
-        unsafe { neon_runtime::buffer::as_mut_slice(cx.env().to_raw(), self.to_raw()) }
+        unsafe { sys::buffer::as_mut_slice(cx.env().to_raw(), self.to_raw()) }
     }
 
     fn as_mut_slice<'cx, 'a, C>(&mut self, cx: &'a mut C) -> &'a mut [Self::Item]
@@ -108,7 +109,7 @@ impl TypedArray for JsBuffer {
     {
         // # Safety
         // See `as_slice`
-        unsafe { neon_runtime::buffer::as_mut_slice(cx.env().to_raw(), self.to_raw()) }
+        unsafe { sys::buffer::as_mut_slice(cx.env().to_raw(), self.to_raw()) }
     }
 
     fn try_borrow<'cx, 'a, C>(&self, lock: &'a Lock<C>) -> Result<Ref<'a, Self::Item>, BorrowError>
@@ -117,7 +118,7 @@ impl TypedArray for JsBuffer {
     {
         // The borrowed data must be guarded by `Ledger` before returning
         Ledger::try_borrow(&lock.ledger, unsafe {
-            neon_runtime::buffer::as_mut_slice(lock.cx.env().to_raw(), self.to_raw())
+            sys::buffer::as_mut_slice(lock.cx.env().to_raw(), self.to_raw())
         })
     }
 
@@ -130,7 +131,7 @@ impl TypedArray for JsBuffer {
     {
         // The borrowed data must be guarded by `Ledger` before returning
         Ledger::try_borrow_mut(&lock.ledger, unsafe {
-            neon_runtime::buffer::as_mut_slice(lock.cx.env().to_raw(), self.to_raw())
+            sys::buffer::as_mut_slice(lock.cx.env().to_raw(), self.to_raw())
         })
     }
 }
@@ -143,7 +144,7 @@ pub struct JsArrayBuffer(raw::Local);
 impl JsArrayBuffer {
     /// Constructs a new `JsArrayBuffer` object, safely zero-filled.
     pub fn new<'a, C: Context<'a>>(cx: &mut C, len: usize) -> JsResult<'a, Self> {
-        let result = unsafe { neon_runtime::arraybuffer::new(cx.env().to_raw(), len) };
+        let result = unsafe { sys::arraybuffer::new(cx.env().to_raw(), len) };
 
         if let Ok(buf) = result {
             Ok(Handle::new_internal(Self(buf)))
@@ -159,7 +160,7 @@ impl JsArrayBuffer {
         T: AsMut<[u8]> + Send,
     {
         let env = cx.env().to_raw();
-        let value = unsafe { neon_runtime::arraybuffer::new_external(env, data) };
+        let value = unsafe { sys::arraybuffer::new_external(env, data) };
 
         Handle::new_internal(Self(value))
     }
@@ -189,7 +190,7 @@ impl ValueInternal for JsArrayBuffer {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_arraybuffer(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_arraybuffer(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -206,14 +207,14 @@ impl TypedArray for JsArrayBuffer {
     where
         C: Context<'cx>,
     {
-        unsafe { neon_runtime::arraybuffer::as_mut_slice(cx.env().to_raw(), self.to_raw()) }
+        unsafe { sys::arraybuffer::as_mut_slice(cx.env().to_raw(), self.to_raw()) }
     }
 
     fn as_mut_slice<'cx, 'a, C>(&mut self, cx: &'a mut C) -> &'a mut [Self::Item]
     where
         C: Context<'cx>,
     {
-        unsafe { neon_runtime::arraybuffer::as_mut_slice(cx.env().to_raw(), self.to_raw()) }
+        unsafe { sys::arraybuffer::as_mut_slice(cx.env().to_raw(), self.to_raw()) }
     }
 
     fn try_borrow<'cx, 'a, C>(&self, lock: &'a Lock<C>) -> Result<Ref<'a, Self::Item>, BorrowError>
@@ -222,7 +223,7 @@ impl TypedArray for JsArrayBuffer {
     {
         // The borrowed data must be guarded by `Ledger` before returning
         Ledger::try_borrow(&lock.ledger, unsafe {
-            neon_runtime::arraybuffer::as_mut_slice(lock.cx.env().to_raw(), self.to_raw())
+            sys::arraybuffer::as_mut_slice(lock.cx.env().to_raw(), self.to_raw())
         })
     }
 
@@ -235,7 +236,7 @@ impl TypedArray for JsArrayBuffer {
     {
         // The borrowed data must be guarded by `Ledger` before returning
         Ledger::try_borrow_mut(&lock.ledger, unsafe {
-            neon_runtime::arraybuffer::as_mut_slice(lock.cx.env().to_raw(), self.to_raw())
+            sys::arraybuffer::as_mut_slice(lock.cx.env().to_raw(), self.to_raw())
         })
     }
 }
@@ -281,7 +282,7 @@ impl<T: Copy> TypedArray for JsTypedArray<T> {
         unsafe {
             let env = cx.env().to_raw();
             let value = self.to_raw();
-            let info = neon_runtime::typedarray::info(env, value);
+            let info = sys::typedarray::info(env, value);
 
             slice::from_raw_parts(info.data.cast(), info.length)
         }
@@ -294,7 +295,7 @@ impl<T: Copy> TypedArray for JsTypedArray<T> {
         unsafe {
             let env = cx.env().to_raw();
             let value = self.to_raw();
-            let info = neon_runtime::typedarray::info(env, value);
+            let info = sys::typedarray::info(env, value);
 
             slice::from_raw_parts_mut(info.data.cast(), info.length)
         }
@@ -310,7 +311,7 @@ impl<T: Copy> TypedArray for JsTypedArray<T> {
         unsafe {
             let env = lock.cx.env().to_raw();
             let value = self.to_raw();
-            let info = neon_runtime::typedarray::info(env, value);
+            let info = sys::typedarray::info(env, value);
 
             // The borrowed data must be guarded by `Ledger` before returning
             Ledger::try_borrow(
@@ -330,7 +331,7 @@ impl<T: Copy> TypedArray for JsTypedArray<T> {
         unsafe {
             let env = lock.cx.env().to_raw();
             let value = self.to_raw();
-            let info = neon_runtime::typedarray::info(env, value);
+            let info = sys::typedarray::info(env, value);
 
             // The borrowed data must be guarded by `Ledger` before returning
             Ledger::try_borrow_mut(
@@ -356,11 +357,11 @@ macro_rules! impl_typed_array {
                 let env = env.to_raw();
                 let other = other.to_raw();
 
-                if unsafe { !neon_runtime::tag::is_typedarray(env, other) } {
+                if unsafe { !sys::tag::is_typedarray(env, other) } {
                     return false;
                 }
 
-                let info = unsafe { neon_runtime::typedarray::info(env, other) };
+                let info = unsafe { sys::typedarray::info(env, other) };
 
                 matches!(info.typ, $($pattern)|+)
             }

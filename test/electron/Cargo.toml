@@ -11,5 +11,3 @@ crate-type = ["cdylib"]
 [dependencies.neon]
 version = "*"
 path = "../.."
-default-features = false
-features = ["proc-macros", "napi-runtime"]

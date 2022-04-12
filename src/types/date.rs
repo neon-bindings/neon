@@ -1,14 +1,17 @@
+use std::{
+    error::Error,
+    fmt::{self, Debug},
+};
+
 use super::{private::ValueInternal, Value};
-use crate::context::internal::Env;
-use crate::context::Context;
-use crate::handle::{internal::TransparentNoCopyWrapper, Handle, Managed};
-use crate::object::Object;
-use crate::result::{JsResult, JsResultExt};
-use neon_runtime;
-use neon_runtime::raw;
-use std::error::Error;
-use std::fmt;
-use std::fmt::Debug;
+
+use crate::{
+    context::{internal::Env, Context},
+    handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    object::Object,
+    result::{JsResult, JsResultExt},
+    sys::{self, raw},
+};
 
 /// A JavaScript Date object
 #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
@@ -100,7 +103,7 @@ impl JsDate {
             return Err(DateError(DateErrorKind::Underflow));
         }
 
-        let local = unsafe { neon_runtime::date::new_date(env, time) };
+        let local = unsafe { sys::date::new_date(env, time) };
         let date = Handle::new_internal(JsDate(local));
         Ok(date)
     }
@@ -109,14 +112,14 @@ impl JsDate {
     /// values will be treated as NaN
     pub fn new_lossy<'a, C: Context<'a>, V: Into<f64>>(cx: &mut C, value: V) -> Handle<'a, JsDate> {
         let env = cx.env().to_raw();
-        let local = unsafe { neon_runtime::date::new_date(env, value.into()) };
+        let local = unsafe { sys::date::new_date(env, value.into()) };
         Handle::new_internal(JsDate(local))
     }
 
     /// Gets the Date's value. An invalid Date will return `std::f64::NaN`
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> f64 {
         let env = cx.env().to_raw();
-        unsafe { neon_runtime::date::value(env, self.to_raw()) }
+        unsafe { sys::date::value(env, self.to_raw()) }
     }
 
     /// Checks if the Date's value is valid. A Date is valid if its value is between
@@ -133,7 +136,7 @@ impl ValueInternal for JsDate {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_date(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_date(env.to_raw(), other.to_raw()) }
     }
 }
 

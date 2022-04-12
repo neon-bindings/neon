@@ -11,43 +11,23 @@ exclude = ["neon.jpg", "doc/**/*"]
 build = "build.rs"
 edition = "2018"
 
-[build-dependencies]
-neon-build = { version = "=0.10.0", path = "crates/neon-build" }
-
 [dev-dependencies]
-lazy_static = "1.4.0"
-rustversion = "0.1.4"
+nodejs-sys = "0.13.0"
 semver = "0.9"
 psd = "0.1.9"     # used for a doc example
 failure = "0.1.5" # used for a doc example
 
 [dependencies]
+libloading = "0.7.3"
 semver = "0.9.0"
 smallvec = "1.4.2"
-neon-runtime = { version = "=0.10.0", path = "crates/neon-runtime" }
-neon-macros = { version = "=0.10.0", path = "crates/neon-macros", optional = true }
+neon-macros = { version = "=0.10.0", path = "crates/neon-macros" }
 
 [features]
-default = ["legacy-runtime"]
-
-# Enable static tests. These can be fragile because of variations in Rust compiler
-# error message formatting from version to version, so they're disabled by default.
-# TODO: https://github.com/neon-bindings/neon/issues/871
-enable-static-tests = []
-
-# Enable the EventHandler API of RFC 25.
-# DEPRECATED: Will be removed with `legacy-runtime`
-event-handler-api = []
-
-# Enable the default panic hook. Useful for debugging neon itself.
-# DEPRECATED: Will be removed with `legacy-runtime`
-default-panic-hook = []
-
-# Feature flag to enable the legacy V8/NAN runtime. For now, this feature is
-# enabled by default.
-legacy-runtime = ["neon-runtime/neon-sys", "neon-build/neon-sys"]
+default = ["napi-1"]
 
 # Default N-API version. Prefer to select a minimum required version.
+# DEPRECATED: This is an alias that should be removed
 napi-runtime = ["napi-6"]
 
 # Select the N-API version
@@ -55,14 +35,14 @@ napi-runtime = ["napi-6"]
 # is disabled by default.
 # The Node N-API documentation specifies N-API and Node version requirements
 # https://nodejs.org/api/n-api.html
-napi-1 = ["proc-macros", "neon-macros/napi", "neon-runtime/napi"]
-napi-2 = ["napi-1", "neon-runtime/napi-2"]
-napi-3 = ["napi-2", "neon-runtime/napi-3"]
-napi-4 = ["napi-3", "neon-runtime/napi-4"]
-napi-5 = ["napi-4", "neon-runtime/napi-5"]
-napi-6 = ["napi-5", "neon-runtime/napi-6"]
+napi-1 = []
+napi-2 = ["napi-1"]
+napi-3 = ["napi-2"]
+napi-4 = ["napi-3"]
+napi-5 = ["napi-4"]
+napi-6 = ["napi-5"]
 napi-latest = ["napi-6"]
-napi-experimental = ["napi-6", "neon-runtime/napi-experimental"]
+napi-experimental = ["napi-6"]
 
 # DEPRECATED: These perform no action and will be removed in 1.0
 try-catch-api = []
@@ -71,30 +51,19 @@ event-queue-api = []
 promise-api = []
 task-api = []
 
-# Feature flag to disable external dependencies on docs build
-# DEPRECATED: Will be removed with `legacy-runtime`
-docs-only = ["neon-runtime/docs-only"]
-
 # Feature flag to include procedural macros
-# DEPRECATED: Will be removed with `legacy-runtime` since it is enabled by default in Node-API backend.
-proc-macros = ["neon-macros"]
+# DEPRECATED: This is always enabled and should be removed.
+proc-macros = []
 
 [package.metadata.docs.rs]
-no-default-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 features = [
     "napi-experimental",
-    "proc-macros",
 ]
 
 [workspace]
 members = [
-    "crates/neon-build",
     "crates/neon-macros",
-    "crates/neon-runtime",
-    "crates/neon-sys",
-    "test/static",
     "test/electron",
-    "test/dynamic/native",
     "test/napi"
 ]

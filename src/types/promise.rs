@@ -1,19 +1,27 @@
 use std::ptr;
-#[cfg(feature = "napi-6")]
-use std::sync::Arc;
 
-use neon_runtime::no_panic::FailureBoundary;
-#[cfg(feature = "napi-6")]
-use neon_runtime::tsfn::ThreadsafeFunction;
-use neon_runtime::{napi, raw};
+use crate::{
+    context::{internal::Env, Context},
+    handle::{internal::TransparentNoCopyWrapper, Managed},
+    result::JsResult,
+    sys::{self, no_panic::FailureBoundary, raw},
+    types::{private::ValueInternal, Handle, Object, Value},
+};
 
-use crate::context::{internal::Env, Context, TaskContext};
-use crate::event::{Channel, JoinHandle, SendError};
-use crate::handle::{internal::TransparentNoCopyWrapper, Managed};
+#[cfg(feature = "napi-4")]
+use crate::{
+    context::TaskContext,
+    event::{Channel, JoinHandle, SendError},
+};
+
 #[cfg(feature = "napi-6")]
-use crate::lifecycle::{DropData, InstanceData};
-use crate::result::JsResult;
-use crate::types::{private::ValueInternal, Handle, Object, Value};
+use {
+    crate::{
+        lifecycle::{DropData, InstanceData},
+        sys::tsfn::ThreadsafeFunction,
+    },
+    std::sync::Arc,
+};
 
 const BOUNDARY: FailureBoundary = FailureBoundary {
     both: "A panic and exception occurred while resolving a `neon::types::Deferred`",
@@ -34,7 +42,7 @@ pub struct JsPromise(raw::Local);
 
 impl JsPromise {
     pub(crate) fn new<'a, C: Context<'a>>(cx: &mut C) -> (Deferred, Handle<'a, Self>) {
-        let (deferred, promise) = unsafe { napi::promise::create(cx.env().to_raw()) };
+        let (deferred, promise) = unsafe { sys::promise::create(cx.env().to_raw()) };
         let deferred = Deferred {
             internal: Some(NodeApiDeferred(deferred)),
             #[cfg(feature = "napi-6")]
@@ -69,7 +77,7 @@ impl ValueInternal for JsPromise {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_promise(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_promise(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -99,7 +107,7 @@ impl Deferred {
         C: Context<'a>,
     {
         unsafe {
-            napi::promise::resolve(cx.env().to_raw(), self.into_inner(), value.to_raw());
+            sys::promise::resolve(cx.env().to_raw(), self.into_inner(), value.to_raw());
         }
     }
 
@@ -110,10 +118,12 @@ impl Deferred {
         C: Context<'a>,
     {
         unsafe {
-            napi::promise::reject(cx.env().to_raw(), self.into_inner(), value.to_raw());
+            sys::promise::reject(cx.env().to_raw(), self.into_inner(), value.to_raw());
         }
     }
 
+    #[cfg(feature = "napi-4")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "napi-4")))]
     /// Settle the [`JsPromise`] by sending a closure across a [`Channel`][`crate::event::Channel`]
     /// to be executed on the main JavaScript thread.
     ///
@@ -136,6 +146,8 @@ impl Deferred {
         })
     }
 
+    #[cfg(feature = "napi-4")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "napi-4")))]
     /// Settle the [`JsPromise`] by sending a closure across a [`Channel`][crate::event::Channel]
     /// to be executed on the main JavaScript thread.
     ///
@@ -178,20 +190,20 @@ impl Deferred {
         }
     }
 
-    pub(crate) fn into_inner(mut self) -> napi::Deferred {
+    pub(crate) fn into_inner(mut self) -> sys::Deferred {
         self.internal.take().unwrap().0
     }
 }
 
 #[repr(transparent)]
-pub(crate) struct NodeApiDeferred(napi::Deferred);
+pub(crate) struct NodeApiDeferred(sys::Deferred);
 
 unsafe impl Send for NodeApiDeferred {}
 
 #[cfg(feature = "napi-6")]
 impl NodeApiDeferred {
     pub(crate) unsafe fn leaked(self, env: raw::Env) {
-        napi::promise::reject_err_message(
+        sys::promise::reject_err_message(
             env,
             self.0,
             "`neon::types::Deferred` was dropped without being settled",

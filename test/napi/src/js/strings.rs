@@ -1,5 +1,4 @@
-use neon::prelude::*;
-use neon::reflect::eval;
+use neon::{prelude::*, reflect::eval};
 
 pub fn return_js_string(mut cx: FunctionContext) -> JsResult<JsString> {
     Ok(cx.string("hello node"))

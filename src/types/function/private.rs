@@ -1,7 +1,6 @@
-use crate::handle::Handle;
-use crate::types::JsValue;
-
 use smallvec::SmallVec;
+
+use crate::{handle::Handle, types::JsValue};
 
 pub type ArgsVec<'a> = SmallVec<[Handle<'a, JsValue>; 8]>;
 

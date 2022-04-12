@@ -1,22 +1,21 @@
-use std::any::{self, Any};
-use std::ops::Deref;
+use std::{
+    any::{self, Any},
+    ops::Deref,
+};
 
-use neon_runtime::external;
-use neon_runtime::raw;
-
-use crate::context::internal::Env;
-use crate::context::{Context, FinalizeContext};
-use crate::handle::{internal::TransparentNoCopyWrapper, Handle, Managed};
-use crate::object::Object;
-use crate::types::private::ValueInternal;
-use crate::types::Value;
-use private::JsBoxInner;
+use crate::{
+    context::{internal::Env, Context, FinalizeContext},
+    handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    object::Object,
+    sys::{external, raw},
+    types::{boxed::private::JsBoxInner, private::ValueInternal, Value},
+};
 
 type BoxAny = Box<dyn Any + Send + 'static>;
 
 mod private {
     pub struct JsBoxInner<T: Send + 'static> {
-        pub(super) local: neon_runtime::raw::Local,
+        pub(super) local: crate::sys::raw::Local,
         // Cached raw pointer to the data contained in the `JsBox`. This value is
         // required to implement `Deref` for `JsBox`. Unlike most `Js` types, `JsBox`
         // is not a transparent wrapper around a `napi_value` and cannot implement `This`.
@@ -226,7 +225,7 @@ impl<T: Send + 'static> ValueInternal for JsBox<T> {
 ///
 /// ### `Finalize`
 ///
-/// The `neon::prelude::Finalize` trait provides a `finalize` method that will be called
+/// The `sys::prelude::Finalize` trait provides a `finalize` method that will be called
 /// immediately before the `JsBox` is garbage collected.
 ///
 /// ### `Send`
@@ -323,23 +322,37 @@ pub trait Finalize: Sized {
 // Primitives
 
 impl Finalize for bool {}
+
 impl Finalize for char {}
+
 impl Finalize for i8 {}
+
 impl Finalize for i16 {}
+
 impl Finalize for i32 {}
+
 impl Finalize for i64 {}
+
 impl Finalize for isize {}
+
 impl Finalize for u8 {}
+
 impl Finalize for u16 {}
+
 impl Finalize for u32 {}
+
 impl Finalize for u64 {}
+
 impl Finalize for usize {}
+
 impl Finalize for f32 {}
+
 impl Finalize for f64 {}
 
 // Common types
 
 impl Finalize for String {}
+
 impl Finalize for std::path::PathBuf {}
 
 // Tuples

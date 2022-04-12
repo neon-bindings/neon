@@ -1,12 +1,15 @@
-use std::cell::RefCell;
-use std::error::Error;
-use std::fmt::{self, Debug, Display};
-use std::ops::{Deref, DerefMut};
+use std::{
+    cell::RefCell,
+    error::Error,
+    fmt::{self, Debug, Display},
+    ops::{Deref, DerefMut},
+};
 
-use crate::context::Context;
-use crate::result::{NeonResult, ResultExt};
-
-use self::lock::{Ledger, Lock};
+use crate::{
+    context::Context,
+    result::{NeonResult, ResultExt},
+    types::buffer::lock::{Ledger, Lock},
+};
 
 pub(crate) mod lock;
 pub(super) mod types;

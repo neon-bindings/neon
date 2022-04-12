@@ -1,12 +1,14 @@
 //! Types and traits for working with JavaScript functions.
 
-use crate::context::Context;
-use crate::handle::Handle;
-use crate::object::Object;
-use crate::result::{JsResult, NeonResult};
-use crate::types::{JsFunction, JsObject, JsValue, Value};
-
 use smallvec::smallvec;
+
+use crate::{
+    context::Context,
+    handle::Handle,
+    object::Object,
+    result::{JsResult, NeonResult},
+    types::{JsFunction, JsObject, JsValue, Value},
+};
 
 pub(crate) mod private;
 

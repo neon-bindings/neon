@@ -1,7 +1,4 @@
-use std::f64::NAN;
-
-use neon::prelude::*;
-use neon::types::JsDate;
+use neon::{prelude::*, types::JsDate};
 
 pub fn create_date(mut cx: FunctionContext) -> JsResult<JsDate> {
     let date = JsDate::new_lossy(&mut cx, 31415);
@@ -24,7 +21,7 @@ pub fn check_date_is_valid(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 pub fn try_new_date(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let _date_overflow = JsDate::new(&mut cx, JsDate::MAX_VALUE + 1.0);
     let _date_underflow = JsDate::new(&mut cx, JsDate::MIN_VALUE - 1.0);
-    let nan_date = JsDate::new(&mut cx, NAN);
+    let nan_date = JsDate::new(&mut cx, f64::NAN);
     assert!(nan_date.unwrap().value(&mut cx).is_nan());
     Ok(cx.undefined())
 }
@@ -44,11 +41,11 @@ pub fn try_new_lossy_date(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 }
 
 pub fn nan_dates(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    let date_nan = JsDate::new(&mut cx, NAN).unwrap();
+    let date_nan = JsDate::new(&mut cx, f64::NAN).unwrap();
     assert!(!date_nan.is_valid(&mut cx));
     assert!(date_nan.value(&mut cx).is_nan());
 
-    let date_nan_lossy = JsDate::new_lossy(&mut cx, NAN);
+    let date_nan_lossy = JsDate::new_lossy(&mut cx, f64::NAN);
     assert!(!date_nan_lossy.is_valid(&mut cx));
     assert!(date_nan_lossy.value(&mut cx).is_nan());
 

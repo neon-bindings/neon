@@ -1,9 +1,9 @@
-use std::cell::RefCell;
-use std::ops::Range;
+use std::{cell::RefCell, ops::Range};
 
-use crate::context::Context;
-
-use super::{BorrowError, Ref, RefMut};
+use crate::{
+    context::Context,
+    types::buffer::{BorrowError, Ref, RefMut},
+};
 
 #[derive(Debug)]
 /// A temporary lock of an execution context.

@@ -2,16 +2,13 @@
 
 use std::panic::{catch_unwind, UnwindSafe};
 
-use neon_runtime;
-use neon_runtime::raw;
-
-use crate::context::internal::Env;
-use crate::context::Context;
-use crate::handle::{internal::TransparentNoCopyWrapper, Handle, Managed};
-use crate::result::{NeonResult, Throw};
-use crate::types::private::ValueInternal;
-use crate::types::utf8::Utf8;
-use crate::types::{build, Object, Value};
+use crate::{
+    context::{internal::Env, Context},
+    handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    result::{NeonResult, Throw},
+    sys::{self, raw},
+    types::{build, private::ValueInternal, utf8::Utf8, Object, Value},
+};
 
 /// A JS `Error` object.
 #[repr(transparent)]
@@ -42,7 +39,7 @@ impl ValueInternal for JsError {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { neon_runtime::tag::is_error(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_error(env.to_raw(), other.to_raw()) }
     }
 }
 
@@ -58,7 +55,7 @@ impl JsError {
     ) -> NeonResult<Handle<'a, JsError>> {
         let msg = cx.string(msg.as_ref());
         build(cx.env(), |out| unsafe {
-            neon_runtime::error::new_error(cx.env().to_raw(), out, msg.to_raw());
+            sys::error::new_error(cx.env().to_raw(), out, msg.to_raw());
             true
         })
     }
@@ -70,7 +67,7 @@ impl JsError {
     ) -> NeonResult<Handle<'a, JsError>> {
         let msg = cx.string(msg.as_ref());
         build(cx.env(), |out| unsafe {
-            neon_runtime::error::new_type_error(cx.env().to_raw(), out, msg.to_raw());
+            sys::error::new_type_error(cx.env().to_raw(), out, msg.to_raw());
             true
         })
     }
@@ -82,7 +79,7 @@ impl JsError {
     ) -> NeonResult<Handle<'a, JsError>> {
         let msg = cx.string(msg.as_ref());
         build(cx.env(), |out| unsafe {
-            neon_runtime::error::new_range_error(cx.env().to_raw(), out, msg.to_raw());
+            sys::error::new_range_error(cx.env().to_raw(), out, msg.to_raw());
             true
         })
     }
@@ -104,9 +101,8 @@ pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> NeonResult<T>>(
             };
             let (data, len) = Utf8::from(&msg[..]).truncate().lower();
             unsafe {
-                #[cfg(feature = "napi-1")]
-                neon_runtime::error::clear_exception(env.to_raw());
-                neon_runtime::error::throw_error_from_utf8(env.to_raw(), data, len);
+                sys::error::clear_exception(env.to_raw());
+                sys::error::throw_error_from_utf8(env.to_raw(), data, len);
                 Err(Throw::new())
             }
         }

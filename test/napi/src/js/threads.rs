@@ -1,9 +1,6 @@
-use std::cell::RefCell;
-use std::sync::Arc;
-use std::time::Duration;
+use std::{cell::RefCell, sync::Arc, time::Duration};
 
-use neon::prelude::*;
-use neon::types::buffer::TypedArray;
+use neon::{prelude::*, types::buffer::TypedArray};
 
 pub fn useless_root(mut cx: FunctionContext) -> JsResult<JsObject> {
     let object = cx.argument::<JsObject>(0)?;

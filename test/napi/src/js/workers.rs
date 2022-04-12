@@ -1,7 +1,8 @@
 use std::sync::Mutex;
 
-use neon::prelude::*;
 use once_cell::sync::{Lazy, OnceCell};
+
+use neon::prelude::*;
 
 pub fn get_and_replace(mut cx: FunctionContext) -> JsResult<JsValue> {
     static OBJECT: Lazy<Mutex<Option<Root<JsObject>>>> = Lazy::new(Default::default);

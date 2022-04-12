@@ -1,5 +1,10 @@
 use neon::prelude::*;
 
+use crate::js::{
+    arrays::*, boxed::*, coercions::*, date::*, errors::*, functions::*, numbers::*, objects::*,
+    strings::*, threads::*, types::*,
+};
+
 mod js {
     pub mod arrays;
     pub mod boxed;
@@ -14,18 +19,6 @@ mod js {
     pub mod types;
     pub mod workers;
 }
-
-use js::arrays::*;
-use js::boxed::*;
-use js::coercions::*;
-use js::date::*;
-use js::errors::*;
-use js::functions::*;
-use js::numbers::*;
-use js::objects::*;
-use js::strings::*;
-use js::threads::*;
-use js::types::*;
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
