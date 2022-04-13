@@ -92,6 +92,26 @@ impl<T: Object> Root<T> {
     /// calling one of these methods:
     /// * N-API < 6, Neon will `panic` to notify of the leak
     /// * N-API >= 6, Neon will drop from a global queue at a runtime cost
+    ///
+    /// For example, early return with a ? or an explicit return before freeing
+    /// a `Root` will trigger the slow path:
+    /// ```
+    /// # use neon::prelude::*;
+    /// # fn create_log_entry(a: &str, b: &str) -> Result<String, String> { unimplemented!() }
+    /// # fn my_neon_function(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    /// # let id_generator = "";
+    /// let callback = cx.argument::<JsFunction>(1)?.root(&mut cx);
+    /// let my_log = match (create_log_entry(&id_generator, "log-emitter")) {
+    ///                Err(_err) => {
+    ///                  return cx.throw_error("Couldn't construct log");
+    ///                },
+    ///                Ok(log) => log,
+    /// };
+    /// # Ok(cx.undefined())
+    /// # }
+    /// ```
+    /// The solution in the original case for this was to bind the callback
+    /// after the fallible code, right before spawning an async task.
     pub fn new<'a, C: Context<'a>>(cx: &mut C, value: &T) -> Self {
         let env = cx.env().to_raw();
         let internal = unsafe { reference::new(env, value.to_raw()) };
