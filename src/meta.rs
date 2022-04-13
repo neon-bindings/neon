@@ -24,13 +24,3 @@ pub fn version() -> Version {
         build: vec![],
     }
 }
-
-// We captured the build profile from build.rs and saved it in the cfg variable `neon_profile`.
-
-/// The current build profile (either `"release"` or `"debug"`).
-#[cfg(neon_profile = "release")]
-pub const BUILD_PROFILE: &str = "release";
-
-/// The current build profile (either `"release"` or `"debug"`).
-#[cfg(not(neon_profile = "release"))]
-pub const BUILD_PROFILE: &str = "debug";
