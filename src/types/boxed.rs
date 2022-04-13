@@ -190,6 +190,11 @@ impl<T: Send + 'static> Managed for JsBox<T> {
         self.0.local
     }
 
+    // This method should be `unsafe`
+    // https://github.com/neon-bindings/neon/issues/885
+    // Type tagging could improve safety
+    // https://github.com/neon-bindings/neon/issues/591
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
     fn from_raw(env: Env, local: raw::Local) -> Self {
         let raw_data = unsafe { maybe_external_deref(env, local) }
             .expect("Failed to unwrap napi_external as Box<Any>")
