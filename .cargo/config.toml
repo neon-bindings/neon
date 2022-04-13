@@ -4,4 +4,4 @@
 neon-check = " check  --all --all-targets --features napi-experimental"
 neon-clippy = "clippy --all --all-targets --features napi-experimental -- -A clippy::missing_safety_doc"
 neon-test = "  test   --all               --features=napi-experimental"
-neon-doc = "   rustdoc                    --features=napi-experimental -- --cfg docsrs"
+neon-doc = "   rustdoc -p neon            --features=napi-experimental -- --cfg docsrs"
