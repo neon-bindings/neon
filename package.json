@@ -9,7 +9,7 @@
     "test:js": "npm test --workspaces --if-present"
   },
   "workspaces": [
-    "create-neon",
+    "pkgs/*",
     "test/*"
   ],
   "devDependencies": {

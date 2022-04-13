@@ -7,9 +7,9 @@ Cargo.lock
 **/index.node
 **/artifacts.json
 cli/lib
-create-neon/dist
-create-neon/create-neon-test-project
-create-neon/create-neon-manual-test-project
+**/dist
+pkgs/create-neon/create-neon-test-project
+pkgs/create-neon/create-neon-manual-test-project
 test/cli/lib
 npm-debug.log
 rls*.log
