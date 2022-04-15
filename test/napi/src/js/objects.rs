@@ -33,6 +33,24 @@ pub fn return_js_object_with_string(mut cx: FunctionContext) -> JsResult<JsObjec
     Ok(js_object)
 }
 
+pub fn freeze_js_object(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let obj: Handle<JsObject> = cx.argument::<JsObject>(0)?;
+    if obj.freeze(&mut cx) {
+        Ok(cx.undefined())
+    } else {
+        cx.throw_error("Could not freeze object")
+    }
+}
+
+pub fn seal_js_object(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let obj: Handle<JsObject> = cx.argument::<JsObject>(0)?;
+    if obj.seal(&mut cx) {
+        Ok(cx.undefined())
+    } else {
+        cx.throw_error("Could not seal object")
+    }
+}
+
 pub fn return_array_buffer(mut cx: FunctionContext) -> JsResult<JsArrayBuffer> {
     let b: Handle<JsArrayBuffer> = cx.array_buffer(16)?;
     Ok(b)

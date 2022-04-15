@@ -188,6 +188,20 @@ pub trait Object: Value {
         })
     }
 
+    #[cfg(feature = "napi-8")]
+    fn freeze<'a, C: Context<'a>>(&self, cx: &mut C) -> bool {
+        let env = cx.env().to_raw();
+        let obj = self.to_raw();
+        unsafe { sys::object::freeze(env, obj) }
+    }
+
+    #[cfg(feature = "napi-8")]
+    fn seal<'a, C: Context<'a>>(&self, cx: &mut C) -> bool {
+        let env = cx.env().to_raw();
+        let obj = self.to_raw();
+        unsafe { sys::object::seal(env, obj) }
+    }
+
     fn set<'a, C: Context<'a>, K: PropertyKey, W: Value>(
         &self,
         cx: &mut C,

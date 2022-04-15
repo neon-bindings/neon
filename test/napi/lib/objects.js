@@ -28,6 +28,33 @@ describe("JsObject", function () {
     );
   });
 
+  it("freeze a JsObject", function () {
+    const originalValue = 1;
+    const obj = { x: originalValue };
+
+    assert.doesNotThrow(function () {
+      addon.freeze_js_object(obj);
+    }, "freeze_js_object should not throw");
+
+    obj.x = 2;
+    assert.equal(
+      obj.x,
+      originalValue,
+      "freeze_js_object should not allow mutation"
+    );
+  });
+
+  it("seal a JsObject", function () {
+    const obj = { x: 1 };
+
+    assert.doesNotThrow(function () {
+      addon.seal_js_object(obj);
+    }, "seal_js_object should not throw");
+
+    delete obj.x;
+    assert.isOk(obj.x, "seal_js_object should not allow property deletion");
+  });
+
   it("correctly reads a TypedArray using the borrow API", function () {
     var b = new ArrayBuffer(32);
     var a = new Int32Array(b, 4, 4);
