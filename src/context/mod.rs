@@ -653,7 +653,7 @@ impl<'a, T: This> CallContext<'a, T> {
 
     /// Indicates the number of arguments that were passed to the function.
     pub fn len(&self) -> usize {
-        self.info.len(self) as usize
+        self.info.len(self)
     }
 
     /// Indicates if no arguments were passed to the function.
