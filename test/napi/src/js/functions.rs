@@ -139,11 +139,11 @@ pub fn construct_js_function_with_overloaded_result(mut cx: FunctionContext) -> 
 }
 
 trait CheckArgument<'a> {
-    fn check_argument<V: Value>(&mut self, i: i32) -> JsResult<'a, V>;
+    fn check_argument<V: Value>(&mut self, i: usize) -> JsResult<'a, V>;
 }
 
 impl<'a, T: This> CheckArgument<'a> for CallContext<'a, T> {
-    fn check_argument<V: Value>(&mut self, i: i32) -> JsResult<'a, V> {
+    fn check_argument<V: Value>(&mut self, i: usize) -> JsResult<'a, V> {
         self.argument::<V>(i)
     }
 }
@@ -166,7 +166,7 @@ pub fn panic_after_throw(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
 pub fn num_arguments(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let n = cx.len();
-    Ok(cx.number(n))
+    Ok(cx.number(n as i32))
 }
 
 pub fn return_this(mut cx: FunctionContext) -> JsResult<JsValue> {

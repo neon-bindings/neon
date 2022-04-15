@@ -193,7 +193,7 @@ impl CallbackInfo<'_> {
         }
     }
 
-    pub fn len<'b, C: Context<'b>>(&self, cx: &C) -> i32 {
+    pub fn len<'b, C: Context<'b>>(&self, cx: &C) -> usize {
         unsafe { sys::call::len(cx.env().to_raw(), self.info) }
     }
 
@@ -652,7 +652,7 @@ impl<'a, T: This> CallContext<'a, T> {
     }
 
     /// Indicates the number of arguments that were passed to the function.
-    pub fn len(&self) -> i32 {
+    pub fn len(&self) -> usize {
         self.info.len(self)
     }
 
@@ -662,7 +662,7 @@ impl<'a, T: This> CallContext<'a, T> {
     }
 
     /// Produces the `i`th argument, or `None` if `i` is greater than or equal to `self.len()`.
-    pub fn argument_opt(&mut self, i: i32) -> Option<Handle<'a, JsValue>> {
+    pub fn argument_opt(&mut self, i: usize) -> Option<Handle<'a, JsValue>> {
         let argv = if let Some(argv) = self.arguments.as_ref() {
             argv
         } else {
@@ -670,12 +670,12 @@ impl<'a, T: This> CallContext<'a, T> {
             self.arguments.insert(argv)
         };
 
-        argv.get(i as usize)
+        argv.get(i)
             .map(|v| Handle::new_internal(JsValue::from_raw(self.env(), v)))
     }
 
     /// Produces the `i`th argument and casts it to the type `V`, or throws an exception if `i` is greater than or equal to `self.len()` or cannot be cast to `V`.
-    pub fn argument<V: Value>(&mut self, i: i32) -> JsResult<'a, V> {
+    pub fn argument<V: Value>(&mut self, i: usize) -> JsResult<'a, V> {
         match self.argument_opt(i) {
             Some(v) => v.downcast_or_throw(self),
             None => self.throw_type_error("not enough arguments"),
