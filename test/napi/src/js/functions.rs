@@ -144,7 +144,7 @@ trait CheckArgument<'a> {
 
 impl<'a, T: This> CheckArgument<'a> for CallContext<'a, T> {
     fn check_argument<V: Value>(&mut self, i: i32) -> JsResult<'a, V> {
-        self.argument::<V>(i)
+        self.argument::<V>(i as usize)
     }
 }
 
@@ -166,7 +166,7 @@ pub fn panic_after_throw(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
 pub fn num_arguments(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let n = cx.len();
-    Ok(cx.number(n))
+    Ok(cx.number(n as i32))
 }
 
 pub fn return_this(mut cx: FunctionContext) -> JsResult<JsValue> {
