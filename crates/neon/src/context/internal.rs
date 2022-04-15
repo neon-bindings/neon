@@ -1,15 +1,11 @@
-use std::{
-    cell::{Cell, RefCell},
-    ffi::c_void,
-    mem::MaybeUninit,
-};
+use std::{cell::RefCell, ffi::c_void, mem::MaybeUninit};
 
 use crate::{
     context::ModuleContext,
     handle::{Handle, Managed},
     result::NeonResult,
-    sys::{self, raw, scope::Root},
-    types::{JsObject, JsValue},
+    sys::{self, raw},
+    types::JsObject,
 };
 
 #[repr(C)]
@@ -33,7 +29,7 @@ impl Env {
         ptr
     }
 
-    unsafe fn try_catch<T, F>(self, f: F) -> Result<T, raw::Local>
+    pub(super) unsafe fn try_catch<T, F>(self, f: F) -> Result<T, raw::Local>
     where
         F: FnOnce() -> Result<T, crate::result::Throw>,
     {
@@ -50,73 +46,8 @@ impl Env {
     }
 }
 
-pub struct ScopeMetadata {
-    env: Env,
-    active: Cell<bool>,
-}
-
-pub struct Scope<'a, R: Root + 'static> {
-    pub metadata: ScopeMetadata,
-    pub handle_scope: &'a mut R,
-}
-
-impl<'a, R: Root + 'static> Scope<'a, R> {
-    pub fn with<T, F: for<'b> FnOnce(Scope<'b, R>) -> T>(env: Env, f: F) -> T {
-        let mut handle_scope: R = unsafe { R::allocate() };
-        unsafe {
-            handle_scope.enter(env.to_raw());
-        }
-        let result = {
-            let scope = Scope {
-                metadata: ScopeMetadata {
-                    env,
-                    active: Cell::new(true),
-                },
-                handle_scope: &mut handle_scope,
-            };
-            f(scope)
-        };
-        unsafe {
-            handle_scope.exit(env.to_raw());
-        }
-        result
-    }
-}
-
 pub trait ContextInternal<'a>: Sized {
-    fn scope_metadata(&self) -> &ScopeMetadata;
-
-    fn env(&self) -> Env {
-        self.scope_metadata().env
-    }
-
-    fn is_active(&self) -> bool {
-        self.scope_metadata().active.get()
-    }
-
-    fn check_active(&self) {
-        if !self.is_active() {
-            panic!("execution context is inactive");
-        }
-    }
-
-    fn activate(&self) {
-        self.scope_metadata().active.set(true);
-    }
-    fn deactivate(&self) {
-        self.scope_metadata().active.set(false);
-    }
-
-    fn try_catch_internal<T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
-    where
-        F: FnOnce(&mut Self) -> NeonResult<T>,
-    {
-        unsafe {
-            self.env()
-                .try_catch(move || f(self))
-                .map_err(JsValue::new_internal)
-        }
-    }
+    fn env(&self) -> Env;
 }
 
 pub unsafe fn initialize_module(
