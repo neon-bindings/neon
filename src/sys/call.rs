@@ -53,7 +53,7 @@ pub unsafe fn this(env: Env, info: FunctionCallbackInfo, out: &mut Local) {
 
 /// Gets the number of arguments passed to the function.
 // TODO: Remove this when `CallContext` is refactored to get call info upfront.
-pub unsafe fn len(env: Env, info: FunctionCallbackInfo) -> i32 {
+pub unsafe fn len(env: Env, info: FunctionCallbackInfo) -> usize {
     let mut argc = 0usize;
     let status = napi::get_cb_info(
         env,
@@ -64,7 +64,7 @@ pub unsafe fn len(env: Env, info: FunctionCallbackInfo) -> i32 {
         null_mut(),
     );
     assert_eq!(status, napi::Status::Ok);
-    argc as i32
+    argc
 }
 
 /// Returns the function arguments for a call
