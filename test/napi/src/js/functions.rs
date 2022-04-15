@@ -139,12 +139,12 @@ pub fn construct_js_function_with_overloaded_result(mut cx: FunctionContext) -> 
 }
 
 trait CheckArgument<'a> {
-    fn check_argument<V: Value>(&mut self, i: i32) -> JsResult<'a, V>;
+    fn check_argument<V: Value>(&mut self, i: usize) -> JsResult<'a, V>;
 }
 
 impl<'a, T: This> CheckArgument<'a> for CallContext<'a, T> {
-    fn check_argument<V: Value>(&mut self, i: i32) -> JsResult<'a, V> {
-        self.argument::<V>(i as usize)
+    fn check_argument<V: Value>(&mut self, i: usize) -> JsResult<'a, V> {
+        self.argument::<V>(i)
     }
 }
 

@@ -193,7 +193,7 @@ impl CallbackInfo<'_> {
         }
     }
 
-    pub fn len<'b, C: Context<'b>>(&self, cx: &C) -> i32 {
+    pub fn len<'b, C: Context<'b>>(&self, cx: &C) -> usize {
         unsafe { sys::call::len(cx.env().to_raw(), self.info) }
     }
 
