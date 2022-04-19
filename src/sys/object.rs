@@ -11,15 +11,13 @@ pub unsafe fn new(out: &mut Local, env: Env) {
 }
 
 #[cfg(feature = "napi-8")]
-pub unsafe fn freeze(env: Env, obj: Local) -> bool {
-    let status = napi::object_freeze(env, obj);
-    status == napi::Status::Ok
+pub unsafe fn freeze(env: Env, obj: Local) -> napi::Status {
+    napi::object_freeze(env, obj)
 }
 
 #[cfg(feature = "napi-8")]
-pub unsafe fn seal(env: Env, obj: Local) -> bool {
-    let status = napi::object_seal(env, obj);
-    status == napi::Status::Ok
+pub unsafe fn seal(env: Env, obj: Local) -> napi::Status {
+    napi::object_seal(env, obj)
 }
 
 #[cfg(feature = "napi-6")]

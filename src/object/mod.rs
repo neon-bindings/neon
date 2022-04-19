@@ -36,7 +36,7 @@ use crate::{
     context::{internal::Env, Context},
     handle::{Handle, Managed, Root},
     result::{NeonResult, Throw},
-    sys::{self, raw},
+    sys::{self, raw, Status},
     types::{build, function::CallOptions, utf8::Utf8, JsFunction, JsUndefined, JsValue, Value},
 };
 
@@ -189,17 +189,29 @@ pub trait Object: Value {
     }
 
     #[cfg(feature = "napi-8")]
-    fn freeze<'a, C: Context<'a>>(&self, cx: &mut C) -> bool {
+    fn freeze<'a, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<&Self> {
         let env = cx.env().to_raw();
         let obj = self.to_raw();
-        unsafe { sys::object::freeze(env, obj) }
+        unsafe {
+            match sys::object::freeze(env, obj) {
+                Status::Ok => Ok(self),
+                Status::PendingException => Err(Throw::new()),
+                _ => cx.throw_type_error("object cannot be frozen"),
+            }
+        }
     }
 
     #[cfg(feature = "napi-8")]
-    fn seal<'a, C: Context<'a>>(&self, cx: &mut C) -> bool {
+    fn seal<'a, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<&Self> {
         let env = cx.env().to_raw();
         let obj = self.to_raw();
-        unsafe { sys::object::seal(env, obj) }
+        unsafe {
+            match sys::object::seal(env, obj) {
+                Status::Ok => Ok(self),
+                Status::PendingException => Err(Throw::new()),
+                _ => cx.throw_type_error("object cannot be sealed"),
+            }
+        }
     }
 
     fn set<'a, C: Context<'a>, K: PropertyKey, W: Value>(

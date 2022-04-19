@@ -42,6 +42,11 @@ describe("JsObject", function () {
       originalValue,
       "freeze_js_object should not allow mutation"
     );
+
+    const shouldNotFreeze = new Uint32Array(8);
+    assert.throws(function () {
+      addon.freeze_js_object(shouldNotFreeze);
+    });
   });
 
   it("seal a JsObject", function () {
@@ -53,6 +58,11 @@ describe("JsObject", function () {
 
     delete obj.x;
     assert.isOk(obj.x, "seal_js_object should not allow property deletion");
+
+    const shouldNotSeal = new Uint32Array(8);
+    assert.throws(function () {
+      addon.freeze_js_object(shouldNotSeal);
+    });
   });
 
   it("correctly reads a TypedArray using the borrow API", function () {
