@@ -13,7 +13,10 @@ pub unsafe fn new(out: &mut Local, env: Env) {
 #[cfg(feature = "napi-8")]
 pub unsafe fn freeze(env: Env, obj: Local) -> napi::Status {
     let status = napi::object_freeze(env, obj);
-    debug_assert!(matches!(status, napi::Status::Ok | napi::Status::PendingException | napi::Status::GenericFailure));
+    debug_assert!(matches!(
+        status,
+        napi::Status::Ok | napi::Status::PendingException | napi::Status::GenericFailure
+    ));
     status
 }
 
