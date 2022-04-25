@@ -10,6 +10,21 @@ pub unsafe fn new(out: &mut Local, env: Env) {
     napi::create_object(env, out as *mut _);
 }
 
+#[cfg(feature = "napi-8")]
+pub unsafe fn freeze(env: Env, obj: Local) -> napi::Status {
+    let status = napi::object_freeze(env, obj);
+    debug_assert!(matches!(
+        status,
+        napi::Status::Ok | napi::Status::PendingException | napi::Status::GenericFailure
+    ));
+    status
+}
+
+#[cfg(feature = "napi-8")]
+pub unsafe fn seal(env: Env, obj: Local) -> napi::Status {
+    napi::object_seal(env, obj)
+}
+
 #[cfg(feature = "napi-6")]
 /// Mutates the `out` argument to refer to a `napi_value` containing the own property names of the
 /// `object` as a JavaScript Array.

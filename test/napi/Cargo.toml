@@ -15,4 +15,4 @@ once_cell = "1"
 [dependencies.neon]
 version = "*"
 path = "../.."
-features = ["napi-6"]
+features = ["napi-8"]

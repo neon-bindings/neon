@@ -28,7 +28,7 @@ default = ["napi-1"]
 
 # Default N-API version. Prefer to select a minimum required version.
 # DEPRECATED: This is an alias that should be removed
-napi-runtime = ["napi-6"]
+napi-runtime = ["napi-8"]
 
 # Select the N-API version
 # Feature flags to enable the experimental N-API runtime. For now, this feature
@@ -41,8 +41,10 @@ napi-3 = ["napi-2"]
 napi-4 = ["napi-3"]
 napi-5 = ["napi-4"]
 napi-6 = ["napi-5"]
-napi-latest = ["napi-6"]
-napi-experimental = ["napi-6"]
+napi-7 = ["napi-6"]
+napi-8 = ["napi-7"]
+napi-latest = ["napi-8"]
+napi-experimental = ["napi-8"]
 
 # DEPRECATED: These perform no action and will be removed in 1.0
 try-catch-api = []
