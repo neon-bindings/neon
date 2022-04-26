@@ -10,4 +10,4 @@ crate-type = ["cdylib"]
 
 [dependencies.neon]
 version = "*"
-path = "../.."
+path = "../../crates/neon"

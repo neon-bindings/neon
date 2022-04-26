@@ -1,4 +1,4 @@
-# <img src="neon.png" alt="neon" width="100%" />
+# <img src="doc/neon.png" alt="neon" width="100%" />
 
 [![Cargo](https://img.shields.io/crates/v/neon.svg)](https://crates.io/crates/neon)
 [![npm](https://img.shields.io/npm/v/neon-cli.svg)](https://www.npmjs.com/package/neon-cli)
@@ -29,7 +29,8 @@ our [API docs](https://docs.rs/neon/latest/neon).
 
 The latest version of Neon, 0.10, includes a few small breaking changes in order to clean up and improve the usability of our APIs.
 
-**Read the new [migration guide](https://github.com/neon-bindings/neon/blob/main/MIGRATION_GUIDE_0.10.md)** to learn how to port your Neon projects to 0.10!
+**Read the new [migration guide](https://github.com/neon-bindings/neon/blob/main/docs/MIGRATION_GUIDE_0.10.md)** to learn how to port your 
+Neon projects to 0.10!
 
 ## Platform Support
 

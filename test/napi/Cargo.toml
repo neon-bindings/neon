@@ -14,5 +14,5 @@ once_cell = "1"
 
 [dependencies.neon]
 version = "*"
-path = "../.."
+path = "../../crates/neon"
 features = ["napi-8"]

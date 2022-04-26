@@ -1,6 +1,6 @@
 # Version 0.10
 
-See the [Neon 0.10 Migration Guide](MIGRATION_GUIDE_0.10.md) for more details about new features and breaking changes.
+See the [Neon 0.10 Migration Guide](docs/MIGRATION_GUIDE_0.10.md) for more details about new features and breaking changes.
 
 ## Features
 
