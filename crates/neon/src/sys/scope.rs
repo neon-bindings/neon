@@ -2,67 +2,82 @@ use std::mem::MaybeUninit;
 
 use super::{
     bindings as napi,
-    raw::{Env, EscapableHandleScope, HandleScope, InheritedHandleScope, Local},
+    raw::{Env, Local},
 };
 
-// TODO: This leaves a lot of room for UB; we can have a cleaner
-// implementation for N-API.
-pub trait Root {
-    unsafe fn allocate() -> Self;
-    unsafe fn enter(&mut self, env: Env);
-    unsafe fn exit(&mut self, env: Env);
+pub(crate) struct HandleScope {
+    env: Env,
+    scope: napi::HandleScope,
 }
 
-impl Root for HandleScope {
-    unsafe fn allocate() -> Self {
-        HandleScope::new()
-    }
-    unsafe fn enter(&mut self, env: Env) {
+impl HandleScope {
+    pub(crate) unsafe fn new(env: Env) -> Self {
         let mut scope = MaybeUninit::uninit();
-        let status = napi::open_handle_scope(env, scope.as_mut_ptr());
 
-        assert_eq!(status, napi::Status::Ok);
+        assert_eq!(
+            napi::open_handle_scope(env, scope.as_mut_ptr()),
+            napi::Status::Ok,
+        );
 
-        self.word = scope.assume_init();
-    }
-    unsafe fn exit(&mut self, env: Env) {
-        let status = napi::close_handle_scope(env, self.word);
-
-        assert_eq!(status, napi::Status::Ok);
+        Self {
+            env,
+            scope: scope.assume_init(),
+        }
     }
 }
 
-impl Root for EscapableHandleScope {
-    unsafe fn allocate() -> Self {
-        EscapableHandleScope::new()
+impl Drop for HandleScope {
+    fn drop(&mut self) {
+        unsafe {
+            debug_assert_eq!(
+                napi::close_handle_scope(self.env, self.scope),
+                napi::Status::Ok,
+            );
+        }
     }
-    unsafe fn enter(&mut self, env: Env) {
+}
+
+pub(crate) struct EscapableHandleScope {
+    env: Env,
+    scope: napi::EscapableHandleScope,
+}
+
+impl EscapableHandleScope {
+    pub(crate) unsafe fn new(env: Env) -> Self {
         let mut scope = MaybeUninit::uninit();
-        let status = napi::open_escapable_handle_scope(env, scope.as_mut_ptr());
 
-        assert_eq!(status, napi::Status::Ok);
+        assert_eq!(
+            napi::open_escapable_handle_scope(env, scope.as_mut_ptr()),
+            napi::Status::Ok,
+        );
 
-        self.word = scope.assume_init();
+        Self {
+            env,
+            scope: scope.assume_init(),
+        }
     }
-    unsafe fn exit(&mut self, env: Env) {
-        let status = napi::close_escapable_handle_scope(env, self.word);
 
-        assert_eq!(status, napi::Status::Ok);
+    pub(crate) unsafe fn escape(&self, value: napi::Value) -> napi::Value {
+        let mut escapee = MaybeUninit::uninit();
+
+        assert_eq!(
+            napi::escape_handle(self.env, self.scope, value, escapee.as_mut_ptr()),
+            napi::Status::Ok,
+        );
+
+        escapee.assume_init()
     }
 }
 
-impl Root for InheritedHandleScope {
-    unsafe fn allocate() -> Self {
-        InheritedHandleScope
+impl Drop for EscapableHandleScope {
+    fn drop(&mut self) {
+        unsafe {
+            debug_assert_eq!(
+                napi::close_escapable_handle_scope(self.env, self.scope),
+                napi::Status::Ok,
+            );
+        }
     }
-    unsafe fn enter(&mut self, _: Env) {}
-    unsafe fn exit(&mut self, _: Env) {}
-}
-
-pub unsafe fn escape(env: Env, out: &mut Local, scope: *mut EscapableHandleScope, value: Local) {
-    let status = napi::escape_handle(env, (*scope).word, value, out as *mut _);
-
-    assert_eq!(status, napi::Status::Ok);
 }
 
 pub unsafe fn get_global(env: Env, out: &mut Local) {

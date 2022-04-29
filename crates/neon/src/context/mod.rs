@@ -151,7 +151,10 @@ use crate::{
     handle::{Handle, Managed},
     object::{Object, This},
     result::{JsResult, NeonResult, Throw},
-    sys::{self, raw},
+    sys::{
+        self, raw,
+        scope::{EscapableHandleScope, HandleScope},
+    },
     types::{
         boxed::{Finalize, JsBox},
         error::JsError,
@@ -160,7 +163,7 @@ use crate::{
     },
 };
 
-use self::internal::{ContextInternal, Env, Scope, ScopeMetadata};
+use self::internal::{ContextInternal, Env};
 
 #[cfg(feature = "napi-4")]
 use crate::event::Channel;
@@ -243,10 +246,15 @@ pub trait Context<'a>: ContextInternal<'a> {
     where
         F: for<'b> FnOnce(ExecuteContext<'b>) -> T,
     {
-        self.check_active();
-        self.deactivate();
-        let result = ExecuteContext::with(self, f);
-        self.activate();
+        let env = self.env();
+        let scope = unsafe { HandleScope::new(env.to_raw()) };
+        let result = f(ExecuteContext {
+            env,
+            _phantom_inner: PhantomData,
+        });
+
+        drop(scope);
+
         result
     }
 
@@ -260,22 +268,17 @@ pub trait Context<'a>: ContextInternal<'a> {
         V: Value,
         F: for<'b, 'c> FnOnce(ComputeContext<'b, 'c>) -> JsResult<'b, V>,
     {
-        self.check_active();
-        self.deactivate();
-        let result = ComputeContext::with(self, |cx| unsafe {
-            let escapable_handle_scope = cx.scope.handle_scope as *mut raw::EscapableHandleScope;
-            let escapee = f(cx)?;
-            let mut result_local: raw::Local = std::mem::zeroed();
-            sys::scope::escape(
-                self.env().to_raw(),
-                &mut result_local,
-                escapable_handle_scope,
-                escapee.to_raw(),
-            );
-            Ok(Handle::new_internal(V::from_raw(self.env(), result_local)))
-        });
-        self.activate();
-        result
+        let env = self.env();
+        let scope = unsafe { EscapableHandleScope::new(env.to_raw()) };
+        let cx = ComputeContext {
+            env,
+            phantom_inner: PhantomData,
+            phantom_outer: PhantomData,
+        };
+
+        let escapee = unsafe { scope.escape(f(cx)?.to_raw()) };
+
+        Ok(Handle::new_internal(V::from_raw(self.env(), escapee)))
     }
 
     #[cfg_attr(
@@ -286,7 +289,11 @@ pub trait Context<'a>: ContextInternal<'a> {
     where
         F: FnOnce(&mut Self) -> NeonResult<T>,
     {
-        self.try_catch_internal(f)
+        unsafe {
+            self.env()
+                .try_catch(move || f(self))
+                .map_err(JsValue::new_internal)
+        }
     }
 
     /// Convenience method for creating a `JsBoolean` value.
@@ -502,7 +509,7 @@ pub trait Context<'a>: ContextInternal<'a> {
 
 /// An execution context of module initialization.
 pub struct ModuleContext<'a> {
-    scope: Scope<'a, raw::InheritedHandleScope>,
+    env: Env,
     exports: Handle<'a, JsObject>,
 }
 
@@ -514,9 +521,7 @@ impl<'a> ModuleContext<'a> {
         exports: Handle<'a, JsObject>,
         f: F,
     ) -> T {
-        // These assertions ensure the proper amount of space is reserved on the rust stack
-        // This is only necessary in the legacy runtime.
-        Scope::with(env, |scope| f(ModuleContext { scope, exports }))
+        f(ModuleContext { env, exports })
     }
 
     #[cfg(not(feature = "napi-5"))]
@@ -558,8 +563,8 @@ impl<'a> ModuleContext<'a> {
 }
 
 impl<'a> ContextInternal<'a> for ModuleContext<'a> {
-    fn scope_metadata(&self) -> &ScopeMetadata {
-        &self.scope.metadata
+    fn env(&self) -> Env {
+        self.env
     }
 }
 
@@ -567,21 +572,13 @@ impl<'a> Context<'a> for ModuleContext<'a> {}
 
 /// An execution context of a scope created by [`Context::execute_scoped()`](Context::execute_scoped).
 pub struct ExecuteContext<'a> {
-    scope: Scope<'a, raw::HandleScope>,
-}
-
-impl<'a> ExecuteContext<'a> {
-    pub(crate) fn with<T, C: Context<'a>, F: for<'b> FnOnce(ExecuteContext<'b>) -> T>(
-        cx: &C,
-        f: F,
-    ) -> T {
-        Scope::with(cx.env(), |scope| f(ExecuteContext { scope }))
-    }
+    env: Env,
+    _phantom_inner: PhantomData<&'a ()>,
 }
 
 impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
-    fn scope_metadata(&self) -> &ScopeMetadata {
-        &self.scope.metadata
+    fn env(&self) -> Env {
+        self.env
     }
 }
 
@@ -589,29 +586,14 @@ impl<'a> Context<'a> for ExecuteContext<'a> {}
 
 /// An execution context of a scope created by [`Context::compute_scoped()`](Context::compute_scoped).
 pub struct ComputeContext<'a, 'outer> {
-    scope: Scope<'a, raw::EscapableHandleScope>,
+    env: Env,
     phantom_inner: PhantomData<&'a ()>,
     phantom_outer: PhantomData<&'outer ()>,
 }
 
-impl<'a, 'b> ComputeContext<'a, 'b> {
-    pub(crate) fn with<T, C: Context<'a>, F: for<'c, 'd> FnOnce(ComputeContext<'c, 'd>) -> T>(
-        cx: &C,
-        f: F,
-    ) -> T {
-        Scope::with(cx.env(), |scope| {
-            f(ComputeContext {
-                scope,
-                phantom_inner: PhantomData,
-                phantom_outer: PhantomData,
-            })
-        })
-    }
-}
-
 impl<'a, 'b> ContextInternal<'a> for ComputeContext<'a, 'b> {
-    fn scope_metadata(&self) -> &ScopeMetadata {
-        &self.scope.metadata
+    fn env(&self) -> Env {
+        self.env
     }
 }
 
@@ -621,7 +603,7 @@ impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> {}
 ///
 /// The type parameter `T` is the type of the `this`-binding.
 pub struct CallContext<'a, T: This> {
-    scope: Scope<'a, raw::InheritedHandleScope>,
+    env: Env,
     info: &'a CallbackInfo<'a>,
 
     arguments: Option<sys::call::Arguments>,
@@ -641,13 +623,11 @@ impl<'a, T: This> CallContext<'a, T> {
         info: &'a CallbackInfo<'a>,
         f: F,
     ) -> U {
-        Scope::with(env, |scope| {
-            f(CallContext {
-                scope,
-                info,
-                arguments: None,
-                phantom_type: PhantomData,
-            })
+        f(CallContext {
+            env,
+            info,
+            arguments: None,
+            phantom_type: PhantomData,
         })
     }
 
@@ -691,8 +671,8 @@ impl<'a, T: This> CallContext<'a, T> {
 }
 
 impl<'a, T: This> ContextInternal<'a> for CallContext<'a, T> {
-    fn scope_metadata(&self) -> &ScopeMetadata {
-        &self.scope.metadata
+    fn env(&self) -> Env {
+        self.env
     }
 }
 
@@ -706,20 +686,22 @@ pub type MethodContext<'a, T> = CallContext<'a, T>;
 
 /// An execution context of a task completion callback.
 pub struct TaskContext<'a> {
-    /// We use an "inherited HandleScope" here because the C++ `neon::Task::complete`
-    /// method sets up and tears down a `HandleScope` for us.
-    scope: Scope<'a, raw::InheritedHandleScope>,
+    env: Env,
+    _phantom_inner: PhantomData<&'a ()>,
 }
 
 impl<'a> TaskContext<'a> {
     pub(crate) fn with_context<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: Env, f: F) -> T {
-        Scope::with(env, |scope| f(TaskContext { scope }))
+        f(Self {
+            env,
+            _phantom_inner: PhantomData,
+        })
     }
 }
 
 impl<'a> ContextInternal<'a> for TaskContext<'a> {
-    fn scope_metadata(&self) -> &ScopeMetadata {
-        &self.scope.metadata
+    fn env(&self) -> Env {
+        self.env
     }
 }
 
@@ -727,18 +709,22 @@ impl<'a> Context<'a> for TaskContext<'a> {}
 
 /// A view of the JS engine in the context of a finalize method on garbage collection
 pub(crate) struct FinalizeContext<'a> {
-    scope: Scope<'a, raw::InheritedHandleScope>,
+    env: Env,
+    _phantom_inner: PhantomData<&'a ()>,
 }
 
 impl<'a> FinalizeContext<'a> {
     pub(crate) fn with<T, F: for<'b> FnOnce(FinalizeContext<'b>) -> T>(env: Env, f: F) -> T {
-        Scope::with(env, |scope| f(FinalizeContext { scope }))
+        f(Self {
+            env,
+            _phantom_inner: PhantomData,
+        })
     }
 }
 
 impl<'a> ContextInternal<'a> for FinalizeContext<'a> {
-    fn scope_metadata(&self) -> &ScopeMetadata {
-        &self.scope.metadata
+    fn env(&self) -> Env {
+        self.env
     }
 }
 
