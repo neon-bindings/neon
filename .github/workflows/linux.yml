@@ -17,8 +17,8 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x, 14.x, 16.x]
-        rust-toolchain: [stable, beta, nightly]
+        node-version: [14.x, 16.x, 18.x]
+        rust-toolchain: [stable, nightly]
 
     steps:
       - uses: actions/checkout@v2
@@ -33,8 +33,6 @@ jobs:
       - name: Use npm v8
         # https://github.com/npm/cli/issues/4552
         run: npm -g i npm@~8.3
-      - name: install build-essential
-        run: sudo apt-get install -y build-essential
       - name: npm install workspace
         run: npm install
       - name: run tests

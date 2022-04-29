@@ -17,7 +17,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [14.x]
+        node-version: [16.x]
         rust-toolchain: [nightly]
 
     steps:
@@ -30,8 +30,6 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
-      - name: install build-essential
-        run: sudo apt-get install -y build-essential
       - run: npm install
       - name: Prettier Formatting
         run: npm run prettier:check
