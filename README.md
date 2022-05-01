@@ -29,7 +29,7 @@ our [API docs](https://docs.rs/neon/latest/neon).
 
 The latest version of Neon, 0.10, includes a few small breaking changes in order to clean up and improve the usability of our APIs.
 
-**Read the new [migration guide](https://github.com/neon-bindings/neon/blob/0.10.0/MIGRATION_GUIDE_0.10.md)** to learn how to port your 
+**Read the new [migration guide](https://github.com/neon-bindings/neon/blob/main/doc/MIGRATION_GUIDE_0.10.md)** to learn how to port your 
 Neon projects to 0.10!
 
 ## Platform Support
