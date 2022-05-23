@@ -1,3 +1,27 @@
+# Version 0.10.1
+
+Fix a soundness hole in `JsArrayBuffer::external`
+and `JsBuffer::external` (https://github.com/neon-bindings/neon/pull/897).
+
+Thanks to [@Cassy343](https://github.com/Cassy343) for finding the [issue](https://github.com/neon-bindings/neon/issues/896)!
+
+In previous versions of Neon, it was possible to create a `JsArrayBuffer` or `JsBuffer` that references data without the `'static` lifetime.
+
+```rust
+pub fn soundness_hole(mut cx: FunctionContext) -> JsResult<JsArrayBuffer> {
+    let mut data = vec![0u8, 1, 2, 3];
+
+    // Creating an external from `&mut [u8]` instead of `Vec<u8>` since there is a blanket impl
+    // of `AsMut<T> for &mut T`
+    let buf = JsArrayBuffer::external(&mut cx, data.as_mut_slice());
+
+    // `buf` is still holding a reference to `data`!
+    drop(data);
+
+    Ok(buf)
+}
+```
+
 # Version 0.10
 
 See the [Neon 0.10 Migration Guide](docs/MIGRATION_GUIDE_0.10.md) for more details about new features and breaking changes.
