@@ -1,6 +1,6 @@
 [package]
 name = "neon"
-version = "0.10.0"
+version = "0.10.1"
 authors = ["Dave Herman <david.herman@gmail.com>"]
 description = "A safe abstraction layer for Node.js."
 readme = "README.md"
@@ -23,7 +23,7 @@ nodejs-sys = "0.13.0"
 libloading = "0.7.3"
 semver = "0.9.0"
 smallvec = "1.4.2"
-neon-macros = { version = "=0.10.0", path = "../neon-macros" }
+neon-macros = { version = "=0.10.1", path = "../neon-macros" }
 
 [features]
 default = ["napi-1"]

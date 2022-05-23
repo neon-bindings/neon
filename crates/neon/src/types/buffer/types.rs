@@ -44,7 +44,7 @@ impl JsBuffer {
     pub fn external<'a, C, T>(cx: &mut C, data: T) -> Handle<'a, Self>
     where
         C: Context<'a>,
-        T: AsMut<[u8]> + Send,
+        T: AsMut<[u8]> + Send + 'static,
     {
         let env = cx.env().to_raw();
         let value = unsafe { sys::buffer::new_external(env, data) };
@@ -157,7 +157,7 @@ impl JsArrayBuffer {
     pub fn external<'a, C, T>(cx: &mut C, data: T) -> Handle<'a, Self>
     where
         C: Context<'a>,
-        T: AsMut<[u8]> + Send,
+        T: AsMut<[u8]> + Send + 'static,
     {
         let env = cx.env().to_raw();
         let value = unsafe { sys::arraybuffer::new_external(env, data) };
