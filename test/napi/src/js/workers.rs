@@ -2,6 +2,7 @@ use std::sync::Mutex;
 
 use once_cell::sync::{Lazy, OnceCell};
 
+use neon::instance::Global;
 use neon::prelude::*;
 
 pub fn get_and_replace(mut cx: FunctionContext) -> JsResult<JsValue> {
@@ -43,4 +44,20 @@ pub fn get_or_init_clone(mut cx: FunctionContext) -> JsResult<JsObject> {
     // Note: This intentionally uses `clone` instead of `to_inner` in order to
     // test the `clone` method.
     Ok(o.clone(&mut cx).into_inner(&mut cx))
+}
+
+static THREAD_ID: Global<u32> = Global::new();
+
+pub fn set_thread_id(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let id = cx.argument::<JsNumber>(0)?.value(&mut cx) as u32;
+    THREAD_ID.set(&mut cx, id);
+    Ok(cx.undefined())
+}
+
+pub fn get_thread_id(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let id = THREAD_ID.get(&mut cx);
+    Ok(match id {
+        Some(id) => cx.number(id).upcast(),
+        None => cx.undefined().upcast(),
+    })
 }

@@ -1,0 +1,72 @@
+use std::any::Any;
+use std::marker::PhantomData;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+use once_cell::sync::OnceCell;
+
+use crate::context::Context;
+use crate::lifecycle::InstanceData;
+
+static COUNTER: AtomicUsize = AtomicUsize::new(0);
+
+fn next_id() -> usize {
+    COUNTER.fetch_add(1, Ordering::SeqCst)
+}
+
+/// A cell that can be used to allocate data that is global to an instance
+/// of a Neon addon.
+pub struct Global<T> {
+    _type: PhantomData<T>,
+    id: OnceCell<usize>,
+}
+
+impl<T> Global<T> {
+    pub const fn new() -> Self {
+        Self {
+            _type: PhantomData,
+            id: OnceCell::new(),
+        }
+    }
+
+    fn id(&self) -> usize {
+        *self.id.get_or_init(next_id)
+    }
+}
+
+impl<T: Any + Send> Global<T> {
+    pub fn borrow<'a, 'b, C>(&self, cx: &'b mut C) -> Option<&'b T>
+    where
+        C: Context<'a>,
+    {
+        InstanceData::globals(cx)[self.id()]
+            .as_ref()
+            .map(|boxed| boxed.downcast_ref().unwrap())
+    }
+
+    pub fn borrow_mut<'a, 'b, C>(&self, cx: &'b mut C) -> Option<&'b mut T>
+    where
+        C: Context<'a>,
+    {
+        InstanceData::globals(cx)[self.id()]
+            .as_mut()
+            .map(|boxed| boxed.downcast_mut().unwrap())
+    }
+
+    pub fn set<'a, 'b, C>(&self, cx: &'b mut C, v: T)
+    where
+        C: Context<'a>,
+    {
+        InstanceData::globals(cx)[self.id()] = Some(Box::new(v));
+    }
+}
+
+impl<T: Any + Send + Clone> Global<T> {
+    pub fn get<'a, C>(&self, cx: &mut C) -> Option<T>
+    where
+        C: Context<'a>,
+    {
+        InstanceData::globals(cx)[self.id()]
+            .as_ref()
+            .map(|boxed| boxed.downcast_ref::<T>().unwrap().clone())
+    }
+}

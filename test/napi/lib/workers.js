@@ -1,10 +1,11 @@
 const assert = require("assert");
-const { Worker, isMainThread, parentPort } = require("worker_threads");
+const { Worker, isMainThread, parentPort, threadId } = require("worker_threads");
 
 const addon = require("..");
 
 // Receive a message, try that method and return the error message
 if (!isMainThread) {
+  addon.set_thread_id(threadId);
   parentPort.once("message", (message) => {
     try {
       switch (message) {
@@ -16,6 +17,12 @@ if (!isMainThread) {
           break;
         case "get_or_init_clone":
           addon.get_or_init_clone(() => ({}));
+          break;
+        case "get_thread_id":
+          {
+            let id = addon.get_thread_id();
+            parentPort.postMessage(id);
+          }
           break;
         default:
           throw new Error(`Unexpected message: ${message}`);
@@ -29,6 +36,11 @@ if (!isMainThread) {
 
   return;
 }
+
+// From here on, we're in the main thread.
+
+// Set the `THREAD_ID` Global value in the main thread cell.
+addon.set_thread_id(threadId);
 
 describe("Worker / Root Tagging Tests", () => {
   describe("Single Threaded", () => {
@@ -104,5 +116,28 @@ describe("Worker / Root Tagging Tests", () => {
 
       worker.postMessage("get_or_init_clone");
     });
+  });
+});
+
+describe("Globals", () => {
+  it("should be able to read an instance global from the main thread", () => {
+    let lookedUpId = addon.get_thread_id();
+    assert.strictEqual(lookedUpId, threadId);
+  });
+
+  it("should allocate separate globals for each addon instance", (cb) => {
+    let mainThreadId = addon.get_thread_id();
+
+    const worker = new Worker(__filename);
+
+    worker.once("message", (message) => {
+      assert.strictEqual(typeof message, 'number');
+      assert.notStrictEqual(message, mainThreadId);
+      let mainThreadIdAgain = addon.get_thread_id();
+      assert.strictEqual(mainThreadIdAgain, mainThreadId);
+      cb();
+    });
+
+    worker.postMessage("get_thread_id");
   });
 });

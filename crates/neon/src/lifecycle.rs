@@ -8,9 +8,13 @@
 //!
 //! [napi-docs]: https://nodejs.org/api/n-api.html#n_api_environment_life_cycle_apis
 
-use std::sync::{
-    atomic::{AtomicU64, Ordering},
-    Arc,
+use std::{
+    any::Any,
+    ops::{Index, IndexMut},
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
 };
 
 use crate::{
@@ -54,6 +58,36 @@ pub(crate) struct InstanceData {
 
     /// Shared `Channel` that is cloned to be returned by the `cx.channel()` method
     shared_channel: Channel,
+
+    /// Table of user-defined global cells.
+    globals: GlobalTable,
+}
+
+pub(crate) struct GlobalTable {
+    cells: Vec<Option<Box<dyn Any + Send>>>,
+}
+
+impl GlobalTable {
+    fn new() -> Self {
+        Self { cells: Vec::new() }
+    }
+}
+
+impl Index<usize> for GlobalTable {
+    type Output = Option<Box<dyn Any + Send>>;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.cells[index]
+    }
+}
+
+impl IndexMut<usize> for GlobalTable {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        if index >= self.cells.len() {
+            self.cells.resize_with(index + 1, Default::default);
+        }
+        &mut self.cells[index]
+    }
 }
 
 /// Wrapper for raw Node-API values to be dropped on the main thread
@@ -83,7 +117,7 @@ impl InstanceData {
     /// # Safety
     /// No additional locking (e.g., `Mutex`) is necessary because holding a
     /// `Context` reference ensures serialized access.
-    pub(crate) fn get<'a, C: Context<'a>>(cx: &mut C) -> &'a mut InstanceData {
+    pub(crate) fn get<'a, C: Context<'a>>(cx: &mut C) -> &mut InstanceData {
         let env = cx.env().to_raw();
         let data = unsafe { lifecycle::get_instance_data::<InstanceData>(env).as_mut() };
 
@@ -107,6 +141,7 @@ impl InstanceData {
             id: InstanceId::next(),
             drop_queue: Arc::new(drop_queue),
             shared_channel,
+            globals: GlobalTable::new(),
         };
 
         unsafe { &mut *lifecycle::set_instance_data(env, data) }
@@ -128,5 +163,10 @@ impl InstanceData {
     /// Unique identifier for this instance of the module
     pub(crate) fn id<'a, C: Context<'a>>(cx: &mut C) -> InstanceId {
         InstanceData::get(cx).id
+    }
+
+    /// Helper to return a reference to the `globals` field of `InstanceData`.
+    pub(crate) fn globals<'a, C: Context<'a>>(cx: &mut C) -> &mut GlobalTable {
+        &mut InstanceData::get(cx).globals
     }
 }
