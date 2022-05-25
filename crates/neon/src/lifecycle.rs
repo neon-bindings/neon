@@ -10,7 +10,6 @@
 
 use std::{
     any::Any,
-    ops::{Index, IndexMut},
     sync::{
         atomic::{AtomicU64, Ordering},
         Arc,
@@ -68,16 +67,8 @@ pub(crate) struct GlobalTable {
     cells: Vec<Option<Box<dyn Any + Send + 'static>>>,
 }
 
-impl Index<usize> for GlobalTable {
-    type Output = Option<Box<dyn Any + Send + 'static>>;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.cells[index]
-    }
-}
-
-impl IndexMut<usize> for GlobalTable {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+impl GlobalTable {
+    pub(crate) fn get(&mut self, index: usize) -> &mut Option<Box<dyn Any + Send + 'static>> {
         if index >= self.cells.len() {
             self.cells.resize_with(index + 1, Default::default);
         }

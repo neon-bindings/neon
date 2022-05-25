@@ -39,7 +39,8 @@ impl<T: Any + Send + 'static> Global<T> {
     where
         C: Context<'cx>,
     {
-        InstanceData::globals(cx)[self.id()]
+        InstanceData::globals(cx)
+            .get(self.id())
             .as_ref()
             .map(|boxed| boxed.downcast_ref().unwrap())
     }
@@ -48,7 +49,8 @@ impl<T: Any + Send + 'static> Global<T> {
     where
         C: Context<'cx>,
     {
-        InstanceData::globals(cx)[self.id()]
+        InstanceData::globals(cx)
+            .get(self.id())
             .as_mut()
             .map(|boxed| boxed.downcast_mut().unwrap())
     }
@@ -57,6 +59,6 @@ impl<T: Any + Send + 'static> Global<T> {
     where
         C: Context<'cx>,
     {
-        InstanceData::globals(cx)[self.id()] = Some(Box::new(v));
+        *InstanceData::globals(cx).get(self.id()) = Some(Box::new(v));
     }
 }
