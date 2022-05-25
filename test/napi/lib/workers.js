@@ -5,7 +5,7 @@ const addon = require("..");
 
 // Receive a message, try that method and return the error message
 if (!isMainThread) {
-  addon.set_thread_id(threadId);
+  addon.get_or_init_thread_id(threadId);
   parentPort.once("message", (message) => {
     try {
       switch (message) {
@@ -20,7 +20,7 @@ if (!isMainThread) {
           break;
         case "get_thread_id":
           {
-            let id = addon.get_thread_id();
+            let id = addon.get_or_init_thread_id(NaN);
             parentPort.postMessage(id);
           }
           break;
@@ -40,7 +40,7 @@ if (!isMainThread) {
 // From here on, we're in the main thread.
 
 // Set the `THREAD_ID` Global value in the main thread cell.
-addon.set_thread_id(threadId);
+addon.get_or_init_thread_id(threadId);
 
 describe("Worker / Root Tagging Tests", () => {
   describe("Single Threaded", () => {
@@ -121,19 +121,22 @@ describe("Worker / Root Tagging Tests", () => {
 
 describe("Globals", () => {
   it("should be able to read an instance global from the main thread", () => {
-    let lookedUpId = addon.get_thread_id();
+    let lookedUpId = addon.get_or_init_thread_id(NaN);
+    assert(!Number.isNaN(lookedUpId));
     assert.strictEqual(lookedUpId, threadId);
   });
 
   it("should allocate separate globals for each addon instance", (cb) => {
-    let mainThreadId = addon.get_thread_id();
+    let mainThreadId = addon.get_or_init_thread_id(NaN);
+    assert(!Number.isNaN(mainThreadId));
 
     const worker = new Worker(__filename);
 
     worker.once("message", (message) => {
       assert.strictEqual(typeof message, 'number');
       assert.notStrictEqual(message, mainThreadId);
-      let mainThreadIdAgain = addon.get_thread_id();
+      let mainThreadIdAgain = addon.get_or_init_thread_id(NaN);
+      assert(!Number.isNaN(mainThreadIdAgain));
       assert.strictEqual(mainThreadIdAgain, mainThreadId);
       cb();
     });

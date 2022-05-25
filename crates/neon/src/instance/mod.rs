@@ -35,30 +35,33 @@ impl<T> Global<T> {
 }
 
 impl<T: Any + Send + 'static> Global<T> {
-    pub fn get<'cx, 'a, C>(&self, cx: &'a mut C) -> Option<&'a T>
+    pub fn get<'cx, 'a, C>(&self, cx: &'a mut C) -> Option<&'cx T>
     where
         C: Context<'cx>,
     {
-        InstanceData::globals(cx)
+        let r: Option<&T> = InstanceData::globals(cx)
             .get(self.id())
             .as_ref()
-            .map(|boxed| boxed.downcast_ref().unwrap())
+            .map(|boxed| boxed.downcast_ref().unwrap());
+
+        unsafe {
+            std::mem::transmute(r)
+        }
     }
 
-    pub fn get_mut<'cx, 'a, C>(&self, cx: &'a mut C) -> Option<&'a mut T>
+    pub fn get_or_init<'cx, 'a, C, F>(&self, cx: &'a mut C, f: F) -> &'cx T
     where
         C: Context<'cx>,
+        F: FnOnce() -> T,
     {
-        InstanceData::globals(cx)
+        let r: &T = InstanceData::globals(cx)
             .get(self.id())
-            .as_mut()
-            .map(|boxed| boxed.downcast_mut().unwrap())
-    }
+            .get_or_insert_with(|| Box::new(f()))
+            .downcast_ref()
+            .unwrap();
 
-    pub fn set<'cx, 'a, C>(&self, cx: &'a mut C, v: T)
-    where
-        C: Context<'cx>,
-    {
-        *InstanceData::globals(cx).get(self.id()) = Some(Box::new(v));
+        unsafe {
+            std::mem::transmute(r)
+        }
     }
 }

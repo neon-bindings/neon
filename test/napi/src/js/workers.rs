@@ -48,16 +48,8 @@ pub fn get_or_init_clone(mut cx: FunctionContext) -> JsResult<JsObject> {
 
 static THREAD_ID: Global<u32> = Global::new();
 
-pub fn set_thread_id(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+pub fn get_or_init_thread_id(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let id = cx.argument::<JsNumber>(0)?.value(&mut cx) as u32;
-    THREAD_ID.set(&mut cx, id);
-    Ok(cx.undefined())
-}
-
-pub fn get_thread_id(mut cx: FunctionContext) -> JsResult<JsValue> {
-    let id = THREAD_ID.get(&mut cx).cloned();
-    Ok(match id {
-        Some(id) => cx.number(id).upcast(),
-        None => cx.undefined().upcast(),
-    })
+    let id: &u32 = THREAD_ID.get_or_init(&mut cx, || id);
+    Ok(cx.number(*id))
 }
