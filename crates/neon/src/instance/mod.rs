@@ -45,7 +45,7 @@ impl<T: Any + Send + 'static> Global<T> {
             .map(|boxed| boxed.downcast_ref().unwrap());
 
         unsafe {
-            std::mem::transmute(r)
+            std::mem::transmute::<Option<&'a T>, Option<&'cx T>>(r)
         }
     }
 
