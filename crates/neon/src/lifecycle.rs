@@ -112,7 +112,7 @@ impl InstanceData {
     /// # Safety
     /// No additional locking (e.g., `Mutex`) is necessary because holding a
     /// `Context` reference ensures serialized access.
-    pub(crate) fn get<'a, C: Context<'a>>(cx: &mut C) -> &mut InstanceData {
+    pub(crate) fn get<'cx, C: Context<'cx>>(cx: &mut C) -> &mut InstanceData {
         let env = cx.env().to_raw();
         let data = unsafe { lifecycle::get_instance_data::<InstanceData>(env).as_mut() };
 
@@ -143,25 +143,25 @@ impl InstanceData {
     }
 
     /// Helper to return a reference to the `drop_queue` field of `InstanceData`
-    pub(crate) fn drop_queue<'a, C: Context<'a>>(cx: &mut C) -> Arc<ThreadsafeFunction<DropData>> {
+    pub(crate) fn drop_queue<'cx, C: Context<'cx>>(cx: &mut C) -> Arc<ThreadsafeFunction<DropData>> {
         Arc::clone(&InstanceData::get(cx).drop_queue)
     }
 
     /// Clones the shared channel and references it since new channels should start
     /// referenced, but the shared channel is unreferenced.
-    pub(crate) fn channel<'a, C: Context<'a>>(cx: &mut C) -> Channel {
+    pub(crate) fn channel<'cx, C: Context<'cx>>(cx: &mut C) -> Channel {
         let mut channel = InstanceData::get(cx).shared_channel.clone();
         channel.reference(cx);
         channel
     }
 
     /// Unique identifier for this instance of the module
-    pub(crate) fn id<'a, C: Context<'a>>(cx: &mut C) -> InstanceId {
+    pub(crate) fn id<'cx, C: Context<'cx>>(cx: &mut C) -> InstanceId {
         InstanceData::get(cx).id
     }
 
     /// Helper to return a reference to the `globals` field of `InstanceData`.
-    pub(crate) fn globals<'a, C: Context<'a>>(cx: &mut C) -> &mut GlobalTable {
+    pub(crate) fn globals<'cx, C: Context<'cx>>(cx: &mut C) -> &mut GlobalTable {
         &mut InstanceData::get(cx).globals
     }
 }

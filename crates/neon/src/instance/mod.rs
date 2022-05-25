@@ -35,27 +35,27 @@ impl<T> Global<T> {
 }
 
 impl<T: Any + Send + 'static> Global<T> {
-    pub fn get<'a, 'b, C>(&self, cx: &'b mut C) -> Option<&'b T>
+    pub fn get<'cx, 'a, C>(&self, cx: &'a mut C) -> Option<&'a T>
     where
-        C: Context<'a>,
+        C: Context<'cx>,
     {
         InstanceData::globals(cx)[self.id()]
             .as_ref()
             .map(|boxed| boxed.downcast_ref().unwrap())
     }
 
-    pub fn get_mut<'a, 'b, C>(&self, cx: &'b mut C) -> Option<&'b mut T>
+    pub fn get_mut<'cx, 'a, C>(&self, cx: &'a mut C) -> Option<&'a mut T>
     where
-        C: Context<'a>,
+        C: Context<'cx>,
     {
         InstanceData::globals(cx)[self.id()]
             .as_mut()
             .map(|boxed| boxed.downcast_mut().unwrap())
     }
 
-    pub fn set<'a, 'b, C>(&self, cx: &'b mut C, v: T)
+    pub fn set<'cx, 'a, C>(&self, cx: &'a mut C, v: T)
     where
-        C: Context<'a>,
+        C: Context<'cx>,
     {
         InstanceData::globals(cx)[self.id()] = Some(Box::new(v));
     }
