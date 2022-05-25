@@ -61,7 +61,7 @@ impl<T: Any + Send + 'static> Global<T> {
             .unwrap();
 
         unsafe {
-            std::mem::transmute(r)
+            std::mem::transmute::<&'a T, &'cx T>(r)
         }
     }
 }
