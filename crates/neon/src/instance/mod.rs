@@ -15,6 +15,7 @@ fn next_id() -> usize {
 
 /// A cell that can be used to allocate data that is global to an instance
 /// of a Neon addon.
+#[derive(Default)]
 pub struct Global<T> {
     _type: PhantomData<T>,
     id: OnceCell<usize>,
@@ -33,8 +34,8 @@ impl<T> Global<T> {
     }
 }
 
-impl<T: Any + Send> Global<T> {
-    pub fn borrow<'a, 'b, C>(&self, cx: &'b mut C) -> Option<&'b T>
+impl<T: Any + Send + 'static> Global<T> {
+    pub fn get<'a, 'b, C>(&self, cx: &'b mut C) -> Option<&'b T>
     where
         C: Context<'a>,
     {
@@ -43,7 +44,7 @@ impl<T: Any + Send> Global<T> {
             .map(|boxed| boxed.downcast_ref().unwrap())
     }
 
-    pub fn borrow_mut<'a, 'b, C>(&self, cx: &'b mut C) -> Option<&'b mut T>
+    pub fn get_mut<'a, 'b, C>(&self, cx: &'b mut C) -> Option<&'b mut T>
     where
         C: Context<'a>,
     {
@@ -57,16 +58,5 @@ impl<T: Any + Send> Global<T> {
         C: Context<'a>,
     {
         InstanceData::globals(cx)[self.id()] = Some(Box::new(v));
-    }
-}
-
-impl<T: Any + Send + Clone> Global<T> {
-    pub fn get<'a, C>(&self, cx: &mut C) -> Option<T>
-    where
-        C: Context<'a>,
-    {
-        InstanceData::globals(cx)[self.id()]
-            .as_ref()
-            .map(|boxed| boxed.downcast_ref::<T>().unwrap().clone())
     }
 }

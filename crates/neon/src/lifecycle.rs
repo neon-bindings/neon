@@ -63,18 +63,13 @@ pub(crate) struct InstanceData {
     globals: GlobalTable,
 }
 
+#[derive(Default)]
 pub(crate) struct GlobalTable {
-    cells: Vec<Option<Box<dyn Any + Send>>>,
-}
-
-impl GlobalTable {
-    fn new() -> Self {
-        Self { cells: Vec::new() }
-    }
+    cells: Vec<Option<Box<dyn Any + Send + 'static>>>,
 }
 
 impl Index<usize> for GlobalTable {
-    type Output = Option<Box<dyn Any + Send>>;
+    type Output = Option<Box<dyn Any + Send + 'static>>;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.cells[index]
@@ -141,7 +136,7 @@ impl InstanceData {
             id: InstanceId::next(),
             drop_queue: Arc::new(drop_queue),
             shared_channel,
-            globals: GlobalTable::new(),
+            globals: GlobalTable::default(),
         };
 
         unsafe { &mut *lifecycle::set_instance_data(env, data) }

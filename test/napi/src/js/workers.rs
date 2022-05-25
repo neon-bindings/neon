@@ -55,7 +55,7 @@ pub fn set_thread_id(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 }
 
 pub fn get_thread_id(mut cx: FunctionContext) -> JsResult<JsValue> {
-    let id = THREAD_ID.get(&mut cx);
+    let id = THREAD_ID.get(&mut cx).cloned();
     Ok(match id {
         Some(id) => cx.number(id).upcast(),
         None => cx.undefined().upcast(),
