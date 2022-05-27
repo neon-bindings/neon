@@ -167,7 +167,7 @@ pub trait Object: Value {
     }
 
     /// Gets a property from a JavaScript object and attempts to downcast as a specific type.
-    /// Equivalent to calling `obj.get(&mut cx)?.downcast_or_throw(&mut cx)`.
+    /// Equivalent to calling `obj.get_value(&mut cx)?.downcast_or_throw(&mut cx)`.
     ///
     /// Throws an exception if the value is a different type.
     fn get<'a, V: Value, C: Context<'a>, K: PropertyKey>(
