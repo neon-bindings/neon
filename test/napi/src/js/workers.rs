@@ -53,3 +53,22 @@ pub fn get_or_init_thread_id(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let id: &u32 = THREAD_ID.get_or_init(&mut cx, id);
     Ok(cx.number(*id))
 }
+
+static REENTRANT_GLOBAL: Global<u32> = Global::new();
+
+pub fn reentrant_try_init(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let f = cx.argument::<JsFunction>(0)?;
+    let n = REENTRANT_GLOBAL.get_or_try_init(&mut cx, |cx| {
+        f.call_with(cx).exec(cx)?;
+        Ok(42)
+    })?;
+    Ok(cx.number(*n))
+}
+
+pub fn get_reentrant_value(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let value = REENTRANT_GLOBAL.get(&mut cx).cloned();
+    match value {
+        Some(n) => Ok(cx.number(n).upcast()),
+        None => Ok(cx.null().upcast()),
+    }
+}

@@ -126,6 +126,31 @@ describe("Globals", () => {
     assert.strictEqual(lookedUpId, threadId);
   });
 
+  it("should gracefully panic upon reentrant get_or_try_init", () => {
+    // 1. Global should start out uninitialized
+    assert.strictEqual(null, addon.get_reentrant_value());
+
+    // 2. Re-entrancy should panic
+    try {
+      let result = addon.reentrant_try_init(() => {
+        addon.reentrant_try_init(() => {});
+      });
+      assert.fail("should have panicked on re-entrancy");
+    } catch (expected) { }
+
+    try {
+      // 3. Global should still be uninitialized
+      assert.strictEqual(null, addon.get_reentrant_value());
+
+      // 4. Successful fallible initialization
+      let result = addon.reentrant_try_init(() => {});
+      assert.strictEqual(42, result);
+      assert.strictEqual(42, addon.get_reentrant_value());
+    } catch (unexpected) {
+      assert.fail("couldn't set reentrant global after initial failure");
+    }
+  });
+
   it("should allocate separate globals for each addon instance", (cb) => {
     let mainThreadId = addon.get_or_init_thread_id(NaN);
     assert(!Number.isNaN(mainThreadId));

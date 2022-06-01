@@ -10,6 +10,7 @@
 
 use std::{
     any::Any,
+    marker::PhantomData,
     sync::{
         atomic::{AtomicU64, Ordering},
         Arc,
@@ -20,6 +21,7 @@ use crate::{
     context::Context,
     event::Channel,
     handle::root::NapiRef,
+    result::NeonResult,
     sys::{lifecycle, raw::Env, tsfn::ThreadsafeFunction},
     types::promise::NodeApiDeferred,
 };
@@ -64,15 +66,169 @@ pub(crate) struct InstanceData {
 
 #[derive(Default)]
 pub(crate) struct GlobalTable {
-    cells: Vec<Option<Box<dyn Any + Send + 'static>>>,
+    cells: Vec<GlobalCell>,
+}
+
+pub(crate) enum GlobalCell {
+    /// Uninitialized state.
+    Uninit,
+    /// Intermediate "dirty" state representing the middle of a `get_or_try_init` transaction.
+    Trying,
+    /// Fully initialized state.
+    Init(Box<dyn Any + Send + 'static>),
+}
+
+pub(crate) type GlobalCellValue = Box<dyn Any + Send + 'static>;
+
+impl GlobalCell {
+    /// Establish the initial state at the beginning of the initialization protocol.
+    /// This method ensures that re-entrant initialization always panics (i.e. when
+    /// an existing `get_or_try_init` is in progress).
+    fn pre_init<F>(&mut self, f: F)
+    where
+        F: FnOnce() -> GlobalCell,
+    {
+        match self {
+            GlobalCell::Uninit => {
+                *self = f();
+            }
+            GlobalCell::Trying => panic!("attempt to reinitialize Global during initialization"),
+            GlobalCell::Init(_) => {}
+        }
+    }
+
+    pub(crate) fn get<'cx, 'a, C>(cx: &'a mut C, id: usize) -> Option<&mut GlobalCellValue>
+    where
+        C: Context<'cx>,
+    {
+        let cell = InstanceData::globals(cx).get(id);
+        match cell {
+            GlobalCell::Init(ref mut b) => Some(b),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn get_or_init<'cx, 'a, C>(
+        cx: &'a mut C,
+        id: usize,
+        value: GlobalCellValue,
+    ) -> &mut GlobalCellValue
+    where
+        C: Context<'cx>,
+    {
+        InstanceData::globals(cx)
+            .get(id)
+            .pre_init(|| GlobalCell::Init(value));
+
+        GlobalCell::get(cx, id).unwrap()
+    }
+
+    pub(crate) fn get_or_init_with<'cx, 'a, C, F>(
+        cx: &'a mut C,
+        id: usize,
+        f: F,
+    ) -> &mut GlobalCellValue
+    where
+        C: Context<'cx>,
+        F: FnOnce() -> GlobalCellValue,
+    {
+        InstanceData::globals(cx)
+            .get(id)
+            .pre_init(|| GlobalCell::Init(f()));
+
+        GlobalCell::get(cx, id).unwrap()
+    }
+
+    pub(crate) fn get_or_try_init<'cx, 'a, C, F>(
+        cx: &'a mut C,
+        id: usize,
+        f: F,
+    ) -> NeonResult<&mut GlobalCellValue>
+    where
+        C: Context<'cx>,
+        F: FnOnce(&mut C) -> NeonResult<GlobalCellValue>,
+    {
+        // Kick off a new transaction and drop it before getting the result.
+        {
+            let mut tx = TryInitTransaction::new(cx, id);
+            tx.run(|cx| Ok(f(cx)?))?;
+        }
+
+        // If we're here, the transaction has succeeded, so get the result.
+        Ok(GlobalCell::get(cx, id).unwrap())
+    }
+}
+
+impl Default for GlobalCell {
+    fn default() -> Self {
+        GlobalCell::Uninit
+    }
 }
 
 impl GlobalTable {
-    pub(crate) fn get(&mut self, index: usize) -> &mut Option<Box<dyn Any + Send + 'static>> {
+    pub(crate) fn get(&mut self, index: usize) -> &mut GlobalCell {
         if index >= self.cells.len() {
             self.cells.resize_with(index + 1, Default::default);
         }
         &mut self.cells[index]
+    }
+}
+
+/// An RAII implementation of `GlobalCell::get_or_try_init`, which ensures that
+/// the state of a cell is properly managed through all possible control paths.
+/// As soon as the transaction begins, the cell is labelled as being in a dirty
+/// state (`GlobalCell::Trying`), so that any additional re-entrant attempts to
+/// initialize the cell will fail fast. The `Drop` implementation ensures that
+/// after the transaction, the cell goes back to a clean state of either
+/// `GlobalCell::Uninit` if it fails or `GlobalCell::Init` if it succeeds.
+struct TryInitTransaction<'cx, 'a, C: Context<'cx>> {
+    cx: &'a mut C,
+    id: usize,
+    _lifetime: PhantomData<&'cx ()>,
+}
+
+impl<'cx, 'a, C: Context<'cx>> TryInitTransaction<'cx, 'a, C> {
+    fn new(cx: &'a mut C, id: usize) -> Self {
+        let mut tx = Self {
+            cx,
+            id,
+            _lifetime: PhantomData,
+        };
+        tx.cell().pre_init(|| GlobalCell::Trying);
+        tx
+    }
+
+    /// _Post-condition:_ If this method returns an `Ok` result, the cell is in the
+    /// `GlobalCell::Init` state.
+    fn run<F>(&mut self, f: F) -> NeonResult<()>
+    where
+        F: FnOnce(&mut C) -> NeonResult<GlobalCellValue>,
+    {
+        if self.is_trying() {
+            let value = f(self.cx)?;
+            *self.cell() = GlobalCell::Init(value);
+        }
+        Ok(())
+    }
+
+    fn cell(&mut self) -> &mut GlobalCell {
+        InstanceData::globals(self.cx).get(self.id)
+    }
+
+    fn is_trying(&mut self) -> bool {
+        if let GlobalCell::Trying = *self.cell() {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+impl<'cx, 'a, C: Context<'cx>> Drop for TryInitTransaction<'cx, 'a, C> {
+    fn drop(&mut self) {
+        if self.is_trying() {
+            *self.cell() = GlobalCell::Uninit;
+        }
     }
 }
 
@@ -134,7 +290,9 @@ impl InstanceData {
     }
 
     /// Helper to return a reference to the `drop_queue` field of `InstanceData`
-    pub(crate) fn drop_queue<'cx, C: Context<'cx>>(cx: &mut C) -> Arc<ThreadsafeFunction<DropData>> {
+    pub(crate) fn drop_queue<'cx, C: Context<'cx>>(
+        cx: &mut C,
+    ) -> Arc<ThreadsafeFunction<DropData>> {
         Arc::clone(&InstanceData::get(cx).drop_queue)
     }
 
