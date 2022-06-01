@@ -131,6 +131,11 @@ describe("Globals", () => {
     assert.strictEqual(lookedUpId, threadId);
   });
 
+  it("should be able to store rooted objects in instance globals", () => {
+    addon.stash_global_object();
+    assert.strictEqual(global, addon.unstash_global_object());
+  });
+
   it("should gracefully panic upon reentrant get_or_try_init", () => {
     // 1. Global should start out uninitialized
     assert.strictEqual(null, addon.get_reentrant_value());

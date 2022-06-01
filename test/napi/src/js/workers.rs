@@ -72,3 +72,19 @@ pub fn get_reentrant_value(mut cx: FunctionContext) -> JsResult<JsValue> {
         None => Ok(cx.null().upcast()),
     }
 }
+
+static GLOBAL_OBJECT: Global<Root<JsObject>> = Global::new();
+
+pub fn stash_global_object(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let global = cx.global();
+    let global: Root<JsObject> = Root::new(&mut cx, &global);
+    GLOBAL_OBJECT.get_or_init(&mut cx, global);
+    Ok(cx.undefined())
+}
+
+pub fn unstash_global_object(mut cx: FunctionContext) -> JsResult<JsValue> {
+    Ok(match GLOBAL_OBJECT.get(&mut cx) {
+        Some(root) => root.to_inner(&mut cx).upcast(),
+        None => cx.null().upcast(),
+    })
+}
