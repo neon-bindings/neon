@@ -216,10 +216,9 @@ impl<'cx, 'a, C: Context<'cx>> TryInitTransaction<'cx, 'a, C> {
     }
 
     fn is_trying(&mut self) -> bool {
-        if let GlobalCell::Trying = *self.cell() {
-            true
-        } else {
-            false
+        match self.cell() {
+            GlobalCell::Trying => true,
+            _ => false,
         }
     }
 }
