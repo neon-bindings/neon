@@ -69,16 +69,16 @@ pub(crate) struct GlobalTable {
     cells: Vec<GlobalCell>,
 }
 
+pub(crate) type GlobalCellValue = Box<dyn Any + Send + 'static>;
+
 pub(crate) enum GlobalCell {
     /// Uninitialized state.
     Uninit,
     /// Intermediate "dirty" state representing the middle of a `get_or_try_init` transaction.
     Trying,
     /// Fully initialized state.
-    Init(Box<dyn Any + Send + 'static>),
+    Init(GlobalCellValue),
 }
-
-pub(crate) type GlobalCellValue = Box<dyn Any + Send + 'static>;
 
 impl GlobalCell {
     /// Establish the initial state at the beginning of the initialization protocol.
