@@ -1,5 +1,10 @@
 const assert = require("assert");
-const { Worker, isMainThread, parentPort, threadId } = require("worker_threads");
+const {
+  Worker,
+  isMainThread,
+  parentPort,
+  threadId,
+} = require("worker_threads");
 
 const addon = require("..");
 
@@ -136,7 +141,7 @@ describe("Globals", () => {
         addon.reentrant_try_init(() => {});
       });
       assert.fail("should have panicked on re-entrancy");
-    } catch (expected) { }
+    } catch (expected) {}
 
     try {
       // 3. Global should still be uninitialized
@@ -158,7 +163,7 @@ describe("Globals", () => {
     const worker = new Worker(__filename);
 
     worker.once("message", (message) => {
-      assert.strictEqual(typeof message, 'number');
+      assert.strictEqual(typeof message, "number");
       assert.notStrictEqual(message, mainThreadId);
       let mainThreadIdAgain = addon.get_or_init_thread_id(NaN);
       assert(!Number.isNaN(mainThreadIdAgain));
