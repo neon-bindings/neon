@@ -44,7 +44,7 @@ impl<T: Any + Send + 'static> Global<T> {
     where
         C: Context<'cx>,
     {
-        // Safety: The type bound Global<T> and the fact that every Global has a unique
+        // Unwrap safety: The type bound Global<T> and the fact that every Global has a unique
         // id guarantees that the cell is only ever assigned instances of type T.
         let r: Option<&T> =
             GlobalCell::get(cx, self.id()).map(|value| value.downcast_ref().unwrap());
@@ -60,7 +60,7 @@ impl<T: Any + Send + 'static> Global<T> {
     where
         C: Context<'cx>,
     {
-        // Safety: The type bound Global<T> and the fact that every Global has a unique
+        // Unwrap safety: The type bound Global<T> and the fact that every Global has a unique
         // id guarantees that the cell is only ever assigned instances of type T.
         let r: &T = GlobalCell::get_or_init(cx, self.id(), Box::new(value))
             .downcast_ref()
@@ -78,7 +78,7 @@ impl<T: Any + Send + 'static> Global<T> {
         C: Context<'cx>,
         F: FnOnce() -> T,
     {
-        // Safety: The type bound Global<T> and the fact that every Global has a unique
+        // Unwrap safety: The type bound Global<T> and the fact that every Global has a unique
         // id guarantees that the cell is only ever assigned instances of type T.
         let r: &T = GlobalCell::get_or_init_with(cx, self.id(), || Box::new(f()))
             .downcast_ref()
@@ -100,7 +100,7 @@ impl<T: Any + Send + 'static> Global<T> {
         C: Context<'cx>,
         F: FnOnce(&mut C) -> Result<T, E>,
     {
-        // Safety: The type bound Global<T> and the fact that every Global has a unique
+        // Unwrap safety: The type bound Global<T> and the fact that every Global has a unique
         // id guarantees that the cell is only ever assigned instances of type T.
         let r: &T = GlobalCell::get_or_try_init(cx, self.id(), |cx| Ok(Box::new(f(cx)?)))?
             .downcast_ref()
