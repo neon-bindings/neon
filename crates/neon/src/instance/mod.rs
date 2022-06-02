@@ -26,10 +26,7 @@ impl<T> Global<T> {
     /// Creates a new global value. This method is `const`, so it can be assigned to
     /// static variables.
     pub const fn new() -> Self {
-        Self {
-            _type: PhantomData,
-            id: OnceCell::new(),
-        }
+        Default::default()
     }
 
     fn id(&self) -> usize {
