@@ -139,14 +139,14 @@ impl GlobalCell {
         GlobalCell::get(cx, id).unwrap()
     }
 
-    pub(crate) fn get_or_try_init<'cx, 'a, C, F>(
+    pub(crate) fn get_or_try_init<'cx, 'a, C, E, F>(
         cx: &'a mut C,
         id: usize,
         f: F,
-    ) -> NeonResult<&mut GlobalCellValue>
+    ) -> Result<&mut GlobalCellValue, E>
     where
         C: Context<'cx>,
-        F: FnOnce(&mut C) -> NeonResult<GlobalCellValue>,
+        F: FnOnce(&mut C) -> Result<GlobalCellValue, E>,
     {
         // Kick off a new transaction and drop it before getting the result.
         {
@@ -200,9 +200,9 @@ impl<'cx, 'a, C: Context<'cx>> TryInitTransaction<'cx, 'a, C> {
 
     /// _Post-condition:_ If this method returns an `Ok` result, the cell is in the
     /// `GlobalCell::Init` state.
-    fn run<F>(&mut self, f: F) -> NeonResult<()>
+    fn run<E, F>(&mut self, f: F) -> Result<(), E>
     where
-        F: FnOnce(&mut C) -> NeonResult<GlobalCellValue>,
+        F: FnOnce(&mut C) -> Result<GlobalCellValue, E>,
     {
         if self.is_trying() {
             let value = f(self.cx)?;

@@ -95,10 +95,10 @@ impl<T: Any + Send + 'static> Global<T> {
     ///
     /// During the execution of `f`, calling any methods on this `Global` that
     /// attempt to initialize it will panic.
-    pub fn get_or_try_init<'cx, 'a, C, F>(&self, cx: &'a mut C, f: F) -> NeonResult<&'cx T>
+    pub fn get_or_try_init<'cx, 'a, C, E, F>(&self, cx: &'a mut C, f: F) -> Result<&'cx T, E>
     where
         C: Context<'cx>,
-        F: FnOnce(&mut C) -> NeonResult<T>,
+        F: FnOnce(&mut C) -> Result<T, E>,
     {
         // Safety: The type bound Global<T> and the fact that every Global has a unique
         // id guarantees that the cell is only ever assigned instances of type T.
