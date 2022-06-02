@@ -141,12 +141,21 @@ describe("Globals", () => {
     assert.strictEqual(null, addon.get_reentrant_value());
 
     // 2. Re-entrancy should panic
+    let innerClosureExecuted = false;
     try {
       let result = addon.reentrant_try_init(() => {
-        addon.reentrant_try_init(() => {});
+        addon.reentrant_try_init(() => {
+          innerClosureExecuted = true;
+        });
       });
       assert.fail("should have panicked on re-entrancy");
-    } catch (expected) {}
+    } catch (expected) {
+      assert.strictEqual(
+        innerClosureExecuted,
+        false,
+        "inner closure should not have executed"
+      );
+    }
 
     try {
       // 3. Global should still be uninitialized
