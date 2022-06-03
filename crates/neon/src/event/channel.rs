@@ -1,13 +1,37 @@
-use std::sync::{
-    atomic::{AtomicUsize, Ordering},
-    mpsc, Arc,
+use std::{
+    error, fmt, mem,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
 };
 
 use crate::{
     context::{Context, TaskContext},
     result::NeonResult,
+    result::ResultExt,
     sys::{raw::Env, tsfn::ThreadsafeFunction},
 };
+
+#[cfg(feature = "futures")]
+use {
+    std::future::Future,
+    std::pin::Pin,
+    std::task::{self, Poll},
+    tokio::sync::oneshot,
+};
+
+#[cfg(not(feature = "futures"))]
+// Synchronous oneshot channel API compatible with `futures-channel`
+mod oneshot {
+    use std::sync::mpsc;
+
+    pub(super) use std::sync::mpsc::Receiver;
+
+    pub(super) fn channel<T>() -> (mpsc::SyncSender<T>, mpsc::Receiver<T>) {
+        mpsc::sync_channel(1)
+    }
+}
 
 type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 
@@ -70,8 +94,8 @@ pub struct Channel {
     has_ref: bool,
 }
 
-impl std::fmt::Debug for Channel {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Debug for Channel {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str("Channel")
     }
 }
@@ -131,9 +155,9 @@ impl Channel {
         T: Send + 'static,
         F: FnOnce(TaskContext) -> NeonResult<T> + Send + 'static,
     {
-        let (tx, rx) = mpsc::sync_channel(1);
+        let (tx, rx) = oneshot::channel();
         let callback = Box::new(move |env| {
-            let env = unsafe { std::mem::transmute(env) };
+            let env = unsafe { mem::transmute(env) };
 
             // Note: It is sufficient to use `TaskContext`'s `InheritedHandleScope` because
             // N-API creates a `HandleScope` before calling the callback.
@@ -225,20 +249,34 @@ impl Drop for Channel {
 /// thread with [`Channel::send`].
 pub struct JoinHandle<T> {
     // `Err` is always `Throw`, but `Throw` cannot be sent across threads
-    rx: mpsc::Receiver<Result<T, ()>>,
+    rx: oneshot::Receiver<Result<T, ()>>,
 }
 
 impl<T> JoinHandle<T> {
     /// Waits for the associated closure to finish executing
     ///
     /// If the closure panics or throws an exception, `Err` is returned
+    ///
+    /// # Panics
+    ///
+    /// This function panics if called within an asynchronous execution context.
     pub fn join(self) -> Result<T, JoinError> {
-        self.rx
-            .recv()
-            // If the sending side dropped without sending, it must have panicked
-            .map_err(|_| JoinError(JoinErrorType::Panic))?
-            // If the closure returned `Err`, a JavaScript exception was thrown
-            .map_err(|_| JoinError(JoinErrorType::Throw))
+        #[cfg(feature = "futures")]
+        let result = self.rx.blocking_recv();
+        #[cfg(not(feature = "futures"))]
+        let result = self.rx.recv();
+
+        JoinError::map_res(result)
+    }
+}
+
+#[cfg(feature = "futures")]
+#[cfg_attr(docsrs, doc(cfg(feature = "futures")))]
+impl<T> Future for JoinHandle<T> {
+    type Output = Result<T, JoinError>;
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut task::Context) -> Poll<Self::Output> {
+        JoinError::map_poll(&mut self.rx, cx)
     }
 }
 
@@ -253,16 +291,50 @@ enum JoinErrorType {
     Throw,
 }
 
-impl std::fmt::Display for JoinError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl JoinError {
+    fn as_str(&self) -> &str {
         match &self.0 {
-            JoinErrorType::Panic => f.write_str("Closure panicked before returning"),
-            JoinErrorType::Throw => f.write_str("Closure threw an exception"),
+            JoinErrorType::Panic => "Closure panicked before returning",
+            JoinErrorType::Throw => "Closure threw an exception",
         }
+    }
+
+    #[cfg(feature = "futures")]
+    // Helper for writing a `Future` implementation by wrapping a `Future` and
+    // mapping to `Result<T, JoinError>`
+    pub(crate) fn map_poll<T, E>(
+        f: &mut (impl Future<Output = Result<Result<T, ()>, E>> + Unpin),
+        cx: &mut task::Context,
+    ) -> Poll<Result<T, Self>> {
+        match Pin::new(f).poll(cx) {
+            Poll::Ready(result) => Poll::Ready(Self::map_res(result)),
+            Poll::Pending => Poll::Pending,
+        }
+    }
+
+    // Helper for mapping a nested `Result` from joining to a `Result<T, JoinError>`
+    pub(crate) fn map_res<T, E>(res: Result<Result<T, ()>, E>) -> Result<T, Self> {
+        res
+            // If the sending side dropped without sending, it must have panicked
+            .map_err(|_| JoinError(JoinErrorType::Panic))?
+            // If the closure returned `Err`, a JavaScript exception was thrown
+            .map_err(|_| JoinError(JoinErrorType::Throw))
     }
 }
 
-impl std::error::Error for JoinError {}
+impl fmt::Display for JoinError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl error::Error for JoinError {}
+
+impl<T> ResultExt<T> for Result<T, JoinError> {
+    fn or_throw<'a, C: Context<'a>>(self, cx: &mut C) -> NeonResult<T> {
+        self.or_else(|err| cx.throw_error(err.as_str()))
+    }
+}
 
 /// Error indicating that a closure was unable to be scheduled to execute on the event loop.
 ///
@@ -275,19 +347,19 @@ impl std::error::Error for JoinError {}
 #[cfg_attr(docsrs, doc(cfg(feature = "napi-4")))]
 pub struct SendError;
 
-impl std::fmt::Display for SendError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for SendError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SendError")
     }
 }
 
-impl std::fmt::Debug for SendError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Display::fmt(self, f)
+impl fmt::Debug for SendError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self, f)
     }
 }
 
-impl std::error::Error for SendError {}
+impl error::Error for SendError {}
 
 struct ChannelState {
     tsfn: ThreadsafeFunction<Callback>,
