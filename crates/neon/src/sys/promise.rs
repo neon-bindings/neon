@@ -1,6 +1,6 @@
 //! JavaScript Promise and Deferred handle
 //!
-//! https://nodejs.org/api/n-api.html#n_api_promises
+//! See: [Promises in Node-API](https://nodejs.org/api/n-api.html#n_api_promises)
 
 use std::mem::MaybeUninit;
 

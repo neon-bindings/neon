@@ -124,14 +124,14 @@ describe("Worker / Root Tagging Tests", () => {
   });
 });
 
-describe("Globals", () => {
-  it("should be able to read an instance global from the main thread", () => {
+describe("Instance-local storage", () => {
+  it("should be able to read an instance local from the main thread", () => {
     let lookedUpId = addon.get_or_init_thread_id(NaN);
     assert(!Number.isNaN(lookedUpId));
     assert.strictEqual(lookedUpId, threadId);
   });
 
-  it("should be able to store rooted objects in instance globals", () => {
+  it("should be able to store rooted objects in instance locals", () => {
     addon.stash_global_object();
     assert.strictEqual(global, addon.unstash_global_object());
   });
@@ -158,7 +158,7 @@ describe("Globals", () => {
     }
 
     try {
-      // 3. Global should still be uninitialized
+      // 3. Local should still be uninitialized
       assert.strictEqual(null, addon.get_reentrant_value());
 
       // 4. Successful fallible initialization
@@ -166,11 +166,11 @@ describe("Globals", () => {
       assert.strictEqual(42, result);
       assert.strictEqual(42, addon.get_reentrant_value());
     } catch (unexpected) {
-      assert.fail("couldn't set reentrant global after initial failure");
+      assert.fail("couldn't set reentrant local after initial failure");
     }
   });
 
-  it("should allocate separate globals for each addon instance", (cb) => {
+  it("should allocate separate locals for each addon instance", (cb) => {
     let mainThreadId = addon.get_or_init_thread_id(NaN);
     assert(!Number.isNaN(mainThreadId));
 

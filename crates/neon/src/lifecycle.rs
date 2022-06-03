@@ -21,7 +21,6 @@ use crate::{
     context::Context,
     event::Channel,
     handle::root::NapiRef,
-    result::NeonResult,
     sys::{lifecycle, raw::Env, tsfn::ThreadsafeFunction},
     types::promise::NodeApiDeferred,
 };
@@ -60,50 +59,50 @@ pub(crate) struct InstanceData {
     /// Shared `Channel` that is cloned to be returned by the `cx.channel()` method
     shared_channel: Channel,
 
-    /// Table of user-defined global cells.
-    globals: GlobalTable,
+    /// Table of user-defined instance-local cells.
+    locals: LocalTable,
 }
 
 #[derive(Default)]
-pub(crate) struct GlobalTable {
-    cells: Vec<GlobalCell>,
+pub(crate) struct LocalTable {
+    cells: Vec<LocalCell>,
 }
 
-pub(crate) type GlobalCellValue = Box<dyn Any + Send + 'static>;
+pub(crate) type LocalCellValue = Box<dyn Any + Send + 'static>;
 
-pub(crate) enum GlobalCell {
+pub(crate) enum LocalCell {
     /// Uninitialized state.
     Uninit,
     /// Intermediate "dirty" state representing the middle of a `get_or_try_init` transaction.
     Trying,
     /// Fully initialized state.
-    Init(GlobalCellValue),
+    Init(LocalCellValue),
 }
 
-impl GlobalCell {
+impl LocalCell {
     /// Establish the initial state at the beginning of the initialization protocol.
     /// This method ensures that re-entrant initialization always panics (i.e. when
     /// an existing `get_or_try_init` is in progress).
     fn pre_init<F>(&mut self, f: F)
     where
-        F: FnOnce() -> GlobalCell,
+        F: FnOnce() -> LocalCell,
     {
         match self {
-            GlobalCell::Uninit => {
+            LocalCell::Uninit => {
                 *self = f();
             }
-            GlobalCell::Trying => panic!("attempt to reinitialize Global during initialization"),
-            GlobalCell::Init(_) => {}
+            LocalCell::Trying => panic!("attempt to reinitialize Local during initialization"),
+            LocalCell::Init(_) => {}
         }
     }
 
-    pub(crate) fn get<'cx, 'a, C>(cx: &'a mut C, id: usize) -> Option<&mut GlobalCellValue>
+    pub(crate) fn get<'cx, 'a, C>(cx: &'a mut C, id: usize) -> Option<&mut LocalCellValue>
     where
         C: Context<'cx>,
     {
-        let cell = InstanceData::globals(cx).get(id);
+        let cell = InstanceData::locals(cx).get(id);
         match cell {
-            GlobalCell::Init(ref mut b) => Some(b),
+            LocalCell::Init(ref mut b) => Some(b),
             _ => None,
         }
     }
@@ -111,42 +110,42 @@ impl GlobalCell {
     pub(crate) fn get_or_init<'cx, 'a, C>(
         cx: &'a mut C,
         id: usize,
-        value: GlobalCellValue,
-    ) -> &mut GlobalCellValue
+        value: LocalCellValue,
+    ) -> &mut LocalCellValue
     where
         C: Context<'cx>,
     {
-        InstanceData::globals(cx)
+        InstanceData::locals(cx)
             .get(id)
-            .pre_init(|| GlobalCell::Init(value));
+            .pre_init(|| LocalCell::Init(value));
 
-        GlobalCell::get(cx, id).unwrap()
+        LocalCell::get(cx, id).unwrap()
     }
 
     pub(crate) fn get_or_init_with<'cx, 'a, C, F>(
         cx: &'a mut C,
         id: usize,
         f: F,
-    ) -> &mut GlobalCellValue
+    ) -> &mut LocalCellValue
     where
         C: Context<'cx>,
-        F: FnOnce() -> GlobalCellValue,
+        F: FnOnce() -> LocalCellValue,
     {
-        InstanceData::globals(cx)
+        InstanceData::locals(cx)
             .get(id)
-            .pre_init(|| GlobalCell::Init(f()));
+            .pre_init(|| LocalCell::Init(f()));
 
-        GlobalCell::get(cx, id).unwrap()
+        LocalCell::get(cx, id).unwrap()
     }
 
     pub(crate) fn get_or_try_init<'cx, 'a, C, E, F>(
         cx: &'a mut C,
         id: usize,
         f: F,
-    ) -> Result<&mut GlobalCellValue, E>
+    ) -> Result<&mut LocalCellValue, E>
     where
         C: Context<'cx>,
-        F: FnOnce(&mut C) -> Result<GlobalCellValue, E>,
+        F: FnOnce(&mut C) -> Result<LocalCellValue, E>,
     {
         // Kick off a new transaction and drop it before getting the result.
         {
@@ -155,18 +154,18 @@ impl GlobalCell {
         }
 
         // If we're here, the transaction has succeeded, so get the result.
-        Ok(GlobalCell::get(cx, id).unwrap())
+        Ok(LocalCell::get(cx, id).unwrap())
     }
 }
 
-impl Default for GlobalCell {
+impl Default for LocalCell {
     fn default() -> Self {
-        GlobalCell::Uninit
+        LocalCell::Uninit
     }
 }
 
-impl GlobalTable {
-    pub(crate) fn get(&mut self, index: usize) -> &mut GlobalCell {
+impl LocalTable {
+    pub(crate) fn get(&mut self, index: usize) -> &mut LocalCell {
         if index >= self.cells.len() {
             self.cells.resize_with(index + 1, Default::default);
         }
@@ -174,13 +173,13 @@ impl GlobalTable {
     }
 }
 
-/// An RAII implementation of `GlobalCell::get_or_try_init`, which ensures that
+/// An RAII implementation of `LocalCell::get_or_try_init`, which ensures that
 /// the state of a cell is properly managed through all possible control paths.
 /// As soon as the transaction begins, the cell is labelled as being in a dirty
-/// state (`GlobalCell::Trying`), so that any additional re-entrant attempts to
+/// state (`LocalCell::Trying`), so that any additional re-entrant attempts to
 /// initialize the cell will fail fast. The `Drop` implementation ensures that
 /// after the transaction, the cell goes back to a clean state of either
-/// `GlobalCell::Uninit` if it fails or `GlobalCell::Init` if it succeeds.
+/// `LocalCell::Uninit` if it fails or `LocalCell::Init` if it succeeds.
 struct TryInitTransaction<'cx, 'a, C: Context<'cx>> {
     cx: &'a mut C,
     id: usize,
@@ -194,30 +193,30 @@ impl<'cx, 'a, C: Context<'cx>> TryInitTransaction<'cx, 'a, C> {
             id,
             _lifetime: PhantomData,
         };
-        tx.cell().pre_init(|| GlobalCell::Trying);
+        tx.cell().pre_init(|| LocalCell::Trying);
         tx
     }
 
     /// _Post-condition:_ If this method returns an `Ok` result, the cell is in the
-    /// `GlobalCell::Init` state.
+    /// `LocalCell::Init` state.
     fn run<E, F>(&mut self, f: F) -> Result<(), E>
     where
-        F: FnOnce(&mut C) -> Result<GlobalCellValue, E>,
+        F: FnOnce(&mut C) -> Result<LocalCellValue, E>,
     {
         if self.is_trying() {
             let value = f(self.cx)?;
-            *self.cell() = GlobalCell::Init(value);
+            *self.cell() = LocalCell::Init(value);
         }
         Ok(())
     }
 
-    fn cell(&mut self) -> &mut GlobalCell {
-        InstanceData::globals(self.cx).get(self.id)
+    fn cell(&mut self) -> &mut LocalCell {
+        InstanceData::locals(self.cx).get(self.id)
     }
 
     fn is_trying(&mut self) -> bool {
         match self.cell() {
-            GlobalCell::Trying => true,
+            LocalCell::Trying => true,
             _ => false,
         }
     }
@@ -226,7 +225,7 @@ impl<'cx, 'a, C: Context<'cx>> TryInitTransaction<'cx, 'a, C> {
 impl<'cx, 'a, C: Context<'cx>> Drop for TryInitTransaction<'cx, 'a, C> {
     fn drop(&mut self) {
         if self.is_trying() {
-            *self.cell() = GlobalCell::Uninit;
+            *self.cell() = LocalCell::Uninit;
         }
     }
 }
@@ -282,7 +281,7 @@ impl InstanceData {
             id: InstanceId::next(),
             drop_queue: Arc::new(drop_queue),
             shared_channel,
-            globals: GlobalTable::default(),
+            locals: LocalTable::default(),
         };
 
         unsafe { &mut *lifecycle::set_instance_data(env, data) }
@@ -308,8 +307,8 @@ impl InstanceData {
         InstanceData::get(cx).id
     }
 
-    /// Helper to return a reference to the `globals` field of `InstanceData`.
-    pub(crate) fn globals<'cx, C: Context<'cx>>(cx: &mut C) -> &mut GlobalTable {
-        &mut InstanceData::get(cx).globals
+    /// Helper to return a reference to the `locals` field of `InstanceData`.
+    pub(crate) fn locals<'cx, C: Context<'cx>>(cx: &mut C) -> &mut LocalTable {
+        &mut InstanceData::get(cx).locals
     }
 }
