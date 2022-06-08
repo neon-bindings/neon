@@ -8,7 +8,7 @@ pub use crate::{
     },
     handle::{Handle, Root},
     object::Object,
-    result::{JsResult, JsResultExt, NeonResult, ResultExt as NeonResultExt},
+    result::{JsResult, NeonResult, ResultExt as NeonResultExt},
     types::{
         boxed::{Finalize, JsBox},
         JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsError, JsFunction, JsNull, JsNumber,

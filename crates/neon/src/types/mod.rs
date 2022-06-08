@@ -98,7 +98,7 @@ use crate::{
         Handle, Managed,
     },
     object::{Object, This},
-    result::{JsResult, JsResultExt, NeonResult, Throw},
+    result::{JsResult, NeonResult, ResultExt, Throw},
     sys::{self, raw},
     types::{
         function::{CallOptions, ConstructOptions},
@@ -388,7 +388,7 @@ impl fmt::Display for StringOverflow {
 /// The result of constructing a new `JsString`.
 pub type StringResult<'a> = Result<Handle<'a, JsString>, StringOverflow>;
 
-impl<'a> JsResultExt<'a, JsString> for StringResult<'a> {
+impl<'a> ResultExt<Handle<'a, JsString>> for StringResult<'a> {
     fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, JsString> {
         match self {
             Ok(v) => Ok(v),

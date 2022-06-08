@@ -63,7 +63,7 @@ pub use self::root::Root;
 use crate::{
     context::{internal::Env, Context},
     handle::internal::{SuperType, TransparentNoCopyWrapper},
-    result::{JsResult, JsResultExt},
+    result::{JsResult, ResultExt},
     sys::{self, raw},
     types::Value,
 };
@@ -138,7 +138,7 @@ impl<F: Value, T: Value> Error for DowncastError<F, T> {}
 /// The result of a call to [`Handle::downcast()`](Handle::downcast).
 pub type DowncastResult<'a, F, T> = Result<Handle<'a, T>, DowncastError<F, T>>;
 
-impl<'a, F: Value, T: Value> JsResultExt<'a, T> for DowncastResult<'a, F, T> {
+impl<'a, F: Value, T: Value> ResultExt<Handle<'a, T>> for DowncastResult<'a, F, T> {
     fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, T> {
         match self {
             Ok(v) => Ok(v),
