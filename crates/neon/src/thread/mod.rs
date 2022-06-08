@@ -49,8 +49,12 @@
 //!
 //! This means that any thread-local data needs to be initialized separately for each
 //! instance of the addon. This module provides a simple container type, [`LocalKey`](LocalKey),
-//! for allocating and initializing thread-local data. For example, a custom datatype
-//! cannot be shared across separate threads and must be thread-local:
+//! for allocating and initializing thread-local data. (Technically, this data is stored in the
+//! addon's [module instance][environment], which is equivalent to being thread-local.)
+//!
+//! A common example is when an addon defines a custom datatype, which cannot be used across
+//! separate threads. The constructor for the datatype can be [rooted](crate::handle::Root) and
+//! saved in thread-local storage:
 //!
 //! ```
 //! # use neon::prelude::*;
@@ -67,6 +71,10 @@
 //! }
 //! ```
 //!
+//! Notice that if this code were implemented without a `LocalKey`, it would fail whenever
+//! one thread stores an instance of the constructor and a different thread attempts to
+//! access it with the call to [`to_inner()`](crate::handle::Root::to_inner).
+//!
 //! ### When to Use Thread-Local Storage
 //!
 //! Single-threaded applications don't generally need to worry about thread-local data.
@@ -80,6 +88,13 @@
 //!   applications, you'll want to store static data in thread-local data in case the
 //!   addon ends up instantiated by multiple threads in some future application.
 //!
+//! ### Why Not Use Standard TLS?
+//!
+//! Because the JavaScript engine may not tie JavaScript threads 1:1 to system threads,
+//! it is recommended to use this module instead of the Rust standard thread-local storage
+//! when tying data to a JavaScript thread.
+//!
+//! [environment]: https://nodejs.org/api/n-api.html#environment-life-cycle-apis
 //! [lifecycle]: https://raw.githubusercontent.com/neon-bindings/neon/main/doc/lifecycle.png
 //! [workers]: https://nodejs.org/api/worker_threads.html
 //! [threadId]: https://nodejs.org/api/worker_threads.html#workerthreadid
