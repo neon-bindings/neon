@@ -5,26 +5,84 @@
 //! be useful for setting up long-lived state that needs to be shared between calls
 //! of an addon's APIs.
 //!
-//! For example, an addon that makes use of a
-//! [Tokio runtime](https://docs.rs/tokio/latest/tokio/runtime/struct.Runtime.html)
-//! can store the runtime in a [`Local`](Local) cell:
+//! For example, an addon may wish to track the [thread ID][threadId] of each of its
+//! instances:
 //!
 //! ```
 //! # use neon::prelude::*;
 //! # use neon::instance::Local;
-//! # struct Runtime;
-//! # type Result<T> = std::result::Result<T, ()>;
-//! # impl Runtime {fn new() -> Result<Self> { Err(()) }}
-//! static RUNTIME: Local<Runtime> = Local::new();
+//! static THREAD_ID: Local<u32> = Local::new();
 //!
-//! pub fn runtime<'cx, C: Context<'cx>>(cx: &mut C) -> Result<&'cx Runtime> {
-//!     RUNTIME.get_or_try_init(cx, |_| Runtime::new())
+//! pub fn thread_id<'cx, C: Context<'cx>>(cx: &mut C) -> NeonResult<u32> {
+//!     THREAD_ID.get_or_try_init(cx, |cx| {
+//!         let global = cx.global();
+//!         let require: Handle<JsFunction> = global.get(cx, "require")?;
+//!         let worker: Handle<JsObject> = require.call_with(cx)
+//!             .arg(cx.string("node:worker_threads"))
+//!             .apply(cx)?;
+//!         let threadId: Handle<JsNumber> = worker.get(cx, "threadId")?;
+//!         Ok(threadId.value(cx) as u32)
+//!     }).cloned()
 //! }
 //! ```
 //!
-//! Because Node.js supports [worker threads](https://nodejs.org/api/worker_threads.html),
-//! a Node.js addon may have multiple instances in a running process. Local
-//! storage is instantiated separately for each instance of the addon.
+//! ### The Addon Lifecycle
+//!
+//! For some use cases, a single shared global constant stored in a `static` variable
+//! might be sufficient:
+//!
+//! ```
+//! static MY_CONSTANT: &'static str = "hello Neon";
+//! ```
+//!
+//! This variable will be allocated when the addon is first loaded into the Node.js
+//! process. This works fine for single-threaded applications, or global immutable
+//! data.
+//!
+//! However, since the addition of [worker threads][workers] in Node v10,
+//! modules can be instantiated multiple times in a single Node process. This means
+//! that while the dynamically-loaded binary library (i.e., the Rust implementation of
+//! the addon) is only loaded once in the running process, but its `main()` function
+//! is executed multiple times with distinct module objects, once per application thread:
+//!
+//! ![The Node.js addon lifecycle, described in detail below.][lifecycle]
+//!
+//! This means that any instance-local data needs to be initialized separately for each
+//! instance of the addon. This module provides a simple container type, [`Local`](Local),
+//! for allocating and initializing instance-local data. For example, a custom datatype
+//! cannot be shared across separate threads and must be instance-local:
+//!
+//! ```
+//! # use neon::prelude::*;
+//! # use neon::instance::Local;
+//! # fn initialize_my_datatype<'cx, C: Context<'cx>>(cx: &mut C) -> JsResult<'cx, JsFunction> { unimplemented!() }
+//! static MY_CONSTRUCTOR: Local<Root<JsFunction>> = Local::new();
+//!
+//! pub fn my_constructor<'cx, C: Context<'cx>>(cx: &mut C) -> JsResult<'cx, JsFunction> {
+//!     let constructor = MY_CONSTRUCTOR.get_or_try_init(cx, |cx| {
+//!         let constructor: Handle<JsFunction> = initialize_my_datatype(cx)?;
+//!         Ok(constructor.root(cx))
+//!     })?;
+//!     Ok(constructor.to_inner(cx))
+//! }
+//! ```
+//!
+//! ### When to Use Instance-Local Storage
+//!
+//! Single-threaded applications don't generally need to worry about instance data.
+//! There are two cases where Neon apps should consider storing static data in a
+//! `Local` storage cell:
+//!
+//! - **Multi-threaded applications:** If your Node application uses the `Worker`
+//!   API, you'll want to store any static data that might get access from multiple
+//!   threads in instance-local data.
+//! - **Libraries:** If your addon is part of a library that could be used by multiple
+//!   applications, you'll want to store static data in instance-local data in case the
+//!   addon ends up instantiated by multiple threads in some future application.
+//!
+//! [lifecycle]: https://raw.githubusercontent.com/neon-bindings/neon/main/doc/lifecycle.png
+//! [workers]: https://nodejs.org/api/worker_threads.html
+//! [threadId]: https://nodejs.org/api/worker_threads.html#workerthreadid
 
 use std::any::Any;
 use std::marker::PhantomData;
