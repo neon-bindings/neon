@@ -15,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/neon-bindings/cargo-cp-artifact.git"
+    "url": "git+https://github.com/neon-bindings/neon.git"
   },
   "keywords": [
     "cargo",
@@ -25,9 +25,9 @@
   "author": "K.J. Valencik",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/neon-bindings/cargo-cp-artifact/issues"
+    "url": "https://github.com/neon-bindings/neon/issues"
   },
-  "homepage": "https://github.com/neon-bindings/cargo-cp-artifact#readme",
+  "homepage": "https://github.com/neon-bindings/neon/tree/main/pkgs/cargo-cp-artifact",
   "devDependencies": {
     "mocha": "^8.3.0"
   }
