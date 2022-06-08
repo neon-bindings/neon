@@ -2,8 +2,8 @@ use std::sync::Mutex;
 
 use once_cell::sync::{Lazy, OnceCell};
 
-use neon::instance::Local;
 use neon::prelude::*;
+use neon::thread::LocalKey;
 
 pub fn get_and_replace(mut cx: FunctionContext) -> JsResult<JsValue> {
     static OBJECT: Lazy<Mutex<Option<Root<JsObject>>>> = Lazy::new(Default::default);
@@ -46,7 +46,7 @@ pub fn get_or_init_clone(mut cx: FunctionContext) -> JsResult<JsObject> {
     Ok(o.clone(&mut cx).into_inner(&mut cx))
 }
 
-static THREAD_ID: Local<u32> = Local::new();
+static THREAD_ID: LocalKey<u32> = LocalKey::new();
 
 pub fn get_or_init_thread_id(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let id = cx.argument::<JsNumber>(0)?.value(&mut cx) as u32;
@@ -54,7 +54,7 @@ pub fn get_or_init_thread_id(mut cx: FunctionContext) -> JsResult<JsNumber> {
     Ok(cx.number(*id))
 }
 
-static REENTRANT_LOCAL: Local<u32> = Local::new();
+static REENTRANT_LOCAL: LocalKey<u32> = LocalKey::new();
 
 pub fn reentrant_try_init(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let f = cx.argument::<JsFunction>(0)?;
@@ -73,7 +73,7 @@ pub fn get_reentrant_value(mut cx: FunctionContext) -> JsResult<JsValue> {
     }
 }
 
-static GLOBAL_OBJECT: Local<Root<JsObject>> = Local::new();
+static GLOBAL_OBJECT: LocalKey<Root<JsObject>> = LocalKey::new();
 
 pub fn stash_global_object(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     GLOBAL_OBJECT.get_or_try_init(&mut cx, |cx| {

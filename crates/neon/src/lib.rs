@@ -81,14 +81,14 @@
 pub mod context;
 pub mod event;
 pub mod handle;
-#[cfg(feature = "napi-6")]
-pub mod instance;
 pub mod meta;
 pub mod object;
 pub mod prelude;
 pub mod reflect;
 pub mod result;
 mod sys;
+#[cfg(feature = "napi-6")]
+pub mod thread;
 pub mod types;
 
 #[doc(hidden)]
