@@ -36,7 +36,7 @@
 //! ```
 //!
 //! This variable will be allocated when the addon is first loaded into the Node.js
-//! process. This works fine for single-threaded applications, or global immutable
+//! process. This works fine for single-threaded applications, or global thread-safe
 //! data.
 //!
 //! However, since the addition of [worker threads][workers] in Node v10,
