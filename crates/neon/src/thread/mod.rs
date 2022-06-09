@@ -20,8 +20,8 @@
 //!         let worker: Handle<JsObject> = require.call_with(cx)
 //!             .arg(cx.string("node:worker_threads"))
 //!             .apply(cx)?;
-//!         let threadId: Handle<JsNumber> = worker.get(cx, "threadId")?;
-//!         Ok(threadId.value(cx) as u32)
+//!         let thread_id: Handle<JsNumber> = worker.get(cx, "threadId")?;
+//!         Ok(thread_id.value(cx) as u32)
 //!     }).cloned()
 //! }
 //! ```
