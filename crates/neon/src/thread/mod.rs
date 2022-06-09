@@ -52,8 +52,8 @@
 //! for allocating and initializing thread-local data. (Technically, this data is stored in the
 //! addon's [module instance][environment], which is equivalent to being thread-local.)
 //!
-//! A common example is when an addon defines a custom datatype, which cannot be used across
-//! separate threads. The constructor for the datatype can be [rooted](crate::handle::Root) and
+//! A common example is when an addon needs to maintain a reference to a JavaScript value. References cannot
+//! be used across separate threads. The constructor for the datatype can be [rooted](crate::handle::Root) and
 //! saved in thread-local storage:
 //!
 //! ```
