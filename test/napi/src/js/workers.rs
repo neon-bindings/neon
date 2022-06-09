@@ -50,7 +50,7 @@ static THREAD_ID: LocalKey<u32> = LocalKey::new();
 
 pub fn get_or_init_thread_id(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let id = cx.argument::<JsNumber>(0)?.value(&mut cx) as u32;
-    let id: &u32 = THREAD_ID.get_or_init(&mut cx, id);
+    let id: &u32 = THREAD_ID.get_or_init(&mut cx, || id);
     Ok(cx.number(*id))
 }
 

@@ -162,33 +162,16 @@ impl<T: Any + Send + 'static> LocalKey<T> {
         unsafe { std::mem::transmute::<Option<&'a T>, Option<&'cx T>>(r) }
     }
 
-    /// Gets the current value of the cell, initializing it with `value` if it has
-    /// not yet been initialized.
-    pub fn get_or_init<'cx, 'a, C>(&self, cx: &'a mut C, value: T) -> &'cx T
-    where
-        C: Context<'cx>,
-    {
-        // Unwrap safety: The type bound LocalKey<T> and the fact that every LocalKey has a unique
-        // id guarantees that the cell is only ever assigned instances of type T.
-        let r: &T = LocalCell::get_or_init(cx, self.id(), Box::new(value))
-            .downcast_ref()
-            .unwrap();
-
-        // Safety: Since the Box is immutable and heap-allocated, it's guaranteed not to
-        // move or change for the duration of the context.
-        unsafe { std::mem::transmute::<&'a T, &'cx T>(r) }
-    }
-
     /// Gets the current value of the cell, initializing it with the result of
     /// calling `f` if it has not yet been initialized.
-    pub fn get_or_init_with<'cx, 'a, C, F>(&self, cx: &'a mut C, f: F) -> &'cx T
+    pub fn get_or_init<'cx, 'a, C, F>(&self, cx: &'a mut C, f: F) -> &'cx T
     where
         C: Context<'cx>,
         F: FnOnce() -> T,
     {
         // Unwrap safety: The type bound LocalKey<T> and the fact that every LocalKey has a unique
         // id guarantees that the cell is only ever assigned instances of type T.
-        let r: &T = LocalCell::get_or_init_with(cx, self.id(), || Box::new(f()))
+        let r: &T = LocalCell::get_or_init(cx, self.id(), || Box::new(f()))
             .downcast_ref()
             .unwrap();
 
@@ -200,6 +183,8 @@ impl<T: Any + Send + 'static> LocalKey<T> {
     /// Gets the current value of the cell, initializing it with the result of
     /// calling `f` if it has not yet been initialized. Returns `Err` if the
     /// callback triggers a JavaScript exception.
+    ///
+    /// # Panics
     ///
     /// During the execution of `f`, calling any methods on this `LocalKey` that
     /// attempt to initialize it will panic.
@@ -227,6 +212,6 @@ impl<T: Any + Send + Default + 'static> LocalKey<T> {
     where
         C: Context<'cx>,
     {
-        self.get_or_init_with(cx, Default::default)
+        self.get_or_init(cx, Default::default)
     }
 }

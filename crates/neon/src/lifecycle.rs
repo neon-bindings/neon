@@ -107,26 +107,7 @@ impl LocalCell {
         }
     }
 
-    pub(crate) fn get_or_init<'cx, 'a, C>(
-        cx: &'a mut C,
-        id: usize,
-        value: LocalCellValue,
-    ) -> &mut LocalCellValue
-    where
-        C: Context<'cx>,
-    {
-        InstanceData::locals(cx)
-            .get(id)
-            .pre_init(|| LocalCell::Init(value));
-
-        LocalCell::get(cx, id).unwrap()
-    }
-
-    pub(crate) fn get_or_init_with<'cx, 'a, C, F>(
-        cx: &'a mut C,
-        id: usize,
-        f: F,
-    ) -> &mut LocalCellValue
+    pub(crate) fn get_or_init<'cx, 'a, C, F>(cx: &'a mut C, id: usize, f: F) -> &mut LocalCellValue
     where
         C: Context<'cx>,
         F: FnOnce() -> LocalCellValue,
