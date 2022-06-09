@@ -9,7 +9,7 @@ use crate::{
     context::{internal::Env, Context},
     handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
     object::Object,
-    result::{JsResult, JsResultExt},
+    result::{JsResult, ResultExt},
     sys::{self, raw},
 };
 
@@ -75,7 +75,7 @@ impl DateErrorKind {
     }
 }
 
-impl<'a, T: Value> JsResultExt<'a, T> for Result<Handle<'a, T>, DateError> {
+impl<'a, T: Value> ResultExt<Handle<'a, T>> for Result<Handle<'a, T>, DateError> {
     /// Creates an `Error` on error
     fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, T> {
         self.or_else(|e| cx.throw_range_error(e.0.as_str()))
