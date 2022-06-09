@@ -5,7 +5,7 @@
 //! a more idiomatic Rust ownership pattern by passing the output of `execute`
 //! into the input of `complete`.
 //!
-//! https://nodejs.org/api/n-api.html#n_api_simple_asynchronous_operations
+//! See: [Async operations in Node-API](https://nodejs.org/api/n-api.html#n_api_simple_asynchronous_operations)
 
 use std::{
     ffi::c_void,

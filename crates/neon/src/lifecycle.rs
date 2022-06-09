@@ -8,9 +8,13 @@
 //!
 //! [napi-docs]: https://nodejs.org/api/n-api.html#n_api_environment_life_cycle_apis
 
-use std::sync::{
-    atomic::{AtomicU64, Ordering},
-    Arc,
+use std::{
+    any::Any,
+    marker::PhantomData,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Arc,
+    },
 };
 
 use crate::{
@@ -54,6 +58,157 @@ pub(crate) struct InstanceData {
 
     /// Shared `Channel` that is cloned to be returned by the `cx.channel()` method
     shared_channel: Channel,
+
+    /// Table of user-defined instance-local cells.
+    locals: LocalTable,
+}
+
+#[derive(Default)]
+pub(crate) struct LocalTable {
+    cells: Vec<LocalCell>,
+}
+
+pub(crate) type LocalCellValue = Box<dyn Any + Send + 'static>;
+
+pub(crate) enum LocalCell {
+    /// Uninitialized state.
+    Uninit,
+    /// Intermediate "dirty" state representing the middle of a `get_or_try_init` transaction.
+    Trying,
+    /// Fully initialized state.
+    Init(LocalCellValue),
+}
+
+impl LocalCell {
+    /// Establish the initial state at the beginning of the initialization protocol.
+    /// This method ensures that re-entrant initialization always panics (i.e. when
+    /// an existing `get_or_try_init` is in progress).
+    fn pre_init<F>(&mut self, f: F)
+    where
+        F: FnOnce() -> LocalCell,
+    {
+        match self {
+            LocalCell::Uninit => {
+                *self = f();
+            }
+            LocalCell::Trying => panic!("attempt to reinitialize Local during initialization"),
+            LocalCell::Init(_) => {}
+        }
+    }
+
+    pub(crate) fn get<'cx, 'a, C>(cx: &'a mut C, id: usize) -> Option<&mut LocalCellValue>
+    where
+        C: Context<'cx>,
+    {
+        let cell = InstanceData::locals(cx).get(id);
+        match cell {
+            LocalCell::Init(ref mut b) => Some(b),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn get_or_init<'cx, 'a, C, F>(cx: &'a mut C, id: usize, f: F) -> &mut LocalCellValue
+    where
+        C: Context<'cx>,
+        F: FnOnce() -> LocalCellValue,
+    {
+        InstanceData::locals(cx)
+            .get(id)
+            .pre_init(|| LocalCell::Init(f()));
+
+        LocalCell::get(cx, id).unwrap()
+    }
+
+    pub(crate) fn get_or_try_init<'cx, 'a, C, E, F>(
+        cx: &'a mut C,
+        id: usize,
+        f: F,
+    ) -> Result<&mut LocalCellValue, E>
+    where
+        C: Context<'cx>,
+        F: FnOnce(&mut C) -> Result<LocalCellValue, E>,
+    {
+        // Kick off a new transaction and drop it before getting the result.
+        {
+            let mut tx = TryInitTransaction::new(cx, id);
+            tx.run(|cx| Ok(f(cx)?))?;
+        }
+
+        // If we're here, the transaction has succeeded, so get the result.
+        Ok(LocalCell::get(cx, id).unwrap())
+    }
+}
+
+impl Default for LocalCell {
+    fn default() -> Self {
+        LocalCell::Uninit
+    }
+}
+
+impl LocalTable {
+    pub(crate) fn get(&mut self, index: usize) -> &mut LocalCell {
+        if index >= self.cells.len() {
+            self.cells.resize_with(index + 1, Default::default);
+        }
+        &mut self.cells[index]
+    }
+}
+
+/// An RAII implementation of `LocalCell::get_or_try_init`, which ensures that
+/// the state of a cell is properly managed through all possible control paths.
+/// As soon as the transaction begins, the cell is labelled as being in a dirty
+/// state (`LocalCell::Trying`), so that any additional re-entrant attempts to
+/// initialize the cell will fail fast. The `Drop` implementation ensures that
+/// after the transaction, the cell goes back to a clean state of either
+/// `LocalCell::Uninit` if it fails or `LocalCell::Init` if it succeeds.
+struct TryInitTransaction<'cx, 'a, C: Context<'cx>> {
+    cx: &'a mut C,
+    id: usize,
+    _lifetime: PhantomData<&'cx ()>,
+}
+
+impl<'cx, 'a, C: Context<'cx>> TryInitTransaction<'cx, 'a, C> {
+    fn new(cx: &'a mut C, id: usize) -> Self {
+        let mut tx = Self {
+            cx,
+            id,
+            _lifetime: PhantomData,
+        };
+        tx.cell().pre_init(|| LocalCell::Trying);
+        tx
+    }
+
+    /// _Post-condition:_ If this method returns an `Ok` result, the cell is in the
+    /// `LocalCell::Init` state.
+    fn run<E, F>(&mut self, f: F) -> Result<(), E>
+    where
+        F: FnOnce(&mut C) -> Result<LocalCellValue, E>,
+    {
+        if self.is_trying() {
+            let value = f(self.cx)?;
+            *self.cell() = LocalCell::Init(value);
+        }
+        Ok(())
+    }
+
+    fn cell(&mut self) -> &mut LocalCell {
+        InstanceData::locals(self.cx).get(self.id)
+    }
+
+    fn is_trying(&mut self) -> bool {
+        match self.cell() {
+            LocalCell::Trying => true,
+            _ => false,
+        }
+    }
+}
+
+impl<'cx, 'a, C: Context<'cx>> Drop for TryInitTransaction<'cx, 'a, C> {
+    fn drop(&mut self) {
+        if self.is_trying() {
+            *self.cell() = LocalCell::Uninit;
+        }
+    }
 }
 
 /// Wrapper for raw Node-API values to be dropped on the main thread
@@ -83,7 +238,7 @@ impl InstanceData {
     /// # Safety
     /// No additional locking (e.g., `Mutex`) is necessary because holding a
     /// `Context` reference ensures serialized access.
-    pub(crate) fn get<'a, C: Context<'a>>(cx: &mut C) -> &'a mut InstanceData {
+    pub(crate) fn get<'cx, C: Context<'cx>>(cx: &mut C) -> &mut InstanceData {
         let env = cx.env().to_raw();
         let data = unsafe { lifecycle::get_instance_data::<InstanceData>(env).as_mut() };
 
@@ -107,26 +262,34 @@ impl InstanceData {
             id: InstanceId::next(),
             drop_queue: Arc::new(drop_queue),
             shared_channel,
+            locals: LocalTable::default(),
         };
 
         unsafe { &mut *lifecycle::set_instance_data(env, data) }
     }
 
     /// Helper to return a reference to the `drop_queue` field of `InstanceData`
-    pub(crate) fn drop_queue<'a, C: Context<'a>>(cx: &mut C) -> Arc<ThreadsafeFunction<DropData>> {
+    pub(crate) fn drop_queue<'cx, C: Context<'cx>>(
+        cx: &mut C,
+    ) -> Arc<ThreadsafeFunction<DropData>> {
         Arc::clone(&InstanceData::get(cx).drop_queue)
     }
 
     /// Clones the shared channel and references it since new channels should start
     /// referenced, but the shared channel is unreferenced.
-    pub(crate) fn channel<'a, C: Context<'a>>(cx: &mut C) -> Channel {
+    pub(crate) fn channel<'cx, C: Context<'cx>>(cx: &mut C) -> Channel {
         let mut channel = InstanceData::get(cx).shared_channel.clone();
         channel.reference(cx);
         channel
     }
 
     /// Unique identifier for this instance of the module
-    pub(crate) fn id<'a, C: Context<'a>>(cx: &mut C) -> InstanceId {
+    pub(crate) fn id<'cx, C: Context<'cx>>(cx: &mut C) -> InstanceId {
         InstanceData::get(cx).id
+    }
+
+    /// Helper to return a reference to the `locals` field of `InstanceData`.
+    pub(crate) fn locals<'cx, C: Context<'cx>>(cx: &mut C) -> &mut LocalTable {
+        &mut InstanceData::get(cx).locals
     }
 }

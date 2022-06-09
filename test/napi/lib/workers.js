@@ -1,10 +1,16 @@
 const assert = require("assert");
-const { Worker, isMainThread, parentPort } = require("worker_threads");
+const {
+  Worker,
+  isMainThread,
+  parentPort,
+  threadId,
+} = require("worker_threads");
 
 const addon = require("..");
 
 // Receive a message, try that method and return the error message
 if (!isMainThread) {
+  addon.get_or_init_thread_id(threadId);
   parentPort.once("message", (message) => {
     try {
       switch (message) {
@@ -16,6 +22,12 @@ if (!isMainThread) {
           break;
         case "get_or_init_clone":
           addon.get_or_init_clone(() => ({}));
+          break;
+        case "get_thread_id":
+          {
+            let id = addon.get_or_init_thread_id(NaN);
+            parentPort.postMessage(id);
+          }
           break;
         default:
           throw new Error(`Unexpected message: ${message}`);
@@ -29,6 +41,11 @@ if (!isMainThread) {
 
   return;
 }
+
+// From here on, we're in the main thread.
+
+// Set the `THREAD_ID` Global value in the main thread cell.
+addon.get_or_init_thread_id(threadId);
 
 describe("Worker / Root Tagging Tests", () => {
   describe("Single Threaded", () => {
@@ -104,5 +121,70 @@ describe("Worker / Root Tagging Tests", () => {
 
       worker.postMessage("get_or_init_clone");
     });
+  });
+});
+
+describe("Instance-local storage", () => {
+  it("should be able to read an instance local from the main thread", () => {
+    let lookedUpId = addon.get_or_init_thread_id(NaN);
+    assert(!Number.isNaN(lookedUpId));
+    assert.strictEqual(lookedUpId, threadId);
+  });
+
+  it("should be able to store rooted objects in instance locals", () => {
+    addon.stash_global_object();
+    assert.strictEqual(global, addon.unstash_global_object());
+  });
+
+  it("should gracefully panic upon reentrant get_or_try_init", () => {
+    // 1. Global should start out uninitialized
+    assert.strictEqual(null, addon.get_reentrant_value());
+
+    // 2. Re-entrancy should panic
+    let innerClosureExecuted = false;
+    try {
+      let result = addon.reentrant_try_init(() => {
+        addon.reentrant_try_init(() => {
+          innerClosureExecuted = true;
+        });
+      });
+      assert.fail("should have panicked on re-entrancy");
+    } catch (expected) {
+      assert.strictEqual(
+        innerClosureExecuted,
+        false,
+        "inner closure should not have executed"
+      );
+    }
+
+    try {
+      // 3. Local should still be uninitialized
+      assert.strictEqual(null, addon.get_reentrant_value());
+
+      // 4. Successful fallible initialization
+      let result = addon.reentrant_try_init(() => {});
+      assert.strictEqual(42, result);
+      assert.strictEqual(42, addon.get_reentrant_value());
+    } catch (unexpected) {
+      assert.fail("couldn't set reentrant local after initial failure");
+    }
+  });
+
+  it("should allocate separate locals for each addon instance", (cb) => {
+    let mainThreadId = addon.get_or_init_thread_id(NaN);
+    assert(!Number.isNaN(mainThreadId));
+
+    const worker = new Worker(__filename);
+
+    worker.once("message", (message) => {
+      assert.strictEqual(typeof message, "number");
+      assert.notStrictEqual(message, mainThreadId);
+      let mainThreadIdAgain = addon.get_or_init_thread_id(NaN);
+      assert(!Number.isNaN(mainThreadIdAgain));
+      assert.strictEqual(mainThreadIdAgain, mainThreadId);
+      cb();
+    });
+
+    worker.postMessage("get_thread_id");
   });
 });

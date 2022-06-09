@@ -23,6 +23,7 @@ nodejs-sys = "0.13.0"
 libloading = "0.7.3"
 semver = "0.9.0"
 smallvec = "1.4.2"
+once_cell = "1.10.0"
 neon-macros = { version = "=0.10.1", path = "../neon-macros" }
 
 [features]

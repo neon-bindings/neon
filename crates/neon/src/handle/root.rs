@@ -144,7 +144,12 @@ impl<T: Object> Root<T> {
         }
     }
 
-    /// Return the referenced JavaScript object and allow it to be garbage collected
+    /// Return the referenced JavaScript object and allow it to be garbage collected.
+    ///
+    /// # Panics
+    ///
+    /// This method panics if it is called from a different JavaScript thread than the
+    /// one in which the handle was created.
     pub fn into_inner<'a, C: Context<'a>>(self, cx: &mut C) -> Handle<'a, T> {
         let env = cx.env();
         let internal = self.into_napi_ref(cx);
@@ -160,6 +165,11 @@ impl<T: Object> Root<T> {
     /// Access the inner JavaScript object without consuming the `Root`
     /// This method aliases the reference without changing the reference count. It
     /// can be used in place of a clone immediately followed by a call to `into_inner`.
+    ///
+    /// # Panics
+    ///
+    /// This method panics if it is called from a different JavaScript thread than the
+    /// one in which the handle was created.
     pub fn to_inner<'a, C: Context<'a>>(&self, cx: &mut C) -> Handle<'a, T> {
         let env = cx.env();
         let local = unsafe { reference::get(env.to_raw(), self.as_napi_ref(cx).0 as *mut _) };

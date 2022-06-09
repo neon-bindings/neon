@@ -340,6 +340,11 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("get_and_replace", js::workers::get_and_replace)?;
     cx.export_function("get_or_init", js::workers::get_or_init)?;
     cx.export_function("get_or_init_clone", js::workers::get_or_init_clone)?;
+    cx.export_function("get_or_init_thread_id", js::workers::get_or_init_thread_id)?;
+    cx.export_function("reentrant_try_init", js::workers::reentrant_try_init)?;
+    cx.export_function("get_reentrant_value", js::workers::get_reentrant_value)?;
+    cx.export_function("stash_global_object", js::workers::stash_global_object)?;
+    cx.export_function("unstash_global_object", js::workers::unstash_global_object)?;
 
     Ok(())
 }

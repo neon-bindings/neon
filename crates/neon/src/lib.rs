@@ -87,6 +87,8 @@ pub mod prelude;
 pub mod reflect;
 pub mod result;
 mod sys;
+#[cfg(feature = "napi-6")]
+pub mod thread;
 pub mod types;
 
 #[doc(hidden)]
