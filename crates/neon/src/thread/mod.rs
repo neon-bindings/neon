@@ -71,7 +71,7 @@
 //! }
 //! ```
 //!
-//! Notice that if this code were implemented without a `LocalKey`, it would fail whenever
+//! Notice that if this code were implemented without a `LocalKey`, it would panic whenever
 //! one thread stores an instance of the constructor and a different thread attempts to
 //! access it with the call to [`to_inner()`](crate::handle::Root::to_inner).
 //!
