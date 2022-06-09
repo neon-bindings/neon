@@ -1,7 +1,7 @@
 //! Thread-local storage for JavaScript threads.
 //!
 //! At runtime, an instance of a Node.js addon can contain its own local storage,
-//! which can then be shared and accessed as needed between Rust modules. This can
+//! which can then be shared and accessed as needed from Rust in a Neon module. This can
 //! be useful for setting up long-lived state that needs to be shared between calls
 //! of an addon's APIs.
 //!
