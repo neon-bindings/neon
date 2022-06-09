@@ -40,10 +40,10 @@
 //! data.
 //!
 //! However, since the addition of [worker threads][workers] in Node v10,
-//! modules can be instantiated multiple times in a single Node process. This means
-//! that while the dynamically-loaded binary library (i.e., the Rust implementation of
-//! the addon) is only loaded once in the running process, but its [`#[main]`](crate::main)
-//! function is executed multiple times with distinct module objects, once per application
+//! modules can be instantiated multiple times in a single Node process. So even
+//! though the dynamically-loaded binary library (i.e., the Rust implementation of
+//! the addon) is only loaded once in the running process, its [`#[main]`](crate::main)
+//! function can be executed multiple times with distinct module objects, one per application
 //! thread:
 //!
 //! ![The Node.js addon lifecycle, described in detail below.][lifecycle]
@@ -54,7 +54,7 @@
 //! addon's [module instance][environment], which is equivalent to being thread-local.)
 //!
 //! A common example is when an addon needs to maintain a reference to a JavaScript value. A
-//! reference can be [rooted](crate::handle::Root) and stored in a static, but refereces cannot
+//! reference can be [rooted](crate::handle::Root) and stored in a static, but references cannot
 //! be used across separate threads. By placing the reference in thread-local storage, an
 //! addon can ensure that each thread stores its own distinct reference:
 //!
@@ -92,9 +92,9 @@
 //!
 //! ### Why Not Use Standard TLS?
 //!
-//! Because the JavaScript engine may not tie JavaScript threads 1:1 to system threads,
+//! Since the JavaScript engine may not tie JavaScript threads 1:1 to system threads,
 //! it is recommended to use this module instead of the Rust standard thread-local storage
-//! when tying data to a JavaScript thread.
+//! when associating data with a JavaScript thread.
 //!
 //! [environment]: https://nodejs.org/api/n-api.html#environment-life-cycle-apis
 //! [lifecycle]: https://raw.githubusercontent.com/neon-bindings/neon/main/doc/lifecycle.png
