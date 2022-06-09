@@ -42,8 +42,9 @@
 //! However, since the addition of [worker threads][workers] in Node v10,
 //! modules can be instantiated multiple times in a single Node process. This means
 //! that while the dynamically-loaded binary library (i.e., the Rust implementation of
-//! the addon) is only loaded once in the running process, but its [`#[main]`](neon::main) function
-//! is executed multiple times with distinct module objects, once per application thread:
+//! the addon) is only loaded once in the running process, but its [`#[main]`](crate::main)
+//! function is executed multiple times with distinct module objects, once per application
+//! thread:
 //!
 //! ![The Node.js addon lifecycle, described in detail below.][lifecycle]
 //!
