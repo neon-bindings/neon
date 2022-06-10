@@ -35,11 +35,16 @@ pub unsafe fn deref<T: Send + 'static>(env: Env, local: Local) -> Option<*const 
 
     let result = result.assume_init();
 
-    // Note: This only validates it is an external, not that it was created by
-    // this module. In this future, this can be improved with type tagging:
-    // https://nodejs.org/api/n-api.html#n_api_napi_type_tag
-    // https://github.com/neon-bindings/neon/issues/591
+    // Ensure we have an external
     if result != napi::ValueType::External {
+        return None;
+    }
+
+    // As a future improvement, this could be done with a dynamic symbol check instead of
+    // relying on the Node-API version compatibility at compile time.
+    #[cfg(feature = "napi-8")]
+    // Check the external came from this module
+    if !super::tag::check_object_type_tag(env, local, &crate::MODULE_TAG) {
         return None;
     }
 
@@ -70,5 +75,11 @@ pub unsafe fn create<T: Send + 'static>(env: Env, v: T, finalizer: fn(Env, T)) -
     // or shutting down.
     assert_eq!(status, napi::Status::Ok);
 
-    result.assume_init()
+    let external = result.assume_init();
+
+    #[cfg(feature = "napi-8")]
+    // Tag the object as coming from this module
+    super::tag::type_tag_object(env, external, &crate::MODULE_TAG);
+
+    external
 }

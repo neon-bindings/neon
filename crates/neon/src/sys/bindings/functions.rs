@@ -335,6 +335,13 @@ mod napi8 {
         extern "C" {
             fn object_freeze(env: Env, object: Value) -> Status;
             fn object_seal(env: Env, object: Value) -> Status;
+            fn type_tag_object(env: Env, object: Value, tag: *const TypeTag) -> Status;
+            fn check_object_type_tag(
+                env: Env,
+                object: Value,
+                tag: *const TypeTag,
+                result: *mut bool,
+            ) -> Status;
         }
     );
 }
