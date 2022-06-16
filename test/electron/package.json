@@ -14,7 +14,7 @@
   "devDependencies": {
     "@playwright/test": "^1.17.1",
     "cargo-cp-artifact": "^0.1.0",
-    "electron": "^16.0.0",
+    "electron": "^16.2.6",
     "playwright": "^1.17.1"
   }
 }
