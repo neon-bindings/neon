@@ -14,6 +14,8 @@ use crate::{
 pub(crate) mod lock;
 pub(super) mod types;
 
+pub use types::Binary;
+
 /// A trait for borrowing binary data from JavaScript values
 ///
 /// Provides both statically and dynamically checked borrowing. Mutable borrows

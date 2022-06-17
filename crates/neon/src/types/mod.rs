@@ -62,7 +62,8 @@
 //!   getting and setting properties.
 //!   - **Standard object types:** [`JsFunction`](JsFunction), [`JsArray`](JsArray),
 //!     [`JsDate`](JsDate), and [`JsError`](JsError).
-//!   - **Typed arrays:** [`JsBuffer`](JsBuffer) and [`JsArrayBuffer`](JsArrayBuffer).
+//!   - **Typed arrays:** [`JsBuffer`](JsBuffer), [`JsArrayBuffer`](JsArrayBuffer),
+//!     and [`JsTypedArray<T>`](JsTypedArray).
 //!   - **Custom types:** [`JsBox`](JsBox), a special Neon type that allows the creation
 //!     of custom objects that own Rust data structures.
 //! - **Primitive types:** These are the built-in JavaScript datatypes that are not
@@ -108,7 +109,11 @@ use crate::{
 
 pub use self::{
     boxed::{Finalize, JsBox},
-    buffer::types::{JsArrayBuffer, JsBuffer, JsTypedArray},
+    buffer::types::{
+        JsArrayBuffer, JsBuffer, JsBigInt64Array, JsBigUint64Array, JsFloat32Array,
+        JsFloat64Array, JsInt8Array, JsInt16Array, JsInt32Array, JsTypedArray,
+        JsUint8Array, JsUint16Array, JsUint32Array,
+    },
     error::JsError,
     promise::{Deferred, JsPromise},
 };

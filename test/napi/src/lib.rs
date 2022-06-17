@@ -235,6 +235,12 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("return_buffer", return_buffer)?;
     cx.export_function("return_external_buffer", return_external_buffer)?;
     cx.export_function("return_external_array_buffer", return_external_array_buffer)?;
+    cx.export_function("return_int8array_from_arraybuffer", return_int8array_from_arraybuffer)?;
+    cx.export_function("return_int16array_from_arraybuffer", return_int16array_from_arraybuffer)?;
+    cx.export_function("return_uint32array_from_arraybuffer", return_uint32array_from_arraybuffer)?;
+    cx.export_function("return_float64array_from_arraybuffer", return_float64array_from_arraybuffer)?;
+    cx.export_function("return_biguint64array_from_arraybuffer", return_biguint64array_from_arraybuffer)?;
+    cx.export_function("return_new_int32array", return_new_int32array)?;
     cx.export_function("read_buffer_with_lock", read_buffer_with_lock)?;
     cx.export_function("read_buffer_with_borrow", read_buffer_with_borrow)?;
     cx.export_function("write_buffer_with_lock", write_buffer_with_lock)?;

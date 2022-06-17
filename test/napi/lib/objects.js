@@ -200,6 +200,64 @@ describe("JsObject", function () {
     assert.strictEqual(Buffer.from(buf).toString(), expected);
   });
 
+  it("gets a typed array constructed from an ArrayBuffer", function () {
+    var b = new ArrayBuffer(64);
+    var i8 = addon.return_int8array_from_arraybuffer(b);
+    assert.strictEqual(i8.byteLength, 64);
+    assert.strictEqual(i8.length, 64);
+    i8[0] = 0x17;
+    i8[1] = -0x17;
+    assert.deepEqual([...i8.slice(0, 2)], [0x17, -0x17]);
+
+    var b = new ArrayBuffer(64);
+    var i16 = addon.return_int16array_from_arraybuffer(b);
+    assert.strictEqual(i16.byteLength, 64);
+    assert.strictEqual(i16.length, 32);
+    i16[0] = 0x1234;
+    i16[1] = -1;
+    i16[2] = -2;
+    i16[3] = 0x5678;
+    assert.deepEqual([...i16.slice(0, 4)], [0x1234, -1, -2, 0x5678]);
+    var u8 = new Uint8Array(b);
+    assert.deepEqual([...u8.slice(0, 8)], [0x34, 0x12, 0xff, 0xff, 0xfe, 0xff, 0x78, 0x56]);
+
+    var b = new ArrayBuffer(64);
+    var u32 = addon.return_uint32array_from_arraybuffer(b);
+    assert.strictEqual(u32.byteLength, 64);
+    assert.strictEqual(u32.length, 16);
+    u32[0] = 0x12345678;
+    var u8 = new Uint8Array(b);
+    assert.deepEqual([...u8.slice(0, 4)], [0x78, 0x56, 0x34, 0x12]);
+
+    var b = new ArrayBuffer(64);
+    var f64 = addon.return_float64array_from_arraybuffer(b);
+    assert.strictEqual(f64.byteLength, 64);
+    assert.strictEqual(f64.length, 8);
+    f64[0] = 1.0;
+    f64[1] = 2.0;
+    f64[2] = 3.141592653589793;
+    assert.deepEqual([...f64.slice(0, 3)], [1.0, 2.0, 3.141592653589793]);
+    assert.deepEqual([...(new Float64Array(b)).slice(0, 3)], [1.0, 2.0, 3.141592653589793]);
+
+    var b = new ArrayBuffer(64);
+    var u64 = addon.return_biguint64array_from_arraybuffer(b);
+    assert.strictEqual(u64.byteLength, 64);
+    assert.strictEqual(u64.length, 8);
+    u64[0] = 0x1234567887654321n;
+    u64[1] = 0xcafed00d1337c0den;
+    var u8 = new Uint8Array(b);
+    assert.deepEqual([...u64.slice(0, 2)], [0x1234567887654321n, 0xcafed00d1337c0den]);
+    assert.deepEqual([...u8.slice(0, 16)], [0x21, 0x43, 0x65, 0x87, 0x78, 0x56, 0x34, 0x12, 0xde, 0xc0, 0x37, 0x13, 0x0d, 0xd0, 0xfe, 0xca]);
+  });
+
+  it("gets a new typed array", function () {
+    var i32 = addon.return_new_int32array(16);
+    assert.strictEqual(i32.constructor, Int32Array);
+    assert.strictEqual(i32.byteLength, 64);
+    assert.strictEqual(i32.length, 16);
+    assert.deepEqual([...i32], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  });
+
   it("correctly reads a Buffer using the lock API", function () {
     var b = Buffer.allocUnsafe(16);
     b.writeUInt8(147, 0);

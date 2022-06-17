@@ -13,6 +13,24 @@ use crate::{
 };
 
 /// The Node [`Buffer`](https://nodejs.org/api/buffer.html) type.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// use neon::types::buffer::TypedArray;
+///
+/// fn make_sequence(mut cx: FunctionContext) -> JsResult<JsBuffer> {
+///     let len = cx.argument::<JsNumber>(0)?.value(&mut cx);
+///     let mut buffer = cx.buffer(len as usize)?;
+///
+///     for (i, elem) in buffer.as_mut_slice(&mut cx).iter_mut().enumerate() {
+///         *elem = i as u8;
+///     }
+///
+///     Ok(buffer)
+/// }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsBuffer(raw::Local);
@@ -137,6 +155,24 @@ impl TypedArray for JsBuffer {
 }
 
 /// The standard JS [`ArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) type.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// use neon::types::buffer::TypedArray;
+///
+/// fn make_sequence(mut cx: FunctionContext) -> JsResult<JsArrayBuffer> {
+///     let len = cx.argument::<JsNumber>(0)?.value(&mut cx);
+///     let mut buffer = cx.array_buffer(len as usize)?;
+///
+///     for (i, elem) in buffer.as_mut_slice(&mut cx).iter_mut().enumerate() {
+///         *elem = i as u8;
+///     }
+///
+///     Ok(buffer)
+/// }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsArrayBuffer(raw::Local);
@@ -241,17 +277,111 @@ impl TypedArray for JsArrayBuffer {
     }
 }
 
-/// The standard JS [`TypedArray`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypedArray) type.
+pub trait Binary: private::Sealed + Copy {
+    fn raw() -> TypedArrayType;
+}
+
+/// The family of JS [typed array][typed-arrays] types.
+///
+/// ## Typed Arrays
+///
+/// JavaScript's [typed arrays][typed-arrays] are objects that allow efficiently reading
+/// and writing raw binary data in memory. In Neon, the generic type `JsTypedArray<T>`
+/// represents a JavaScript typed array with element type `T`. For example, a JavaScript
+/// [`Uint32Array`][Uint32Array] represents a compact array of 32-bit unsigned integers,
+/// and is represented in Neon as a `JsTypedArray<u32>`.
+///
+/// Neon also offers a set of convenience shorthands for concrete instances of
+/// `JsTypedArray`, named after their corresponding JavaScript type. For example,
+/// `JsTypedArray<u32>` can also be referred to as [`JsUint32Array`][JsUint32Array].
+///
+/// The following table shows the complete set of typed array types, with both their
+/// JavaScript and Neon types:
+///
+/// | Rust Type                      | Convenience Type                       | JavaScript Type                    |
+/// | ------------------------------ | -------------------------------------- | ---------------------------------- |
+/// | `JsTypedArray<`[`u8`][u8]`>`   | [`JsUint8Array`][JsUint8Array]         | [`Uint8Array`][Uint8Array]         |
+/// | `JsTypedArray<`[`i8`][i8]`>`   | [`JsInt8Array`][JsInt8Array]           | [`Int8Array`][Int8Array]           |
+/// | `JsTypedArray<`[`u16`][u16]`>` | [`JsUint16Array`][JsUint16Array]       | [`Uint16Array`][Uint16Array]       |
+/// | `JsTypedArray<`[`i16`][i16]`>` | [`JsInt16Array`][JsInt16Array]         | [`Int16Array`][Int16Array]         |
+/// | `JsTypedArray<`[`u32`][u32]`>` | [`JsUint32Array`][JsUint32Array]       | [`Uint32Array`][Uint32Array]       |
+/// | `JsTypedArray<`[`i32`][i32]`>` | [`JsInt32Array`][JsInt32Array]         | [`Int32Array`][Int32Array]         |
+/// | `JsTypedArray<`[`u64`][u64]`>` | [`JsBigUint64Array`][JsBigUint64Array] | [`BigUint64Array`][BigUint64Array] |
+/// | `JsTypedArray<`[`i64`][i64]`>` | [`JsBigInt64Array`][JsBigInt64Array]   | [`BigInt64Array`][BigInt64Array]   |
+/// | `JsTypedArray<`[`f32`][f32]`>` | [`JsFloat32Array`][JsFloat32Array]     | [`Float32Array`][Float32Array]     |
+/// | `JsTypedArray<`[`f64`][f64]`>` | [`JsFloat64Array`][JsFloat64Array]     | [`Float64Array`][Float64Array]     |
+///
+/// ### Example: Creating an integer array
+///
+/// This example creates a typed array of unsigned 32-bit integers with a user-specified
+/// length:
+///
+/// ```
+/// # use neon::prelude::*;
+/// fn create_int_array(mut cx: FunctionContext) -> JsResult<JsTypedArray<u32>> {
+///     let len = cx.argument::<JsNumber>(0)?.value(&mut cx) as usize;
+///     JsTypedArray::new(&mut cx, len)
+/// }
+/// ```
+///
+/// ## Buffers
+///
+/// Typed arrays are managed with the [`ArrayBuffer`][ArrayBuffer] type, which controls
+/// the storage of the underlying data buffer, and several typed views for managing access
+/// to the buffer. Neon provides access to the `ArrayBuffer` class with the
+/// [`JsArrayBuffer`](crate::types::JsArrayBuffer) type.
+///
+/// Node also provides a [`Buffer`][Buffer] type, which is built on top of `ArrayBuffer`
+/// and provides additional functionality. Neon provides access to the `Buffer` class
+/// with the [`JsBuffer`](crate::types::JsBuffer) type.
+///
+/// Many of Node's I/O APIs work with these types, and they can also be used for
+/// compact in-memory data structures, which can be shared efficiently between
+/// JavaScript and Rust without copying.
+///
+/// [u8]: std::primitive::u8
+/// [i8]: std::primitive::i8
+/// [u16]: std::primitive::u16
+/// [i16]: std::primitive::i16
+/// [u32]: std::primitive::u32
+/// [i32]: std::primitive::i32
+/// [u64]: std::primitive::u64
+/// [i64]: std::primitive::i64
+/// [f32]: std::primitive::f32
+/// [f64]: std::primitive::f64
+/// [JsUint8Array]: crate::types::JsUint8Array
+/// [JsInt8Array]: crate::types::JsInt8Array
+/// [JsUint16Array]: crate::types::JsUint16Array
+/// [JsInt16Array]: crate::types::JsInt16Array
+/// [JsUint32Array]: crate::types::JsUint32Array
+/// [JsInt32Array]: crate::types::JsInt32Array
+/// [JsBigUint64Array]: crate::types::JsBigUint64Array
+/// [JsBigInt64Array]: crate::types::JsBigInt64Array
+/// [JsFloat32Array]: crate::types::JsFloat32Array
+/// [JsFloat64Array]: crate::types::JsFloat64Array
+/// [Uint8Array]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array
+/// [Int8Array]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int8Array
+/// [Uint16Array]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array
+/// [Int16Array]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int16Array
+/// [Uint32Array]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array
+/// [Int32Array]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Int32Array
+/// [BigUint64Array]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigUint64Array
+/// [BigInt64Array]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt64Array
+/// [Float32Array]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Float32Array
+/// [Float64Array]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Float64Array
+/// [typed-arrays]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
+/// [ArrayBuffer]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer
+/// [Buffer]: https://nodejs.org/api/buffer.html
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct JsTypedArray<T> {
+pub struct JsTypedArray<T: Binary> {
     local: raw::Local,
     _type: PhantomData<T>,
 }
 
-impl<T> private::Sealed for JsTypedArray<T> {}
+impl<T: Binary> private::Sealed for JsTypedArray<T> {}
 
-unsafe impl<T> TransparentNoCopyWrapper for JsTypedArray<T> {
+unsafe impl<T: Binary> TransparentNoCopyWrapper for JsTypedArray<T> {
     type Inner = raw::Local;
 
     fn into_inner(self) -> Self::Inner {
@@ -259,7 +389,7 @@ unsafe impl<T> TransparentNoCopyWrapper for JsTypedArray<T> {
     }
 }
 
-impl<T> Managed for JsTypedArray<T> {
+impl<T: Binary> Managed for JsTypedArray<T> {
     fn to_raw(&self) -> raw::Local {
         self.local
     }
@@ -272,7 +402,7 @@ impl<T> Managed for JsTypedArray<T> {
     }
 }
 
-impl<T: Copy> TypedArray for JsTypedArray<T> {
+impl<T: Binary> TypedArray for JsTypedArray<T> {
     type Item = T;
 
     fn as_slice<'cx, 'a, C>(&self, cx: &'a C) -> &'a [Self::Item]
@@ -342,8 +472,53 @@ impl<T: Copy> TypedArray for JsTypedArray<T> {
     }
 }
 
+impl<T: Binary> JsTypedArray<T> {
+    pub fn from_array_buffer<'cx, 'a, C>(
+        cx: &'a mut C,
+        buffer: Handle<JsArrayBuffer>,
+        byte_offset: usize,
+        len: usize,
+
+    ) -> JsResult<'cx, Self>
+    where
+        C: Context<'cx>,
+    {
+        let result = unsafe {
+            sys::typedarray::new(cx.env().to_raw(), T::raw(), buffer.to_raw(), byte_offset, len)
+        };
+
+        if let Ok(arr) = result {
+            Ok(Handle::new_internal(Self {
+                local: arr,
+                _type: PhantomData,
+            }))
+        } else {
+            Err(Throw::new())
+        }
+    }
+
+    pub fn new<'cx, 'a, C>(
+        cx: &'a mut C,
+        len: usize,
+    ) -> JsResult<'cx, Self>
+    where
+        C: Context<'cx>,
+    {
+        let buffer = cx.array_buffer(len * std::mem::size_of::<T>())?;
+        Self::from_array_buffer(cx, buffer, 0, len)
+    }
+}
+
 macro_rules! impl_typed_array {
-    ($name:expr, $typ:ty, $($pattern:pat)|+$(,)?) => {
+    ($name:expr, $typ:ty, $($pattern:pat)|+, $tag:ident$(,)?) => {
+        impl private::Sealed for $typ {}
+
+        impl Binary for $typ {
+            fn raw() -> TypedArrayType {
+                TypedArrayType::$tag
+            }
+        }
+
         impl Value for JsTypedArray<$typ> {}
 
         impl Object for JsTypedArray<$typ> {}
@@ -369,17 +544,218 @@ macro_rules! impl_typed_array {
     };
 }
 
-impl_typed_array!("Int8Array", i8, TypedArrayType::I8);
+impl_typed_array!("Int8Array", i8, TypedArrayType::I8, I8);
 impl_typed_array!(
     "Uint8Array",
     u8,
     TypedArrayType::U8 | TypedArrayType::U8Clamped,
+    U8,
 );
-impl_typed_array!("Int16Array", i16, TypedArrayType::I16);
-impl_typed_array!("Uint16Array", u16, TypedArrayType::U16);
-impl_typed_array!("Int32Array", i32, TypedArrayType::I32);
-impl_typed_array!("Uint32Array", u32, TypedArrayType::U32);
-impl_typed_array!("Float32Array", f32, TypedArrayType::F32);
-impl_typed_array!("Float64Array", f64, TypedArrayType::F64);
-impl_typed_array!("BigInt64Array", i64, TypedArrayType::I64);
-impl_typed_array!("BigUint64Array", u64, TypedArrayType::U64);
+impl_typed_array!("Int16Array", i16, TypedArrayType::I16, I16);
+impl_typed_array!("Uint16Array", u16, TypedArrayType::U16, U16);
+impl_typed_array!("Int32Array", i32, TypedArrayType::I32, I32);
+impl_typed_array!("Uint32Array", u32, TypedArrayType::U32, U32);
+impl_typed_array!("Float32Array", f32, TypedArrayType::F32, F32);
+impl_typed_array!("Float64Array", f64, TypedArrayType::F64, F64);
+impl_typed_array!("BigInt64Array", i64, TypedArrayType::I64, I64);
+impl_typed_array!("BigUint64Array", u64, TypedArrayType::U64, U64);
+
+/// The standard JS [`Int8Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int8Array) type.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// use neon::types::buffer::TypedArray;
+///
+/// fn double(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+///     let mut array: Handle<JsInt8Array> = cx.argument(0)?;
+///
+///     for elem in array.as_mut_slice(&mut cx).iter_mut() {
+///         *elem *= 2;
+///     }
+///
+///     Ok(cx.undefined())
+/// }
+/// ```
+pub type JsInt8Array = JsTypedArray<i8>;
+
+/// The standard JS [`Uint8Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) type.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// use neon::types::buffer::TypedArray;
+///
+/// fn double(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+///     let mut array: Handle<JsUint8Array> = cx.argument(0)?;
+///
+///     for elem in array.as_mut_slice(&mut cx).iter_mut() {
+///         *elem *= 2;
+///     }
+///
+///     Ok(cx.undefined())
+/// }
+/// ```
+pub type JsUint8Array = JsTypedArray<u8>;
+
+/// The standard JS [`Int16Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int16Array) type.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// use neon::types::buffer::TypedArray;
+///
+/// fn double(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+///     let mut array: Handle<JsInt16Array> = cx.argument(0)?;
+///
+///     for elem in array.as_mut_slice(&mut cx).iter_mut() {
+///         *elem *= 2;
+///     }
+///
+///     Ok(cx.undefined())
+/// }
+/// ```
+pub type JsInt16Array = JsTypedArray<i16>;
+
+/// The standard JS [`Uint16Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint16Array) type.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// use neon::types::buffer::TypedArray;
+///
+/// fn double(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+///     let mut array: Handle<JsUint16Array> = cx.argument(0)?;
+///
+///     for elem in array.as_mut_slice(&mut cx).iter_mut() {
+///         *elem *= 2;
+///     }
+///
+///     Ok(cx.undefined())
+/// }
+/// ```
+pub type JsUint16Array = JsTypedArray<u16>;
+
+/// The standard JS [`Int32Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Int32Array) type.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// use neon::types::buffer::TypedArray;
+///
+/// fn double(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+///     let mut array: Handle<JsInt32Array> = cx.argument(0)?;
+///
+///     for elem in array.as_mut_slice(&mut cx).iter_mut() {
+///         *elem *= 2;
+///     }
+///
+///     Ok(cx.undefined())
+/// }
+/// ```
+pub type JsInt32Array = JsTypedArray<i32>;
+
+/// The standard JS [`Uint32Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Uint32Array) type.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// use neon::types::buffer::TypedArray;
+///
+/// fn double(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+///     let mut array: Handle<JsUint32Array> = cx.argument(0)?;
+///
+///     for elem in array.as_mut_slice(&mut cx).iter_mut() {
+///         *elem *= 2;
+///     }
+///
+///     Ok(cx.undefined())
+/// }
+/// ```
+pub type JsUint32Array = JsTypedArray<u32>;
+
+/// The standard JS [`BigInt64Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigInt64Array) type.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// use neon::types::buffer::TypedArray;
+///
+/// fn double(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+///     let mut array: Handle<JsBigInt64Array> = cx.argument(0)?;
+///
+///     for elem in array.as_mut_slice(&mut cx).iter_mut() {
+///         *elem *= 2;
+///     }
+///
+///     Ok(cx.undefined())
+/// }
+/// ```
+pub type JsBigInt64Array = JsTypedArray<i64>;
+
+/// The standard JS [`BigUint64Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/BigUint64Array) type.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// use neon::types::buffer::TypedArray;
+///
+/// fn double(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+///     let mut array: Handle<JsBigUint64Array> = cx.argument(0)?;
+///
+///     for elem in array.as_mut_slice(&mut cx).iter_mut() {
+///         *elem *= 2;
+///     }
+///
+///     Ok(cx.undefined())
+/// }
+/// ```
+pub type JsBigUint64Array = JsTypedArray<u64>;
+
+/// The standard JS [`Float32Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float32Array) type.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// use neon::types::buffer::TypedArray;
+///
+/// fn double(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+///     let mut array: Handle<JsFloat32Array> = cx.argument(0)?;
+///
+///     for elem in array.as_mut_slice(&mut cx).iter_mut() {
+///         *elem *= 2.0;
+///     }
+///
+///     Ok(cx.undefined())
+/// }
+/// ```
+pub type JsFloat32Array = JsTypedArray<f32>;
+
+/// The standard JS [`Float64Array`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Float64Array) type.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// use neon::types::buffer::TypedArray;
+///
+/// fn double(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+///     let mut array: Handle<JsFloat64Array> = cx.argument(0)?;
+///
+///     for elem in array.as_mut_slice(&mut cx).iter_mut() {
+///         *elem *= 2.0;
+///     }
+///
+///     Ok(cx.undefined())
+/// }
+/// ```
+pub type JsFloat64Array = JsTypedArray<f64>;

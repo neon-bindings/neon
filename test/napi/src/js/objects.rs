@@ -167,6 +167,41 @@ pub fn return_external_array_buffer(mut cx: FunctionContext) -> JsResult<JsArray
     Ok(buf)
 }
 
+pub fn return_int8array_from_arraybuffer(mut cx: FunctionContext) -> JsResult<JsInt8Array> {
+    let buf = cx.argument::<JsArrayBuffer>(0)?;
+    let len = buf.as_slice(&cx).len();
+    JsInt8Array::from_array_buffer(&mut cx, buf, 0, len)
+}
+
+pub fn return_int16array_from_arraybuffer(mut cx: FunctionContext) -> JsResult<JsInt16Array> {
+    let buf = cx.argument::<JsArrayBuffer>(0)?;
+    let len = buf.as_slice(&cx).len();
+    JsInt16Array::from_array_buffer(&mut cx, buf, 0, len / 2)
+}
+
+pub fn return_uint32array_from_arraybuffer(mut cx: FunctionContext) -> JsResult<JsUint32Array> {
+    let buf = cx.argument::<JsArrayBuffer>(0)?;
+    let len = buf.as_slice(&cx).len();
+    JsUint32Array::from_array_buffer(&mut cx, buf, 0, len / 4)
+}
+
+pub fn return_float64array_from_arraybuffer(mut cx: FunctionContext) -> JsResult<JsFloat64Array> {
+    let buf = cx.argument::<JsArrayBuffer>(0)?;
+    let len = buf.as_slice(&cx).len();
+    JsFloat64Array::from_array_buffer(&mut cx, buf, 0, len / 8)
+}
+
+pub fn return_biguint64array_from_arraybuffer(mut cx: FunctionContext) -> JsResult<JsBigUint64Array> {
+    let buf = cx.argument::<JsArrayBuffer>(0)?;
+    let len = buf.as_slice(&cx).len();
+    JsBigUint64Array::from_array_buffer(&mut cx, buf, 0, len / 8)
+}
+
+pub fn return_new_int32array(mut cx: FunctionContext) -> JsResult<JsInt32Array> {
+    let len = cx.argument::<JsNumber>(0)?.value(&mut cx) as usize;
+    JsInt32Array::new(&mut cx, len)
+}
+
 pub fn read_buffer_with_lock(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let b: Handle<JsBuffer> = cx.argument(0)?;
     let i = cx.argument::<JsNumber>(1)?.value(&mut cx) as usize;

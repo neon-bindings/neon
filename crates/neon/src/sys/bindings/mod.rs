@@ -3,7 +3,7 @@
 //! These types are manually copied from bindings generated from `bindgen`. To
 //! update, use the following approach:
 //!
-//! * Run `cargo build` with `--cfg neon=dev` at least once to install `nodejs-sys`
+//! * Run a debug build of Neon at least once to install `nodejs-sys`
 //! * Open the generated bindings at `target/debug/build/nodejs-sys-*/out/bindings.rs`
 //! * Copy the types needed into `types.rs` and `functions.rs`
 //! * Modify to match Rust naming conventions:

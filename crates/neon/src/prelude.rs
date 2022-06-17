@@ -11,8 +11,10 @@ pub use crate::{
     result::{JsResult, NeonResult, ResultExt as NeonResultExt},
     types::{
         boxed::{Finalize, JsBox},
-        JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsError, JsFunction, JsNull, JsNumber,
-        JsObject, JsPromise, JsString, JsTypedArray, JsUndefined, JsValue, Value,
+        JsArray, JsArrayBuffer, JsBigInt64Array, JsBigUint64Array, JsBoolean, JsBuffer,
+        JsError, JsFloat32Array, JsFloat64Array, JsFunction, JsInt8Array, JsInt16Array,
+        JsInt32Array, JsNull, JsNumber, JsObject, JsPromise, JsString, JsTypedArray,
+        JsUint8Array, JsUint16Array, JsUint32Array, JsUndefined, JsValue, Value,
     },
 };
 
