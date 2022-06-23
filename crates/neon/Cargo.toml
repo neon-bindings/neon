@@ -12,8 +12,8 @@ edition = "2018"
 
 [dev-dependencies]
 semver = "0.9"
-psd = "0.1.9"     # used for a doc example
-failure = "0.1.5" # used for a doc example
+psd = "0.3.1"     # used for a doc example
+anyhow = "1.0.58" # used for a doc example
 
 [target.'cfg(not(target = "windows"))'.dev-dependencies]
 # Avoid `clang` as a dependency on windows
