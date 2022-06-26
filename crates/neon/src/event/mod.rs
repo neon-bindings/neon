@@ -61,10 +61,10 @@
 //! ```
 //! # use neon::prelude::*;
 //! # use psd::Psd;
-//! # use failure::Error;
+//! # use anyhow::{Context as _, Result};
 //! #
-//! fn psd_from_filename(filename: String) -> Result<Psd, Error> {
-//!     Psd::from_bytes(&std::fs::read(&filename)?)
+//! fn psd_from_filename(filename: String) -> Result<Psd> {
+//!     Psd::from_bytes(&std::fs::read(&filename)?).context("invalid psd file")
 //! }
 //!
 //! fn parse(filename: String, callback: Root<JsFunction>, channel: Channel) {
