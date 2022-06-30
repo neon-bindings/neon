@@ -3,13 +3,14 @@ use std::{marker::PhantomData, slice};
 use crate::{
     context::{internal::Env, Context},
     handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    object::Object,
     result::{JsResult, Throw},
     sys::{self, raw, TypedArrayType},
     types::buffer::{
         lock::{Ledger, Lock},
         private, BorrowError, Ref, RefMut, TypedArray,
     },
-    types::{private::ValueInternal, Object, Value},
+    types::{private::ValueInternal, Value},
 };
 
 /// The Node [`Buffer`](https://nodejs.org/api/buffer.html) type.
@@ -277,8 +278,12 @@ impl TypedArray for JsArrayBuffer {
     }
 }
 
+/// A marker trait for all possible element types of binary buffers.
+///
+/// This trait can only be implemented within the Neon library.
 pub trait Binary: private::Sealed + Copy {
-    fn raw() -> TypedArrayType;
+    /// The internal Node-API enum value for this binary type.
+    const RAW: TypedArrayType;
 }
 
 /// The family of JS [typed array][typed-arrays] types.
@@ -484,7 +489,7 @@ impl<T: Binary> JsTypedArray<T> {
         C: Context<'cx>,
     {
         let result = unsafe {
-            sys::typedarray::new(cx.env().to_raw(), T::raw(), buffer.to_raw(), byte_offset, len)
+            sys::typedarray::new(cx.env().to_raw(), T::RAW, buffer.to_raw(), byte_offset, len)
         };
 
         if let Ok(arr) = result {
@@ -514,9 +519,7 @@ macro_rules! impl_typed_array {
         impl private::Sealed for $typ {}
 
         impl Binary for $typ {
-            fn raw() -> TypedArrayType {
-                TypedArrayType::$tag
-            }
+            const RAW: TypedArrayType = TypedArrayType::$tag;
         }
 
         impl Value for JsTypedArray<$typ> {}

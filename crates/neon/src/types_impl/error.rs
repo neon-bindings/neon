@@ -5,9 +5,10 @@ use std::panic::{catch_unwind, UnwindSafe};
 use crate::{
     context::{internal::Env, Context},
     handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    object::Object,
     result::{NeonResult, Throw},
     sys::{self, raw},
-    types::{build, private::ValueInternal, utf8::Utf8, Object, Value},
+    types::{build, private::ValueInternal, utf8::Utf8, Value},
 };
 
 /// A JS `Error` object.

@@ -1,3 +1,5 @@
+//! Types and traits for working with binary buffers.
+
 use std::{
     cell::RefCell,
     error::Error,
@@ -16,10 +18,30 @@ pub(super) mod types;
 
 pub use types::Binary;
 
-/// A trait for borrowing binary data from JavaScript values
+/// A trait allowing Rust to borrow binary data from the memory buffer of JavaScript
+/// [typed arrays][typed-arrays].
 ///
-/// Provides both statically and dynamically checked borrowing. Mutable borrows
-/// are guaranteed not to overlap with other borrows.
+/// This trait provides both statically and dynamically checked borrowing. As usual
+/// in Rust, mutable borrows are guaranteed not to overlap with other borrows.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// use neon::types::buffer::TypedArray;
+///
+/// fn double(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+///     let mut array: Handle<JsUint32Array> = cx.argument(0)?;
+///
+///     for elem in array.as_mut_slice(&mut cx).iter_mut() {
+///         *elem *= 2;
+///     }
+///
+///     Ok(cx.undefined())
+/// }
+/// ```
+///
+/// [typed-arrays]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
 pub trait TypedArray: private::Sealed {
     type Item;
 

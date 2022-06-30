@@ -89,7 +89,13 @@ pub mod result;
 mod sys;
 #[cfg(feature = "napi-6")]
 pub mod thread;
-pub mod types;
+// To use the #[aquamarine] attribute on the top-level neon::types module docs, we have to
+// use this hack so we can keep the module docs in a separate file.
+// See: https://github.com/mersinvald/aquamarine/issues/5#issuecomment-1168816499
+mod types_docs;
+mod types_impl;
+
+pub use types_docs::exports as types;
 
 #[doc(hidden)]
 pub mod macro_internal;
