@@ -3,7 +3,7 @@
 ///
 /// ## Modeling JavaScript Types
 ///
-/// All JavaScript values in Neon implement the abstract [`Value`] trait, which
+/// All JavaScript values in Neon implement the abstract [`Value`](Value) trait, which
 /// is the most generic way to work with JavaScript values. Neon provides a
 /// number of types that implement this trait, each representing a particular
 /// type of JavaScript value.
@@ -51,54 +51,87 @@
 ///
 /// ### The JavaScript Type Hierarchy
 ///
+/// The top of the JavaScript type hierarchy is modeled with the Neon type
+/// [`JsValue`](JsValue). A [handle](crate::handle) to a `JsValue` can refer
+/// to any JavaScript value. (For TypeScript programmers, this can be thought
+/// of as similar to TypeScript's [`unknown`][unknown] type.)
+///
+/// From there, the type hierarchy divides into _object types_ and _primitive
+/// types_:
+///
 /// ```mermaid
 /// flowchart LR
 /// JsValue(JsValue)
 /// JsValue-->JsObject(JsObject)
+/// click JsValue "./struct.JsValue.html" "JsValue"
+/// click JsObject "./struct.JsObject.html" "JsObject"
 /// subgraph primitives [Primitive Types]
 ///     JsBoolean(JsBoolean)
 ///     JsNumber(JsNumber)
 ///     JsString(JsString)
 ///     JsNull(JsNull)
 ///     JsUndefined(JsUndefined)
+///     click JsBoolean "./struct.JsBoolean.html" "JsBoolean"
+///     click JsNumber "./struct.JsNumber.html" "JsNumber"
+///     click JsString "./struct.JsString.html" "JsString"
+///     click JsNull "./struct.JsNull.html" "JsNull"
+///     click JsUndefined "./struct.JsUndefined.html" "JsUndefined"
 /// end
+/// JsValue-->primitives
+/// ```
+///
+/// The top of the object type hierarchy is [`JsObject`](JsObject). A handle to a
+/// `JsObject` can refer to any JavaScript object.
+///
+/// The primitive types are the built-in JavaScript datatypes that are not object
+/// types: [`JsBoolean`](JsBoolean), [`JsNumber`](JsNumber), [`JsString`](JsString),
+/// [`JsNull`](JsNull), and [`JsUndefined`](JsUndefined).
+///
+/// #### Object Types
+///
+/// The object type hierarchy further divides into a number of different subtypes:
+///
+/// ```mermaid
+/// flowchart LR
+/// JsObject(JsObject)
+/// click JsObject "./struct.JsObject.html" "JsObject"
 /// subgraph objects [Standard Object Types]
 ///     JsFunction(JsFunction)
 ///     JsArray(JsArray)
 ///     JsDate(JsDate)
 ///     JsError(JsError)
+///     click JsFunction "./struct.JsFunction.html" "JsFunction"
+///     click JsArray "./struct.JsArray.html" "JsArray"
+///     click JsDate "./struct.JsDate.html" "JsDate"
+///     click JsError "./struct.JsError.html" "JsError"
 /// end
 /// subgraph typedarrays [Typed Arrays]
 ///     JsBuffer(JsBuffer)
 ///     JsArrayBuffer(JsArrayBuffer)
 ///     JsTypedArray("JsTypedArray&lt;T&gt;")
+///     click JsBuffer "./struct.JsBuffer.html" "JsBuffer"
+///     click JsArrayBuffer "./struct.JsArrayBuffer.html" "JsArrayBuffer"
+///     click JsTypedArray "./struct.JsTypedArray.html" "JsTypedArray"
 /// end
 /// subgraph custom [Custom Types]
 ///     JsBox(JsBox)
+///     click JsBox "./struct.JsBox.html" "JsBox"
 /// end
-/// JsValue-->primitives
 /// JsObject-->objects
 /// JsObject-->typedarrays
 /// JsObject-->custom
 /// ```
 ///
-/// The JavaScript type hierarchy includes:
+/// These include several categories of object types:
+/// - **Standard object types:** [`JsFunction`](JsFunction), [`JsArray`](JsArray),
+///   [`JsDate`](JsDate), and [`JsError`](JsError).
+/// - **Typed arrays:** [`JsBuffer`](JsBuffer), [`JsArrayBuffer`](JsArrayBuffer),
+///   and [`JsTypedArray<T>`](JsTypedArray).
+/// - **Custom types:** [`JsBox`](JsBox), a special Neon type that allows the creation
+///   of custom objects that own Rust data structures.
 ///
-/// - [`JsValue`](JsValue): This is the top of the type hierarchy, and can refer to
-///   any JavaScript value. (For TypeScript programmers, this can be thought of as
-///   similar to TypeScript's [`unknown`][unknown] type.)
-/// - [`JsObject`](JsObject): This is the top of the object type hierarchy. Object
-///   types all implement the [`Object`](crate::object::Object) trait, which allows
-///   getting and setting properties.
-///   - **Standard object types:** [`JsFunction`](JsFunction), [`JsArray`](JsArray),
-///     [`JsDate`](JsDate), and [`JsError`](JsError).
-///   - **Typed arrays:** [`JsBuffer`](JsBuffer), [`JsArrayBuffer`](JsArrayBuffer),
-///     and [`JsTypedArray<T>`](JsTypedArray).
-///   - **Custom types:** [`JsBox`](JsBox), a special Neon type that allows the creation
-///     of custom objects that own Rust data structures.
-/// - **Primitive types:** These are the built-in JavaScript datatypes that are not
-///   object types: [`JsNumber`](JsNumber), [`JsBoolean`](JsBoolean),
-///   [`JsString`](JsString), [`JsNull`](JsNull), and [`JsUndefined`](JsUndefined).
+/// All object types implement the [`Object`](crate::object::Object) trait, which
+/// allows getting and setting properties of an object.
 ///
 /// [unknown]: https://mariusschulz.com/blog/the-unknown-type-in-typescript#the-unknown-type
 pub mod exports {
