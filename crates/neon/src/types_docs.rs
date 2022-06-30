@@ -52,29 +52,29 @@
 /// ### The JavaScript Type Hierarchy
 ///
 /// ```mermaid
-/// flowchart TB
-/// JsValue
-/// JsValue-->JsObject
+/// flowchart LR
+/// JsValue(JsValue)
+/// JsValue-->JsObject(JsObject)
 /// subgraph primitives [Primitive Types]
-///     JsBoolean
-///     JsNumber
-///     JsString
-///     JsNull
-///     JsUndefined
+///     JsBoolean(JsBoolean)
+///     JsNumber(JsNumber)
+///     JsString(JsString)
+///     JsNull(JsNull)
+///     JsUndefined(JsUndefined)
 /// end
 /// subgraph objects [Standard Object Types]
-///     JsFunction
-///     JsArray
-///     JsDate
-///     JsError
+///     JsFunction(JsFunction)
+///     JsArray(JsArray)
+///     JsDate(JsDate)
+///     JsError(JsError)
 /// end
 /// subgraph typedarrays [Typed Arrays]
-///     JsBuffer
-///     JsArrayBuffer
-///     JsTypedArray["JsTypedArray&lt;T&gt;"]
+///     JsBuffer(JsBuffer)
+///     JsArrayBuffer(JsArrayBuffer)
+///     JsTypedArray("JsTypedArray&lt;T&gt;")
 /// end
 /// subgraph custom [Custom Types]
-///     JsBox
+///     JsBox(JsBox)
 /// end
 /// JsValue-->primitives
 /// JsObject-->objects
