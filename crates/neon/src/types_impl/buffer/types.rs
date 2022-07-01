@@ -483,7 +483,6 @@ impl<T: Binary> JsTypedArray<T> {
         buffer: Handle<JsArrayBuffer>,
         byte_offset: usize,
         len: usize,
-
     ) -> JsResult<'cx, Self>
     where
         C: Context<'cx>,
@@ -502,10 +501,7 @@ impl<T: Binary> JsTypedArray<T> {
         }
     }
 
-    pub fn new<'cx, 'a, C>(
-        cx: &'a mut C,
-        len: usize,
-    ) -> JsResult<'cx, Self>
+    pub fn new<'cx, 'a, C>(cx: &'a mut C, len: usize) -> JsResult<'cx, Self>
     where
         C: Context<'cx>,
     {

@@ -2,7 +2,7 @@ use std::ptr;
 
 use crate::{
     context::{internal::Env, Context},
-    handle::{Handle, internal::TransparentNoCopyWrapper, Managed},
+    handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
     object::Object,
     result::JsResult,
     sys::{self, no_panic::FailureBoundary, raw},

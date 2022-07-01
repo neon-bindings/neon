@@ -46,8 +46,7 @@ pub unsafe fn new(
     buffer: Local,
     offset: usize,
     len: usize,
-) -> Result<Local, napi::Status>
-{
+) -> Result<Local, napi::Status> {
     let mut array = MaybeUninit::uninit();
     let status = napi::create_typedarray(env, typ, len, buffer, offset, array.as_mut_ptr());
 

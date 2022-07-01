@@ -37,9 +37,9 @@ use crate::{
 pub use self::{
     boxed::{Finalize, JsBox},
     buffer::types::{
-        JsArrayBuffer, JsBuffer, JsBigInt64Array, JsBigUint64Array, JsFloat32Array,
-        JsFloat64Array, JsInt8Array, JsInt16Array, JsInt32Array, JsTypedArray,
-        JsUint8Array, JsUint16Array, JsUint32Array,
+        JsArrayBuffer, JsBigInt64Array, JsBigUint64Array, JsBuffer, JsFloat32Array, JsFloat64Array,
+        JsInt16Array, JsInt32Array, JsInt8Array, JsTypedArray, JsUint16Array, JsUint32Array,
+        JsUint8Array,
     },
     error::JsError,
     promise::{Deferred, JsPromise},

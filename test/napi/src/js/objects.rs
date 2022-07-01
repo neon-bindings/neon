@@ -191,7 +191,9 @@ pub fn return_float64array_from_arraybuffer(mut cx: FunctionContext) -> JsResult
     JsFloat64Array::from_array_buffer(&mut cx, buf, 0, len / 8)
 }
 
-pub fn return_biguint64array_from_arraybuffer(mut cx: FunctionContext) -> JsResult<JsBigUint64Array> {
+pub fn return_biguint64array_from_arraybuffer(
+    mut cx: FunctionContext,
+) -> JsResult<JsBigUint64Array> {
     let buf = cx.argument::<JsArrayBuffer>(0)?;
     let len = buf.as_slice(&cx).len();
     JsBigUint64Array::from_array_buffer(&mut cx, buf, 0, len / 8)
