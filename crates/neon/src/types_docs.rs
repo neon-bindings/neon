@@ -89,7 +89,7 @@
 ///
 /// #### Object Types
 ///
-/// The object type hierarchy further divides into a number of different subtypes:
+/// The object type hierarchy further divides into a variety of different subtypes:
 ///
 /// ```mermaid
 /// flowchart LR
