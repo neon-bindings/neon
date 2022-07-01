@@ -1,21 +1,21 @@
 import { assert } from "chai";
 import { spawn } from "child_process";
-import execa from "execa";
 import * as path from "path";
 import { promises as fs } from "fs";
 import * as TOML from "toml";
 import expect from "../dev/expect";
 import rimraf from "../dev/rimraf";
 
+// HACK: `execa` is an ES module, but Neon tests in Node which doesn't include
+// an ESM loader. This is a small wrapper for `execa` that covers the test cases.
+async function execa(command: string, args: readonly string[]): Promise<void> {
+  const { execa } = await import("execa");
+
+  await execa(command, args);
+}
+
 const NODE: string = process.execPath;
-const CREATE_NEON = path.join(
-  __dirname,
-  "..",
-  "dist",
-  "src",
-  "bin",
-  "create-neon.js"
-);
+const CREATE_NEON = path.join(__dirname, "..", "src", "bin", "create-neon.js");
 
 describe("Command-line argument validation", () => {
   it("requires an argument", async () => {
