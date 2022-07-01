@@ -219,7 +219,10 @@ describe("JsObject", function () {
     i16[3] = 0x5678;
     assert.deepEqual([...i16.slice(0, 4)], [0x1234, -1, -2, 0x5678]);
     var u8 = new Uint8Array(b);
-    assert.deepEqual([...u8.slice(0, 8)], [0x34, 0x12, 0xff, 0xff, 0xfe, 0xff, 0x78, 0x56]);
+    assert.deepEqual(
+      [...u8.slice(0, 8)],
+      [0x34, 0x12, 0xff, 0xff, 0xfe, 0xff, 0x78, 0x56]
+    );
 
     var b = new ArrayBuffer(64);
     var u32 = addon.return_uint32array_from_arraybuffer(b);
@@ -237,7 +240,10 @@ describe("JsObject", function () {
     f64[1] = 2.0;
     f64[2] = 3.141592653589793;
     assert.deepEqual([...f64.slice(0, 3)], [1.0, 2.0, 3.141592653589793]);
-    assert.deepEqual([...(new Float64Array(b)).slice(0, 3)], [1.0, 2.0, 3.141592653589793]);
+    assert.deepEqual(
+      [...new Float64Array(b).slice(0, 3)],
+      [1.0, 2.0, 3.141592653589793]
+    );
 
     var b = new ArrayBuffer(64);
     var u64 = addon.return_biguint64array_from_arraybuffer(b);
@@ -246,8 +252,17 @@ describe("JsObject", function () {
     u64[0] = 0x1234567887654321n;
     u64[1] = 0xcafed00d1337c0den;
     var u8 = new Uint8Array(b);
-    assert.deepEqual([...u64.slice(0, 2)], [0x1234567887654321n, 0xcafed00d1337c0den]);
-    assert.deepEqual([...u8.slice(0, 16)], [0x21, 0x43, 0x65, 0x87, 0x78, 0x56, 0x34, 0x12, 0xde, 0xc0, 0x37, 0x13, 0x0d, 0xd0, 0xfe, 0xca]);
+    assert.deepEqual(
+      [...u64.slice(0, 2)],
+      [0x1234567887654321n, 0xcafed00d1337c0den]
+    );
+    assert.deepEqual(
+      [...u8.slice(0, 16)],
+      [
+        0x21, 0x43, 0x65, 0x87, 0x78, 0x56, 0x34, 0x12, 0xde, 0xc0, 0x37, 0x13,
+        0x0d, 0xd0, 0xfe, 0xca,
+      ]
+    );
   });
 
   it("gets a new typed array", function () {
@@ -255,7 +270,10 @@ describe("JsObject", function () {
     assert.strictEqual(i32.constructor, Int32Array);
     assert.strictEqual(i32.byteLength, 64);
     assert.strictEqual(i32.length, 16);
-    assert.deepEqual([...i32], [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    assert.deepEqual(
+      [...i32],
+      [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    );
   });
 
   it("correctly reads a Buffer using the lock API", function () {
