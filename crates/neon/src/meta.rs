@@ -20,7 +20,7 @@ pub fn version() -> Version {
         major: MAJOR.parse().unwrap(),
         minor: MINOR.parse().unwrap(),
         patch: PATCH.parse().unwrap(),
-        pre: vec![],
-        build: vec![],
+        pre: Default::default(),
+        build: Default::default(),
     }
 }

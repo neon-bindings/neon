@@ -29,6 +29,6 @@
   },
   "homepage": "https://github.com/neon-bindings/neon/tree/main/pkgs/cargo-cp-artifact",
   "devDependencies": {
-    "mocha": "^9.1.0"
+    "mocha": "^10.0.0"
   }
 }
