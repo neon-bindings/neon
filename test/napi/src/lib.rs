@@ -345,6 +345,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("get_reentrant_value", js::workers::get_reentrant_value)?;
     cx.export_function("stash_global_object", js::workers::stash_global_object)?;
     cx.export_function("unstash_global_object", js::workers::unstash_global_object)?;
+    cx.export_function("reject_after", js::workers::reject_after)?;
 
     Ok(())
 }

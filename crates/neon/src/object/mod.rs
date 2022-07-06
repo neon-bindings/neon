@@ -36,7 +36,7 @@ use crate::{
     context::{internal::Env, Context},
     handle::{Handle, Managed, Root},
     result::{NeonResult, Throw},
-    sys::{self, raw, Status},
+    sys::{self, raw},
     types::{build, function::CallOptions, utf8::Utf8, JsFunction, JsUndefined, JsValue, Value},
 };
 
@@ -194,8 +194,8 @@ pub trait Object: Value {
         let obj = self.to_raw();
         unsafe {
             match sys::object::freeze(env, obj) {
-                Status::Ok => Ok(self),
-                Status::PendingException => Err(Throw::new()),
+                sys::Status::Ok => Ok(self),
+                sys::Status::PendingException => Err(Throw::new()),
                 _ => cx.throw_type_error("object cannot be frozen"),
             }
         }
@@ -207,8 +207,8 @@ pub trait Object: Value {
         let obj = self.to_raw();
         unsafe {
             match sys::object::seal(env, obj) {
-                Status::Ok => Ok(self),
-                Status::PendingException => Err(Throw::new()),
+                sys::Status::Ok => Ok(self),
+                sys::Status::PendingException => Err(Throw::new()),
                 _ => cx.throw_type_error("object cannot be sealed"),
             }
         }

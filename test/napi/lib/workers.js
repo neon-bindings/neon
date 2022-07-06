@@ -10,6 +10,11 @@ const addon = require("..");
 
 // Receive a message, try that method and return the error message
 if (!isMainThread) {
+  // RACE: Attempt to reproduce shutdown race condition bug. This depends on timings
+  // that may differ across systems. It should not produce spurious failures, but may
+  // succeed even if the presence of a bug.
+  addon.reject_after(new Error("Oh, no!"), 200).catch(() => {});
+
   addon.get_or_init_thread_id(threadId);
   parentPort.once("message", (message) => {
     try {
@@ -186,5 +191,12 @@ describe("Instance-local storage", () => {
     });
 
     worker.postMessage("get_thread_id");
+  });
+
+  it("should be able to exit a worker without a crash", (cb) => {
+    const worker = new Worker(__filename);
+
+    setTimeout(() => worker.terminate(), 50);
+    setTimeout(cb, 100);
   });
 });

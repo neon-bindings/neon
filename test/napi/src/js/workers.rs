@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use std::{convert::TryFrom, sync::Mutex, thread, time::Duration};
 
 use once_cell::sync::{Lazy, OnceCell};
 
@@ -89,4 +89,22 @@ pub fn unstash_global_object(mut cx: FunctionContext) -> JsResult<JsValue> {
         Some(root) => root.to_inner(&mut cx).upcast(),
         None => cx.null().upcast(),
     })
+}
+
+pub fn reject_after(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    let err = cx.argument::<JsObject>(0)?.root(&mut cx);
+    let ms = cx.argument::<JsNumber>(1)?.value(&mut cx) as i64;
+    let ms = u64::try_from(ms)
+        .or_else(|err| cx.throw_error(err.to_string()))
+        .map(Duration::from_millis)?;
+
+    let promise =
+        cx.task(move || thread::sleep(ms))
+            .promise(move |mut cx, _| -> JsResult<JsValue> {
+                let err = err.into_inner(&mut cx);
+
+                cx.throw(err)
+            });
+
+    Ok(promise)
 }
