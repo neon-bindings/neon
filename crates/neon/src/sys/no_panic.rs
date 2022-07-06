@@ -50,8 +50,8 @@ impl FailureBoundary {
     where
         F: FnOnce(Option<Env>) -> Local,
     {
-        // Event loop has terminated if `null`
-        let env = if env.is_null() { None } else { Some(env) };
+        // Make `env = None` if unable to call into JS
+        let env = can_call_into_js(env).then(|| env);
 
         // Run the user supplied callback, catching panics
         // This is unwind safe because control is never yielded back to the caller
@@ -119,6 +119,19 @@ impl FailureBoundary {
         // Trigger a fatal exception
         fatal_exception(env, error);
     }
+}
+
+// HACK: Force `NAPI_PREAMBLE` to run without executing any JavaScript to tell if it's
+// possible to call into JS.
+//
+// `NAPI_PREAMBLE` is a macro that checks if it is possible to call into JS.
+// https://github.com/nodejs/node/blob/5fad0b93667ffc6e4def52996b9529ac99b26319/src/js_native_api_v8.h#L211-L218
+//
+//  `napi_throw` starts by using `NAPI_PREAMBLE` and then a `CHECK_ARGS` on the `napi_value`. Since
+// we already know `env` is non-null, we expect the `null` value to cause a `napi_invalid_arg` error.
+// https://github.com/nodejs/node/blob/5fad0b93667ffc6e4def52996b9529ac99b26319/src/js_native_api_v8.cc#L1925-L1926
+fn can_call_into_js(env: Env) -> bool {
+    !env.is_null() && unsafe { napi::throw(env, ptr::null_mut()) == napi::Status::InvalidArg }
 }
 
 // We cannot use `napi_fatal_exception` because of this bug; instead, cause an
