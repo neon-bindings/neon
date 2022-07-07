@@ -8,8 +8,7 @@ use std::{
 
 use crate::{
     context::{Context, TaskContext},
-    result::NeonResult,
-    result::ResultExt,
+    result::{NeonResult, ResultExt, Throw},
     sys::{raw::Env, tsfn::ThreadsafeFunction},
 };
 
@@ -22,14 +21,26 @@ use {
 };
 
 #[cfg(not(feature = "futures"))]
-// Synchronous oneshot channel API compatible with `futures-channel`
+// Synchronous oneshot channel API compatible with `tokio::sync::oneshot`
 mod oneshot {
     use std::sync::mpsc;
 
-    pub(super) use std::sync::mpsc::Receiver;
+    pub(super) mod error {
+        pub use super::mpsc::RecvError;
+    }
 
-    pub(super) fn channel<T>() -> (mpsc::SyncSender<T>, mpsc::Receiver<T>) {
-        mpsc::sync_channel(1)
+    pub(super) struct Receiver<T>(mpsc::Receiver<T>);
+
+    impl<T> Receiver<T> {
+        pub(super) fn blocking_recv(self) -> Result<T, mpsc::RecvError> {
+            self.0.recv()
+        }
+    }
+
+    pub(super) fn channel<T>() -> (mpsc::SyncSender<T>, Receiver<T>) {
+        let (tx, rx) = mpsc::sync_channel(1);
+
+        (tx, Receiver(rx))
     }
 }
 
@@ -163,7 +174,7 @@ impl Channel {
             // N-API creates a `HandleScope` before calling the callback.
             TaskContext::with_context(env, move |cx| {
                 // Error can be ignored; it only means the user didn't join
-                let _ = tx.send(f(cx).map_err(|_| ()));
+                let _ = tx.send(f(cx).map_err(Into::into));
             });
         });
 
@@ -249,7 +260,7 @@ impl Drop for Channel {
 /// thread with [`Channel::send`].
 pub struct JoinHandle<T> {
     // `Err` is always `Throw`, but `Throw` cannot be sent across threads
-    rx: oneshot::Receiver<Result<T, ()>>,
+    rx: oneshot::Receiver<Result<T, SendThrow>>,
 }
 
 impl<T> JoinHandle<T> {
@@ -261,12 +272,7 @@ impl<T> JoinHandle<T> {
     ///
     /// This function panics if called within an asynchronous execution context.
     pub fn join(self) -> Result<T, JoinError> {
-        #[cfg(feature = "futures")]
-        let result = self.rx.blocking_recv();
-        #[cfg(not(feature = "futures"))]
-        let result = self.rx.recv();
-
-        JoinError::map_res(result)
+        Ok(self.rx.blocking_recv()??)
     }
 }
 
@@ -276,7 +282,15 @@ impl<T> Future for JoinHandle<T> {
     type Output = Result<T, JoinError>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut task::Context) -> Poll<Self::Output> {
-        JoinError::map_poll(&mut self.rx, cx)
+        match Pin::new(&mut self.rx).poll(cx) {
+            Poll::Ready(result) => {
+                // Closure can be replaced with a try block after stabilization
+                let get_result = move || Ok(result??);
+
+                Poll::Ready(get_result())
+            }
+            Poll::Pending => Poll::Pending,
+        }
     }
 }
 
@@ -298,28 +312,6 @@ impl JoinError {
             JoinErrorType::Throw => "Closure threw an exception",
         }
     }
-
-    #[cfg(feature = "futures")]
-    // Helper for writing a `Future` implementation by wrapping a `Future` and
-    // mapping to `Result<T, JoinError>`
-    pub(crate) fn map_poll<T, E>(
-        f: &mut (impl Future<Output = Result<Result<T, ()>, E>> + Unpin),
-        cx: &mut task::Context,
-    ) -> Poll<Result<T, Self>> {
-        match Pin::new(f).poll(cx) {
-            Poll::Ready(result) => Poll::Ready(Self::map_res(result)),
-            Poll::Pending => Poll::Pending,
-        }
-    }
-
-    // Helper for mapping a nested `Result` from joining to a `Result<T, JoinError>`
-    pub(crate) fn map_res<T, E>(res: Result<Result<T, ()>, E>) -> Result<T, Self> {
-        res
-            // If the sending side dropped without sending, it must have panicked
-            .map_err(|_| JoinError(JoinErrorType::Panic))?
-            // If the closure returned `Err`, a JavaScript exception was thrown
-            .map_err(|_| JoinError(JoinErrorType::Throw))
-    }
 }
 
 impl fmt::Display for JoinError {
@@ -329,6 +321,27 @@ impl fmt::Display for JoinError {
 }
 
 impl error::Error for JoinError {}
+
+impl From<oneshot::error::RecvError> for JoinError {
+    fn from(_: oneshot::error::RecvError) -> Self {
+        JoinError(JoinErrorType::Panic)
+    }
+}
+
+// Marker that a `Throw` occurred that can be sent across threads for use in `JoinError`
+pub(crate) struct SendThrow(());
+
+impl From<SendThrow> for JoinError {
+    fn from(_: SendThrow) -> Self {
+        JoinError(JoinErrorType::Throw)
+    }
+}
+
+impl From<Throw> for SendThrow {
+    fn from(_: Throw) -> SendThrow {
+        SendThrow(())
+    }
+}
 
 impl<T> ResultExt<T> for Result<T, JoinError> {
     fn or_throw<'a, C: Context<'a>>(self, cx: &mut C) -> NeonResult<T> {

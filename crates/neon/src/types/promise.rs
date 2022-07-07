@@ -15,18 +15,15 @@ use crate::{
 };
 
 #[cfg(feature = "napi-6")]
-use {
-    crate::{
-        lifecycle::{DropData, InstanceData},
-        sys::tsfn::ThreadsafeFunction,
-    },
-    std::sync::Arc,
+use crate::{
+    lifecycle::{DropData, InstanceData},
+    sys::tsfn::ThreadsafeFunction,
 };
 
 #[cfg(all(feature = "napi-5", feature = "futures"))]
 use {
     crate::context::internal::ContextInternal,
-    crate::event::JoinError,
+    crate::event::{JoinError, SendThrow},
     crate::result::NeonResult,
     crate::types::{JsFunction, JsValue},
     std::future::Future,
@@ -35,6 +32,9 @@ use {
     std::task::{self, Poll},
     tokio::sync::oneshot,
 };
+
+#[cfg(any(feature = "napi-6", all(feature = "napi-5", feature = "futures")))]
+use std::sync::Arc;
 
 const BOUNDARY: FailureBoundary = FailureBoundary {
     both: "A panic and exception occurred while resolving a `neon::types::Deferred`",
@@ -129,7 +129,7 @@ impl JsPromise {
 
                 TaskContext::with_context(cx.env(), move |cx| {
                     // Error indicates that the `Future` has already dropped; ignore
-                    let _ = tx.send(f(cx, Ok(v)).map_err(|_| ()));
+                    let _ = tx.send(f(cx, Ok(v)).map_err(Into::into));
                 });
 
                 Ok(cx.undefined())
@@ -143,7 +143,7 @@ impl JsPromise {
 
                 TaskContext::with_context(cx.env(), move |cx| {
                     // Error indicates that the `Future` has already dropped; ignore
-                    let _ = tx.send(f(cx, Err(v)).map_err(|_| ()));
+                    let _ = tx.send(f(cx, Err(v)).map_err(Into::into));
                 });
 
                 Ok(cx.undefined())
@@ -353,7 +353,7 @@ impl Drop for Deferred {
 /// are backed by a `Promise`.
 pub struct JsFuture<T> {
     // `Err` is always `Throw`, but `Throw` cannot be sent across threads
-    rx: oneshot::Receiver<Result<T, ()>>,
+    rx: oneshot::Receiver<Result<T, SendThrow>>,
 }
 
 #[cfg(all(feature = "napi-5", feature = "futures"))]
@@ -362,6 +362,14 @@ impl<T> Future for JsFuture<T> {
     type Output = Result<T, JoinError>;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut task::Context) -> Poll<Self::Output> {
-        JoinError::map_poll(&mut self.rx, cx)
+        match Pin::new(&mut self.rx).poll(cx) {
+            Poll::Ready(result) => {
+                // Closure can be replaced with a try block after stabilization
+                let get_result = move || Ok(result??);
+
+                Poll::Ready(get_result())
+            }
+            Poll::Pending => Poll::Pending,
+        }
     }
 }
