@@ -284,7 +284,10 @@ impl<T> Future for JoinHandle<T> {
     fn poll(mut self: Pin<&mut Self>, cx: &mut task::Context) -> Poll<Self::Output> {
         match Pin::new(&mut self.rx).poll(cx) {
             Poll::Ready(result) => {
-                // Closure can be replaced with a try block after stabilization
+                // Flatten `Result<Result<T, SendThrow>, RecvError>` by mapping to
+                // `Result<T, JoinError>`. This can be simplified by replacing the
+                // closure with a try-block after stabilization.
+                // https://doc.rust-lang.org/beta/unstable-book/language-features/try-blocks.html
                 let get_result = move || Ok(result??);
 
                 Poll::Ready(get_result())
