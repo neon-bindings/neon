@@ -12,6 +12,7 @@ mod js {
     pub mod date;
     pub mod errors;
     pub mod functions;
+    pub mod futures;
     pub mod numbers;
     pub mod objects;
     pub mod strings;
@@ -346,6 +347,10 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("stash_global_object", js::workers::stash_global_object)?;
     cx.export_function("unstash_global_object", js::workers::unstash_global_object)?;
     cx.export_function("reject_after", js::workers::reject_after)?;
+
+    // Futures
+    cx.export_function("lazy_async_add", js::futures::lazy_async_add)?;
+    cx.export_function("lazy_async_sum", js::futures::lazy_async_sum)?;
 
     Ok(())
 }

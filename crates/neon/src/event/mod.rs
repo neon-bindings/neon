@@ -126,6 +126,8 @@ mod task;
 
 pub use self::task::TaskBuilder;
 
+#[cfg(all(feature = "napi-5", feature = "futures"))]
+pub(crate) use self::channel::SendThrow;
 #[cfg(feature = "napi-4")]
 pub use self::channel::{Channel, JoinError, JoinHandle, SendError};
 

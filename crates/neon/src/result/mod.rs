@@ -38,7 +38,7 @@ use std::{
     marker::PhantomData,
 };
 
-use crate::{context::Context, handle::Handle};
+use crate::{context::Context, handle::Handle, types::Value};
 
 /// A [unit type][unit] indicating that the JavaScript thread is throwing an exception.
 ///
@@ -73,4 +73,14 @@ pub type JsResult<'b, T> = NeonResult<Handle<'b, T>>;
 /// into [`NeonResult`](NeonResult) values by throwing JavaScript exceptions.
 pub trait ResultExt<T> {
     fn or_throw<'a, C: Context<'a>>(self, cx: &mut C) -> NeonResult<T>;
+}
+
+impl<'a, 'b, T, E> ResultExt<Handle<'a, T>> for Result<Handle<'a, T>, Handle<'b, E>>
+where
+    T: Value,
+    E: Value,
+{
+    fn or_throw<'cx, C: Context<'cx>>(self, cx: &mut C) -> JsResult<'a, T> {
+        self.or_else(|err| cx.throw(err))
+    }
 }

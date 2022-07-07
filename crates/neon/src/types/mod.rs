@@ -116,6 +116,10 @@ pub use self::{
 #[cfg(feature = "napi-5")]
 pub use self::date::{DateError, DateErrorKind, JsDate};
 
+#[cfg(all(feature = "napi-5", feature = "futures"))]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-5", feature = "futures"))))]
+pub use self::promise::JsFuture;
+
 pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(
     env: Env,
     init: F,

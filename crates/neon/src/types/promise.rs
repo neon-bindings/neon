@@ -15,13 +15,26 @@ use crate::{
 };
 
 #[cfg(feature = "napi-6")]
-use {
-    crate::{
-        lifecycle::{DropData, InstanceData},
-        sys::tsfn::ThreadsafeFunction,
-    },
-    std::sync::Arc,
+use crate::{
+    lifecycle::{DropData, InstanceData},
+    sys::tsfn::ThreadsafeFunction,
 };
+
+#[cfg(all(feature = "napi-5", feature = "futures"))]
+use {
+    crate::context::internal::ContextInternal,
+    crate::event::{JoinError, SendThrow},
+    crate::result::NeonResult,
+    crate::types::{JsFunction, JsValue},
+    std::future::Future,
+    std::pin::Pin,
+    std::sync::Mutex,
+    std::task::{self, Poll},
+    tokio::sync::oneshot,
+};
+
+#[cfg(any(feature = "napi-6", all(feature = "napi-5", feature = "futures")))]
+use std::sync::Arc;
 
 const BOUNDARY: FailureBoundary = FailureBoundary {
     both: "A panic and exception occurred while resolving a `neon::types::Deferred`",
@@ -50,6 +63,97 @@ impl JsPromise {
         };
 
         (deferred, Handle::new_internal(JsPromise(promise)))
+    }
+
+    /// Creates a new `Promise` immediately resolved with the given value. If the value is a
+    /// `Promise` or a then-able, it will be flattened.
+    ///
+    /// `JsPromise::resolve` is useful to ensure a value that might not be a `Promise` or
+    /// might not be a native promise is converted to a `Promise` before use.
+    pub fn resolve<'a, C: Context<'a>, T: Value>(cx: &mut C, value: Handle<T>) -> Handle<'a, Self> {
+        let (deferred, promise) = cx.promise();
+        deferred.resolve(cx, value);
+        promise
+    }
+
+    /// Creates a nwe `Promise` immediately rejected with the given error.
+    pub fn reject<'a, C: Context<'a>, E: Value>(cx: &mut C, err: Handle<E>) -> Handle<'a, Self> {
+        let (deferred, promise) = cx.promise();
+        deferred.reject(cx, err);
+        promise
+    }
+
+    #[cfg(all(feature = "napi-5", feature = "futures"))]
+    #[cfg_attr(docsrs, doc(cfg(all(feature = "napi-5", feature = "futures"))))]
+    /// Creates a [`Future`](std::future::Future) that can be awaited to receive the result of a
+    /// JavaScript `Promise`.
+    ///
+    /// A callback must be provided that maps a `Result` representing the resolution or rejection of
+    /// the `Promise` and returns a value as the `Future` output.
+    ///
+    /// _Note_: Unlike `Future`, `Promise` are eagerly evaluated and so are `JsFuture`.
+    pub fn to_future<'a, O, C, F>(&self, cx: &mut C, f: F) -> NeonResult<JsFuture<O>>
+    where
+        O: Send + 'static,
+        C: Context<'a>,
+        F: FnOnce(TaskContext, Result<Handle<JsValue>, Handle<JsValue>>) -> NeonResult<O>
+            + Send
+            + 'static,
+    {
+        let then = self.get::<JsFunction, _, _>(cx, "then")?;
+        let catch = self.get::<JsFunction, _, _>(cx, "catch")?;
+
+        let (tx, rx) = oneshot::channel();
+        let take_state = {
+            // Note: If this becomes a bottleneck, `unsafe` could be used to avoid it.
+            // The promise spec guarantees that it will only be used once.
+            let state = Arc::new(Mutex::new(Some((f, tx))));
+
+            move || {
+                state
+                    .lock()
+                    .ok()
+                    .and_then(|mut lock| lock.take())
+                    // This should never happen because `self` is a native `Promise`
+                    // and settling multiple times is a violation of the spec.
+                    .expect("Attempted to settle JsFuture multiple times")
+            }
+        };
+
+        let resolve = JsFunction::new(cx, {
+            let take_state = take_state.clone();
+
+            move |mut cx| {
+                let (f, tx) = take_state();
+                let v = cx.argument::<JsValue>(0)?;
+
+                TaskContext::with_context(cx.env(), move |cx| {
+                    // Error indicates that the `Future` has already dropped; ignore
+                    let _ = tx.send(f(cx, Ok(v)).map_err(Into::into));
+                });
+
+                Ok(cx.undefined())
+            }
+        })?;
+
+        let reject = JsFunction::new(cx, {
+            move |mut cx| {
+                let (f, tx) = take_state();
+                let v = cx.argument::<JsValue>(0)?;
+
+                TaskContext::with_context(cx.env(), move |cx| {
+                    // Error indicates that the `Future` has already dropped; ignore
+                    let _ = tx.send(f(cx, Err(v)).map_err(Into::into));
+                });
+
+                Ok(cx.undefined())
+            }
+        })?;
+
+        then.exec(cx, Handle::new_internal(Self(self.0)), [resolve.upcast()])?;
+        catch.exec(cx, Handle::new_internal(Self(self.0)), [reject.upcast()])?;
+
+        Ok(JsFuture { rx })
     }
 }
 
@@ -237,6 +341,38 @@ impl Drop for Deferred {
         // If `None`, the `Deferred` has already been settled
         if let Some(internal) = self.internal.take() {
             let _ = self.drop_queue.call(DropData::Deferred(internal), None);
+        }
+    }
+}
+
+#[cfg(all(feature = "napi-5", feature = "futures"))]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-5", feature = "futures"))))]
+/// A [`Future`](std::future::Future) created from a [`JsPromise`].
+///
+/// Unlike typical `Future`, `JsFuture` are eagerly executed because they
+/// are backed by a `Promise`.
+pub struct JsFuture<T> {
+    // `Err` is always `Throw`, but `Throw` cannot be sent across threads
+    rx: oneshot::Receiver<Result<T, SendThrow>>,
+}
+
+#[cfg(all(feature = "napi-5", feature = "futures"))]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-5", feature = "futures"))))]
+impl<T> Future for JsFuture<T> {
+    type Output = Result<T, JoinError>;
+
+    fn poll(mut self: Pin<&mut Self>, cx: &mut task::Context) -> Poll<Self::Output> {
+        match Pin::new(&mut self.rx).poll(cx) {
+            Poll::Ready(result) => {
+                // Flatten `Result<Result<T, SendThrow>, RecvError>` by mapping to
+                // `Result<T, JoinError>`. This can be simplified by replacing the
+                // closure with a try-block after stabilization.
+                // https://doc.rust-lang.org/beta/unstable-book/language-features/try-blocks.html
+                let get_result = move || Ok(result??);
+
+                Poll::Ready(get_result())
+            }
+            Poll::Pending => Poll::Pending,
         }
     }
 }
