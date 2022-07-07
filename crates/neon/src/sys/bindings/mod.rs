@@ -118,7 +118,7 @@ macro_rules! generate {
 
         #[inline(never)]
         fn panic_load<T>() -> T {
-            panic!("Must load N-API bindings")
+            panic!("Node-API symbol has not been loaded")
         }
 
         static mut NAPI: Napi = {
@@ -139,21 +139,31 @@ macro_rules! generate {
             host: &libloading::Library,
             actual_napi_version: u32,
             expected_napi_version: u32,
-        ) -> Result<(), libloading::Error> {
+        ) {
             assert!(
                 actual_napi_version >= expected_napi_version,
-                "Minimum required N-API version {}, found {}.",
+                "Minimum required Node-API version {}, found {}.",
                 expected_napi_version,
                 actual_napi_version,
             );
 
+            let print_warn = |err| eprintln!("WARN: {}", err);
+
             NAPI = Napi {
                 $(
-                    $name: *host.get(napi_name!($name).as_bytes())?,
+                    $name: match host.get(napi_name!($name).as_bytes()) {
+                        Ok(f) => *f,
+                        // Node compatible runtimes may not have full coverage of Node-API
+                        // (e.g., bun). Instead of failing to start, warn on start and
+                        // panic when the API is called.
+                        // https://github.com/Jarred-Sumner/bun/issues/158
+                        Err(err) => {
+                            print_warn(err);
+                            NAPI.$name
+                        },
+                    },
                 )*
             };
-
-            Ok(())
         }
 
         $(

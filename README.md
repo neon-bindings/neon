@@ -49,6 +49,10 @@ Neon projects to 0.10!
 Support for [LTS versions of Node](https://github.com/nodejs/LTS#release-schedule) and current are expected. If you're
 using a different version of Node and believe it should be supported, let us know.
 
+### Bun (experimental)
+
+[Bun](https://bun.sh/) is an alternate JavaScript runtime that targets Node compatibility. In many cases Neon modules will work in bun; however, at the time of this writing, some Node-API functions are [not implemented](https://github.com/Jarred-Sumner/bun/issues/158).
+
 ### Rust
 
 Neon supports Rust stable version 1.18 and higher. We test on the latest stable, beta, and nightly versions of Rust.
