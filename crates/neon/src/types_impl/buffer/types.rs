@@ -278,14 +278,6 @@ impl TypedArray for JsArrayBuffer {
     }
 }
 
-/// A marker trait for all possible element types of binary buffers.
-///
-/// This trait can only be implemented within the Neon library.
-pub trait Binary: private::Sealed + Copy {
-    /// The internal Node-API enum value for this binary type.
-    const RAW: TypedArrayType;
-}
-
 /// The family of JS [typed array][typed-arrays] types.
 ///
 /// ## Typed Arrays
@@ -379,14 +371,14 @@ pub trait Binary: private::Sealed + Copy {
 /// [Buffer]: https://nodejs.org/api/buffer.html
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct JsTypedArray<T: Binary> {
+pub struct JsTypedArray<T: private::Binary> {
     local: raw::Local,
     _type: PhantomData<T>,
 }
 
-impl<T: Binary> private::Sealed for JsTypedArray<T> {}
+impl<T: private::Binary> private::Sealed for JsTypedArray<T> {}
 
-unsafe impl<T: Binary> TransparentNoCopyWrapper for JsTypedArray<T> {
+unsafe impl<T: private::Binary> TransparentNoCopyWrapper for JsTypedArray<T> {
     type Inner = raw::Local;
 
     fn into_inner(self) -> Self::Inner {
@@ -394,7 +386,7 @@ unsafe impl<T: Binary> TransparentNoCopyWrapper for JsTypedArray<T> {
     }
 }
 
-impl<T: Binary> Managed for JsTypedArray<T> {
+impl<T: private::Binary> Managed for JsTypedArray<T> {
     fn to_raw(&self) -> raw::Local {
         self.local
     }
@@ -407,7 +399,7 @@ impl<T: Binary> Managed for JsTypedArray<T> {
     }
 }
 
-impl<T: Binary> TypedArray for JsTypedArray<T> {
+impl<T: private::Binary> TypedArray for JsTypedArray<T> {
     type Item = T;
 
     fn as_slice<'cx, 'a, C>(&self, cx: &'a C) -> &'a [Self::Item]
@@ -477,7 +469,7 @@ impl<T: Binary> TypedArray for JsTypedArray<T> {
     }
 }
 
-impl<T: Binary> JsTypedArray<T> {
+impl<T: private::Binary> JsTypedArray<T> {
     pub fn from_array_buffer<'cx, 'a, C>(
         cx: &'a mut C,
         buffer: Handle<JsArrayBuffer>,
@@ -488,7 +480,13 @@ impl<T: Binary> JsTypedArray<T> {
         C: Context<'cx>,
     {
         let result = unsafe {
-            sys::typedarray::new(cx.env().to_raw(), T::RAW, buffer.to_raw(), byte_offset, len)
+            sys::typedarray::new(
+                cx.env().to_raw(),
+                T::TYPE_TAG,
+                buffer.to_raw(),
+                byte_offset,
+                len,
+            )
         };
 
         if let Ok(arr) = result {
@@ -514,8 +512,8 @@ macro_rules! impl_typed_array {
     ($name:expr, $typ:ty, $($pattern:pat)|+, $tag:ident$(,)?) => {
         impl private::Sealed for $typ {}
 
-        impl Binary for $typ {
-            const RAW: TypedArrayType = TypedArrayType::$tag;
+        impl private::Binary for $typ {
+            const TYPE_TAG: TypedArrayType = TypedArrayType::$tag;
         }
 
         impl Value for JsTypedArray<$typ> {}

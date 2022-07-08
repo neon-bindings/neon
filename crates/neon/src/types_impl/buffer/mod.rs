@@ -14,9 +14,8 @@ use crate::{
 };
 
 pub(crate) mod lock;
+mod private;
 pub(super) mod types;
-
-pub use types::Binary;
 
 /// A trait allowing Rust to borrow binary data from the memory buffer of JavaScript
 /// [typed arrays][typed-arrays].
@@ -174,8 +173,4 @@ impl<T> ResultExt<T> for Result<T, BorrowError> {
     fn or_throw<'a, C: Context<'a>>(self, cx: &mut C) -> NeonResult<T> {
         self.or_else(|_| cx.throw_error("BorrowError"))
     }
-}
-
-mod private {
-    pub trait Sealed {}
 }
