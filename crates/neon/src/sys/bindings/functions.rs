@@ -371,19 +371,19 @@ pub(super) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
     // with `Error: Module did not self-register` if N-API does not exist.
     let version = get_version(&host, env).expect("Failed to find N-API version");
 
-    napi1::load(&host, version, 1)?;
+    napi1::load(&host, version, 1);
 
     #[cfg(feature = "napi-4")]
-    napi4::load(&host, version, 4)?;
+    napi4::load(&host, version, 4);
 
     #[cfg(feature = "napi-5")]
-    napi5::load(&host, version, 5)?;
+    napi5::load(&host, version, 5);
 
     #[cfg(feature = "napi-6")]
-    napi6::load(&host, version, 6)?;
+    napi6::load(&host, version, 6);
 
     #[cfg(feature = "napi-8")]
-    napi8::load(&host, version, 8)?;
+    napi8::load(&host, version, 8);
 
     Ok(())
 }
