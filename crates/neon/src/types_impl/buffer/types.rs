@@ -472,8 +472,8 @@ impl<T: private::Binary> TypedArray for JsTypedArray<T> {
 }
 
 impl<T: private::Binary> JsTypedArray<T> {
-    pub fn from_array_buffer<'cx, 'a, C>(
-        cx: &'a mut C,
+    pub fn from_array_buffer<'cx, C>(
+        cx: &mut C,
         buffer: Handle<JsArrayBuffer>,
         byte_offset: usize,
         len: usize,
@@ -501,7 +501,7 @@ impl<T: private::Binary> JsTypedArray<T> {
         }
     }
 
-    pub fn new<'cx, 'a, C>(cx: &'a mut C, len: usize) -> JsResult<'cx, Self>
+    pub fn new<'cx, C>(cx: &mut C, len: usize) -> JsResult<'cx, Self>
     where
         C: Context<'cx>,
     {
