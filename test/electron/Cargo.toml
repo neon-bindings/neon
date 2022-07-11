@@ -9,5 +9,5 @@ license = "MIT/Apache-2.0"
 crate-type = ["cdylib"]
 
 [dependencies.neon]
-version = "1.0.0-alpha.0"
+version = "1.0.0-alpha.1"
 path = "../../crates/neon"
