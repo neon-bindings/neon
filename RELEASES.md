@@ -1,3 +1,48 @@
+# Version 1.0.0-alpha.0
+
+Pre-release of a major milestone for Neon. 1.0.
+
+## Breaking Changes
+
+### Major
+
+* Removed the legacy backend; only Node-API is supported going forward (https://github.com/neon-bindings/neon/pull/881)
+* Removed `neon::result::JsResultExt` in favor of more general `neon::result::ResultExt` (https://github.com/neon-bindings/neon/pull/904)
+
+### Minor
+
+* Length APIs (`argument`, `argument_ops`, `len`) use `usize` instead of `i32` (https://github.com/neon-bindings/neon/pull/889)
+* Deprecate feature flags for accepted RFCs (https://github.com/neon-bindings/neon/pull/872)
+* `neon::meta::version` returns `semver@1` version instead of `0.9` (https://github.com/neon-bindings/neon/pull/912)
+
+## Features
+
+* Add `Object.freeze` and `Object.seal` (https://github.com/neon-bindings/neon/pull/891)
+* Futures RFC (https://github.com/neon-bindings/neon/pull/872) Implementation (https://github.com/neon-bindings/neon/pull/874)
+  - Await `JoinHandle` from sending an event on a `Channel`
+  - Adapt `JsPromise` to `JsFuture`
+* API for thread-local data (i.e., instance data) (https://github.com/neon-bindings/neon/pull/902)
+* Add Object::call_with() convenience method to call a method on an object (https://github.com/neon-bindings/neon/pull/879)
+
+## Bug Fixes
+
+* Relax the lifetime constraints on `TypedArray` borrows (https://github.com/neon-bindings/neon/pull/877)
+* Allowing missing symbols at load time to support [bun](https://bun.sh) (https://github.com/neon-bindings/neon/pull/914)
+* Prevent a panic when an async event is called after the JavaScript runtime has stopped (https://github.com/neon-bindings/neon/pull/913)
+* Fix a soundness hole in `JsArrayBuffer::external` and `JsBuffer::external` (https://github.com/neon-bindings/neon/pull/897)
+
+## Docs
+
+* Fixed mistake in `Object::get` docs (https://github.com/neon-bindings/neon/pull/903)
+* Fixed link in README to migration guide (https://github.com/neon-bindings/neon/pull/895)
+
+## Internal
+
+* Moved `cargo-cp-artirfact` into the monorepo (https://github.com/neon-bindings/neon/pull/905)
+* Decreased the size of the Neon build matrix (https://github.com/neon-bindings/neon/pull/893)
+* Removed scope abstraction from legacy backend (https://github.com/neon-bindings/neon/pull/888)
+* Improved the monorepo structure of neon (https://github.com/neon-bindings/neon/pull/884)
+
 # Version 0.10.1
 
 Fix a soundness hole in `JsArrayBuffer::external`
