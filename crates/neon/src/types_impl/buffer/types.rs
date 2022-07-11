@@ -497,6 +497,9 @@ impl<T: Binary> TypedArray for JsTypedArray<T> {
 }
 
 impl<T: Binary> JsTypedArray<T> {
+    /// Constructs a typed array that views `buffer`.
+    ///
+    /// The resulting typed array has `(buffer.byte_length() / size_of::<T>())` elements.
     pub fn from_buffer<'cx, C>(cx: &mut C, buffer: Handle<JsArrayBuffer>) -> JsResult<'cx, Self>
     where
         C: Context<'cx>,
@@ -515,6 +518,11 @@ impl<T: Binary> JsTypedArray<T> {
         Self::from_buffer_region(cx, buffer, 0, len)
     }
 
+    /// Constructs a typed array that views a region of `buffer` starting
+    /// at the specified byte offset and with the specified number of elements.
+    ///
+    /// The resulting typed array has `len` elements and byte length
+    /// `(len * size_of::<T>())`.
     pub fn from_buffer_region<'cx, C>(
         cx: &mut C,
         buffer: Handle<JsArrayBuffer>,
@@ -544,6 +552,10 @@ impl<T: Binary> JsTypedArray<T> {
         }
     }
 
+    /// Constructs a new typed array of length `len`.
+    ///
+    /// The resulting typed array has a newly allocated storage buffer of
+    /// size `(len * size_of::<T>())` bytes.
     pub fn new<'cx, C>(cx: &mut C, len: usize) -> JsResult<'cx, Self>
     where
         C: Context<'cx>,
@@ -552,6 +564,13 @@ impl<T: Binary> JsTypedArray<T> {
         Self::from_buffer_region(cx, buffer, 0, len)
     }
 
+    /// Returns the [`JsArrayBuffer`](JsArrayBuffer) that owns the underlying storage buffer
+    /// for this typed array.
+    ///
+    /// Note that the typed array may only reference a region of the buffer; use the
+    /// [`byte_offset()`](JsTypedArray::byte_offset) and
+    /// [`byte_length()`](crate::types::buffer::TypedArray::byte_length) methods to
+    /// determine the region.
     pub fn buffer<'cx, C>(&self, cx: &mut C) -> Handle<'cx, JsArrayBuffer>
     where
         C: Context<'cx>,
@@ -561,6 +580,8 @@ impl<T: Binary> JsTypedArray<T> {
         Handle::new_internal(JsArrayBuffer::from_raw(env, info.buf))
     }
 
+    /// Returns the offset (in bytes) of the typed array from the start of its
+    /// [`JsArrayBuffer`](JsArrayBuffer).
     pub fn byte_offset<'cx, C>(&self, cx: &mut C) -> usize
     where
         C: Context<'cx>,
@@ -570,6 +591,14 @@ impl<T: Binary> JsTypedArray<T> {
         info.offset
     }
 
+    /// Returns the length of the typed array, i.e. the number of elements.
+    ///
+    /// Note that, depending on the element size, this is not necessarily the same as
+    /// [`byte_length()`](crate::types::buffer::TypedArray::byte_length). In particular:
+    ///
+    /// ```ignore
+    /// self.byte_length() == self.len() * size_of::<T>()
+    /// ```
     pub fn len<'cx, C>(&self, cx: &mut C) -> usize
     where
         C: Context<'cx>,
@@ -577,13 +606,6 @@ impl<T: Binary> JsTypedArray<T> {
         let env = cx.env();
         let info = unsafe { sys::typedarray::info(env.to_raw(), self.to_raw()) };
         info.length
-    }
-
-    pub fn byte_length<'cx, C>(&self, cx: &mut C) -> usize
-    where
-        C: Context<'cx>,
-    {
-        self.len(cx) * std::mem::size_of::<T>()
     }
 }
 
