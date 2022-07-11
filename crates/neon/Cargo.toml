@@ -1,6 +1,6 @@
 [package]
 name = "neon"
-version = "1.0.0-alpha.0"
+version = "1.0.0-alpha.1"
 authors = ["Dave Herman <david.herman@gmail.com>"]
 description = "A safe abstraction layer for Node.js."
 readme = "../../README.md"
@@ -24,7 +24,7 @@ libloading = "0.7.3"
 semver = "1"
 smallvec = "1.4.2"
 once_cell = "1.10.0"
-neon-macros = { version = "=0.10.1", path = "../neon-macros" }
+neon-macros = { version = "=1.0.0-alpha.1", path = "../neon-macros" }
 
 [dependencies.tokio]
 version = "1.18.2"
