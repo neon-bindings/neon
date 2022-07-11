@@ -155,6 +155,10 @@ impl TypedArray for JsBuffer {
             sys::buffer::as_mut_slice(lock.cx.env().to_raw(), self.to_raw())
         })
     }
+
+    fn byte_length<'cx, C: Context<'cx>>(&self, cx: &mut C) -> usize {
+        unsafe { sys::buffer::size(cx.env().to_raw(), self.to_raw()) }
+    }
 }
 
 /// The standard JS [`ArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) type.
@@ -278,6 +282,18 @@ impl TypedArray for JsArrayBuffer {
             sys::arraybuffer::as_mut_slice(lock.cx.env().to_raw(), self.to_raw())
         })
     }
+
+    fn byte_length<'cx, C: Context<'cx>>(&self, cx: &mut C) -> usize {
+        unsafe { sys::arraybuffer::size(cx.env().to_raw(), self.to_raw()) }
+    }
+}
+
+/// A marker trait for all possible element types of binary buffers.
+///
+/// This trait can only be implemented within the Neon library.
+pub trait Binary: private::Sealed + Copy {
+    /// The internal Node-API enum value for this binary type.
+    const TYPE_TAG: TypedArrayType;
 }
 
 /// The family of JS [typed array][typed-arrays] types.
@@ -373,14 +389,14 @@ impl TypedArray for JsArrayBuffer {
 /// [Buffer]: https://nodejs.org/api/buffer.html
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct JsTypedArray<T: private::Binary> {
+pub struct JsTypedArray<T: Binary> {
     local: raw::Local,
     _type: PhantomData<T>,
 }
 
-impl<T: private::Binary> private::Sealed for JsTypedArray<T> {}
+impl<T: Binary> private::Sealed for JsTypedArray<T> {}
 
-unsafe impl<T: private::Binary> TransparentNoCopyWrapper for JsTypedArray<T> {
+unsafe impl<T: Binary> TransparentNoCopyWrapper for JsTypedArray<T> {
     type Inner = raw::Local;
 
     fn into_inner(self) -> Self::Inner {
@@ -388,7 +404,7 @@ unsafe impl<T: private::Binary> TransparentNoCopyWrapper for JsTypedArray<T> {
     }
 }
 
-impl<T: private::Binary> Managed for JsTypedArray<T> {
+impl<T: Binary> Managed for JsTypedArray<T> {
     fn to_raw(&self) -> raw::Local {
         self.local
     }
@@ -401,7 +417,7 @@ impl<T: private::Binary> Managed for JsTypedArray<T> {
     }
 }
 
-impl<T: private::Binary> TypedArray for JsTypedArray<T> {
+impl<T: Binary> TypedArray for JsTypedArray<T> {
     type Item = T;
 
     fn as_slice<'cx, 'a, C>(&self, cx: &'a C) -> &'a [Self::Item]
@@ -469,10 +485,37 @@ impl<T: private::Binary> TypedArray for JsTypedArray<T> {
             )
         }
     }
+
+    fn byte_length<'cx, C: Context<'cx>>(&self, cx: &mut C) -> usize {
+        unsafe {
+            let env = cx.env().to_raw();
+            let value = self.to_raw();
+            let info = sys::typedarray::info(env, value);
+            info.length * std::mem::size_of::<Self::Item>()
+        }
+    }
 }
 
-impl<T: private::Binary> JsTypedArray<T> {
-    pub fn from_array_buffer<'cx, C>(
+impl<T: Binary> JsTypedArray<T> {
+    pub fn from_buffer<'cx, C>(cx: &mut C, buffer: Handle<JsArrayBuffer>) -> JsResult<'cx, Self>
+    where
+        C: Context<'cx>,
+    {
+        let byte_length = buffer.byte_length(cx);
+        let elt_size = std::mem::size_of::<T>();
+        let len = byte_length / elt_size;
+
+        if (len * elt_size) != byte_length {
+            panic!(
+                "byte length of typed array should be a multiple of {}",
+                elt_size
+            );
+        }
+
+        Self::from_buffer_region(cx, buffer, 0, len)
+    }
+
+    pub fn from_buffer_region<'cx, C>(
         cx: &mut C,
         buffer: Handle<JsArrayBuffer>,
         byte_offset: usize,
@@ -506,7 +549,41 @@ impl<T: private::Binary> JsTypedArray<T> {
         C: Context<'cx>,
     {
         let buffer = cx.array_buffer(len * std::mem::size_of::<T>())?;
-        Self::from_array_buffer(cx, buffer, 0, len)
+        Self::from_buffer_region(cx, buffer, 0, len)
+    }
+
+    pub fn buffer<'cx, C>(&self, cx: &mut C) -> Handle<'cx, JsArrayBuffer>
+    where
+        C: Context<'cx>,
+    {
+        let env = cx.env();
+        let info = unsafe { sys::typedarray::info(env.to_raw(), self.to_raw()) };
+        Handle::new_internal(JsArrayBuffer::from_raw(env, info.buf))
+    }
+
+    pub fn byte_offset<'cx, C>(&self, cx: &mut C) -> usize
+    where
+        C: Context<'cx>,
+    {
+        let env = cx.env();
+        let info = unsafe { sys::typedarray::info(env.to_raw(), self.to_raw()) };
+        info.offset
+    }
+
+    pub fn len<'cx, C>(&self, cx: &mut C) -> usize
+    where
+        C: Context<'cx>,
+    {
+        let env = cx.env();
+        let info = unsafe { sys::typedarray::info(env.to_raw(), self.to_raw()) };
+        info.length
+    }
+
+    pub fn byte_length<'cx, C>(&self, cx: &mut C) -> usize
+    where
+        C: Context<'cx>,
+    {
+        self.len(cx) * std::mem::size_of::<T>()
     }
 }
 
@@ -514,7 +591,7 @@ macro_rules! impl_typed_array {
     ($typ:ident, $etyp:ty, $($pattern:pat)|+, $tag:ident, $alias:ident, $two:expr$(,)?) => {
         impl private::Sealed for $etyp {}
 
-        impl private::Binary for $etyp {
+        impl Binary for $etyp {
             const TYPE_TAG: TypedArrayType = TypedArrayType::$tag;
         }
 

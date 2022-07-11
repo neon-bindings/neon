@@ -276,6 +276,118 @@ describe("JsObject", function () {
     );
   });
 
+  it("gets correct typed array info", function () {
+    var buf = new ArrayBuffer(128);
+
+    var a = addon.return_int8array_from_arraybuffer(buf);
+    var info = addon.get_typed_array_info(a);
+
+    assert.strictEqual(buf, a.buffer);
+    assert.strictEqual(0, a.byteOffset);
+    assert.strictEqual(128, a.length);
+    assert.strictEqual(128, a.byteLength);
+
+    assert.strictEqual(buf, info.buffer);
+    assert.strictEqual(0, info.byteOffset);
+    assert.strictEqual(128, info.length);
+    assert.strictEqual(128, info.byteLength);
+
+    var a = addon.return_int16array_from_arraybuffer(buf);
+    var info = addon.get_typed_array_info(a);
+
+    assert.strictEqual(buf, a.buffer);
+    assert.strictEqual(0, a.byteOffset);
+    assert.strictEqual(64, a.length);
+    assert.strictEqual(128, a.byteLength);
+
+    assert.strictEqual(buf, info.buffer);
+    assert.strictEqual(0, info.byteOffset);
+    assert.strictEqual(64, info.length);
+    assert.strictEqual(128, info.byteLength);
+
+    var a = addon.return_uint32array_from_arraybuffer(buf);
+    var info = addon.get_typed_array_info(a);
+
+    assert.strictEqual(buf, a.buffer);
+    assert.strictEqual(0, a.byteOffset);
+    assert.strictEqual(32, a.length);
+    assert.strictEqual(128, a.byteLength);
+
+    assert.strictEqual(buf, info.buffer);
+    assert.strictEqual(0, info.byteOffset);
+    assert.strictEqual(32, info.length);
+    assert.strictEqual(128, info.byteLength);
+
+    var a = addon.return_biguint64array_from_arraybuffer(buf);
+    var info = addon.get_typed_array_info(a);
+
+    assert.strictEqual(buf, a.buffer);
+    assert.strictEqual(0, a.byteOffset);
+    assert.strictEqual(16, a.length);
+    assert.strictEqual(128, a.byteLength);
+
+    assert.strictEqual(buf, info.buffer);
+    assert.strictEqual(0, info.byteOffset);
+    assert.strictEqual(16, info.length);
+    assert.strictEqual(128, info.byteLength);
+  });
+
+  it("correctly constructs a view over a slice of a buffer", function () {
+    var buf = new ArrayBuffer(128);
+
+    var a = addon.return_uint32array_from_arraybuffer_region(buf, 16, 4);
+    var info = addon.get_typed_array_info(a);
+
+    assert.strictEqual(buf, a.buffer);
+    assert.strictEqual(16, a.byteOffset);
+    assert.strictEqual(4, a.length);
+    assert.strictEqual(16, a.byteLength);
+
+    assert.strictEqual(buf, info.buffer);
+    assert.strictEqual(16, info.byteOffset);
+    assert.strictEqual(4, info.length);
+    assert.strictEqual(16, info.byteLength);
+
+    a[0] = 17;
+    a[1] = 42;
+    a[2] = 100;
+    a[3] = 1000;
+
+    var left = buf.slice(0, 16);
+    var middle = buf.slice(16, 32);
+    var right = buf.slice(32);
+
+    assert.deepEqual(new Uint8Array(16), new Uint8Array(left));
+    assert.deepEqual(
+      new Uint8Array([17, 0, 0, 0, 42, 0, 0, 0, 100, 0, 0, 0, 232, 3, 0, 0]),
+      new Uint8Array(middle)
+    );
+    assert.deepEqual(new Uint8Array(96), new Uint8Array(right));
+  });
+
+  it("properly fails to construct typed arrays with invalid arguments", function () {
+    var buf = new ArrayBuffer(32);
+    try {
+      addon.return_uint32array_from_arraybuffer_region(buf, 1, 4);
+      assert.fail("should have thrown for unaligned offset");
+    } catch (expected) {}
+
+    try {
+      addon.return_uint32array_from_arraybuffer_region(buf, 100, 104);
+      assert.fail("should have thrown for bounds check failure");
+    } catch (expected) {}
+
+    try {
+      addon.return_uint32array_from_arraybuffer_region(buf, 0, 5);
+      assert.fail("should have thrown for invalid length");
+    } catch (expected) {}
+
+    try {
+      addon.return_uint32array_from_arraybuffer_region(buf, 0, 10);
+      assert.fail("should have thrown for excessive length");
+    } catch (expected) {}
+  });
+
   it("correctly reads a Buffer using the lock API", function () {
     var b = Buffer.allocUnsafe(16);
     b.writeUInt8(147, 0);

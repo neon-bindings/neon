@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use neon::{
     prelude::*,
-    types::buffer::{BorrowError, TypedArray},
+    types::buffer::{Binary, BorrowError, TypedArray},
 };
 
 pub fn return_js_global_object(mut cx: FunctionContext) -> JsResult<JsObject> {
@@ -169,39 +169,101 @@ pub fn return_external_array_buffer(mut cx: FunctionContext) -> JsResult<JsArray
 
 pub fn return_int8array_from_arraybuffer(mut cx: FunctionContext) -> JsResult<JsInt8Array> {
     let buf = cx.argument::<JsArrayBuffer>(0)?;
-    let len = buf.as_slice(&cx).len();
-    JsInt8Array::from_array_buffer(&mut cx, buf, 0, len)
+    JsInt8Array::from_buffer(&mut cx, buf)
 }
 
 pub fn return_int16array_from_arraybuffer(mut cx: FunctionContext) -> JsResult<JsInt16Array> {
     let buf = cx.argument::<JsArrayBuffer>(0)?;
-    let len = buf.as_slice(&cx).len();
-    JsInt16Array::from_array_buffer(&mut cx, buf, 0, len / 2)
+    JsInt16Array::from_buffer(&mut cx, buf)
 }
 
 pub fn return_uint32array_from_arraybuffer(mut cx: FunctionContext) -> JsResult<JsUint32Array> {
     let buf = cx.argument::<JsArrayBuffer>(0)?;
-    let len = buf.as_slice(&cx).len();
-    JsUint32Array::from_array_buffer(&mut cx, buf, 0, len / 4)
+    JsUint32Array::from_buffer(&mut cx, buf)
 }
 
 pub fn return_float64array_from_arraybuffer(mut cx: FunctionContext) -> JsResult<JsFloat64Array> {
     let buf = cx.argument::<JsArrayBuffer>(0)?;
-    let len = buf.as_slice(&cx).len();
-    JsFloat64Array::from_array_buffer(&mut cx, buf, 0, len / 8)
+    JsFloat64Array::from_buffer(&mut cx, buf)
 }
 
 pub fn return_biguint64array_from_arraybuffer(
     mut cx: FunctionContext,
 ) -> JsResult<JsBigUint64Array> {
     let buf = cx.argument::<JsArrayBuffer>(0)?;
-    let len = buf.as_slice(&cx).len();
-    JsBigUint64Array::from_array_buffer(&mut cx, buf, 0, len / 8)
+    JsBigUint64Array::from_buffer(&mut cx, buf)
 }
 
 pub fn return_new_int32array(mut cx: FunctionContext) -> JsResult<JsInt32Array> {
     let len = cx.argument::<JsNumber>(0)?.value(&mut cx) as usize;
     JsInt32Array::new(&mut cx, len)
+}
+
+pub fn return_uint32array_from_arraybuffer_region(
+    mut cx: FunctionContext,
+) -> JsResult<JsUint32Array> {
+    let buf = cx.argument::<JsArrayBuffer>(0)?;
+    let byte_offset = cx.argument::<JsNumber>(1)?;
+    let byte_offset = byte_offset.value(&mut cx);
+    let len = cx.argument::<JsNumber>(2)?;
+    let len = len.value(&mut cx);
+    JsUint32Array::from_buffer_region(&mut cx, buf, byte_offset as usize, len as usize)
+}
+
+fn typed_array_info<'cx, C, T: Binary>(
+    cx: &mut C,
+    a: Handle<'cx, JsTypedArray<T>>,
+) -> JsResult<'cx, JsObject>
+where
+    C: Context<'cx>,
+{
+    let byte_offset = a.byte_offset(cx);
+    let byte_offset = cx.number(byte_offset as u32);
+
+    let len = a.len(cx);
+    let len = cx.number(len as u32);
+
+    let byte_length = a.byte_length(cx);
+    let byte_length = cx.number(byte_length as u32);
+
+    let buffer = a.buffer(cx);
+
+    let obj = cx.empty_object();
+
+    obj.set(cx, "byteOffset", byte_offset)?;
+    obj.set(cx, "length", len)?;
+    obj.set(cx, "byteLength", byte_length)?;
+    obj.set(cx, "buffer", buffer)?;
+
+    Ok(obj)
+}
+
+pub fn get_typed_array_info(mut cx: FunctionContext) -> JsResult<JsObject> {
+    let x = cx.argument::<JsValue>(0)?;
+
+    if let Ok(a) = x.downcast::<JsTypedArray<u8>, _>(&mut cx) {
+        typed_array_info(&mut cx, a)
+    } else if let Ok(a) = x.downcast::<JsTypedArray<i8>, _>(&mut cx) {
+        typed_array_info(&mut cx, a)
+    } else if let Ok(a) = x.downcast::<JsTypedArray<u16>, _>(&mut cx) {
+        typed_array_info(&mut cx, a)
+    } else if let Ok(a) = x.downcast::<JsTypedArray<i16>, _>(&mut cx) {
+        typed_array_info(&mut cx, a)
+    } else if let Ok(a) = x.downcast::<JsTypedArray<u32>, _>(&mut cx) {
+        typed_array_info(&mut cx, a)
+    } else if let Ok(a) = x.downcast::<JsTypedArray<i32>, _>(&mut cx) {
+        typed_array_info(&mut cx, a)
+    } else if let Ok(a) = x.downcast::<JsTypedArray<u64>, _>(&mut cx) {
+        typed_array_info(&mut cx, a)
+    } else if let Ok(a) = x.downcast::<JsTypedArray<i64>, _>(&mut cx) {
+        typed_array_info(&mut cx, a)
+    } else if let Ok(a) = x.downcast::<JsTypedArray<f32>, _>(&mut cx) {
+        typed_array_info(&mut cx, a)
+    } else if let Ok(a) = x.downcast::<JsTypedArray<f64>, _>(&mut cx) {
+        typed_array_info(&mut cx, a)
+    } else {
+        cx.throw_type_error("expected a typed array")
+    }
 }
 
 pub fn read_buffer_with_lock(mut cx: FunctionContext) -> JsResult<JsNumber> {

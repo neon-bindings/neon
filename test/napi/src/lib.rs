@@ -256,6 +256,11 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         return_biguint64array_from_arraybuffer,
     )?;
     cx.export_function("return_new_int32array", return_new_int32array)?;
+    cx.export_function(
+        "return_uint32array_from_arraybuffer_region",
+        return_uint32array_from_arraybuffer_region,
+    )?;
+    cx.export_function("get_typed_array_info", get_typed_array_info)?;
     cx.export_function("read_buffer_with_lock", read_buffer_with_lock)?;
     cx.export_function("read_buffer_with_borrow", read_buffer_with_borrow)?;
     cx.export_function("write_buffer_with_lock", write_buffer_with_lock)?;
