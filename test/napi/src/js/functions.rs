@@ -1,4 +1,4 @@
-use neon::{object::This, prelude::*};
+use neon::prelude::*;
 
 fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let x = cx.argument::<JsNumber>(0)?.value(&mut cx);
@@ -142,7 +142,7 @@ trait CheckArgument<'a> {
     fn check_argument<V: Value>(&mut self, i: usize) -> JsResult<'a, V>;
 }
 
-impl<'a, T: This> CheckArgument<'a> for CallContext<'a, T> {
+impl<'a> CheckArgument<'a> for FunctionContext<'a> {
     fn check_argument<V: Value>(&mut self, i: usize) -> JsResult<'a, V> {
         self.argument::<V>(i)
     }
@@ -170,12 +170,11 @@ pub fn num_arguments(mut cx: FunctionContext) -> JsResult<JsNumber> {
 }
 
 pub fn return_this(mut cx: FunctionContext) -> JsResult<JsValue> {
-    Ok(cx.this().upcast())
+    Ok(cx.this()?)
 }
 
 pub fn require_object_this(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    let this = cx.this();
-    let this = this.downcast::<JsObject, _>(&mut cx).or_throw(&mut cx)?;
+    let this = cx.this::<JsObject>()?;
     let t = cx.boolean(true);
     this.set(&mut cx, "modified", t)?;
     Ok(cx.undefined())
@@ -241,7 +240,7 @@ pub fn get_number_or_default(mut cx: FunctionContext) -> JsResult<JsNumber> {
 }
 
 pub fn is_construct(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let this = cx.this();
+    let this = cx.this::<JsObject>()?;
     let construct = matches!(cx.kind(), CallKind::Construct);
     let construct = cx.boolean(construct);
     this.set(&mut cx, "wasConstructed", construct)?;

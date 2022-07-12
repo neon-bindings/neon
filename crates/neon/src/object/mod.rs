@@ -33,8 +33,8 @@
 //! [symbol]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol
 
 use crate::{
-    context::{internal::Env, Context},
-    handle::{Handle, Managed, Root},
+    context::Context,
+    handle::{Handle, Root},
     result::{NeonResult, Throw},
     sys::{self, raw},
     types::{build, function::CallOptions, utf8::Utf8, JsFunction, JsUndefined, JsValue, Value},
@@ -241,10 +241,4 @@ pub trait Object: Value {
         options.this(JsValue::new_internal(self.to_raw()));
         Ok(options)
     }
-}
-
-/// The trait of types that can be a function's `this` binding.
-pub unsafe trait This: Managed {
-    #[allow(clippy::wrong_self_convention)]
-    fn as_this(env: Env, h: raw::Local) -> Self;
 }
