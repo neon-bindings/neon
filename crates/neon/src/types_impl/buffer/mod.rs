@@ -182,5 +182,18 @@ impl<T> ResultExt<T> for Result<T, BorrowError> {
 }
 
 mod private {
+    use super::Binary;
+    use crate::sys::raw;
+    use std::marker::PhantomData;
+
     pub trait Sealed {}
+
+    #[derive(Debug, Clone)]
+    pub struct JsTypedArrayInner<T: Binary> {
+        pub(super) local: raw::Local,
+        pub(super) buffer: raw::Local,
+        pub(super) byte_offset: usize,
+        pub(super) len: usize,
+        pub(super) _type: PhantomData<T>,
+    }
 }
