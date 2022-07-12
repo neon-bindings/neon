@@ -577,7 +577,7 @@ impl<T: Binary> JsTypedArray<T> {
     /// Returns the [`JsArrayBuffer`](JsArrayBuffer) that owns the underlying storage buffer
     /// for this typed array.
     ///
-    /// Note that the typed array may only reference a region of the buffer; use the
+    /// Note that the typed array might only reference a region of the buffer; use the
     /// [`byte_offset()`](JsTypedArray::byte_offset) and
     /// [`byte_length()`](crate::types::buffer::TypedArray::byte_length) methods to
     /// determine the region.
