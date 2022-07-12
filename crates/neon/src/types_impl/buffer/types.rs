@@ -494,12 +494,7 @@ impl<T: Binary> TypedArray for JsTypedArray<T> {
     }
 
     fn byte_length<'cx, C: Context<'cx>>(&self, cx: &mut C) -> usize {
-        unsafe {
-            let env = cx.env().to_raw();
-            let value = self.to_raw();
-            let info = sys::typedarray::info(env, value);
-            info.length * std::mem::size_of::<Self::Item>()
-        }
+        self.len(cx) * std::mem::size_of::<Self::Item>()
     }
 }
 
