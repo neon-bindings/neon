@@ -538,6 +538,7 @@ impl JsArray {
         unsafe { sys::array::len(env.to_raw(), self.to_raw()) }
     }
 
+    #[allow(clippy::len_without_is_empty)]
     pub fn len<'a, C: Context<'a>>(&self, cx: &mut C) -> u32 {
         self.len_inner(cx.env())
     }

@@ -108,7 +108,7 @@ impl<'a, T> Deref for Ref<'a, T> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
-        &self.data
+        self.data
     }
 }
 
@@ -116,7 +116,7 @@ impl<'a, T> Deref for RefMut<'a, T> {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
-        &self.data
+        self.data
     }
 }
 
@@ -129,7 +129,7 @@ impl<'a, T> DerefMut for RefMut<'a, T> {
 impl<'a, T> Drop for Ref<'a, T> {
     fn drop(&mut self) {
         let mut ledger = self.ledger.borrow_mut();
-        let range = Ledger::slice_to_range(&self.data);
+        let range = Ledger::slice_to_range(self.data);
         let i = ledger.shared.iter().rposition(|r| r == &range).unwrap();
 
         ledger.shared.remove(i);
@@ -139,7 +139,7 @@ impl<'a, T> Drop for Ref<'a, T> {
 impl<'a, T> Drop for RefMut<'a, T> {
     fn drop(&mut self) {
         let mut ledger = self.ledger.borrow_mut();
-        let range = Ledger::slice_to_range(&self.data);
+        let range = Ledger::slice_to_range(self.data);
         let i = ledger.owned.iter().rposition(|r| r == &range).unwrap();
 
         ledger.owned.remove(i);

@@ -8,7 +8,7 @@ fn runtime<'a, C: Context<'a>>(cx: &mut C) -> NeonResult<&'static Runtime> {
     static RUNTIME: OnceCell<Runtime> = OnceCell::new();
 
     RUNTIME
-        .get_or_try_init(|| Runtime::new())
+        .get_or_try_init(Runtime::new)
         .or_else(|err| cx.throw_error(&err.to_string()))
 }
 
@@ -58,7 +58,7 @@ pub fn lazy_async_sum(mut cx: FunctionContext) -> JsResult<JsPromise> {
             let nums = nums
                 .or_throw(&mut cx)?
                 .downcast_or_throw::<JsTypedArray<f64>, _>(&mut cx)?
-                .as_slice(&mut cx)
+                .as_slice(&cx)
                 .to_vec();
 
             Ok(nums)

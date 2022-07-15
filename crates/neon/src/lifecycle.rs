@@ -131,7 +131,7 @@ impl LocalCell {
         // Kick off a new transaction and drop it before getting the result.
         {
             let mut tx = TryInitTransaction::new(cx, id);
-            tx.run(|cx| Ok(f(cx)?))?;
+            tx.run(|cx| f(cx))?;
         }
 
         // If we're here, the transaction has succeeded, so get the result.
@@ -195,11 +195,9 @@ impl<'cx, 'a, C: Context<'cx>> TryInitTransaction<'cx, 'a, C> {
         InstanceData::locals(self.cx).get(self.id)
     }
 
+    #[allow(clippy::wrong_self_convention)]
     fn is_trying(&mut self) -> bool {
-        match self.cell() {
-            LocalCell::Trying => true,
-            _ => false,
-        }
+        matches!(self.cell(), LocalCell::Trying)
     }
 }
 

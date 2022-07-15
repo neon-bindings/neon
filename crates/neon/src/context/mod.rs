@@ -322,12 +322,12 @@ pub trait Context<'a>: ContextInternal<'a> {
 
     /// Convenience method for creating a `JsNull` value.
     fn null(&mut self) -> Handle<'a, JsNull> {
-        return JsNull::new(self);
+        JsNull::new(self)
     }
 
     /// Convenience method for creating a `JsUndefined` value.
     fn undefined(&mut self) -> Handle<'a, JsUndefined> {
-        return JsUndefined::new(self);
+        JsUndefined::new(self)
     }
 
     /// Convenience method for creating an empty `JsObject` value.

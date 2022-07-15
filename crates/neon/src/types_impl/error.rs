@@ -90,7 +90,7 @@ pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> NeonResult<T>>(
     env: Env,
     f: F,
 ) -> NeonResult<T> {
-    match catch_unwind(|| f()) {
+    match catch_unwind(f) {
         Ok(result) => result,
         Err(panic) => {
             let msg = if let Some(string) = panic.downcast_ref::<String>() {

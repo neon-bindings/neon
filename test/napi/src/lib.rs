@@ -36,8 +36,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     let b_true = cx.boolean(true);
     let b_false = cx.boolean(false);
 
-    assert_eq!(b_true.value(&mut cx), true);
-    assert_eq!(b_false.value(&mut cx), false);
+    assert!(b_true.value(&mut cx));
+    assert!(!b_false.value(&mut cx));
 
     cx.export_value("undefined", undefined)?;
     cx.export_value("null", null)?;
@@ -81,13 +81,10 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
             .abs()
             < f64::EPSILON
     );
-    assert_eq!(
-        {
-            let v: Handle<JsBoolean> = rust_created.get(&mut cx, "whatever")?;
-            v.value(&mut cx)
-        },
-        true
-    );
+    assert!({
+        let v: Handle<JsBoolean> = rust_created.get(&mut cx, "whatever")?;
+        v.value(&mut cx)
+    });
 
     let property_names = rust_created
         .get_own_property_names(&mut cx)?

@@ -246,7 +246,7 @@ impl Deferred {
         F: FnOnce(TaskContext) -> JsResult<V> + Send + 'static,
     {
         channel.try_send(move |cx| {
-            self.try_catch_settle(cx, move |cx| complete(cx));
+            self.try_catch_settle(cx, complete);
             Ok(())
         })
     }

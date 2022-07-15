@@ -409,6 +409,9 @@ impl<T: Binary> Managed for JsTypedArray<T> {
         self.0.local
     }
 
+    // This method should be `unsafe`
+    // https://github.com/neon-bindings/neon/issues/885
+    #[allow(clippy::not_unsafe_ptr_arg_deref)]
     fn from_raw(env: Env, local: raw::Local) -> Self {
         // Safety: Recomputing this information ensures that the lifetime of the
         //         buffer handle matches the lifetime of the typed array handle.
@@ -600,6 +603,7 @@ impl<T: Binary> JsTypedArray<T> {
     /// ```ignore
     /// self.byte_length() == self.len() * size_of::<T>()
     /// ```
+    #[allow(clippy::len_without_is_empty)]
     pub fn len<'cx, C>(&self, _cx: &mut C) -> usize
     where
         C: Context<'cx>,
