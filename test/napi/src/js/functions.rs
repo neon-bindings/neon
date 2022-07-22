@@ -138,19 +138,9 @@ pub fn construct_js_function_with_overloaded_result(mut cx: FunctionContext) -> 
         .apply(&mut cx)
 }
 
-trait CheckArgument<'a> {
-    fn check_argument<V: Value>(&mut self, i: usize) -> JsResult<'a, V>;
-}
-
-impl<'a> CheckArgument<'a> for FunctionContext<'a> {
-    fn check_argument<V: Value>(&mut self, i: usize) -> JsResult<'a, V> {
-        self.argument::<V>(i)
-    }
-}
-
 pub fn check_string_and_number(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    cx.check_argument::<JsString>(0)?;
-    cx.check_argument::<JsNumber>(1)?;
+    cx.argument::<JsString>(0)?;
+    cx.argument::<JsNumber>(1)?;
     Ok(cx.undefined())
 }
 

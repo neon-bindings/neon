@@ -659,9 +659,17 @@ impl<'a> FunctionContext<'a> {
         }
     }
 
-    /// Produces a handle to the `this`-binding.
+    /// Produces a handle to the `this`-binding and attempts to downcast as a specific type.
+    /// Equivalent to calling `cx.this_value().downcast_or_throw(&mut cx)`.
+    ///
+    /// Throws an exception if the value is a different type.
     pub fn this<T: Value>(&mut self) -> JsResult<'a, T> {
-        JsValue::new_internal(self.info.this(self)).downcast_or_throw(self)
+        self.this_value().downcast_or_throw(self)
+    }
+
+    /// Produces a handle to the function's [`this`-binding](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/this#function_context).
+    pub fn this_value(&mut self) -> Handle<'a, JsValue> {
+        JsValue::new_internal(self.info.this(self))
     }
 }
 
