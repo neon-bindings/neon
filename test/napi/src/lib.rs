@@ -2,7 +2,7 @@ use neon::prelude::*;
 
 use crate::js::{
     arrays::*, boxed::*, coercions::*, date::*, errors::*, functions::*, numbers::*, objects::*,
-    strings::*, threads::*, types::*,
+    strings::*, threads::*, typedarrays::*, types::*,
 };
 
 mod js {
@@ -17,6 +17,7 @@ mod js {
     pub mod objects;
     pub mod strings;
     pub mod threads;
+    pub mod typedarrays;
     pub mod types;
     pub mod workers;
 }
@@ -257,6 +258,11 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         "return_uint32array_from_arraybuffer_region",
         return_uint32array_from_arraybuffer_region,
     )?;
+    cx.export_function("get_arraybuffer_byte_length", get_arraybuffer_byte_length)?;
+    cx.export_function("detach_same_handle", detach_same_handle)?;
+    cx.export_function("detach_and_escape", detach_and_escape)?;
+    cx.export_function("detach_and_cast", detach_and_cast)?;
+    cx.export_function("detach_and_unroot", detach_and_unroot)?;
     cx.export_function("get_typed_array_info", get_typed_array_info)?;
     cx.export_function("read_buffer_with_lock", read_buffer_with_lock)?;
     cx.export_function("read_buffer_with_borrow", read_buffer_with_borrow)?;
