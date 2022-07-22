@@ -242,9 +242,10 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape.
     ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
-    fn execute_scoped<T, F>(&mut self, f: F) -> T
+    fn execute_scoped<'b, T, F>(&mut self, f: F) -> T
     where
-        F: for<'b> FnOnce(ExecuteContext<'b>) -> T,
+        'a: 'b,
+        F: FnOnce(ExecuteContext<'b>) -> T,
     {
         let env = self.env();
         let scope = unsafe { HandleScope::new(env.to_raw()) };
@@ -263,17 +264,17 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape, with the exception of the result value, which is rooted in the outer context.
     ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
-    fn compute_scoped<V, F>(&mut self, f: F) -> JsResult<'a, V>
+    fn compute_scoped<'b, V, F>(&mut self, f: F) -> JsResult<'a, V>
     where
+        'a: 'b,
         V: Value,
-        F: for<'b, 'c> FnOnce(ComputeContext<'b, 'c>) -> JsResult<'b, V>,
+        F: FnOnce(ComputeContext<'b>) -> JsResult<'b, V>,
     {
         let env = self.env();
         let scope = unsafe { EscapableHandleScope::new(env.to_raw()) };
         let cx = ComputeContext {
             env,
             phantom_inner: PhantomData,
-            phantom_outer: PhantomData,
         };
 
         let escapee = unsafe { scope.escape(f(cx)?.to_raw()) };
@@ -585,19 +586,18 @@ impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
 impl<'a> Context<'a> for ExecuteContext<'a> {}
 
 /// An execution context of a scope created by [`Context::compute_scoped()`](Context::compute_scoped).
-pub struct ComputeContext<'a, 'outer> {
+pub struct ComputeContext<'a> {
     env: Env,
     phantom_inner: PhantomData<&'a ()>,
-    phantom_outer: PhantomData<&'outer ()>,
 }
 
-impl<'a, 'b> ContextInternal<'a> for ComputeContext<'a, 'b> {
+impl<'a> ContextInternal<'a> for ComputeContext<'a> {
     fn env(&self) -> Env {
         self.env
     }
 }
 
-impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> {}
+impl<'a> Context<'a> for ComputeContext<'a> {}
 
 /// An execution context of a function call.
 ///

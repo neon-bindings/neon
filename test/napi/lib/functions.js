@@ -174,7 +174,10 @@ describe("JsFunction", function () {
   });
 
   it("computes a value in a scoped computation", function () {
+    const o = {};
+
     assert.equal(addon.compute_scoped(), 99);
+    assert.equal(addon.recompute_scoped(o), o);
   });
 
   it("catches an exception with cx.try_catch", function () {

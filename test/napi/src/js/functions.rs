@@ -215,6 +215,14 @@ pub fn compute_scoped(mut cx: FunctionContext) -> JsResult<JsNumber> {
     Ok(i)
 }
 
+// Simple identity function to verify that a handle can be moved to `compute_scoped`
+// closure and re-escaped.
+pub fn recompute_scoped(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let value = cx.argument::<JsValue>(0)?;
+
+    cx.compute_scoped(move |_| Ok(value))
+}
+
 pub fn throw_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
     let v = cx
         .argument_opt(0)
