@@ -193,6 +193,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("check_string_and_number", check_string_and_number)?;
     cx.export_function("execute_scoped", execute_scoped)?;
     cx.export_function("compute_scoped", compute_scoped)?;
+    cx.export_function("recompute_scoped", recompute_scoped)?;
 
     cx.export_function("return_js_array", return_js_array)?;
     cx.export_function("return_js_array_with_number", return_js_array_with_number)?;
