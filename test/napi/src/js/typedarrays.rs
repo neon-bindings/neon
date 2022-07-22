@@ -196,53 +196,14 @@ where
     Ok(obj)
 }
 
-pub fn detach_same_handle(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let a = cx.argument::<JsUint32Array>(0)?;
-    let detach = cx.argument::<JsFunction>(1)?;
-
-    let before = typed_array_info(&mut cx, a)?;
-    detach.call_with(&cx)
-        .arg(a)
-        .exec(&mut cx)?;
-    let after = typed_array_info(&mut cx, a)?;
-
-    let result = cx.empty_object();
-
-    result.set(&mut cx, "before", before)?;
-    result.set(&mut cx, "after", after)?;
-
-    Ok(result)
-}
-
-pub fn detach_and_escape(mut cx: FunctionContext) -> JsResult<JsObject> {
-    static EXPANDO_KEY: &str = "__neon_test__:before";
-
-    let detach = cx.argument::<JsFunction>(0)?;
-
-    let a = cx.compute_scoped(|mut cx| {
-        let buf = cx.array_buffer(16)?;
-        let a = JsUint32Array::from_buffer(&mut cx, buf)?;
-        let before = typed_array_info(&mut cx, a)?;
-        a.set(&mut cx, EXPANDO_KEY, before)?;
-        detach.call_with(&cx)
-            .arg(a)
-            .exec(&mut cx)?;
-        Ok(a)
-    })?;
-
-    let before = a.get::<JsObject, _, _>(&mut cx, EXPANDO_KEY)?;
-    let after = typed_array_info(&mut cx, a)?;
-
-    let result = cx.empty_object();
-
-    result.set(&mut cx, "before", before)?;
-    result.set(&mut cx, "after", after)?;
-
-    Ok(result)
-}
-
-pub fn detach_and_cast(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let a = cx.argument::<JsUint32Array>(0)?;
+fn detach_and_then<'cx, F>(mut cx: FunctionContext<'cx>, f: F) -> JsResult<JsObject>
+where
+    F: FnOnce(
+        &mut FunctionContext<'cx>,
+        Handle<'cx, JsUint32Array>,
+    ) -> NeonResult<Option<Handle<'cx, JsUint32Array>>>
+{
+    let mut a = cx.argument::<JsUint32Array>(0)?;
     let detach = cx.argument::<JsFunction>(1)?;
 
     let before = typed_array_info(&mut cx, a)?;
@@ -251,8 +212,9 @@ pub fn detach_and_cast(mut cx: FunctionContext) -> JsResult<JsObject> {
         .arg(a)
         .exec(&mut cx)?;
 
-    let v = a.upcast::<JsValue>();
-    let a = v.downcast_or_throw::<JsUint32Array, _>(&mut cx)?;
+    if let Some(new_array) = f(&mut cx, a)? {
+        a = new_array;
+    }
 
     let after = typed_array_info(&mut cx, a)?;
 
@@ -264,27 +226,31 @@ pub fn detach_and_cast(mut cx: FunctionContext) -> JsResult<JsObject> {
     Ok(result)
 }
 
-pub fn detach_and_unroot(mut cx: FunctionContext) -> JsResult<JsObject> {
-    let a = cx.argument::<JsUint32Array>(0)?;
-    let detach = cx.argument::<JsFunction>(1)?;
+pub fn detach_same_handle(cx: FunctionContext) -> JsResult<JsObject> {
+    detach_and_then(cx, |_, _| { Ok(None) })
+}
 
-    let before = typed_array_info(&mut cx, a)?;
+pub fn detach_and_escape(cx: FunctionContext) -> JsResult<JsObject> {
+    detach_and_then(cx, |cx, a| {
+        let a = cx.compute_scoped(|_| { Ok(a) })?;
+        Ok(Some(a))
+    })
+}
 
-    detach.call_with(&cx)
-        .arg(a)
-        .exec(&mut cx)?;
+pub fn detach_and_cast(cx: FunctionContext) -> JsResult<JsObject> {
+    detach_and_then(cx, |cx, a| {
+        let v = a.upcast::<JsValue>();
+        let a = v.downcast_or_throw::<JsUint32Array, _>(cx)?;
+        Ok(Some(a))
+    })
+}
 
-    let root = a.root(&mut cx);
-    let a = root.into_inner(&mut cx);
-
-    let after = typed_array_info(&mut cx, a)?;
-
-    let result = cx.empty_object();
-
-    result.set(&mut cx, "before", before)?;
-    result.set(&mut cx, "after", after)?;
-
-    Ok(result)
+pub fn detach_and_unroot(cx: FunctionContext) -> JsResult<JsObject> {
+    detach_and_then(cx, |cx, a| {
+        let root = a.root(cx);
+        let a = root.into_inner(cx);
+        Ok(Some(a))
+    })
 }
 
 pub fn get_typed_array_info(mut cx: FunctionContext) -> JsResult<JsObject> {
