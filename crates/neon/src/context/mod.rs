@@ -10,9 +10,8 @@
 //! execution context. All interaction with the JavaScript engine in Neon code is mediated
 //! through instances of this trait.
 //!
-//! One particularly useful context type is [`CallContext`](CallContext), which is passed
-//! to all Neon functions as their initial execution context (or [`FunctionContext`](FunctionContext),
-//! a convenient shorthand for `CallContext<JsObject>`):
+//! One particularly useful context type is [`FunctionContext`](FunctionContext), which is passed
+//! to all Neon functions as their initial execution context.
 //!
 //! ```
 //! # use neon::prelude::*;
@@ -149,7 +148,7 @@ pub use crate::types::buffer::lock::Lock;
 use crate::{
     event::TaskBuilder,
     handle::{Handle, Managed},
-    object::{Object, This},
+    object::Object,
     result::{JsResult, NeonResult, Throw},
     sys::{
         self, raw,
@@ -602,32 +601,30 @@ impl<'a, 'b> Context<'a> for ComputeContext<'a, 'b> {}
 /// An execution context of a function call.
 ///
 /// The type parameter `T` is the type of the `this`-binding.
-pub struct CallContext<'a, T: This> {
+pub struct FunctionContext<'a> {
     env: Env,
     info: &'a CallbackInfo<'a>,
 
     arguments: Option<sys::call::Arguments>,
-    phantom_type: PhantomData<T>,
 }
 
-impl<'a, T: This> UnwindSafe for CallContext<'a, T> {}
+impl<'a> UnwindSafe for FunctionContext<'a> {}
 
-impl<'a, T: This> CallContext<'a, T> {
+impl<'a> FunctionContext<'a> {
     /// Indicates whether the function was called with `new`.
     pub fn kind(&self) -> CallKind {
         self.info.kind(self)
     }
 
-    pub(crate) fn with<U, F: for<'b> FnOnce(CallContext<'b, T>) -> U>(
+    pub(crate) fn with<U, F: for<'b> FnOnce(FunctionContext<'b>) -> U>(
         env: Env,
         info: &'a CallbackInfo<'a>,
         f: F,
     ) -> U {
-        f(CallContext {
+        f(FunctionContext {
             env,
             info,
             arguments: None,
-            phantom_type: PhantomData,
         })
     }
 
@@ -662,27 +659,27 @@ impl<'a, T: This> CallContext<'a, T> {
         }
     }
 
-    /// Produces a handle to the `this`-binding.
-    pub fn this(&mut self) -> Handle<'a, T> {
-        let this = T::as_this(self.env(), self.info.this(self));
+    /// Produces a handle to the `this`-binding and attempts to downcast as a specific type.
+    /// Equivalent to calling `cx.this_value().downcast_or_throw(&mut cx)`.
+    ///
+    /// Throws an exception if the value is a different type.
+    pub fn this<T: Value>(&mut self) -> JsResult<'a, T> {
+        self.this_value().downcast_or_throw(self)
+    }
 
-        Handle::new_internal(this)
+    /// Produces a handle to the function's [`this`-binding](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/this#function_context).
+    pub fn this_value(&mut self) -> Handle<'a, JsValue> {
+        JsValue::new_internal(self.info.this(self))
     }
 }
 
-impl<'a, T: This> ContextInternal<'a> for CallContext<'a, T> {
+impl<'a> ContextInternal<'a> for FunctionContext<'a> {
     fn env(&self) -> Env {
         self.env
     }
 }
 
-impl<'a, T: This> Context<'a> for CallContext<'a, T> {}
-
-/// A shorthand for a [`CallContext`](CallContext) with `this`-type [`JsObject`](crate::types::JsObject).
-pub type FunctionContext<'a> = CallContext<'a, JsObject>;
-
-/// An alias for [`CallContext`](CallContext), useful for indicating that the function is a method of a class.
-pub type MethodContext<'a, T> = CallContext<'a, T>;
+impl<'a> Context<'a> for FunctionContext<'a> {}
 
 /// An execution context of a task completion callback.
 pub struct TaskContext<'a> {

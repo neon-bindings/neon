@@ -97,7 +97,7 @@ use crate::{
         internal::{SuperType, TransparentNoCopyWrapper},
         Handle, Managed,
     },
-    object::{Object, This},
+    object::Object,
     result::{JsResult, NeonResult, ResultExt, Throw},
     sys::{self, raw},
     types::{
@@ -195,12 +195,6 @@ impl private::ValueInternal for JsValue {
     }
 }
 
-unsafe impl This for JsValue {
-    fn as_this(_env: Env, h: raw::Local) -> Self {
-        JsValue(h)
-    }
-}
-
 impl JsValue {
     pub(crate) fn new_internal<'a>(value: raw::Local) -> Handle<'a, JsValue> {
         Handle::new_internal(JsValue(value))
@@ -224,15 +218,6 @@ impl JsUndefined {
             Handle::new_internal(JsUndefined(local))
         }
     }
-
-    #[allow(clippy::wrong_self_convention)]
-    fn as_this_compat(env: Env, _: raw::Local) -> Self {
-        unsafe {
-            let mut local: raw::Local = std::mem::zeroed();
-            sys::primitive::undefined(&mut local, env.to_raw());
-            JsUndefined(local)
-        }
-    }
 }
 
 impl Value for JsUndefined {}
@@ -252,12 +237,6 @@ impl Managed for JsUndefined {
 
     fn from_raw(_: Env, h: raw::Local) -> Self {
         JsUndefined(h)
-    }
-}
-
-unsafe impl This for JsUndefined {
-    fn as_this(env: Env, h: raw::Local) -> Self {
-        JsUndefined::as_this_compat(env, h)
     }
 }
 
@@ -556,12 +535,6 @@ impl Managed for JsObject {
     }
 
     fn from_raw(_: Env, h: raw::Local) -> Self {
-        JsObject(h)
-    }
-}
-
-unsafe impl This for JsObject {
-    fn as_this(_env: Env, h: raw::Local) -> Self {
         JsObject(h)
     }
 }
