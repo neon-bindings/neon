@@ -1,9 +1,6 @@
 use std::borrow::Cow;
 
-use neon::{
-    prelude::*,
-    types::buffer::TypedArray,
-};
+use neon::{prelude::*, types::buffer::TypedArray};
 
 pub fn return_js_global_object(mut cx: FunctionContext) -> JsResult<JsObject> {
     Ok(cx.global())

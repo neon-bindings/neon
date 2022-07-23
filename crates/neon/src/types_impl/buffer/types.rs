@@ -220,7 +220,12 @@ impl<'cx> Handle<'cx, JsArrayBuffer> {
     ///
     /// See the [`Region`](Region) documentation for more information.
     pub fn region<T: Binary>(self, byte_offset: usize, len: usize) -> Region<'cx, T> {
-        Region { buffer: self, byte_offset, len, phantom: PhantomData }
+        Region {
+            buffer: self,
+            byte_offset,
+            len,
+            phantom: PhantomData,
+        }
     }
 }
 
@@ -546,14 +551,16 @@ impl<T: Binary> JsTypedArray<T> {
     /// Throws an exception if the region is invalid, for example if the starting
     /// offset is not properly aligned, or the length goes beyond the end of the
     /// buffer.
-    pub fn from_region<'c, 'r, C>(
-        cx: &mut C,
-        region: Region<'r, T>,
-    ) -> JsResult<'c, Self>
+    pub fn from_region<'c, 'r, C>(cx: &mut C, region: Region<'r, T>) -> JsResult<'c, Self>
     where
         C: Context<'c>,
     {
-        let Region { buffer, byte_offset, len, .. } = region;
+        let Region {
+            buffer,
+            byte_offset,
+            len,
+            ..
+        } = region;
 
         let result = unsafe {
             sys::typedarray::new(

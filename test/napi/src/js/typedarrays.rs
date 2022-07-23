@@ -201,16 +201,14 @@ where
     F: FnOnce(
         &mut FunctionContext<'cx>,
         Handle<'cx, JsUint32Array>,
-    ) -> NeonResult<Option<Handle<'cx, JsUint32Array>>>
+    ) -> NeonResult<Option<Handle<'cx, JsUint32Array>>>,
 {
     let mut a = cx.argument::<JsUint32Array>(0)?;
     let detach = cx.argument::<JsFunction>(1)?;
 
     let before = typed_array_info(&mut cx, a)?;
 
-    detach.call_with(&cx)
-        .arg(a)
-        .exec(&mut cx)?;
+    detach.call_with(&cx).arg(a).exec(&mut cx)?;
 
     if let Some(new_array) = f(&mut cx, a)? {
         a = new_array;
@@ -227,12 +225,12 @@ where
 }
 
 pub fn detach_same_handle(cx: FunctionContext) -> JsResult<JsObject> {
-    detach_and_then(cx, |_, _| { Ok(None) })
+    detach_and_then(cx, |_, _| Ok(None))
 }
 
 pub fn detach_and_escape(cx: FunctionContext) -> JsResult<JsObject> {
     detach_and_then(cx, |cx, a| {
-        let a = cx.compute_scoped(|_| { Ok(a) })?;
+        let a = cx.compute_scoped(|_| Ok(a))?;
         Ok(Some(a))
     })
 }
