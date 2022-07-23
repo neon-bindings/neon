@@ -421,49 +421,64 @@ describe("Typed arrays", function () {
     assert.strictEqual(addon.get_arraybuffer_byte_length(buf), 0);
   });
 
-  function testDetach(arr, addonFn, byteLengthBefore, lengthBefore) {
+  function testDetach(arr, addonFn, byteLengthBefore, lengthBefore, byteOffsetBefore) {
     let { before, after } = addonFn(arr, (arr) => detach(arr.buffer));
 
     assert.strictEqual(before.byteLength, byteLengthBefore);
     assert.strictEqual(before.length, lengthBefore);
+    assert.strictEqual(before.byteOffset, byteOffsetBefore);
     assert.strictEqual(after.byteLength, 0);
     assert.strictEqual(after.length, 0);
+    assert.strictEqual(after.byteOffset, 0);
   }
 
   it("provides correct metadata when detaching a typed array's buffer", function () {
-    var arr = new Uint32Array(4);
+    var buf = new ArrayBuffer(16);
+    var arr = new Uint32Array(buf, 4, 2);
     var buf = arr.buffer;
 
     assert.strictEqual(buf.byteLength, 16);
-    assert.strictEqual(arr.byteLength, 16);
-    assert.strictEqual(arr.length, 4);
+
+    assert.strictEqual(arr.byteLength, 8);
+    assert.strictEqual(arr.length, 2);
+    assert.strictEqual(arr.byteOffset, 4);
 
     var info = addon.get_typed_array_info(arr);
 
-    assert.strictEqual(info.byteLength, 16);
-    assert.strictEqual(info.length, 4);
+    assert.strictEqual(info.byteLength, 8);
+    assert.strictEqual(info.length, 2);
+    assert.strictEqual(info.byteOffset, 4);
     assert.strictEqual(info.buffer, buf);
 
-    testDetach(arr, addon.detach_same_handle, 16, 4);
+    testDetach(arr, addon.detach_same_handle, 8, 2, 4);
 
     var info = addon.get_typed_array_info(arr);
 
+    assert.strictEqual(buf.byteLength, 0);
+
+    assert.strictEqual(arr.buffer, buf);
     assert.strictEqual(arr.byteLength, 0);
     assert.strictEqual(arr.length, 0);
-    assert.strictEqual(addon.get_typed_array_info(arr).byteLength, 0);
-    assert.strictEqual(addon.get_typed_array_info(arr).length, 0);
+    assert.strictEqual(arr.byteOffset, 0);
 
+    assert.strictEqual(info.byteLength, 0);
+    assert.strictEqual(info.length, 0);
+    assert.strictEqual(info.byteOffset, 0);
+    assert.strictEqual(info.buffer, buf);
   });
 
   it("provides correct metadata when detaching an escaped typed array's buffer", function () {
-    testDetach(new Uint32Array(4), addon.detach_and_escape, 16, 4);
+    var buf = new ArrayBuffer(16);
+    testDetach(new Uint32Array(buf, 4, 2), addon.detach_and_escape, 8, 2, 4);
   });
 
   it("provides correct metadata when detaching a casted typed array's buffer", function () {
-    testDetach(new Uint32Array(4), addon.detach_and_cast, 16, 4);
+    var buf = new ArrayBuffer(16);
+    testDetach(new Uint32Array(buf, 4, 2), addon.detach_and_cast, 8, 2, 4);
   });
 
   it("provides correct metadata when detaching an un-rooted typed array's buffer", function () {
-    testDetach(new Uint32Array(4), addon.detach_and_unroot, 16, 4);
+    var buf = new ArrayBuffer(16);
+    testDetach(new Uint32Array(buf, 4, 2), addon.detach_and_unroot, 8, 2, 4);
   });
 });
