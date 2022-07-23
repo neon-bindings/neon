@@ -9,7 +9,7 @@ use crate::{
     types::buffer::{
         lock::{Ledger, Lock},
         private::{self, JsTypedArrayInner},
-        BorrowError, Ref, RefMut, TypedArray,
+        BorrowError, Ref, RefMut, Region, TypedArray,
     },
     types::{private::ValueInternal, Value},
 };
@@ -207,6 +207,20 @@ impl JsArrayBuffer {
         let value = unsafe { sys::arraybuffer::new_external(env, data) };
 
         Handle::new_internal(Self(value))
+    }
+}
+
+impl<'cx> Handle<'cx, JsArrayBuffer> {
+    /// Returns a [`Region`](crate::types::buffer::Region) representing a typed
+    /// region of this buffer, starting at `byte_offset` and containing `len`
+    /// elements of type `T`.
+    ///
+    /// The region is **not** checked for validity by this method. Regions are only
+    /// validated when they are converted to typed arrays.
+    ///
+    /// See the [`Region`](Region) documentation for more information.
+    pub fn region<T: Binary>(self, byte_offset: usize, len: usize) -> Region<'cx, T> {
+        Region { buffer: self, byte_offset, len, phantom: PhantomData }
     }
 }
 
@@ -503,7 +517,10 @@ impl<T: Binary> JsTypedArray<T> {
     /// Constructs a typed array that views `buffer`.
     ///
     /// The resulting typed array has `(buffer.byte_length() / size_of::<T>())` elements.
-    pub fn from_buffer<'cx, C>(cx: &mut C, buffer: Handle<JsArrayBuffer>) -> JsResult<'cx, Self>
+    pub fn from_buffer<'cx, 'b: 'cx, C>(
+        cx: &mut C,
+        buffer: Handle<'b, JsArrayBuffer>,
+    ) -> JsResult<'cx, Self>
     where
         C: Context<'cx>,
     {
@@ -518,23 +535,26 @@ impl<T: Binary> JsTypedArray<T> {
             );
         }
 
-        Self::from_buffer_region(cx, buffer, 0, len)
+        Self::from_region(cx, buffer.region(0, len))
     }
 
-    /// Constructs a typed array that views a region of `buffer` starting
-    /// at the specified byte offset and with the specified number of elements.
+    /// Constructs a typed array for the specified buffer region.
     ///
-    /// The resulting typed array has `len` elements and byte length
-    /// `(len * size_of::<T>())`.
-    pub fn from_buffer_region<'cx, C>(
+    /// The resulting typed array has `region.len()` elements and byte length
+    /// `region.byte_length()`.
+    ///
+    /// Throws an exception if the region is invalid, for example if the starting
+    /// offset is not properly aligned, or the length goes beyond the end of the
+    /// buffer.
+    pub fn from_region<'c, 'r, C>(
         cx: &mut C,
-        buffer: Handle<JsArrayBuffer>,
-        byte_offset: usize,
-        len: usize,
-    ) -> JsResult<'cx, Self>
+        region: Region<'r, T>,
+    ) -> JsResult<'c, Self>
     where
-        C: Context<'cx>,
+        C: Context<'c>,
     {
+        let Region { buffer, byte_offset, len, .. } = region;
+
         let result = unsafe {
             sys::typedarray::new(
                 cx.env().to_raw(),
@@ -556,6 +576,22 @@ impl<T: Binary> JsTypedArray<T> {
         }
     }
 
+    /// Returns information about the backing buffer region for this typed array.
+    pub fn to_region<'cx, C>(&self, cx: &mut C) -> Region<'cx, T>
+    where
+        C: Context<'cx>,
+    {
+        let env = cx.env();
+        let info = unsafe { sys::typedarray::info(env.to_raw(), self.to_raw()) };
+
+        Region {
+            buffer: Handle::new_internal(JsArrayBuffer::from_raw(cx.env(), info.buf)),
+            byte_offset: info.offset,
+            len: info.length,
+            phantom: PhantomData,
+        }
+    }
+
     /// Constructs a new typed array of length `len`.
     ///
     /// The resulting typed array has a newly allocated storage buffer of
@@ -565,7 +601,7 @@ impl<T: Binary> JsTypedArray<T> {
         C: Context<'cx>,
     {
         let buffer = cx.array_buffer(len * std::mem::size_of::<T>())?;
-        Self::from_buffer_region(cx, buffer, 0, len)
+        Self::from_region(cx, buffer.region(0, len))
     }
 
     /// Returns the [`JsArrayBuffer`](JsArrayBuffer) that owns the underlying storage buffer

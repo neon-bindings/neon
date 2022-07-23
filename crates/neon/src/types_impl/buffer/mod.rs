@@ -4,13 +4,15 @@ use std::{
     cell::RefCell,
     error::Error,
     fmt::{self, Debug, Display},
+    marker::PhantomData,
     ops::{Deref, DerefMut},
 };
 
 use crate::{
     context::Context,
-    result::{NeonResult, ResultExt},
-    types::buffer::lock::{Ledger, Lock},
+    handle::Handle,
+    result::{JsResult, NeonResult, ResultExt},
+    types::{buffer::lock::{Ledger, Lock}, JsArrayBuffer, JsTypedArray},
 };
 
 pub(crate) mod lock;
@@ -178,6 +180,80 @@ impl Debug for BorrowError {
 impl<T> ResultExt<T> for Result<T, BorrowError> {
     fn or_throw<'a, C: Context<'a>>(self, cx: &mut C) -> NeonResult<T> {
         self.or_else(|_| cx.throw_error("BorrowError"))
+    }
+}
+
+/// Represents a typed region of an [`ArrayBuffer`](crate::types::JsArrayBuffer).
+///
+/// A `Region` can be created via the
+/// [`Handle<JsArrayBuffer>::region()`](crate::handle::Handle::region) or
+/// [`JsTypedArray::to_region()`](crate::types::JsTypedArray::to_region) methods.
+///
+/// A region is **not** checked for validity until it is converted
+/// a typed array via [`to_typed_array()`](Region::to_typed_array) or
+/// [`JsTypedArray::from_region()`](crate::types::JsTypedArray::from_region).
+///
+/// # Example
+///
+/// ```
+/// # use crate::prelude::*;
+/// # fn f(mut cx: FunctionContext) -> JsResult<JsUint32Array> {
+/// // Allocate a 16-byte ArrayBuffer and a uint32 array of length 2 (i.e., 8 bytes)
+/// // starting at byte offset 4 of the buffer:
+/// //
+/// //       0       4       8       12      16
+/// //      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+/// // buf: | | | | | | | | | | | | | | | | |
+/// //      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+/// //               ^       ^
+/// //               |       |
+/// //              +-------+-------+
+/// //         arr: |       |       |
+/// //              +-------+-------+
+/// //               0       1       2
+/// let buf = cx.array_buffer(16);
+/// let arr = JsUint32Array::from_region(&mut cx, buf.region(4, 2))?;
+/// # Ok(arr)
+/// # }
+/// ```
+#[derive(Clone,Copy)]
+pub struct Region<'cx, T: Binary> {
+    pub(super) buffer: Handle<'cx, JsArrayBuffer>,
+    pub(super) byte_offset: usize,
+    pub(super) len: usize,
+    pub(super) phantom: PhantomData<T>,
+}
+
+impl<'cx, T: Binary> Region<'cx, T> {
+    /// Returns the handle to the region's buffer.
+    pub fn buffer(self) -> Handle<'cx, JsArrayBuffer> { self.buffer }
+
+    /// Returns the starting byte offset of the region.
+    pub fn byte_offset(self) -> usize { self.byte_offset }
+
+    /// Returns the number of elements of type `T` in the region.
+    pub fn len(self) -> usize { self.len }
+
+    /// Returns the byte length of the region, which is equal to
+    /// `(self.len() * size_of::<T>())`.
+    pub fn byte_length(self) -> usize { self.len * std::mem::size_of::<T>() }
+
+    /// Constructs a typed array for this buffer region.
+    ///
+    /// The resulting typed array has `self.len()` elements and byte length
+    /// `self.byte_length()`.
+    ///
+    /// Throws an exception if the region is invalid, for example if the starting
+    /// offset is not properly aligned, or the length goes beyond the end of the
+    /// buffer.
+    pub fn to_typed_array<'c, C>(
+        self,
+        cx: &mut C,
+    ) -> JsResult<'c, JsTypedArray<T>>
+    where
+        C: Context<'c>,
+    {
+        JsTypedArray::from_region(cx, self)
     }
 }
 
