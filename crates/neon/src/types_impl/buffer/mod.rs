@@ -199,7 +199,7 @@ impl<T> ResultExt<T> for Result<T, BorrowError> {
 /// # Example
 ///
 /// ```
-/// # use crate::prelude::*;
+/// # use neon::prelude::*;
 /// # fn f(mut cx: FunctionContext) -> JsResult<JsUint32Array> {
 /// // Allocate a 16-byte ArrayBuffer and a uint32 array of length 2 (i.e., 8 bytes)
 /// // starting at byte offset 4 of the buffer:
@@ -214,7 +214,7 @@ impl<T> ResultExt<T> for Result<T, BorrowError> {
 /// //         arr: |       |       |
 /// //              +-------+-------+
 /// //               0       1       2
-/// let buf = cx.array_buffer(16);
+/// let buf = cx.array_buffer(16)?;
 /// let arr = JsUint32Array::from_region(&mut cx, buf.region(4, 2))?;
 /// # Ok(arr)
 /// # }
