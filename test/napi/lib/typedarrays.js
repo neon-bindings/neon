@@ -1,10 +1,10 @@
 var addon = require("..");
 var assert = require("chai").assert;
 
-const { Worker, isMainThread, parentPort } = require('worker_threads');
+const { Worker, isMainThread, parentPort } = require("worker_threads");
 
 if (!isMainThread) {
-  parentPort.on('message', (message) => {
+  parentPort.on("message", (message) => {
     // transfer it back
     parentPort.postMessage(message, [message]);
   });
@@ -34,12 +34,12 @@ function detach(buffer) {
     reject = rej;
   });
 
-  DETACH_WORKER.once('message', (message) => {
+  DETACH_WORKER.once("message", (message) => {
     resolve(message);
   });
 
   return promise;
-};
+}
 
 describe("Typed arrays", function () {
   it("correctly reads a TypedArray using the borrow API", function () {
@@ -421,7 +421,13 @@ describe("Typed arrays", function () {
     assert.strictEqual(addon.get_arraybuffer_byte_length(buf), 0);
   });
 
-  function testDetach(arr, addonFn, byteLengthBefore, lengthBefore, byteOffsetBefore) {
+  function testDetach(
+    arr,
+    addonFn,
+    byteLengthBefore,
+    lengthBefore,
+    byteOffsetBefore
+  ) {
     let { before, after } = addonFn(arr, (arr) => detach(arr.buffer));
 
     assert.strictEqual(before.byteLength, byteLengthBefore);
