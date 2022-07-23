@@ -420,8 +420,6 @@ impl<T: Binary> Managed for JsTypedArray<T> {
         Self(JsTypedArrayInner {
             local,
             buffer: info.buf,
-            byte_offset: info.offset,
-            len: info.length,
             _type: PhantomData,
         })
     }
@@ -551,8 +549,6 @@ impl<T: Binary> JsTypedArray<T> {
             Ok(Handle::new_internal(Self(JsTypedArrayInner {
                 local: arr,
                 buffer: buffer.to_raw(),
-                byte_offset,
-                len,
                 _type: PhantomData,
             })))
         } else {
@@ -588,11 +584,12 @@ impl<T: Binary> JsTypedArray<T> {
 
     /// Returns the offset (in bytes) of the typed array from the start of its
     /// [`JsArrayBuffer`](JsArrayBuffer).
-    pub fn byte_offset<'cx, C>(&self, _cx: &mut C) -> usize
+    pub fn byte_offset<'cx, C>(&self, cx: &mut C) -> usize
     where
         C: Context<'cx>,
     {
-        self.0.byte_offset
+        let info = unsafe { sys::typedarray::info(cx.env().to_raw(), self.to_raw()) };
+        info.offset
     }
 
     /// Returns the length of the typed array, i.e. the number of elements.
@@ -604,11 +601,12 @@ impl<T: Binary> JsTypedArray<T> {
     /// self.byte_length() == self.len() * size_of::<T>()
     /// ```
     #[allow(clippy::len_without_is_empty)]
-    pub fn len<'cx, C>(&self, _cx: &mut C) -> usize
+    pub fn len<'cx, C>(&self, cx: &mut C) -> usize
     where
         C: Context<'cx>,
     {
-        self.0.len
+        let info = unsafe { sys::typedarray::info(cx.env().to_raw(), self.to_raw()) };
+        info.length
     }
 }
 

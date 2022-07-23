@@ -192,8 +192,6 @@ mod private {
     pub struct JsTypedArrayInner<T: Binary> {
         pub(super) local: raw::Local,
         pub(super) buffer: raw::Local,
-        pub(super) byte_offset: usize,
-        pub(super) len: usize,
         pub(super) _type: PhantomData<T>,
     }
 }
