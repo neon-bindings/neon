@@ -279,6 +279,44 @@ pub fn get_typed_array_info(mut cx: FunctionContext) -> JsResult<JsObject> {
     }
 }
 
+pub fn build_f32_region(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let buf: Handle<JsArrayBuffer> = cx.argument(0)?;
+    let offset: Handle<JsNumber> = cx.argument(1)?;
+    let offset: usize = offset.value(&mut cx) as u32 as usize;
+    let len: Handle<JsNumber> = cx.argument(2)?;
+    let len: usize = len.value(&mut cx) as u32 as usize;
+    let convert: Handle<JsBoolean> = cx.argument(3)?;
+    let convert: bool = convert.value(&mut cx);
+
+    let region = buf.region::<f32>(offset, len);
+
+    if convert {
+        let arr = region.to_typed_array(&mut cx)?;
+        Ok(arr.upcast())
+    } else {
+        Ok(cx.undefined().upcast())
+    }
+}
+
+pub fn build_f64_region(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let buf: Handle<JsArrayBuffer> = cx.argument(0)?;
+    let offset: Handle<JsNumber> = cx.argument(1)?;
+    let offset: usize = offset.value(&mut cx) as u32 as usize;
+    let len: Handle<JsNumber> = cx.argument(2)?;
+    let len: usize = len.value(&mut cx) as u32 as usize;
+    let convert: Handle<JsBoolean> = cx.argument(3)?;
+    let convert: bool = convert.value(&mut cx);
+
+    let region = buf.region::<f64>(offset, len);
+
+    if convert {
+        let arr = region.to_typed_array(&mut cx)?;
+        Ok(arr.upcast())
+    } else {
+        Ok(cx.undefined().upcast())
+    }
+}
+
 pub fn read_buffer_with_lock(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let b: Handle<JsBuffer> = cx.argument(0)?;
     let i = cx.argument::<JsNumber>(1)?.value(&mut cx) as usize;

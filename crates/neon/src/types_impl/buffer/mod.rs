@@ -48,7 +48,7 @@ pub use types::Binary;
 ///
 /// [typed-arrays]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
 pub trait TypedArray: private::Sealed {
-    type Item;
+    type Item: Binary;
 
     /// Statically checked immutable borrow of binary data.
     ///

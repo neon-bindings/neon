@@ -264,6 +264,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("detach_and_cast", detach_and_cast)?;
     cx.export_function("detach_and_unroot", detach_and_unroot)?;
     cx.export_function("get_typed_array_info", get_typed_array_info)?;
+    cx.export_function("build_f32_region", build_f32_region)?;
+    cx.export_function("build_f64_region", build_f64_region)?;
     cx.export_function("read_buffer_with_lock", read_buffer_with_lock)?;
     cx.export_function("read_buffer_with_borrow", read_buffer_with_borrow)?;
     cx.export_function("write_buffer_with_lock", write_buffer_with_lock)?;
