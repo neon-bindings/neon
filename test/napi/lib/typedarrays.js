@@ -494,25 +494,33 @@ describe("Typed arrays", function () {
     try {
       addon.build_f32_region(buf, 1, 4, false);
     } catch (e) {
-      assert.fail("misaligned region shouldn't be validated without instantiating");
+      assert.fail(
+        "misaligned region shouldn't be validated without instantiating"
+      );
     }
 
     try {
       addon.build_f32_region(buf, 0, 20, false);
     } catch (e) {
-      assert.fail("region overrun shouldn't be validated without instantiating");
+      assert.fail(
+        "region overrun shouldn't be validated without instantiating"
+      );
     }
 
     try {
       addon.build_f64_region(buf, 1, 4, false);
     } catch (e) {
-      assert.fail("misaligned region shouldn't be validated without instantiating");
+      assert.fail(
+        "misaligned region shouldn't be validated without instantiating"
+      );
     }
 
     try {
       addon.build_f64_region(buf, 0, 10, false);
     } catch (e) {
-      assert.fail("region overrun shouldn't be validated without instantiating");
+      assert.fail(
+        "region overrun shouldn't be validated without instantiating"
+      );
     }
   });
 
@@ -522,21 +530,21 @@ describe("Typed arrays", function () {
     try {
       addon.build_f32_region(buf, 1, 4, false);
       assert.fail("misaligned region should be validated when instantiating");
-    } catch (expected) { }
+    } catch (expected) {}
 
     try {
       addon.build_f32_region(buf, 0, 20, false);
       assert.fail("region overrun should be validated when instantiating");
-    } catch (expected) { }
+    } catch (expected) {}
 
     try {
       addon.build_f64_region(buf, 1, 4, true);
       assert.fail("misaligned region should be validated when instantiating");
-    } catch (expected) { }
+    } catch (expected) {}
 
     try {
       addon.build_f64_region(buf, 0, 10, true);
       assert.fail("region overrun should be validated when instantiating");
-    } catch (expected) { }
-  })
+    } catch (expected) {}
+  });
 });
