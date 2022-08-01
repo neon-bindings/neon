@@ -157,7 +157,7 @@ impl TypedArray for JsBuffer {
         })
     }
 
-    fn byte_length<'cx, C: Context<'cx>>(&self, cx: &mut C) -> usize {
+    fn size<'cx, C: Context<'cx>>(&self, cx: &mut C) -> usize {
         unsafe { sys::buffer::size(cx.env().to_raw(), self.to_raw()) }
     }
 }
@@ -208,21 +208,45 @@ impl JsArrayBuffer {
 
         Handle::new_internal(Self(value))
     }
+
+    /// Returns a region of this buffer.
+    ///
+    /// See also: [`Handle<JsArrayBuffer>::region()`](Handle::region) for a more
+    /// ergonomic form of this method.
+    pub fn region<'cx, T: Binary>(
+        buffer: &Handle<'cx, JsArrayBuffer>,
+        offset: usize,
+        len: usize,
+    ) -> Region<'cx, T> {
+        buffer.region(offset, len)
+    }
 }
 
 impl<'cx> Handle<'cx, JsArrayBuffer> {
     /// Returns a [`Region`](crate::types::buffer::Region) representing a typed
-    /// region of this buffer, starting at `byte_offset` and containing `len`
-    /// elements of type `T`.
+    /// region of this buffer, starting at `offset` and containing `len` elements
+    /// of type `T`.
     ///
     /// The region is **not** checked for validity by this method. Regions are only
     /// validated when they are converted to typed arrays.
     ///
+    /// # Example
+    ///
+    /// ```
+    /// # use neon::prelude::*;
+    /// # fn f(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    /// let buf: Handle<JsArrayBuffer> = cx.argument(0)?;
+    /// let region = buf.region::<u32>(64, 8);
+    /// println!("offset={}, len={}, size={}", region.offset(), region.len(), region.size());
+    /// # Ok(cx.undefined())
+    /// # }
+    /// ```
+    ///
     /// See the [`Region`](Region) documentation for more information.
-    pub fn region<T: Binary>(self, byte_offset: usize, len: usize) -> Region<'cx, T> {
+    pub fn region<T: Binary>(&self, offset: usize, len: usize) -> Region<'cx, T> {
         Region {
-            buffer: self,
-            byte_offset,
+            buffer: *self,
+            offset,
             len,
             phantom: PhantomData,
         }
@@ -303,7 +327,7 @@ impl TypedArray for JsArrayBuffer {
         })
     }
 
-    fn byte_length<'cx, C: Context<'cx>>(&self, cx: &mut C) -> usize {
+    fn size<'cx, C: Context<'cx>>(&self, cx: &mut C) -> usize {
         unsafe { sys::arraybuffer::size(cx.env().to_raw(), self.to_raw()) }
     }
 }
@@ -513,7 +537,7 @@ impl<T: Binary> TypedArray for JsTypedArray<T> {
         }
     }
 
-    fn byte_length<'cx, C: Context<'cx>>(&self, cx: &mut C) -> usize {
+    fn size<'cx, C: Context<'cx>>(&self, cx: &mut C) -> usize {
         self.len(cx) * std::mem::size_of::<Self::Item>()
     }
 }
@@ -521,7 +545,7 @@ impl<T: Binary> TypedArray for JsTypedArray<T> {
 impl<T: Binary> JsTypedArray<T> {
     /// Constructs a typed array that views `buffer`.
     ///
-    /// The resulting typed array has `(buffer.byte_length() / size_of::<T>())` elements.
+    /// The resulting typed array has `(buffer.size() / size_of::<T>())` elements.
     pub fn from_buffer<'cx, 'b: 'cx, C>(
         cx: &mut C,
         buffer: Handle<'b, JsArrayBuffer>,
@@ -529,11 +553,11 @@ impl<T: Binary> JsTypedArray<T> {
     where
         C: Context<'cx>,
     {
-        let byte_length = buffer.byte_length(cx);
+        let size = buffer.size(cx);
         let elt_size = std::mem::size_of::<T>();
-        let len = byte_length / elt_size;
+        let len = size / elt_size;
 
-        if (len * elt_size) != byte_length {
+        if (len * elt_size) != size {
             panic!(
                 "byte length of typed array should be a multiple of {}",
                 elt_size
@@ -545,8 +569,8 @@ impl<T: Binary> JsTypedArray<T> {
 
     /// Constructs a typed array for the specified buffer region.
     ///
-    /// The resulting typed array has `region.len()` elements and byte length
-    /// `region.byte_length()`.
+    /// The resulting typed array has `region.len()` elements and a size of
+    /// `region.size()` bytes.
     ///
     /// Throws an exception if the region is invalid, for example if the starting
     /// offset is not properly aligned, or the length goes beyond the end of the
@@ -557,19 +581,13 @@ impl<T: Binary> JsTypedArray<T> {
     {
         let Region {
             buffer,
-            byte_offset,
+            offset,
             len,
             ..
         } = region;
 
         let result = unsafe {
-            sys::typedarray::new(
-                cx.env().to_raw(),
-                T::TYPE_TAG,
-                buffer.to_raw(),
-                byte_offset,
-                len,
-            )
+            sys::typedarray::new(cx.env().to_raw(), T::TYPE_TAG, buffer.to_raw(), offset, len)
         };
 
         if let Ok(arr) = result {
@@ -584,7 +602,7 @@ impl<T: Binary> JsTypedArray<T> {
     }
 
     /// Returns information about the backing buffer region for this typed array.
-    pub fn to_region<'cx, C>(&self, cx: &mut C) -> Region<'cx, T>
+    pub fn region<'cx, C>(&self, cx: &mut C) -> Region<'cx, T>
     where
         C: Context<'cx>,
     {
@@ -593,7 +611,7 @@ impl<T: Binary> JsTypedArray<T> {
 
         Region {
             buffer: Handle::new_internal(JsArrayBuffer::from_raw(cx.env(), info.buf)),
-            byte_offset: info.offset,
+            offset: info.offset,
             len: info.length,
             phantom: PhantomData,
         }
@@ -615,8 +633,8 @@ impl<T: Binary> JsTypedArray<T> {
     /// for this typed array.
     ///
     /// Note that the typed array might only reference a region of the buffer; use the
-    /// [`byte_offset()`](JsTypedArray::byte_offset) and
-    /// [`byte_length()`](crate::types::buffer::TypedArray::byte_length) methods to
+    /// [`offset()`](JsTypedArray::offset) and
+    /// [`size()`](crate::types::buffer::TypedArray::size) methods to
     /// determine the region.
     pub fn buffer<'cx, C>(&self, cx: &mut C) -> Handle<'cx, JsArrayBuffer>
     where
@@ -627,7 +645,7 @@ impl<T: Binary> JsTypedArray<T> {
 
     /// Returns the offset (in bytes) of the typed array from the start of its
     /// [`JsArrayBuffer`](JsArrayBuffer).
-    pub fn byte_offset<'cx, C>(&self, cx: &mut C) -> usize
+    pub fn offset<'cx, C>(&self, cx: &mut C) -> usize
     where
         C: Context<'cx>,
     {
@@ -638,10 +656,10 @@ impl<T: Binary> JsTypedArray<T> {
     /// Returns the length of the typed array, i.e. the number of elements.
     ///
     /// Note that, depending on the element size, this is not necessarily the same as
-    /// [`byte_length()`](crate::types::buffer::TypedArray::byte_length). In particular:
+    /// [`size()`](crate::types::buffer::TypedArray::size). In particular:
     ///
     /// ```ignore
-    /// self.byte_length() == self.len() * size_of::<T>()
+    /// self.size() == self.len() * size_of::<T>()
     /// ```
     #[allow(clippy::len_without_is_empty)]
     pub fn len<'cx, C>(&self, cx: &mut C) -> usize

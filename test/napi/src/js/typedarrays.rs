@@ -154,17 +154,17 @@ pub fn return_uint32array_from_arraybuffer_region(
     mut cx: FunctionContext,
 ) -> JsResult<JsUint32Array> {
     let buf = cx.argument::<JsArrayBuffer>(0)?;
-    let byte_offset = cx.argument::<JsNumber>(1)?;
-    let byte_offset = byte_offset.value(&mut cx);
+    let offset = cx.argument::<JsNumber>(1)?;
+    let offset = offset.value(&mut cx);
     let len = cx.argument::<JsNumber>(2)?;
     let len = len.value(&mut cx);
-    JsUint32Array::from_region(&mut cx, buf.region(byte_offset as usize, len as usize))
+    JsUint32Array::from_region(&mut cx, buf.region(offset as usize, len as usize))
 }
 
 pub fn get_arraybuffer_byte_length(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let buf = cx.argument::<JsArrayBuffer>(0)?;
-    let byte_length = buf.byte_length(&mut cx);
-    let n = cx.number(byte_length as u32);
+    let size = buf.size(&mut cx);
+    let n = cx.number(size as u32);
     Ok(n)
 }
 
@@ -175,22 +175,22 @@ fn typed_array_info<'cx, C, T: Binary>(
 where
     C: Context<'cx>,
 {
-    let byte_offset = a.byte_offset(cx);
-    let byte_offset = cx.number(byte_offset as u32);
+    let offset = a.offset(cx);
+    let offset = cx.number(offset as u32);
 
     let len = a.len(cx);
     let len = cx.number(len as u32);
 
-    let byte_length = a.byte_length(cx);
-    let byte_length = cx.number(byte_length as u32);
+    let size = a.size(cx);
+    let size = cx.number(size as u32);
 
     let buffer = a.buffer(cx);
 
     let obj = cx.empty_object();
 
-    obj.set(cx, "byteOffset", byte_offset)?;
+    obj.set(cx, "byteOffset", offset)?;
     obj.set(cx, "length", len)?;
-    obj.set(cx, "byteLength", byte_length)?;
+    obj.set(cx, "byteLength", size)?;
     obj.set(cx, "buffer", buffer)?;
 
     Ok(obj)

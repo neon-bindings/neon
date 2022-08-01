@@ -90,7 +90,7 @@ pub trait TypedArray: private::Sealed {
         C: Context<'cx>;
 
     /// Returns the size, in bytes, of the allocated binary data.
-    fn byte_length<'cx, C>(&self, cx: &mut C) -> usize
+    fn size<'cx, C>(&self, cx: &mut C) -> usize
     where
         C: Context<'cx>;
 }
@@ -190,7 +190,7 @@ impl<T> ResultExt<T> for Result<T, BorrowError> {
 ///
 /// A `Region` can be created via the
 /// [`Handle<JsArrayBuffer>::region()`](crate::handle::Handle::region) or
-/// [`JsTypedArray::to_region()`](crate::types::JsTypedArray::to_region) methods.
+/// [`JsTypedArray::region()`](crate::types::JsTypedArray::region) methods.
 ///
 /// A region is **not** checked for validity until it is converted
 /// a typed array via [`to_typed_array()`](Region::to_typed_array) or
@@ -222,7 +222,7 @@ impl<T> ResultExt<T> for Result<T, BorrowError> {
 #[derive(Clone, Copy)]
 pub struct Region<'cx, T: Binary> {
     pub(super) buffer: Handle<'cx, JsArrayBuffer>,
-    pub(super) byte_offset: usize,
+    pub(super) offset: usize,
     pub(super) len: usize,
     pub(super) phantom: PhantomData<T>,
 }
@@ -234,8 +234,8 @@ impl<'cx, T: Binary> Region<'cx, T> {
     }
 
     /// Returns the starting byte offset of the region.
-    pub fn byte_offset(self) -> usize {
-        self.byte_offset
+    pub fn offset(self) -> usize {
+        self.offset
     }
 
     /// Returns the number of elements of type `T` in the region.
@@ -243,25 +243,25 @@ impl<'cx, T: Binary> Region<'cx, T> {
         self.len
     }
 
-    /// Returns the byte length of the region, which is equal to
+    /// Returns the size of the region in bytes, which is equal to
     /// `(self.len() * size_of::<T>())`.
-    pub fn byte_length(self) -> usize {
+    pub fn size(self) -> usize {
         self.len * std::mem::size_of::<T>()
     }
 
     /// Constructs a typed array for this buffer region.
     ///
-    /// The resulting typed array has `self.len()` elements and byte length
-    /// `self.byte_length()`.
+    /// The resulting typed array has `self.len()` elements and a size of
+    /// `self.size()` bytes.
     ///
     /// Throws an exception if the region is invalid, for example if the starting
     /// offset is not properly aligned, or the length goes beyond the end of the
     /// buffer.
-    pub fn to_typed_array<'c, C>(self, cx: &mut C) -> JsResult<'c, JsTypedArray<T>>
+    pub fn to_typed_array<'c, C>(&self, cx: &mut C) -> JsResult<'c, JsTypedArray<T>>
     where
         C: Context<'c>,
     {
-        JsTypedArray::from_region(cx, self)
+        JsTypedArray::from_region(cx, *self)
     }
 }
 
