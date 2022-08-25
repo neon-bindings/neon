@@ -98,3 +98,26 @@ pub use neon_macros::*;
 
 #[cfg(feature = "napi-6")]
 mod lifecycle;
+
+#[cfg(feature = "napi-8")]
+static MODULE_TAG: once_cell::sync::Lazy<crate::sys::TypeTag> = once_cell::sync::Lazy::new(|| {
+    let mut lower = [0; std::mem::size_of::<u64>()];
+
+    // Generating a random module tag at runtime allows Neon builds to be reproducible. A few
+    //  alternativeswere considered:
+    // * Generating a random value at build time; this reduces runtime dependencies but, breaks
+    //   reproducible builds
+    // * A static random value; this solves the previous issues, but does not protect against ABI
+    //   differences across Neon and Rust versions
+    // * Calculating a variable from the environment (e.g. Rust version); this theoretically works
+    //   but, is complicated and error prone. This could be a future optimization.
+    getrandom::getrandom(&mut lower).expect("Failed to generate a Neon module type tag");
+
+    // We only use 64-bits of the available 128-bits. The rest is reserved for future versioning and
+    // expansion of implementation.
+    let lower = u64::from_ne_bytes(lower);
+
+    // Note: `upper` must be non-zero or `napi_check_object_type_tag` will always return false
+    // https://github.com/nodejs/node/blob/5fad0b93667ffc6e4def52996b9529ac99b26319/src/js_native_api_v8.cc#L2455
+    crate::sys::TypeTag { lower, upper: 1 }
+});

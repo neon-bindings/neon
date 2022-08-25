@@ -114,3 +114,21 @@ pub unsafe fn is_promise(env: Env, val: Local) -> bool {
     );
     result
 }
+
+#[cfg(feature = "napi-8")]
+pub unsafe fn type_tag_object(env: Env, object: Local, tag: &super::TypeTag) {
+    assert_eq!(
+        napi::type_tag_object(env, object, tag as *const _),
+        napi::Status::Ok
+    );
+}
+
+#[cfg(feature = "napi-8")]
+pub unsafe fn check_object_type_tag(env: Env, object: Local, tag: &super::TypeTag) -> bool {
+    let mut result = false;
+    assert_eq!(
+        napi::check_object_type_tag(env, object, tag as *const _, &mut result as *mut _),
+        napi::Status::Ok
+    );
+    result
+}

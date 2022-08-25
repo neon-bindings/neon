@@ -20,6 +20,7 @@ anyhow = "1.0.58" # used for a doc example
 nodejs-sys = "0.13.0"
 
 [dependencies]
+getrandom = { version = "0.2.7", optional = true }
 libloading = "0.7.3"
 semver = "1"
 smallvec = "1.4.2"
@@ -55,7 +56,7 @@ napi-4 = ["napi-3"]
 napi-5 = ["napi-4"]
 napi-6 = ["napi-5"]
 napi-7 = ["napi-6"]
-napi-8 = ["napi-7"]
+napi-8 = ["napi-7", "getrandom"]
 napi-latest = ["napi-8"]
 napi-experimental = ["napi-8"]
 

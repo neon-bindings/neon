@@ -226,3 +226,11 @@ pub struct Deferred__ {
 }
 
 pub type Deferred = *mut Deferred__;
+
+#[cfg(feature = "napi-8")]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct TypeTag {
+    pub(crate) lower: u64,
+    pub(crate) upper: u64,
+}

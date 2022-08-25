@@ -253,6 +253,7 @@ unsafe fn panic_msg(panic: &Panic) -> Option<&str> {
 }
 
 unsafe fn external_from_panic(env: Env, panic: Panic) -> Local {
+    let fail = || fatal_error("Failed to create a neon::types::JsBox from a panic");
     let mut result = MaybeUninit::uninit();
     let status = napi::create_external(
         env,
@@ -263,10 +264,17 @@ unsafe fn external_from_panic(env: Env, panic: Panic) -> Local {
     );
 
     if status != napi::Status::Ok {
-        fatal_error("Failed to create a neon::types::JsBox from a panic");
+        fail();
     }
 
-    result.assume_init()
+    let external = result.assume_init();
+
+    #[cfg(feature = "napi-8")]
+    if napi::type_tag_object(env, external, &*crate::MODULE_TAG) != napi::Status::Ok {
+        fail();
+    }
+
+    external
 }
 
 extern "C" fn finalize_panic(_env: Env, data: *mut c_void, _hint: *mut c_void) {
