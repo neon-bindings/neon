@@ -9,7 +9,7 @@
     "test": "mocha --v8-expose-gc --timeout 5000 --recursive lib"
   },
   "devDependencies": {
-    "cargo-cp-artifact": "^0.1.6",
+    "cargo-cp-artifact": "^0.1.7",
     "chai": "^4.3.6",
     "mocha": "^10.0.0"
   }
