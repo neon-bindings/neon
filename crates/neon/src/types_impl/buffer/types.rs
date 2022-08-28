@@ -6,15 +6,24 @@ use crate::{
     object::Object,
     result::{JsResult, Throw},
     sys::{self, raw, TypedArrayType},
-    types::buffer::{
-        lock::{Ledger, Lock},
-        private::{self, JsTypedArrayInner},
-        BorrowError, Ref, RefMut, Region, TypedArray,
+    types_impl::{
+        buffer::{
+            lock::{Ledger, Lock},
+            private::{self, JsTypedArrayInner},
+            BorrowError, Ref, RefMut, Region, TypedArray,
+        },
+        private::ValueInternal,
+        Value,
     },
-    types::{private::ValueInternal, Value},
 };
 
+#[cfg(feature = "doc-comment")]
 use doc_comment::doc_comment;
+
+#[cfg(not(feature = "doc-comment"))]
+macro_rules! doc_comment {
+    {$comment:expr, $decl:item} => { $decl };
+}
 
 /// The Node [`Buffer`](https://nodejs.org/api/buffer.html) type.
 ///
@@ -335,12 +344,10 @@ impl TypedArray for JsArrayBuffer {
 /// A marker trait for all possible element types of binary buffers.
 ///
 /// This trait can only be implemented within the Neon library.
-pub trait Binary: private::Sealed + Copy + std::fmt::Debug {
+pub trait Binary: private::Sealed + Clone {
     /// The internal Node-API enum value for this binary type.
     const TYPE_TAG: TypedArrayType;
 }
-
-impl<T: Binary> Copy for JsTypedArrayInner<T> {}
 
 /// The family of JS [typed array][typed-arrays] types.
 ///
@@ -558,13 +565,13 @@ impl<T: Binary> JsTypedArray<T> {
         let len = size / elt_size;
 
         if (len * elt_size) != size {
-            panic!(
+            return cx.throw_range_error(format!(
                 "byte length of typed array should be a multiple of {}",
                 elt_size
-            );
+            ));
         }
 
-        Self::from_region(cx, buffer.region(0, len))
+        Self::from_region(cx, &buffer.region(0, len))
     }
 
     /// Constructs a typed array for the specified buffer region.
@@ -575,30 +582,26 @@ impl<T: Binary> JsTypedArray<T> {
     /// Throws an exception if the region is invalid, for example if the starting
     /// offset is not properly aligned, or the length goes beyond the end of the
     /// buffer.
-    pub fn from_region<'c, 'r, C>(cx: &mut C, region: Region<'r, T>) -> JsResult<'c, Self>
+    pub fn from_region<'c, 'r, C>(cx: &mut C, region: &Region<'r, T>) -> JsResult<'c, Self>
     where
         C: Context<'c>,
     {
-        let Region {
+        let &Region {
             buffer,
             offset,
             len,
             ..
         } = region;
 
-        let result = unsafe {
+        let arr = (unsafe {
             sys::typedarray::new(cx.env().to_raw(), T::TYPE_TAG, buffer.to_raw(), offset, len)
-        };
+        }).map_err(|_| Throw::new())?;
 
-        if let Ok(arr) = result {
-            Ok(Handle::new_internal(Self(JsTypedArrayInner {
-                local: arr,
-                buffer: buffer.to_raw(),
-                _type: PhantomData,
-            })))
-        } else {
-            Err(Throw::new())
-        }
+        Ok(Handle::new_internal(Self(JsTypedArrayInner {
+            local: arr,
+            buffer: buffer.to_raw(),
+            _type: PhantomData,
+        })))
     }
 
     /// Returns information about the backing buffer region for this typed array.
@@ -626,7 +629,7 @@ impl<T: Binary> JsTypedArray<T> {
         C: Context<'cx>,
     {
         let buffer = cx.array_buffer(len * std::mem::size_of::<T>())?;
-        Self::from_region(cx, buffer.region(0, len))
+        Self::from_region(cx, &buffer.region(0, len))
     }
 
     /// Returns the [`JsArrayBuffer`](JsArrayBuffer) that owns the underlying storage buffer

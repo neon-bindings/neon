@@ -1,10 +1,10 @@
-#[cfg_attr(doc, aquamarine::aquamarine)]
+#[cfg_attr(aquamarine, aquamarine::aquamarine)]
 /// Representations of JavaScript's core builtin types.
 ///
 /// ## Modeling JavaScript Types
 ///
-/// All JavaScript values in Neon implement the abstract [`Value`](Value) trait, which
-/// is the most generic way to work with JavaScript values. Neon provides a
+/// All JavaScript values in Neon implement the abstract [`Value`](crate::types::Value)
+/// trait, which is the most generic way to work with JavaScript values. Neon provides a
 /// number of types that implement this trait, each representing a particular
 /// type of JavaScript value.
 ///
@@ -52,9 +52,9 @@
 /// ### The JavaScript Type Hierarchy
 ///
 /// The top of the JavaScript type hierarchy is modeled with the Neon type
-/// [`JsValue`](JsValue). A [handle](crate::handle) to a `JsValue` can refer
-/// to any JavaScript value. (For TypeScript programmers, this can be thought
-/// of as similar to TypeScript's [`unknown`][unknown] type.)
+/// [`JsValue`](crate::types::JsValue). A [handle](crate::handle) to a `JsValue`
+/// can refer to any JavaScript value. (For TypeScript programmers, this can be
+/// thought of as similar to TypeScript's [`unknown`][unknown] type.)
 ///
 /// From there, the type hierarchy divides into _object types_ and _primitive
 /// types_:
@@ -80,12 +80,13 @@
 /// JsValue-->primitives
 /// ```
 ///
-/// The top of the object type hierarchy is [`JsObject`](JsObject). A handle to a
-/// `JsObject` can refer to any JavaScript object.
+/// The top of the object type hierarchy is [`JsObject`](crate::types::JsObject). A
+/// handle to a `JsObject` can refer to any JavaScript object.
 ///
 /// The primitive types are the built-in JavaScript datatypes that are not object
-/// types: [`JsBoolean`](JsBoolean), [`JsNumber`](JsNumber), [`JsString`](JsString),
-/// [`JsNull`](JsNull), and [`JsUndefined`](JsUndefined).
+/// types: [`JsBoolean`](crate::types::JsBoolean), [`JsNumber`](crate::types::JsNumber),
+/// [`JsString`](crate::types::JsString), [`JsNull`](crate::types::JsNull), and
+/// [`JsUndefined`](crate::types::JsUndefined).
 ///
 /// #### Object Types
 ///
@@ -123,12 +124,14 @@
 /// ```
 ///
 /// These include several categories of object types:
-/// - **Standard object types:** [`JsFunction`](JsFunction), [`JsArray`](JsArray),
-///   [`JsDate`](JsDate), and [`JsError`](JsError).
-/// - **Typed arrays:** [`JsBuffer`](JsBuffer), [`JsArrayBuffer`](JsArrayBuffer),
-///   and [`JsTypedArray<T>`](JsTypedArray).
-/// - **Custom types:** [`JsBox`](JsBox), a special Neon type that allows the creation
-///   of custom objects that own Rust data structures.
+/// - **Standard object types:** [`JsFunction`](crate::types::JsFunction),
+///   [`JsArray`](crate::types::JsArray), [`JsDate`](crate::types::JsDate), and
+///   [`JsError`](crate::types::JsError).
+/// - **Typed arrays:** [`JsBuffer`](crate::types::JsBuffer),
+///   [`JsArrayBuffer`](crate::types::JsArrayBuffer), and
+///   [`JsTypedArray<T>`](crate::types::JsTypedArray).
+/// - **Custom types:** [`JsBox`](crate::types::JsBox), a special Neon type that allows
+///   the creation of custom objects that own Rust data structures.
 ///
 /// All object types implement the [`Object`](crate::object::Object) trait, which
 /// allows getting and setting properties of an object.

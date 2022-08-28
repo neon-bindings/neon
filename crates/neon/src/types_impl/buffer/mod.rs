@@ -192,7 +192,7 @@ impl<T> ResultExt<T> for Result<T, BorrowError> {
 /// [`Handle<JsArrayBuffer>::region()`](crate::handle::Handle::region) or
 /// [`JsTypedArray::region()`](crate::types::JsTypedArray::region) methods.
 ///
-/// A region is **not** checked for validity until it is converted
+/// A region is **not** checked for validity until it is converted to
 /// a typed array via [`to_typed_array()`](Region::to_typed_array) or
 /// [`JsTypedArray::from_region()`](crate::types::JsTypedArray::from_region).
 ///
@@ -215,37 +215,37 @@ impl<T> ResultExt<T> for Result<T, BorrowError> {
 /// //              +-------+-------+
 /// //               0       1       2
 /// let buf = cx.array_buffer(16)?;
-/// let arr = JsUint32Array::from_region(&mut cx, buf.region(4, 2))?;
+/// let arr = JsUint32Array::from_region(&mut cx, &buf.region(4, 2))?;
 /// # Ok(arr)
 /// # }
 /// ```
 #[derive(Clone, Copy)]
 pub struct Region<'cx, T: Binary> {
-    pub(super) buffer: Handle<'cx, JsArrayBuffer>,
-    pub(super) offset: usize,
-    pub(super) len: usize,
-    pub(super) phantom: PhantomData<T>,
+    buffer: Handle<'cx, JsArrayBuffer>,
+    offset: usize,
+    len: usize,
+    phantom: PhantomData<T>,
 }
 
 impl<'cx, T: Binary> Region<'cx, T> {
     /// Returns the handle to the region's buffer.
-    pub fn buffer(self) -> Handle<'cx, JsArrayBuffer> {
+    pub fn buffer(&self) -> Handle<'cx, JsArrayBuffer> {
         self.buffer
     }
 
     /// Returns the starting byte offset of the region.
-    pub fn offset(self) -> usize {
+    pub fn offset(&self) -> usize {
         self.offset
     }
 
     /// Returns the number of elements of type `T` in the region.
-    pub fn len(self) -> usize {
+    pub fn len(&self) -> usize {
         self.len
     }
 
     /// Returns the size of the region in bytes, which is equal to
     /// `(self.len() * size_of::<T>())`.
-    pub fn size(self) -> usize {
+    pub fn size(&self) -> usize {
         self.len * std::mem::size_of::<T>()
     }
 
@@ -261,21 +261,37 @@ impl<'cx, T: Binary> Region<'cx, T> {
     where
         C: Context<'c>,
     {
-        JsTypedArray::from_region(cx, *self)
+        JsTypedArray::from_region(cx, self)
     }
 }
 
 mod private {
     use super::Binary;
     use crate::sys::raw;
+    use std::fmt::{Debug, Formatter};
     use std::marker::PhantomData;
 
     pub trait Sealed {}
 
-    #[derive(Debug, Clone)]
+    #[derive(Clone)]
     pub struct JsTypedArrayInner<T: Binary> {
         pub(super) local: raw::Local,
         pub(super) buffer: raw::Local,
         pub(super) _type: PhantomData<T>,
     }
+
+    impl<T: Binary> Debug for JsTypedArrayInner<T> {
+        fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
+            f.write_str("JsTypedArrayInner { ")?;
+            f.write_str("local: ")?;
+            self.local.fmt(f)?;
+            f.write_str(", buffer: ")?;
+            self.buffer.fmt(f)?;
+            f.write_str(", _type: PhantomData")?;
+            f.write_str(" }")?;
+            Ok(())
+        }
+    }
+
+    impl<T: Binary> Copy for JsTypedArrayInner<T> {}
 }

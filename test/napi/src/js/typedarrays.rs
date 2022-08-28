@@ -158,7 +158,7 @@ pub fn return_uint32array_from_arraybuffer_region(
     let offset = offset.value(&mut cx);
     let len = cx.argument::<JsNumber>(2)?;
     let len = len.value(&mut cx);
-    JsUint32Array::from_region(&mut cx, buf.region(offset as usize, len as usize))
+    JsUint32Array::from_region(&mut cx, &buf.region(offset as usize, len as usize))
 }
 
 pub fn get_arraybuffer_byte_length(mut cx: FunctionContext) -> JsResult<JsNumber> {
