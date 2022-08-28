@@ -27,7 +27,7 @@ function detach(buffer) {
 
   DETACH_WORKER.postMessage(buffer, [buffer]);
 
-  return new Promise(resolve => DETACH_WORKER.once("message", resolve));
+  return new Promise((resolve) => DETACH_WORKER.once("message", resolve));
 }
 
 describe("Typed arrays", function () {

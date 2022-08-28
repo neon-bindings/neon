@@ -595,7 +595,8 @@ impl<T: Binary> JsTypedArray<T> {
 
         let arr = (unsafe {
             sys::typedarray::new(cx.env().to_raw(), T::TYPE_TAG, buffer.to_raw(), offset, len)
-        }).map_err(|_| Throw::new())?;
+        })
+        .map_err(|_| Throw::new())?;
 
         Ok(Handle::new_internal(Self(JsTypedArrayInner {
             local: arr,

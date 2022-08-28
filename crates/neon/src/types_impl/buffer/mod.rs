@@ -239,6 +239,7 @@ impl<'cx, T: Binary> Region<'cx, T> {
     }
 
     /// Returns the number of elements of type `T` in the region.
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.len
     }

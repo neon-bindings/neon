@@ -160,7 +160,7 @@ pub fn num_arguments(mut cx: FunctionContext) -> JsResult<JsNumber> {
 }
 
 pub fn return_this(mut cx: FunctionContext) -> JsResult<JsValue> {
-    Ok(cx.this()?)
+    cx.this()
 }
 
 pub fn require_object_this(mut cx: FunctionContext) -> JsResult<JsUndefined> {
