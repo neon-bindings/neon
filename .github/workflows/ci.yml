@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    # Prevent duplicate runs of this workflow on our own internal PRs.
+    branches:
+      - main
+      - next/*
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+    branches:
+      - main
+      - next/*
+
+env:
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "true"
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      node_version: ${{ steps.set_matrix.outputs.node_version }}
+      rust_toolchain: ${{ steps.set_matrix.outputs.rust_toolchain }}
+    steps:
+      - name: Set Matrix
+        id: set_matrix
+        env:
+          FULL_NODE_VERSIONS: '["14.x", "16.x", "18.x"]'
+          FULL_RUST_TOOLCHAINS: '["stable", "nightly"]'
+          PARTIAL_NODE_VERSIONS: '["16.x"]'
+          PARTIAL_RUST_TOOLCHAINS: '["stable"]'
+          HAS_FULL_MATRIX_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'full matrix') }}
+          IS_PUSHED: ${{ github.event_name == 'push' }}
+        run: |
+          if [[ "$HAS_FULL_MATRIX_LABEL" == "true" ]] || [[ "$IS_PUSHED" == "true" ]]; then
+            echo "::set-output name=node_version::$FULL_NODE_VERSIONS"
+            echo "::set-output name=rust_toolchain::$FULL_RUST_TOOLCHAINS"
+          else
+            echo "::set-output name=node_version::$PARTIAL_NODE_VERSIONS"
+            echo "::set-output name=rust_toolchain::$PARTIAL_RUST_TOOLCHAINS"
+          fi
+
+  build:
+    needs: matrix
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: ${{fromJson(needs.matrix.outputs.node_version)}}
+        rust-toolchain: ${{fromJson(needs.matrix.outputs.rust_toolchain)}}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Use Rust ${{ matrix.rust-toolchain }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust-toolchain }}
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Electron Cache Variables
+        id: electron_cache_vars
+        run: |
+          echo "::set-output name=key::${{ runner.os }}-electron-${{ hashFiles('./package-lock.json') }}"
+      - name: Cache Electron (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/cache@v3
+        with:
+          key: ${{ steps.electron_cache_vars.outputs.key }}
+          path: ~/.cache/electron
+      - name: Cache Electron (Windows)
+        if: matrix.os == 'windows-latest'
+        uses: actions/cache@v3
+        with:
+          key: ${{ steps.electron_cache_vars.outputs.key }}
+          path: "%LOCALAPPDATA%\\electron\\Cache"
+      - name: Cache Electron (macOS)
+        if: matrix.os == 'macos-latest'
+        uses: actions/cache@v3
+        with:
+          key: ${{ runner.os }}-electron-${{ hashFiles('./package-lock.json') }}
+          path: ~/Library/Caches/electron
+
+      - name: Use npm v8
+        # https://github.com/npm/cli/issues/4552
+        run: npm -g i npm@~8.3
+
+      - name: npm install
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Test (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: xvfb-run --auto-servernum npm test -- --nocapture
+      - name: Test
+        if: matrix.os != 'ubuntu-latest'
+        run: npm test
