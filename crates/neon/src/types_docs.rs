@@ -1,4 +1,4 @@
-#[cfg_attr(aquamarine, aquamarine::aquamarine)]
+#[cfg_attr(feature = "aquamarine", aquamarine::aquamarine)]
 /// Representations of JavaScript's core builtin types.
 ///
 /// ## Modeling JavaScript Types
