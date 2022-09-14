@@ -5,9 +5,10 @@ use std::panic::{catch_unwind, UnwindSafe};
 use crate::{
     context::{internal::Env, Context},
     handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    object::Object,
     result::{NeonResult, Throw},
     sys::{self, raw},
-    types::{build, private::ValueInternal, utf8::Utf8, Object, Value},
+    types::{build, private::ValueInternal, utf8::Utf8, Value},
 };
 
 /// A JS `Error` object.
@@ -89,7 +90,7 @@ pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> NeonResult<T>>(
     env: Env,
     f: F,
 ) -> NeonResult<T> {
-    match catch_unwind(|| f()) {
+    match catch_unwind(f) {
         Ok(result) => result,
         Err(panic) => {
             let msg = if let Some(string) = panic.downcast_ref::<String>() {

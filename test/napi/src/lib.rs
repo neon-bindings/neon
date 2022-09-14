@@ -2,7 +2,7 @@ use neon::prelude::*;
 
 use crate::js::{
     arrays::*, boxed::*, coercions::*, date::*, errors::*, functions::*, numbers::*, objects::*,
-    strings::*, threads::*, types::*,
+    strings::*, threads::*, typedarrays::*, types::*,
 };
 
 mod js {
@@ -17,6 +17,7 @@ mod js {
     pub mod objects;
     pub mod strings;
     pub mod threads;
+    pub mod typedarrays;
     pub mod types;
     pub mod workers;
 }
@@ -36,8 +37,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     let b_true = cx.boolean(true);
     let b_false = cx.boolean(false);
 
-    assert_eq!(b_true.value(&mut cx), true);
-    assert_eq!(b_false.value(&mut cx), false);
+    assert!(b_true.value(&mut cx));
+    assert!(!b_false.value(&mut cx));
 
     cx.export_value("undefined", undefined)?;
     cx.export_value("null", null)?;
@@ -81,13 +82,10 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
             .abs()
             < f64::EPSILON
     );
-    assert_eq!(
-        {
-            let v: Handle<JsBoolean> = rust_created.get(&mut cx, "whatever")?;
-            v.value(&mut cx)
-        },
-        true
-    );
+    assert!({
+        let v: Handle<JsBoolean> = rust_created.get(&mut cx, "whatever")?;
+        v.value(&mut cx)
+    });
 
     let property_names = rust_created
         .get_own_property_names(&mut cx)?
@@ -235,6 +233,39 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("return_buffer", return_buffer)?;
     cx.export_function("return_external_buffer", return_external_buffer)?;
     cx.export_function("return_external_array_buffer", return_external_array_buffer)?;
+    cx.export_function(
+        "return_int8array_from_arraybuffer",
+        return_int8array_from_arraybuffer,
+    )?;
+    cx.export_function(
+        "return_int16array_from_arraybuffer",
+        return_int16array_from_arraybuffer,
+    )?;
+    cx.export_function(
+        "return_uint32array_from_arraybuffer",
+        return_uint32array_from_arraybuffer,
+    )?;
+    cx.export_function(
+        "return_float64array_from_arraybuffer",
+        return_float64array_from_arraybuffer,
+    )?;
+    cx.export_function(
+        "return_biguint64array_from_arraybuffer",
+        return_biguint64array_from_arraybuffer,
+    )?;
+    cx.export_function("return_new_int32array", return_new_int32array)?;
+    cx.export_function(
+        "return_uint32array_from_arraybuffer_region",
+        return_uint32array_from_arraybuffer_region,
+    )?;
+    cx.export_function("get_arraybuffer_byte_length", get_arraybuffer_byte_length)?;
+    cx.export_function("detach_same_handle", detach_same_handle)?;
+    cx.export_function("detach_and_escape", detach_and_escape)?;
+    cx.export_function("detach_and_cast", detach_and_cast)?;
+    cx.export_function("detach_and_unroot", detach_and_unroot)?;
+    cx.export_function("get_typed_array_info", get_typed_array_info)?;
+    cx.export_function("build_f32_region", build_f32_region)?;
+    cx.export_function("build_f64_region", build_f64_region)?;
     cx.export_function("read_buffer_with_lock", read_buffer_with_lock)?;
     cx.export_function("read_buffer_with_borrow", read_buffer_with_borrow)?;
     cx.export_function("write_buffer_with_lock", write_buffer_with_lock)?;

@@ -2,10 +2,11 @@ use std::ptr;
 
 use crate::{
     context::{internal::Env, Context},
-    handle::{internal::TransparentNoCopyWrapper, Managed},
+    handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    object::Object,
     result::JsResult,
     sys::{self, no_panic::FailureBoundary, raw},
-    types::{private::ValueInternal, Handle, Object, Value},
+    types::{private::ValueInternal, Value},
 };
 
 #[cfg(feature = "napi-4")]
@@ -245,7 +246,7 @@ impl Deferred {
         F: FnOnce(TaskContext) -> JsResult<V> + Send + 'static,
     {
         channel.try_send(move |cx| {
-            self.try_catch_settle(cx, move |cx| complete(cx));
+            self.try_catch_settle(cx, complete);
             Ok(())
         })
     }

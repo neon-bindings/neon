@@ -88,7 +88,7 @@ pub struct Handle<'a, T: Managed + 'a> {
 impl<'a, T: Managed> Clone for Handle<'a, T> {
     fn clone(&self) -> Self {
         Self {
-            value: self.value.clone(),
+            value: self.value,
             phantom: PhantomData,
         }
     }

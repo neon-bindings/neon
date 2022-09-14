@@ -90,6 +90,15 @@ mod napi1 {
                 byte_length: *mut usize,
             ) -> Status;
 
+            fn create_typedarray(
+                env: Env,
+                type_: TypedArrayType,
+                length: usize,
+                arraybuffer: Value,
+                byte_offset: usize,
+                result: *mut Value,
+            ) -> Status;
+
             fn get_typedarray_info(
                 env: Env,
                 typedarray: Value,

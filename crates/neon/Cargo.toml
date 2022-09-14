@@ -26,6 +26,8 @@ semver = "1"
 smallvec = "1.4.2"
 once_cell = "1.10.0"
 neon-macros = { version = "=1.0.0-alpha.1", path = "../neon-macros" }
+aquamarine = { version = "0.1.11", optional = true }
+doc-comment = { version = "0.3.3", optional = true }
 
 [dependencies.tokio]
 version = "1.18.2"
@@ -71,9 +73,13 @@ task-api = []
 # DEPRECATED: This is always enabled and should be removed.
 proc-macros = []
 
+# Enables the optional dependencies that are only used for generating the API docs.
+doc-dependencies = ["doc-comment", "aquamarine"]
+
 [package.metadata.docs.rs]
 rustdoc-args = ["--cfg", "docsrs"]
 features = [
     "futures",
     "napi-experimental",
+    "doc-dependencies",
 ]

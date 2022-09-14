@@ -78,7 +78,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
 
         Self {
             tsfn: Tsfn(result.assume_init()),
-            is_finalized: is_finalized,
+            is_finalized,
             callback,
         }
     }

@@ -210,13 +210,11 @@ unsafe fn error_from_message(env: Env, msg: &str) -> Local {
 
     let status = napi::create_error(env, ptr::null_mut(), msg, err.as_mut_ptr());
 
-    let err = if status == napi::Status::Ok {
+    if status == napi::Status::Ok {
         err.assume_init()
     } else {
         fatal_error("Failed to create an Error");
-    };
-
-    err
+    }
 }
 
 #[track_caller]
@@ -246,7 +244,7 @@ unsafe fn panic_msg(panic: &Panic) -> Option<&str> {
     if let Some(msg) = panic.downcast_ref::<&str>() {
         Some(msg)
     } else if let Some(msg) = panic.downcast_ref::<String>() {
-        Some(&msg)
+        Some(msg)
     } else {
         None
     }

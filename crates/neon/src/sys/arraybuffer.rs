@@ -65,3 +65,17 @@ pub unsafe fn as_mut_slice<'a>(env: Env, buf: Local) -> &'a mut [u8] {
 
     slice::from_raw_parts_mut(data.assume_init().cast(), size)
 }
+
+/// # Safety
+/// * Caller must ensure `env` and `buf` are valid
+pub unsafe fn size(env: Env, buf: Local) -> usize {
+    let mut data = MaybeUninit::uninit();
+    let mut size = 0usize;
+
+    assert_eq!(
+        napi::get_arraybuffer_info(env, buf, data.as_mut_ptr(), &mut size as *mut _),
+        napi::Status::Ok,
+    );
+
+    size
+}

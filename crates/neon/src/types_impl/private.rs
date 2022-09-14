@@ -1,7 +1,8 @@
 use crate::{
     context::internal::Env,
+    handle::{Handle, Managed},
     sys::raw,
-    types::{Handle, Managed, Value},
+    types::Value,
 };
 
 pub trait ValueInternal: Managed + 'static {
