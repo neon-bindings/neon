@@ -11,6 +11,9 @@ on:
       - main
       - next/*
 
+env:
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "true"
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -21,19 +24,28 @@ jobs:
         rust-toolchain: [nightly]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Use Rust ${{ matrix.rust-toolchain }}
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust-toolchain }}
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-      - run: npm install
+          cache: "npm"
+      - name: Cache Electron
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/electron
+          key: ${{ runner.os }}-electron-${{ hashFiles('./package-lock.json') }}
+      - name: npm install
+        run: npm ci --prefer-offline --no-audit --no-fund
       - name: Prettier Formatting
         run: npm run prettier:check
       - name: Rust Formatting
         run: cargo fmt --all -- --check
-      - name: Clippy (N-API)
+      - name: Rust Clippy
         run: cargo neon-clippy
