@@ -14,7 +14,7 @@ use crate::{
     result::{JsResult, NeonResult, ResultExt},
     types::{
         buffer::lock::{Ledger, Lock},
-        JsArrayBuffer, JsTypedArray,
+        JsArrayBuffer, JsTypedArray, Value,
     },
 };
 
@@ -47,7 +47,7 @@ pub use types::Binary;
 /// ```
 ///
 /// [typed-arrays]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
-pub trait TypedArray: private::Sealed {
+pub trait TypedArray: private::Sealed + Value {
     type Item: Binary;
 
     /// Statically checked immutable borrow of binary data.
@@ -91,6 +91,11 @@ pub trait TypedArray: private::Sealed {
 
     /// Returns the size, in bytes, of the allocated binary data.
     fn size<'cx, C>(&self, cx: &mut C) -> usize
+    where
+        C: Context<'cx>;
+
+    /// Constructs an instance from a slice by copying its contents.
+    fn from_slice<'cx, C>(cx: &mut C, slice: &[Self::Item]) -> JsResult<'cx, Self>
     where
         C: Context<'cx>;
 }
