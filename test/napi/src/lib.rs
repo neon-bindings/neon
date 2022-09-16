@@ -212,7 +212,10 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("seal_js_object", seal_js_object)?;
 
     cx.export_function("return_array_buffer", return_array_buffer)?;
-    cx.export_function("return_array_buffer_from_slice", return_array_buffer_from_slice)?;
+    cx.export_function(
+        "return_array_buffer_from_slice",
+        return_array_buffer_from_slice,
+    )?;
     cx.export_function("read_array_buffer_with_lock", read_array_buffer_with_lock)?;
     cx.export_function(
         "read_array_buffer_with_borrow",
