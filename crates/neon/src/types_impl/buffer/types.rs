@@ -206,6 +206,18 @@ impl JsArrayBuffer {
         }
     }
 
+    /// Constructs a new `JsArrayBuffer` object from a slice by copying its contents.
+    pub fn from_slice<'cx, C>(cx: &mut C, slice: &[u8]) -> JsResult<'cx, Self>
+    where
+        C: Context<'cx>,
+    {
+        let len = slice.len();
+        let mut buffer = JsArrayBuffer::new(cx, len)?;
+        let target = buffer.as_mut_slice(cx);
+        target.copy_from_slice(slice);
+        Ok(buffer)
+    }
+
     /// Construct a new `JsArrayBuffer` from bytes allocated by Rust
     pub fn external<'a, C, T>(cx: &mut C, data: T) -> Handle<'a, Self>
     where
@@ -672,6 +684,24 @@ impl<T: Binary> JsTypedArray<T> {
     {
         let info = unsafe { sys::typedarray::info(cx.env().to_raw(), self.to_raw()) };
         info.length
+    }
+}
+
+impl<T: Binary + Copy> JsTypedArray<T> {
+    /// Constructs a typed array from a slice by copying its contents.
+    pub fn from_slice<'cx, C>(cx: &mut C, slice: &[T]) -> JsResult<'cx, Self>
+    where
+        C: Context<'cx>,
+    {
+        let elt_size = std::mem::size_of::<T>();
+        let size = slice.len() * elt_size;
+        let buffer = cx.array_buffer(size)?;
+
+        let mut array = Self::from_buffer(cx, buffer)?;
+        let target = array.as_mut_slice(cx);
+        target.copy_from_slice(slice);
+
+        Ok(array)
     }
 }
 

@@ -8,6 +8,18 @@ pub fn return_array_buffer(mut cx: FunctionContext) -> JsResult<JsArrayBuffer> {
     Ok(b)
 }
 
+pub fn return_array_buffer_from_slice(mut cx: FunctionContext) -> JsResult<JsArrayBuffer> {
+    let len: Handle<JsNumber> = cx.argument(0)?;
+    let len: f64 = len.value(&mut cx);
+    let len: u32 = len as u32;
+    let mut v: Vec<u8> = Vec::new();
+    for i in 0..len {
+        v.push(i as u8);
+    }
+    let b: Handle<JsArrayBuffer> = JsArrayBuffer::from_slice(&mut cx, &v)?;
+    Ok(b)
+}
+
 pub fn read_array_buffer_with_lock(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let buf = cx.argument::<JsTypedArray<u32>>(0)?;
     let i = cx.argument::<JsNumber>(1)?.value(&mut cx) as usize;
@@ -148,6 +160,18 @@ pub fn return_biguint64array_from_arraybuffer(
 pub fn return_new_int32array(mut cx: FunctionContext) -> JsResult<JsInt32Array> {
     let len = cx.argument::<JsNumber>(0)?.value(&mut cx) as usize;
     JsInt32Array::new(&mut cx, len)
+}
+
+pub fn return_int32array_from_slice(mut cx: FunctionContext) -> JsResult<JsInt32Array> {
+    let len: Handle<JsNumber> = cx.argument(0)?;
+    let len: f64 = len.value(&mut cx);
+    let len: u32 = len as u32;
+    let mut v: Vec<i32> = Vec::new();
+    for i in 0..len {
+        v.push(i as i32);
+    }
+    let a: Handle<JsInt32Array> = JsInt32Array::from_slice(&mut cx, &v)?;
+    Ok(a)
 }
 
 pub fn return_uint32array_from_arraybuffer_region(

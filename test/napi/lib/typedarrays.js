@@ -152,6 +152,14 @@ describe("Typed arrays", function () {
     assert.ok(b.equals(Buffer.alloc(16)));
   });
 
+  it("gets a 16-byte buffer initialized from a slice", function () {
+    var b = addon.return_array_buffer_from_slice(16);
+    var a = new Uint8Array(b);
+    for (var i = 0; i < 16; i++) {
+      assert.strictEqual(a[i], i);
+    }
+  });
+
   it("gets an external Buffer", function () {
     var expected = "String to copy";
     var buf = addon.return_external_buffer(expected);
@@ -240,6 +248,13 @@ describe("Typed arrays", function () {
       [...i32],
       [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     );
+  });
+
+  it("gets a typed array copied from a slice", function () {
+    var i32 = addon.return_int32array_from_slice(16);
+    for (var i = 0; i < 16; i++) {
+      assert.strictEqual(i32[i], i);
+    }
   });
 
   it("gets correct typed array info", function () {
