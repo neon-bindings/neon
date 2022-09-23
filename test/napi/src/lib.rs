@@ -212,6 +212,10 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("seal_js_object", seal_js_object)?;
 
     cx.export_function("return_array_buffer", return_array_buffer)?;
+    cx.export_function(
+        "return_array_buffer_from_slice",
+        return_array_buffer_from_slice,
+    )?;
     cx.export_function("read_array_buffer_with_lock", read_array_buffer_with_lock)?;
     cx.export_function(
         "read_array_buffer_with_borrow",
@@ -254,6 +258,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         return_biguint64array_from_arraybuffer,
     )?;
     cx.export_function("return_new_int32array", return_new_int32array)?;
+    cx.export_function("return_int32array_from_slice", return_int32array_from_slice)?;
     cx.export_function(
         "return_uint32array_from_arraybuffer_region",
         return_uint32array_from_arraybuffer_region,

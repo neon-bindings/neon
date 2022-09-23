@@ -60,6 +60,17 @@ impl JsBuffer {
         }
     }
 
+    /// Constructs a `JsBuffer` from a slice by copying its contents.
+    ///
+    /// This method is defined on `JsBuffer` as a convenience and delegates to
+    /// [`TypedArray::from_slice`][TypedArray::from_slice].
+    pub fn from_slice<'cx, C>(cx: &mut C, slice: &[u8]) -> JsResult<'cx, Self>
+    where
+        C: Context<'cx>,
+    {
+        <JsBuffer as TypedArray>::from_slice(cx, slice)
+    }
+
     /// Constructs a new `Buffer` object with uninitialized memory
     pub unsafe fn uninitialized<'a, C: Context<'a>>(cx: &mut C, len: usize) -> JsResult<'a, Self> {
         let result = sys::buffer::uninitialized(cx.env().to_raw(), len);
@@ -169,6 +180,16 @@ impl TypedArray for JsBuffer {
     fn size<'cx, C: Context<'cx>>(&self, cx: &mut C) -> usize {
         unsafe { sys::buffer::size(cx.env().to_raw(), self.to_raw()) }
     }
+
+    fn from_slice<'cx, C>(cx: &mut C, slice: &[u8]) -> JsResult<'cx, Self>
+    where
+        C: Context<'cx>,
+    {
+        let mut buffer = cx.buffer(slice.len())?;
+        let target = buffer.as_mut_slice(cx);
+        target.copy_from_slice(slice);
+        Ok(buffer)
+    }
 }
 
 /// The standard JS [`ArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) type.
@@ -204,6 +225,17 @@ impl JsArrayBuffer {
         } else {
             Err(Throw::new())
         }
+    }
+
+    /// Constructs a `JsArrayBuffer` from a slice by copying its contents.
+    ///
+    /// This method is defined on `JsArrayBuffer` as a convenience and delegates to
+    /// [`TypedArray::from_slice`][TypedArray::from_slice].
+    pub fn from_slice<'cx, C>(cx: &mut C, slice: &[u8]) -> JsResult<'cx, Self>
+    where
+        C: Context<'cx>,
+    {
+        <JsArrayBuffer as TypedArray>::from_slice(cx, slice)
     }
 
     /// Construct a new `JsArrayBuffer` from bytes allocated by Rust
@@ -339,12 +371,23 @@ impl TypedArray for JsArrayBuffer {
     fn size<'cx, C: Context<'cx>>(&self, cx: &mut C) -> usize {
         unsafe { sys::arraybuffer::size(cx.env().to_raw(), self.to_raw()) }
     }
+
+    fn from_slice<'cx, C>(cx: &mut C, slice: &[u8]) -> JsResult<'cx, Self>
+    where
+        C: Context<'cx>,
+    {
+        let len = slice.len();
+        let mut buffer = JsArrayBuffer::new(cx, len)?;
+        let target = buffer.as_mut_slice(cx);
+        target.copy_from_slice(slice);
+        Ok(buffer)
+    }
 }
 
 /// A marker trait for all possible element types of binary buffers.
 ///
 /// This trait can only be implemented within the Neon library.
-pub trait Binary: private::Sealed + Clone {
+pub trait Binary: private::Sealed + Copy {
     /// The internal Node-API enum value for this binary type.
     const TYPE_TAG: TypedArrayType;
 }
@@ -475,7 +518,11 @@ impl<T: Binary> Managed for JsTypedArray<T> {
     }
 }
 
-impl<T: Binary> TypedArray for JsTypedArray<T> {
+impl<T> TypedArray for JsTypedArray<T>
+where
+    T: Binary,
+    Self: Value,
+{
     type Item = T;
 
     fn as_slice<'cx, 'a, C>(&self, cx: &'a C) -> &'a [Self::Item]
@@ -546,6 +593,37 @@ impl<T: Binary> TypedArray for JsTypedArray<T> {
 
     fn size<'cx, C: Context<'cx>>(&self, cx: &mut C) -> usize {
         self.len(cx) * std::mem::size_of::<Self::Item>()
+    }
+
+    fn from_slice<'cx, C>(cx: &mut C, slice: &[T]) -> JsResult<'cx, Self>
+    where
+        C: Context<'cx>,
+    {
+        let elt_size = std::mem::size_of::<T>();
+        let size = slice.len() * elt_size;
+        let buffer = cx.array_buffer(size)?;
+
+        let mut array = Self::from_buffer(cx, buffer)?;
+        let target = array.as_mut_slice(cx);
+        target.copy_from_slice(slice);
+
+        Ok(array)
+    }
+}
+
+impl<T: Binary> JsTypedArray<T>
+where
+    JsTypedArray<T>: Value,
+{
+    /// Constructs an instance from a slice by copying its contents.
+    ///
+    /// This method is defined on `JsTypedArray` as a convenience and delegates to
+    /// [`TypedArray::from_slice`][TypedArray::from_slice].
+    pub fn from_slice<'cx, C>(cx: &mut C, slice: &[T]) -> JsResult<'cx, Self>
+    where
+        C: Context<'cx>,
+    {
+        <JsTypedArray<T> as TypedArray>::from_slice(cx, slice)
     }
 }
 
