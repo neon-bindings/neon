@@ -589,6 +589,22 @@ where
     }
 }
 
+impl<T: Binary> JsTypedArray<T>
+where
+    JsTypedArray<T>: Value,
+{
+    /// Constructs an instance from a slice by copying its contents.
+    ///
+    /// This method is defined on `JsTypedArray` as a convenience and delegates to
+    /// [`TypedArray::from_slice`][TypedArray::from_slice].
+    pub fn from_slice<'cx, C>(cx: &mut C, slice: &[T]) -> JsResult<'cx, Self>
+    where
+        C: Context<'cx>,
+    {
+        <JsTypedArray<T> as TypedArray>::from_slice(cx, slice)
+    }
+}
+
 impl<T: Binary> JsTypedArray<T> {
     /// Constructs a typed array that views `buffer`.
     ///
