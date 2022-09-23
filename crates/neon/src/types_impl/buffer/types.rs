@@ -60,6 +60,17 @@ impl JsBuffer {
         }
     }
 
+    /// Constructs a `JsBuffer` from a slice by copying its contents.
+    ///
+    /// This method is defined on `JsBuffer` as a convenience and delegates to
+    /// [`TypedArray::from_slice`][TypedArray::from_slice].
+    pub fn from_slice<'cx, C>(cx: &mut C, slice: &[u8]) -> JsResult<'cx, Self>
+    where
+        C: Context<'cx>,
+    {
+        <JsBuffer as TypedArray>::from_slice(cx, slice)
+    }
+
     /// Constructs a new `Buffer` object with uninitialized memory
     pub unsafe fn uninitialized<'a, C: Context<'a>>(cx: &mut C, len: usize) -> JsResult<'a, Self> {
         let result = sys::buffer::uninitialized(cx.env().to_raw(), len);
@@ -214,6 +225,17 @@ impl JsArrayBuffer {
         } else {
             Err(Throw::new())
         }
+    }
+
+    /// Constructs a `JsArrayBuffer` from a slice by copying its contents.
+    ///
+    /// This method is defined on `JsArrayBuffer` as a convenience and delegates to
+    /// [`TypedArray::from_slice`][TypedArray::from_slice].
+    pub fn from_slice<'cx, C>(cx: &mut C, slice: &[u8]) -> JsResult<'cx, Self>
+    where
+        C: Context<'cx>,
+    {
+        <JsArrayBuffer as TypedArray>::from_slice(cx, slice)
     }
 
     /// Construct a new `JsArrayBuffer` from bytes allocated by Rust
