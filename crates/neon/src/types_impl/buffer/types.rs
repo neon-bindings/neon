@@ -365,7 +365,7 @@ impl TypedArray for JsArrayBuffer {
 /// A marker trait for all possible element types of binary buffers.
 ///
 /// This trait can only be implemented within the Neon library.
-pub trait Binary: private::Sealed + Clone {
+pub trait Binary: private::Sealed + Copy {
     /// The internal Node-API enum value for this binary type.
     const TYPE_TAG: TypedArrayType;
 }
@@ -498,7 +498,7 @@ impl<T: Binary> Managed for JsTypedArray<T> {
 
 impl<T> TypedArray for JsTypedArray<T>
 where
-    T: Binary + Copy,
+    T: Binary,
     Self: Value,
 {
     type Item = T;

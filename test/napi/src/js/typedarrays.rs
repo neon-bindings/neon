@@ -187,7 +187,7 @@ pub fn get_arraybuffer_byte_length(mut cx: FunctionContext) -> JsResult<JsNumber
     Ok(n)
 }
 
-fn typed_array_info<'cx, C, T: Binary + Copy>(
+fn typed_array_info<'cx, C, T: Binary>(
     cx: &mut C,
     a: Handle<'cx, JsTypedArray<T>>,
 ) -> JsResult<'cx, JsObject>
