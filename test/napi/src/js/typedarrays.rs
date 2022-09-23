@@ -9,15 +9,10 @@ pub fn return_array_buffer(mut cx: FunctionContext) -> JsResult<JsArrayBuffer> {
 }
 
 pub fn return_array_buffer_from_slice(mut cx: FunctionContext) -> JsResult<JsArrayBuffer> {
-    let len: Handle<JsNumber> = cx.argument(0)?;
-    let len: f64 = len.value(&mut cx);
-    let len: u32 = len as u32;
-    let mut v: Vec<u8> = Vec::new();
-    for i in 0..len {
-        v.push(i as u8);
-    }
-    let b: Handle<JsArrayBuffer> = JsArrayBuffer::from_slice(&mut cx, &v)?;
-    Ok(b)
+    let len = cx.argument::<JsNumber>(0)?.value(&mut cx) as usize;
+    let v = (0..len).map(|i| i as u8).collect::<Vec<_>>();
+
+    JsArrayBuffer::from_slice(&mut cx, &v)
 }
 
 pub fn read_array_buffer_with_lock(mut cx: FunctionContext) -> JsResult<JsNumber> {
