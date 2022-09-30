@@ -51,7 +51,7 @@ impl FailureBoundary {
         F: FnOnce(Option<Env>) -> Local,
     {
         // Make `env = None` if unable to call into JS
-        let env = can_call_into_js(env).then(|| env);
+        let env = can_call_into_js(env).then_some(env);
 
         // Run the user supplied callback, catching panics
         // This is unwind safe because control is never yielded back to the caller
@@ -277,7 +277,7 @@ unsafe fn external_from_panic(env: Env, panic: Panic) -> Local {
 
 extern "C" fn finalize_panic(_env: Env, data: *mut c_void, _hint: *mut c_void) {
     unsafe {
-        Box::from_raw(data.cast::<Panic>());
+        drop(Box::from_raw(data.cast::<Panic>()));
     }
 }
 

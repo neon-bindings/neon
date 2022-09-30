@@ -293,7 +293,7 @@ pub fn channel_panic_throw(mut cx: FunctionContext) -> JsResult<JsUndefined> {
             // Throw an exception, but ignore the `Err(Throw)`
             let _ = cx.throw_error::<_, ()>(msg);
             // Attempting to throw another error while already throwing should `panic`
-            let _ = cx.throw_error("Unreachable")?;
+            cx.throw_error("Unreachable")?;
 
             Ok(())
         })
@@ -357,7 +357,7 @@ pub fn task_panic_throw(mut cx: FunctionContext) -> JsResult<JsUndefined> {
         // Throw an exception, but ignore the `Err(Throw)`
         let _ = cx.throw_error::<_, ()>(msg);
         // Attempting to throw another error while already throwing should `panic`
-        let _ = cx.throw_error("Unreachable")?;
+        cx.throw_error("Unreachable")?;
 
         Ok(())
     });
@@ -407,7 +407,7 @@ pub fn task_panic_throw_promise(mut cx: FunctionContext) -> JsResult<JsPromise> 
         // Throw an exception, but ignore the `Err(Throw)`
         let _ = cx.throw_error::<_, ()>(msg);
         // Attempting to throw another error while already throwing should `panic`
-        let _ = cx.throw_error("Unreachable")?;
+        cx.throw_error("Unreachable")?;
 
         Ok(cx.undefined())
     });
@@ -455,7 +455,7 @@ pub fn deferred_settle_with_panic_throw(mut cx: FunctionContext) -> JsResult<JsP
             // Throw an exception, but ignore the `Err(Throw)`
             let _ = cx.throw_error::<_, ()>(msg);
             // Attempting to throw another error while already throwing should `panic`
-            let _ = cx.throw_error("Unreachable")?;
+            cx.throw_error("Unreachable")?;
 
             Ok(cx.undefined())
         })

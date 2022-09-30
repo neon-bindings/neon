@@ -44,7 +44,7 @@ where
 }
 
 unsafe extern "C" fn drop_external<T>(_env: Env, _data: *mut c_void, hint: *mut c_void) {
-    Box::<T>::from_raw(hint as *mut _);
+    drop(Box::<T>::from_raw(hint as *mut _));
 }
 
 /// # Safety
