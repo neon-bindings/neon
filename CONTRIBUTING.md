@@ -6,10 +6,11 @@ Neon welcomes contribution from everyone. Here are some resources to help you jo
 
 ### Issue reports
 
-We welcome issues and aim to keep the barrier low. Just [file a GitHub issue](https://github.com/neon-bindings/neon/issues)
-like normal---we don't require issue templates or have any particular process.
+We welcome issues and aim to keep the barrier low. For clarity and efficiency, we created two simple issue templates:
+ - [Bug Report](https://github.com/neon-bindings/issues/new?assignees=&labels=bug&template=bug_report.yml&title=🐛+%5BBUG%5D+-+<title>)
+ - [General Neon Issue](https://github.com/neon-bindings/issues/new?assignees=&labels=&template=default_issue.yml&title=Neon+Issue)
 
-That said, the more information you can provide to help us reproduce your issue, the better!
+The more information you can provide, the better! Thanks in advance! ❤️
 
 ### Requests For Comments
 
