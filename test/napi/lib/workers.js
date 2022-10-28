@@ -15,6 +15,9 @@ if (!isMainThread) {
   // succeed even if the presence of a bug.
   addon.reject_after(new Error("Oh, no!"), 200).catch(() => {});
 
+  // Reproduce another shutdown bug; this one isn't timing-dependent.
+  let boxed_channels = addon.box_channels();
+
   addon.get_or_init_thread_id(threadId);
   parentPort.once("message", (message) => {
     try {
