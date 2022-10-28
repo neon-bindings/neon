@@ -248,7 +248,9 @@ impl Drop for Channel {
         // UV thread if strong reference count goes to 0.
         let state = Arc::clone(&self.state);
 
-        self.send(move |mut cx| {
+        // `Channel::try_send` will only fail if the environment has shutdown.
+        // In that case, the teardown will perform clean-up.
+        let _ = self.try_send(move |mut cx| {
             state.unref(&mut cx);
             Ok(())
         });
