@@ -384,6 +384,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("stash_global_object", js::workers::stash_global_object)?;
     cx.export_function("unstash_global_object", js::workers::unstash_global_object)?;
     cx.export_function("reject_after", js::workers::reject_after)?;
+    cx.export_function("box_channels", js::workers::box_channels)?;
 
     // Futures
     cx.export_function("lazy_async_add", js::futures::lazy_async_add)?;
