@@ -54,7 +54,13 @@ where
         // If adding the finalizer fails the closure will leak, but it would
         // be unsafe to drop it because there's no guarantee V8 won't use the
         // pointer.
-        assert_eq!(status, napi::Status::Ok);
+        //
+        // As a special case, we also allow PendingException, because it means
+        // we're shutting down the VM and don't need to worry about cleanup.
+        assert!(matches!(
+            status,
+            napi::Status::Ok | napi::Status::PendingException
+        ));
     }
 
     Ok(out)
