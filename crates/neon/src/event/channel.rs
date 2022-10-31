@@ -249,9 +249,7 @@ impl Drop for Channel {
         // UV thread if strong reference count goes to 0.
         let state = Arc::clone(&self.state);
 
-        // Use `try_send` instead of `send` because, if `send` fails, it means we're shutting down
-        // the VM and don't need to worry about cleanup.
-        let _ = self.try_send(move |mut cx| {
+        self.send(move |mut cx| {
             state.unref(&mut cx);
             Ok(())
         });

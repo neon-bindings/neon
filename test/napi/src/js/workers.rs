@@ -108,20 +108,3 @@ pub fn reject_after(mut cx: FunctionContext) -> JsResult<JsPromise> {
 
     Ok(promise)
 }
-
-#[allow(dead_code)]
-pub struct Channels {
-    channel_1: Channel,
-    channel_2: Channel,
-}
-impl Finalize for Channels {}
-
-pub fn box_channels(mut cx: FunctionContext) -> JsResult<JsBox<Channels>> {
-    let channel_1 = cx.channel();
-    let channel_2 = cx.channel();
-
-    Ok(cx.boxed(Channels {
-        channel_1,
-        channel_2,
-    }))
-}
