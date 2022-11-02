@@ -14,6 +14,7 @@ on:
 
 env:
   PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "true"
+  RUST_BACKTRACE: "full"
 
 jobs:
   matrix:

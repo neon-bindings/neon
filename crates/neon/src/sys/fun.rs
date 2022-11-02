@@ -57,10 +57,7 @@ where
         //
         // As a special case, we also allow PendingException, because it means
         // we're shutting down the VM and don't need to worry about cleanup.
-        assert!(matches!(
-            status,
-            napi::Status::Ok | napi::Status::PendingException
-        ));
+        assert_eq!(status, napi::Status::Ok);
     }
 
     Ok(out)
