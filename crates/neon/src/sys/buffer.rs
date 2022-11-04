@@ -1,6 +1,6 @@
-use std::{mem::MaybeUninit, slice};
 #[cfg(feature = "external-buffers")]
 use std::os::raw::c_void;
+use std::{mem::MaybeUninit, slice};
 
 use super::{
     bindings as napi,
