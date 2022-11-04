@@ -1,4 +1,6 @@
-use std::{mem::MaybeUninit, os::raw::c_void, slice};
+use std::{mem::MaybeUninit, slice};
+#[cfg(feature = "external-buffers")]
+use std::os::raw::c_void;
 
 use super::{
     bindings as napi,
@@ -27,6 +29,7 @@ pub unsafe fn uninitialized(env: Env, len: usize) -> Result<(Local, *mut u8), na
     Ok((buf.assume_init(), bytes.assume_init().cast()))
 }
 
+#[cfg(feature = "external-buffers")]
 pub unsafe fn new_external<T>(env: Env, data: T) -> Local
 where
     T: AsMut<[u8]> + Send,
@@ -52,6 +55,7 @@ where
     result.assume_init()
 }
 
+#[cfg(feature = "external-buffers")]
 unsafe extern "C" fn drop_external<T>(_env: Env, _data: *mut c_void, hint: *mut c_void) {
     Box::<T>::from_raw(hint as *mut _);
 }

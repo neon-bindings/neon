@@ -16,4 +16,4 @@ tokio = { version = "1", features = ["rt-multi-thread"] }
 [dependencies.neon]
 version = "1.0.0-alpha.1"
 path = "../../crates/neon"
-features = ["futures", "napi-experimental"]
+features = ["futures", "napi-experimental", "external-buffers"]

@@ -198,6 +198,7 @@ mod napi1 {
 
             fn strict_equals(env: Env, lhs: Value, rhs: Value, result: *mut bool) -> Status;
 
+            #[cfg(feature = "external-buffers")]
             fn create_external_arraybuffer(
                 env: Env,
                 data: *mut c_void,
@@ -207,6 +208,7 @@ mod napi1 {
                 result: *mut Value,
             ) -> Status;
 
+            #[cfg(feature = "external-buffers")]
             fn create_external_buffer(
                 env: Env,
                 length: usize,

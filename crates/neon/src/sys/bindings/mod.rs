@@ -106,7 +106,7 @@ macro_rules! napi_name {
 /// ```
 macro_rules! generate {
     (extern "C" {
-        $(fn $name:ident($($param:ident: $ptype:ty$(,)?)*)$( -> $rtype:ty)?;)+
+        $($(#[$attr:meta])? fn $name:ident($($param:ident: $ptype:ty$(,)?)*)$( -> $rtype:ty)?;)+
     }) => {
         struct Napi {
             $(
@@ -167,7 +167,7 @@ macro_rules! generate {
         }
 
         $(
-            #[inline]
+            $(#[$attr])? #[inline]
             pub(crate) unsafe fn $name($($param: $ptype,)*)$( -> $rtype)* {
                 (NAPI.$name)($($param,)*)
             }
