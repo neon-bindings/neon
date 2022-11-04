@@ -82,7 +82,21 @@ impl JsBuffer {
         }
     }
 
-    /// Construct a new `Buffer` from bytes allocated by Rust
+    #[cfg(feature = "external-buffers")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "external-buffers")))]
+    /// Construct a new `Buffer` from bytes allocated by Rust.
+    ///
+    /// # Compatibility Note
+    ///
+    /// Some Node environments are built using V8's _sandboxed pointers_ functionality, which
+    /// [disallows the use of external buffers](https://www.electronjs.org/blog/v8-memory-cage).
+    /// In those environments, calling the underlying
+    /// [runtime function](https://nodejs.org/api/n-api.html#napi_create_external_buffer)
+    /// used by this method results in an immediate termination of the Node VM.
+    ///
+    /// As a result, this API is disabled by default. If you are confident that your code will
+    /// only be used in environments that disable sandboxed pointers, you can make use of this
+    /// method by enabling the **`external-buffers`** feature flag.
     pub fn external<'a, C, T>(cx: &mut C, data: T) -> Handle<'a, Self>
     where
         C: Context<'a>,
@@ -238,7 +252,21 @@ impl JsArrayBuffer {
         <JsArrayBuffer as TypedArray>::from_slice(cx, slice)
     }
 
-    /// Construct a new `JsArrayBuffer` from bytes allocated by Rust
+    #[cfg(feature = "external-buffers")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "external-buffers")))]
+    /// Construct a new `JsArrayBuffer` from bytes allocated by Rust.
+    ///
+    /// # Compatibility Note
+    ///
+    /// Some Node environments are built using V8's _sandboxed pointers_ functionality, which
+    /// [disallows the use of external buffers](https://www.electronjs.org/blog/v8-memory-cage).
+    /// In those environments, calling the underlying
+    /// [runtime function](https://nodejs.org/api/n-api.html#napi_create_external_arraybuffer)
+    /// used by this method results in an immediate termination of the Node VM.
+    ///
+    /// As a result, this API is disabled by default. If you are confident that your code will
+    /// only be used in environments that disable sandboxed pointers, you can make use of this
+    /// method by enabling the **`external-buffers`** feature flag.
     pub fn external<'a, C, T>(cx: &mut C, data: T) -> Handle<'a, Self>
     where
         C: Context<'a>,

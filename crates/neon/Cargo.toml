@@ -38,6 +38,11 @@ optional = true
 [features]
 default = ["napi-1"]
 
+# Enable the creation of external binary buffers. This is disabled by default
+# since these APIs fail at runtime in environments that enable the V8 memory
+# cage (such as Electron: https://www.electronjs.org/blog/v8-memory-cage).
+external-buffers = []
+
 # Experimental Rust Futures API
 # https://github.com/neon-bindings/rfcs/pull/46
 futures = ["tokio"]

@@ -1,7 +1,7 @@
 [alias]
 # Neon defines mutually exclusive feature flags which prevents using `cargo clippy --all-features`
 # The following aliases simplify linting the entire workspace
-neon-check = " check  --all --all-targets --features napi-experimental,futures"
-neon-clippy = "clippy --all --all-targets --features napi-experimental,futures -- -A clippy::missing_safety_doc"
-neon-test = "  test   --all               --features=doc-comment,napi-experimental,futures"
-neon-doc = "   rustdoc -p neon            --features=doc-dependencies,napi-experimental,futures -- --cfg docsrs"
+neon-check = " check  --all --all-targets --features napi-experimental,futures,external-buffers"
+neon-clippy = "clippy --all --all-targets --features napi-experimental,futures,external-buffers -- -A clippy::missing_safety_doc"
+neon-test = "  test   --all               --features=doc-comment,napi-experimental,futures,external-buffers"
+neon-doc = "   rustdoc -p neon            --features=doc-dependencies,napi-experimental,futures,external-buffers -- --cfg docsrs"
