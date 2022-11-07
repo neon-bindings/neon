@@ -75,7 +75,6 @@
 //!     channel.send(move |mut cx| {
 //!         let callback = callback.into_inner(&mut cx);
 //!         let this = cx.undefined();
-//!         let null = cx.null();
 //!         let args = match result {
 //!             Ok(psd) => {
 //!                 // Extract data from the parsed file.
