@@ -76,7 +76,6 @@ type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 ///         channel.send(move |mut cx| {
 ///             let callback = callback.into_inner(&mut cx);
 ///             let this = cx.undefined();
-///             let null = cx.null();
 ///             let args = vec![
 ///                 cx.null().upcast::<JsValue>(),
 ///                 cx.number(result).upcast(),
