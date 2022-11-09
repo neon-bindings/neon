@@ -4,6 +4,7 @@ const {
   isMainThread,
   parentPort,
   threadId,
+  workerData,
 } = require("worker_threads");
 
 const addon = require("..");
@@ -15,7 +16,11 @@ if (!isMainThread) {
   // succeed even if the presence of a bug.
   addon.reject_after(new Error("Oh, no!"), 200).catch(() => {});
 
+  // Reproduce another shutdown bug; this one isn't timing-dependent.
+  let boxed_channels = addon.box_channels();
+
   addon.get_or_init_thread_id(threadId);
+
   parentPort.once("message", (message) => {
     try {
       switch (message) {
@@ -43,6 +48,10 @@ if (!isMainThread) {
       parentPort.postMessage(err);
     }
   });
+
+  if (workerData === "notify_when_startup_complete") {
+    parentPort.postMessage("startup_complete");
+  }
 
   return;
 }
@@ -194,9 +203,13 @@ describe("Instance-local storage", () => {
   });
 
   it("should be able to exit a worker without a crash", (cb) => {
-    const worker = new Worker(__filename);
+    const worker = new Worker(__filename, {
+      workerData: "notify_when_startup_complete",
+    });
 
-    setTimeout(() => worker.terminate(), 50);
-    setTimeout(cb, 100);
+    worker.once("message", async () => {
+      await worker.terminate();
+      setTimeout(cb, 200);
+    });
   });
 });
