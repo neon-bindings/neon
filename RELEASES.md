@@ -1,3 +1,45 @@
+# Version 1.0.0-alpha.2
+
+## Breaking Changes
+
+### `neon::object::This`
+
+https://github.com/neon-bindings/neon/pull/918
+
+Trait [`neon::object::This`](https://docs.rs/neon/latest/neon/object/trait.This.html) has been removed. `This` was primarily added for use with the `declare_types!` macro to generate classes. The macro was removed and `This` is no longer needed. Additionally, the `This` argument on `JsFunction` was found to be _invalid_ because it asserted at compile time a type for `this` that could change at runtime. (Note that this was _not_ unsound because the type would be checked by Node-API and result in a `panic`.)
+
+### `JsFunction::this`
+
+https://github.com/neon-bindings/neon/pull/918
+
+`JsFunction::this` was changed to perform a downcast and be _fallible_. This is in line with similar APIs (e.g., `Object::get`). Additionally, an infallible version, `JsValue::this_value` was added that does _not_ perform a downcast.
+
+### Added Feature flag for external buffers
+
+https://github.com/neon-bindings/neon/pull/937
+
+Electron began using [pointer compression](https://www.electronjs.org/blog/v8-memory-cage) on JavaScript values that is incompatible with external buffers. As a preventative measure, `JsArrayBuffer::external` and `JsBuffer::external` have been placed behind a feature flag that warns of Electron incompatibility.
+
+## Improvements
+
+* Lifetimes were relaxed on `execute_scoped` to allow valid code to compile. (https://github.com/neon-bindings/neon/pull/919)
+* Added a `from_slice` helper on `TypedArray` (https://github.com/neon-bindings/neon/pull/925)
+* `JsTypedArray` construction and type aliases (https://github.com/neon-bindings/neon/pull/909)
+
+## Bug Fixes
+
+* Fixed a panic on VM shutdown when using `Channel` (https://github.com/neon-bindings/neon/pull/934)
+* Type tags were added to `JsBox` to prevent undefined behavior when multiple native add-ons are used (https://github.com/neon-bindings/neon/pull/907)
+
+## Docs
+
+* Significantly improved documentation of `TypedArray` (https://github.com/neon-bindings/neon/pull/909)
+* Removed unused values in `Channel` docs (https://github.com/neon-bindings/neon/pull/925)
+
+### `cargo-cp-artifact`
+
+`0.1.7` includes a fix to unlink `.node` files before copying to address common code signing errors on macOS (https://github.com/neon-bindings/neon/pull/921).
+
 # Version 1.0.0-alpha.1
 
 Pre-release of a major milestone for Neon. 1.0.
