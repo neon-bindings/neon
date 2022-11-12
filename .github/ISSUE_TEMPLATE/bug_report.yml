@@ -11,19 +11,6 @@ body:
         ______
         **Note**: We encourage you to [submit an RFC](https://github.com/neon-bindings/rfcs) if you would like to propose a **design change** or a **new feature** for the Neon API or the Neon command-line tool.
         ______
-
-        In addition to the `bug` label, consider adding others you might find relevant:
-        | Label | Description |
-        |:-----:|-------------|
-        | `CI` | Continuous Integration |
-        | `CLI` | Command Line Interface |
-        | `beginner friendly` | Great for those just starting out |
-        | `Performance` | Anything that affects performance |
-        | `linux` | Specific to Linux |
-        | `macos` | Specific to MacOS |
-        | `windows` | Specific to Windows |
-        | `android` | Specific to Android |
-        | `electron` | Specific to Electron apps |
   - type: textarea
     id: issue_summary
     attributes:
