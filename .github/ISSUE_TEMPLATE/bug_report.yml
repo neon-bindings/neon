@@ -8,9 +8,6 @@ body:
       value: |
         Thanks in advance for taking the time to file this issue!
         We hope this simple template will improve issue resolution time and minimize the need for _context discovery_ discussions.
-        ______
-        **Note**: We encourage you to [submit an RFC](https://github.com/neon-bindings/rfcs) if you would like to propose a **design change** or a **new feature** for the Neon API or the Neon command-line tool.
-        ______
   - type: textarea
     id: issue_summary
     attributes:
@@ -43,15 +40,15 @@ body:
       description: "Please specify the version of `node` you are running"
       placeholder: "v18.10.0"
   - type: input
-    id: npm_version
+    id: pm_version
     attributes:
-      label: "Node Package Manager version: "
-      description: "Please specify the version of `npm` you are running"
-      placeholder: "8.19.2"
+      label: "Package Manager & version: "
+      description: "Please specify the package manager your are using and its version"
+      placeholder: "example: npm 8.19.2"
   - type: input
     id: neon_version
     attributes:
-      label: "NEON version(s): "
+      label: "Neon version(s): "
       description: "Please specify the versions of `neon` that exhibit this issue"
       placeholder: "example: v0.10.0, v0.9.x"
   - type: input
