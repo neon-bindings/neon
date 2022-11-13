@@ -93,6 +93,41 @@ pub trait Value: private::ValueInternal {
 }
 
 /// A JavaScript value of any type.
+///
+/// The `JsValue` type is a catch-all type that sits at the top of the
+/// [JavaScript type hierarchy](./index.html#the-javascript-type-hierarchy).
+/// All JavaScript values can be safely and statically
+/// [upcast](crate::handle::Handle::upcast) to `JsValue`; by contrast, a
+/// [downcast](crate::handle::Handle::downcast) of a `JsValue` to another type
+/// requires a runtime check.
+/// (For TypeScript programmers, this can be thought of as similar to TypeScript's
+/// [`unknown`](https://www.typescriptlang.org/docs/handbook/2/functions.html#unknown)
+/// type.)
+///
+/// The `JsValue` type can be useful for generic, dynamic, or otherwise
+/// hard-to-express API signatures, such as overloaded types:
+///
+/// ```
+/// # use neon::prelude::*;
+/// // Takes a string and adds the specified padding to the left.
+/// // If the padding is a string, it's added as-is.
+/// // If the padding is a number, then that number of spaces is added.
+/// fn pad_left(mut cx: FunctionContext) -> JsResult<JsString> {
+///     let string: Handle<JsString> = cx.argument(0)?;
+///     let padding: Handle<JsValue> = cx.argument(1)?;
+///
+///     let padding: String = if let Ok(str) = padding.downcast::<JsString, _>(&mut cx) {
+///         str.value(&mut cx)
+///     } else if let Ok(num) = padding.downcast::<JsNumber, _>(&mut cx) {
+///         " ".repeat(num.value(&mut cx) as usize)
+///     } else {
+///         return cx.throw_type_error("expected string or number");
+///     };
+///
+///     let new_value = padding + &string.value(&mut cx);
+///     Ok(cx.string(&new_value))
+/// }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsValue(raw::Local);
