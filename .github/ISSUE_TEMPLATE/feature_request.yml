@@ -1,6 +1,6 @@
-name: Feature Request (RFC) 💡 
+name: Feature Request (RFC) 💡
 title: <title>
-description: Use this template for a new feature request or a design change. 
+description: Use this template for a new feature request or a design change.
 labels: ["enhancement"]
 body:
   - type: input
@@ -15,7 +15,7 @@ body:
     id: rfc_date
     attributes:
       label: "Start Date"
-      placeholder: "fill me in with today's date, `YYYY-MM-DD`"  
+      placeholder: "fill me in with today's date, `YYYY-MM-DD`"
   - type: input
     id: rfc_pr
     attributes:
@@ -25,7 +25,7 @@ body:
     id: rfc_issue
     attributes:
       label: Neon Issue
-      placeholder: Leave this empty      
+      placeholder: Leave this empty
   - type: textarea
     id: rfc_summary
     attributes:
@@ -59,7 +59,7 @@ body:
         - Its interaction with other features is clear.
         - It is reasonably clear how the feature would be implemented.
         - Corner cases are dissected by example.
-        
+
         This section should return to the examples given in the previous section, and explain more fully how the detailed proposal makes those examples work.
   - type: textarea
     id: rfc_drawbacks
