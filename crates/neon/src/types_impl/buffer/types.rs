@@ -25,7 +25,9 @@ macro_rules! doc_comment {
     {$comment:expr, $decl:item} => { $decl };
 }
 
-/// The Node [`Buffer`](https://nodejs.org/api/buffer.html) type.
+/// The type of Node
+/// [`Buffer`](https://nodejs.org/api/buffer.html)
+/// objects.
 ///
 /// # Example
 ///
@@ -206,7 +208,9 @@ impl TypedArray for JsBuffer {
     }
 }
 
-/// The standard JS [`ArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) type.
+/// The type of JavaScript
+/// [`ArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer)
+/// objects.
 ///
 /// # Example
 ///
@@ -420,7 +424,7 @@ pub trait Binary: private::Sealed + Copy {
     const TYPE_TAG: TypedArrayType;
 }
 
-/// The family of JS [typed array][typed-arrays] types.
+/// The family of JavaScript [typed array][typed-arrays] types.
 ///
 /// ## Typed Arrays
 ///
@@ -814,11 +818,11 @@ macro_rules! impl_typed_array {
 
         doc_comment! {
             concat!(
-                "The standard JS [`",
+                "The type of JavaScript [`",
                 stringify!($typ),
                 "`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/",
                 stringify!($typ),
-                ") type.
+                ") objects.
 
 # Example
 

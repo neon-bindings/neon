@@ -11,7 +11,9 @@ use crate::{
     types::{build, private::ValueInternal, utf8::Utf8, Value},
 };
 
-/// A JS `Error` object.
+/// The type of JavaScript
+/// [`Error`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error)
+/// objects.
 #[repr(transparent)]
 #[derive(Debug)]
 pub struct JsError(raw::Local);

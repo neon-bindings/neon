@@ -92,7 +92,7 @@ pub trait Value: private::ValueInternal {
     }
 }
 
-/// A JavaScript value of any type.
+/// The type of any JavaScript value, i.e., the root of all types.
 ///
 /// The `JsValue` type is a catch-all type that sits at the top of the
 /// [JavaScript type hierarchy](./index.html#the-javascript-type-hierarchy).
@@ -168,7 +168,9 @@ impl JsValue {
     }
 }
 
-/// The JavaScript `undefined` value.
+/// The type of JavaScript
+/// [`undefined`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#primitive_values)
+/// primitives.
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsUndefined(raw::Local);
@@ -217,7 +219,9 @@ impl private::ValueInternal for JsUndefined {
     }
 }
 
-/// The JavaScript `null` value.
+/// The type of JavaScript
+/// [`null`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#primitive_values)
+/// primitives.
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsNull(raw::Local);
@@ -266,7 +270,9 @@ impl private::ValueInternal for JsNull {
     }
 }
 
-/// A JavaScript boolean primitive value.
+/// The type of JavaScript
+/// [Boolean](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#primitive_values)
+/// primitives.
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsBoolean(raw::Local);
@@ -320,12 +326,14 @@ impl private::ValueInternal for JsBoolean {
     }
 }
 
-/// A JavaScript string primitive value.
+/// The type of JavaScript
+/// [string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#primitive_values)
+/// primitives.
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsString(raw::Local);
 
-/// An error produced when constructing a string that exceeds the JS engine's maximum string size.
+/// An error produced when constructing a string that exceeds the limits of the runtime.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
 pub struct StringOverflow(usize);
 
@@ -427,7 +435,9 @@ impl JsString {
     }
 }
 
-/// A JavaScript number value.
+/// The type of JavaScript
+/// [number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#primitive_values)
+/// primitives.
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsNumber(raw::Local);
@@ -481,7 +491,9 @@ impl private::ValueInternal for JsNumber {
     }
 }
 
-/// A JavaScript object.
+/// The type of JavaScript
+/// [objects](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#objects),
+/// i.e., the root of all object types.
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsObject(raw::Local);
@@ -536,7 +548,12 @@ impl JsObject {
     }
 }
 
-/// A JavaScript array object, i.e. a value for which `Array.isArray`
+/// The type of JavaScript
+/// [`Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)
+/// objects.
+///
+/// An array is any JavaScript value for which
+/// [`Array.isArray`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray)
 /// would return `true`.
 #[derive(Debug)]
 #[repr(transparent)]
@@ -615,7 +632,9 @@ impl private::ValueInternal for JsArray {
 
 impl Object for JsArray {}
 
-/// A JavaScript function object.
+/// The type of JavaScript
+/// [`Function`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function)
+/// objects.
 #[derive(Debug)]
 #[repr(transparent)]
 ///

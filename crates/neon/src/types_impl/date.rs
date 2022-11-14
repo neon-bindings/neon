@@ -13,7 +13,9 @@ use crate::{
     sys::{self, raw},
 };
 
-/// A JavaScript Date object
+/// The type of JavaScript
+/// [`Date`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date)
+/// objects.
 #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
 #[derive(Debug)]
 #[repr(transparent)]
@@ -39,7 +41,7 @@ impl Managed for JsDate {
     }
 }
 
-/// The Error struct for a Date
+/// An error produced when constructing a date with an invalid value.
 #[derive(Debug)]
 #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
 pub struct DateError(DateErrorKind);
@@ -58,11 +60,15 @@ impl fmt::Display for DateError {
 
 impl Error for DateError {}
 
-/// The error kinds corresponding to `DateError`
+/// The error kinds of a [`DateError`](DateError).
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
 pub enum DateErrorKind {
+    /// Produced for an initialization value greater than
+    /// [`JsDate::MAX_VALUE`](JsDate::MAX_VALUE).
     Overflow,
+    /// Produced for an initialization value lesser than
+    /// [`JsDate::MIN_VALUE`](JsDate::MIN_VALUE).
     Underflow,
 }
 
@@ -83,12 +89,14 @@ impl<'a, T: Value> ResultExt<Handle<'a, T>> for Result<Handle<'a, T>, DateError>
 }
 
 impl JsDate {
-    /// The smallest possible Date value, defined by ECMAScript. See <https://www.ecma-international.org/ecma-262/5.1/#sec-15.7.3.3>
+    /// The smallest possible `Date` value,
+    /// [defined by ECMAScript](https://www.ecma-international.org/ecma-262/5.1/#sec-15.7.3.3).
     pub const MIN_VALUE: f64 = -8.64e15;
-    /// The largest possible Date value, defined by ECMAScript. See <https://www.ecma-international.org/ecma-262/5.1/#sec-15.7.3.2>
+    /// The largest possible `Date` value,
+    /// [defined by ECMAScript](https://www.ecma-international.org/ecma-262/5.1/#sec-15.7.3.2).
     pub const MAX_VALUE: f64 = 8.64e15;
 
-    /// Creates a new Date. It errors when `value` is outside the range of valid JavaScript Date values. When `value`
+    /// Creates a new `Date`. It errors when `value` is outside the range of valid JavaScript Date values. When `value`
     /// is `NaN`, the operation will succeed but with an invalid Date
     pub fn new<'a, C: Context<'a>, T: Into<f64>>(
         cx: &mut C,
@@ -108,7 +116,7 @@ impl JsDate {
         Ok(date)
     }
 
-    /// Creates a new Date with lossy conversion for out of bounds Date values. Out of bounds
+    /// Creates a new `Date` with lossy conversion for out of bounds Date values. Out of bounds
     /// values will be treated as NaN
     pub fn new_lossy<'a, C: Context<'a>, V: Into<f64>>(cx: &mut C, value: V) -> Handle<'a, JsDate> {
         let env = cx.env().to_raw();
@@ -116,13 +124,13 @@ impl JsDate {
         Handle::new_internal(JsDate(local))
     }
 
-    /// Gets the Date's value. An invalid Date will return `std::f64::NaN`
+    /// Gets the `Date`'s value. An invalid Date will return `std::f64::NaN`
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> f64 {
         let env = cx.env().to_raw();
         unsafe { sys::date::value(env, self.to_raw()) }
     }
 
-    /// Checks if the Date's value is valid. A Date is valid if its value is between
+    /// Checks if the `Date`'s value is valid. A Date is valid if its value is between
     /// `JsDate::MIN_VALUE` and `JsDate::MAX_VALUE` or if it is `NaN`
     pub fn is_valid<'a, C: Context<'a>>(&self, cx: &mut C) -> bool {
         let value = self.value(cx);

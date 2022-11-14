@@ -49,7 +49,9 @@ const BOUNDARY: FailureBoundary = FailureBoundary {
     feature = "promise-api",
     deprecated = "`promise-api` feature has no impact and may be removed"
 )]
-/// The JavaScript [`Promise`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise) value.
+/// The type of JavaScript
+/// [`Promise`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)
+/// objects.
 ///
 /// [`JsPromise`] may be constructed with [`Context::promise`].
 pub struct JsPromise(raw::Local);
@@ -190,7 +192,7 @@ impl Value for JsPromise {}
 
 impl Object for JsPromise {}
 
-/// [`Deferred`] is a handle that can be used to resolve or reject a [`JsPromise`]
+/// A controller struct that can be used to resolve or reject a [`JsPromise`].
 ///
 /// It is recommended to settle a [`Deferred`] with [`Deferred::settle_with`] to ensure
 /// exceptions are caught.
@@ -348,7 +350,9 @@ impl Drop for Deferred {
 
 #[cfg(all(feature = "napi-5", feature = "futures"))]
 #[cfg_attr(docsrs, doc(cfg(all(feature = "napi-5", feature = "futures"))))]
-/// A [`Future`](std::future::Future) created from a [`JsPromise`].
+/// A type of JavaScript
+/// [`Promise`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)
+/// object that acts as a [`Future`](std::future::Future).
 ///
 /// Unlike typical `Future`, `JsFuture` are eagerly executed because they
 /// are backed by a `Promise`.
