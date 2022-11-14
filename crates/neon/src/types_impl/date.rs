@@ -60,7 +60,7 @@ impl fmt::Display for DateError {
 
 impl Error for DateError {}
 
-/// The error kinds of a [`DateError`](DateError).
+/// The error kinds of a [`DateError`].
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
 pub enum DateErrorKind {
