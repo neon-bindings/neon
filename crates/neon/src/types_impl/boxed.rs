@@ -271,7 +271,7 @@ impl<T: Finalize + Send + 'static> JsBox<T> {
     }
 }
 
-impl<'a, T: Send + 'static> Deref for JsBox<T> {
+impl<T: Send + 'static> Deref for JsBox<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {

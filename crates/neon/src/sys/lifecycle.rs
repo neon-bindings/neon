@@ -42,5 +42,5 @@ pub unsafe fn get_instance_data<T: Send + 'static>(env: Env) -> *mut T {
 }
 
 unsafe extern "C" fn drop_box<T>(_env: Env, data: *mut c_void, _hint: *mut c_void) {
-    Box::<T>::from_raw(data.cast());
+    drop(Box::<T>::from_raw(data.cast()));
 }

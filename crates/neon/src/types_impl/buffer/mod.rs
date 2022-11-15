@@ -132,7 +132,7 @@ impl<'a, T> Deref for RefMut<'a, T> {
 
 impl<'a, T> DerefMut for RefMut<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.data
+        self.data
     }
 }
 
