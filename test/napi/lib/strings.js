@@ -5,13 +5,13 @@ describe("JsString", function () {
   it("should return a JsString built in Rust", function () {
     assert.equal(addon.return_js_string(), "hello node");
   });
-  describe("encoding", function() {
+  describe("encoding", function () {
     it("should return the UTF-8 string length", function () {
       assert.equal(addon.return_length_utf8("a🥹"), 5);
     });
-    it('should return the UTF-16 string length', function () {
+    it("should return the UTF-16 string length", function () {
       assert.equal(addon.return_length_utf16("a🥹"), 3);
-    })
+    });
   });
   describe("run_as_script", function () {
     it("should return the evaluated value", function () {
