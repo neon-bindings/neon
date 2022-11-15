@@ -65,6 +65,14 @@ mod napi1 {
                 result: *mut usize,
             ) -> Status;
 
+            fn get_value_string_utf16(
+                env: Env,
+                value: Value,
+                buf: *mut u16,
+                bufsize: usize,
+                result: *mut usize,
+            ) -> Status;
+
             fn create_type_error(env: Env, code: Value, msg: Value, result: *mut Value) -> Status;
 
             fn create_range_error(env: Env, code: Value, msg: Value, result: *mut Value) -> Status;

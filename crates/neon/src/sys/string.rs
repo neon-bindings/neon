@@ -30,6 +30,24 @@ pub unsafe fn data(env: Env, out: *mut u8, len: isize, value: Local) -> isize {
     read.assume_init() as isize
 }
 
+pub unsafe fn utf16_len(env: Env, value: Local) -> isize {
+    let mut len = MaybeUninit::uninit();
+    let status = napi::get_value_string_utf16(env, value, ptr::null_mut(), 0, len.as_mut_ptr());
+
+    assert_eq!(status, napi::Status::Ok);
+
+    len.assume_init() as isize
+}
+
+pub unsafe fn data_utf16(env: Env, out: *mut u16, len: isize, value: Local) -> isize {
+    let mut read = MaybeUninit::uninit();
+    let status = napi::get_value_string_utf16(env, value, out, len as usize, read.as_mut_ptr());
+
+    assert_eq!(status, napi::Status::Ok);
+
+    read.assume_init() as isize
+}
+
 pub unsafe fn run_script(out: &mut Local, env: Env, value: Local) -> bool {
     let status = napi::run_script(env, value, out as *mut _);
 
