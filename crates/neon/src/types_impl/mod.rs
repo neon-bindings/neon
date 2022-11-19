@@ -783,6 +783,7 @@ impl JsFunction {
     }
 
     #[cfg(feature = "napi-5")]
+    /// Returns a new `JsFunction` implemented by `f`.
     pub fn new<'a, C, F, V>(cx: &mut C, f: F) -> JsResult<'a, JsFunction>
     where
         C: Context<'a>,
@@ -834,6 +835,9 @@ impl JsFunction {
 }
 
 impl<CL: Object> JsFunction<CL> {
+    /// Calls this function.
+    ///
+    /// See also: [`JsFunction::call_with`].
     pub fn call<'a, 'b, C: Context<'a>, T, AS>(
         &self,
         cx: &mut C,
@@ -851,6 +855,7 @@ impl<CL: Object> JsFunction<CL> {
         })
     }
 
+    /// Calls this function for side effect, discarding its result.
     pub fn exec<'a, 'b, C: Context<'a>, T, AS>(
         &self,
         cx: &mut C,
@@ -865,6 +870,9 @@ impl<CL: Object> JsFunction<CL> {
         Ok(())
     }
 
+    /// Calls this function as a constructor.
+    ///
+    /// See also: [`JsFunction::construct_with`].
     pub fn construct<'a, 'b, C: Context<'a>, AS>(&self, cx: &mut C, args: AS) -> JsResult<'a, CL>
     where
         AS: AsRef<[Handle<'b, JsValue>]>,
