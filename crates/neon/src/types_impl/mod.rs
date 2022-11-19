@@ -562,7 +562,7 @@ impl JsObject {
 /// # use neon::prelude::*;
 /// # fn foo(mut cx: FunctionContext) -> JsResult<JsArray> {
 /// // Create a new empty array:
-/// let a = cx.empty_array();
+/// let a: Handle<JsArray> = cx.empty_array();
 ///
 /// // Create some new values to push onto the array:
 /// let n = cx.number(17);
