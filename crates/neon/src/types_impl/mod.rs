@@ -555,11 +555,39 @@ impl JsObject {
 /// An array is any JavaScript value for which
 /// [`Array.isArray`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray)
 /// would return `true`.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// # fn foo(mut cx: FunctionContext) -> JsResult<JsArray> {
+/// // Create a new empty array:
+/// let a = cx.empty_array();
+///
+/// // Create some new values to push onto the array:
+/// let n = cx.number(17);
+/// let s = cx.string("hello");
+///
+/// // Push the elements onto the array:
+/// a.set(&mut cx, 0, n)?;
+/// a.set(&mut cx, 1, s)?;
+/// # Ok(a)
+/// # }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsArray(raw::Local);
 
 impl JsArray {
+    /// Constructs a new empty array of length `len`, equivalent to the JavaScript
+    /// expression `new Array(len)`.
+    ///
+    /// Note that for non-zero `len`, this creates a
+    /// [sparse array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Indexed_collections#sparse_arrays),
+    /// which can sometimes have surprising behavior. To ensure that a new array
+    /// is and remains dense (i.e., not sparse), consider creating an empty array
+    /// with `JsArray::new(cx, 0)` or `cx.empty_array()` and only appending
+    /// elements to the end of the array.
     pub fn new<'a, C: Context<'a>>(cx: &mut C, len: u32) -> Handle<'a, JsArray> {
         JsArray::new_internal(cx.env(), len)
     }
@@ -572,6 +600,11 @@ impl JsArray {
         }
     }
 
+    /// Copies the array contents into a new [`Vec`] by iterating through all indices
+    /// from 0 to `self.len()`.
+    ///
+    /// The length is dynamically checked on each iteration in case the array is modified
+    /// during the computation.
     pub fn to_vec<'a, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<Vec<Handle<'a, JsValue>>> {
         let mut result = Vec::with_capacity(self.len_inner(cx.env()) as usize);
         let mut i = 0;
@@ -591,10 +624,14 @@ impl JsArray {
     }
 
     #[allow(clippy::len_without_is_empty)]
+    /// Returns the length of the array, equivalent to the JavaScript expression
+    /// [`this.length`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/length).
     pub fn len<'a, C: Context<'a>>(&self, cx: &mut C) -> u32 {
         self.len_inner(cx.env())
     }
 
+    /// Indicates whether the array is empty, equivalent to
+    /// `self.len() == 0`.
     pub fn is_empty<'a, C: Context<'a>>(&self, cx: &mut C) -> bool {
         self.len(cx) == 0
     }
