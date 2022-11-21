@@ -453,6 +453,8 @@ impl JsString {
     /// # use neon::prelude::*;
     /// fn print_with_widestring(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     ///     let s = cx.argument::<JsString>(0)?.to_utf16(&mut cx);
+    ///     // The returned vector is guaranteed to be valid UTF-16.
+    ///     // Therefore, we can skip the validation step.
     ///     let s = unsafe { widestring::Utf16String::from_vec_unchecked(s) };
     ///     println!("JavaScript string as UTF-16: {}", s);
     ///
