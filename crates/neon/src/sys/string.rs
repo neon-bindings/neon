@@ -22,8 +22,7 @@ pub unsafe fn utf8_len(env: Env, value: Local) -> usize {
 
 pub unsafe fn data(env: Env, out: *mut u8, len: usize, value: Local) -> usize {
     let mut read = MaybeUninit::uninit();
-    let status =
-        napi::get_value_string_utf8(env, value, out as *mut _, len, read.as_mut_ptr());
+    let status = napi::get_value_string_utf8(env, value, out as *mut _, len, read.as_mut_ptr());
 
     assert_eq!(status, napi::Status::Ok);
 
