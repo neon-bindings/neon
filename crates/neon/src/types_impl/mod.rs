@@ -416,11 +416,10 @@ impl JsString {
 
         unsafe {
             let capacity = sys::string::utf8_len(env, self.to_raw()) + 1;
-            let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
-            let p = buffer.as_mut_ptr();
-            std::mem::forget(buffer);
-            let len = sys::string::data(env, p, capacity, self.to_raw());
-            String::from_raw_parts(p, len as usize, capacity as usize)
+            let mut buffer: Vec<u8> = Vec::with_capacity(capacity);
+            let len = sys::string::data(env, buffer.as_mut_ptr(), capacity, self.to_raw());
+            buffer.set_len(len);
+            String::from_utf8_unchecked(buffer)
         }
     }
 
@@ -466,11 +465,10 @@ impl JsString {
 
         unsafe {
             let capacity = sys::string::utf16_len(env, self.to_raw()) + 1;
-            let mut buffer: Vec<u16> = Vec::with_capacity(capacity as usize);
-            let p = buffer.as_mut_ptr();
-            std::mem::forget(buffer);
-            let len = sys::string::data_utf16(env, p, capacity, self.to_raw());
-            Vec::from_raw_parts(p, len as usize, capacity as usize)
+            let mut buffer: Vec<u16> = Vec::with_capacity(capacity);
+            let len = sys::string::data_utf16(env, buffer.as_mut_ptr(), capacity, self.to_raw());
+            buffer.set_len(len);
+            buffer
         }
     }
 
