@@ -364,7 +364,7 @@ impl JsString {
     ///     Ok(cx.undefined())
     /// }
     /// ```
-    pub fn size<'a, C: Context<'a>>(&self, cx: &mut C) -> isize {
+    pub fn size<'a, C: Context<'a>>(&self, cx: &mut C) -> usize {
         let env = cx.env().to_raw();
 
         unsafe { sys::string::utf8_len(env, self.to_raw()) }
@@ -390,7 +390,7 @@ impl JsString {
     ///     Ok(cx.undefined())
     /// }
     /// ```
-    pub fn size_utf16<'a, C: Context<'a>>(&self, cx: &mut C) -> isize {
+    pub fn size_utf16<'a, C: Context<'a>>(&self, cx: &mut C) -> usize {
         let env = cx.env().to_raw();
 
         unsafe { sys::string::utf16_len(env, self.to_raw()) }
