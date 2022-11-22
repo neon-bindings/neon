@@ -171,11 +171,33 @@ impl JsValue {
 /// The type of JavaScript
 /// [`undefined`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#primitive_values)
 /// primitives.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+/// // Extract the console.log function:
+/// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
+/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
+///
+/// // The undefined value:
+/// let undefined = cx.undefined();
+///
+/// // Call console.log(undefined):
+/// log.call_with(&cx).arg(undefined).exec(&mut cx)?;
+/// # Ok(undefined)
+/// # }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsUndefined(raw::Local);
 
 impl JsUndefined {
+    /// Creates an `undefined` value.
+    ///
+    /// Although this method can be called many times, all `undefined`
+    /// values are indistinguishable.
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsUndefined> {
         JsUndefined::new_internal(cx.env())
     }
