@@ -52,6 +52,8 @@ pub struct JsBuffer(raw::Local);
 
 impl JsBuffer {
     /// Constructs a new `Buffer` object, safely zero-filled.
+    ///
+    /// **See also:** [`Context::buffer`]
     pub fn new<'a, C: Context<'a>>(cx: &mut C, len: usize) -> JsResult<'a, Self> {
         let result = unsafe { sys::buffer::new(cx.env().to_raw(), len) };
 
@@ -235,6 +237,8 @@ pub struct JsArrayBuffer(raw::Local);
 
 impl JsArrayBuffer {
     /// Constructs a new `JsArrayBuffer` object, safely zero-filled.
+    ///
+    /// **See also:** [`Context::array_buffer`]
     pub fn new<'a, C: Context<'a>>(cx: &mut C, len: usize) -> JsResult<'a, Self> {
         let result = unsafe { sys::arraybuffer::new(cx.env().to_raw(), len) };
 

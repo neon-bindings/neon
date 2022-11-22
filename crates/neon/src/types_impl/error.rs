@@ -52,6 +52,8 @@ impl Object for JsError {}
 
 impl JsError {
     /// Creates a direct instance of the [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error) class.
+    ///
+    /// **See also:** [`Context::error`]
     pub fn error<'a, C: Context<'a>, S: AsRef<str>>(
         cx: &mut C,
         msg: S,
@@ -64,6 +66,8 @@ impl JsError {
     }
 
     /// Creates an instance of the [`TypeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypeError) class.
+    ///
+    /// **See also:** [`Context::type_error`]
     pub fn type_error<'a, C: Context<'a>, S: AsRef<str>>(
         cx: &mut C,
         msg: S,
@@ -76,6 +80,8 @@ impl JsError {
     }
 
     /// Creates an instance of the [`RangeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RangeError) class.
+    ///
+    /// **See also:** [`Context::range_error`]
     pub fn range_error<'a, C: Context<'a>, S: AsRef<str>>(
         cx: &mut C,
         msg: S,

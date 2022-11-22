@@ -198,6 +198,8 @@ impl JsUndefined {
     ///
     /// Although this method can be called many times, all `undefined`
     /// values are indistinguishable.
+    ///
+    /// **See also:** [`Context::undefined`]
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsUndefined> {
         JsUndefined::new_internal(cx.env())
     }
@@ -244,11 +246,35 @@ impl private::ValueInternal for JsUndefined {
 /// The type of JavaScript
 /// [`null`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#primitive_values)
 /// primitives.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// # fn test(mut cx: FunctionContext) -> JsResult<JsNull> {
+/// // Extract the console.log function:
+/// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
+/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
+///
+/// // The null value:
+/// let null = cx.null();
+///
+/// // Call console.log(undefined):
+/// log.call_with(&cx).arg(null).exec(&mut cx)?;
+/// # Ok(null)
+/// # }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsNull(raw::Local);
 
 impl JsNull {
+    /// Creates a `null` value.
+    ///
+    /// Although this method can be called many times, all `null`
+    /// values are indistinguishable.
+    ///
+    /// **See also:** [`Context::null`]
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsNull> {
         JsNull::new_internal(cx.env())
     }
@@ -295,11 +321,33 @@ impl private::ValueInternal for JsNull {
 /// The type of JavaScript
 /// [Boolean](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#primitive_values)
 /// primitives.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+/// // Extract the console.log function:
+/// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
+/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
+///
+/// // The two Boolean values:
+/// let t = cx.boolean(true);
+/// let f = cx.boolean(false);
+///
+/// // Call console.log(true, false):
+/// log.call_with(&cx).arg(t).arg(f).exec(&mut cx)?;
+/// # Ok(cx.undefined())
+/// # }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsBoolean(raw::Local);
 
 impl JsBoolean {
+    /// Creates a Boolean value with value `b`.
+    ///
+    /// **See also:** [`Context::boolean`]
     pub fn new<'a, C: Context<'a>>(cx: &mut C, b: bool) -> Handle<'a, JsBoolean> {
         JsBoolean::new_internal(cx.env(), b)
     }
@@ -312,6 +360,7 @@ impl JsBoolean {
         }
     }
 
+    /// Returns the value of this Boolean as a Rust `bool`.
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> bool {
         let env = cx.env().to_raw();
         unsafe { sys::primitive::boolean_value(env, self.to_raw()) }
@@ -460,11 +509,32 @@ impl JsString {
 /// The type of JavaScript
 /// [number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#primitive_values)
 /// primitives.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+/// // Extract the console.log function:
+/// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
+/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
+///
+/// // Create a number:
+/// let n = cx.number(17.0);
+///
+/// // Call console.log(n):
+/// log.call_with(&cx).arg(n).exec(&mut cx)?;
+/// # Ok(cx.undefined())
+/// # }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsNumber(raw::Local);
 
 impl JsNumber {
+    /// Creates a new number with value `x`.
+    ///
+    /// **See also:** [`Context::number`]
     pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, x: T) -> Handle<'a, JsNumber> {
         JsNumber::new_internal(cx.env(), x.into())
     }
@@ -477,6 +547,7 @@ impl JsNumber {
         }
     }
 
+    /// Returns the value of this number as a Rust `f64`.
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> f64 {
         let env = cx.env().to_raw();
         unsafe { sys::primitive::number_value(env, self.to_raw()) }
@@ -516,6 +587,27 @@ impl private::ValueInternal for JsNumber {
 /// The type of JavaScript
 /// [objects](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#objects),
 /// i.e., the root of all object types.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+/// // Extract the console.log function:
+/// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
+/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
+///
+/// // Create an object:
+/// let obj = cx.empty_object();
+///
+/// obj.set(&mut cx, "name", cx.string("Neon"))?;
+/// obj.set(&mut cx, "url", cx.string("https://neon-bindings.com"))?;
+///
+/// // Call console.log(obj):
+/// log.call_with(&cx).arg(obj).exec(&mut cx)?;
+/// # Ok(cx.undefined())
+/// # }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsObject(raw::Local);
@@ -553,6 +645,9 @@ impl private::ValueInternal for JsObject {
 impl Object for JsObject {}
 
 impl JsObject {
+    /// Creates a new empty object.
+    ///
+    /// **See also:** [`Context::empty_object`]
     pub fn new<'a, C: Context<'a>>(c: &mut C) -> Handle<'a, JsObject> {
         JsObject::new_internal(c.env())
     }
@@ -610,6 +705,8 @@ impl JsArray {
     /// is and remains dense (i.e., not sparse), consider creating an empty array
     /// with `JsArray::new(cx, 0)` or `cx.empty_array()` and only appending
     /// elements to the end of the array.
+    ///
+    /// **See also:** [`Context::empty_array`]
     pub fn new<'a, C: Context<'a>>(cx: &mut C, len: u32) -> Handle<'a, JsArray> {
         JsArray::new_internal(cx.env(), len)
     }
@@ -859,7 +956,7 @@ impl JsFunction {
 impl<CL: Object> JsFunction<CL> {
     /// Calls this function.
     ///
-    /// See also: [`JsFunction::call_with`].
+    /// **See also:** [`JsFunction::call_with`].
     pub fn call<'a, 'b, C: Context<'a>, T, AS>(
         &self,
         cx: &mut C,
@@ -894,7 +991,7 @@ impl<CL: Object> JsFunction<CL> {
 
     /// Calls this function as a constructor.
     ///
-    /// See also: [`JsFunction::construct_with`].
+    /// **See also:** [`JsFunction::construct_with`].
     pub fn construct<'a, 'b, C: Context<'a>, AS>(&self, cx: &mut C, args: AS) -> JsResult<'a, CL>
     where
         AS: AsRef<[Handle<'b, JsValue>]>,
