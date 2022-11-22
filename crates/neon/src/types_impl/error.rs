@@ -14,6 +14,24 @@ use crate::{
 /// The type of JavaScript
 /// [`Error`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error)
 /// objects.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+/// // Create a type error:
+/// let err = cx.type_error("expected a number, found a string");
+///
+/// // Add some custom diagnostic properties to the error:
+/// err.set(&mut cx, "expected", cx.string("number"))?;
+/// err.set(&mut cx, "found", cx.string("string"))?;
+///
+/// // Throw the error:
+/// cx.throw(err)?;
+/// # Ok(cx.undefined())
+/// # }
+/// ```
 #[repr(transparent)]
 #[derive(Debug)]
 pub struct JsError(raw::Local);
