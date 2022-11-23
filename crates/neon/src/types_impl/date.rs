@@ -16,6 +16,42 @@ use crate::{
 /// The type of JavaScript
 /// [`Date`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date)
 /// objects.
+///
+/// # Example
+///
+/// The following shows an example of converting Rust
+/// [`SystemTime`](std::time::SystemTime) timestamps to JavaScript `Date` objects.
+///
+/// ```
+/// # use neon::prelude::*;
+/// use neon::types::JsDate;
+/// use std::fs::File;
+/// use std::time::SystemTime;
+///
+/// /// Return the "modified" timestamp for the file at the given path.
+/// /// (A more robust implementation would do more detailed error reporting
+/// /// and handle edge cases for u128 -> f64 timestamp conversion.)
+/// fn last_modified(path: &str) -> Option<f64> {
+///     Some(File::open(&path).ok()?
+///         .metadata().ok()?
+///         .modified().ok()?
+///         .duration_since(SystemTime::UNIX_EPOCH).ok()?
+///         .as_millis() as f64)
+/// }
+///
+/// fn modified(mut cx: FunctionContext) -> JsResult<JsDate> {
+///     let path: Handle<JsString> = cx.argument(0)?;
+///
+///     let modified = last_modified(&path.value(&mut cx))
+///         .and_then(|n| cx.date(n).ok());
+///
+///     if let Some(date) = modified {
+///         Ok(date)
+///     } else {
+///         cx.throw_error("failed to get timestamp")
+///     }
+/// }
+/// ```
 #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
 #[derive(Debug)]
 #[repr(transparent)]
@@ -96,8 +132,9 @@ impl JsDate {
     /// [defined by ECMAScript](https://www.ecma-international.org/ecma-262/5.1/#sec-15.7.3.2).
     pub const MAX_VALUE: f64 = 8.64e15;
 
-    /// Creates a new `Date`. It errors when `value` is outside the range of valid JavaScript Date values. When `value`
-    /// is `NaN`, the operation will succeed but with an invalid Date
+    /// Creates a new `Date`. It errors when `value` is outside the range of valid JavaScript
+    /// `Date` values. When `value` is `NaN`, the operation will succeed but with an
+    /// invalid `Date`.
     pub fn new<'a, C: Context<'a>, T: Into<f64>>(
         cx: &mut C,
         value: T,
@@ -116,22 +153,22 @@ impl JsDate {
         Ok(date)
     }
 
-    /// Creates a new `Date` with lossy conversion for out of bounds Date values. Out of bounds
-    /// values will be treated as NaN
+    /// Creates a new `Date` with lossy conversion for out of bounds `Date` values.
+    /// Out of bounds values will be treated as `NaN`.
     pub fn new_lossy<'a, C: Context<'a>, V: Into<f64>>(cx: &mut C, value: V) -> Handle<'a, JsDate> {
         let env = cx.env().to_raw();
         let local = unsafe { sys::date::new_date(env, value.into()) };
         Handle::new_internal(JsDate(local))
     }
 
-    /// Gets the `Date`'s value. An invalid Date will return `std::f64::NaN`
+    /// Gets the `Date`'s value. An invalid `Date` will return [`std::f64::NAN`].
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> f64 {
         let env = cx.env().to_raw();
         unsafe { sys::date::value(env, self.to_raw()) }
     }
 
-    /// Checks if the `Date`'s value is valid. A Date is valid if its value is between
-    /// `JsDate::MIN_VALUE` and `JsDate::MAX_VALUE` or if it is `NaN`
+    /// Checks if the `Date`'s value is valid. A `Date` is valid if its value is
+    /// between [`JsDate::MIN_VALUE`] and [`JsDate::MAX_VALUE`] or if it is `NaN`.
     pub fn is_valid<'a, C: Context<'a>>(&self, cx: &mut C) -> bool {
         let value = self.value(cx);
         (JsDate::MIN_VALUE..=JsDate::MAX_VALUE).contains(&value)
