@@ -24,19 +24,19 @@ use crate::{
 ///
 /// ```
 /// # use neon::prelude::*;
+/// use easy_cast::Cast; // for safe numeric conversions
 /// use neon::types::JsDate;
 /// use std::fs::File;
 /// use std::time::SystemTime;
 ///
 /// /// Return the "modified" timestamp for the file at the given path.
-/// /// (A more robust implementation would do more detailed error reporting
-/// /// and handle edge cases for u128 -> f64 timestamp conversion.)
 /// fn last_modified(path: &str) -> Option<f64> {
-///     Some(File::open(&path).ok()?
+///     // A more robust implementation would do more detailed error reporting.
+///     File::open(&path).ok()?
 ///         .metadata().ok()?
 ///         .modified().ok()?
 ///         .duration_since(SystemTime::UNIX_EPOCH).ok()?
-///         .as_millis() as f64)
+///         .as_millis().try_cast().ok()
 /// }
 ///
 /// fn modified(mut cx: FunctionContext) -> JsResult<JsDate> {
