@@ -23,7 +23,7 @@ where
     );
 
     if status == napi::Status::PendingException {
-        Box::from_raw(data);
+        drop(Box::from_raw(data));
 
         return Err(status);
     }
@@ -39,7 +39,7 @@ where
             _finalize_data: *mut c_void,
             finalize_hint: *mut c_void,
         ) {
-            Box::from_raw(finalize_hint.cast::<F>());
+            drop(Box::from_raw(finalize_hint.cast::<F>()));
         }
 
         let status = napi::add_finalizer(

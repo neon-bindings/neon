@@ -207,7 +207,7 @@ impl CallbackInfo<'_> {
         let env = cx.env();
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            sys::call::this(env.to_raw(), std::mem::transmute(self.info), &mut local);
+            sys::call::this(env.to_raw(), self.info, &mut local);
             local
         }
     }
