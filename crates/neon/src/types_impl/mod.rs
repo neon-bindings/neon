@@ -343,22 +343,132 @@ impl private::ValueInternal for JsString {
 }
 
 impl JsString {
-    pub fn size<'a, C: Context<'a>>(&self, cx: &mut C) -> isize {
+    /// Return the byte size of this string when converted to a Rust [`String`] with
+    /// [`JsString::value`].
+    ///
+    /// # Example
+    ///
+    /// A function that verifies the length of the passed JavaScript string. The string is assumed
+    /// to be `hello 🥹` here, which encodes as 10 bytes in UTF-8:
+    ///
+    /// - 6 bytes for `hello ` (including the space).
+    /// - 4 bytes for the emoji `🥹`.
+    ///
+    /// ```rust
+    /// # use neon::prelude::*;
+    /// fn string_len(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    ///     let len = cx.argument::<JsString>(0)?.size(&mut cx);
+    ///     // assuming the function is called with the JS string `hello 🥹`.
+    ///     assert_eq!(10, len);
+    ///
+    ///     Ok(cx.undefined())
+    /// }
+    /// ```
+    pub fn size<'a, C: Context<'a>>(&self, cx: &mut C) -> usize {
         let env = cx.env().to_raw();
 
         unsafe { sys::string::utf8_len(env, self.to_raw()) }
     }
 
+    /// Return the size of this string encoded as UTF-16 with [`JsString::to_utf16`].
+    ///
+    /// # Example
+    ///
+    /// A function that verifies the length of the passed JavaScript string. The string is assumed
+    /// to be `hello 🥹` here, which encodes as 8 `u16`s in UTF-16:
+    ///
+    /// - 6 `u16`s for `hello ` (including the space).
+    /// - 2 `u16`s for the emoji `🥹`.
+    ///
+    /// ```rust
+    /// # use neon::prelude::*;
+    /// fn string_len_utf16(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    ///     let len = cx.argument::<JsString>(0)?.size_utf16(&mut cx);
+    ///     // assuming the function is called with the JS string `hello 🥹`.
+    ///     assert_eq!(8, len);
+    ///
+    ///     Ok(cx.undefined())
+    /// }
+    /// ```
+    pub fn size_utf16<'a, C: Context<'a>>(&self, cx: &mut C) -> usize {
+        let env = cx.env().to_raw();
+
+        unsafe { sys::string::utf16_len(env, self.to_raw()) }
+    }
+
+    /// Convert the JavaScript string into a Rust [`String`].
+    ///
+    /// # Example
+    ///
+    /// A function that expects a single JavaScript string as argument and prints it out.
+    ///
+    /// ```rust
+    /// # use neon::prelude::*;
+    /// fn print_string(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    ///     let s = cx.argument::<JsString>(0)?.value(&mut cx);
+    ///     println!("JavaScript string content: {}", s);
+    ///
+    ///     Ok(cx.undefined())
+    /// }
+    /// ```
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> String {
         let env = cx.env().to_raw();
 
         unsafe {
             let capacity = sys::string::utf8_len(env, self.to_raw()) + 1;
-            let mut buffer: Vec<u8> = Vec::with_capacity(capacity as usize);
-            let p = buffer.as_mut_ptr();
-            std::mem::forget(buffer);
-            let len = sys::string::data(env, p, capacity, self.to_raw());
-            String::from_raw_parts(p, len as usize, capacity as usize)
+            let mut buffer: Vec<u8> = Vec::with_capacity(capacity);
+            let len = sys::string::data(env, buffer.as_mut_ptr(), capacity, self.to_raw());
+            buffer.set_len(len);
+            String::from_utf8_unchecked(buffer)
+        }
+    }
+
+    /// Convert the JavaScript String into a UTF-16 encoded [`Vec<u16>`].
+    ///
+    /// The returned vector is guaranteed to be valid UTF-16. Therefore, any external crate that
+    /// handles UTF-16 encoded strings, can assume the content to be valid and skip eventual
+    /// validation steps.
+    ///
+    /// # Example
+    ///
+    /// A function that expects a single JavaScript string as argument and prints it out as a raw
+    /// vector of `u16`s.
+    ///
+    /// ```rust
+    /// # use neon::prelude::*;
+    /// fn print_string_as_utf16(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    ///     let s = cx.argument::<JsString>(0)?.to_utf16(&mut cx);
+    ///     println!("JavaScript string as raw UTF-16: {:?}", s);
+    ///
+    ///     Ok(cx.undefined())
+    /// }
+    /// ```
+    ///
+    /// Again a function that expects a single JavaScript string as argument, but utilizes the
+    /// [`widestring`](https://crates.io/crates/widestring) crate to handle the raw [`Vec<u16>`] as
+    /// a typical string.
+    ///
+    /// ```rust
+    /// # use neon::prelude::*;
+    /// fn print_with_widestring(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    ///     let s = cx.argument::<JsString>(0)?.to_utf16(&mut cx);
+    ///     // The returned vector is guaranteed to be valid UTF-16.
+    ///     // Therefore, we can skip the validation step.
+    ///     let s = unsafe { widestring::Utf16String::from_vec_unchecked(s) };
+    ///     println!("JavaScript string as UTF-16: {}", s);
+    ///
+    ///     Ok(cx.undefined())
+    /// }
+    /// ```
+    pub fn to_utf16<'a, C: Context<'a>>(&self, cx: &mut C) -> Vec<u16> {
+        let env = cx.env().to_raw();
+
+        unsafe {
+            let capacity = sys::string::utf16_len(env, self.to_raw()) + 1;
+            let mut buffer: Vec<u16> = Vec::with_capacity(capacity);
+            let len = sys::string::data_utf16(env, buffer.as_mut_ptr(), capacity, self.to_raw());
+            buffer.set_len(len);
+            buffer
         }
     }
 
