@@ -5,17 +5,17 @@ use super::{
 
 /// Mutates the `out` argument provided to refer to the global `undefined` object.
 pub unsafe fn undefined(out: &mut Local, env: Env) {
-    napi::get_undefined(env, out as *mut Local);
+    assert_eq!(napi::get_undefined(env, out as *mut Local), napi::Status::Ok);
 }
 
 /// Mutates the `out` argument provided to refer to the global `null` object.
 pub unsafe fn null(out: &mut Local, env: Env) {
-    napi::get_null(env, out as *mut Local);
+    assert_eq!(napi::get_null(env, out as *mut Local), napi::Status::Ok);
 }
 
 /// Mutates the `out` argument provided to refer to one of the global `true` or `false` objects.
 pub unsafe fn boolean(out: &mut Local, env: Env, b: bool) {
-    napi::get_boolean(env, b, out as *mut Local);
+    assert_eq!(napi::get_boolean(env, b, out as *mut Local), napi::Status::Ok);
 }
 
 /// Get the boolean value out of a `Local` object. If the `Local` object does not contain a
@@ -32,7 +32,7 @@ pub unsafe fn boolean_value(env: Env, p: Local) -> bool {
 /// Mutates the `out` argument provided to refer to a newly created `Local` containing a
 /// JavaScript number.
 pub unsafe fn number(out: &mut Local, env: Env, v: f64) {
-    napi::create_double(env, v, out as *mut Local);
+    assert_eq!(napi::create_double(env, v, out as *mut Local), napi::Status::Ok);
 }
 
 /// Gets the underlying value of an `Local` object containing a JavaScript number. Panics if
