@@ -86,6 +86,8 @@ pub mod object;
 pub mod prelude;
 pub mod reflect;
 pub mod result;
+#[cfg(feature = "serde")]
+mod serde;
 mod sys;
 #[cfg(feature = "napi-6")]
 pub mod thread;
@@ -96,6 +98,9 @@ mod types_docs;
 mod types_impl;
 
 pub use types_docs::exports as types;
+
+#[cfg(feature = "serde")]
+pub use crate::serde::{deserialize, serialize};
 
 #[doc(hidden)]
 pub mod macro_internal;

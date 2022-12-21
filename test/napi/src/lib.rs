@@ -15,6 +15,7 @@ mod js {
     pub mod futures;
     pub mod numbers;
     pub mod objects;
+    pub mod serde;
     pub mod strings;
     pub mod threads;
     pub mod typedarrays;
@@ -392,6 +393,9 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     // Futures
     cx.export_function("lazy_async_add", js::futures::lazy_async_add)?;
     cx.export_function("lazy_async_sum", js::futures::lazy_async_sum)?;
+
+    // Serde
+    cx.export_function("build_serde_test_suite", js::serde::build_suite)?;
 
     Ok(())
 }

@@ -74,7 +74,7 @@ pub unsafe fn schedule<I, O, D>(
         napi::Status::Ok => {}
         status => {
             // If queueing failed, delete the work to prevent a leak
-            let _ =napi::delete_async_work(env, *work);
+            let _ = napi::delete_async_work(env, *work);
             assert_eq!(status, napi::Status::Ok);
         }
     }

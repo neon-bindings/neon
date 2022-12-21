@@ -253,6 +253,9 @@ mod napi1 {
                 message: *const c_char,
                 message_len: usize,
             );
+
+            #[cfg(feature = "serde")]
+            fn get_property_names(env: Env, object: Value, result: *mut Value) -> Status;
         }
     );
 }
