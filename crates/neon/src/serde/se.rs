@@ -75,6 +75,18 @@ impl WrappedObjectSerializer {
     }
 }
 
+// Specialized serializer for maps with known fields
+pub(super) struct StructSerializer {
+    serializer: Serializer,
+    value: sys::Value,
+}
+
+impl StructSerializer {
+    unsafe fn new(serializer: Serializer, value: sys::Value) -> Self {
+        Self { serializer, value }
+    }
+}
+
 // Specialized serializer that understands valid key types
 struct KeySerializer {
     serializer: Serializer,
@@ -96,7 +108,7 @@ impl ser::Serializer for Serializer {
     type SerializeTupleStruct = ArraySerializer;
     type SerializeTupleVariant = WrappedArraySerializer;
     type SerializeMap = ObjectSerializer;
-    type SerializeStruct = ObjectSerializer;
+    type SerializeStruct = StructSerializer;
     type SerializeStructVariant = WrappedObjectSerializer;
 
     fn serialize_bool(self, v: bool) -> Result<Self::Ok, Self::Error> {
@@ -278,9 +290,12 @@ impl ser::Serializer for Serializer {
     fn serialize_struct(
         self,
         _name: &'static str,
-        len: usize,
+        _len: usize,
     ) -> Result<Self::SerializeStruct, Self::Error> {
-        self.serialize_map(Some(len))
+        unsafe {
+            let value = sys::create_object(self.env)?;
+            Ok(StructSerializer::new(self, value))
+        }
     }
 
     // Externally tagged enum; `{ [variant]: value }`
@@ -426,6 +441,27 @@ impl ser::SerializeStruct for ObjectSerializer {
         T: ?Sized + Serialize,
     {
         ser::SerializeMap::serialize_entry(self, key, value)
+    }
+
+    fn end(self) -> Result<Self::Ok, Self::Error> {
+        Ok(self.value)
+    }
+}
+
+impl ser::SerializeStruct for StructSerializer {
+    type Ok = sys::Value;
+    type Error = Error;
+
+    fn serialize_field<T>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error>
+    where
+        T: ?Sized + Serialize,
+    {
+        let k = unsafe { sys::get_interned_string(self.serializer.env, key)? };
+        let v = value.serialize(self.serializer)?;
+
+        unsafe { sys::set_property(self.serializer.env, self.value, k, v)? };
+
+        Ok(())
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {

@@ -281,7 +281,7 @@ impl de::Deserializer<'static> for Deserializer {
             Ok(v) => visitor.visit_byte_buf(v),
             Err(err) if err == sys::Status::InvalidArg => {
                 visitor.visit_byte_buf(unsafe { sys::get_value_arrayview(self.env, self.value)? })
-            },
+            }
             Err(err) => Err(err.into()),
         }
     }

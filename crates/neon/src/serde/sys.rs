@@ -201,9 +201,13 @@ pub(super) unsafe fn get_value_arrayview(env: Env, value: Value) -> Result<Vec<u
         out.as_mut_ptr(),
         ptr::null_mut(),
         ptr::null_mut(),
-    ).verify()?;
+    )
+    .verify()?;
 
-    if !matches!(typ.assume_init(), sys::TypedArrayType::U8 | sys::TypedArrayType::U8Clamped) {
+    if !matches!(
+        typ.assume_init(),
+        sys::TypedArrayType::U8 | sys::TypedArrayType::U8Clamped
+    ) {
         return Err(Status::InvalidArg);
     }
 
@@ -228,4 +232,46 @@ pub(super) unsafe fn get_named_property(
     key: impl AsRef<str>,
 ) -> Result<Value, Status> {
     get_property(env, object, create_string(env, key)?)
+}
+
+pub(super) unsafe fn get_interned_string(env: Env, s: &'static str) -> Result<Value, Status> {
+    use std::{cell::RefCell, collections::{HashMap, hash_map::Entry}};
+
+    // FIXME: Do this correctly
+    thread_local! {
+        pub static INTERNED: RefCell<HashMap<*const str, sys::Ref>> = RefCell::new(HashMap::new());
+    }
+
+    INTERNED.with(|interned| match interned.borrow_mut().entry(s) {
+        Entry::Occupied(root) => {
+            let mut v = MaybeUninit::uninit();
+            sys::get_reference_value(env, *root.get(), v.as_mut_ptr()).verify()?;
+            Ok(v.assume_init())
+        }
+        Entry::Vacant(entry) => {
+            let global = {
+                let mut global = MaybeUninit::uninit();
+                sys::get_global(env, global.as_mut_ptr()).verify()?;
+                global.assume_init()
+            };
+
+            let v = {
+                let s = create_string(env, s)?;
+                let ctor = get_named_property(env, global, "String")?;
+                let mut v = MaybeUninit::uninit();
+                sys::new_instance(env, ctor, 1, [s].as_ptr(), v.as_mut_ptr()).verify()?;
+                v.assume_init()
+            };
+
+            let root = {
+                let mut root = MaybeUninit::uninit();
+                sys::create_reference(env, v, 1, root.as_mut_ptr()).verify()?;
+                root.assume_init()
+            };
+
+            entry.insert(root);
+
+            Ok(v)
+        }
+    })
 }

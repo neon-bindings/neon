@@ -268,10 +268,7 @@ fn test_write_list(cx: &mut FunctionContext) {
 
     test_encode_ok(
         cx,
-        &[(
-            long_test_list,
-            json_str!([false, null, ["foo\nbar", 3.5]]),
-        )],
+        &[(long_test_list, json_str!([false, null, ["foo\nbar", 3.5]]))],
     );
 }
 
