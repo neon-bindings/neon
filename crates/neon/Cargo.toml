@@ -1,6 +1,6 @@
 [package]
 name = "neon"
-version = "1.0.0-alpha.1"
+version = "1.0.0-alpha.2"
 authors = ["Dave Herman <david.herman@gmail.com>"]
 description = "A safe abstraction layer for Node.js."
 readme = "../../README.md"
@@ -12,8 +12,9 @@ edition = "2018"
 
 [dev-dependencies]
 semver = "1"
-psd = "0.3.1"     # used for a doc example
-anyhow = "1.0.58" # used for a doc example
+psd = "0.3.1"        # used for a doc example
+anyhow = "1.0.58"    # used for a doc example
+widestring = "1.0.2" # used for a doc example
 
 [target.'cfg(not(target = "windows"))'.dev-dependencies]
 # Avoid `clang` as a dependency on windows
@@ -25,7 +26,7 @@ libloading = "0.7.3"
 semver = "1"
 smallvec = "1.4.2"
 once_cell = "1.10.0"
-neon-macros = { version = "=1.0.0-alpha.1", path = "../neon-macros" }
+neon-macros = { version = "=1.0.0-alpha.2", path = "../neon-macros" }
 aquamarine = { version = "0.1.11", optional = true }
 easy-cast = { version = "0.5.1", optional = true }
 doc-comment = { version = "0.3.3", optional = true }

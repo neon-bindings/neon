@@ -259,7 +259,7 @@ dependencies = [
 
 [[package]]
 name = "neon"
-version = "1.0.0-alpha.1"
+version = "1.0.0-alpha.2"
 dependencies = [
  "anyhow",
  "aquamarine",
@@ -274,11 +274,12 @@ dependencies = [
  "semver",
  "smallvec",
  "tokio",
+ "widestring",
 ]
 
 [[package]]
 name = "neon-macros"
-version = "1.0.0-alpha.1"
+version = "1.0.0-alpha.2"
 dependencies = [
  "quote",
  "syn",
@@ -540,6 +541,12 @@ checksum = "d011071ae14a2f6671d0b74080ae0cd8ebf3a6f8c9589a2cd45f23126fe29724"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "widestring"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "653f141f39ec16bba3c5abe400a0c60da7468261cc2cbf36805022876bc721a8"
 
 [[package]]
 name = "winapi"

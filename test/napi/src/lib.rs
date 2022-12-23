@@ -108,6 +108,9 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("add1", add1)?;
 
     cx.export_function("return_js_string", return_js_string)?;
+    cx.export_function("return_js_string_utf16", return_js_string_utf16)?;
+    cx.export_function("return_length_utf8", return_length_utf8)?;
+    cx.export_function("return_length_utf16", return_length_utf16)?;
     cx.export_function("run_string_as_script", run_string_as_script)?;
 
     cx.export_function("return_js_number", return_js_number)?;
