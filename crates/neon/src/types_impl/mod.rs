@@ -710,8 +710,11 @@ impl private::ValueInternal for JsNumber {
 /// // Create an object:
 /// let obj = cx.empty_object();
 ///
-/// obj.set(&mut cx, "name", cx.string("Neon"))?;
-/// obj.set(&mut cx, "url", cx.string("https://neon-bindings.com"))?;
+/// let name = cx.string("Neon");
+/// obj.set(&mut cx, "name", name)?;
+///
+/// let url = cx.string("https://neon-bindings.com");
+/// obj.set(&mut cx, "url", url)?;
 ///
 /// // Call console.log(obj):
 /// log.call_with(&cx).arg(obj).exec(&mut cx)?;

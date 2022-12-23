@@ -3,5 +3,5 @@
 # The following aliases simplify linting the entire workspace
 neon-check = " check  --all --all-targets --features napi-experimental,futures,external-buffers"
 neon-clippy = "clippy --all --all-targets --features napi-experimental,futures,external-buffers -- -A clippy::missing_safety_doc"
-neon-test = "  test   --all               --features=doc-comment,napi-experimental,futures,external-buffers"
+neon-test = "  test   --all               --features=doc-dependencies,doc-comment,napi-experimental,futures,external-buffers"
 neon-doc = "   rustdoc -p neon            --features=doc-dependencies,napi-experimental,futures,external-buffers -- --cfg docsrs"

@@ -21,11 +21,14 @@ use crate::{
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// // Create a type error:
-/// let err = cx.type_error("expected a number, found a string");
+/// let err = cx.type_error("expected a number, found a string")?;
 ///
 /// // Add some custom diagnostic properties to the error:
-/// err.set(&mut cx, "expected", cx.string("number"))?;
-/// err.set(&mut cx, "found", cx.string("string"))?;
+/// let expected = cx.string("number");
+/// err.set(&mut cx, "expected", expected)?;
+///
+/// let found = cx.string("string");
+/// err.set(&mut cx, "found", found)?;
 ///
 /// // Throw the error:
 /// cx.throw(err)?;
