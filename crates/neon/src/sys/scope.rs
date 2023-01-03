@@ -29,10 +29,9 @@ impl HandleScope {
 impl Drop for HandleScope {
     fn drop(&mut self) {
         unsafe {
-            debug_assert_eq!(
-                napi::close_handle_scope(self.env, self.scope),
-                napi::Status::Ok,
-            );
+            let _status = napi::close_handle_scope(self.env, self.scope);
+
+            debug_assert_eq!(_status, napi::Status::Ok,);
         }
     }
 }
@@ -72,10 +71,9 @@ impl EscapableHandleScope {
 impl Drop for EscapableHandleScope {
     fn drop(&mut self) {
         unsafe {
-            debug_assert_eq!(
-                napi::close_escapable_handle_scope(self.env, self.scope),
-                napi::Status::Ok,
-            );
+            let _status = napi::close_escapable_handle_scope(self.env, self.scope);
+
+            debug_assert_eq!(_status, napi::Status::Ok,);
         }
     }
 }
