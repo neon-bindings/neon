@@ -203,6 +203,34 @@ impl CallbackInfo<'_> {
         unsafe { sys::call::argv(cx.env().to_raw(), self.info) }
     }
 
+    #[cfg(feature = "serde")]
+    pub(crate) fn argv_exact<'b, C: Context<'b>, const N: usize>(
+        &self,
+        cx: &mut C,
+    ) -> [Handle<'b, JsValue>; N] {
+        use std::ptr;
+
+        let mut argv = [JsValue::new_internal(ptr::null_mut()); N];
+        let mut argc = argv.len();
+
+        unsafe {
+            assert_eq!(
+                sys::get_cb_info(
+                    cx.env().to_raw(),
+                    self.info,
+                    &mut argc,
+                    argv.as_mut_ptr().cast(),
+                    ptr::null_mut(),
+                    ptr::null_mut(),
+                ),
+                sys::Status::Ok,
+            );
+        }
+
+        // Empty values will be filled with `undefined`
+        argv
+    }
+
     pub fn this<'b, C: Context<'b>>(&self, cx: &mut C) -> raw::Local {
         let env = cx.env();
         unsafe {
@@ -603,7 +631,7 @@ impl<'a> Context<'a> for ComputeContext<'a> {}
 /// The type parameter `T` is the type of the `this`-binding.
 pub struct FunctionContext<'a> {
     env: Env,
-    info: &'a CallbackInfo<'a>,
+    pub(crate) info: &'a CallbackInfo<'a>,
 
     arguments: Option<sys::call::Arguments>,
 }
@@ -659,6 +687,24 @@ impl<'a> FunctionContext<'a> {
         }
     }
 
+    #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+    #[cfg(feature = "serde")]
+    /// Attempt to read arguments into a Rust tuple using serde
+    /// ```
+    /// # use neon::prelude::*;
+    /// fn greet(mut cx: FunctionContext) -> JsResult<JsString> {
+    ///     let (greeting, name): (String, String) = cx.deserialize_args()?;
+    ///
+    ///     Ok(cx.string(format!("{}, {}!", greeting, name)))
+    /// }
+    /// ```
+    pub fn deserialize_args<T>(&mut self) -> NeonResult<T>
+    where
+        T: crate::serde::FromArgs<'a>,
+    {
+        crate::serde::FromArgs::from_args(self)
+    }
+
     /// Produces a handle to the `this`-binding and attempts to downcast as a specific type.
     /// Equivalent to calling `cx.this_value().downcast_or_throw(&mut cx)`.
     ///
@@ -670,6 +716,11 @@ impl<'a> FunctionContext<'a> {
     /// Produces a handle to the function's [`this`-binding](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/this#function_context).
     pub fn this_value(&mut self) -> Handle<'a, JsValue> {
         JsValue::new_internal(self.info.this(self))
+    }
+
+    #[cfg(feature = "serde")]
+    pub(crate) fn argv<const N: usize>(&mut self) -> [Handle<'a, JsValue>; N] {
+        self.info.argv_exact(self)
     }
 }
 

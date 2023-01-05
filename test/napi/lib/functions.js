@@ -231,6 +231,13 @@ describe("JsFunction", function () {
     assert.strictEqual(addon.count_called() + 1, addon.count_called());
   });
 
+  it("should be able to deserialize arguments with serde", function () {
+    assert.strictEqual(
+      addon.deserialize_greet("Hello", "World", [5, 3]),
+      "Hello, World!"
+    );
+  });
+
   (global.gc ? it : it.skip)(
     "should drop function when going out of scope",
     function (cb) {

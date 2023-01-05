@@ -245,6 +245,13 @@ pub fn is_construct(mut cx: FunctionContext) -> JsResult<JsObject> {
     Ok(this)
 }
 
+pub fn deserialize_greet(mut cx: FunctionContext) -> JsResult<JsString> {
+    let (greeting, name): (String, Handle<JsString>) = cx.deserialize_args()?;
+    let msg = format!("{}, {}!", greeting, name.value(&mut cx));
+
+    Ok(cx.string(msg))
+}
+
 // `function caller_with_drop_callback(wrappedCallback, dropCallback)`
 //
 // `wrappedCallback` will be called each time the returned function is

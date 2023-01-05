@@ -105,6 +105,12 @@ pub use neon_macros::*;
 #[cfg(feature = "napi-6")]
 mod lifecycle;
 
+#[cfg(feature = "serde")]
+mod serde;
+
+#[cfg(feature = "serde")]
+pub use crate::serde::{deserialize, serialize};
+
 #[cfg(feature = "napi-8")]
 static MODULE_TAG: once_cell::sync::Lazy<crate::sys::TypeTag> = once_cell::sync::Lazy::new(|| {
     let mut lower = [0; std::mem::size_of::<u64>()];

@@ -29,6 +29,8 @@ once_cell = "1.10.0"
 neon-macros = { version = "=1.0.0-alpha.2", path = "../neon-macros" }
 aquamarine = { version = "0.1.11", optional = true }
 doc-comment = { version = "0.3.3", optional = true }
+serde = { version = "1", optional = true }
+serde_json = { version = "1", optional = true }
 
 [dependencies.tokio]
 version = "1.18.2"
@@ -47,6 +49,9 @@ external-buffers = []
 # Experimental Rust Futures API
 # https://github.com/neon-bindings/rfcs/pull/46
 futures = ["tokio"]
+
+# Convert between JavaScript and Rust values using serde and JSON serialization
+serde = ["dep:serde", "serde_json"]
 
 # Default N-API version. Prefer to select a minimum required version.
 # DEPRECATED: This is an alias that should be removed
@@ -88,4 +93,5 @@ features = [
     "futures",
     "napi-experimental",
     "doc-dependencies",
+    "serde",
 ]
