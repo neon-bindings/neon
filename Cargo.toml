@@ -3,3 +3,6 @@ members = [
     "crates/*",
     "test/*",
 ]
+
+[profile.release]
+lto = true
