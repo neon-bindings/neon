@@ -356,6 +356,80 @@ impl Drop for Deferred {
 ///
 /// Unlike typical `Future`, `JsFuture` are eagerly executed because they
 /// are backed by a `Promise`.
+///
+/// # Example
+///
+/// This example uses a `JsFuture` to take asynchronous binary data and perform
+/// potentially expensive computations on that data in a Rust thread.
+///
+/// The example uses a [Tokio](https://tokio.rs) thread pool (allocated and
+/// stored on demand with a [`OnceCell`](https://crates.io/crates/once_cell))
+/// to run the computations.
+///
+/// ```
+/// # use neon::prelude::*;
+/// use neon::types::buffer::TypedArray;
+/// use once_cell::sync::OnceCell;
+/// use tokio::runtime::Runtime;
+///
+/// // Lazily allocate a Tokio runtime to use as the thread pool.
+/// fn runtime<'a, C: Context<'a>>(cx: &mut C) -> NeonResult<&'static Runtime> {
+///     static RUNTIME: OnceCell<Runtime> = OnceCell::new();
+///
+///     RUNTIME
+///         .get_or_try_init(Runtime::new)
+///         .or_else(|err| cx.throw_error(&err.to_string()))
+/// }
+///
+/// // async_compute: Promise<Float64Array> -> Promise<number>
+/// //
+/// // Takes a promise that produces a typed array and returns a promise that:
+/// // - awaits the typed array from the original promise;
+/// // - computes a value from the contents of the array in a background thread; and
+/// // - resolves once the computation is completed
+/// pub fn async_compute(mut cx: FunctionContext) -> JsResult<JsPromise> {
+///     let nums: Handle<JsPromise> = cx.argument(0)?;
+///
+///     // Convert the JS Promise to a Rust Future for use in a compute thread.
+///     let nums = nums.to_future(&mut cx, |mut cx, result| {
+///         // Get the promise's result value (or throw if it was rejected).
+///         let value = result.or_throw(&mut cx)?;
+///
+///         // Downcast the result value to a Float64Array.
+///         let array: Handle<JsFloat64Array> = value.downcast_or_throw(&mut cx)?;
+///
+///         // Convert the typed array to a Rust vector.
+///         let vec = array.as_slice(&cx).to_vec();
+///         Ok(vec)
+///     })?;
+///
+///     // Construct a result promise which will be fulfilled when the computation completes.
+///     let (deferred, promise) = cx.promise();
+///     let channel = cx.channel();
+///     let runtime = runtime(&mut cx)?;
+///
+///     // Perform the computation in a background thread using the Tokio thread pool.
+///     runtime.spawn(async move {
+///         // Await the JsFuture, which yields Result<Vec<f64>, JoinError>.
+///         let result = match nums.await {
+///             // Perform the computation. For this example, we just compute the sum
+///             // of all values in the array; more involved examples might be running
+///             // compression or decompression algorithms, encoding or decoding media
+///             // codecs, image filters or other media transformations, etc.
+///             Ok(nums) => Ok(nums.into_iter().sum::<f64>()),
+///             Err(err) => Err(err)
+///         };
+///     
+///         // Resolve the result promise with the result of the computation.
+///         deferred.settle_with(&channel, |mut cx| {
+///             let result = result.or_throw(&mut cx)?;
+///             Ok(cx.number(result))
+///         });
+///     });
+///
+///     Ok(promise)
+/// }
+/// ```
 pub struct JsFuture<T> {
     // `Err` is always `Throw`, but `Throw` cannot be sent across threads
     rx: oneshot::Receiver<Result<T, SendThrow>>,
