@@ -54,6 +54,68 @@ const BOUNDARY: FailureBoundary = FailureBoundary {
 /// objects.
 ///
 /// [`JsPromise`] may be constructed with [`Context::promise`].
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// fn resolve_promise(mut cx: FunctionContext) -> JsResult<JsPromise> {
+///     let (deferred, promise) = cx.promise();
+///     let msg = cx.string("Hello, World!");
+///
+///     deferred.resolve(&mut cx, msg);
+///
+///     Ok(promise)
+/// }
+/// ```
+///
+/// # Example: Asynchronous task
+///
+/// This example uses the [linkify](https://crates.io/crates/linkify) crate in an
+/// asynchronous task, i.e. a
+/// [Node worker pool](https://nodejs.org/en/docs/guides/dont-block-the-event-loop/)
+/// thread, to find all the links in a text string.
+///
+/// More robust implementations might use a custom Rust thread or thread pool to avoid
+/// blocking the worker pool; for more information, see the [`JsFuture`] example.
+///
+/// ```
+/// # use neon::prelude::*;
+/// use linkify::{LinkFinder, LinkKind};
+/// 
+/// fn linkify(mut cx: FunctionContext) -> JsResult<JsPromise> {
+///     let text = cx.argument::<JsString>(0)?.value(&mut cx);
+/// 
+///     let promise = cx
+///         .task(move || {
+///             let (indices, kinds): (Vec<_>, Vec<_>) = LinkFinder::new()
+///                 .spans(&text)
+///                 .map(|span| {
+///                     let end: u32 = span.end() as u32;
+/// 
+///                     let kind: u8 = match span.kind() {
+///                         Some(LinkKind::Url) => 1,
+///                         Some(LinkKind::Email) => 2,
+///                         _ => 0,
+///                     };
+/// 
+///                     (end, kind)
+///                 })
+///                 .unzip();
+///             (indices, kinds)
+///         })
+///         .promise(|mut cx, (indices, kinds)| {
+///             let indices = JsUint32Array::from_slice(&mut cx, &indices)?;
+///             let kinds = JsUint8Array::from_slice(&mut cx, &kinds)?;
+///             let result = cx.empty_object();
+///             result.set(&mut cx, "indices", indices)?;
+///             result.set(&mut cx, "kinds", kinds)?;
+///             Ok(result)
+///         });
+/// 
+///     Ok(promise)
+/// }
+/// ```
 pub struct JsPromise(raw::Local);
 
 impl JsPromise {
@@ -354,8 +416,8 @@ impl Drop for Deferred {
 /// [`Promise`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)
 /// object that acts as a [`Future`](std::future::Future).
 ///
-/// Unlike typical `Future`, `JsFuture` are eagerly executed because they
-/// are backed by a `Promise`.
+/// Unlike typical `Future` implementations, `JsFuture`s are eagerly executed
+/// because they are backed by a `Promise`.
 ///
 /// # Example
 ///
@@ -412,7 +474,7 @@ impl Drop for Deferred {
 ///     runtime.spawn(async move {
 ///         // Await the JsFuture, which yields Result<Vec<f64>, JoinError>.
 ///         let result = match nums.await {
-///             // Perform the computation. For this example, we just compute the sum
+///             // Perform the computation. In this example, we just calculate the sum
 ///             // of all values in the array; more involved examples might be running
 ///             // compression or decompression algorithms, encoding or decoding media
 ///             // codecs, image filters or other media transformations, etc.
