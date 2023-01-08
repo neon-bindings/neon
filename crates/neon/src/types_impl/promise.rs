@@ -82,23 +82,23 @@ const BOUNDARY: FailureBoundary = FailureBoundary {
 /// ```
 /// # use neon::prelude::*;
 /// use linkify::{LinkFinder, LinkKind};
-/// 
+///
 /// fn linkify(mut cx: FunctionContext) -> JsResult<JsPromise> {
 ///     let text = cx.argument::<JsString>(0)?.value(&mut cx);
-/// 
+///
 ///     let promise = cx
 ///         .task(move || {
 ///             let (indices, kinds): (Vec<_>, Vec<_>) = LinkFinder::new()
 ///                 .spans(&text)
 ///                 .map(|span| {
 ///                     let end: u32 = span.end() as u32;
-/// 
+///
 ///                     let kind: u8 = match span.kind() {
 ///                         Some(LinkKind::Url) => 1,
 ///                         Some(LinkKind::Email) => 2,
 ///                         _ => 0,
 ///                     };
-/// 
+///
 ///                     (end, kind)
 ///                 })
 ///                 .unzip();
@@ -112,7 +112,7 @@ const BOUNDARY: FailureBoundary = FailureBoundary {
 ///             result.set(&mut cx, "kinds", kinds)?;
 ///             Ok(result)
 ///         });
-/// 
+///
 ///     Ok(promise)
 /// }
 /// ```
