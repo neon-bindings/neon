@@ -707,7 +707,7 @@ impl<'a> FunctionContext<'a> {
 
     #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
     #[cfg(feature = "serde")]
-    /// Attempt to read the first argument into a Rust tuple using serde
+    /// Attempt to read the first argument using serde.
     /// ```
     /// # use neon::prelude::*;
     /// fn greet(mut cx: FunctionContext) -> JsResult<JsString> {
@@ -716,6 +716,8 @@ impl<'a> FunctionContext<'a> {
     ///     Ok(cx.string(format!("Hello, {}!", name)))
     /// }
     /// ```
+    ///
+    /// Equivalent to `let (v,) = cx.deserialize_args()?;`.
     pub fn deserialize_arg<T>(&mut self) -> NeonResult<T>
     where
         T: crate::serde::FromArg<'a>,
