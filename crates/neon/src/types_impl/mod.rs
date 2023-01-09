@@ -400,6 +400,24 @@ impl private::ValueInternal for JsBoolean {
 /// The type of JavaScript
 /// [string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#primitive_values)
 /// primitives.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+/// // Extract the console.log function:
+/// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
+/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
+///
+/// // Create a string:
+/// let s = cx.string("hello 🥹");
+///
+/// // Call console.log(s):
+/// log.call_with(&cx).arg(s).exec(&mut cx)?;
+/// # Ok(cx.undefined())
+/// # }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsString(raw::Local);
@@ -457,26 +475,25 @@ impl private::ValueInternal for JsString {
 }
 
 impl JsString {
-    /// Return the byte size of this string when converted to a Rust [`String`] with
-    /// [`JsString::value`].
+    /// Returns the size of the UTF-8 representation of this string,
+    /// measured in 8-bit code units.
+    ///
+    /// Equivalent to `self.value(cx).len()` (but more efficient).
     ///
     /// # Example
     ///
-    /// A function that verifies the length of the passed JavaScript string. The string is assumed
-    /// to be `hello 🥹` here, which encodes as 10 bytes in UTF-8:
+    /// The string `"hello 🥹"` encodes as 10 bytes in UTF-8:
     ///
-    /// - 6 bytes for `hello ` (including the space).
-    /// - 4 bytes for the emoji `🥹`.
+    /// - 6 bytes for `"hello "` (including the space).
+    /// - 4 bytes for the emoji `"🥹"`.
     ///
     /// ```rust
     /// # use neon::prelude::*;
-    /// fn string_len(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    ///     let len = cx.argument::<JsString>(0)?.size(&mut cx);
-    ///     // assuming the function is called with the JS string `hello 🥹`.
-    ///     assert_eq!(10, len);
-    ///
-    ///     Ok(cx.undefined())
-    /// }
+    /// # fn string_len(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    /// let str = cx.string("hello 🥹");
+    /// assert_eq!(10, str.size(&mut cx));
+    /// # Ok(cx.undefined())
+    /// # }
     /// ```
     pub fn size<'a, C: Context<'a>>(&self, cx: &mut C) -> usize {
         let env = cx.env().to_raw();
@@ -484,25 +501,25 @@ impl JsString {
         unsafe { sys::string::utf8_len(env, self.to_raw()) }
     }
 
-    /// Return the size of this string encoded as UTF-16 with [`JsString::to_utf16`].
+    /// Returns the size of the UTF-16 representation of this string,
+    /// measured in 16-bit code units.
+    ///
+    /// Equivalent to `self.to_utf16(cx).len()` (but more efficient).
     ///
     /// # Example
     ///
-    /// A function that verifies the length of the passed JavaScript string. The string is assumed
-    /// to be `hello 🥹` here, which encodes as 8 `u16`s in UTF-16:
+    /// The string `"hello 🥹"` encodes as 8 code units in UTF-16:
     ///
-    /// - 6 `u16`s for `hello ` (including the space).
-    /// - 2 `u16`s for the emoji `🥹`.
+    /// - 6 `u16`s for `"hello "` (including the space).
+    /// - 2 `u16`s for the emoji `"🥹"`.
     ///
     /// ```rust
     /// # use neon::prelude::*;
-    /// fn string_len_utf16(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    ///     let len = cx.argument::<JsString>(0)?.size_utf16(&mut cx);
-    ///     // assuming the function is called with the JS string `hello 🥹`.
-    ///     assert_eq!(8, len);
-    ///
-    ///     Ok(cx.undefined())
-    /// }
+    /// # fn string_len_utf16(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    /// let str = cx.string("hello 🥹");
+    /// assert_eq!(8, str.size_utf16(&mut cx));
+    /// # Ok(cx.undefined())
+    /// # }
     /// ```
     pub fn size_utf16<'a, C: Context<'a>>(&self, cx: &mut C) -> usize {
         let env = cx.env().to_raw();
@@ -510,17 +527,18 @@ impl JsString {
         unsafe { sys::string::utf16_len(env, self.to_raw()) }
     }
 
-    /// Convert the JavaScript string into a Rust [`String`].
+    /// Convert this JavaScript string into a Rust [`String`].
     ///
     /// # Example
     ///
-    /// A function that expects a single JavaScript string as argument and prints it out.
+    /// This example function expects a single JavaScript string as argument
+    /// and prints it out.
     ///
     /// ```rust
     /// # use neon::prelude::*;
     /// fn print_string(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     ///     let s = cx.argument::<JsString>(0)?.value(&mut cx);
-    ///     println!("JavaScript string content: {}", s);
+    ///     println!("JavaScript string contents: {}", s);
     ///
     ///     Ok(cx.undefined())
     /// }
@@ -537,16 +555,15 @@ impl JsString {
         }
     }
 
-    /// Convert the JavaScript String into a UTF-16 encoded [`Vec<u16>`].
+    /// Convert this JavaScript string into a [`Vec<u16>`] encoded as UTF-16.
     ///
-    /// The returned vector is guaranteed to be valid UTF-16. Therefore, any external crate that
-    /// handles UTF-16 encoded strings, can assume the content to be valid and skip eventual
-    /// validation steps.
+    /// The returned vector is guaranteed to be valid UTF-16, so libraries that handle
+    /// UTF-16-encoded strings can assume the content to be valid.
     ///
     /// # Example
     ///
-    /// A function that expects a single JavaScript string as argument and prints it out as a raw
-    /// vector of `u16`s.
+    /// This example function expects a single JavaScript string as argument and prints it out
+    /// as a raw vector of `u16`s.
     ///
     /// ```rust
     /// # use neon::prelude::*;
@@ -558,17 +575,21 @@ impl JsString {
     /// }
     /// ```
     ///
-    /// Again a function that expects a single JavaScript string as argument, but utilizes the
-    /// [`widestring`](https://crates.io/crates/widestring) crate to handle the raw [`Vec<u16>`] as
-    /// a typical string.
+    /// This next example function also expects a single JavaScript string as argument and converts
+    /// to a [`Vec<u16>`], but utilizes the [`widestring`](https://crates.io/crates/widestring)
+    /// crate to handle the vector as a typical string.
     ///
     /// ```rust
     /// # use neon::prelude::*;
+    /// use widestring::Utf16String;
+    ///
     /// fn print_with_widestring(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     ///     let s = cx.argument::<JsString>(0)?.to_utf16(&mut cx);
-    ///     // The returned vector is guaranteed to be valid UTF-16.
-    ///     // Therefore, we can skip the validation step.
-    ///     let s = unsafe { widestring::Utf16String::from_vec_unchecked(s) };
+    ///
+    ///     // The returned vector is guaranteed to be valid UTF-16, so we can
+    ///     // safely skip the validation step.
+    ///     let s = unsafe { Utf16String::from_vec_unchecked(s) };
+    ///
     ///     println!("JavaScript string as UTF-16: {}", s);
     ///
     ///     Ok(cx.undefined())
@@ -586,10 +607,49 @@ impl JsString {
         }
     }
 
+    /// Creates a new `JsString` value from a Rust string by copying its contents.
+    ///
+    /// This method panics if the string is longer than the maximum string size allowed
+    /// by the JavaScript engine.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use neon::prelude::*;
+    /// # fn string_new(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    /// let str = JsString::new(&mut cx, "hello 🥹");
+    /// assert_eq!(10, str.size(&mut cx));
+    /// # Ok(cx.undefined())
+    /// # }
+    /// ```
+    ///
+    /// **See also:** [`Context::string`]
     pub fn new<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, val: S) -> Handle<'a, JsString> {
         JsString::try_new(cx, val).unwrap()
     }
 
+    /// Tries to create a new `JsString` value from a Rust string by copying its contents.
+    ///
+    /// Returns `Err(StringOverflow)` if the string is longer than the maximum string size
+    /// allowed by the JavaScript engine.
+    ///
+    /// # Example
+    ///
+    /// This example tries to construct a JavaScript string from a Rust string of
+    /// unknown length, and on overflow generates an alternate truncated string with
+    /// a suffix (`"[…]"`) to indicate the truncation.
+    ///
+    /// ```
+    /// # use neon::prelude::*;
+    /// # fn string_try_new(mut cx: FunctionContext) -> JsResult<JsString> {
+    /// # static str: &'static str = "hello 🥹";
+    /// let s = match JsString::try_new(&mut cx, str) {
+    ///     Ok(s) => s,
+    ///     Err(_) => cx.string(format!("{}[…]", &str[0..32])),
+    /// };
+    /// # Ok(s)
+    /// # }
+    /// ```
     pub fn try_new<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, val: S) -> StringResult<'a> {
         let val = val.as_ref();
         match JsString::new_internal(cx.env(), val) {
