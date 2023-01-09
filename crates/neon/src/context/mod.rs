@@ -145,6 +145,9 @@ use std::{convert::Into, marker::PhantomData, panic::UnwindSafe};
 
 pub use crate::types::buffer::lock::Lock;
 
+#[cfg(feature = "serde")]
+pub use crate::serde::{FromArg, FromArgs};
+
 use crate::{
     event::TaskBuilder,
     handle::{Handle, Managed},
@@ -700,9 +703,9 @@ impl<'a> FunctionContext<'a> {
     /// ```
     pub fn deserialize_args<T>(&mut self) -> NeonResult<T>
     where
-        T: crate::serde::FromArgs<'a>,
+        T: FromArgs<'a>,
     {
-        crate::serde::FromArgs::from_args(self)
+        crate::serde::from_args(self)
     }
 
     #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
@@ -720,9 +723,9 @@ impl<'a> FunctionContext<'a> {
     /// Equivalent to `let (v,) = cx.deserialize_args()?;`.
     pub fn deserialize_arg<T>(&mut self) -> NeonResult<T>
     where
-        T: crate::serde::FromArg<'a>,
+        T: FromArg<'a>,
     {
-        let (arg,) = crate::serde::FromArgs::from_args(self)?;
+        let (arg,) = crate::serde::from_args(self)?;
         Ok(arg)
     }
 
