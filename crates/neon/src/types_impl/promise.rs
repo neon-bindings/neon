@@ -53,7 +53,7 @@ const BOUNDARY: FailureBoundary = FailureBoundary {
 /// [`Promise`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)
 /// objects.
 ///
-/// [`JsPromise`] may be constructed with [`Context::promise`].
+/// [`JsPromise`] instances may be constructed with [`Context::promise`].
 ///
 /// # Example
 ///
@@ -263,6 +263,10 @@ impl Object for JsPromise {}
 /// On Node-API versions less than 6, dropping a [`Deferred`] without settling will
 /// cause a panic. On Node-API 6+, the associated [`JsPromise`] will be automatically
 /// rejected.
+///
+/// # Examples
+///
+/// See [`JsPromise`], [`JsFuture`].
 pub struct Deferred {
     internal: Option<NodeApiDeferred>,
     #[cfg(feature = "napi-6")]
