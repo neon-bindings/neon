@@ -11,7 +11,6 @@ crate-type = ["cdylib"]
 [dependencies]
 criterion = "0.4"
 once_cell = "1"
-pprof = { version = "0.11", features = ["prost-codec", "frame-pointer"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
@@ -19,3 +18,6 @@ serde_json = "1"
 version = "1.0.0-alpha.2"
 path = "../../crates/neon"
 features = ["external-buffers", "futures", "napi-experimental", "serde"]
+
+[target.'cfg(not(windows))'.dependencies]
+pprof = { version = "0.11", features = ["prost-codec", "frame-pointer"] }

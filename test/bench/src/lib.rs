@@ -1,14 +1,18 @@
 use serde::Deserialize;
-use std::{fmt, fs, io, path, time::Duration};
+use std::{fmt, time::Duration};
 
 use criterion::Criterion;
 use neon::prelude::*;
+
+#[cfg(not(windows))]
+use std::{fs, io, path};
 
 mod pokemon;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct BenchOptions {
+    #[cfg(not(windows))]
     report_file: Option<path::PathBuf>,
     #[serde(default)]
     neon: bool,
@@ -33,6 +37,7 @@ fn serialize(mut cx: FunctionContext) -> JsResult<JsUndefined> {
         .get::<JsObject, _, _>(&mut cx, "JSON")?
         .get::<JsFunction, _, _>(&mut cx, "parse")?;
 
+    #[cfg(not(windows))]
     let guard = options
         .report_file
         .is_some()
@@ -65,6 +70,7 @@ fn serialize(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
     group.finish();
 
+    #[cfg(not(windows))]
     if let (Some(guard), Some(report_file)) = (guard, options.report_file.as_ref()) {
         let report = guard.report().build().or_throw(&mut cx)?;
         let profile = report.pprof().or_throw(&mut cx)?;
@@ -96,6 +102,7 @@ fn deserialize(mut cx: FunctionContext) -> JsResult<JsUndefined> {
         .get::<JsObject, _, _>(&mut cx, "JSON")?
         .get::<JsFunction, _, _>(&mut cx, "stringify")?;
 
+    #[cfg(not(windows))]
     let guard = options
         .report_file
         .is_some()
@@ -134,6 +141,7 @@ fn deserialize(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
     group.finish();
 
+    #[cfg(not(windows))]
     if let (Some(guard), Some(report_file)) = (guard, options.report_file.as_ref()) {
         let report = guard.report().build().or_throw(&mut cx)?;
         let profile = report.pprof().or_throw(&mut cx)?;
