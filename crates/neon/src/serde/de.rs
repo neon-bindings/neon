@@ -144,7 +144,7 @@ impl de::Deserializer<'static> for Deserializer {
     where
         V: de::Visitor<'static>,
     {
-        visitor.visit_f64(unsafe { sys::get_value_double(self.env, self.value)? as f64 })
+        visitor.visit_f64(unsafe { sys::get_value_double(self.env, self.value)? })
     }
 
     fn deserialize_char<V>(self, visitor: V) -> Result<V::Value, Self::Error>
