@@ -2,7 +2,8 @@ use serde::de;
 
 use crate::{
     context::FunctionContext,
-    handle::Handle,
+    handle::{Handle, Root},
+    object::Object,
     result::NeonResult,
     types::{JsValue, Value},
 };
@@ -26,6 +27,15 @@ where
 {
     fn from_arg(cx: &mut FunctionContext<'cx>, v: Handle<'cx, JsValue>) -> NeonResult<Self> {
         super::deserialize(cx, v)
+    }
+}
+
+impl<'cx, O> FromArg<'cx> for Root<O>
+where
+    O: Object,
+{
+    fn from_arg(cx: &mut FunctionContext<'cx>, v: Handle<'cx, JsValue>) -> NeonResult<Self> {
+        Ok(v.downcast_or_throw::<O, _>(cx)?.root(cx))
     }
 }
 

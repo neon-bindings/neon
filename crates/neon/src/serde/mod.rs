@@ -11,7 +11,7 @@ use crate::{
 #[cfg(feature = "napi-6")]
 use crate::{handle::Root, thread::LocalKey};
 
-pub(crate) use args::FromArgs;
+pub(crate) use args::{FromArg, FromArgs};
 
 mod args;
 mod de;

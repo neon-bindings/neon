@@ -705,6 +705,25 @@ impl<'a> FunctionContext<'a> {
         crate::serde::FromArgs::from_args(self)
     }
 
+    #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+    #[cfg(feature = "serde")]
+    /// Attempt to read the first argument into a Rust tuple using serde
+    /// ```
+    /// # use neon::prelude::*;
+    /// fn greet(mut cx: FunctionContext) -> JsResult<JsString> {
+    ///     let name: String = cx.deserialize_arg()?;
+    ///
+    ///     Ok(cx.string(format!("Hello, {}!", name)))
+    /// }
+    /// ```
+    pub fn deserialize_arg<T>(&mut self) -> NeonResult<T>
+    where
+        T: crate::serde::FromArg<'a>,
+    {
+        let (arg,) = crate::serde::FromArgs::from_args(self)?;
+        Ok(arg)
+    }
+
     /// Produces a handle to the `this`-binding and attempts to downcast as a specific type.
     /// Equivalent to calling `cx.this_value().downcast_or_throw(&mut cx)`.
     ///
