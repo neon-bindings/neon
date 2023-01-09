@@ -82,6 +82,7 @@ const BOUNDARY: FailureBoundary = FailureBoundary {
 /// ```
 /// # use neon::prelude::*;
 /// use linkify::{LinkFinder, LinkKind};
+/// use easy_cast::Cast; // for safe numerical conversions
 ///
 /// fn linkify(mut cx: FunctionContext) -> JsResult<JsPromise> {
 ///     let text = cx.argument::<JsString>(0)?.value(&mut cx);
@@ -91,7 +92,7 @@ const BOUNDARY: FailureBoundary = FailureBoundary {
 ///             let (indices, kinds): (Vec<_>, Vec<_>) = LinkFinder::new()
 ///                 .spans(&text)
 ///                 .map(|span| {
-///                     let end: u32 = span.end() as u32;
+///                     let end: u32 = span.end().cast();
 ///
 ///                     let kind: u8 = match span.kind() {
 ///                         Some(LinkKind::Url) => 1,
