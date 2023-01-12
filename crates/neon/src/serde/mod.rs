@@ -25,6 +25,10 @@ pub(super) enum Error {
     Unsupported(sys::ValueType),
     Status(sys::Status),
     FallbackJson,
+    Overflow(f64),
+    Underflow(f64),
+    NotInt(f64),
+    NaN,
 }
 
 impl fmt::Display for Error {
@@ -34,6 +38,10 @@ impl fmt::Display for Error {
             Error::Unsupported(typ) => write!(f, "Unsupported({:?})", typ),
             Error::Status(status) => write!(f, "Status({:?})", status),
             Error::FallbackJson => f.write_str("FallbackJson"),
+            Error::Overflow(n) => write!(f, "Overflow: {}", n),
+            Error::Underflow(n) => write!(f, "Underflow: {}", n),
+            Error::NotInt(n) => write!(f, "NotInt: {}", n),
+            Error::NaN => f.write_str("NaN"),
         }
     }
 }
@@ -127,7 +135,7 @@ where
     V: Value,
     C: Context<'cx>,
 {
-    de::deserialize(cx, v).or_else(|err| cx.throw_error(dbg!(err).to_string()))
+    de::deserialize(cx, v).or_else(|err| cx.throw_error(err.to_string()))
 }
 
 /// Attempts to write Rust data into a JavaScript value using serde
@@ -140,7 +148,14 @@ where
     let v = match v.serialize(unsafe { ser::Serializer::new(cx.env().to_raw()) }) {
         Ok(v) => JsValue::new_internal(v),
         Err(Error::FallbackJson) => {
-            let s = serde_json::to_string(v).or_else(|err| cx.throw_error(err.to_string()))?;
+            let mut writer = Vec::with_capacity(128);
+            let mut serializer = serde_json::Serializer::new(&mut writer);
+
+            v.serialize(ser::JsonSerializer::new(&mut serializer))
+                .or_else(|err| cx.throw_error(err.to_string()))?;
+
+            // Safety: JSON is always valid UTF-8
+            let s = unsafe { String::from_utf8_unchecked(writer) };
             let s = cx.string(s);
             let this = cx.undefined();
 

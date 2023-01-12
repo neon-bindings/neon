@@ -1,6 +1,6 @@
 // Adapted from https://github.com/serde-rs/json/blob/master/tests/test.rs
 
-use std::{any, collections::BTreeMap, fmt, marker::PhantomData};
+use std::{any, collections::BTreeMap, fmt, marker::PhantomData, panic};
 
 use neon::{prelude::*, types::buffer::TypedArray};
 
@@ -84,7 +84,16 @@ where
     F: Fn(&mut FunctionContext) + 'static,
 {
     let f = JsFunction::new(cx, move |mut cx| {
-        f(&mut cx);
+        panic::catch_unwind(panic::AssertUnwindSafe(|| f(&mut cx))).or_else(|panic| {
+            if let Some(s) = panic.downcast_ref::<&str>() {
+                cx.throw_error(s)
+            } else if let Some(s) = panic.downcast_ref::<String>() {
+                cx.throw_error(s)
+            } else {
+                panic::resume_unwind(panic)
+            }
+        })?;
+
         Ok(cx.undefined())
     })?;
 
@@ -507,8 +516,8 @@ fn test_parse_i64(cx: &mut FunctionContext) {
             ("-2", -2),
             ("-1234", -1234),
             (" -1234 ", -1234),
-            (&i64::MIN.to_string(), i64::MIN),
-            (&i64::MAX.to_string(), i64::MAX),
+            (&MIN_SAFE_INTEGER.to_string(), MIN_SAFE_INTEGER),
+            (&MAX_SAFE_INTEGER.to_string(), MAX_SAFE_INTEGER as i64),
         ],
     );
 }
@@ -520,7 +529,7 @@ fn test_parse_u64(cx: &mut FunctionContext) {
             ("0", 0u64),
             ("3", 3u64),
             ("1234", 1234),
-            (&u64::MAX.to_string(), u64::MAX),
+            (&MAX_SAFE_INTEGER.to_string(), MAX_SAFE_INTEGER),
         ],
     );
 }
@@ -1152,6 +1161,119 @@ fn issue_220(cx: &mut FunctionContext) {
     assert_eq!(from_str::<E>(cx, r#"{"V": 0}"#).unwrap(), E::V(0));
 }
 
+// Test that numeric handling is consistent across neon and serde_json implementations
+fn test_numbers(cx: &mut FunctionContext) {
+    macro_rules! serialize {
+        ($typ:ty, $value:expr) => {{
+            let value: $typ = $value;
+            let neon: Handle<JsNumber> = neon::serialize(cx, &value).unwrap();
+            let json = neon::serialize::<JsArray, _, _>(cx, &(value,))
+                .unwrap()
+                .get::<JsNumber, _, _>(cx, 0)
+                .unwrap();
+
+            assert_eq!(neon.value(cx), json.value(cx));
+        }};
+    }
+
+    macro_rules! serialize_fails {
+        ($typ:ty, $value:expr) => {{
+            let value: $typ = $value;
+            let neon = cx.try_catch(|cx| neon::serialize::<JsNumber, _, _>(cx, &value));
+            let json = cx.try_catch(|cx| neon::serialize::<JsArray, _, _>(cx, &(value,)));
+
+            assert!(neon.is_err());
+            assert!(json.is_err());
+        }};
+    }
+
+    macro_rules! deserialize {
+        ($typ:ty, $value:expr) => {{
+            let value = cx.number($value);
+            let arr = cx.empty_array();
+
+            arr.set(cx, 0, value).unwrap();
+
+            let neon = neon::deserialize::<$typ, _, _>(cx, value).unwrap();
+            let (json,) = neon::deserialize::<($typ,), _, _>(cx, arr).unwrap();
+
+            assert_eq!(neon, json);
+        }};
+    }
+
+    macro_rules! deserialize_fails {
+        ($typ:ty, $value:expr) => {{
+            let value = cx.number($value);
+            let arr = cx.empty_array();
+
+            arr.set(cx, 0, value).unwrap();
+
+            let neon = cx.try_catch(|cx| neon::deserialize::<$typ, _, _>(cx, value));
+            let json = cx.try_catch(|cx| neon::deserialize::<($typ,), _, _>(cx, arr));
+
+            assert!(neon.is_err());
+            assert!(json.is_err());
+        }};
+    }
+
+    // Simple float tests
+    serialize!(f64, -1.1);
+    serialize!(f64, 0.0);
+    serialize!(f64, 1.1);
+    serialize!(f64, 0.1 * 0.2);
+    serialize!(f64, -0.1 * 0.2);
+
+    // Out of range
+    serialize_fails!(u64, MAX_SAFE_INTEGER + 2);
+    serialize_fails!(i64, MAX_SAFE_INTEGER as i64 + 2);
+    serialize_fails!(i64, MIN_SAFE_INTEGER - 2);
+    serialize_fails!(u128, MAX_SAFE_INTEGER as u128 + 2);
+    serialize_fails!(i128, MAX_SAFE_INTEGER as i128 + 2);
+    serialize_fails!(i128, MIN_SAFE_INTEGER as i128 - 2);
+
+    // Simple float tests
+    deserialize!(f64, -1.1);
+    deserialize!(f64, 0.0);
+    deserialize!(f64, 1.1);
+    deserialize!(f64, 0.1 * 0.2);
+    deserialize!(f64, -0.1 * 0.2);
+
+    // Out of range
+    deserialize_fails!(u8, -1.0);
+    deserialize_fails!(u8, f64::MAX);
+    deserialize_fails!(u16, -1.0);
+    deserialize_fails!(u16, f64::MAX);
+    deserialize_fails!(u32, -1.0);
+    deserialize_fails!(u32, f64::MAX);
+    deserialize_fails!(u64, -1.0);
+    deserialize_fails!(u64, f64::MAX);
+    deserialize_fails!(u128, -1.0);
+    deserialize_fails!(u128, f64::MAX);
+
+    deserialize_fails!(i8, f64::MIN);
+    deserialize_fails!(i8, f64::MAX);
+    deserialize_fails!(i16, f64::MIN);
+    deserialize_fails!(i16, f64::MAX);
+    deserialize_fails!(i32, f64::MIN);
+    deserialize_fails!(i32, f64::MAX);
+    deserialize_fails!(i64, f64::MIN);
+    deserialize_fails!(i64, f64::MAX);
+    deserialize_fails!(i128, f64::MIN);
+    deserialize_fails!(i128, f64::MAX);
+
+    // Unexpected truncate
+    deserialize_fails!(u8, 1.1);
+    deserialize_fails!(u16, 1.1);
+    deserialize_fails!(u32, 1.1);
+    deserialize_fails!(u64, 1.1);
+    deserialize_fails!(u128, 1.1);
+    deserialize_fails!(i8, 1.1);
+    deserialize_fails!(i16, 1.1);
+    deserialize_fails!(i32, 1.1);
+    deserialize_fails!(i64, 1.1);
+    deserialize_fails!(i128, 1.1);
+}
+
 pub fn build_suite(mut cx: FunctionContext) -> JsResult<JsObject> {
     let o = cx.empty_object();
 
@@ -1200,6 +1322,7 @@ pub fn build_suite(mut cx: FunctionContext) -> JsResult<JsObject> {
     export(&mut cx, &o, test_deny_float_key)?;
     export(&mut cx, &o, test_effectively_string_keys)?;
     export(&mut cx, &o, issue_220)?;
+    export(&mut cx, &o, test_numbers)?;
 
     Ok(o)
 }

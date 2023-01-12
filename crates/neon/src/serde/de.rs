@@ -41,6 +41,96 @@ impl Deserializer {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
+struct Number(f64);
+
+impl Number {
+    unsafe fn new(env: sys::Env, value: sys::Value) -> Result<Self, sys::Status> {
+        sys::get_value_double(env, value).map(Self)
+    }
+
+    fn check_int(self, max: f64) -> Result<f64, Error> {
+        let Self(n) = self;
+
+        if n.is_nan() {
+            return Err(Error::NaN);
+        }
+
+        if n.fract() != 0.0 {
+            return Err(Error::NotInt(n));
+        }
+
+        if n > max {
+            return Err(Error::Overflow(n));
+        }
+
+        Ok(n)
+    }
+
+    fn check_signed(self, min: f64, max: f64) -> Result<f64, Error> {
+        if self.0 < min {
+            return Err(Error::Underflow(self.0));
+        }
+
+        self.check_int(max)
+    }
+
+    fn check_unsigned(self, max: f64) -> Result<f64, Error> {
+        if self.0.is_sign_negative() {
+            return Err(Error::Underflow(self.0));
+        }
+
+        self.check_int(max)
+    }
+
+    fn into_u8(self) -> Result<u8, Error> {
+        self.check_unsigned(u8::MAX as f64).map(|v| v as u8)
+    }
+
+    fn into_u16(self) -> Result<u16, Error> {
+        self.check_unsigned(u16::MAX as f64).map(|v| v as u16)
+    }
+
+    fn into_u32(self) -> Result<u32, Error> {
+        self.check_unsigned(u32::MAX as f64).map(|v| v as u32)
+    }
+
+    fn into_u64(self) -> Result<u64, Error> {
+        self.check_unsigned(u64::MAX as f64).map(|v| v as u64)
+    }
+
+    fn into_u128(self) -> Result<u128, Error> {
+        self.check_unsigned(u128::MAX as f64).map(|v| v as u128)
+    }
+
+    fn into_i8(self) -> Result<i8, Error> {
+        self.check_signed(i8::MIN as f64, i8::MAX as f64)
+            .map(|v| v as i8)
+    }
+
+    fn into_i16(self) -> Result<i16, Error> {
+        self.check_signed(i16::MIN as f64, i16::MAX as f64)
+            .map(|v| v as i16)
+    }
+
+    fn into_i32(self) -> Result<i32, Error> {
+        self.check_signed(i32::MIN as f64, i32::MAX as f64)
+            .map(|v| v as i32)
+    }
+
+    // FIXME: Does this work?
+    fn into_i64(self) -> Result<i64, Error> {
+        self.check_signed(i64::MIN as f64, i64::MAX as f64)
+            .map(|v| v as i64)
+    }
+
+    // FIXME: Does this work?
+    fn into_i128(self) -> Result<i128, Error> {
+        self.check_signed(i128::MIN as f64, i128::MAX as f64)
+            .map(|v| v as i128)
+    }
+}
+
 impl de::Deserializer<'static> for Deserializer {
     type Error = Error;
 
@@ -81,56 +171,70 @@ impl de::Deserializer<'static> for Deserializer {
     where
         V: de::Visitor<'static>,
     {
-        visitor.visit_i8(unsafe { sys::get_value_double(self.env, self.value)? as i8 })
+        visitor.visit_i8(unsafe { Number::new(self.env, self.value)?.into_i8()? })
     }
 
     fn deserialize_i16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'static>,
     {
-        visitor.visit_i16(unsafe { sys::get_value_double(self.env, self.value)? as i16 })
+        visitor.visit_i16(unsafe { Number::new(self.env, self.value)?.into_i16()? })
     }
 
     fn deserialize_i32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'static>,
     {
-        visitor.visit_i32(unsafe { sys::get_value_double(self.env, self.value)? as i32 })
+        visitor.visit_i32(unsafe { Number::new(self.env, self.value)?.into_i32()? })
     }
 
     fn deserialize_i64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'static>,
     {
-        visitor.visit_i64(unsafe { sys::get_value_double(self.env, self.value)? as i64 })
+        visitor.visit_i64(unsafe { Number::new(self.env, self.value)?.into_i64()? })
+    }
+
+    fn deserialize_i128<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'static>,
+    {
+        visitor.visit_i128(unsafe { Number::new(self.env, self.value)?.into_i128()? })
     }
 
     fn deserialize_u8<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'static>,
     {
-        visitor.visit_u8(unsafe { sys::get_value_double(self.env, self.value)? as u8 })
+        visitor.visit_u8(unsafe { Number::new(self.env, self.value)?.into_u8()? })
     }
 
     fn deserialize_u16<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'static>,
     {
-        visitor.visit_u16(unsafe { sys::get_value_double(self.env, self.value)? as u16 })
+        visitor.visit_u16(unsafe { Number::new(self.env, self.value)?.into_u16()? })
     }
 
     fn deserialize_u32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'static>,
     {
-        visitor.visit_u32(unsafe { sys::get_value_double(self.env, self.value)? as u32 })
+        visitor.visit_u32(unsafe { Number::new(self.env, self.value)?.into_u32()? })
     }
 
     fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
         V: de::Visitor<'static>,
     {
-        visitor.visit_u64(unsafe { sys::get_value_double(self.env, self.value)? as u64 })
+        visitor.visit_u64(unsafe { Number::new(self.env, self.value)?.into_u64()? })
+    }
+
+    fn deserialize_u128<V>(self, visitor: V) -> Result<V::Value, Self::Error>
+    where
+        V: de::Visitor<'static>,
+    {
+        visitor.visit_u128(unsafe { Number::new(self.env, self.value)?.into_u128()? })
     }
 
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
