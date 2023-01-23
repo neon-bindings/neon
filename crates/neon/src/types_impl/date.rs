@@ -26,30 +26,24 @@ use crate::{
 /// # use neon::prelude::*;
 /// use easy_cast::Cast; // for safe numeric conversions
 /// use neon::types::JsDate;
-/// use std::fs::File;
-/// use std::time::SystemTime;
+/// use std::{error::Error, fs::File, time::SystemTime};
 ///
 /// /// Return the "modified" timestamp for the file at the given path.
-/// fn last_modified(path: &str) -> Option<f64> {
-///     // A more robust implementation would do more detailed error reporting.
-///     File::open(&path).ok()?
-///         .metadata().ok()?
-///         .modified().ok()?
-///         .duration_since(SystemTime::UNIX_EPOCH).ok()?
-///         .as_millis().try_cast().ok()
+/// fn last_modified(path: &str) -> Result<f64, Box<dyn Error>> {
+///     Ok(File::open(&path)?
+///         .metadata()?
+///         .modified()?
+///         .duration_since(SystemTime::UNIX_EPOCH)?
+///         .as_millis()
+///         .try_cast()?)
 /// }
 ///
 /// fn modified(mut cx: FunctionContext) -> JsResult<JsDate> {
 ///     let path: Handle<JsString> = cx.argument(0)?;
 ///
-///     let modified = last_modified(&path.value(&mut cx))
-///         .and_then(|n| cx.date(n).ok());
-///
-///     if let Some(date) = modified {
-///         Ok(date)
-///     } else {
-///         cx.throw_error("failed to get timestamp")
-///     }
+///     last_modified(&path.value(&mut cx))
+///         .and_then(|n| Ok(cx.date(n)?))
+///         .or_else(|err| cx.throw_error(err.to_string()))
 /// }
 /// ```
 #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
