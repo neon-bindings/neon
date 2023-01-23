@@ -29,7 +29,7 @@ mod private {
     }
 }
 
-/// A type of JavaScript smart pointer object that owns Rust data.
+/// A JavaScript smart pointer object that owns Rust data.
 ///
 /// The type `JsBox<T>` provides shared ownership of a value of type `T`,
 /// allocated in the heap. The data is owned by the JavaScript engine and the
