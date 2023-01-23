@@ -177,15 +177,14 @@ impl JsValue {
 /// ```
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-/// // Extract the console.log function:
+/// // Extract the console object:
 /// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
-/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
 ///
 /// // The undefined value:
 /// let undefined = cx.undefined();
 ///
 /// // Call console.log(undefined):
-/// log.call_with(&cx).arg(undefined).exec(&mut cx)?;
+/// console.call_method_with(&mut cx, "log")?.arg(undefined).exec(&mut cx)?;
 /// # Ok(undefined)
 /// # }
 /// ```
