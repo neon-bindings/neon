@@ -251,15 +251,11 @@ impl private::ValueInternal for JsUndefined {
 /// ```
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsNull> {
-/// // Extract the console.log function:
-/// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
-/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
-///
-/// // The null value:
-/// let null = cx.null();
-///
-/// // Call console.log(undefined):
-/// log.call_with(&cx).arg(null).exec(&mut cx)?;
+/// cx.global()
+///     .get::<JsObject, _, _>(&mut cx, "console")?
+///     .call_method_with(&mut cx, "log")?
+///     .arg(cx.null())
+///     .exec(&mut cx)?;
 /// # Ok(null)
 /// # }
 /// ```
