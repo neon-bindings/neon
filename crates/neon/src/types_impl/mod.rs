@@ -1143,6 +1143,8 @@ impl<CL: Object> JsFunction<CL> {
     }
 
     /// Calls this function for side effect, discarding its result.
+    ///
+    /// **See also:** [`JsFunction::call_with`].
     pub fn exec<'a, 'b, C: Context<'a>, T, AS>(
         &self,
         cx: &mut C,
