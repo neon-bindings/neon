@@ -53,7 +53,19 @@ const BOUNDARY: FailureBoundary = FailureBoundary {
 /// [`Promise`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)
 /// objects.
 ///
-/// [`JsPromise`] instances may be constructed with [`Context::promise`].
+/// [`JsPromise`] instances may be constructed with [`Context::promise`], which
+/// produces both a promise and a [`Deferred`], which can be used to control
+/// the behavior of the promise. A `Deferred` struct is similar to the `resolve`
+/// and `reject` functions produced by JavaScript's standard
+/// [`Promise`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/Promise)
+/// constructor:
+///
+/// ```javascript
+/// let deferred;
+/// let promise = new Promise((resolve, reject) => {
+///   deferred = { resolve, reject };
+/// });
+/// ```
 ///
 /// # Example
 ///
