@@ -76,7 +76,7 @@ const BOUNDARY: FailureBoundary = FailureBoundary {
 /// [Node worker pool](https://nodejs.org/en/docs/guides/dont-block-the-event-loop/)
 /// thread, to find all the links in a text string.
 ///
-/// More robust implementations might use a custom Rust thread or thread pool to avoid
+/// Alternate implementations might use a custom Rust thread or thread pool to avoid
 /// blocking the worker pool; for more information, see the [`JsFuture`] example.
 ///
 /// ```
@@ -90,8 +90,13 @@ const BOUNDARY: FailureBoundary = FailureBoundary {
 ///     let promise = cx
 ///         .task(move || {
 ///             let (indices, kinds): (Vec<_>, Vec<_>) = LinkFinder::new()
+///                 // The spans() method fully partitions the text
+///                 // into a sequence of contiguous spans, some of which
+///                 // are plain text and some of which are links.
 ///                 .spans(&text)
 ///                 .map(|span| {
+///                     // The first span starts at 0 and the rest start
+///                     // at their preceding span's end index.
 ///                     let end: u32 = span.end().cast();
 ///
 ///                     let kind: u8 = match span.kind() {
