@@ -256,7 +256,7 @@ impl private::ValueInternal for JsUndefined {
 ///     .call_method_with(&mut cx, "log")?
 ///     .arg(cx.null())
 ///     .exec(&mut cx)?;
-/// # Ok(null)
+/// # Ok(cx.null())
 /// # }
 /// ```
 #[derive(Debug)]
