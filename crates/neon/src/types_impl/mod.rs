@@ -92,7 +92,42 @@ pub trait Value: private::ValueInternal {
     }
 }
 
-/// A JavaScript value of any type.
+/// The type of any JavaScript value, i.e., the root of all types.
+///
+/// The `JsValue` type is a catch-all type that sits at the top of the
+/// [JavaScript type hierarchy](./index.html#the-javascript-type-hierarchy).
+/// All JavaScript values can be safely and statically
+/// [upcast](crate::handle::Handle::upcast) to `JsValue`; by contrast, a
+/// [downcast](crate::handle::Handle::downcast) of a `JsValue` to another type
+/// requires a runtime check.
+/// (For TypeScript programmers, this can be thought of as similar to TypeScript's
+/// [`unknown`](https://www.typescriptlang.org/docs/handbook/2/functions.html#unknown)
+/// type.)
+///
+/// The `JsValue` type can be useful for generic, dynamic, or otherwise
+/// hard-to-express API signatures, such as overloaded types:
+///
+/// ```
+/// # use neon::prelude::*;
+/// // Takes a string and adds the specified padding to the left.
+/// // If the padding is a string, it's added as-is.
+/// // If the padding is a number, then that number of spaces is added.
+/// fn pad_left(mut cx: FunctionContext) -> JsResult<JsString> {
+///     let string: Handle<JsString> = cx.argument(0)?;
+///     let padding: Handle<JsValue> = cx.argument(1)?;
+///
+///     let padding: String = if let Ok(str) = padding.downcast::<JsString, _>(&mut cx) {
+///         str.value(&mut cx)
+///     } else if let Ok(num) = padding.downcast::<JsNumber, _>(&mut cx) {
+///         " ".repeat(num.value(&mut cx) as usize)
+///     } else {
+///         return cx.throw_type_error("expected string or number");
+///     };
+///
+///     let new_value = padding + &string.value(&mut cx);
+///     Ok(cx.string(&new_value))
+/// }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsValue(raw::Local);
@@ -133,12 +168,37 @@ impl JsValue {
     }
 }
 
-/// The JavaScript `undefined` value.
+/// The type of JavaScript
+/// [`undefined`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#primitive_values)
+/// primitives.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+/// // Extract the console object:
+/// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
+///
+/// // The undefined value:
+/// let undefined = cx.undefined();
+///
+/// // Call console.log(undefined):
+/// console.call_method_with(&mut cx, "log")?.arg(undefined).exec(&mut cx)?;
+/// # Ok(undefined)
+/// # }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsUndefined(raw::Local);
 
 impl JsUndefined {
+    /// Creates an `undefined` value.
+    ///
+    /// Although this method can be called many times, all `undefined`
+    /// values are indistinguishable.
+    ///
+    /// **See also:** [`Context::undefined`]
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsUndefined> {
         JsUndefined::new_internal(cx.env())
     }
@@ -182,12 +242,34 @@ impl private::ValueInternal for JsUndefined {
     }
 }
 
-/// The JavaScript `null` value.
+/// The type of JavaScript
+/// [`null`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#primitive_values)
+/// primitives.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// # fn test(mut cx: FunctionContext) -> JsResult<JsNull> {
+/// cx.global()
+///     .get::<JsObject, _, _>(&mut cx, "console")?
+///     .call_method_with(&mut cx, "log")?
+///     .arg(cx.null())
+///     .exec(&mut cx)?;
+/// # Ok(cx.null())
+/// # }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsNull(raw::Local);
 
 impl JsNull {
+    /// Creates a `null` value.
+    ///
+    /// Although this method can be called many times, all `null`
+    /// values are indistinguishable.
+    ///
+    /// **See also:** [`Context::null`]
     pub fn new<'a, C: Context<'a>>(cx: &mut C) -> Handle<'a, JsNull> {
         JsNull::new_internal(cx.env())
     }
@@ -231,12 +313,36 @@ impl private::ValueInternal for JsNull {
     }
 }
 
-/// A JavaScript boolean primitive value.
+/// The type of JavaScript
+/// [Boolean](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#primitive_values)
+/// primitives.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+/// // Extract the console.log function:
+/// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
+/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
+///
+/// // The two Boolean values:
+/// let t = cx.boolean(true);
+/// let f = cx.boolean(false);
+///
+/// // Call console.log(true, false):
+/// log.call_with(&cx).arg(t).arg(f).exec(&mut cx)?;
+/// # Ok(cx.undefined())
+/// # }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsBoolean(raw::Local);
 
 impl JsBoolean {
+    /// Creates a Boolean value with value `b`.
+    ///
+    /// **See also:** [`Context::boolean`]
     pub fn new<'a, C: Context<'a>>(cx: &mut C, b: bool) -> Handle<'a, JsBoolean> {
         JsBoolean::new_internal(cx.env(), b)
     }
@@ -249,6 +355,7 @@ impl JsBoolean {
         }
     }
 
+    /// Returns the value of this Boolean as a Rust `bool`.
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> bool {
         let env = cx.env().to_raw();
         unsafe { sys::primitive::boolean_value(env, self.to_raw()) }
@@ -285,12 +392,32 @@ impl private::ValueInternal for JsBoolean {
     }
 }
 
-/// A JavaScript string primitive value.
+/// The type of JavaScript
+/// [string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#primitive_values)
+/// primitives.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+/// // Extract the console.log function:
+/// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
+/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
+///
+/// // Create a string:
+/// let s = cx.string("hello 🥹");
+///
+/// // Call console.log(s):
+/// log.call_with(&cx).arg(s).exec(&mut cx)?;
+/// # Ok(cx.undefined())
+/// # }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsString(raw::Local);
 
-/// An error produced when constructing a string that exceeds the JS engine's maximum string size.
+/// An error produced when constructing a string that exceeds the limits of the runtime.
 #[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Debug)]
 pub struct StringOverflow(usize);
 
@@ -343,26 +470,25 @@ impl private::ValueInternal for JsString {
 }
 
 impl JsString {
-    /// Return the byte size of this string when converted to a Rust [`String`] with
-    /// [`JsString::value`].
+    /// Returns the size of the UTF-8 representation of this string,
+    /// measured in 8-bit code units.
+    ///
+    /// Equivalent to `self.value(cx).len()` (but more efficient).
     ///
     /// # Example
     ///
-    /// A function that verifies the length of the passed JavaScript string. The string is assumed
-    /// to be `hello 🥹` here, which encodes as 10 bytes in UTF-8:
+    /// The string `"hello 🥹"` encodes as 10 bytes in UTF-8:
     ///
-    /// - 6 bytes for `hello ` (including the space).
-    /// - 4 bytes for the emoji `🥹`.
+    /// - 6 bytes for `"hello "` (including the space).
+    /// - 4 bytes for the emoji `"🥹"`.
     ///
     /// ```rust
     /// # use neon::prelude::*;
-    /// fn string_len(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    ///     let len = cx.argument::<JsString>(0)?.size(&mut cx);
-    ///     // assuming the function is called with the JS string `hello 🥹`.
-    ///     assert_eq!(10, len);
-    ///
-    ///     Ok(cx.undefined())
-    /// }
+    /// # fn string_len(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    /// let str = cx.string("hello 🥹");
+    /// assert_eq!(10, str.size(&mut cx));
+    /// # Ok(cx.undefined())
+    /// # }
     /// ```
     pub fn size<'a, C: Context<'a>>(&self, cx: &mut C) -> usize {
         let env = cx.env().to_raw();
@@ -370,25 +496,25 @@ impl JsString {
         unsafe { sys::string::utf8_len(env, self.to_raw()) }
     }
 
-    /// Return the size of this string encoded as UTF-16 with [`JsString::to_utf16`].
+    /// Returns the size of the UTF-16 representation of this string,
+    /// measured in 16-bit code units.
+    ///
+    /// Equivalent to `self.to_utf16(cx).len()` (but more efficient).
     ///
     /// # Example
     ///
-    /// A function that verifies the length of the passed JavaScript string. The string is assumed
-    /// to be `hello 🥹` here, which encodes as 8 `u16`s in UTF-16:
+    /// The string `"hello 🥹"` encodes as 8 code units in UTF-16:
     ///
-    /// - 6 `u16`s for `hello ` (including the space).
-    /// - 2 `u16`s for the emoji `🥹`.
+    /// - 6 `u16`s for `"hello "` (including the space).
+    /// - 2 `u16`s for the emoji `"🥹"`.
     ///
     /// ```rust
     /// # use neon::prelude::*;
-    /// fn string_len_utf16(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-    ///     let len = cx.argument::<JsString>(0)?.size_utf16(&mut cx);
-    ///     // assuming the function is called with the JS string `hello 🥹`.
-    ///     assert_eq!(8, len);
-    ///
-    ///     Ok(cx.undefined())
-    /// }
+    /// # fn string_len_utf16(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    /// let str = cx.string("hello 🥹");
+    /// assert_eq!(8, str.size_utf16(&mut cx));
+    /// # Ok(cx.undefined())
+    /// # }
     /// ```
     pub fn size_utf16<'a, C: Context<'a>>(&self, cx: &mut C) -> usize {
         let env = cx.env().to_raw();
@@ -396,17 +522,18 @@ impl JsString {
         unsafe { sys::string::utf16_len(env, self.to_raw()) }
     }
 
-    /// Convert the JavaScript string into a Rust [`String`].
+    /// Convert this JavaScript string into a Rust [`String`].
     ///
     /// # Example
     ///
-    /// A function that expects a single JavaScript string as argument and prints it out.
+    /// This example function expects a single JavaScript string as argument
+    /// and prints it out.
     ///
     /// ```rust
     /// # use neon::prelude::*;
     /// fn print_string(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     ///     let s = cx.argument::<JsString>(0)?.value(&mut cx);
-    ///     println!("JavaScript string content: {}", s);
+    ///     println!("JavaScript string contents: {}", s);
     ///
     ///     Ok(cx.undefined())
     /// }
@@ -423,16 +550,15 @@ impl JsString {
         }
     }
 
-    /// Convert the JavaScript String into a UTF-16 encoded [`Vec<u16>`].
+    /// Convert this JavaScript string into a [`Vec<u16>`] encoded as UTF-16.
     ///
-    /// The returned vector is guaranteed to be valid UTF-16. Therefore, any external crate that
-    /// handles UTF-16 encoded strings, can assume the content to be valid and skip eventual
-    /// validation steps.
+    /// The returned vector is guaranteed to be valid UTF-16, so libraries that handle
+    /// UTF-16-encoded strings can assume the content to be valid.
     ///
     /// # Example
     ///
-    /// A function that expects a single JavaScript string as argument and prints it out as a raw
-    /// vector of `u16`s.
+    /// This example function expects a single JavaScript string as argument and prints it out
+    /// as a raw vector of `u16`s.
     ///
     /// ```rust
     /// # use neon::prelude::*;
@@ -444,17 +570,21 @@ impl JsString {
     /// }
     /// ```
     ///
-    /// Again a function that expects a single JavaScript string as argument, but utilizes the
-    /// [`widestring`](https://crates.io/crates/widestring) crate to handle the raw [`Vec<u16>`] as
-    /// a typical string.
+    /// This next example function also expects a single JavaScript string as argument and converts
+    /// to a [`Vec<u16>`], but utilizes the [`widestring`](https://crates.io/crates/widestring)
+    /// crate to handle the vector as a typical string.
     ///
     /// ```rust
     /// # use neon::prelude::*;
+    /// use widestring::Utf16String;
+    ///
     /// fn print_with_widestring(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     ///     let s = cx.argument::<JsString>(0)?.to_utf16(&mut cx);
-    ///     // The returned vector is guaranteed to be valid UTF-16.
-    ///     // Therefore, we can skip the validation step.
-    ///     let s = unsafe { widestring::Utf16String::from_vec_unchecked(s) };
+    ///
+    ///     // The returned vector is guaranteed to be valid UTF-16, so we can
+    ///     // safely skip the validation step.
+    ///     let s = unsafe { Utf16String::from_vec_unchecked(s) };
+    ///
     ///     println!("JavaScript string as UTF-16: {}", s);
     ///
     ///     Ok(cx.undefined())
@@ -472,10 +602,49 @@ impl JsString {
         }
     }
 
+    /// Creates a new `JsString` value from a Rust string by copying its contents.
+    ///
+    /// This method panics if the string is longer than the maximum string size allowed
+    /// by the JavaScript engine.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use neon::prelude::*;
+    /// # fn string_new(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    /// let str = JsString::new(&mut cx, "hello 🥹");
+    /// assert_eq!(10, str.size(&mut cx));
+    /// # Ok(cx.undefined())
+    /// # }
+    /// ```
+    ///
+    /// **See also:** [`Context::string`]
     pub fn new<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, val: S) -> Handle<'a, JsString> {
         JsString::try_new(cx, val).unwrap()
     }
 
+    /// Tries to create a new `JsString` value from a Rust string by copying its contents.
+    ///
+    /// Returns `Err(StringOverflow)` if the string is longer than the maximum string size
+    /// allowed by the JavaScript engine.
+    ///
+    /// # Example
+    ///
+    /// This example tries to construct a JavaScript string from a Rust string of
+    /// unknown length, and on overflow generates an alternate truncated string with
+    /// a suffix (`"[…]"`) to indicate the truncation.
+    ///
+    /// ```
+    /// # use neon::prelude::*;
+    /// # fn string_try_new(mut cx: FunctionContext) -> JsResult<JsString> {
+    /// # static str: &'static str = "hello 🥹";
+    /// let s = match JsString::try_new(&mut cx, str) {
+    ///     Ok(s) => s,
+    ///     Err(_) => cx.string(format!("{}[…]", &str[0..32])),
+    /// };
+    /// # Ok(s)
+    /// # }
+    /// ```
     pub fn try_new<'a, C: Context<'a>, S: AsRef<str>>(cx: &mut C, val: S) -> StringResult<'a> {
         let val = val.as_ref();
         match JsString::new_internal(cx.env(), val) {
@@ -502,12 +671,35 @@ impl JsString {
     }
 }
 
-/// A JavaScript number value.
+/// The type of JavaScript
+/// [number](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#primitive_values)
+/// primitives.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+/// // Extract the console.log function:
+/// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
+/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
+///
+/// // Create a number:
+/// let n = cx.number(17.0);
+///
+/// // Call console.log(n):
+/// log.call_with(&cx).arg(n).exec(&mut cx)?;
+/// # Ok(cx.undefined())
+/// # }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsNumber(raw::Local);
 
 impl JsNumber {
+    /// Creates a new number with value `x`.
+    ///
+    /// **See also:** [`Context::number`]
     pub fn new<'a, C: Context<'a>, T: Into<f64>>(cx: &mut C, x: T) -> Handle<'a, JsNumber> {
         JsNumber::new_internal(cx.env(), x.into())
     }
@@ -520,6 +712,7 @@ impl JsNumber {
         }
     }
 
+    /// Returns the value of this number as a Rust `f64`.
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> f64 {
         let env = cx.env().to_raw();
         unsafe { sys::primitive::number_value(env, self.to_raw()) }
@@ -556,7 +749,33 @@ impl private::ValueInternal for JsNumber {
     }
 }
 
-/// A JavaScript object.
+/// The type of JavaScript
+/// [objects](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#objects),
+/// i.e., the root of all object types.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+/// // Extract the console.log function:
+/// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
+/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
+///
+/// // Create an object:
+/// let obj = cx.empty_object();
+///
+/// let name = cx.string("Neon");
+/// obj.set(&mut cx, "name", name)?;
+///
+/// let url = cx.string("https://neon-bindings.com");
+/// obj.set(&mut cx, "url", url)?;
+///
+/// // Call console.log(obj):
+/// log.call_with(&cx).arg(obj).exec(&mut cx)?;
+/// # Ok(cx.undefined())
+/// # }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsObject(raw::Local);
@@ -594,6 +813,9 @@ impl private::ValueInternal for JsObject {
 impl Object for JsObject {}
 
 impl JsObject {
+    /// Creates a new empty object.
+    ///
+    /// **See also:** [`Context::empty_object`]
     pub fn new<'a, C: Context<'a>>(c: &mut C) -> Handle<'a, JsObject> {
         JsObject::new_internal(c.env())
     }
@@ -611,13 +833,48 @@ impl JsObject {
     }
 }
 
-/// A JavaScript array object, i.e. a value for which `Array.isArray`
+/// The type of JavaScript
+/// [`Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array)
+/// objects.
+///
+/// An array is any JavaScript value for which
+/// [`Array.isArray`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/isArray)
 /// would return `true`.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// # fn foo(mut cx: FunctionContext) -> JsResult<JsArray> {
+/// // Create a new empty array:
+/// let a: Handle<JsArray> = cx.empty_array();
+///
+/// // Create some new values to push onto the array:
+/// let n = cx.number(17);
+/// let s = cx.string("hello");
+///
+/// // Push the elements onto the array:
+/// a.set(&mut cx, 0, n)?;
+/// a.set(&mut cx, 1, s)?;
+/// # Ok(a)
+/// # }
+/// ```
 #[derive(Debug)]
 #[repr(transparent)]
 pub struct JsArray(raw::Local);
 
 impl JsArray {
+    /// Constructs a new empty array of length `len`, equivalent to the JavaScript
+    /// expression `new Array(len)`.
+    ///
+    /// Note that for non-zero `len`, this creates a
+    /// [sparse array](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Indexed_collections#sparse_arrays),
+    /// which can sometimes have surprising behavior. To ensure that a new array
+    /// is and remains dense (i.e., not sparse), consider creating an empty array
+    /// with `JsArray::new(cx, 0)` or `cx.empty_array()` and only appending
+    /// elements to the end of the array.
+    ///
+    /// **See also:** [`Context::empty_array`]
     pub fn new<'a, C: Context<'a>>(cx: &mut C, len: u32) -> Handle<'a, JsArray> {
         JsArray::new_internal(cx.env(), len)
     }
@@ -630,6 +887,11 @@ impl JsArray {
         }
     }
 
+    /// Copies the array contents into a new [`Vec`] by iterating through all indices
+    /// from 0 to `self.len()`.
+    ///
+    /// The length is dynamically checked on each iteration in case the array is modified
+    /// during the computation.
     pub fn to_vec<'a, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<Vec<Handle<'a, JsValue>>> {
         let mut result = Vec::with_capacity(self.len_inner(cx.env()) as usize);
         let mut i = 0;
@@ -649,10 +911,14 @@ impl JsArray {
     }
 
     #[allow(clippy::len_without_is_empty)]
+    /// Returns the length of the array, equivalent to the JavaScript expression
+    /// [`this.length`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/length).
     pub fn len<'a, C: Context<'a>>(&self, cx: &mut C) -> u32 {
         self.len_inner(cx.env())
     }
 
+    /// Indicates whether the array is empty, equivalent to
+    /// `self.len() == 0`.
     pub fn is_empty<'a, C: Context<'a>>(&self, cx: &mut C) -> bool {
         self.len(cx) == 0
     }
@@ -690,7 +956,9 @@ impl private::ValueInternal for JsArray {
 
 impl Object for JsArray {}
 
-/// A JavaScript function object.
+/// The type of JavaScript
+/// [`Function`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Function)
+/// objects.
 #[derive(Debug)]
 #[repr(transparent)]
 ///
@@ -802,6 +1070,7 @@ impl JsFunction {
     }
 
     #[cfg(feature = "napi-5")]
+    /// Returns a new `JsFunction` implemented by `f`.
     pub fn new<'a, C, F, V>(cx: &mut C, f: F) -> JsResult<'a, JsFunction>
     where
         C: Context<'a>,
@@ -853,6 +1122,9 @@ impl JsFunction {
 }
 
 impl<CL: Object> JsFunction<CL> {
+    /// Calls this function.
+    ///
+    /// **See also:** [`JsFunction::call_with`].
     pub fn call<'a, 'b, C: Context<'a>, T, AS>(
         &self,
         cx: &mut C,
@@ -870,6 +1142,9 @@ impl<CL: Object> JsFunction<CL> {
         })
     }
 
+    /// Calls this function for side effect, discarding its result.
+    ///
+    /// **See also:** [`JsFunction::call_with`].
     pub fn exec<'a, 'b, C: Context<'a>, T, AS>(
         &self,
         cx: &mut C,
@@ -884,6 +1159,9 @@ impl<CL: Object> JsFunction<CL> {
         Ok(())
     }
 
+    /// Calls this function as a constructor.
+    ///
+    /// **See also:** [`JsFunction::construct_with`].
     pub fn construct<'a, 'b, C: Context<'a>, AS>(&self, cx: &mut C, args: AS) -> JsResult<'a, CL>
     where
         AS: AsRef<[Handle<'b, JsValue>]>,

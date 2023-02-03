@@ -29,7 +29,7 @@ mod private {
     }
 }
 
-/// A smart pointer for Rust data managed by the JavaScript engine.
+/// A JavaScript smart pointer object that owns Rust data.
 ///
 /// The type `JsBox<T>` provides shared ownership of a value of type `T`,
 /// allocated in the heap. The data is owned by the JavaScript engine and the
@@ -281,8 +281,11 @@ impl<T: Send + 'static> Deref for JsBox<T> {
     }
 }
 
-/// Finalize is executed on the main JavaScript thread and executed immediately
-/// before garbage collection.
+/// A trait for finalizing values owned by the main JavaScript thread.
+///
+/// [`Finalize::finalize`] is executed on the main JavaScript thread
+/// immediately before garbage collection.
+///
 /// Values contained by a `JsBox` must implement `Finalize`.
 ///
 /// ## Examples

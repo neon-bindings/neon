@@ -25,7 +25,9 @@ macro_rules! doc_comment {
     {$comment:expr, $decl:item} => { $decl };
 }
 
-/// The Node [`Buffer`](https://nodejs.org/api/buffer.html) type.
+/// The type of Node
+/// [`Buffer`](https://nodejs.org/api/buffer.html)
+/// objects.
 ///
 /// # Example
 ///
@@ -50,6 +52,8 @@ pub struct JsBuffer(raw::Local);
 
 impl JsBuffer {
     /// Constructs a new `Buffer` object, safely zero-filled.
+    ///
+    /// **See also:** [`Context::buffer`]
     pub fn new<'a, C: Context<'a>>(cx: &mut C, len: usize) -> JsResult<'a, Self> {
         let result = unsafe { sys::buffer::new(cx.env().to_raw(), len) };
 
@@ -206,7 +210,9 @@ impl TypedArray for JsBuffer {
     }
 }
 
-/// The standard JS [`ArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer) type.
+/// The type of JavaScript
+/// [`ArrayBuffer`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer)
+/// objects.
 ///
 /// # Example
 ///
@@ -231,6 +237,8 @@ pub struct JsArrayBuffer(raw::Local);
 
 impl JsArrayBuffer {
     /// Constructs a new `JsArrayBuffer` object, safely zero-filled.
+    ///
+    /// **See also:** [`Context::array_buffer`]
     pub fn new<'a, C: Context<'a>>(cx: &mut C, len: usize) -> JsResult<'a, Self> {
         let result = unsafe { sys::arraybuffer::new(cx.env().to_raw(), len) };
 
@@ -420,7 +428,7 @@ pub trait Binary: private::Sealed + Copy {
     const TYPE_TAG: TypedArrayType;
 }
 
-/// The family of JS [typed array][typed-arrays] types.
+/// The family of JavaScript [typed array][typed-arrays] types.
 ///
 /// ## Typed Arrays
 ///
@@ -814,11 +822,11 @@ macro_rules! impl_typed_array {
 
         doc_comment! {
             concat!(
-                "The standard JS [`",
+                "The type of JavaScript [`",
                 stringify!($typ),
                 "`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/",
                 stringify!($typ),
-                ") type.
+                ") objects.
 
 # Example
 

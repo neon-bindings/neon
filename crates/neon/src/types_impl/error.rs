@@ -11,7 +11,30 @@ use crate::{
     types::{build, private::ValueInternal, utf8::Utf8, Value},
 };
 
-/// A JS `Error` object.
+/// The type of JavaScript
+/// [`Error`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error)
+/// objects.
+///
+/// # Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+/// // Create a type error:
+/// let err = cx.type_error("expected a number, found a string")?;
+///
+/// // Add some custom diagnostic properties to the error:
+/// let expected = cx.string("number");
+/// err.set(&mut cx, "expected", expected)?;
+///
+/// let found = cx.string("string");
+/// err.set(&mut cx, "found", found)?;
+///
+/// // Throw the error:
+/// cx.throw(err)?;
+/// # Ok(cx.undefined())
+/// # }
+/// ```
 #[repr(transparent)]
 #[derive(Debug)]
 pub struct JsError(raw::Local);
@@ -50,6 +73,8 @@ impl Object for JsError {}
 
 impl JsError {
     /// Creates a direct instance of the [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error) class.
+    ///
+    /// **See also:** [`Context::error`]
     pub fn error<'a, C: Context<'a>, S: AsRef<str>>(
         cx: &mut C,
         msg: S,
@@ -62,6 +87,8 @@ impl JsError {
     }
 
     /// Creates an instance of the [`TypeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypeError) class.
+    ///
+    /// **See also:** [`Context::type_error`]
     pub fn type_error<'a, C: Context<'a>, S: AsRef<str>>(
         cx: &mut C,
         msg: S,
@@ -74,6 +101,8 @@ impl JsError {
     }
 
     /// Creates an instance of the [`RangeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/RangeError) class.
+    ///
+    /// **See also:** [`Context::range_error`]
     pub fn range_error<'a, C: Context<'a>, S: AsRef<str>>(
         cx: &mut C,
         msg: S,
