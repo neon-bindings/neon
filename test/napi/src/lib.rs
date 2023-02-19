@@ -213,6 +213,9 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     )?;
     cx.export_function("freeze_js_object", freeze_js_object)?;
     cx.export_function("seal_js_object", seal_js_object)?;
+    cx.export_function("type_tag_js_object", type_tag_js_object)?;
+    cx.export_function("check_type_tag_js_object", check_type_tag_js_object)?;
+    cx.export_function("check_not_type_tag_js_object", check_not_type_tag_js_object)?;
 
     cx.export_function("return_array_buffer", return_array_buffer)?;
     cx.export_function(

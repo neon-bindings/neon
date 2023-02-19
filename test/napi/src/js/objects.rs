@@ -49,6 +49,25 @@ pub fn seal_js_object(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     }
 }
 
+static TYPE_TAG: u128 = u128::from_be_bytes(*b"neon-bindings-ty");
+
+pub fn type_tag_js_object(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let obj: Handle<JsObject> = cx.argument::<JsObject>(0)?;
+    obj.type_tag(&mut cx, TYPE_TAG).map(|_| cx.undefined())
+}
+
+pub fn check_type_tag_js_object(mut cx: FunctionContext) -> JsResult<JsBoolean> {
+    let obj: Handle<JsObject> = cx.argument::<JsObject>(0)?;
+    obj.check_type_tag(&mut cx, TYPE_TAG)
+        .map(|value| cx.boolean(value))
+}
+
+pub fn check_not_type_tag_js_object(mut cx: FunctionContext) -> JsResult<JsBoolean> {
+    let obj: Handle<JsObject> = cx.argument::<JsObject>(0)?;
+    obj.check_type_tag(&mut cx, !TYPE_TAG)
+        .map(|value| cx.boolean(value))
+}
+
 // Accepts either a `JsString` or `JsBuffer` and returns the contents as
 // as bytes; avoids copying.
 fn get_bytes<'cx, 'a, C>(cx: &'a mut C, v: Handle<JsValue>) -> NeonResult<Cow<'a, [u8]>>

@@ -65,6 +65,40 @@ describe("JsObject", function () {
     });
   });
 
+  it("type tag a JsObject", function () {
+    const obj = { x: 1 };
+
+    assert.strictEqual(
+      addon.check_not_type_tag_js_object(obj),
+      false,
+      "check_not_type_tag_js_object should return false for non-tagged object"
+    );
+
+    assert.doesNotThrow(function () {
+      addon.type_tag_js_object(obj);
+    }, "type_tag_js_object should not throw");
+
+    assert.throws(
+      function () {
+        addon.type_tag_js_object(obj);
+      },
+      "object cannot be type tagged (again)",
+      "type_tag_js_object should throw when called twice"
+    );
+
+    assert.strictEqual(
+      addon.check_type_tag_js_object(obj),
+      true,
+      "check_type_tag_js_object should return true for identically tagged object"
+    );
+
+    assert.strictEqual(
+      addon.check_not_type_tag_js_object(obj),
+      false,
+      "check_not_type_tag_js_object should return false for object with different type tag"
+    );
+  });
+
   it("returns only own properties from get_own_property_names", function () {
     var superObject = {
       a: 1,

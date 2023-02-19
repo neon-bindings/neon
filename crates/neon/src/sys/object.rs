@@ -25,6 +25,16 @@ pub unsafe fn seal(env: Env, obj: Local) -> napi::Status {
     napi::object_seal(env, obj)
 }
 
+#[cfg(feature = "napi-8")]
+pub unsafe fn type_tag(env: Env, obj: Local, tag: u128) -> napi::Status {
+    napi::type_tag_object(env, obj, &tag as *const u128 as *const _)
+}
+
+#[cfg(feature = "napi-8")]
+pub unsafe fn check_type_tag(out: &mut bool, env: Env, obj: Local, tag: u128) -> napi::Status {
+    napi::check_object_type_tag(env, obj, &tag as *const u128 as *const _, out)
+}
+
 #[cfg(feature = "napi-6")]
 /// Mutates the `out` argument to refer to a `napi_value` containing the own property names of the
 /// `object` as a JavaScript Array.

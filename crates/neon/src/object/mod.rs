@@ -214,6 +214,33 @@ pub trait Object: Value {
         }
     }
 
+    #[cfg(feature = "napi-8")]
+    fn type_tag<'a, C: Context<'a>>(&self, cx: &mut C, tag: u128) -> NeonResult<&Self> {
+        let env = cx.env().to_raw();
+        let obj = self.to_raw();
+        unsafe {
+            match sys::object::type_tag(env, obj, tag) {
+                sys::Status::Ok => Ok(self),
+                sys::Status::PendingException => Err(Throw::new()),
+                _ => cx.throw_type_error("object cannot be type tagged (again)"),
+            }
+        }
+    }
+
+    #[cfg(feature = "napi-8")]
+    fn check_type_tag<'a, C: Context<'a>>(&self, cx: &mut C, tag: u128) -> NeonResult<bool> {
+        let env = cx.env().to_raw();
+        let obj = self.to_raw();
+        let mut result = false;
+        unsafe {
+            match sys::object::check_type_tag(&mut result, env, obj, tag) {
+                sys::Status::Ok => Ok(result),
+                sys::Status::PendingException => Err(Throw::new()),
+                _ => cx.throw_type_error("object's type tag cannot be checked"),
+            }
+        }
+    }
+
     fn set<'a, C: Context<'a>, K: PropertyKey, W: Value>(
         &self,
         cx: &mut C,
