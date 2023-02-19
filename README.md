@@ -89,8 +89,8 @@ For more examples, see our [examples repo](https://github.com/neon-bindings/exam
 
 The Neon community is just getting started and there's tons of fun to be had. Come play! :)
 
-The [Rust Bindings community Slack](https://rust-bindings.slack.com) is open to all;
-use [the Slackin app](https://rust-bindings-slackin.herokuapp.com) to receive an invitation.
+The [Neon Community Slack](https://rust-bindings.slack.com) is open to all;
+use [this invite link](https://join.slack.com/t/rust-bindings/shared_invite/zt-1pl5s83xe-ZvXyrzL8vuUmijU~7yiEcg) to receive an invitation.
 
 ### Testing Neon
 
