@@ -19,7 +19,7 @@ linkify = "0.9.0"    # used for a doc example
 
 [target.'cfg(not(target = "windows"))'.dev-dependencies]
 # Avoid `clang` as a dependency on windows
-nodejs-sys = "0.13.0"
+nodejs-sys = "0.14.0"
 
 [dependencies]
 getrandom = { version = "0.2.7", optional = true }

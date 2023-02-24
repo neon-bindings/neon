@@ -132,3 +132,8 @@ pub unsafe fn check_object_type_tag(env: Env, object: Local, tag: &super::TypeTa
     );
     result
 }
+
+#[cfg(feature = "napi-6")]
+pub unsafe fn is_bigint(env: Env, val: Local) -> bool {
+    is_type(env, val, napi::ValueType::BigInt)
+}

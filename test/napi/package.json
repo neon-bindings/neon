@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "install": "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
+    "mocha": "mocha",
     "test": "mocha --v8-expose-gc --timeout 5000 --recursive lib"
   },
   "devDependencies": {

@@ -345,6 +345,40 @@ mod napi6 {
             ) -> Status;
 
             fn get_instance_data(env: Env, data: *mut *mut c_void) -> Status;
+
+            fn create_bigint_int64(env: Env, value: i64, result: *mut Value) -> Status;
+
+            fn create_bigint_uint64(env: Env, value: u64, result: *mut Value) -> Status;
+
+            fn create_bigint_words(
+                env: Env,
+                sign_bit: i32,
+                word_count: usize,
+                words: *const u64,
+                result: *mut Value,
+            ) -> Status;
+
+            fn get_value_bigint_int64(
+                env: Env,
+                value: Value,
+                result: *mut i64,
+                lossless: *mut bool,
+            ) -> Status;
+
+            fn get_value_bigint_uint64(
+                env: Env,
+                value: Value,
+                result: *mut u64,
+                lossless: *mut bool,
+            ) -> Status;
+
+            fn get_value_bigint_words(
+                env: Env,
+                value: Value,
+                sign_bit: *mut i64,
+                word_count: *mut usize,
+                words: *mut u64,
+            ) -> Status;
         }
     );
 }

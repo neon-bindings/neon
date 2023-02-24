@@ -7,6 +7,7 @@ use crate::js::{
 
 mod js {
     pub mod arrays;
+    pub mod bigint;
     pub mod boxed;
     pub mod coercions;
     pub mod date;
@@ -392,6 +393,9 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     // Futures
     cx.export_function("lazy_async_add", js::futures::lazy_async_add)?;
     cx.export_function("lazy_async_sum", js::futures::lazy_async_sum)?;
+
+    // JsBigInt test suite
+    cx.export_function("bigint_suite", js::bigint::bigint_suite)?;
 
     Ok(())
 }

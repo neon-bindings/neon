@@ -1,5 +1,8 @@
 // See types_docs.rs for top-level module API docs.
 
+#[cfg(feature = "napi-6")]
+#[cfg_attr(docsrs, doc(cfg(feature = "napi-6")))]
+pub mod bigint;
 pub(crate) mod boxed;
 pub mod buffer;
 #[cfg(feature = "napi-5")]
@@ -1243,3 +1246,38 @@ impl<T: Object> private::ValueInternal for JsFunction<T> {
         unsafe { sys::tag::is_function(env.to_raw(), other.to_raw()) }
     }
 }
+
+#[cfg(feature = "napi-6")]
+#[cfg_attr(docsrs, doc(cfg(feature = "napi-6")))]
+#[derive(Debug)]
+#[repr(transparent)]
+/// The type of JavaScript
+/// [`BigInt`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt)
+/// values.
+///
+/// # Example
+///
+/// The following shows an example of adding two numbers that exceed
+/// [`Number.MAX_SAFE_INTEGER`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER).
+///
+/// ```
+/// # use neon::{prelude::*, types::JsBigInt};
+///
+/// fn add_bigint(mut cx: FunctionContext) -> JsResult<JsBigInt> {
+///     // Get references to the `BigInt` arguments
+///     let a = cx.argument::<JsBigInt>(0)?;
+///     let b = cx.argument::<JsBigInt>(1)?;
+///
+///     // Convert the `BigInt` to `i64`
+///     let a = a.to_i64(&mut cx)
+///         // On failure, convert err to a `RangeError` exception
+///         .or_throw(&mut cx)?;
+///
+///     let b = b.to_i64(&mut cx).or_throw(&mut cx)?;
+///     let sum = a + b;
+///
+///     // Create a `BigInt` from the `i64` sum
+///     Ok(JsBigInt::from_i64(&mut cx, sum))
+/// }
+/// ```
+pub struct JsBigInt(raw::Local);
