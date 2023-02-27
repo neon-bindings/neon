@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     context::{internal::Env, Context, FinalizeContext},
-    handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    handle::{internal::TransparentNoCopyWrapper, Handle},
     object::Object,
     sys::{external, raw},
     types::{boxed::private::JsBoxInner, private::ValueInternal, Value},
@@ -185,44 +185,37 @@ unsafe impl<T: Send + 'static> TransparentNoCopyWrapper for JsBox<T> {
     }
 }
 
-impl<T: Send + 'static> Managed for JsBox<T> {
-    fn to_raw(&self) -> raw::Local {
-        self.0.local
-    }
-
-    // This method should be `unsafe`
-    // https://github.com/neon-bindings/neon/issues/885
-    // Type tagging could improve safety
-    // https://github.com/neon-bindings/neon/issues/591
-    #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    fn from_raw(env: Env, local: raw::Local) -> Self {
-        let raw_data = unsafe { maybe_external_deref(env, local) }
-            .expect("Failed to unwrap napi_external as Box<Any>")
-            .downcast_ref()
-            .expect("Failed to downcast Any");
-
-        Self(JsBoxInner { local, raw_data })
-    }
-}
-
 impl<T: Send + 'static> ValueInternal for JsBox<T> {
     fn name() -> String {
         any::type_name::<Self>().to_string()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        let data = unsafe { maybe_external_deref(env, other.to_raw()) };
+        let data = unsafe { maybe_external_deref(env, other.to_local()) };
 
         data.map(|v| v.is::<T>()).unwrap_or(false)
     }
 
     fn downcast<Other: Value>(env: Env, other: &Other) -> Option<Self> {
-        let local = other.to_raw();
+        let local = other.to_local();
         let data = unsafe { maybe_external_deref(env, local) };
 
         // Attempt to downcast the `Option<&BoxAny>` to `Option<*const T>`
         data.and_then(|v| v.downcast_ref())
             .map(|raw_data| Self(JsBoxInner { local, raw_data }))
+    }
+
+    fn to_local(&self) -> raw::Local {
+        self.0.local
+    }
+
+    unsafe fn from_local(env: Env, local: raw::Local) -> Self {
+        let raw_data = unsafe { maybe_external_deref(env, local) }
+            .expect("Failed to unwrap napi_external as Box<Any>")
+            .downcast_ref()
+            .expect("Failed to downcast Any");
+
+        Self(JsBoxInner { local, raw_data })
     }
 }
 

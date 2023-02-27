@@ -52,7 +52,21 @@ use crate::{context::Context, handle::Handle, types::Value};
 pub struct Throw(PhantomData<*mut ()>); // *mut is !Send + !Sync, making it harder to accidentally store
 
 impl Throw {
-    pub(crate) fn new() -> Self {
+    #[cfg(feature = "sys")]
+    /// Creates a `Throw` struct representing a JavaScript exception
+    /// state.
+    ///
+    /// # Safety
+    ///
+    /// `Throw` should *only* be constructed when the JavaScript VM is in a
+    /// throwing state. I.e., when [`Status::PendingException`](crate::sys::bindings::Status::PendingException)
+    /// is returned.
+    pub unsafe fn new() -> Self {
+        Self(PhantomData)
+    }
+
+    #[cfg(not(feature = "sys"))]
+    pub(crate) unsafe fn new() -> Self {
         Self(PhantomData)
     }
 }

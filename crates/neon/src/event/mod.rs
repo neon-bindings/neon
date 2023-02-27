@@ -30,9 +30,10 @@
 //!
 //! ```
 //! # use neon::prelude::*;
-//! #
+//! # #[cfg(not(feature = "napi-6"))]
+//! # type Channel = ();
 //! # fn parse(filename: String, callback: Root<JsFunction>, channel: Channel) { }
-//! #
+//! # #[cfg(feature = "napi-6")]
 //! fn parse_async(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 //!     // The types `String`, `Root<JsFunction>`, and `Channel` can all be
 //!     // sent across threads.
@@ -60,6 +61,8 @@
 //!
 //! ```
 //! # use neon::prelude::*;
+//! # #[cfg(not(feature = "napi-6"))]
+//! # type Channel = ();
 //! # use psd::Psd;
 //! # use anyhow::{Context as _, Result};
 //! #
@@ -67,6 +70,7 @@
 //!     Psd::from_bytes(&std::fs::read(&filename)?).context("invalid psd file")
 //! }
 //!
+//! # #[cfg(feature = "napi-6")]
 //! fn parse(filename: String, callback: Root<JsFunction>, channel: Channel) {
 //!     let result = psd_from_filename(filename);
 //!

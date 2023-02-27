@@ -26,13 +26,14 @@ use crate::{
     context::{internal::Env, Context, FunctionContext},
     handle::{
         internal::{SuperType, TransparentNoCopyWrapper},
-        Handle, Managed,
+        Handle,
     },
     object::Object,
     result::{JsResult, NeonResult, ResultExt, Throw},
     sys::{self, raw},
     types::{
         function::{CallOptions, ConstructOptions},
+        private::ValueInternal,
         utf8::Utf8,
     },
 };
@@ -55,14 +56,16 @@ pub use self::date::{DateError, DateErrorKind, JsDate};
 #[cfg_attr(docsrs, doc(cfg(all(feature = "napi-5", feature = "futures"))))]
 pub use self::promise::JsFuture;
 
-pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(
+// This should be considered deprecated and will be removed:
+// https://github.com/neon-bindings/neon/issues/983
+pub(crate) fn build<'a, T: Value, F: FnOnce(&mut raw::Local) -> bool>(
     env: Env,
     init: F,
 ) -> JsResult<'a, T> {
     unsafe {
         let mut local: raw::Local = std::mem::zeroed();
         if init(&mut local) {
-            Ok(Handle::new_internal(T::from_raw(env, local)))
+            Ok(Handle::new_internal(T::from_local(env, local)))
         } else {
             Err(Throw::new())
         }
@@ -71,27 +74,46 @@ pub(crate) fn build<'a, T: Managed, F: FnOnce(&mut raw::Local) -> bool>(
 
 impl<T: Value> SuperType<T> for JsValue {
     fn upcast_internal(v: &T) -> JsValue {
-        JsValue(v.to_raw())
+        JsValue(v.to_local())
     }
 }
 
 impl<T: Object> SuperType<T> for JsObject {
     fn upcast_internal(v: &T) -> JsObject {
-        JsObject(v.to_raw())
+        JsObject(v.to_local())
     }
 }
 
 /// The trait shared by all JavaScript values.
-pub trait Value: private::ValueInternal {
-    fn to_string<'a, C: Context<'a>>(&self, cx: &mut C) -> JsResult<'a, JsString> {
+pub trait Value: ValueInternal {
+    fn to_string<'cx, C: Context<'cx>>(&self, cx: &mut C) -> JsResult<'cx, JsString> {
         let env = cx.env();
         build(env, |out| unsafe {
-            sys::convert::to_string(out, env.to_raw(), self.to_raw())
+            sys::convert::to_string(out, env.to_raw(), self.to_local())
         })
     }
 
-    fn as_value<'a, C: Context<'a>>(&self, _: &mut C) -> Handle<'a, JsValue> {
-        JsValue::new_internal(self.to_raw())
+    fn as_value<'cx, C: Context<'cx>>(&self, _: &mut C) -> Handle<'cx, JsValue> {
+        JsValue::new_internal(self.to_local())
+    }
+
+    #[cfg(feature = "sys")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "sys")))]
+    /// Get a raw reference to the wrapped Node-API value.
+    fn to_raw(&self) -> sys::Value {
+        self.to_local()
+    }
+
+    #[cfg(feature = "sys")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "sys")))]
+    /// Creates a value from a raw Node-API value.
+    ///
+    /// # Safety
+    ///
+    /// * `value` must be of type `Self`
+    /// * `value` must be valid for `'cx`
+    unsafe fn from_raw<'cx, C: Context<'cx>>(cx: &C, value: sys::Value) -> Handle<'cx, Self> {
+        Handle::new_internal(Self::from_local(cx.env(), value))
     }
 }
 
@@ -145,23 +167,21 @@ unsafe impl TransparentNoCopyWrapper for JsValue {
     }
 }
 
-impl Managed for JsValue {
-    fn to_raw(&self) -> raw::Local {
-        self.0
-    }
-
-    fn from_raw(_: Env, h: raw::Local) -> Self {
-        JsValue(h)
-    }
-}
-
-impl private::ValueInternal for JsValue {
+impl ValueInternal for JsValue {
     fn name() -> String {
         "any".to_string()
     }
 
     fn is_typeof<Other: Value>(_env: Env, _other: &Other) -> bool {
         true
+    }
+
+    fn to_local(&self) -> raw::Local {
+        self.0
+    }
+
+    unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
+        JsValue(h)
     }
 }
 
@@ -225,23 +245,21 @@ unsafe impl TransparentNoCopyWrapper for JsUndefined {
     }
 }
 
-impl Managed for JsUndefined {
-    fn to_raw(&self) -> raw::Local {
-        self.0
-    }
-
-    fn from_raw(_: Env, h: raw::Local) -> Self {
-        JsUndefined(h)
-    }
-}
-
-impl private::ValueInternal for JsUndefined {
+impl ValueInternal for JsUndefined {
     fn name() -> String {
         "undefined".to_string()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_undefined(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_undefined(env.to_raw(), other.to_local()) }
+    }
+
+    fn to_local(&self) -> raw::Local {
+        self.0
+    }
+
+    unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
+        JsUndefined(h)
     }
 }
 
@@ -296,23 +314,21 @@ unsafe impl TransparentNoCopyWrapper for JsNull {
     }
 }
 
-impl Managed for JsNull {
-    fn to_raw(&self) -> raw::Local {
-        self.0
-    }
-
-    fn from_raw(_: Env, h: raw::Local) -> Self {
-        JsNull(h)
-    }
-}
-
-impl private::ValueInternal for JsNull {
+impl ValueInternal for JsNull {
     fn name() -> String {
         "null".to_string()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_null(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_null(env.to_raw(), other.to_local()) }
+    }
+
+    fn to_local(&self) -> raw::Local {
+        self.0
+    }
+
+    unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
+        JsNull(h)
     }
 }
 
@@ -361,7 +377,7 @@ impl JsBoolean {
     /// Returns the value of this Boolean as a Rust `bool`.
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> bool {
         let env = cx.env().to_raw();
-        unsafe { sys::primitive::boolean_value(env, self.to_raw()) }
+        unsafe { sys::primitive::boolean_value(env, self.to_local()) }
     }
 }
 
@@ -375,23 +391,21 @@ unsafe impl TransparentNoCopyWrapper for JsBoolean {
     }
 }
 
-impl Managed for JsBoolean {
-    fn to_raw(&self) -> raw::Local {
-        self.0
-    }
-
-    fn from_raw(_: Env, h: raw::Local) -> Self {
-        JsBoolean(h)
-    }
-}
-
-impl private::ValueInternal for JsBoolean {
+impl ValueInternal for JsBoolean {
     fn name() -> String {
         "boolean".to_string()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_boolean(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_boolean(env.to_raw(), other.to_local()) }
+    }
+
+    fn to_local(&self) -> raw::Local {
+        self.0
+    }
+
+    unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
+        JsBoolean(h)
     }
 }
 
@@ -452,23 +466,21 @@ unsafe impl TransparentNoCopyWrapper for JsString {
     }
 }
 
-impl Managed for JsString {
-    fn to_raw(&self) -> raw::Local {
-        self.0
-    }
-
-    fn from_raw(_: Env, h: raw::Local) -> Self {
-        JsString(h)
-    }
-}
-
-impl private::ValueInternal for JsString {
+impl ValueInternal for JsString {
     fn name() -> String {
         "string".to_string()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_string(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_string(env.to_raw(), other.to_local()) }
+    }
+
+    fn to_local(&self) -> raw::Local {
+        self.0
+    }
+
+    unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
+        JsString(h)
     }
 }
 
@@ -496,7 +508,7 @@ impl JsString {
     pub fn size<'a, C: Context<'a>>(&self, cx: &mut C) -> usize {
         let env = cx.env().to_raw();
 
-        unsafe { sys::string::utf8_len(env, self.to_raw()) }
+        unsafe { sys::string::utf8_len(env, self.to_local()) }
     }
 
     /// Returns the size of the UTF-16 representation of this string,
@@ -522,7 +534,7 @@ impl JsString {
     pub fn size_utf16<'a, C: Context<'a>>(&self, cx: &mut C) -> usize {
         let env = cx.env().to_raw();
 
-        unsafe { sys::string::utf16_len(env, self.to_raw()) }
+        unsafe { sys::string::utf16_len(env, self.to_local()) }
     }
 
     /// Convert this JavaScript string into a Rust [`String`].
@@ -545,9 +557,9 @@ impl JsString {
         let env = cx.env().to_raw();
 
         unsafe {
-            let capacity = sys::string::utf8_len(env, self.to_raw()) + 1;
+            let capacity = sys::string::utf8_len(env, self.to_local()) + 1;
             let mut buffer: Vec<u8> = Vec::with_capacity(capacity);
-            let len = sys::string::data(env, buffer.as_mut_ptr(), capacity, self.to_raw());
+            let len = sys::string::data(env, buffer.as_mut_ptr(), capacity, self.to_local());
             buffer.set_len(len);
             String::from_utf8_unchecked(buffer)
         }
@@ -597,9 +609,9 @@ impl JsString {
         let env = cx.env().to_raw();
 
         unsafe {
-            let capacity = sys::string::utf16_len(env, self.to_raw()) + 1;
+            let capacity = sys::string::utf16_len(env, self.to_local()) + 1;
             let mut buffer: Vec<u16> = Vec::with_capacity(capacity);
-            let len = sys::string::data_utf16(env, buffer.as_mut_ptr(), capacity, self.to_raw());
+            let len = sys::string::data_utf16(env, buffer.as_mut_ptr(), capacity, self.to_local());
             buffer.set_len(len);
             buffer
         }
@@ -718,7 +730,7 @@ impl JsNumber {
     /// Returns the value of this number as a Rust `f64`.
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> f64 {
         let env = cx.env().to_raw();
-        unsafe { sys::primitive::number_value(env, self.to_raw()) }
+        unsafe { sys::primitive::number_value(env, self.to_local()) }
     }
 }
 
@@ -732,23 +744,21 @@ unsafe impl TransparentNoCopyWrapper for JsNumber {
     }
 }
 
-impl Managed for JsNumber {
-    fn to_raw(&self) -> raw::Local {
-        self.0
-    }
-
-    fn from_raw(_: Env, h: raw::Local) -> Self {
-        JsNumber(h)
-    }
-}
-
-impl private::ValueInternal for JsNumber {
+impl ValueInternal for JsNumber {
     fn name() -> String {
         "number".to_string()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_number(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_number(env.to_raw(), other.to_local()) }
+    }
+
+    fn to_local(&self) -> raw::Local {
+        self.0
+    }
+
+    unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
+        JsNumber(h)
     }
 }
 
@@ -793,23 +803,21 @@ unsafe impl TransparentNoCopyWrapper for JsObject {
     }
 }
 
-impl Managed for JsObject {
-    fn to_raw(&self) -> raw::Local {
-        self.0
-    }
-
-    fn from_raw(_: Env, h: raw::Local) -> Self {
-        JsObject(h)
-    }
-}
-
-impl private::ValueInternal for JsObject {
+impl ValueInternal for JsObject {
     fn name() -> String {
         "object".to_string()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_object(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_object(env.to_raw(), other.to_local()) }
+    }
+
+    fn to_local(&self) -> raw::Local {
+        self.0
+    }
+
+    unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
+        JsObject(h)
     }
 }
 
@@ -910,7 +918,7 @@ impl JsArray {
     }
 
     fn len_inner(&self, env: Env) -> u32 {
-        unsafe { sys::array::len(env.to_raw(), self.to_raw()) }
+        unsafe { sys::array::len(env.to_raw(), self.to_local()) }
     }
 
     #[allow(clippy::len_without_is_empty)]
@@ -937,23 +945,21 @@ unsafe impl TransparentNoCopyWrapper for JsArray {
     }
 }
 
-impl Managed for JsArray {
-    fn to_raw(&self) -> raw::Local {
-        self.0
-    }
-
-    fn from_raw(_: Env, h: raw::Local) -> Self {
-        JsArray(h)
-    }
-}
-
-impl private::ValueInternal for JsArray {
+impl ValueInternal for JsArray {
     fn name() -> String {
         "Array".to_string()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_array(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_array(env.to_raw(), other.to_local()) }
+    }
+
+    fn to_local(&self) -> raw::Local {
+        self.0
+    }
+
+    unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
+        JsArray(h)
     }
 }
 
@@ -1103,7 +1109,7 @@ impl JsFunction {
 
             FunctionContext::with(env, &info, |cx| {
                 convert_panics(env, AssertUnwindSafe(|| f(cx)))
-                    .map(|v| v.to_raw())
+                    .map(|v| v.to_local())
                     // We do not have a Js Value to return, most likely due to an exception.
                     // If we are in a throwing state, constructing a Js Value would be invalid.
                     // While not explicitly written, the Node-API documentation includes many examples
@@ -1113,13 +1119,15 @@ impl JsFunction {
             })
         };
 
-        if let Ok(raw) = unsafe { sys::fun::new(cx.env().to_raw(), name, f) } {
-            Ok(Handle::new_internal(JsFunction {
-                raw,
-                marker: PhantomData,
-            }))
-        } else {
-            Err(Throw::new())
+        unsafe {
+            if let Ok(raw) = sys::fun::new(cx.env().to_raw(), name, f) {
+                Ok(Handle::new_internal(JsFunction {
+                    raw,
+                    marker: PhantomData,
+                }))
+            } else {
+                Err(Throw::new())
+            }
         }
     }
 }
@@ -1141,7 +1149,7 @@ impl<CL: Object> JsFunction<CL> {
         let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
         let env = cx.env().to_raw();
         build(cx.env(), |out| unsafe {
-            sys::fun::call(out, env, self.to_raw(), this.to_raw(), argc, argv)
+            sys::fun::call(out, env, self.to_local(), this.to_local(), argc, argv)
         })
     }
 
@@ -1172,7 +1180,7 @@ impl<CL: Object> JsFunction<CL> {
         let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
         let env = cx.env().to_raw();
         build(cx.env(), |out| unsafe {
-            sys::fun::construct(out, env, self.to_raw(), argc, argv)
+            sys::fun::construct(out, env, self.to_local(), argc, argv)
         })
     }
 }
@@ -1224,26 +1232,24 @@ unsafe impl<T: Object> TransparentNoCopyWrapper for JsFunction<T> {
     }
 }
 
-impl<T: Object> Managed for JsFunction<T> {
-    fn to_raw(&self) -> raw::Local {
-        self.raw
-    }
-
-    fn from_raw(_: Env, h: raw::Local) -> Self {
-        JsFunction {
-            raw: h,
-            marker: PhantomData,
-        }
-    }
-}
-
-impl<T: Object> private::ValueInternal for JsFunction<T> {
+impl<T: Object> ValueInternal for JsFunction<T> {
     fn name() -> String {
         "function".to_string()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_function(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_function(env.to_raw(), other.to_local()) }
+    }
+
+    fn to_local(&self) -> raw::Local {
+        self.raw
+    }
+
+    unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
+        JsFunction {
+            raw: h,
+            marker: PhantomData,
+        }
     }
 }
 

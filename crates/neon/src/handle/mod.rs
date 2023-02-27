@@ -61,31 +61,24 @@ use std::{
 pub use self::root::Root;
 
 use crate::{
-    context::{internal::Env, Context},
+    context::Context,
     handle::internal::{SuperType, TransparentNoCopyWrapper},
     result::{JsResult, ResultExt},
-    sys::{self, raw},
+    sys,
     types::Value,
 };
-
-/// The trait of data owned by the JavaScript engine and that can only be accessed via handles.
-pub trait Managed: TransparentNoCopyWrapper {
-    fn to_raw(&self) -> raw::Local;
-
-    fn from_raw(env: Env, h: raw::Local) -> Self;
-}
 
 /// A handle to a JavaScript value that is owned by the JavaScript engine.
 #[derive(Debug)]
 #[repr(transparent)]
-pub struct Handle<'a, T: Managed + 'a> {
+pub struct Handle<'a, V: Value + 'a> {
     // Contains the actual `Copy` JavaScript value data. It will be wrapped in
-    // in a `!Copy` type when dereferencing. Only `T` should be visible to the user.
-    value: <T as TransparentNoCopyWrapper>::Inner,
-    phantom: PhantomData<&'a T>,
+    // in a `!Copy` type when dereferencing. Only `V` should be visible to the user.
+    value: <V as TransparentNoCopyWrapper>::Inner,
+    phantom: PhantomData<&'a V>,
 }
 
-impl<'a, T: Managed> Clone for Handle<'a, T> {
+impl<'a, V: Value> Clone for Handle<'a, V> {
     fn clone(&self) -> Self {
         Self {
             value: self.value,
@@ -94,10 +87,10 @@ impl<'a, T: Managed> Clone for Handle<'a, T> {
     }
 }
 
-impl<'a, T: Managed> Copy for Handle<'a, T> {}
+impl<'a, V: Value> Copy for Handle<'a, V> {}
 
-impl<'a, T: Managed + 'a> Handle<'a, T> {
-    pub(crate) fn new_internal(value: T) -> Handle<'a, T> {
+impl<'a, V: Value + 'a> Handle<'a, V> {
+    pub(crate) fn new_internal(value: V) -> Handle<'a, V> {
         Handle {
             value: value.into_inner(),
             phantom: PhantomData,
@@ -196,19 +189,19 @@ impl<'a, T: Value> Handle<'a, T> {
         cx: &mut C,
         other: Handle<'b, U>,
     ) -> bool {
-        unsafe { sys::mem::strict_equals(cx.env().to_raw(), self.to_raw(), other.to_raw()) }
+        unsafe { sys::mem::strict_equals(cx.env().to_raw(), self.to_local(), other.to_local()) }
     }
 }
 
-impl<'a, T: Managed> Deref for Handle<'a, T> {
-    type Target = T;
-    fn deref(&self) -> &T {
+impl<'a, V: Value> Deref for Handle<'a, V> {
+    type Target = V;
+    fn deref(&self) -> &V {
         unsafe { mem::transmute(&self.value) }
     }
 }
 
-impl<'a, T: Managed> DerefMut for Handle<'a, T> {
-    fn deref_mut(&mut self) -> &mut T {
+impl<'a, V: Value> DerefMut for Handle<'a, V> {
+    fn deref_mut(&mut self) -> &mut V {
         unsafe { mem::transmute(&mut self.value) }
     }
 }

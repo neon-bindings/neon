@@ -50,6 +50,10 @@ external-buffers = []
 # https://github.com/neon-bindings/rfcs/pull/46
 futures = ["tokio"]
 
+# Enable low-level system APIs. The `sys` API allows augmenting the Neon API
+# from external crates.
+sys = []
+
 # Default N-API version. Prefer to select a minimum required version.
 # DEPRECATED: This is an alias that should be removed
 napi-runtime = ["napi-8"]

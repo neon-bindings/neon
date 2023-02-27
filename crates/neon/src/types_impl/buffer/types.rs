@@ -2,7 +2,7 @@ use std::{marker::PhantomData, slice};
 
 use crate::{
     context::{internal::Env, Context},
-    handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    handle::{internal::TransparentNoCopyWrapper, Handle},
     object::Object,
     result::{JsResult, Throw},
     sys::{self, raw, TypedArrayType},
@@ -55,12 +55,14 @@ impl JsBuffer {
     ///
     /// **See also:** [`Context::buffer`]
     pub fn new<'a, C: Context<'a>>(cx: &mut C, len: usize) -> JsResult<'a, Self> {
-        let result = unsafe { sys::buffer::new(cx.env().to_raw(), len) };
+        unsafe {
+            let result = sys::buffer::new(cx.env().to_raw(), len);
 
-        if let Ok(buf) = result {
-            Ok(Handle::new_internal(Self(buf)))
-        } else {
-            Err(Throw::new())
+            if let Ok(buf) = result {
+                Ok(Handle::new_internal(Self(buf)))
+            } else {
+                Err(Throw::new())
+            }
         }
     }
 
@@ -121,23 +123,21 @@ unsafe impl TransparentNoCopyWrapper for JsBuffer {
     }
 }
 
-impl Managed for JsBuffer {
-    fn to_raw(&self) -> raw::Local {
-        self.0
-    }
-
-    fn from_raw(_env: Env, h: raw::Local) -> Self {
-        Self(h)
-    }
-}
-
 impl ValueInternal for JsBuffer {
     fn name() -> String {
         "Buffer".to_string()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_buffer(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_buffer(env.to_raw(), other.to_local()) }
+    }
+
+    fn to_local(&self) -> raw::Local {
+        self.0
+    }
+
+    unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
+        Self(h)
     }
 }
 
@@ -160,7 +160,7 @@ impl TypedArray for JsBuffer {
         // associated with a `Context` and the value will not be garbage collected while that
         // `Context` is in scope. This means that the referenced data is valid *at least* as long
         // as `Context`, even if the `Handle` is dropped.
-        unsafe { sys::buffer::as_mut_slice(cx.env().to_raw(), self.to_raw()) }
+        unsafe { sys::buffer::as_mut_slice(cx.env().to_raw(), self.to_local()) }
     }
 
     fn as_mut_slice<'cx, 'a, C>(&mut self, cx: &'a mut C) -> &'a mut [Self::Item]
@@ -169,7 +169,7 @@ impl TypedArray for JsBuffer {
     {
         // # Safety
         // See `as_slice`
-        unsafe { sys::buffer::as_mut_slice(cx.env().to_raw(), self.to_raw()) }
+        unsafe { sys::buffer::as_mut_slice(cx.env().to_raw(), self.to_local()) }
     }
 
     fn try_borrow<'cx, 'a, C>(&self, lock: &'a Lock<C>) -> Result<Ref<'a, Self::Item>, BorrowError>
@@ -178,7 +178,7 @@ impl TypedArray for JsBuffer {
     {
         // The borrowed data must be guarded by `Ledger` before returning
         Ledger::try_borrow(&lock.ledger, unsafe {
-            sys::buffer::as_mut_slice(lock.cx.env().to_raw(), self.to_raw())
+            sys::buffer::as_mut_slice(lock.cx.env().to_raw(), self.to_local())
         })
     }
 
@@ -191,12 +191,12 @@ impl TypedArray for JsBuffer {
     {
         // The borrowed data must be guarded by `Ledger` before returning
         Ledger::try_borrow_mut(&lock.ledger, unsafe {
-            sys::buffer::as_mut_slice(lock.cx.env().to_raw(), self.to_raw())
+            sys::buffer::as_mut_slice(lock.cx.env().to_raw(), self.to_local())
         })
     }
 
     fn size<'cx, C: Context<'cx>>(&self, cx: &mut C) -> usize {
-        unsafe { sys::buffer::size(cx.env().to_raw(), self.to_raw()) }
+        unsafe { sys::buffer::size(cx.env().to_raw(), self.to_local()) }
     }
 
     fn from_slice<'cx, C>(cx: &mut C, slice: &[u8]) -> JsResult<'cx, Self>
@@ -240,12 +240,14 @@ impl JsArrayBuffer {
     ///
     /// **See also:** [`Context::array_buffer`]
     pub fn new<'a, C: Context<'a>>(cx: &mut C, len: usize) -> JsResult<'a, Self> {
-        let result = unsafe { sys::arraybuffer::new(cx.env().to_raw(), len) };
+        unsafe {
+            let result = sys::arraybuffer::new(cx.env().to_raw(), len);
 
-        if let Ok(buf) = result {
-            Ok(Handle::new_internal(Self(buf)))
-        } else {
-            Err(Throw::new())
+            if let Ok(buf) = result {
+                Ok(Handle::new_internal(Self(buf)))
+            } else {
+                Err(Throw::new())
+            }
         }
     }
 
@@ -338,23 +340,21 @@ unsafe impl TransparentNoCopyWrapper for JsArrayBuffer {
     }
 }
 
-impl Managed for JsArrayBuffer {
-    fn to_raw(&self) -> raw::Local {
-        self.0
-    }
-
-    fn from_raw(_env: Env, h: raw::Local) -> Self {
-        Self(h)
-    }
-}
-
 impl ValueInternal for JsArrayBuffer {
     fn name() -> String {
         "JsArrayBuffer".to_string()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_arraybuffer(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_arraybuffer(env.to_raw(), other.to_local()) }
+    }
+
+    fn to_local(&self) -> raw::Local {
+        self.0
+    }
+
+    unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
+        Self(h)
     }
 }
 
@@ -371,14 +371,14 @@ impl TypedArray for JsArrayBuffer {
     where
         C: Context<'cx>,
     {
-        unsafe { sys::arraybuffer::as_mut_slice(cx.env().to_raw(), self.to_raw()) }
+        unsafe { sys::arraybuffer::as_mut_slice(cx.env().to_raw(), self.to_local()) }
     }
 
     fn as_mut_slice<'cx, 'a, C>(&mut self, cx: &'a mut C) -> &'a mut [Self::Item]
     where
         C: Context<'cx>,
     {
-        unsafe { sys::arraybuffer::as_mut_slice(cx.env().to_raw(), self.to_raw()) }
+        unsafe { sys::arraybuffer::as_mut_slice(cx.env().to_raw(), self.to_local()) }
     }
 
     fn try_borrow<'cx, 'a, C>(&self, lock: &'a Lock<C>) -> Result<Ref<'a, Self::Item>, BorrowError>
@@ -387,7 +387,7 @@ impl TypedArray for JsArrayBuffer {
     {
         // The borrowed data must be guarded by `Ledger` before returning
         Ledger::try_borrow(&lock.ledger, unsafe {
-            sys::arraybuffer::as_mut_slice(lock.cx.env().to_raw(), self.to_raw())
+            sys::arraybuffer::as_mut_slice(lock.cx.env().to_raw(), self.to_local())
         })
     }
 
@@ -400,12 +400,12 @@ impl TypedArray for JsArrayBuffer {
     {
         // The borrowed data must be guarded by `Ledger` before returning
         Ledger::try_borrow_mut(&lock.ledger, unsafe {
-            sys::arraybuffer::as_mut_slice(lock.cx.env().to_raw(), self.to_raw())
+            sys::arraybuffer::as_mut_slice(lock.cx.env().to_raw(), self.to_local())
         })
     }
 
     fn size<'cx, C: Context<'cx>>(&self, cx: &mut C) -> usize {
-        unsafe { sys::arraybuffer::size(cx.env().to_raw(), self.to_raw()) }
+        unsafe { sys::arraybuffer::size(cx.env().to_raw(), self.to_local()) }
     }
 
     fn from_slice<'cx, C>(cx: &mut C, slice: &[u8]) -> JsResult<'cx, Self>
@@ -533,27 +533,6 @@ unsafe impl<T: Binary> TransparentNoCopyWrapper for JsTypedArray<T> {
     }
 }
 
-impl<T: Binary> Managed for JsTypedArray<T> {
-    fn to_raw(&self) -> raw::Local {
-        self.0.local
-    }
-
-    // This method should be `unsafe`
-    // https://github.com/neon-bindings/neon/issues/885
-    #[allow(clippy::not_unsafe_ptr_arg_deref)]
-    fn from_raw(env: Env, local: raw::Local) -> Self {
-        // Safety: Recomputing this information ensures that the lifetime of the
-        //         buffer handle matches the lifetime of the typed array handle.
-        let info = unsafe { sys::typedarray::info(env.to_raw(), local) };
-
-        Self(JsTypedArrayInner {
-            local,
-            buffer: info.buf,
-            _type: PhantomData,
-        })
-    }
-}
-
 impl<T> TypedArray for JsTypedArray<T>
 where
     T: Binary,
@@ -567,7 +546,7 @@ where
     {
         unsafe {
             let env = cx.env().to_raw();
-            let value = self.to_raw();
+            let value = self.to_local();
             let info = sys::typedarray::info(env, value);
 
             slice::from_raw_parts(info.data.cast(), info.length)
@@ -580,7 +559,7 @@ where
     {
         unsafe {
             let env = cx.env().to_raw();
-            let value = self.to_raw();
+            let value = self.to_local();
             let info = sys::typedarray::info(env, value);
 
             slice::from_raw_parts_mut(info.data.cast(), info.length)
@@ -596,7 +575,7 @@ where
     {
         unsafe {
             let env = lock.cx.env().to_raw();
-            let value = self.to_raw();
+            let value = self.to_local();
             let info = sys::typedarray::info(env, value);
 
             // The borrowed data must be guarded by `Ledger` before returning
@@ -616,7 +595,7 @@ where
     {
         unsafe {
             let env = lock.cx.env().to_raw();
-            let value = self.to_raw();
+            let value = self.to_local();
             let info = sys::typedarray::info(env, value);
 
             // The borrowed data must be guarded by `Ledger` before returning
@@ -663,7 +642,11 @@ where
     }
 }
 
-impl<T: Binary> JsTypedArray<T> {
+impl<T> JsTypedArray<T>
+where
+    T: Binary,
+    Self: Value,
+{
     /// Constructs a typed array that views `buffer`.
     ///
     /// The resulting typed array has `(buffer.size() / size_of::<T>())` elements.
@@ -707,14 +690,20 @@ impl<T: Binary> JsTypedArray<T> {
             ..
         } = region;
 
-        let arr = (unsafe {
-            sys::typedarray::new(cx.env().to_raw(), T::TYPE_TAG, buffer.to_raw(), offset, len)
-        })
-        .map_err(|_| Throw::new())?;
+        let arr = unsafe {
+            sys::typedarray::new(
+                cx.env().to_raw(),
+                T::TYPE_TAG,
+                buffer.to_local(),
+                offset,
+                len,
+            )
+            .map_err(|_| Throw::new())?
+        };
 
         Ok(Handle::new_internal(Self(JsTypedArrayInner {
             local: arr,
-            buffer: buffer.to_raw(),
+            buffer: buffer.to_local(),
             _type: PhantomData,
         })))
     }
@@ -725,10 +714,10 @@ impl<T: Binary> JsTypedArray<T> {
         C: Context<'cx>,
     {
         let env = cx.env();
-        let info = unsafe { sys::typedarray::info(env.to_raw(), self.to_raw()) };
+        let info = unsafe { sys::typedarray::info(env.to_raw(), self.to_local()) };
 
         Region {
-            buffer: Handle::new_internal(JsArrayBuffer::from_raw(cx.env(), info.buf)),
+            buffer: Handle::new_internal(unsafe { JsArrayBuffer::from_local(cx.env(), info.buf) }),
             offset: info.offset,
             len: info.length,
             phantom: PhantomData,
@@ -758,7 +747,7 @@ impl<T: Binary> JsTypedArray<T> {
     where
         C: Context<'cx>,
     {
-        Handle::new_internal(JsArrayBuffer::from_raw(cx.env(), self.0.buffer))
+        Handle::new_internal(unsafe { JsArrayBuffer::from_local(cx.env(), self.0.buffer) })
     }
 
     /// Returns the offset (in bytes) of the typed array from the start of its
@@ -767,7 +756,7 @@ impl<T: Binary> JsTypedArray<T> {
     where
         C: Context<'cx>,
     {
-        let info = unsafe { sys::typedarray::info(cx.env().to_raw(), self.to_raw()) };
+        let info = unsafe { sys::typedarray::info(cx.env().to_raw(), self.to_local()) };
         info.offset
     }
 
@@ -784,7 +773,7 @@ impl<T: Binary> JsTypedArray<T> {
     where
         C: Context<'cx>,
     {
-        let info = unsafe { sys::typedarray::info(cx.env().to_raw(), self.to_raw()) };
+        let info = unsafe { sys::typedarray::info(cx.env().to_raw(), self.to_local()) };
         info.length
     }
 }
@@ -808,7 +797,7 @@ macro_rules! impl_typed_array {
 
             fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
                 let env = env.to_raw();
-                let other = other.to_raw();
+                let other = other.to_local();
 
                 if unsafe { !sys::tag::is_typedarray(env, other) } {
                     return false;
@@ -817,6 +806,22 @@ macro_rules! impl_typed_array {
                 let info = unsafe { sys::typedarray::info(env, other) };
 
                 matches!(info.typ, $($pattern)|+)
+            }
+
+            fn to_local(&self) -> raw::Local {
+                self.0.local
+            }
+
+            unsafe fn from_local(env: Env, local: raw::Local) -> Self {
+                // Safety: Recomputing this information ensures that the lifetime of the
+                //         buffer handle matches the lifetime of the typed array handle.
+                let info = unsafe { sys::typedarray::info(env.to_raw(), local) };
+
+                Self(JsTypedArrayInner {
+                    local,
+                    buffer: info.buf,
+                    _type: PhantomData,
+                })
             }
         }
 

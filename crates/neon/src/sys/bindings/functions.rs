@@ -5,6 +5,7 @@ mod napi1 {
     use std::os::raw::{c_char, c_void};
 
     generate!(
+        #[cfg_attr(docsrs, doc(cfg(feature = "napi-1")))]
         extern "C" {
             fn get_undefined(env: Env, result: *mut Value) -> Status;
 
@@ -209,7 +210,7 @@ mod napi1 {
 
             fn strict_equals(env: Env, lhs: Value, rhs: Value, result: *mut bool) -> Status;
 
-            #[cfg(feature = "external-buffers")]
+            #[cfg(any(feature = "sys", feature = "external-buffers"))]
             fn create_external_arraybuffer(
                 env: Env,
                 data: *mut c_void,
@@ -219,7 +220,7 @@ mod napi1 {
                 result: *mut Value,
             ) -> Status;
 
-            #[cfg(feature = "external-buffers")]
+            #[cfg(any(feature = "sys", feature = "external-buffers"))]
             fn create_external_buffer(
                 env: Env,
                 length: usize,
@@ -263,6 +264,7 @@ mod napi4 {
     use std::os::raw::c_void;
 
     generate!(
+        #[cfg_attr(docsrs, doc(cfg(feature = "napi-4")))]
         extern "C" {
             fn create_threadsafe_function(
                 env: Env,
@@ -302,6 +304,7 @@ mod napi5 {
     use std::ffi::c_void;
 
     generate!(
+        #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
         extern "C" {
             fn create_date(env: Env, value: f64, result: *mut Value) -> Status;
 
@@ -327,6 +330,7 @@ mod napi6 {
     use std::os::raw::c_void;
 
     generate!(
+        #[cfg_attr(docsrs, doc(cfg(feature = "napi-6")))]
         extern "C" {
             fn get_all_property_names(
                 env: Env,
@@ -388,6 +392,7 @@ mod napi8 {
     use super::super::types::*;
 
     generate!(
+        #[cfg_attr(docsrs, doc(cfg(feature = "napi-8")))]
         extern "C" {
             fn object_freeze(env: Env, object: Value) -> Status;
             fn object_seal(env: Env, object: Value) -> Status;
@@ -402,15 +407,15 @@ mod napi8 {
     );
 }
 
-pub(crate) use napi1::*;
+pub use napi1::*;
 #[cfg(feature = "napi-4")]
-pub(crate) use napi4::*;
+pub use napi4::*;
 #[cfg(feature = "napi-5")]
-pub(crate) use napi5::*;
+pub use napi5::*;
 #[cfg(feature = "napi-6")]
-pub(crate) use napi6::*;
+pub use napi6::*;
 #[cfg(feature = "napi-8")]
-pub(crate) use napi8::*;
+pub use napi8::*;
 
 use super::{Env, Status};
 
@@ -424,7 +429,7 @@ unsafe fn get_version(host: &libloading::Library, env: Env) -> Result<u32, liblo
     Ok(version)
 }
 
-pub(super) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
+pub(crate) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
     #[cfg(not(windows))]
     let host = libloading::os::unix::Library::this().into();
     #[cfg(windows)]

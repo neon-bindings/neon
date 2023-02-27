@@ -147,7 +147,7 @@ pub use crate::types::buffer::lock::Lock;
 
 use crate::{
     event::TaskBuilder,
-    handle::{Handle, Managed},
+    handle::Handle,
     object::Object,
     result::{JsResult, NeonResult, Throw},
     sys::{
@@ -157,6 +157,7 @@ use crate::{
     types::{
         boxed::{Finalize, JsBox},
         error::JsError,
+        private::ValueInternal,
         Deferred, JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber,
         JsObject, JsPromise, JsString, JsUndefined, JsValue, StringResult, Value,
     },
@@ -276,9 +277,11 @@ pub trait Context<'a>: ContextInternal<'a> {
             phantom_inner: PhantomData,
         };
 
-        let escapee = unsafe { scope.escape(f(cx)?.to_raw()) };
+        let escapee = unsafe { scope.escape(f(cx)?.to_local()) };
 
-        Ok(Handle::new_internal(V::from_raw(self.env(), escapee)))
+        Ok(Handle::new_internal(unsafe {
+            V::from_local(self.env(), escapee)
+        }))
     }
 
     #[cfg_attr(
@@ -366,9 +369,9 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Throws a JS value.
     fn throw<T: Value, U>(&mut self, v: Handle<T>) -> NeonResult<U> {
         unsafe {
-            sys::error::throw(self.env().to_raw(), v.to_raw());
+            sys::error::throw(self.env().to_raw(), v.to_local());
+            Err(Throw::new())
         }
-        Err(Throw::new())
     }
 
     /// Creates a direct instance of the [`Error`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Error) class.
@@ -504,6 +507,13 @@ pub trait Context<'a>: ContextInternal<'a> {
         E: FnOnce() -> O + Send + 'static,
     {
         TaskBuilder::new(self, execute)
+    }
+
+    #[cfg(feature = "sys")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "sys")))]
+    /// Gets the raw `sys::Env` for usage with Node-API.
+    fn to_raw(&self) -> sys::Env {
+        self.env().to_raw()
     }
 }
 
@@ -648,7 +658,7 @@ impl<'a> FunctionContext<'a> {
         };
 
         argv.get(i)
-            .map(|v| Handle::new_internal(JsValue::from_raw(self.env(), v)))
+            .map(|v| Handle::new_internal(unsafe { JsValue::from_local(self.env(), v) }))
     }
 
     /// Produces the `i`th argument and casts it to the type `V`, or throws an exception if `i` is greater than or equal to `self.len()` or cannot be cast to `V`.
@@ -726,3 +736,41 @@ impl<'a> ContextInternal<'a> for FinalizeContext<'a> {
 }
 
 impl<'a> Context<'a> for FinalizeContext<'a> {}
+
+#[cfg(feature = "sys")]
+#[cfg_attr(docsrs, doc(cfg(feature = "sys")))]
+/// An execution context constructed from a raw [`Env`](crate::sys::bindings::Env).
+pub struct SysContext<'cx> {
+    env: Env,
+    _phantom_inner: PhantomData<&'cx ()>,
+}
+
+#[cfg(feature = "sys")]
+impl<'cx> SysContext<'cx> {
+    /// Creates a context from a raw `Env`.
+    ///
+    /// # Safety
+    ///
+    /// Once a `SysContext` has been created, it is unsafe to use
+    /// the `Env`. The handle scope for the `Env` must be valid for
+    /// the lifetime `'cx`.
+    pub unsafe fn from_raw(env: sys::Env) -> Self {
+        Self {
+            env: env.into(),
+            _phantom_inner: PhantomData,
+        }
+    }
+}
+
+#[cfg(feature = "sys")]
+impl<'cx> SysContext<'cx> {}
+
+#[cfg(feature = "sys")]
+impl<'cx> ContextInternal<'cx> for SysContext<'cx> {
+    fn env(&self) -> Env {
+        self.env
+    }
+}
+
+#[cfg(feature = "sys")]
+impl<'cx> Context<'cx> for SysContext<'cx> {}
