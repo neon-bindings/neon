@@ -1,17 +1,21 @@
 {
   "name": "cargo-cp-artifact",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "description": "Copies compiler artifacts emitted by rustc by parsing Cargo metadata",
-  "main": "src/index.js",
+  "main": "index.node",
   "files": [
     "bin",
-    "src"
+    "index.node"
   ],
   "bin": {
     "cargo-cp-artifact": "bin/cargo-cp-artifact.js"
   },
   "scripts": {
-    "test": "mocha test"
+    "build": "cargo run -p cargo-cp-artifact -- -ac cargo-cp-artifact-adapter index.node -- cargo build --message-format=json-render-diagnostics",
+    "build-debug": "npm run build --",
+    "build-release": "npm run build -- --release",
+    "install": "npm run build-release",
+    "test": "cargo test"
   },
   "repository": {
     "type": "git",
@@ -29,6 +33,5 @@
   },
   "homepage": "https://github.com/neon-bindings/neon/tree/main/pkgs/cargo-cp-artifact",
   "devDependencies": {
-    "mocha": "^10.0.0"
   }
 }

@@ -1,0 +1,13 @@
+[package]
+name = "cargo-cp-artifact"
+version = "0.2.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "cargo-cp-artifact"
+path = "src/bin.rs"
+
+[dependencies]
+cargo_metadata = "0.15.3"
