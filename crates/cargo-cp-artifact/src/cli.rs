@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-
 use crate::artifact::ArtifactKind;
-use crate::cargo::{CargoCommand, push_artifact, Status};
+use crate::cargo::{CargoCommand, CopyMap, Status};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ParseError {
@@ -83,7 +81,7 @@ impl<T: Iterator<Item = String>> Args<T> {
     where
         F: Fn() -> Result<String, ParseError>,
     {
-        let mut artifacts = HashMap::new();
+        let mut artifacts = CopyMap::new();
     
         loop {
             let token = self.next()?;
@@ -97,7 +95,7 @@ impl<T: Iterator<Item = String>> Args<T> {
                 let kind = self.get_artifact_kind(token)?;
                 let crate_name = self.next()?;
                 let output_file = self.next()?;
-                push_artifact(&mut artifacts, kind, crate_name, output_file);
+                artifacts.add(kind, crate_name, output_file);
                 continue;
             }
     
@@ -113,7 +111,7 @@ impl<T: Iterator<Item = String>> Args<T> {
                 }
 
                 let output_file = self.next()?;
-                push_artifact(&mut artifacts, kind, crate_name, output_file);
+                artifacts.add(kind, crate_name, output_file);
                 continue;
             }
     
@@ -233,9 +231,9 @@ mod test {
     }
 
     fn example_cargo_command() -> CargoCommand {
-        let mut artifacts = HashMap::new();
+        let mut artifacts = CopyMap::new();
         let artifact = example_artifact1();
-        artifacts.insert(artifact, vec!["my-bin".to_string()]);
+        artifacts.set(artifact, &["my-bin"]);
 
         let command = "a".to_string();
         let args = vec!["b".to_string(), "c".to_string()];
@@ -244,11 +242,11 @@ mod test {
     }
 
     fn example_complex_cargo_command() -> CargoCommand {
-        let mut artifacts = HashMap::new();
+        let mut artifacts = CopyMap::new();
 
-        artifacts.insert(example_artifact1(), vec!["my-bin".to_string(), "other-copy".to_string()]);
-        artifacts.insert(example_artifact2(), vec!["b".to_string()]);
-        artifacts.insert(example_artifact3(), vec!["index.node".to_string()]);
+        artifacts.set(example_artifact1(), &["my-bin", "other-copy"]);
+        artifacts.set(example_artifact2(), &["b"]);
+        artifacts.set(example_artifact3(), &["index.node"]);
 
         let command = "a".to_string();
         let args = vec!["b".to_string(), "c".to_string()];
