@@ -32,7 +32,6 @@ impl std::fmt::Display for ParseError {
     }
 }
 
-//struct Args(std::iter::Skip<std::env::Args>);
 pub struct Args<T>(T);
 
 impl Args<std::iter::Skip<std::env::Args>> {
@@ -140,12 +139,19 @@ fn get_crate_name_from_env() -> Result<String, ParseError> {
 }
 
 pub fn run(skip: usize) -> Status {
-    match Args::new(skip).parse(get_crate_name_from_env) {
-        Ok(cargo) => { cargo.exec() }
+    let cargo = match Args::new(skip).parse(get_crate_name_from_env) {
+        Ok(cargo) => cargo,
         Err(err) => {
             eprintln!("{err}");
-            Status::Failure
+            return Status::Failure;
         }
+    };
+
+    if let Err(err) = cargo.exec() {
+        eprintln!("{err}");
+        Status::Failure
+    } else {
+        Status::Success
     }
 }
 

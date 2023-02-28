@@ -27,6 +27,28 @@ pub struct Artifact {
     pub crate_name: String,
 }
 
+pub enum ArtifactError {
+    MkdirFailed(std::io::Error),
+    OverwriteFailed(std::io::Error),
+    CopyFailed(std::io::Error),
+}
+
+impl std::fmt::Display for ArtifactError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ArtifactError::MkdirFailed(err) => {
+                write!(f, "Could not create directory: {}", err)
+            }
+            ArtifactError::OverwriteFailed(err) => {
+                write!(f, "Could not delete .node file: {}", err)
+            }
+            ArtifactError::CopyFailed(err) => {
+                write!(f, "Could not copy artifact: {}", err)
+            }
+        }
+    }
+}
+
 fn is_newer(from: &Path, to: &Path) -> bool {
     if let (Ok(from_meta), Ok(to_meta)) = (from.metadata(), to.metadata()) {
         if let (Ok(from_mtime), Ok(to_mtime)) = (from_meta.modified(), to_meta.modified()) {
@@ -39,15 +61,13 @@ fn is_newer(from: &Path, to: &Path) -> bool {
 
 impl Artifact {
 
-    // FIXME: return Result
-    pub fn copy(&self, from: &Path, to: &Path) {
+    pub fn copy(&self, from: &Path, to: &Path) -> Result<(), ArtifactError> {
         if !is_newer(from, to) {
-            return;
+            return Ok(());
         }
 
         if let Some(basename) = to.parent() {
-            // FIXME: panic
-            create_dir_all(basename).expect("Couldn't create directories for output file");
+            create_dir_all(basename).map_err(ArtifactError::MkdirFailed)?;
         }
 
         // Apple Silicon (M1, etc.) requires shared libraries to be signed. However,
@@ -64,14 +84,13 @@ impl Artifact {
             if let Err(err) = remove_file(to) {
                 match err.kind() {
                     ErrorKind::NotFound => {}
-                    // FIXME: panic
-                    _ => { panic!("Couldn't overwrite {}", to.to_string_lossy()); }
+                    _ => { return Err(ArtifactError::OverwriteFailed(err)); }
                 }
             }
         }
 
-        // FIXME: panic
-        std::fs::copy(from, to).expect("Couldn't copy file");
+        std::fs::copy(from, to).map_err(ArtifactError::CopyFailed)?;
+        Ok(())
     }
 
 }

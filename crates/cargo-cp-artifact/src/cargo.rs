@@ -1,4 +1,4 @@
-use crate::artifact::{Artifact, ArtifactKind};
+use crate::artifact::{Artifact, ArtifactError, ArtifactKind};
 
 use std::collections::HashMap;
 use std::process::{Stdio, Command};
@@ -23,12 +23,13 @@ impl CopyMap {
         }
     }
 
-    pub fn copy(&self, artifact: &Artifact, from: &Path) {
+    pub fn copy(&self, artifact: &Artifact, from: &Path) -> Result<(), CargoError> {
         if let Some(output_files) = self.0.get(&artifact) {
             for output_file in output_files {
-                artifact.copy(from, Path::new(output_file));
+                artifact.copy(from, Path::new(output_file)).map_err(CargoError::ArtifactCopyFailed)?;
             }
         }
+        Ok(())
     }
 }
 
@@ -57,38 +58,61 @@ pub enum Status {
     Failure,
 }
 
+pub enum CargoError {
+    SpawnFailed(std::io::Error),
+    MessageParseFailed(std::io::Error),
+    CommandWaitFailed(std::io::Error),
+    ArtifactCopyFailed(ArtifactError),
+}
+
+impl std::fmt::Display for CargoError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CargoError::SpawnFailed(err) => {
+                write!(f, "Could not execute command: {}", err)
+            }
+            CargoError::MessageParseFailed(err) => {
+                write!(f, "Could not read command output: {}", err)
+            }
+            CargoError::CommandWaitFailed(err) => {
+                write!(f, "Command failed to exit: {}", err)
+            }
+            CargoError::ArtifactCopyFailed(err) => {
+                write!(f, "Failed to copy artifact: {}", err)
+            }
+        }
+    }
+}
+
 impl CargoCommand {
     pub fn new(artifacts: CopyMap, command: String, args: Vec<String>) -> Self {
         Self { artifacts, command, args }
     }
 
-    pub fn exec(self) -> Status {
+    pub fn exec(self) -> Result<(), CargoError> {
         let mut command = Command::new(self.command)
             .args(&self.args)
             .stdout(Stdio::piped())
             .spawn()
-            .unwrap(); // FIXME: unwrap
+            .map_err(CargoError::SpawnFailed)?;
 
-        let reader = std::io::BufReader::new(command.stdout.take().unwrap()); // FIXME: unwrap
+        let reader = std::io::BufReader::new(command.stdout.take().unwrap());
         for message in cargo_metadata::Message::parse_stream(reader) {
-            if let Message::CompilerArtifact(artifact) = message.unwrap() { // FIXME: unwrap
+            let message = message.map_err(CargoError::MessageParseFailed)?;
+            if let Message::CompilerArtifact(artifact) = message {
                 let Target { kind: kinds, name, .. } = artifact.target;
                 for (kind, filename) in kinds.iter().zip(artifact.filenames) {
                     let from = filename.into_std_path_buf();
                     if let Some(kind) = ArtifactKind::parse(kind) {
                         let crate_name = name.clone();
                         let artifact = Artifact { kind, crate_name };
-                        self.artifacts.copy(&artifact, &from);
+                        self.artifacts.copy(&artifact, &from)?;
                     }
                 }
             }
         }
 
-        // FIXME: panic
-        if command.wait().expect("Couldn't get cargo's exit status").success() {
-            Status::Success
-        } else {
-            Status::Failure
-        }
+        command.wait().map_err(CargoError::CommandWaitFailed)?;
+        Ok(())
     }
 }
