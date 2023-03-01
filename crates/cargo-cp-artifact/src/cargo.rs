@@ -1,9 +1,9 @@
 use crate::artifact::{Artifact, ArtifactError, ArtifactKind};
 
-use std::collections::HashMap;
-use std::process::{Stdio, Command};
-use std::path::Path;
 use cargo_metadata::{Message, Target};
+use std::collections::HashMap;
+use std::path::Path;
+use std::process::{Command, Stdio};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct CopyMap(HashMap<Artifact, Vec<String>>);
@@ -26,7 +26,9 @@ impl CopyMap {
     pub fn copy(&self, artifact: &Artifact, from: &Path) -> Result<(), CargoError> {
         if let Some(output_files) = self.0.get(&artifact) {
             for output_file in output_files {
-                artifact.copy(from, Path::new(output_file)).map_err(CargoError::ArtifactCopyFailed)?;
+                artifact
+                    .copy(from, Path::new(output_file))
+                    .map_err(CargoError::ArtifactCopyFailed)?;
             }
         }
         Ok(())
@@ -38,10 +40,7 @@ impl CopyMap {
     pub fn set(&mut self, artifact: Artifact, output_files: &[&str]) {
         let _ = self.0.insert(
             artifact,
-            output_files
-                .iter()
-                .map(|s| s.to_string())
-                .collect(),
+            output_files.iter().map(|s| s.to_string()).collect(),
         );
     }
 }
@@ -86,7 +85,11 @@ impl std::fmt::Display for CargoError {
 
 impl CargoCommand {
     pub fn new(artifacts: CopyMap, command: String, args: Vec<String>) -> Self {
-        Self { artifacts, command, args }
+        Self {
+            artifacts,
+            command,
+            args,
+        }
     }
 
     pub fn exec(self) -> Result<(), CargoError> {
@@ -100,7 +103,9 @@ impl CargoCommand {
         for message in cargo_metadata::Message::parse_stream(reader) {
             let message = message.map_err(CargoError::MessageParseFailed)?;
             if let Message::CompilerArtifact(artifact) = message {
-                let Target { kind: kinds, name, .. } = artifact.target;
+                let Target {
+                    kind: kinds, name, ..
+                } = artifact.target;
                 for (kind, filename) in kinds.iter().zip(artifact.filenames) {
                     let from = filename.into_std_path_buf();
                     if let Some(kind) = ArtifactKind::parse(kind) {

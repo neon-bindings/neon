@@ -60,7 +60,6 @@ fn is_newer(from: &Path, to: &Path) -> bool {
 }
 
 impl Artifact {
-
     pub fn copy(&self, from: &Path, to: &Path) -> Result<(), ArtifactError> {
         if !is_newer(from, to) {
             return Ok(());
@@ -84,7 +83,9 @@ impl Artifact {
             if let Err(err) = remove_file(to) {
                 match err.kind() {
                     ErrorKind::NotFound => {}
-                    _ => { return Err(ArtifactError::OverwriteFailed(err)); }
+                    _ => {
+                        return Err(ArtifactError::OverwriteFailed(err));
+                    }
                 }
             }
         }
@@ -92,5 +93,4 @@ impl Artifact {
         std::fs::copy(from, to).map_err(ArtifactError::CopyFailed)?;
         Ok(())
     }
-
 }

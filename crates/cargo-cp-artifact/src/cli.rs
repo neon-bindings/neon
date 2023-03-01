@@ -81,15 +81,15 @@ impl<T: Iterator<Item = String>> Args<T> {
         F: Fn() -> Result<String, ParseError>,
     {
         let mut artifacts = CopyMap::new();
-    
+
         loop {
             let token = self.next()?;
             let token = token.as_str();
-    
+
             if token == "--" {
                 break;
             }
-    
+
             if token == "--artifact" || (token.len() <= 3 && token.starts_with("-a")) {
                 let kind = self.get_artifact_kind(token)?;
                 let crate_name = self.next()?;
@@ -97,7 +97,7 @@ impl<T: Iterator<Item = String>> Args<T> {
                 artifacts.add(kind, crate_name, output_file);
                 continue;
             }
-    
+
             if token == "--npm" || (token.len() <= 3 && token.starts_with("-n")) {
                 let kind = self.get_artifact_kind(token)?;
                 let mut crate_name = get_crate_name()?;
@@ -113,12 +113,12 @@ impl<T: Iterator<Item = String>> Args<T> {
                 artifacts.add(kind, crate_name, output_file);
                 continue;
             }
-    
+
             return Err(ParseError::UnexpectedOption(token.to_string()));
         }
-    
+
         let command = self.next()?;
-    
+
         Ok(CargoCommand::new(artifacts, command, self.rest()))
     }
 }
@@ -194,25 +194,37 @@ mod test {
             "expected artifact type parse error",
         );
     }
-    
+
     #[test]
     fn test_missing_env_var() {
         let r = args!["-nc", "a", "b", "--"].parse(get_crate_name_err);
         assert_err!(r, ParseError::EnvVarNotFound, "expected env var error");
     }
-    
+
     #[test]
     fn test_missing_command() {
         let r = args!["-ac", "a", "b"].parse(get_crate_name_ok);
-        assert_err!(r, ParseError::CommandNotFound, "expected command not found error");
+        assert_err!(
+            r,
+            ParseError::CommandNotFound,
+            "expected command not found error"
+        );
         let r = args!["-ac", "a", "b", "--"].parse(get_crate_name_ok);
-        assert_err!(r, ParseError::CommandNotFound, "expected command not found error");
+        assert_err!(
+            r,
+            ParseError::CommandNotFound,
+            "expected command not found error"
+        );
     }
-    
+
     #[test]
     fn test_invalid_option() {
         let r = args!["-q"].parse(get_crate_name_ok);
-        assert_err!(r, ParseError::UnexpectedOption("-q".to_string()), "expected bad option error");
+        assert_err!(
+            r,
+            ParseError::UnexpectedOption("-q".to_string()),
+            "expected bad option error"
+        );
     }
 
     fn example_artifact1() -> Artifact {
@@ -244,7 +256,11 @@ mod test {
         let command = "a".to_string();
         let args = vec!["b".to_string(), "c".to_string()];
 
-        CargoCommand { artifacts, command, args }
+        CargoCommand {
+            artifacts,
+            command,
+            args,
+        }
     }
 
     fn example_complex_cargo_command() -> CargoCommand {
@@ -257,7 +273,11 @@ mod test {
         let command = "a".to_string();
         let args = vec!["b".to_string(), "c".to_string()];
 
-        CargoCommand { artifacts, command, args }
+        CargoCommand {
+            artifacts,
+            command,
+            args,
+        }
     }
 
     #[test]
@@ -271,34 +291,20 @@ mod test {
             "a",
             "b",
             "c"
-        ].parse(get_crate_name_ok)
+        ]
+        .parse(get_crate_name_ok)
+        .expect("expected successful parse");
+
+        assert_eq!(cmd, example_cargo_command(), "improperly parsed: {:?}", cmd);
+
+        let cmd = args!["-a", "bin", "my-crate", "my-bin", "--", "a", "b", "c"]
+            .parse(get_crate_name_ok)
             .expect("expected successful parse");
 
         assert_eq!(cmd, example_cargo_command(), "improperly parsed: {:?}", cmd);
 
-        let cmd = args![
-            "-a",
-            "bin",
-            "my-crate",
-            "my-bin",
-            "--",
-            "a",
-            "b",
-            "c"
-        ].parse(get_crate_name_ok)
-            .expect("expected successful parse");
-
-        assert_eq!(cmd, example_cargo_command(), "improperly parsed: {:?}", cmd);
-
-        let cmd = args![
-            "-ab",
-            "my-crate",
-            "my-bin",
-            "--",
-            "a",
-            "b",
-            "c"
-        ].parse(get_crate_name_ok)
+        let cmd = args!["-ab", "my-crate", "my-bin", "--", "a", "b", "c"]
+            .parse(get_crate_name_ok)
             .expect("expected successful parse");
 
         assert_eq!(cmd, example_cargo_command(), "improperly parsed: {:?}", cmd);
@@ -306,40 +312,20 @@ mod test {
 
     #[test]
     fn test_npm_option() {
-        let cmd = args![
-            "--npm",
-            "bin",
-            "my-bin",
-            "--",
-            "a",
-            "b",
-            "c"
-        ].parse(get_crate_name_ok)
+        let cmd = args!["--npm", "bin", "my-bin", "--", "a", "b", "c"]
+            .parse(get_crate_name_ok)
             .expect("expected successful parse");
 
         assert_eq!(cmd, example_cargo_command(), "improperly parsed: {:?}", cmd);
 
-        let cmd = args![
-            "-n",
-            "bin",
-            "my-bin",
-            "--",
-            "a",
-            "b",
-            "c"
-        ].parse(get_crate_name_ok)
+        let cmd = args!["-n", "bin", "my-bin", "--", "a", "b", "c"]
+            .parse(get_crate_name_ok)
             .expect("expected successful parse");
 
         assert_eq!(cmd, example_cargo_command(), "improperly parsed: {:?}", cmd);
 
-        let cmd = args![
-            "-nb",
-            "my-bin",
-            "--",
-            "a",
-            "b",
-            "c"
-        ].parse(get_crate_name_ok)
+        let cmd = args!["-nb", "my-bin", "--", "a", "b", "c"]
+            .parse(get_crate_name_ok)
             .expect("expected successful parse");
 
         assert_eq!(cmd, example_cargo_command(), "improperly parsed: {:?}", cmd);
@@ -347,15 +333,8 @@ mod test {
 
     #[test]
     fn test_namespace_removal() {
-        let cmd = args![
-            "--npm",
-            "bin",
-            "my-bin",
-            "--",
-            "a",
-            "b",
-            "c"
-        ].parse(get_crate_name_with_namespace)
+        let cmd = args!["--npm", "bin", "my-bin", "--", "a", "b", "c"]
+            .parse(get_crate_name_with_namespace)
             .expect("expected successful parse");
 
         assert_eq!(cmd, example_cargo_command(), "improperly parsed: {:?}", cmd);
@@ -380,9 +359,15 @@ mod test {
             "a",
             "b",
             "c"
-        ].parse(get_crate_name_ok)
-            .expect("expected successful parse");
+        ]
+        .parse(get_crate_name_ok)
+        .expect("expected successful parse");
 
-        assert_eq!(cmd, example_complex_cargo_command(), "improperly parsed: {:?}", cmd);
+        assert_eq!(
+            cmd,
+            example_complex_cargo_command(),
+            "improperly parsed: {:?}",
+            cmd
+        );
     }
 }
