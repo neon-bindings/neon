@@ -40,20 +40,6 @@ impl Args<std::iter::Skip<std::env::Args>> {
     }
 }
 
-#[cfg(test)]
-impl<'a> Args<std::vec::IntoIter<String>> {
-    fn from_vec(v: Vec<String>) -> Self {
-        Self(v.into_iter())
-    }
-}
-
-#[cfg(test)]
-macro_rules! args {
-    [$($s:literal),*] => {
-        Args::from_vec(vec![$($s.to_string()),*])
-    }
-}
-
 impl<T: Iterator<Item = String>> Args<T> {
     fn next(&mut self) -> Result<String, ParseError> {
         let Self(args) = self;
@@ -160,6 +146,18 @@ mod test {
     use super::*;
     use crate::artifact::{Artifact, ArtifactKind};
 
+    impl<'a> Args<std::vec::IntoIter<String>> {
+        fn from_vec(v: Vec<String>) -> Self {
+            Self(v.into_iter())
+        }
+    }
+
+    macro_rules! args {
+        [$($s:literal),*] => {
+            Args::from_vec(vec![$($s.to_string()),*])
+        }
+    }
+    
     macro_rules! assert_err {
         ($actual:expr, $expected:expr, $($arg:tt)+) => {
             {
