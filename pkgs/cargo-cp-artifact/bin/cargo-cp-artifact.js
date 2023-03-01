@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 "use strict";
 
-const run = require("..");
+const run = require("..").run;
 
-run(process.argv.slice(2), process.env);
+run();

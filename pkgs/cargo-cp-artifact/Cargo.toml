@@ -1,0 +1,21 @@
+[package]
+name = "cargo-cp-artifact-adapter"
+version = "0.2.0"
+authors = ["K.J. Valencik"]
+license = "MIT"
+edition = "2018"
+exclude = ["index.node"]
+
+[lib]
+crate-type = ["cdylib"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cargo-cp-artifact = { path = "../../crates/cargo-cp-artifact" }
+cargo_metadata = "0.15.3"
+
+[dependencies.neon]
+version = "0.10.1"
+default-features = false
+features = ["napi-6"]
