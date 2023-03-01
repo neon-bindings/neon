@@ -157,7 +157,7 @@ mod test {
             Args::from_vec(vec![$($s.to_string()),*])
         }
     }
-    
+
     macro_rules! assert_err {
         ($actual:expr, $expected:expr, $($arg:tt)+) => {
             {
