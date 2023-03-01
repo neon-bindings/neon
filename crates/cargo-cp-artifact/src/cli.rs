@@ -40,14 +40,14 @@ impl Args<std::iter::Skip<std::env::Args>> {
     }
 }
 
+#[cfg(test)]
 impl<'a> Args<std::vec::IntoIter<String>> {
-    #[allow(dead_code)]
     fn from_vec(v: Vec<String>) -> Self {
         Self(v.into_iter())
     }
 }
 
-#[allow(unused_macros)]
+#[cfg(test)]
 macro_rules! args {
     [$($s:literal),*] => {
         Args::from_vec(vec![$($s.to_string()),*])
