@@ -18,6 +18,7 @@ Neon owes its existence to the contributions of these fine people.
 * [Lin Clark](https://github.com/linclark)
 * [ComplexSpaces](https://github.com/complexspaces)
 * [Nathaniel Daniel](https://github.com/adumbidiot)
+* [John Darrington](https://github.com/DnOberon)
 * [Joey Ezechiëls](https://github.com/jjpe)
 * [Ryan Fitzgerald](https://github.com/rf-)
 * [Cory Forsyth](https://github.com/bantic)

@@ -1,3 +1,7 @@
+# (cargo-cp-artifact) 0.1.8
+
+Fixes sending additional arguments on Windows.
+
 # Version 1.0.0-alpha.2
 
 ## Breaking Changes

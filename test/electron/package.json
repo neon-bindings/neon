@@ -13,7 +13,7 @@
   "repository": "https://github.com/electron/electron-quick-start",
   "devDependencies": {
     "@playwright/test": "^1.23.1",
-    "cargo-cp-artifact": "^0.1.7",
+    "cargo-cp-artifact": "^0.1.8",
     "electron": "^19.0.11",
     "playwright": "^1.23.1"
   }
