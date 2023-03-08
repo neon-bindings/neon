@@ -15,6 +15,7 @@ function run(argv, env) {
 
   const cp = spawn(options.cmd, options.args, {
     stdio: ["inherit", "pipe", "inherit"],
+    shell: process.platform === "win32",
   });
 
   const rl = readline.createInterface({ input: cp.stdout });
