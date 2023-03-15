@@ -36,6 +36,14 @@ Followed by *two* arguments: `artifact-kind output-file`
 
 The crate name will be read from the `npm_package_name` environment variable. If the package name includes a namespace (`@namespace/package`), the namespace will be removed when matching the crate name (`package`).
 
+#### `--target-location`
+
+_Alias: `-tl`_
+
+Followed be relative location to the target folder
+
+This argument could be specified when cargo-cp-artifact is unable to find target folder. This could happen when neon is used to build cross-platform binaries using cross-rs and/or when neon package is not a root package in the rust project.
+
 ### Artifact Kind
 
 Valid artifact kinds are `bin`, `cdylib`, and `dylib`. They may be abbreviated as `b`, `c`, and `d` respectively.

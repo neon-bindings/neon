@@ -79,9 +79,13 @@ function processCargoBuildLine(options, copied, line) {
 
   // `kind` and `filenames` zip up as key/value pairs
   kinds.forEach((kind, i) => {
-    const filename = filenames[i];
+    let filename = filenames[i];
     const key = getArtifactName({ artifactType: kind, crateName: name });
     const outputFiles = options.artifacts[key];
+
+    if (options.targetLocation) {
+      filename = options.targetLocation + filename;
+    }
 
     if (!outputFiles || !filename) {
       return;

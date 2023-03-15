@@ -56,6 +56,7 @@ function getCrateNameFromEnv(env) {
 
 function parse(argv, env) {
   const artifacts = {};
+  let targetLocation;
   let tokens = argv;
 
   function getNext() {
@@ -112,6 +113,11 @@ function parse(argv, env) {
       continue;
     }
 
+    if (token === "--target-location" || (token.length <= 3 && token.startsWith("-tl"))) {
+      targetLocation = getNext();
+      continue;
+    }
+
     throw new ParseError(`Unexpected option: ${token}`);
   }
 
@@ -125,6 +131,7 @@ function parse(argv, env) {
     artifacts,
     cmd,
     args: tokens,
+    targetLocation: targetLocation,
   };
 }
 
