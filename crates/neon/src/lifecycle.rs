@@ -12,7 +12,7 @@ use std::{
     any::Any,
     marker::PhantomData,
     sync::{
-        atomic::{AtomicU64, Ordering},
+        atomic::{AtomicU32, Ordering},
         Arc,
     },
 };
@@ -31,13 +31,17 @@ use crate::{
 ///
 /// _Note_: Since `InstanceData` is created lazily, the order of `id` may not
 /// reflect the order that instances were created.
-pub(crate) struct InstanceId(u64);
+pub(crate) struct InstanceId(u32);
 
 impl InstanceId {
     fn next() -> Self {
-        static NEXT_ID: AtomicU64 = AtomicU64::new(0);
+        static NEXT_ID: AtomicU32 = AtomicU32::new(0);
 
-        Self(NEXT_ID.fetch_add(1, Ordering::SeqCst))
+        let next = NEXT_ID.fetch_add(1, Ordering::SeqCst).checked_add(1);
+        match next {
+            Some(id) => Self(id),
+            None => panic!("u32 overflow ocurred in Lifecycle InstanceId"),
+        }
     }
 }
 
