@@ -1,10 +1,13 @@
 use crate::artifact::ArtifactKind;
-use crate::cargo::{CargoCommand, CopyMap, Status};
+use crate::cargo::Status;
+use crate::copy::{CopyMap, CopyPlan};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum ParseError {
     UnexpectedArtifactKind(String),
-    CommandNotFound,
+    MissingArtifactKind,
+    MissingCrateName,
+    MissingOutputFile,
     EnvVarNotFound,
     UnexpectedOption(String),
 }
@@ -15,8 +18,20 @@ impl std::fmt::Display for ParseError {
             ParseError::UnexpectedArtifactKind(found) => {
                 write!(f, "Unexpected artifact type: {found}")
             }
-            ParseError::CommandNotFound => {
-                writeln!(f, "Missing command to execute.")?;
+            ParseError::MissingArtifactKind => {
+                writeln!(f, "Missing artifact type.")?;
+                writeln!(f, "")?;
+                write!(f, "cargo-cp-artifact -a cdylib my-crate index.node ")?;
+                write!(f, "-- cargo build --message-format=json-render-diagnostics")
+            }
+            ParseError::MissingCrateName => {
+                writeln!(f, "Missing crate name.")?;
+                writeln!(f, "")?;
+                write!(f, "cargo-cp-artifact -a cdylib my-crate index.node ")?;
+                write!(f, "-- cargo build --message-format=json-render-diagnostics")
+            }
+            ParseError::MissingOutputFile => {
+                writeln!(f, "Missing output file.")?;
                 writeln!(f, "")?;
                 write!(f, "cargo-cp-artifact -a cdylib my-crate index.node ")?;
                 write!(f, "-- cargo build --message-format=json-render-diagnostics")
@@ -41,12 +56,9 @@ impl Args<std::iter::Skip<std::env::Args>> {
 }
 
 impl<T: Iterator<Item = String>> Args<T> {
-    fn next(&mut self) -> Result<String, ParseError> {
+    fn next(&mut self) -> Option<String> {
         let Self(args) = self;
-        match args.next() {
-            Some(token) => Ok(token),
-            None => Err(ParseError::CommandNotFound),
-        }
+        args.next()
     }
 
     fn rest(self) -> Vec<String> {
@@ -58,18 +70,24 @@ impl<T: Iterator<Item = String>> Args<T> {
         if token.len() == 3 && &token[1..2] != "-" {
             validate_artifact_kind(&token[2..3])
         } else {
-            validate_artifact_kind(self.next()?.as_str())
+            match self.next() {
+                Some(kind) => validate_artifact_kind(kind.as_str()),
+                None => Err(ParseError::MissingArtifactKind),
+            }
         }
     }
 
-    fn parse<F>(mut self, get_crate_name: F) -> Result<CargoCommand, ParseError>
+    fn parse<F>(mut self, get_crate_name: F) -> Result<CopyPlan, ParseError>
     where
         F: Fn() -> Result<String, ParseError>,
     {
         let mut artifacts = CopyMap::new();
 
         loop {
-            let token = self.next()?;
+            let token = match self.next() {
+                Some(token) => token,
+                None => { break; }
+            };
             let token = token.as_str();
 
             if token == "--" {
@@ -78,8 +96,8 @@ impl<T: Iterator<Item = String>> Args<T> {
 
             if token == "--artifact" || (token.len() <= 3 && token.starts_with("-a")) {
                 let kind = self.get_artifact_kind(token)?;
-                let crate_name = self.next()?;
-                let output_file = self.next()?;
+                let crate_name = self.next().ok_or(ParseError::MissingCrateName)?;
+                let output_file = self.next().ok_or(ParseError::MissingOutputFile)?;
                 artifacts.add(kind, crate_name, output_file);
                 continue;
             }
@@ -95,7 +113,7 @@ impl<T: Iterator<Item = String>> Args<T> {
                     }
                 }
 
-                let output_file = self.next()?;
+                let output_file = self.next().ok_or(ParseError::MissingOutputFile)?;
                 artifacts.add(kind, crate_name, output_file);
                 continue;
             }
@@ -103,9 +121,10 @@ impl<T: Iterator<Item = String>> Args<T> {
             return Err(ParseError::UnexpectedOption(token.to_string()));
         }
 
-        let command = self.next()?;
-
-        Ok(CargoCommand::new(artifacts, command, self.rest()))
+        Ok(match self.next() {
+            Some(command) => CopyPlan::cargo(artifacts, command, self.rest()),
+            None => CopyPlan::stdin(artifacts)
+        })
     }
 }
 
@@ -145,6 +164,8 @@ pub fn run(skip: usize) -> Status {
 mod test {
     use super::*;
     use crate::artifact::{Artifact, ArtifactKind};
+    use crate::cargo::CargoCommand;
+    use crate::copy::{CopyAction, CopyPlan};
 
     impl<'a> Args<std::vec::IntoIter<String>> {
         fn from_vec(v: Vec<String>) -> Self {
@@ -201,17 +222,25 @@ mod test {
 
     #[test]
     fn test_missing_command() {
-        let r = args!["-ac", "a", "b"].parse(get_crate_name_ok);
-        assert_err!(
-            r,
-            ParseError::CommandNotFound,
-            "expected command not found error"
+        let cmd = args!["-ac", "my-crate", "my-bin"]
+            .parse(get_crate_name_ok)
+            .expect("expected successful parse");
+
+        assert_eq!(
+            cmd,
+            example_stdin(),
+            "expected stdin plan: {:?}",
+            cmd
         );
-        let r = args!["-ac", "a", "b", "--"].parse(get_crate_name_ok);
-        assert_err!(
-            r,
-            ParseError::CommandNotFound,
-            "expected command not found error"
+
+        let cmd = args!["-ac", "my-crate", "my-bin", "--"]
+            .parse(get_crate_name_ok)
+            .expect("expected successful parse");
+        assert_eq!(
+            cmd,
+            example_stdin(),
+            "expected stdin plan: {:?}",
+            cmd
         );
     }
 
@@ -246,7 +275,17 @@ mod test {
         }
     }
 
-    fn example_cargo_command() -> CargoCommand {
+    fn example_stdin() -> CopyPlan {
+        let mut artifacts = CopyMap::new();
+        let artifact = example_artifact3();
+        artifacts.set(artifact, &["my-bin"]);
+
+        let action = CopyAction::Stdin;
+
+        CopyPlan { artifacts, action }
+    }
+
+    fn example_cargo_command() -> CopyPlan {
         let mut artifacts = CopyMap::new();
         let artifact = example_artifact1();
         artifacts.set(artifact, &["my-bin"]);
@@ -254,14 +293,15 @@ mod test {
         let command = "a".to_string();
         let args = vec!["b".to_string(), "c".to_string()];
 
-        CargoCommand {
-            artifacts,
+        let action = CopyAction::Cargo(CargoCommand {
             command,
             args,
-        }
+        });
+
+        CopyPlan { artifacts, action }
     }
 
-    fn example_complex_cargo_command() -> CargoCommand {
+    fn example_complex_cargo_command() -> CopyPlan {
         let mut artifacts = CopyMap::new();
 
         artifacts.set(example_artifact1(), &["my-bin", "other-copy"]);
@@ -271,11 +311,12 @@ mod test {
         let command = "a".to_string();
         let args = vec!["b".to_string(), "c".to_string()];
 
-        CargoCommand {
-            artifacts,
+        let action = CopyAction::Cargo(CargoCommand {
             command,
             args,
-        }
+        });
+
+        CopyPlan { artifacts, action }
     }
 
     #[test]
@@ -340,7 +381,7 @@ mod test {
 
     #[test]
     fn test_complex_command() {
-        let cmd: CargoCommand = args![
+        let cmd: CopyPlan = args![
             "-nb",
             "my-bin",
             "--artifact",

@@ -1,6 +1,7 @@
 mod artifact;
 mod cargo;
 mod cli;
+mod copy;
 
 use cargo::Status;
 

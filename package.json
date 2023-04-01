@@ -12,6 +12,9 @@
     "pkgs/*",
     "test/*"
   ],
+  "dependencies": {
+    "cross-target": "file:pkgs/cross-target"
+  },
   "devDependencies": {
     "prettier": "^2.7.1"
   }
