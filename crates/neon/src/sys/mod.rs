@@ -100,6 +100,7 @@ pub(crate) mod tsfn;
 #[cfg(feature = "napi-5")]
 pub(crate) mod date;
 
+mod debug_send_wrapper;
 #[cfg(feature = "napi-6")]
 pub(crate) mod lifecycle;
 

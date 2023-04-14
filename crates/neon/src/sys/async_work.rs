@@ -14,7 +14,9 @@ use std::{
     ptr, thread,
 };
 
-use super::{bindings as napi, no_panic::FailureBoundary, raw::Env};
+use super::{
+    bindings as napi, debug_send_wrapper::DebugSendWrapper, no_panic::FailureBoundary, raw::Env,
+};
 
 const BOUNDARY: FailureBoundary = FailureBoundary {
     both: "A panic and exception occurred while executing a `neon::event::TaskBuilder` task",
@@ -40,13 +42,13 @@ pub unsafe fn schedule<I, O, D>(
 ) where
     I: Send + 'static,
     O: Send + 'static,
-    D: Send + 'static,
+    D: 'static,
 {
     let mut data = Box::new(Data {
         state: State::Input(input),
         execute,
         complete,
-        data,
+        data: DebugSendWrapper::new(data),
         // Work is initialized as a null pointer, but set by `create_async_work`
         // `data` must not be used until this value has been set.
         work: ptr::null_mut(),
@@ -85,7 +87,7 @@ struct Data<I, O, D> {
     state: State<I, O>,
     execute: Execute<I, O>,
     complete: Complete<O, D>,
-    data: D,
+    data: DebugSendWrapper<D>,
     work: napi::AsyncWork,
 }
 
@@ -170,7 +172,7 @@ unsafe extern "C" fn call_complete<I, O, D>(env: Env, status: napi::Status, data
         };
 
         match status {
-            napi::Status::Ok => complete(env, output, data),
+            napi::Status::Ok => complete(env, output, data.take()),
             napi::Status::Cancelled => {}
             _ => assert_eq!(status, napi::Status::Ok),
         }

@@ -31,6 +31,7 @@ neon-macros = { version = "=1.0.0-alpha.2", path = "../neon-macros" }
 aquamarine = { version = "0.1.11", optional = true }
 easy-cast = { version = "0.5.1", optional = true }
 doc-comment = { version = "0.3.3", optional = true }
+send_wrapper = "0.6"
 
 [dependencies.tokio]
 version = "1.24.2"

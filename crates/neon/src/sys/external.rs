@@ -2,11 +2,12 @@ use std::mem::MaybeUninit;
 
 use super::{
     bindings as napi,
+    debug_send_wrapper::DebugSendWrapper,
     raw::{Env, Local},
 };
 
 /// `finalize_external` is invoked immediately before a `napi_external` is garbage collected
-extern "C" fn finalize_external<T: Send + 'static>(
+extern "C" fn finalize_external<T: 'static>(
     env: Env,
     // Raw pointer to a `Box<T>` stored by a `napi_external`
     data: *mut std::ffi::c_void,
@@ -15,10 +16,10 @@ extern "C" fn finalize_external<T: Send + 'static>(
     hint: *mut std::ffi::c_void,
 ) {
     unsafe {
-        let data = Box::<T>::from_raw(data as *mut _);
+        let data = Box::<DebugSendWrapper<T>>::from_raw(data as *mut _);
         let finalizer: fn(Env, T) = std::mem::transmute(hint as *const ());
 
-        finalizer(env, *data);
+        finalizer(env, data.take());
     }
 }
 
@@ -27,7 +28,7 @@ extern "C" fn finalize_external<T: Send + 'static>(
 /// module. Calling `deref` with an external created by another native module,
 /// even another neon module, is undefined behavior.
 /// <https://github.com/neon-bindings/neon/issues/591>
-pub unsafe fn deref<T: Send + 'static>(env: Env, local: Local) -> Option<*const T> {
+pub unsafe fn deref<T: 'static>(env: Env, local: Local) -> Option<*const T> {
     let mut result = MaybeUninit::uninit();
     let status = napi::typeof_value(env, local, result.as_mut_ptr());
 
@@ -53,12 +54,15 @@ pub unsafe fn deref<T: Send + 'static>(env: Env, local: Local) -> Option<*const 
 
     assert_eq!(status, napi::Status::Ok);
 
-    Some(result.assume_init() as *const _)
+    let v = result.assume_init();
+    let v = &**v.cast_const().cast::<DebugSendWrapper<T>>() as *const T;
+
+    Some(v)
 }
 
 /// Creates a `napi_external` from a Rust type
-pub unsafe fn create<T: Send + 'static>(env: Env, v: T, finalizer: fn(Env, T)) -> Local {
-    let v = Box::new(v);
+pub unsafe fn create<T: 'static>(env: Env, v: T, finalizer: fn(Env, T)) -> Local {
+    let v = Box::new(DebugSendWrapper::new(v));
     let mut result = MaybeUninit::uninit();
 
     let status = napi::create_external(

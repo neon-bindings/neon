@@ -11,10 +11,10 @@ use crate::{
     types::{boxed::private::JsBoxInner, private::ValueInternal, Value},
 };
 
-type BoxAny = Box<dyn Any + Send + 'static>;
+type BoxAny = Box<dyn Any + 'static>;
 
 mod private {
-    pub struct JsBoxInner<T: Send + 'static> {
+    pub struct JsBoxInner<T: 'static> {
         pub(super) local: crate::sys::raw::Local,
         // Cached raw pointer to the data contained in the `JsBox`. This value is
         // required to implement `Deref` for `JsBox`. Unlike most `Js` types, `JsBox`
@@ -141,15 +141,15 @@ mod private {
 ///     Ok(cx.string(greeting))
 /// }
 #[repr(transparent)]
-pub struct JsBox<T: Send + 'static>(JsBoxInner<T>);
+pub struct JsBox<T: 'static>(JsBoxInner<T>);
 
-impl<T: Send + 'static> std::fmt::Debug for JsBoxInner<T> {
+impl<T: 'static> std::fmt::Debug for JsBoxInner<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "JsBox<{}>", std::any::type_name::<T>())
     }
 }
 
-impl<T: Send + 'static> std::fmt::Debug for JsBox<T> {
+impl<T: 'static> std::fmt::Debug for JsBox<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         std::fmt::Debug::fmt(&self.0, f)
     }
@@ -162,7 +162,7 @@ unsafe fn maybe_external_deref<'a>(env: Env, local: raw::Local) -> Option<&'a Bo
 }
 
 // Custom `Clone` implementation since `T` might not be `Clone`
-impl<T: Send + 'static> Clone for JsBoxInner<T> {
+impl<T: 'static> Clone for JsBoxInner<T> {
     fn clone(&self) -> Self {
         Self {
             local: self.local,
@@ -171,13 +171,13 @@ impl<T: Send + 'static> Clone for JsBoxInner<T> {
     }
 }
 
-impl<T: Send + 'static> Object for JsBox<T> {}
+impl<T: 'static> Object for JsBox<T> {}
 
-impl<T: Send + 'static> Copy for JsBoxInner<T> {}
+impl<T: 'static> Copy for JsBoxInner<T> {}
 
-impl<T: Send + 'static> Value for JsBox<T> {}
+impl<T: 'static> Value for JsBox<T> {}
 
-unsafe impl<T: Send + 'static> TransparentNoCopyWrapper for JsBox<T> {
+unsafe impl<T: 'static> TransparentNoCopyWrapper for JsBox<T> {
     type Inner = JsBoxInner<T>;
 
     fn into_inner(self) -> Self::Inner {
@@ -185,7 +185,7 @@ unsafe impl<T: Send + 'static> TransparentNoCopyWrapper for JsBox<T> {
     }
 }
 
-impl<T: Send + 'static> ValueInternal for JsBox<T> {
+impl<T: 'static> ValueInternal for JsBox<T> {
     fn name() -> String {
         any::type_name::<Self>().to_string()
     }
@@ -219,17 +219,12 @@ impl<T: Send + 'static> ValueInternal for JsBox<T> {
     }
 }
 
-/// Values contained by a `JsBox` must be `Finalize + Send + 'static`
+/// Values contained by a `JsBox` must be `Finalize + 'static`
 ///
 /// ### `Finalize`
 ///
 /// The `sys::prelude::Finalize` trait provides a `finalize` method that will be called
 /// immediately before the `JsBox` is garbage collected.
-///
-/// ### `Send`
-///
-/// `JsBox` may be moved across threads. It is important to guarantee that the
-/// contents is also safe to move across threads.
 ///
 /// ### `'static'
 ///
@@ -237,12 +232,12 @@ impl<T: Send + 'static> ValueInternal for JsBox<T> {
 /// is unable to verify the lifetime of the contents, references must be valid for the
 /// entire duration of the program. This does not mean that the `JsBox` will be valid
 /// until the application terminates, only that its lifetime is indefinite.
-impl<T: Finalize + Send + 'static> JsBox<T> {
+impl<T: Finalize + 'static> JsBox<T> {
     /// Constructs a new `JsBox` containing `value`.
     pub fn new<'a, C>(cx: &mut C, value: T) -> Handle<'a, JsBox<T>>
     where
         C: Context<'a>,
-        T: Send + 'static,
+        T: 'static,
     {
         // This function will execute immediately before the `JsBox` is garbage collected.
         // It unwraps the `napi_external`, downcasts the `BoxAny` and moves the type
@@ -264,7 +259,7 @@ impl<T: Finalize + Send + 'static> JsBox<T> {
     }
 }
 
-impl<T: Send + 'static> Deref for JsBox<T> {
+impl<T: 'static> Deref for JsBox<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
