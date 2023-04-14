@@ -18,6 +18,7 @@ use std::{
 
 use super::{
     bindings as napi,
+    debug_send_wrapper::DebugSendWrapper,
     error::fatal_error,
     raw::{Env, Local},
 };
@@ -256,7 +257,7 @@ unsafe fn external_from_panic(env: Env, panic: Panic) -> Local {
     let mut result = MaybeUninit::uninit();
     let status = napi::create_external(
         env,
-        Box::into_raw(Box::new(panic)).cast(),
+        Box::into_raw(Box::new(DebugSendWrapper::new(panic))).cast(),
         Some(finalize_panic),
         ptr::null_mut(),
         result.as_mut_ptr(),

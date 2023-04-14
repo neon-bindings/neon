@@ -423,7 +423,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     ///     Ok(point)
     /// }
     /// ```
-    fn boxed<U: Finalize + Send + 'static>(&mut self, v: U) -> Handle<'a, JsBox<U>> {
+    fn boxed<U: Finalize + 'static>(&mut self, v: U) -> Handle<'a, JsBox<U>> {
         JsBox::new(self, v)
     }
 
