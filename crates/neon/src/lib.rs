@@ -86,6 +86,7 @@ pub mod object;
 pub mod prelude;
 pub mod reflect;
 pub mod result;
+#[cfg(not(feature = "sys"))]
 mod sys;
 #[cfg(feature = "napi-6")]
 pub mod thread;
@@ -94,6 +95,10 @@ pub mod thread;
 // See: https://github.com/mersinvald/aquamarine/issues/5#issuecomment-1168816499
 mod types_docs;
 mod types_impl;
+
+#[cfg(feature = "sys")]
+#[cfg_attr(docsrs, doc(cfg(feature = "sys")))]
+pub mod sys;
 
 pub use types_docs::exports as types;
 
@@ -127,3 +132,41 @@ static MODULE_TAG: once_cell::sync::Lazy<crate::sys::TypeTag> = once_cell::sync:
     // https://github.com/nodejs/node/blob/5fad0b93667ffc6e4def52996b9529ac99b26319/src/js_native_api_v8.cc#L2455
     crate::sys::TypeTag { lower, upper: 1 }
 });
+
+#[test]
+#[ignore]
+fn feature_matrix() {
+    use std::{env, process::Command};
+
+    const EXTERNAL_BUFFERS: &str = "external-buffers";
+    const FUTURES: &str = "futures";
+    const NODE_API_VERSIONS: &[&str] = &[
+        "napi-1", "napi-2", "napi-3", "napi-4", "napi-5", "napi-6", "napi-7", "napi-8",
+    ];
+
+    // If the number of features in Neon grows, we can use `itertools` to generate permutations.
+    // https://docs.rs/itertools/latest/itertools/trait.Itertools.html#method.permutations
+    const FEATURES: &[&[&str]] = &[
+        &[],
+        &[EXTERNAL_BUFFERS],
+        &[FUTURES],
+        &[EXTERNAL_BUFFERS, FUTURES],
+    ];
+
+    let cargo = env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
+
+    for features in FEATURES {
+        for version in NODE_API_VERSIONS.iter().map(|f| f.to_string()) {
+            let features = features.iter().fold(version, |f, s| f + "," + s);
+            let status = Command::new(&cargo)
+                .args(["check", "-p", "neon", "--features"])
+                .arg(features)
+                .spawn()
+                .unwrap()
+                .wait()
+                .unwrap();
+
+            assert!(status.success());
+        }
+    }
+}

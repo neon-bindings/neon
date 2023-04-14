@@ -94,7 +94,7 @@ impl<T: Object> Root<T> {
     /// * N-API >= 6, Neon will drop from a global queue at a runtime cost
     pub fn new<'a, C: Context<'a>>(cx: &mut C, value: &T) -> Self {
         let env = cx.env().to_raw();
-        let internal = unsafe { reference::new(env, value.to_raw()) };
+        let internal = unsafe { reference::new(env, value.to_local()) };
 
         Self {
             internal: Some(NapiRef(internal as *mut _)),
@@ -159,7 +159,7 @@ impl<T: Object> Root<T> {
             internal.unref(env.to_raw());
         }
 
-        Handle::new_internal(T::from_raw(env, local))
+        Handle::new_internal(unsafe { T::from_local(env, local) })
     }
 
     /// Access the inner JavaScript object without consuming the `Root`
@@ -174,7 +174,7 @@ impl<T: Object> Root<T> {
         let env = cx.env();
         let local = unsafe { reference::get(env.to_raw(), self.as_napi_ref(cx).0 as *mut _) };
 
-        Handle::new_internal(T::from_raw(env, local))
+        Handle::new_internal(unsafe { T::from_local(env, local) })
     }
 
     fn as_napi_ref<'a, C: Context<'a>>(&self, cx: &mut C) -> &NapiRef {

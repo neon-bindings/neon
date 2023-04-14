@@ -1,15 +1,17 @@
-//! # FFI bindings to N-API symbols
+//! # FFI bindings to Node-API symbols
 //!
-//! These types are manually copied from bindings generated from `bindgen`. To
-//! update, use the following approach:
-//!
-//! * Run a debug build of Neon at least once to install `nodejs-sys`
-//! * Open the generated bindings at `target/debug/build/nodejs-sys-*/out/bindings.rs`
-//! * Copy the types needed into `types.rs` and `functions.rs`
-//! * Modify to match Rust naming conventions:
-//!   - Remove `napi_` prefixes
-//!   - Use `PascalCase` for types
-//!   - Rename types that match a reserved word
+//! Rust types generated from [Node-API](https://nodejs.org/api/n-api.html).
+
+// These types are manually copied from bindings generated from `bindgen`. To
+// update, use the following approach:
+//
+// * Run a debug build of Neon at least once to install `nodejs-sys`
+// * Open the generated bindings at `target/debug/build/nodejs-sys-*/out/bindings.rs`
+// * Copy the types needed into `types.rs` and `functions.rs`
+// * Modify to match Rust naming conventions:
+//   - Remove `napi_` prefixes
+//   - Use `PascalCase` for types
+//   - Rename types that match a reserved word
 
 /// Constructs the name of a N-API symbol as a string from a function identifier
 /// E.g., `get_undefined` becomes `"napi_get_undefined"`
@@ -105,7 +107,7 @@ macro_rules! napi_name {
 /// }
 /// ```
 macro_rules! generate {
-    (extern "C" {
+    (#[$extern_attr:meta] extern "C" {
         $($(#[$attr:meta])? fn $name:ident($($param:ident: $ptype:ty$(,)?)*)$( -> $rtype:ty)?;)+
     }) => {
         struct Napi {
@@ -167,27 +169,22 @@ macro_rules! generate {
         }
 
         $(
-            $(#[$attr])? #[inline]
-            pub(crate) unsafe fn $name($($param: $ptype,)*)$( -> $rtype)* {
+            #[$extern_attr] $(#[$attr])? #[inline]
+            #[doc = concat!(
+                "[`",
+                napi_name!($name),
+                "`](https://nodejs.org/api/n-api.html#",
+                napi_name!($name),
+                ")",
+            )]
+            pub unsafe fn $name($($param: $ptype,)*)$( -> $rtype)* {
                 (NAPI.$name)($($param,)*)
             }
         )*
     };
 }
 
-use std::sync::Once;
-
-pub(crate) use self::{functions::*, types::*};
+pub use self::{functions::*, types::*};
 
 mod functions;
 mod types;
-
-static SETUP: Once = Once::new();
-
-/// Loads N-API symbols from host process.
-/// Must be called at least once before using any functions in bindings or
-/// they will panic.
-/// Safety: `env` must be a valid `napi_env` for the current thread
-pub(crate) unsafe fn setup(env: Env) {
-    SETUP.call_once(|| load(env).expect("Failed to load N-API symbols"));
-}

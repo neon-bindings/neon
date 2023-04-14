@@ -91,7 +91,7 @@ impl<'a, K: Value> PropertyKey for Handle<'a, K> {
     ) -> bool {
         let env = cx.env().to_raw();
 
-        sys::object::get(out, env, obj, self.to_raw())
+        sys::object::get(out, env, obj, self.to_local())
     }
 
     unsafe fn set_from<'c, C: Context<'c>>(
@@ -103,7 +103,7 @@ impl<'a, K: Value> PropertyKey for Handle<'a, K> {
     ) -> bool {
         let env = cx.env().to_raw();
 
-        sys::object::set(out, env, obj, self.to_raw(), val)
+        sys::object::set(out, env, obj, self.to_local(), val)
     }
 }
 
@@ -162,7 +162,7 @@ pub trait Object: Value {
         key: K,
     ) -> NeonResult<Handle<'a, JsValue>> {
         build(cx.env(), |out| unsafe {
-            key.get_from(cx, out, self.to_raw())
+            key.get_from(cx, out, self.to_local())
         })
     }
 
@@ -184,14 +184,14 @@ pub trait Object: Value {
         let env = cx.env();
 
         build(cx.env(), |out| unsafe {
-            sys::object::get_own_property_names(out, env.to_raw(), self.to_raw())
+            sys::object::get_own_property_names(out, env.to_raw(), self.to_local())
         })
     }
 
     #[cfg(feature = "napi-8")]
     fn freeze<'a, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<&Self> {
         let env = cx.env().to_raw();
-        let obj = self.to_raw();
+        let obj = self.to_local();
         unsafe {
             match sys::object::freeze(env, obj) {
                 sys::Status::Ok => Ok(self),
@@ -204,7 +204,7 @@ pub trait Object: Value {
     #[cfg(feature = "napi-8")]
     fn seal<'a, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<&Self> {
         let env = cx.env().to_raw();
-        let obj = self.to_raw();
+        let obj = self.to_local();
         unsafe {
             match sys::object::seal(env, obj) {
                 sys::Status::Ok => Ok(self),
@@ -221,10 +221,12 @@ pub trait Object: Value {
         val: Handle<W>,
     ) -> NeonResult<bool> {
         let mut result = false;
-        if unsafe { key.set_from(cx, &mut result, self.to_raw(), val.to_raw()) } {
-            Ok(result)
-        } else {
-            Err(Throw::new())
+        unsafe {
+            if key.set_from(cx, &mut result, self.to_local(), val.to_local()) {
+                Ok(result)
+            } else {
+                Err(Throw::new())
+            }
         }
     }
 
@@ -238,7 +240,7 @@ pub trait Object: Value {
         K: PropertyKey,
     {
         let mut options = self.get::<JsFunction, _, _>(cx, method)?.call_with(cx);
-        options.this(JsValue::new_internal(self.to_raw()));
+        options.this(JsValue::new_internal(self.to_local()));
         Ok(options)
     }
 }

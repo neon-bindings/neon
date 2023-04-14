@@ -232,7 +232,11 @@ pub struct Region<'cx, T: Binary> {
     phantom: PhantomData<T>,
 }
 
-impl<'cx, T: Binary> Region<'cx, T> {
+impl<'cx, T> Region<'cx, T>
+where
+    T: Binary,
+    JsTypedArray<T>: Value,
+{
     /// Returns the handle to the region's buffer.
     pub fn buffer(&self) -> Handle<'cx, JsArrayBuffer> {
         self.buffer

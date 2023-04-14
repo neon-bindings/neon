@@ -2,7 +2,7 @@ use std::ptr;
 
 use crate::{
     context::{internal::Env, Context},
-    handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    handle::{internal::TransparentNoCopyWrapper, Handle},
     object::Object,
     result::JsResult,
     sys::{self, no_panic::FailureBoundary, raw},
@@ -94,8 +94,10 @@ const BOUNDARY: FailureBoundary = FailureBoundary {
 /// ```
 /// # use neon::prelude::*;
 /// use linkify::{LinkFinder, LinkKind};
+/// # #[cfg(feature = "doc-dependencies")]
 /// use easy_cast::Cast; // for safe numerical conversions
 ///
+/// # #[cfg(feature = "doc-dependencies")]
 /// fn linkify(mut cx: FunctionContext) -> JsResult<JsPromise> {
 ///     let text = cx.argument::<JsString>(0)?.value(&mut cx);
 ///
@@ -248,23 +250,21 @@ unsafe impl TransparentNoCopyWrapper for JsPromise {
     }
 }
 
-impl Managed for JsPromise {
-    fn to_raw(&self) -> raw::Local {
-        self.0
-    }
-
-    fn from_raw(_env: Env, h: raw::Local) -> Self {
-        Self(h)
-    }
-}
-
 impl ValueInternal for JsPromise {
     fn name() -> String {
         "Promise".to_string()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_promise(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_promise(env.to_raw(), other.to_local()) }
+    }
+
+    fn to_local(&self) -> raw::Local {
+        self.0
+    }
+
+    unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
+        Self(h)
     }
 }
 
@@ -298,7 +298,7 @@ impl Deferred {
         C: Context<'a>,
     {
         unsafe {
-            sys::promise::resolve(cx.env().to_raw(), self.into_inner(), value.to_raw());
+            sys::promise::resolve(cx.env().to_raw(), self.into_inner(), value.to_local());
         }
     }
 
@@ -309,7 +309,7 @@ impl Deferred {
         C: Context<'a>,
     {
         unsafe {
-            sys::promise::reject(cx.env().to_raw(), self.into_inner(), value.to_raw());
+            sys::promise::reject(cx.env().to_raw(), self.into_inner(), value.to_local());
         }
     }
 
@@ -374,7 +374,7 @@ impl Deferred {
                 cx.env().to_raw(),
                 Some(self.into_inner()),
                 move |_| match f(cx) {
-                    Ok(value) => value.to_raw(),
+                    Ok(value) => value.to_local(),
                     Err(_) => ptr::null_mut(),
                 },
             );

@@ -7,7 +7,7 @@ use super::{private::ValueInternal, Value};
 
 use crate::{
     context::{internal::Env, Context},
-    handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    handle::{internal::TransparentNoCopyWrapper, Handle},
     object::Object,
     result::{JsResult, ResultExt},
     sys::{self, raw},
@@ -58,16 +58,6 @@ unsafe impl TransparentNoCopyWrapper for JsDate {
 
     fn into_inner(self) -> Self::Inner {
         self.0
-    }
-}
-
-impl Managed for JsDate {
-    fn to_raw(&self) -> raw::Local {
-        self.0
-    }
-
-    fn from_raw(_: Env, h: raw::Local) -> Self {
-        JsDate(h)
     }
 }
 
@@ -158,7 +148,7 @@ impl JsDate {
     /// Gets the `Date`'s value. An invalid `Date` will return [`std::f64::NAN`].
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> f64 {
         let env = cx.env().to_raw();
-        unsafe { sys::date::value(env, self.to_raw()) }
+        unsafe { sys::date::value(env, self.to_local()) }
     }
 
     /// Checks if the `Date`'s value is valid. A `Date` is valid if its value is
@@ -175,7 +165,15 @@ impl ValueInternal for JsDate {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_date(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_date(env.to_raw(), other.to_local()) }
+    }
+
+    fn to_local(&self) -> raw::Local {
+        self.0
+    }
+
+    unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
+        JsDate(h)
     }
 }
 

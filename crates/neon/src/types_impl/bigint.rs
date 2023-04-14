@@ -4,7 +4,7 @@ use std::{error, fmt, mem::MaybeUninit};
 
 use crate::{
     context::{internal::Env, Context},
-    handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    handle::{internal::TransparentNoCopyWrapper, Handle},
     result::{NeonResult, ResultExt},
     sys::{self, raw},
     types::{private, JsBigInt, Value},
@@ -427,22 +427,20 @@ unsafe impl TransparentNoCopyWrapper for JsBigInt {
     }
 }
 
-impl Managed for JsBigInt {
-    fn to_raw(&self) -> raw::Local {
-        self.0
-    }
-
-    fn from_raw(_: Env, h: raw::Local) -> Self {
-        Self(h)
-    }
-}
-
 impl private::ValueInternal for JsBigInt {
     fn name() -> String {
         "BigInt".to_string()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_bigint(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_bigint(env.to_raw(), other.to_local()) }
+    }
+
+    fn to_local(&self) -> raw::Local {
+        self.0
+    }
+
+    unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
+        Self(h)
     }
 }

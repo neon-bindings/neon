@@ -4,7 +4,7 @@ use std::panic::{catch_unwind, UnwindSafe};
 
 use crate::{
     context::{internal::Env, Context},
-    handle::{internal::TransparentNoCopyWrapper, Handle, Managed},
+    handle::{internal::TransparentNoCopyWrapper, Handle},
     object::Object,
     result::{NeonResult, Throw},
     sys::{self, raw},
@@ -47,23 +47,21 @@ unsafe impl TransparentNoCopyWrapper for JsError {
     }
 }
 
-impl Managed for JsError {
-    fn to_raw(&self) -> raw::Local {
-        self.0
-    }
-
-    fn from_raw(_: Env, h: raw::Local) -> Self {
-        JsError(h)
-    }
-}
-
 impl ValueInternal for JsError {
     fn name() -> String {
         "Error".to_string()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_error(env.to_raw(), other.to_raw()) }
+        unsafe { sys::tag::is_error(env.to_raw(), other.to_local()) }
+    }
+
+    fn to_local(&self) -> raw::Local {
+        self.0
+    }
+
+    unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
+        JsError(h)
     }
 }
 
@@ -81,7 +79,7 @@ impl JsError {
     ) -> NeonResult<Handle<'a, JsError>> {
         let msg = cx.string(msg.as_ref());
         build(cx.env(), |out| unsafe {
-            sys::error::new_error(cx.env().to_raw(), out, msg.to_raw());
+            sys::error::new_error(cx.env().to_raw(), out, msg.to_local());
             true
         })
     }
@@ -95,7 +93,7 @@ impl JsError {
     ) -> NeonResult<Handle<'a, JsError>> {
         let msg = cx.string(msg.as_ref());
         build(cx.env(), |out| unsafe {
-            sys::error::new_type_error(cx.env().to_raw(), out, msg.to_raw());
+            sys::error::new_type_error(cx.env().to_raw(), out, msg.to_local());
             true
         })
     }
@@ -109,7 +107,7 @@ impl JsError {
     ) -> NeonResult<Handle<'a, JsError>> {
         let msg = cx.string(msg.as_ref());
         build(cx.env(), |out| unsafe {
-            sys::error::new_range_error(cx.env().to_raw(), out, msg.to_raw());
+            sys::error::new_range_error(cx.env().to_raw(), out, msg.to_local());
             true
         })
     }

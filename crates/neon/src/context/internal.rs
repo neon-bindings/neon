@@ -2,10 +2,10 @@ use std::{cell::RefCell, ffi::c_void, mem::MaybeUninit};
 
 use crate::{
     context::ModuleContext,
-    handle::{Handle, Managed},
+    handle::Handle,
     result::NeonResult,
     sys::{self, raw},
-    types::JsObject,
+    types::{private::ValueInternal, JsObject},
 };
 
 #[repr(C)]
@@ -64,7 +64,7 @@ pub unsafe fn initialize_module(
     });
 
     let env = Env(env);
-    let exports = Handle::new_internal(JsObject::from_raw(env, exports.cast()));
+    let exports = Handle::new_internal(JsObject::from_local(env, exports.cast()));
 
     ModuleContext::with(env, exports, |cx| {
         let _ = init(cx);
