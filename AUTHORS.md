@@ -39,6 +39,7 @@ Neon owes its existence to the contributions of these fine people.
 * [Laz](https://github.com/lazops)
 * [Anton Lazarev](https://github.com/antonok-edm)
 * [Simon Liang](https://github.com/lhr0909)
+* [Matthew Little](https://github.com/zone117x)
 * [Terence Lee](https://github.com/hone)
 * [Milan Loveless](https://github.com/MilanLoveless)
 * [Mikuroさいな](https://github.com/MikuroXina)

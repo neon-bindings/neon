@@ -306,7 +306,7 @@ dependencies = [
 
 [[package]]
 name = "neon"
-version = "1.0.0-alpha.2"
+version = "1.0.0-alpha.3"
 dependencies = [
  "anyhow",
  "aquamarine",
@@ -328,7 +328,7 @@ dependencies = [
 
 [[package]]
 name = "neon-macros"
-version = "1.0.0-alpha.2"
+version = "1.0.0-alpha.3"
 dependencies = [
  "quote",
  "syn",

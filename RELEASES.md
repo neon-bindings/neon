@@ -1,6 +1,23 @@
-# (cargo-cp-artifact) 0.1.8
+# Version 1.0.0-alpha.3
 
-Fixes sending additional arguments on Windows.
+## Breaking Changes
+
+## Improvements
+
+* Added `JsBigInt` (https://github.com/neon-bindings/neon/pull/963).
+* Added UTF-16 functions to `JsString` (https://github.com/neon-bindings/neon/pull/944).
+
+## Bug Fixes
+
+* Fix a scope leak in release builds (https://github.com/neon-bindings/neon/pull/952).
+
+## Docs
+
+* Examples added for many types ((https://github.com/neon-bindings/neon/pull/942)).
+
+### `cargo-cp-artifact`
+
+`0.1.8` fixes sending additional arguments on Windows (https://github.com/neon-bindings/neon/pull/972).
 
 # Version 1.0.0-alpha.2
 
