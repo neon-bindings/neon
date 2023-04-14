@@ -1,3 +1,7 @@
+# Version 1.0.0-alpha.4
+
+Patch to enable new features flags in docs.rs.
+
 # Version 1.0.0-alpha.3
 
 ## Breaking Changes
