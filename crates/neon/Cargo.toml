@@ -33,7 +33,7 @@ easy-cast = { version = "0.5.1", optional = true }
 doc-comment = { version = "0.3.3", optional = true }
 
 [dependencies.tokio]
-version = "1.23.1"
+version = "1.24.2"
 default-features = false
 features = ["sync"]
 optional = true
