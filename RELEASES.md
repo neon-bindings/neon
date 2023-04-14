@@ -2,10 +2,15 @@
 
 ## Breaking Changes
 
+* Removed `Managed` trait
+
 ## Improvements
 
 * Added `JsBigInt` (https://github.com/neon-bindings/neon/pull/963).
 * Added UTF-16 functions to `JsString` (https://github.com/neon-bindings/neon/pull/944).
+* Relaxed `Send` constraints (https://github.com/neon-bindings/neon/pull/979)
+* Lifecycle support for 32-bit (https://github.com/neon-bindings/neon/pull/977)
+* Added `sys` feature (https://github.com/neon-bindings/neon/pull/970)
 
 ## Bug Fixes
 
