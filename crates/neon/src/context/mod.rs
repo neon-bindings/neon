@@ -360,7 +360,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Produces a handle to the JavaScript global object.
-    fn global(&mut self) -> Handle<'a, JsObject> {
+    fn global_object(&mut self) -> Handle<'a, JsObject> {
         JsObject::build(|out| unsafe {
             sys::scope::get_global(self.env().to_raw(), out);
         })

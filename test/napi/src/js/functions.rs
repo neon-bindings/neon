@@ -27,7 +27,7 @@ pub fn call_js_function_idiomatically(mut cx: FunctionContext) -> JsResult<JsNum
 }
 
 fn get_math_max<'a>(cx: &mut FunctionContext<'a>) -> JsResult<'a, JsFunction> {
-    let math: Handle<JsObject> = cx.global().get(cx, "Math")?;
+    let math: Handle<JsObject> = cx.global_object().get(cx, "Math")?;
     let max: Handle<JsFunction> = math.get(cx, "max")?;
     Ok(max)
 }
@@ -96,7 +96,7 @@ pub fn exec_js_function_with_implicit_this(mut cx: FunctionContext) -> JsResult<
 }
 
 pub fn call_js_function_with_heterogeneous_tuple(mut cx: FunctionContext) -> JsResult<JsArray> {
-    cx.global()
+    cx.global_object()
         .get::<JsFunction, _, _>(&mut cx, "Array")?
         .call_with(&cx)
         .args((cx.number(1.0), cx.string("hello"), cx.boolean(true)))
@@ -129,7 +129,7 @@ pub fn construct_js_function_idiomatically(mut cx: FunctionContext) -> JsResult<
 }
 
 pub fn construct_js_function_with_overloaded_result(mut cx: FunctionContext) -> JsResult<JsArray> {
-    let global = cx.global();
+    let global = cx.global_object();
     let f: Handle<JsFunction> = global.get(&mut cx, "Array")?;
     f.construct_with(&cx)
         .arg(cx.number(1))
@@ -225,7 +225,7 @@ pub fn throw_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
 pub fn call_and_catch(mut cx: FunctionContext) -> JsResult<JsValue> {
     let f: Handle<JsFunction> = cx.argument(0)?;
     Ok(cx
-        .try_catch(|cx| f.call_with(cx).this(cx.global()).apply(cx))
+        .try_catch(|cx| f.call_with(cx).this(cx.global_object()).apply(cx))
         .unwrap_or_else(|err| err))
 }
 

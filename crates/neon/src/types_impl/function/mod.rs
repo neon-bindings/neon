@@ -18,7 +18,7 @@ pub(crate) mod private;
 /// ```
 /// # use neon::prelude::*;
 /// # fn foo(mut cx: FunctionContext) -> JsResult<JsNumber> {
-/// # let global = cx.global();
+/// # let global = cx.global_object();
 /// # let parse_int: Handle<JsFunction> = global.get(&mut cx, "parseInt")?;
 /// let x: Handle<JsNumber> = parse_int
 ///     .call_with(&cx)
@@ -77,7 +77,7 @@ impl<'a> CallOptions<'a> {
 /// ```
 /// # use neon::prelude::*;
 /// # fn foo(mut cx: FunctionContext) -> JsResult<JsObject> {
-/// # let global = cx.global();
+/// # let global = cx.global_object();
 /// # let url: Handle<JsFunction> = global.get(&mut cx, "URL")?;
 /// let obj = url
 ///     .construct_with(&cx)
