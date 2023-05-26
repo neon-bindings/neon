@@ -359,6 +359,12 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsDate::new(self, value)
     }
 
+    /// Convenience method for looking up a global property by name.
+    fn global<T: Value>(&mut self, name: &str) -> JsResult<'a, T> {
+        let global = self.global_object();
+        global.get(self, name)
+    }
+
     /// Produces a handle to the JavaScript global object.
     fn global_object(&mut self) -> Handle<'a, JsObject> {
         JsObject::build(|out| unsafe {
