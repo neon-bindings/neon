@@ -5,9 +5,9 @@ use super::{
     raw::{Env, Local},
 };
 
-pub unsafe fn new(out: &mut Local, env: Env, length: u32) {
+pub unsafe fn new(out: &mut Local, env: Env, length: usize) {
     assert_eq!(
-        napi::create_array_with_length(env, length as usize, out as *mut _),
+        napi::create_array_with_length(env, length, out as *mut _),
         napi::Status::Ok,
     );
 }

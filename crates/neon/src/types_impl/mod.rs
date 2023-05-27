@@ -886,11 +886,11 @@ impl JsArray {
     /// elements to the end of the array.
     ///
     /// **See also:** [`Context::empty_array`]
-    pub fn new<'a, C: Context<'a>>(cx: &mut C, len: u32) -> Handle<'a, JsArray> {
+    pub fn new<'a, C: Context<'a>>(cx: &mut C, len: usize) -> Handle<'a, JsArray> {
         JsArray::new_internal(cx.env(), len)
     }
 
-    pub(crate) fn new_internal<'a>(env: Env, len: u32) -> Handle<'a, JsArray> {
+    pub(crate) fn new_internal<'a>(env: Env, len: usize) -> Handle<'a, JsArray> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
             sys::array::new(&mut local, env.to_raw(), len);
