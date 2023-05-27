@@ -360,6 +360,22 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     /// Convenience method for looking up a global property by name.
+    ///
+    /// Equivalent to:
+    ///
+    /// ```
+    /// # use neon::prelude::*;
+    /// # fn get_array_global<'cx, C: Context<'cx>>(cx: &mut C) -> JsResult<'cx, JsFunction> {
+    /// #     let name = "Array";
+    /// #     let v: Handle<JsFunction> =
+    /// {
+    ///     let global = cx.global_object();
+    ///     global.get(cx, name)
+    /// }
+    /// #     ?;
+    /// #     Ok(v)
+    /// # }
+    /// ```
     fn global<T: Value>(&mut self, name: &str) -> JsResult<'a, T> {
         let global = self.global_object();
         global.get(self, name)
