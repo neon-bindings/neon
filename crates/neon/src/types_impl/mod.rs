@@ -16,7 +16,6 @@ pub(crate) mod utf8;
 
 use std::{
     fmt::{self, Debug},
-    marker::PhantomData,
     os::raw::c_void,
 };
 
@@ -1040,12 +1039,11 @@ impl Object for JsArray {}
 /// # Ok(f)
 /// # }
 /// ```
-pub struct JsFunction<T: Object = JsObject> {
+pub struct JsFunction {
     raw: raw::Local,
-    marker: PhantomData<T>,
 }
 
-impl<T: Object> Object for JsFunction<T> {}
+impl Object for JsFunction {}
 
 // Maximum number of function arguments in V8.
 const V8_ARGC_LIMIT: usize = 65535;
@@ -1123,7 +1121,6 @@ impl JsFunction {
             if let Ok(raw) = sys::fun::new(cx.env().to_raw(), name, f) {
                 Ok(Handle::new_internal(JsFunction {
                     raw,
-                    marker: PhantomData,
                 }))
             } else {
                 Err(Throw::new())
@@ -1132,7 +1129,7 @@ impl JsFunction {
     }
 }
 
-impl<CL: Object> JsFunction<CL> {
+impl JsFunction {
     /// Calls this function.
     ///
     /// **See also:** [`JsFunction::call_with`].
@@ -1173,7 +1170,7 @@ impl<CL: Object> JsFunction<CL> {
     /// Calls this function as a constructor.
     ///
     /// **See also:** [`JsFunction::construct_with`].
-    pub fn construct<'a, 'b, C: Context<'a>, AS>(&self, cx: &mut C, args: AS) -> JsResult<'a, CL>
+    pub fn construct<'a, 'b, C: Context<'a>, AS>(&self, cx: &mut C, args: AS) -> JsResult<'a, JsObject>
     where
         AS: AsRef<[Handle<'b, JsValue>]>,
     {
@@ -1216,15 +1213,14 @@ impl JsFunction {
     /// The caller must wrap in a `Handle` with an appropriate lifetime.
     unsafe fn clone(&self) -> Self {
         Self {
-            marker: PhantomData,
             raw: self.raw,
         }
     }
 }
 
-impl<T: Object> Value for JsFunction<T> {}
+impl Value for JsFunction {}
 
-unsafe impl<T: Object> TransparentNoCopyWrapper for JsFunction<T> {
+unsafe impl TransparentNoCopyWrapper for JsFunction {
     type Inner = raw::Local;
 
     fn into_inner(self) -> Self::Inner {
@@ -1232,7 +1228,7 @@ unsafe impl<T: Object> TransparentNoCopyWrapper for JsFunction<T> {
     }
 }
 
-impl<T: Object> ValueInternal for JsFunction<T> {
+impl ValueInternal for JsFunction {
     fn name() -> String {
         "function".to_string()
     }
@@ -1248,7 +1244,6 @@ impl<T: Object> ValueInternal for JsFunction<T> {
     unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
         JsFunction {
             raw: h,
-            marker: PhantomData,
         }
     }
 }
