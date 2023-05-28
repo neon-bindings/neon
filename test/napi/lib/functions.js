@@ -222,6 +222,28 @@ describe("JsFunction", function () {
     assert.strictEqual(addon.get_number_or_default(), 0);
   });
 
+  it("always provides an object for the this-binding", function() {
+    var meta1 = addon.assume_this_is_an_object.call(null);
+    assert.strictEqual(meta1.prototype, Object.getPrototypeOf(global));
+    assert.strictEqual(meta1.hasOwn, false);
+    assert.strictEqual(meta1.property, Object.getPrototypeOf(global).toString);
+
+    var meta2 = addon.assume_this_is_an_object.call(42);
+    assert.strictEqual(meta2.prototype, Number.prototype);
+    assert.strictEqual(meta2.hasOwn, false);
+    assert.strictEqual(meta2.property, Number.prototype.toString);
+
+    var meta3 = addon.assume_this_is_an_object.call(Object.create(null));
+    assert.strictEqual(meta3.prototype, null);
+    assert.strictEqual(meta3.hasOwn, false);
+    assert.strictEqual(meta3.property, undefined);
+
+    var meta4 = addon.assume_this_is_an_object.call({toString: 17});
+    assert.strictEqual(meta4.prototype, Object.prototype);
+    assert.strictEqual(meta4.hasOwn, true);
+    assert.strictEqual(meta4.property, 17);
+  });
+
   it("distinguishes calls from constructs", function () {
     assert.equal(addon.is_construct.call({}).wasConstructed, false);
     assert.equal(new addon.is_construct().wasConstructed, true);
