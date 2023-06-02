@@ -77,7 +77,7 @@ static GLOBAL_OBJECT: LocalKey<Root<JsObject>> = LocalKey::new();
 
 pub fn stash_global_object(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     GLOBAL_OBJECT.get_or_try_init(&mut cx, |cx| {
-        let global = cx.global();
+        let global = cx.global_object();
         let global: Root<JsObject> = Root::new(cx, &global);
         Ok(global)
     })?;

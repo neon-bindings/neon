@@ -15,8 +15,7 @@
 //!
 //! pub fn thread_id<'cx, C: Context<'cx>>(cx: &mut C) -> NeonResult<u32> {
 //!     THREAD_ID.get_or_try_init(cx, |cx| {
-//!         let global = cx.global();
-//!         let require: Handle<JsFunction> = global.get(cx, "require")?;
+//!         let require: Handle<JsFunction> = cx.global("require")?;
 //!         let worker: Handle<JsObject> = require.call_with(cx)
 //!             .arg(cx.string("node:worker_threads"))
 //!             .apply(cx)?;
