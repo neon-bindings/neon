@@ -74,7 +74,9 @@ pub(crate) struct LocalTable {
 
 pub(crate) type LocalCellValue = Box<dyn Any + Send + 'static>;
 
+#[derive(Default)]
 pub(crate) enum LocalCell {
+    #[default]
     /// Uninitialized state.
     Uninit,
     /// Intermediate "dirty" state representing the middle of a `get_or_try_init` transaction.
@@ -140,12 +142,6 @@ impl LocalCell {
 
         // If we're here, the transaction has succeeded, so get the result.
         Ok(LocalCell::get(cx, id).unwrap())
-    }
-}
-
-impl Default for LocalCell {
-    fn default() -> Self {
-        LocalCell::Uninit
     }
 }
 
