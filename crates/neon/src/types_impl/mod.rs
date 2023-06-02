@@ -200,7 +200,7 @@ impl JsValue {
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// // Extract the console object:
-/// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
+/// let console: Handle<JsObject> = cx.global("console")?;
 ///
 /// // The undefined value:
 /// let undefined = cx.undefined();
@@ -271,8 +271,7 @@ impl ValueInternal for JsUndefined {
 /// ```
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsNull> {
-/// cx.global()
-///     .get::<JsObject, _, _>(&mut cx, "console")?
+/// cx.global::<JsObject>("console")?
 ///     .call_method_with(&mut cx, "log")?
 ///     .arg(cx.null())
 ///     .exec(&mut cx)?;
@@ -341,7 +340,7 @@ impl ValueInternal for JsNull {
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// // Extract the console.log function:
-/// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
+/// let console: Handle<JsObject> = cx.global("console")?;
 /// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
 ///
 /// // The two Boolean values:
@@ -418,7 +417,7 @@ impl ValueInternal for JsBoolean {
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// // Extract the console.log function:
-/// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
+/// let console: Handle<JsObject> = cx.global("console")?;
 /// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
 ///
 /// // Create a string:
@@ -695,7 +694,7 @@ impl JsString {
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// // Extract the console.log function:
-/// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
+/// let console: Handle<JsObject> = cx.global("console")?;
 /// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
 ///
 /// // Create a number:
@@ -771,7 +770,7 @@ impl ValueInternal for JsNumber {
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// // Extract the console.log function:
-/// let console: Handle<JsObject> = cx.global().get(&mut cx, "console")?;
+/// let console: Handle<JsObject> = cx.global("console")?;
 /// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
 ///
 /// // Create an object:
@@ -885,11 +884,11 @@ impl JsArray {
     /// elements to the end of the array.
     ///
     /// **See also:** [`Context::empty_array`]
-    pub fn new<'a, C: Context<'a>>(cx: &mut C, len: u32) -> Handle<'a, JsArray> {
+    pub fn new<'a, C: Context<'a>>(cx: &mut C, len: usize) -> Handle<'a, JsArray> {
         JsArray::new_internal(cx.env(), len)
     }
 
-    pub(crate) fn new_internal<'a>(env: Env, len: u32) -> Handle<'a, JsArray> {
+    pub(crate) fn new_internal<'a>(env: Env, len: usize) -> Handle<'a, JsArray> {
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
             sys::array::new(&mut local, env.to_raw(), len);
@@ -984,9 +983,8 @@ impl Object for JsArray {}
 /// ```
 /// # use neon::prelude::*;
 /// # fn foo(mut cx: FunctionContext) -> JsResult<JsNumber> {
-/// # let global = cx.global();
 /// // Extract the parseInt function from the global object
-/// let parse_int: Handle<JsFunction> = global.get(&mut cx, "parseInt")?;
+/// let parse_int: Handle<JsFunction> = cx.global("parseInt")?;
 ///
 /// // Call parseInt("42")
 /// let x: Handle<JsNumber> = parse_int
@@ -1005,9 +1003,8 @@ impl Object for JsArray {}
 /// ```
 /// # use neon::prelude::*;
 /// # fn foo(mut cx: FunctionContext) -> JsResult<JsObject> {
-/// # let global = cx.global();
 /// // Extract the URL constructor from the global object
-/// let url: Handle<JsFunction> = global.get(&mut cx, "URL")?;
+/// let url: Handle<JsFunction> = cx.global("URL")?;
 ///
 /// // Call new URL("https://neon-bindings.com")
 /// let obj = url
