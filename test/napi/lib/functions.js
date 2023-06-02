@@ -222,7 +222,7 @@ describe("JsFunction", function () {
     assert.strictEqual(addon.get_number_or_default(), 0);
   });
 
-  it("always provides an object for the this-binding", function() {
+  it("always provides an object for the this-binding", function () {
     var meta1 = addon.assume_this_is_an_object.call(null);
     assert.strictEqual(meta1.prototype, Object.getPrototypeOf(global));
     assert.strictEqual(meta1.hasOwn, false);
@@ -238,7 +238,7 @@ describe("JsFunction", function () {
     assert.strictEqual(meta3.hasOwn, false);
     assert.strictEqual(meta3.property, undefined);
 
-    var meta4 = addon.assume_this_is_an_object.call({toString: 17});
+    var meta4 = addon.assume_this_is_an_object.call({ toString: 17 });
     assert.strictEqual(meta4.prototype, Object.prototype);
     assert.strictEqual(meta4.hasOwn, true);
     assert.strictEqual(meta4.property, 17);
