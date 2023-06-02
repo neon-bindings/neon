@@ -238,16 +238,18 @@ pub fn get_number_or_default(mut cx: FunctionContext) -> JsResult<JsNumber> {
 pub fn assume_this_is_an_object(mut cx: FunctionContext) -> JsResult<JsObject> {
     let this: Handle<JsObject> = cx.this()?;
     let result: Handle<JsObject> = cx.empty_object();
-    let global: Handle<JsObject> = cx.global();
-    let object_class: Handle<JsFunction> = global.get(&mut cx, "Object")?;
+    let object_class: Handle<JsFunction> = cx.global("Object")?;
     let get_prototype_of: Handle<JsFunction> = object_class.get(&mut cx, "getPrototypeOf")?;
     let object_prototype: Handle<JsObject> = object_class.get(&mut cx, "prototype")?;
     let has_own_property: Handle<JsFunction> = object_prototype.get(&mut cx, "hasOwnProperty")?;
-    let proto: Result<Handle<JsValue>, Handle<JsValue>> = cx.try_catch(|cx| {
-        get_prototype_of.call_with(cx).arg(this).apply(cx)
-    });
+    let proto: Result<Handle<JsValue>, Handle<JsValue>> =
+        cx.try_catch(|cx| get_prototype_of.call_with(cx).arg(this).apply(cx));
     let proto: Handle<JsValue> = proto.unwrap_or_else(|_| cx.undefined().upcast());
-    let has_own: Handle<JsBoolean> = has_own_property.call_with(&cx).this(this).arg(cx.string("toString")).apply(&mut cx)?;
+    let has_own: Handle<JsBoolean> = has_own_property
+        .call_with(&cx)
+        .this(this)
+        .arg(cx.string("toString"))
+        .apply(&mut cx)?;
     let prop: Handle<JsValue> = this.get(&mut cx, "toString")?;
     result.set(&mut cx, "prototype", proto)?;
     result.set(&mut cx, "hasOwn", has_own)?;

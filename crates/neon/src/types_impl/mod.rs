@@ -1116,9 +1116,7 @@ impl JsFunction {
 
         unsafe {
             if let Ok(raw) = sys::fun::new(cx.env().to_raw(), name, f) {
-                Ok(Handle::new_internal(JsFunction {
-                    raw,
-                }))
+                Ok(Handle::new_internal(JsFunction { raw }))
             } else {
                 Err(Throw::new())
             }
@@ -1167,7 +1165,11 @@ impl JsFunction {
     /// Calls this function as a constructor.
     ///
     /// **See also:** [`JsFunction::construct_with`].
-    pub fn construct<'a, 'b, C: Context<'a>, AS>(&self, cx: &mut C, args: AS) -> JsResult<'a, JsObject>
+    pub fn construct<'a, 'b, C: Context<'a>, AS>(
+        &self,
+        cx: &mut C,
+        args: AS,
+    ) -> JsResult<'a, JsObject>
     where
         AS: AsRef<[Handle<'b, JsValue>]>,
     {
@@ -1209,9 +1211,7 @@ impl JsFunction {
     /// # Safety
     /// The caller must wrap in a `Handle` with an appropriate lifetime.
     unsafe fn clone(&self) -> Self {
-        Self {
-            raw: self.raw,
-        }
+        Self { raw: self.raw }
     }
 }
 
@@ -1239,9 +1239,7 @@ impl ValueInternal for JsFunction {
     }
 
     unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
-        JsFunction {
-            raw: h,
-        }
+        JsFunction { raw: h }
     }
 }
 
