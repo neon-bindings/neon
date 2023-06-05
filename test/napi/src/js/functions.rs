@@ -307,10 +307,13 @@ pub fn caller_with_drop_callback(mut cx: FunctionContext) -> JsResult<JsFunction
         channel: cx.channel(),
     };
 
-    JsFunction::new(&mut cx, move |mut cx| {
-        let this = cx.undefined();
-        let args: [Handle<JsValue>; 0] = [];
+    JsFunction::new(
+        &mut cx,
+        neon::function::arg0(move |mut cx: FunctionContext| {
+            let this = cx.undefined();
+            let args: [Handle<JsValue>; 0] = [];
 
-        callback.f.to_inner(&mut cx).call(&mut cx, this, args)
-    })
+            callback.f.to_inner(&mut cx).call(&mut cx, this, args)
+        }),
+    )
 }

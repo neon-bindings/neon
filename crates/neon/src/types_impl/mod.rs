@@ -1075,20 +1075,18 @@ impl JsFunction {
 
     #[cfg(feature = "napi-5")]
     /// Returns a new `JsFunction` implemented by `f`.
-    pub fn new<'a, C, F, V>(cx: &mut C, f: F) -> JsResult<'a, JsFunction>
+    pub fn new<'a, C, F, Args>(cx: &mut C, f: F) -> JsResult<'a, JsFunction>
     where
         C: Context<'a>,
-        F: Fn(FunctionContext) -> JsResult<V> + 'static,
-        V: Value,
+        F: crate::function::Function<'static, Args> + 'static,
     {
         Self::new_internal(cx, f)
     }
 
-    fn new_internal<'a, C, F, V>(cx: &mut C, f: F) -> JsResult<'a, JsFunction>
+    fn new_internal<'a, C, F, Args>(cx: &mut C, f: F) -> JsResult<'a, JsFunction>
     where
         C: Context<'a>,
-        F: Fn(FunctionContext) -> JsResult<V> + 'static,
-        V: Value,
+        for<'cx> F: crate::function::Function<'static, Args> + 'static,
     {
         use std::any;
         use std::panic::AssertUnwindSafe;
@@ -1101,17 +1099,16 @@ impl JsFunction {
         let f = move |env: raw::Env, info| {
             let env = env.into();
             let info = unsafe { CallbackInfo::new(info) };
+            let cx = unsafe { FunctionContext::new(env, info) };
 
-            FunctionContext::with(env, &info, |cx| {
-                convert_panics(env, AssertUnwindSafe(|| f(cx)))
-                    .map(|v| v.to_local())
-                    // We do not have a Js Value to return, most likely due to an exception.
-                    // If we are in a throwing state, constructing a Js Value would be invalid.
-                    // While not explicitly written, the Node-API documentation includes many examples
-                    // of returning `NULL` when a native function does not return a value.
-                    // https://nodejs.org/api/n-api.html#n_api_napi_create_function
-                    .unwrap_or_else(|_: Throw| ptr::null_mut())
-            })
+            convert_panics(env, AssertUnwindSafe(|| f.call(cx)))
+                .map(|v| v.to_local())
+                // We do not have a Js Value to return, most likely due to an exception.
+                // If we are in a throwing state, constructing a Js Value would be invalid.
+                // While not explicitly written, the Node-API documentation includes many examples
+                // of returning `NULL` when a native function does not return a value.
+                // https://nodejs.org/api/n-api.html#n_api_napi_create_function
+                .unwrap_or_else(|_: Throw| ptr::null_mut())
         };
 
         unsafe {

@@ -18,19 +18,22 @@ where
     F: Fn(&mut FunctionContext) -> NeonResult<()> + 'static,
     C: Context<'cx>,
 {
-    JsFunction::new(cx, move |mut cx| {
-        panic::catch_unwind(panic::AssertUnwindSafe(|| f(&mut cx))).or_else(|panic| {
-            if let Some(s) = panic.downcast_ref::<&str>() {
-                cx.throw_error(s)
-            } else if let Some(s) = panic.downcast_ref::<String>() {
-                cx.throw_error(s)
-            } else {
-                panic::resume_unwind(panic)
-            }
-        })??;
+    JsFunction::new(
+        cx,
+        neon::function::arg0(move |mut cx| {
+            panic::catch_unwind(panic::AssertUnwindSafe(|| f(&mut cx))).or_else(|panic| {
+                if let Some(s) = panic.downcast_ref::<&str>() {
+                    cx.throw_error(s)
+                } else if let Some(s) = panic.downcast_ref::<String>() {
+                    cx.throw_error(s)
+                } else {
+                    panic::resume_unwind(panic)
+                }
+            })??;
 
-        Ok(cx.undefined())
-    })
+            Ok(cx.undefined())
+        }),
+    )
 }
 
 // Export a test that is expected not to throw

@@ -326,11 +326,11 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("count_called", {
         let n = std::cell::RefCell::new(0);
 
-        move |mut cx| {
+        neon::function::arg0(move |mut cx| {
             *n.borrow_mut() += 1;
 
             Ok(cx.number(*n.borrow()))
-        }
+        })
     })?;
 
     fn call_get_own_property_names(mut cx: FunctionContext) -> JsResult<JsArray> {
@@ -398,5 +398,49 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     // JsBigInt test suite
     cx.export_function("bigint_suite", js::bigint::bigint_suite)?;
 
+    cx.export_function("add_a", add_a)?;
+    cx.export_function("add_b", add_b)?;
+    cx.export_function("add_d", add_d)?;
+    cx.export_function("add_e", add_e)?;
+    cx.export_function("add_f", add_f)?;
+    cx.export_function("add_g", add_g)?;
+    cx.export_function("add_h", |a: f64, b: f64| a + b)?;
+    cx.export_function("add_i", |_cx, a: f64, b: f64| a + b)?;
+    cx.export_function("add_j", |_cx, a: f64, b: f64| Ok(a + b))?;
+
     Ok(())
+}
+
+fn add_a(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let a = cx.argument::<JsNumber>(0)?.value(&mut cx);
+    let b = cx.argument::<JsNumber>(1)?.value(&mut cx);
+
+    Ok(cx.number(a + b))
+}
+
+fn add_b<'cx>(
+    mut cx: FunctionContext<'cx>,
+    a: Handle<'cx, JsNumber>,
+    b: Handle<'cx, JsNumber>,
+) -> JsResult<'cx, JsNumber> {
+    let a = a.value(&mut cx);
+    let b = b.value(&mut cx);
+
+    Ok(cx.number(a + b))
+}
+
+fn add_d(mut cx: FunctionContext, a: f64, b: f64) -> JsResult<JsNumber> {
+    Ok(cx.number(a + b))
+}
+
+fn add_e(mut cx: FunctionContext, a: f64, b: f64) -> Handle<JsNumber> {
+    cx.number(a + b)
+}
+
+fn add_f(a: f64, b: f64) -> NeonResult<f64> {
+    Ok(a + b)
+}
+
+fn add_g(a: f64, b: f64) -> f64 {
+    a + b
 }

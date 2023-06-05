@@ -200,11 +200,11 @@ impl CallbackInfo<'_> {
         unsafe { sys::call::len(cx.env().to_raw(), self.info) }
     }
 
-    pub fn argv<'b, C: Context<'b>>(&self, cx: &mut C) -> sys::call::Arguments {
+    pub fn argv<'b, C: Context<'b>>(&self, cx: &C) -> sys::call::Arguments {
         unsafe { sys::call::argv(cx.env().to_raw(), self.info) }
     }
 
-    pub fn this<'b, C: Context<'b>>(&self, cx: &mut C) -> raw::Local {
+    pub fn this<'b, C: Context<'b>>(&self, cx: &C) -> raw::Local {
         let env = cx.env();
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
@@ -570,10 +570,9 @@ impl<'a> ModuleContext<'a> {
 
     #[cfg(feature = "napi-5")]
     /// Convenience method for exporting a Neon function from a module.
-    pub fn export_function<F, V>(&mut self, key: &str, f: F) -> NeonResult<()>
+    pub fn export_function<F, Args>(&mut self, key: &str, f: F) -> NeonResult<()>
     where
-        F: Fn(FunctionContext) -> JsResult<V> + 'static,
-        V: Value,
+        F: crate::function::Function<'static, Args> + 'static,
     {
         let value = JsFunction::new(self, f)?.upcast::<JsValue>();
         // Note: Cloning `exports` is necessary to avoid holding a shared reference to
@@ -635,7 +634,7 @@ impl<'a> Context<'a> for ComputeContext<'a> {}
 /// The type parameter `T` is the type of the `this`-binding.
 pub struct FunctionContext<'a> {
     env: Env,
-    info: &'a CallbackInfo<'a>,
+    info: CallbackInfo<'a>,
 
     arguments: Option<sys::call::Arguments>,
 }
@@ -648,16 +647,12 @@ impl<'a> FunctionContext<'a> {
         self.info.kind(self)
     }
 
-    pub(crate) fn with<U, F: for<'b> FnOnce(FunctionContext<'b>) -> U>(
-        env: Env,
-        info: &'a CallbackInfo<'a>,
-        f: F,
-    ) -> U {
-        f(FunctionContext {
+    pub(crate) unsafe fn new(env: Env, info: CallbackInfo<'a>) -> Self {
+        Self {
             env,
             info,
             arguments: None,
-        })
+        }
     }
 
     /// Indicates the number of arguments that were passed to the function.
@@ -675,7 +670,7 @@ impl<'a> FunctionContext<'a> {
         let argv = if let Some(argv) = self.arguments.as_ref() {
             argv
         } else {
-            let argv = self.info.argv(self);
+            let argv = self.info.argv(&*self);
             self.arguments.insert(argv)
         };
 
@@ -701,7 +696,7 @@ impl<'a> FunctionContext<'a> {
 
     /// Produces a handle to the function's [`this`-binding](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/this#function_context).
     pub fn this_value(&mut self) -> Handle<'a, JsValue> {
-        JsValue::new_internal(self.info.this(self))
+        JsValue::new_internal(self.info.this(&*self))
     }
 }
 
@@ -720,6 +715,16 @@ pub struct TaskContext<'a> {
 }
 
 impl<'a> TaskContext<'a> {
+    pub(crate) unsafe fn new<C>(cx: &mut C) -> Self
+    where
+        C: Context<'a>,
+    {
+        Self {
+            env: cx.env(),
+            _phantom_inner: PhantomData,
+        }
+    }
+
     pub(crate) fn with_context<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: Env, f: F) -> T {
         f(Self {
             env,

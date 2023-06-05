@@ -34,6 +34,7 @@ use {
     tokio::sync::oneshot,
 };
 
+use crate::context::FunctionContext;
 #[cfg(any(feature = "napi-6", all(feature = "napi-5", feature = "futures")))]
 use std::sync::Arc;
 
@@ -208,7 +209,7 @@ impl JsPromise {
         let resolve = JsFunction::new(cx, {
             let take_state = take_state.clone();
 
-            move |mut cx| {
+            move |mut cx: FunctionContext| {
                 let (f, tx) = take_state();
                 let v = cx.argument::<JsValue>(0)?;
 
@@ -217,12 +218,12 @@ impl JsPromise {
                     let _ = tx.send(f(cx, Ok(v)).map_err(Into::into));
                 });
 
-                Ok(cx.undefined())
+                Ok(())
             }
         })?;
 
         let reject = JsFunction::new(cx, {
-            move |mut cx| {
+            move |mut cx: FunctionContext| {
                 let (f, tx) = take_state();
                 let v = cx.argument::<JsValue>(0)?;
 
@@ -231,7 +232,7 @@ impl JsPromise {
                     let _ = tx.send(f(cx, Err(v)).map_err(Into::into));
                 });
 
-                Ok(cx.undefined())
+                Ok(())
             }
         })?;
 
