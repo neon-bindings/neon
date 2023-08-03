@@ -68,9 +68,9 @@ impl<T> std::fmt::Debug for Root<T> {
 // `Root` are intended to be `Send` and `Sync`
 // Safety: `Root` contains two types. A `NapiRef` which is `Send` and `Sync` and a
 // `PhantomData` that does not impact the safety.
-unsafe impl<T> Send for Root<T> {}
+unsafe impl<T: Send> Send for Root<T> {}
 
-unsafe impl<T> Sync for Root<T> {}
+unsafe impl<T: Sync> Sync for Root<T> {}
 
 #[cfg(feature = "napi-6")]
 fn instance_id<'a, C: Context<'a>>(cx: &mut C) -> InstanceId {
