@@ -80,6 +80,7 @@
 
 pub mod context;
 pub mod event;
+pub mod extract;
 pub mod handle;
 pub mod meta;
 pub mod object;

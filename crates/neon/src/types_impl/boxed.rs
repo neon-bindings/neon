@@ -259,6 +259,14 @@ impl<T: Finalize + 'static> JsBox<T> {
     }
 }
 
+impl<'cx, T: Finalize + 'static> Handle<'cx, JsBox<T>> {
+    pub fn as_ref(&self) -> &'cx T {
+        // Safety: `JsBox` is only a reference into the JS heap. This value
+        // will live at least as long as the _handle_ and not the `JsBox`.
+        unsafe { &*self.0.raw_data }
+    }
+}
+
 impl<T: 'static> Deref for JsBox<T> {
     type Target = T;
 

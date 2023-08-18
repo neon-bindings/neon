@@ -147,6 +147,7 @@ pub use crate::types::buffer::lock::Lock;
 
 use crate::{
     event::TaskBuilder,
+    extract::FromArgs,
     handle::Handle,
     object::Object,
     result::{JsResult, NeonResult, Throw},
@@ -211,6 +212,36 @@ impl CallbackInfo<'_> {
             sys::call::this(env.to_raw(), self.info, &mut local);
             local
         }
+    }
+
+    pub(crate) fn argv_exact<'b, C: Context<'b>, const N: usize>(
+        &self,
+        cx: &mut C,
+    ) -> [Handle<'b, JsValue>; N] {
+        use std::ptr;
+
+        let mut argv = [JsValue::new_internal(ptr::null_mut()); N];
+        let mut argc = argv.len();
+
+        // # Safety
+        // * Node-API fills empty slots with `undefined
+        // * `Handle` and `JsValue` are transparent wrappers around a raw pointer
+        unsafe {
+            assert_eq!(
+                sys::get_cb_info(
+                    cx.env().to_raw(),
+                    self.info,
+                    &mut argc,
+                    argv.as_mut_ptr().cast(),
+                    ptr::null_mut(),
+                    ptr::null_mut(),
+                ),
+                sys::Status::Ok,
+            );
+        }
+
+        // Empty values will be filled with `undefined`
+        argv
     }
 }
 
@@ -691,6 +722,27 @@ impl<'a> FunctionContext<'a> {
         }
     }
 
+    /// Extract Rust data from the JavaScript arguments.
+    ///
+    /// This is frequently more efficient and ergonomic than getting arguments
+    /// individually. See the [`extract`](crate::extract) module documentation
+    /// for more examples.
+    ///
+    /// ```
+    /// # use neon::prelude::*;
+    /// fn add(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    ///     let (a, b): (f64, f64) = cx.args()?;
+    ///
+    ///     Ok(cx.number(a + b))
+    /// }
+    /// ```
+    pub fn args<T>(&mut self) -> NeonResult<T>
+    where
+        T: FromArgs<'a>,
+    {
+        T::from_args(self)
+    }
+
     /// Produces a handle to the `this`-binding and attempts to downcast as a specific type.
     /// Equivalent to calling `cx.this_value().downcast_or_throw(&mut cx)`.
     ///
@@ -702,6 +754,10 @@ impl<'a> FunctionContext<'a> {
     /// Produces a handle to the function's [`this`-binding](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/this#function_context).
     pub fn this_value(&mut self) -> Handle<'a, JsValue> {
         JsValue::new_internal(self.info.this(self))
+    }
+
+    pub(crate) fn argv<const N: usize>(&mut self) -> [Handle<'a, JsValue>; N] {
+        self.info.argv_exact(self)
     }
 }
 

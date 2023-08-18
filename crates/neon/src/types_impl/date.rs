@@ -145,7 +145,7 @@ impl JsDate {
         Handle::new_internal(JsDate(local))
     }
 
-    /// Gets the `Date`'s value. An invalid `Date` will return [`std::f64::NAN`].
+    /// Gets the `Date`'s value. An invalid `Date` will return [`f64::NAN`].
     pub fn value<'a, C: Context<'a>>(&self, cx: &mut C) -> f64 {
         let env = cx.env().to_raw();
         unsafe { sys::date::value(env, self.to_local()) }
