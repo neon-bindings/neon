@@ -6,7 +6,7 @@ const NPM_ENV = "npm_package_name";
 const EXPECTED_COMMAND = [
   "Missing command to execute.",
   [
-    "cargo-cp-artifct -a cdylib my-crate index.node",
+    "cargo-cp-artifact -a cdylib my-crate index.node",
     "--",
     "cargo build --message-format=json-render-diagnostics",
   ].join(" "),
