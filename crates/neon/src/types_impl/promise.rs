@@ -186,7 +186,6 @@ impl JsPromise {
             + 'static,
     {
         let then = self.get::<JsFunction, _, _>(cx, "then")?;
-        let catch = self.get::<JsFunction, _, _>(cx, "catch")?;
 
         let (tx, rx) = oneshot::channel();
         let take_state = {
@@ -235,8 +234,11 @@ impl JsPromise {
             }
         })?;
 
-        then.exec(cx, Handle::new_internal(Self(self.0)), [resolve.upcast()])?;
-        catch.exec(cx, Handle::new_internal(Self(self.0)), [reject.upcast()])?;
+        then.exec(
+            cx,
+            Handle::new_internal(Self(self.0)),
+            [resolve.upcast(), reject.upcast()],
+        )?;
 
         Ok(JsFuture { rx })
     }
