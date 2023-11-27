@@ -164,10 +164,7 @@ unsafe fn maybe_external_deref<'a>(env: Env, local: raw::Local) -> Option<&'a Bo
 // Custom `Clone` implementation since `T` might not be `Clone`
 impl<T: 'static> Clone for JsBoxInner<T> {
     fn clone(&self) -> Self {
-        Self {
-            local: self.local,
-            raw_data: self.raw_data,
-        }
+        *self
     }
 }
 
