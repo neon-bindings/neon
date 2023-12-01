@@ -6,11 +6,11 @@
 //! in the process of shutting down. The context uses this internal state to manage what
 //! operations are safely available and when.
 //!
-//! The [`Context`](Context) trait provides an abstract interface to the JavaScript
+//! The [`Context`] trait provides an abstract interface to the JavaScript
 //! execution context. All interaction with the JavaScript engine in Neon code is mediated
 //! through instances of this trait.
 //!
-//! One particularly useful context type is [`FunctionContext`](FunctionContext), which is passed
+//! One particularly useful context type is [`FunctionContext`], which is passed
 //! to all Neon functions as their initial execution context.
 //!
 //! ```
@@ -20,7 +20,7 @@
 //! }
 //! ```
 //!
-//! Another important context type is [`ModuleContext`](ModuleContext), which is provided
+//! Another important context type is [`ModuleContext`], which is provided
 //! to a Neon module's [`main`](crate::main) function to enable sharing Neon functions back
 //! with JavaScript:
 //!
@@ -38,12 +38,12 @@
 //!
 //! Because contexts represent the engine at a point in time, they are associated with a
 //! [_lifetime_][lifetime], which limits how long Rust code is allowed to access them. This
-//! is also used to determine the lifetime of [`Handle`](crate::handle::Handle)s, which
+//! is also used to determine the lifetime of [`Handle`]s, which
 //! provide safe references to JavaScript memory managed by the engine's garbage collector.
 //!
 //! For example, we can
 //! write a simple string scanner that counts whitespace in a JavaScript string and
-//! returns a [`JsNumber`](crate::types::JsNumber):
+//! returns a [`JsNumber`]:
 //!
 //! ```
 //! # use neon::prelude::*;
@@ -111,7 +111,7 @@
 //! ## Throwing Exceptions
 //!
 //! When a Neon API causes a JavaScript exception to be thrown, it returns an
-//! [`Err`](std::result::Result::Err) result, indicating that the thread associated
+//! [`Err`] result, indicating that the thread associated
 //! with the context is now throwing. This allows Rust code to perform any
 //! cleanup before returning, but with an important restriction:
 //!
@@ -126,7 +126,7 @@
 //! JavaScript without calling any throwing APIs.
 //!
 //! Alternatively, to invoke a Neon API and catch any JavaScript exceptions, use the
-//! [`Context::try_catch`](Context::try_catch) method, which catches any thrown
+//! [`Context::try_catch`] method, which catches any thrown
 //! exception and restores the context to non-throwing state.
 //!
 //! ## See also
@@ -469,7 +469,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Returns an unbounded channel for scheduling events to be executed on the JavaScript thread.
     ///
     /// When using N-API >= 6,the channel returned by this method is backed by a shared queue.
-    /// To create a channel backed by a _new_ queue see [`Channel`](crate::event::Channel).
+    /// To create a channel backed by a _new_ queue see [`Channel`].
     fn channel(&mut self) -> Channel {
         #[cfg(feature = "napi-6")]
         let channel = InstanceData::channel(self);

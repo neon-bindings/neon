@@ -4,7 +4,6 @@ import * as path from "path";
 import { promises as fs } from "fs";
 import * as TOML from "toml";
 import expect from "../dev/expect";
-import rimraf from "../dev/rimraf";
 
 // HACK: `execa` is an ES module, but Neon tests in Node which doesn't include
 // an ESM loader. This is a small wrapper for `execa` that covers the test cases.
@@ -41,7 +40,7 @@ const PROJECT = "create-neon-test-project";
 
 describe("Project creation", () => {
   afterEach(async () => {
-    await rimraf(PROJECT, { maxBusyTries: 3, emfileWait: 100 });
+    await fs.rmdir(PROJECT, { recursive: true, maxRetries: 3 });
   });
 
   it("succeeds with all default answers", async () => {

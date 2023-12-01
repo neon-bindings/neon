@@ -25,9 +25,9 @@ jobs:
       - name: Set Matrix
         id: set_matrix
         env:
-          FULL_NODE_VERSIONS: '["14.x", "16.x", "18.x"]'
+          FULL_NODE_VERSIONS: '["18.x", "20.x", "21.x"]'
           FULL_RUST_TOOLCHAINS: '["stable", "nightly"]'
-          PARTIAL_NODE_VERSIONS: '["16.x"]'
+          PARTIAL_NODE_VERSIONS: '["20.x"]'
           PARTIAL_RUST_TOOLCHAINS: '["stable"]'
           HAS_FULL_MATRIX_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'full matrix') }}
           IS_PUSHED: ${{ github.event_name == 'push' }}
@@ -89,10 +89,6 @@ jobs:
         with:
           key: ${{ runner.os }}-electron-${{ hashFiles('./package-lock.json') }}
           path: ~/Library/Caches/electron
-
-      - name: Use npm v8
-        # https://github.com/npm/cli/issues/4552
-        run: npm -g i npm@~8.3
 
       - name: npm install
         run: npm ci --prefer-offline --no-audit --no-fund

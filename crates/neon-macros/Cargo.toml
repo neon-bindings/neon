@@ -5,12 +5,12 @@ authors = ["Dave Herman <david.herman@gmail.com>"]
 description = "Procedural macros supporting Neon"
 repository = "https://github.com/neon-bindings/neon"
 license = "MIT/Apache-2.0"
-edition = "2018"
+edition = "2021"
 
 [lib]
 proc-macro = true
 
 [dependencies]
-quote = "1"
-syn = "1"
-syn-mid = "0.5"
+quote = "1.0.33"
+syn = "2.0.39"
+syn-mid = "0.6.0"

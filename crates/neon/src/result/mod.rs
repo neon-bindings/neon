@@ -2,10 +2,10 @@
 //!
 //! Most interactions with the JavaScript engine can throw a JavaScript exception. Neon APIs
 //! that can throw an exception are called _throwing APIs_ and return the type
-//! [`NeonResult`](NeonResult) (or its shorthand [`JsResult`](JsResult)).
+//! [`NeonResult`] (or its shorthand [`JsResult`]).
 //!
-//! When a throwing API triggers a JavaScript exception, it returns an [Err](std::result::Result::Err)
-//! result. This indicates that the thread associated with the [`Context`](crate::context::Context)
+//! When a throwing API triggers a JavaScript exception, it returns an [Err]
+//! result. This indicates that the thread associated with the [`Context`]
 //! is now throwing, and allows Rust code to perform any cleanup. See the
 //! [`neon::context`](crate::context) module documentation for more about
 //! [contexts and exceptions](crate::context#throwing-exceptions).
@@ -17,7 +17,7 @@
 //!
 //! ## Example
 //!
-//! Neon functions typically use [`JsResult`](JsResult) for their return type. This
+//! Neon functions typically use [`JsResult`] for their return type. This
 //! example defines a function that extracts a property called `"message"` from an object,
 //! throwing an exception if the argument is not of the right type or extracting the property
 //! fails:
@@ -42,7 +42,7 @@ use crate::{context::Context, handle::Handle, types::Value};
 
 /// A [unit type][unit] indicating that the JavaScript thread is throwing an exception.
 ///
-/// `Throw` deliberately does not implement [`std::error::Error`](std::error::Error). It's
+/// `Throw` deliberately does not implement [`std::error::Error`]. It's
 /// not recommended to chain JavaScript exceptions with other kinds of Rust errors,
 /// since throwing means that the JavaScript thread is unavailable until the exception
 /// is handled.
@@ -80,11 +80,11 @@ impl Display for Throw {
 /// The result type for throwing APIs.
 pub type NeonResult<T> = Result<T, Throw>;
 
-/// Shorthand for a [`NeonResult`](NeonResult) that produces JavaScript values.
+/// Shorthand for a [`NeonResult`] that produces JavaScript values.
 pub type JsResult<'b, T> = NeonResult<Handle<'b, T>>;
 
-/// Extension trait for converting Rust [`Result`](std::result::Result) values
-/// into [`NeonResult`](NeonResult) values by throwing JavaScript exceptions.
+/// Extension trait for converting Rust [`Result`] values
+/// into [`NeonResult`] values by throwing JavaScript exceptions.
 pub trait ResultExt<T> {
     fn or_throw<'a, C: Context<'a>>(self, cx: &mut C) -> NeonResult<T>;
 }

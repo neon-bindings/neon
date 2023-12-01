@@ -1,6 +1,6 @@
 //! Traits for working with JavaScript objects.
 //!
-//! This module defines the [`Object`](Object) trait, which is implemented
+//! This module defines the [`Object`] trait, which is implemented
 //! by all object types in the [JavaScript type hierarchy][hierarchy]. This
 //! trait provides key operations in the semantics of JavaScript objects,
 //! such as getting and setting an object's properties.
@@ -9,7 +9,7 @@
 //!
 //! Object properties are accessed by a _property key_, which in JavaScript
 //! can be a string or [symbol][symbol]. (Neon does not yet have support for
-//! symbols.) For convenience, the [`PropertyKey`](PropertyKey) trait allows
+//! symbols.) For convenience, the [`PropertyKey`] trait allows
 //! Neon programs to use various Rust string types, as well as numeric types,
 //! as keys when accessing object properties, converting the keys to strings
 //! as necessary:

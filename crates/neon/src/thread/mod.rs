@@ -48,7 +48,7 @@
 //! ![The Node.js addon lifecycle, described in detail below.][lifecycle]
 //!
 //! This means that any thread-local data needs to be initialized separately for each
-//! instance of the addon. This module provides a simple container type, [`LocalKey`](LocalKey),
+//! instance of the addon. This module provides a simple container type, [`LocalKey`],
 //! for allocating and initializing thread-local data. (Technically, this data is stored in the
 //! addon's [module instance][environment], which is equivalent to being thread-local.)
 //!
@@ -116,13 +116,13 @@ fn next_id() -> usize {
 }
 
 /// A JavaScript thread-local container that owns its contents, similar to
-/// [`std::thread::LocalKey`](std::thread::LocalKey) but tied to a JavaScript thread rather
+/// [`std::thread::LocalKey`] but tied to a JavaScript thread rather
 /// than a system thread.
 ///
 /// ### Initialization and Destruction
 ///
 /// Initialization is dynamically performed on the first call to one of the `init` methods
-/// of `LocalKey`, and values that implement [`Drop`](std::ops::Drop) get destructed when
+/// of `LocalKey`, and values that implement [`Drop`] get destructed when
 /// the JavaScript thread exits, i.e. when a worker thread terminates or the main thread
 /// terminates on process exit.
 #[derive(Default)]

@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "cargo-cp-artifact": "^0.1.8",
-    "chai": "^4.3.6",
-    "mocha": "^10.0.0"
+    "chai": "^4.3.10",
+    "mocha": "^10.2.0"
   }
 }

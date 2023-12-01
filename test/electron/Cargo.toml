@@ -1,7 +1,7 @@
 [package]
 name = "electron-tests"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 authors = ["The Neon Community"]
 license = "MIT/Apache-2.0"
 
