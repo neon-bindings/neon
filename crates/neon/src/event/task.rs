@@ -8,10 +8,6 @@ use crate::{
     types::{Deferred, JsPromise, Value},
 };
 
-#[cfg_attr(
-    feature = "task-api",
-    deprecated = "`task-api` feature has no impact and may be removed"
-)]
 /// Node asynchronous task builder
 ///
 /// ```

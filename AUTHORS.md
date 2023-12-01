@@ -19,6 +19,7 @@ Neon owes its existence to the contributions of these fine people.
 * [ComplexSpaces](https://github.com/complexspaces)
 * [Nathaniel Daniel](https://github.com/adumbidiot)
 * [John Darrington](https://github.com/DnOberon)
+* [erics118](https://github.com/erics118)
 * [Joey Ezechiëls](https://github.com/jjpe)
 * [Ryan Fitzgerald](https://github.com/rf-)
 * [Cory Forsyth](https://github.com/bantic)
@@ -74,4 +75,5 @@ Neon owes its existence to the contributions of these fine people.
 * [Chi Wang](https://github.com/patr0nus)
 * [wangcong](https://github.com/king6cong)
 * [Amila Welihinda](https://github.com/amilajack)
+* [xyloflake](https://github.com/xyloflake)
 * [Felix Yan](https://github.com/felixonmars)

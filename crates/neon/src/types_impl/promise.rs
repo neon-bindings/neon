@@ -45,10 +45,6 @@ const BOUNDARY: FailureBoundary = FailureBoundary {
 
 #[derive(Debug)]
 #[repr(transparent)]
-#[cfg_attr(
-    feature = "promise-api",
-    deprecated = "`promise-api` feature has no impact and may be removed"
-)]
 /// The type of JavaScript
 /// [`Promise`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise)
 /// objects.

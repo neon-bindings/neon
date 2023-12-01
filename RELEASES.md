@@ -1,3 +1,29 @@
+# Version 1.0.0
+
+## Commitment to Compatibility
+The release of Neon 1.0 marks our commitment to backwards-compatibility: starting with 1.0.0, Neon users can be confident that future **upgrades to Neon 1.x versions should never require code changes** (with the possible exception of safety bugfixes, which we expect to be rare). We also do not anticipate releasing new major versions often and do not have any plans to do so for now.
+
+## Breaking Changes
+
+* Remove the generic parameter from `JsFunction` (https://github.com/neon-bindings/neon/pull/989)
+* `JsArray::new` takes a `usize` instead of a `u32` (https://github.com/neon-bindings/neon/pull/988)
+* Made `Context::global` read a key and added `Context::global_object` (https://github.com/neon-bindings/neon/pull/987)
+* Deprecated feature flags were removed
+
+## Bug fixes
+
+* Fix `unhandledRejection` with `JsPromise::to_future` (https://github.com/neon-bindings/neon/pull/1008)
+* Typo in `cargo-cp-artifact` help (https://github.com/neon-bindings/neon/pull/998)
+* Typo in README (https://github.com/neon-bindings/neon/pull/1012)
+
+## Other
+
+https://github.com/neon-bindings/neon/pull/1010
+
+* Bumped dependency versions
+* Changed to edition 2021
+* Updated support matrix to Node 18, 20, and 21
+
 # Version 1.0.0-alpha.4
 
 Patch to enable new features flags in docs.rs.

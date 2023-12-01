@@ -1,6 +1,6 @@
 [package]
 name = "neon"
-version = "1.0.0-alpha.4"
+version = "1.0.0"
 authors = ["Dave Herman <david.herman@gmail.com>"]
 description = "A safe abstraction layer for Node.js."
 readme = "../../README.md"
@@ -27,7 +27,7 @@ libloading = "0.8.1"
 semver = "1.0.20"
 smallvec = "1.11.2"
 once_cell = "1.18.0"
-neon-macros = { version = "=1.0.0-alpha.4", path = "../neon-macros" }
+neon-macros = { version = "=1.0.0", path = "../neon-macros" }
 aquamarine = { version = "0.3.2", optional = true }
 easy-cast = { version = "0.5.2", optional = true }
 doc-comment = { version = "0.3.3", optional = true }
@@ -74,17 +74,6 @@ napi-7 = ["napi-6"]
 napi-8 = ["napi-7", "getrandom"]
 napi-latest = ["napi-8"]
 napi-experimental = ["napi-8"]
-
-# DEPRECATED: These perform no action and will be removed in 1.0
-try-catch-api = []
-channel-api = []
-event-queue-api = []
-promise-api = []
-task-api = []
-
-# Feature flag to include procedural macros
-# DEPRECATED: This is always enabled and should be removed.
-proc-macros = []
 
 # Enables the optional dependencies that are only used for generating the API docs.
 doc-dependencies = ["doc-comment", "aquamarine", "easy-cast"]
