@@ -302,7 +302,7 @@ impl JsArrayBuffer {
 }
 
 impl<'cx> Handle<'cx, JsArrayBuffer> {
-    /// Returns a [`Region`](crate::types::buffer::Region) representing a typed
+    /// Returns a [`Region`] representing a typed
     /// region of this buffer, starting at `offset` and containing `len` elements
     /// of type `T`.
     ///
@@ -321,7 +321,7 @@ impl<'cx> Handle<'cx, JsArrayBuffer> {
     /// # }
     /// ```
     ///
-    /// See the [`Region`](Region) documentation for more information.
+    /// See the [`Region`] documentation for more information.
     pub fn region<T: Binary>(&self, offset: usize, len: usize) -> Region<'cx, T> {
         Region {
             buffer: *self,
@@ -614,8 +614,8 @@ where
     where
         C: Context<'cx>,
     {
-        let elt_size = std::mem::size_of::<T>();
-        let size = slice.len() * elt_size;
+        let _elt_size = std::mem::size_of::<T>();
+        let size = std::mem::size_of_val(slice);
         let buffer = cx.array_buffer(size)?;
 
         let mut array = Self::from_buffer(cx, buffer)?;
@@ -779,7 +779,7 @@ where
 }
 
 macro_rules! impl_typed_array {
-    ($typ:ident, $etyp:ty, $($pattern:pat)|+, $tag:ident, $alias:ident, $two:expr$(,)?) => {
+    ($typ:ident, $etyp:ty, $($pattern:pat_param)|+, $tag:ident, $alias:ident, $two:expr$(,)?) => {
         impl private::Sealed for $etyp {}
 
         impl Binary for $etyp {

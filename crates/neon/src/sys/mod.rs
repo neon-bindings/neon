@@ -12,7 +12,7 @@
 //!
 //! ## Initialization
 //!
-//! Before any Node-API functions may be used, [`setup`](setup) must be called at
+//! Before any Node-API functions may be used, [`setup`] must be called at
 //! least once.
 //!
 //! ```rust,no_run
@@ -22,7 +22,7 @@
 //! unsafe { neon::sys::setup(env); }
 //! # }
 //! ```
-//! **Note**: It is unnecessary to call [`setup`](setup) if
+//! **Note**: It is unnecessary to call [`setup`] if
 //! [`#[neon::main]`](crate::main) is used to initialize the addon.
 //!
 //! ## Safety
@@ -34,7 +34,7 @@
 //!
 //! ### Env
 //!
-//! Neon ensures safety by carefully restricting access to [`Env`](bindings::Env)
+//! Neon ensures safety by carefully restricting access to [`Env`]
 //! by wrapping it in a [`Context`](crate::context::Context). Usages of `Env`
 //! should follow Neon's borrowing rules of `Context`.
 //!
@@ -45,7 +45,7 @@
 //!
 //! Neon [value types](crate::types) encapsulate references to
 //! [JavaScript values](bindings::Value) with a _known type_. It is unsound to
-//! construct a Neon value with a [`Value`](bindings::Value) of the incorrect type.
+//! construct a Neon value with a [`Value`] of the incorrect type.
 //!
 //! ## Example
 //!

@@ -5,14 +5,14 @@
 //!
 //! Neon APIs that accept and return JavaScript values never use raw pointer types
 //! ([`*T`](pointer)) or reference types ([`&T`](reference)). Instead they use the
-//! special Neon type [`Handle`](Handle), which encapsulates a JavaScript
-//! [`Value`](crate::types::Value) and ensures that Rust only maintains access to
+//! special Neon type [`Handle`], which encapsulates a JavaScript
+//! [`Value`] and ensures that Rust only maintains access to
 //! the value while it is guaranteed to be valid.
 //!
 //! ## Working with Handles
 //!
 //! The `Handle<T>` type automatically dereferences to `T` (via the standard
-//! [`Deref`](std::ops::Deref) trait), so you can call `T`'s methods on a value of
+//! [`Deref`] trait), so you can call `T`'s methods on a value of
 //! type `Handle<T>`. For example, we can call
 //! [`JsNumber::value()`](crate::types::JsNumber::value) on a `Handle<JsNumber>`:
 //!

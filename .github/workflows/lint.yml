@@ -20,7 +20,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [20.x]
         rust-toolchain: [nightly]
 
     steps:

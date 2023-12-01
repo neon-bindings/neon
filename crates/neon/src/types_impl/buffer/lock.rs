@@ -136,7 +136,7 @@ mod tests {
     #[test]
     fn test_overlapping_immutable_borrows() -> Result<(), Box<dyn Error>> {
         let ledger = RefCell::new(Ledger::default());
-        let data = vec![0u8; 128];
+        let data = [0u8; 128];
 
         Ledger::try_borrow(&ledger, &data[0..10])?;
         Ledger::try_borrow(&ledger, &data[0..100])?;
@@ -148,7 +148,7 @@ mod tests {
     #[test]
     fn test_nonoverlapping_borrows() -> Result<(), Box<dyn Error>> {
         let ledger = RefCell::new(Ledger::default());
-        let mut data = vec![0; 16];
+        let mut data = [0; 16];
         let (a, b) = data.split_at_mut(4);
 
         let _a = Ledger::try_borrow_mut(&ledger, a)?;
@@ -160,7 +160,7 @@ mod tests {
     #[test]
     fn test_overlapping_borrows() -> Result<(), Box<dyn Error>> {
         let ledger = RefCell::new(Ledger::default());
-        let mut data = vec![0; 16];
+        let mut data = [0; 16];
         let a = unsafe_aliased_slice(&mut data[4..8]);
         let b = unsafe_aliased_slice(&mut data[6..12]);
         let ab = Ledger::try_borrow(&ledger, a)?;

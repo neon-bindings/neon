@@ -42,8 +42,8 @@ Neon projects to 0.10!
 
 ### Node.js
 
-| Node 12 | Node 14 | Node 16 |
-| ------- | ------- | ------- |
+| Node 18 | Node 20 | Node 21 |
+|---------|---------|---------|
 | ✓       | ✓       | ✓       |
 
 Support for [LTS versions of Node](https://github.com/nodejs/LTS#release-schedule) and current are expected. If you're

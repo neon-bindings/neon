@@ -8,33 +8,33 @@ homepage = "https://www.neon-bindings.com"
 repository = "https://github.com/neon-bindings/neon"
 license = "MIT/Apache-2.0"
 exclude = ["neon.jpg", "doc/**/*"]
-edition = "2018"
+edition = "2021"
 
 [dev-dependencies]
-semver = "1"
-psd = "0.3.1"        # used for a doc example
-anyhow = "1.0.58"    # used for a doc example
+semver = "1.0.20"
+psd = "0.3.4"        # used for a doc example
+anyhow = "1.0.75"    # used for a doc example
 widestring = "1.0.2" # used for a doc example
-linkify = "0.9.0"    # used for a doc example
+linkify = "0.10.0"   # used for a doc example
 
 [target.'cfg(not(target = "windows"))'.dev-dependencies]
 # Avoid `clang` as a dependency on windows
-nodejs-sys = "0.14.0"
+nodejs-sys = "0.15.0"
 
 [dependencies]
-getrandom = { version = "0.2.7", optional = true }
-libloading = "0.7.3"
-semver = "1"
-smallvec = "1.4.2"
-once_cell = "1.10.0"
+getrandom = { version = "0.2.11", optional = true }
+libloading = "0.8.1"
+semver = "1.0.20"
+smallvec = "1.11.2"
+once_cell = "1.18.0"
 neon-macros = { version = "=1.0.0-alpha.4", path = "../neon-macros" }
-aquamarine = { version = "0.1.11", optional = true }
-easy-cast = { version = "0.5.1", optional = true }
+aquamarine = { version = "0.3.2", optional = true }
+easy-cast = { version = "0.5.2", optional = true }
 doc-comment = { version = "0.3.3", optional = true }
-send_wrapper = "0.6"
+send_wrapper = "0.6.0"
 
 [dependencies.tokio]
-version = "1.24.2"
+version = "1.34.0"
 default-features = false
 features = ["sync"]
 optional = true
