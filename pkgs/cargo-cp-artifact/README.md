@@ -79,7 +79,7 @@ npm run build -- --feature=serde
 
 At the time of writing, `cargo` does not include a configuration for outputting a library or binary to a specified location. An `--out-dir` option [exists on nightly](https://github.com/rust-lang/cargo/issues/6790), but does not allow specifying the name of the file.
 
-It surprisingly difficult to reliably find the location of a cargo compiler artifact. It is impacted by many parameters, including:
+It's surprisingly difficult to reliably find the location of a cargo compiler artifact. It is impacted by many parameters, including:
 
 * Build profile
 * Target, default or specified
