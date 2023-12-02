@@ -2,9 +2,9 @@
 
 import { promises as fs } from "fs";
 import * as path from "path";
-import die from "../die";
-import Package from "../package";
-import expand from "../expand";
+import die from "../die.js";
+import Package from "../package.js";
+import expand from "../expand.js";
 import versions from "../../data/versions.json";
 
 const TEMPLATES: Record<string, string> = {

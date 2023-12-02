@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import * as path from "path";
 import versions from "../data/versions.json";
-import shell from "./shell";
+import shell from "./shell.js";
 
 const KEYS = [
   "name",

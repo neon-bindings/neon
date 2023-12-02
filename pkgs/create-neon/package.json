@@ -30,6 +30,7 @@
     "neon"
   ],
   "devDependencies": {
+    "@tsconfig/node18": "^18.2.2",
     "@types/chai": "^4.3.11",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.10.1",
