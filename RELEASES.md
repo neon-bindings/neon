@@ -1,6 +1,7 @@
 # Version 1.0.0
 
 ## Commitment to Compatibility
+
 The release of Neon 1.0 marks our commitment to backwards-compatibility: starting with 1.0.0, Neon users can be confident that future **upgrades to Neon 1.x versions should never require code changes** (with the possible exception of safety bugfixes, which we expect to be rare). We also do not anticipate releasing new major versions often and do not have any plans to do so for now.
 
 ## Breaking Changes
@@ -20,6 +21,7 @@ The release of Neon 1.0 marks our commitment to backwards-compatibility: startin
 
 https://github.com/neon-bindings/neon/pull/1010
 
+* Relaxed error behavior on missing Node-API symbols. Neon will panic on first use instead of aborting the process at module load time.
 * Bumped dependency versions
 * Changed to edition 2021
 * Updated support matrix to Node 18, 20, and 21

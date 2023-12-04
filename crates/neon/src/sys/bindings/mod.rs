@@ -137,18 +137,7 @@ macro_rules! generate {
             }
         };
 
-        pub(super) unsafe fn load(
-            host: &libloading::Library,
-            actual_napi_version: u32,
-            expected_napi_version: u32,
-        ) {
-            assert!(
-                actual_napi_version >= expected_napi_version,
-                "Minimum required Node-API version {}, found {}.",
-                expected_napi_version,
-                actual_napi_version,
-            );
-
+        pub(super) unsafe fn load(host: &libloading::Library) {
             let print_warn = |err| eprintln!("WARN: {}", err);
 
             NAPI = Napi {

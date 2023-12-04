@@ -40,7 +40,7 @@ features = ["sync"]
 optional = true
 
 [features]
-default = ["napi-1"]
+default = ["napi-8"]
 
 # Enable the creation of external binary buffers. This is disabled by default
 # since these APIs fail at runtime in environments that enable the V8 memory
