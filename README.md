@@ -25,12 +25,12 @@ Neon!
 See our [Neon fundamentals docs](https://neon-bindings.com/docs/intro) and
 our [API docs](https://docs.rs/neon/latest/neon).
 
-## Neon 0.10 Migration Guide
+## Neon 1.0.0 Migration Guide
 
-The latest version of Neon, 0.10, includes a few small breaking changes in order to clean up and improve the usability of our APIs.
+The latest version of Neon, 1.0.0, includes several breaking changes in order to fix unsoundness, improve consistency, and add features.
 
-**Read the new [migration guide](https://github.com/neon-bindings/neon/blob/main/doc/MIGRATION_GUIDE_0.10.md)** to learn how to port your 
-Neon projects to 0.10!
+**Read the new [migration guide](doc/MIGRATION_GUIDE_1.0.0.md)** to learn how to port your 
+Neon projects to 1.0.0!
 
 ## Platform Support
 

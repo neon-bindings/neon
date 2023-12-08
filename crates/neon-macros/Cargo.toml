@@ -1,6 +1,6 @@
 [package]
 name = "neon-macros"
-version = "1.0.0-alpha.4"
+version = "1.0.0"
 authors = ["Dave Herman <david.herman@gmail.com>"]
 description = "Procedural macros supporting Neon"
 repository = "https://github.com/neon-bindings/neon"

@@ -1,5 +1,5 @@
 {
-  "neon": "0.10",
+  "neon": "1.0.0",
   "napi": "8",
   "cargo-cp-artifact": "0.1"
 }

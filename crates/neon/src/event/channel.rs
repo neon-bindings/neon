@@ -90,14 +90,6 @@ type Callback = Box<dyn FnOnce(Env) + Send + 'static>;
 ///     Ok(cx.undefined())
 /// }
 /// ```
-#[cfg_attr(
-    feature = "channel-api",
-    deprecated = "`channel-api` feature has no impact and may be removed"
-)]
-#[cfg_attr(
-    all(not(feature = "channel-api"), feature = "event-queue-api"),
-    deprecated = "`event-queue-api` feature has no impact and may be removed"
-)]
 #[cfg_attr(docsrs, doc(cfg(feature = "napi-4")))]
 pub struct Channel {
     state: Arc<ChannelState>,

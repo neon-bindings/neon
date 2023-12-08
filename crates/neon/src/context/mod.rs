@@ -284,10 +284,6 @@ pub trait Context<'a>: ContextInternal<'a> {
         }))
     }
 
-    #[cfg_attr(
-        feature = "try-catch-api",
-        deprecated = "`try-catch-api` feature has no impact and may be removed"
-    )]
     fn try_catch<T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
     where
         F: FnOnce(&mut Self) -> NeonResult<T>,
@@ -457,14 +453,6 @@ pub trait Context<'a>: ContextInternal<'a> {
     }
 
     #[cfg(feature = "napi-4")]
-    #[cfg_attr(
-        feature = "channel-api",
-        deprecated = "`channel-api` feature has no impact and may be removed"
-    )]
-    #[cfg_attr(
-        all(not(feature = "channel-api"), feature = "event-queue-api"),
-        deprecated = "`event-queue-api` feature has no impact and may be removed"
-    )]
     #[cfg_attr(docsrs, doc(cfg(feature = "napi-4")))]
     /// Returns an unbounded channel for scheduling events to be executed on the JavaScript thread.
     ///
@@ -480,10 +468,6 @@ pub trait Context<'a>: ContextInternal<'a> {
         channel
     }
 
-    #[cfg_attr(
-        feature = "promise-api",
-        deprecated = "`promise-api` feature has no impact and may be removed"
-    )]
     /// Creates a [`Deferred`] and [`JsPromise`] pair. The [`Deferred`] handle can be
     /// used to resolve or reject the [`JsPromise`].
     ///
@@ -502,10 +486,6 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsPromise::new(self)
     }
 
-    #[cfg_attr(
-        feature = "task-api",
-        deprecated = "`task-api` feature has no impact and may be removed"
-    )]
     /// Creates a [`TaskBuilder`] which can be used to schedule the `execute`
     /// callback to asynchronously execute on the
     /// [Node worker pool](https://nodejs.org/en/docs/guides/dont-block-the-event-loop/).

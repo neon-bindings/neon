@@ -15,6 +15,6 @@ once_cell = "1.18.0"
 tokio = { version = "1.34.0", features = ["rt-multi-thread"] }
 
 [dependencies.neon]
-version = "1.0.0-alpha.4"
+version = "1.0.0"
 path = "../../crates/neon"
 features = ["futures", "napi-experimental", "external-buffers"]
