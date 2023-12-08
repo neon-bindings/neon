@@ -7,7 +7,7 @@ const TEMPLATES_DIR = path.join(__dirname, "..", "data", "templates");
 
 export interface Versions {
   neon: string;
-  napi: number;
+  "cargo-cp-artifact": string;
 }
 
 export interface Metadata {
