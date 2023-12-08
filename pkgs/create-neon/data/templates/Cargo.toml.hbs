@@ -19,8 +19,4 @@ crate-type = ["cdylib"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
-[dependencies.neon]
-version = "{{versions.neon}}"
-default-features = false
-features = ["napi-{{versions.napi}}"]
+neon = "{{versions.neon}}"

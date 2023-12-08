@@ -4,7 +4,7 @@ import { promises as fs } from "fs";
 import * as path from "path";
 import die from "../die";
 import Package from "../package";
-import expand, { Versions } from "../expand";
+import expand from "../expand";
 import versions from "../../data/versions.json";
 
 const TEMPLATES: Record<string, string> = {
@@ -13,21 +13,6 @@ const TEMPLATES: Record<string, string> = {
   "README.md.hbs": "README.md",
   "lib.rs.hbs": path.join("src", "lib.rs"),
 };
-
-function inferVersions(): Versions {
-  // Select the N-API version associated with the current
-  // running Node process.
-  let inferred = process.versions.napi;
-
-  let napi = inferred
-    ? Math.min(Number(versions.napi), Number(inferred))
-    : Number(versions.napi);
-
-  return {
-    neon: versions.neon,
-    napi: napi,
-  };
-}
 
 async function main(name: string) {
   let tmpFolderName: string = "";
@@ -56,7 +41,7 @@ async function main(name: string) {
       let target = path.join(tmpFolderName, TEMPLATES[source]);
       await expand(source, target, {
         package: pkg,
-        versions: inferVersions(),
+        versions,
       });
     }
   }
