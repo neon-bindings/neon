@@ -1,6 +1,6 @@
-import { promises as fs } from "fs";
-import * as path from "path";
-import shell from "./shell.js";
+import { promises as fs } from 'fs';
+import * as path from 'path';
+import shell from './shell.js';
 import { VERSIONS } from './versions.js';
 
 const KEYS = [

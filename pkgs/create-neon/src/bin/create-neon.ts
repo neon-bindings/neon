@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-import { promises as fs } from "fs";
-import * as path from "path";
-import die from "../die.js";
-import Package from "../package.js";
+import { promises as fs } from 'fs';
+import * as path from 'path';
+import die from '../die.js';
+import Package from '../package.js';
 import { VERSIONS } from '../versions.js';
-import expand from "../expand.js";
+import expand from '../expand.js';
 import chalk from 'chalk';
 
 function pink(text: string): string {
