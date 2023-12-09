@@ -10,8 +10,9 @@ function readChunks(input: Readable): Readable {
     output.write(decoder.write(data));
   });
   input.on("close", () => {
-    output.write(decoder.end());
-    output.destroy();
+    let end = decoder.end();
+    output.write(end || "");
+    output.end();
   });
   return output;
 }
@@ -35,6 +36,9 @@ class LinesBuffer {
   }
 
   add(lines: string[]) {
+    if (lines.length === 0) {
+      return;
+    }
     if (isCompleteLine(lines[lines.length - 1])) {
       lines.push("");
     }

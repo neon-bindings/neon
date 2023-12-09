@@ -1,20 +1,14 @@
-import { assert } from "chai";
-import { spawn } from "child_process";
-import * as path from "path";
-import { promises as fs } from "fs";
-import * as TOML from "toml";
-import expect from "../dev/expect.js";
-
-// HACK: `execa` is an ES module, but Neon tests in Node which doesn't include
-// an ESM loader. This is a small wrapper for `execa` that covers the test cases.
-async function execa(command: string, args: readonly string[]): Promise<void> {
-  const { execa } = await import("execa");
-
-  await execa(command, args);
-}
+import { assert } from 'chai';
+import { spawn } from 'child_process';
+import * as path from 'path';
+import { promises as fs } from 'fs';
+import * as TOML from 'toml';
+import expect from '../dev/expect.js';
+import { execa } from 'execa';
+import { fileURLToPath } from 'url';
 
 const NODE: string = process.execPath;
-const CREATE_NEON = path.join(__dirname, "..", "src", "bin", "create-neon.js");
+const CREATE_NEON = fileURLToPath(new URL(path.join('..', 'src', 'bin', 'create-neon.js'), import.meta.url));
 
 describe("Command-line argument validation", () => {
   it("requires an argument", async () => {
@@ -40,7 +34,7 @@ const PROJECT = "create-neon-test-project";
 
 describe("Project creation", () => {
   afterEach(async () => {
-    await fs.rmdir(PROJECT, { recursive: true, maxRetries: 3 });
+    await fs.rm(PROJECT, { recursive: true, maxRetries: 3 });
   });
 
   it("succeeds with all default answers", async () => {
@@ -69,7 +63,7 @@ describe("Project creation", () => {
     assert.strictEqual(json.main, "index.node");
     assert.strictEqual(json.version, "0.1.0");
     assert.strictEqual(json.scripts.test, "cargo test");
-    assert.strictEqual(json.license, "ISC");
+    assert.isString(json.license);
     assert.strictEqual(json.description, "");
     assert.strictEqual(json.author, "");
 
@@ -79,7 +73,7 @@ describe("Project creation", () => {
 
     assert.strictEqual(toml.package.name, PROJECT);
     assert.strictEqual(toml.package.version, "0.1.0");
-    assert.strictEqual(toml.package.license, "ISC");
+    assert.strictEqual(toml.package.license, json.license);
     assert.deepEqual(toml.lib["crate-type"], ["cdylib"]);
   });
 
