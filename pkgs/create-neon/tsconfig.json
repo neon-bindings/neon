@@ -1,13 +1,10 @@
 {
   "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
-    "allowJs": false,
-    "sourceMap": false,
+    "module": "es2022",
+    "moduleResolution": "bundler",
     "outDir": "dist",
-    "noImplicitReturns": true,
-    "allowUnreachableCode": false,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noImplicitAny": true,
     "resolveJsonModule": true
   },
   "include": ["src/**/*", "dev/**/*", "test/**/*"],

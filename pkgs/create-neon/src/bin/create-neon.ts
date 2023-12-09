@@ -4,8 +4,17 @@ import { promises as fs } from "fs";
 import * as path from "path";
 import die from "../die.js";
 import Package from "../package.js";
+import { VERSIONS } from '../versions.js';
 import expand from "../expand.js";
-import versions from "../../data/versions.json";
+import chalk from 'chalk';
+
+function pink(text: string): string {
+  return chalk.bold.hex('#e75480')(text);
+}
+
+function blue(text: string): string {
+  return chalk.bold.cyanBright(text);
+}
 
 const TEMPLATES: Record<string, string> = {
   ".gitignore.hbs": ".gitignore",
@@ -41,7 +50,7 @@ async function main(name: string) {
       let target = path.join(tmpFolderName, TEMPLATES[source]);
       await expand(source, target, {
         package: pkg,
-        versions,
+        versions: VERSIONS,
       });
     }
   }
@@ -56,10 +65,10 @@ async function main(name: string) {
 
 if (process.argv.length < 3) {
   console.error(
-    "✨ create-neon: Create a new Neon project with zero configuration. ✨"
+    `✨ ${pink('create-neon:')} Create a new Neon project with zero configuration. ✨`
   );
   console.error();
-  console.error("Usage: npm init neon name");
+  console.error(`${blue('Usage:')} npm init neon name`);
   console.error();
   console.error(
     "  name   The name of your Neon project, placed in a new directory of the same name."

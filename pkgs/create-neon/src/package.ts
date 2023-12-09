@@ -1,7 +1,7 @@
 import { promises as fs } from "fs";
 import * as path from "path";
-import versions from "../data/versions.json";
 import shell from "./shell.js";
+import { VERSIONS } from './versions.js';
 
 const KEYS = [
   "name",
@@ -38,15 +38,14 @@ export default class Package {
       version: "0.1.0",
       main: "index.node",
       scripts: {
-        build:
-          "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
+        build: "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
         "build-debug": "npm run build --",
         "build-release": "npm run build -- --release",
         install: "npm run build-release",
         test: "cargo test",
       },
       devDependencies: {
-        "cargo-cp-artifact": `^${versions["cargo-cp-artifact"]}`,
+        "cargo-cp-artifact": `^${VERSIONS["cargo-cp-artifact"]}`,
       },
     };
 

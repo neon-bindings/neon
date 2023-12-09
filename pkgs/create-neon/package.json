@@ -2,6 +2,8 @@
   "name": "create-neon",
   "version": "0.3.0",
   "description": "Create Neon projects with no build configuration.",
+  "type": "module",
+  "exports": "./dist/src/bin/create-neon.js",
   "author": "Dave Herman <david.herman@gmail.com>",
   "license": "MIT",
   "bugs": {
@@ -16,7 +18,7 @@
     "dist/data/**/*"
   ],
   "scripts": {
-    "build": "tsc && cp -r data/templates dist/data",
+    "build": "tsc && cp -r data/templates dist/data && cp data/*.json dist/data/",
     "prepublishOnly": "npm run build",
     "pretest": "npm run build",
     "test": "mocha",
@@ -32,6 +34,8 @@
   "devDependencies": {
     "@tsconfig/node18": "^18.2.2",
     "@types/chai": "^4.3.11",
+    "@types/command-line-args": "^5.2.3",
+    "@types/command-line-usage": "^5.0.4",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.10.1",
     "chai": "^4.3.10",
@@ -42,6 +46,9 @@
     "typescript": "^5.3.2"
   },
   "dependencies": {
+    "chalk": "^5.3.0",
+    "command-line-args": "^5.2.1",
+    "command-line-usage": "^7.0.1",
     "handlebars": "^4.7.8"
   }
 }

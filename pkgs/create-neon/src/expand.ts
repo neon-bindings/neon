@@ -3,7 +3,8 @@ import handlebars from "handlebars";
 import * as path from "path";
 import Package from "./package.js";
 
-const TEMPLATES_DIR = path.join(__dirname, "..", "data", "templates");
+const TEMPLATES_DIR = new URL(path.join('..', 'data', 'templates', '/'), import.meta.url);
+//const TEMPLATES_DIR = path.join(__dirname, "..", "data", "templates");
 
 export interface Versions {
   neon: string;
@@ -20,7 +21,7 @@ export default async function expand(
   target: string,
   metadata: Metadata
 ) {
-  let template = await fs.readFile(path.join(TEMPLATES_DIR, source), "utf8");
+  let template = await fs.readFile(new URL(source, TEMPLATES_DIR), "utf8");
   let compiled = handlebars.compile(template, { noEscape: true });
   let expanded = compiled(metadata);
   // The 'wx' flag creates the file but fails if it already exists.

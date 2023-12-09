@@ -3,7 +3,7 @@ import { spawn } from "child_process";
 import * as path from "path";
 import { promises as fs } from "fs";
 import * as TOML from "toml";
-import expect from "../dev/expect";
+import expect from "../dev/expect.js";
 
 // HACK: `execa` is an ES module, but Neon tests in Node which doesn't include
 // an ESM loader. This is a small wrapper for `execa` that covers the test cases.
