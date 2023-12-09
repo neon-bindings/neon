@@ -1,3 +1,14 @@
+// This whole module is a bummer but was the best I could figure out since:
+// - Using @sindresorhus packages like 'chalk' and 'execa' forces a project to use Node's native ESM support.
+// - This means the tsconfig must generate a modern format like es2022.
+// - When generating ESM, TS doesn't support importing JSON files with static typing without import assertions.
+// - Import assertions are not yet stable in Node, and produce an instability warning.
+//
+// So for the time being, this module simply implements the static typing explicitly.
+// If and when TS adds back and way to infer the static types when importing a JSON file
+// and generates a stable format that Node doesn't complain about, we can eliminate this
+// boilerplate wrapper module.
+
 import { createRequire } from 'module';
 
 export type Versions = {
