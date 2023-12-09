@@ -1,28 +1,29 @@
 import { createRequire } from 'module';
 
-type VersionData = {
-  "neon": string,
+export type Versions = {
+  neon: string,
   "cargo-cp-artifact": string
 };
 
-function assertIsVersionData(data: unknown): asserts data is VersionData {
+const KEYS = ['neon', 'cargo-cp-artifact'];
+
+function assertIsVersions(data: unknown): asserts data is Versions {
   if (!data || typeof data !== 'object') {
     throw new TypeError("expected object");
   }
-  if (!('neon' in data)) {
-    throw new TypeError("required 'neon' property not found");
-  }
-  if (!('cargo-cp-artifact' in data)) {
-    throw new TypeError("require 'cargo-cp-artifact' property not found");
-  }
+  KEYS.forEach(key => {
+    if (!(key in data)) {
+      throw new TypeError(`require '${key}' property not found`);
+    }
+  });
 }
 
 const dynamicRequire = createRequire(import.meta.url);
 
-function load(): VersionData {
+function load(): Versions {
   const data = dynamicRequire('../data/versions.json');
-  assertIsVersionData(data);
+  assertIsVersions(data);
   return data;
 }
 
-export const VERSIONS: VersionData = load();
+export const VERSIONS: Versions = load();
