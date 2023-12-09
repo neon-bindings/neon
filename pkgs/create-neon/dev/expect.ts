@@ -10,8 +10,7 @@ function readChunks(input: Readable): Readable {
     output.write(decoder.write(data));
   });
   input.on("close", () => {
-    let end = decoder.end();
-    output.write(end || "");
+    output.write(decoder.end());
     output.end();
   });
   return output;
