@@ -1,0 +1,268 @@
+name: Publish
+
+run-name: |
+  {{#$}}
+    (github.event_name == 'workflow_dispatch' && inputs.dryrun && 'Dry run') ||
+    (github.event_name == 'workflow_dispatch' &&
+      format('Tag and release: {0}',
+        (inputs.releaseType == 'custom' && inputs.custom) || inputs.releaseType)
+      ) ||
+    format('Publish: {0}', github.event.head_commit.message)
+  {{/$}}
+
+env:
+  NODE_VERSION: 18.x
+  NEON_PLATFORMS_DIR: platforms
+  ACTIONS_USER: github-actions
+  ACTIONS_EMAIL: github-actions@github.com
+
+on:
+  push:
+    tags:
+      - v*
+  workflow_dispatch:
+    inputs:
+      dryrun:
+        description: 'Dry run (no npm publish)'
+        required: false
+        type: boolean
+        default: true
+      releaseType:
+        description: 'Release type (or custom to specify)'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prepatch
+          - preminor
+          - premajor
+          - prerelease
+          - custom
+      custom:
+        description: 'Custom version'
+        required: false
+        default: ''
+
+jobs:
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      action: {{#$}} steps.action.outputs.type {{/$}}
+      branch: {{#$}} steps.branch.outputs.branch {{/$}}
+      macOS: {{#$}} steps.matrix.outputs.macOS {{/$}}
+      Windows: {{#$}} steps.matrix.outputs.Windows {{/$}}
+      Linux: {{#$}} steps.matrix.outputs.Linux {{/$}}
+    steps:
+      - name: Validate Workflow Inputs
+        if: {{#$}} inputs.releaseType == 'custom' && inputs.custom == '' {{/$}}
+        shell: bash
+        run: |
+          echo '::error::Missing release version number'
+          exit 1
+      - id: action
+        name: Determine Action Type
+        shell: bash
+        run: |
+          case "{{#$}} github.event_name {{/$}},{{#$}} inputs.dryrun {{/$}}" in
+            workflow_dispatch,true) type=dryrun ;;
+            workflow_dispatch,*) type=tag ;;
+            *) type=publish ;;
+          esac
+          echo "type=$type"
+          echo "type=$type" >> "$GITHUB_OUTPUT"
+      - name: Validate Secrets
+        env:
+          NPM_TOKEN: {{#$}} secrets.NPM_TOKEN {{/$}}
+          TAG_TOKEN: {{#$}} secrets.TAG_TOKEN {{/$}}
+        shell: bash
+        run: |
+          action={{#$}} steps.action.outputs.type {{/$}}
+          if [[ $action = publish ]] && [[ -z $NPM_TOKEN ]]; then
+            echo "::error::Secret NPM_TOKEN is not defined for this GitHub repo."
+            echo "::error::To publish to npm, this action requires:"
+            echo "::error:: • an npm access token;"
+            echo "::error:: • with Read-Write access to this project's npm packages;"
+            echo "::error:: • stored as a repo secret named NPM_TOKEN."
+            echo "::error::See https://docs.npmjs.com/about-access-tokens for info about creating npm tokens."
+            echo "::error::See https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions for info about how to store GitHub repo secrets."
+            exit 1
+          fi
+          if [[ $action = tag ]] && [[ -z $TAG_TOKEN ]]; then
+            echo "::error::Secret TAG_TOKEN is not defined for this GitHub repo."
+            echo "::error::To push a release tag, this action requires:"
+            echo "::error:: • a GitHub Personal Access Token;"
+            echo "::error:: • with Read-Write access to this repo;"
+            echo "::error:: • stored as a repo secret named TAG_TOKEN."
+            echo "::error::See https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens for info about creating GitHub Personal Access Tokens."
+            echo "::error::See https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions for info about how to store GitHub repo secrets."
+            exit 1
+          fi
+      - name: Checkout Code
+        uses: actions/checkout@{{versions.actions.checkout}}
+        with:
+          token: {{#$}} secrets.TAG_TOKEN || github.token {{/$}}
+      - name: Install Node
+        uses: actions/setup-node@{{versions.actions.setupNode}}
+        with:
+          node-version: {{#$}} env.NODE_VERSION {{/$}}
+          cache: npm
+      - name: Compute Default Branch
+        id: branch
+        shell: bash
+        run: |
+          branch=$(git remote show origin | grep 'HEAD branch' | awk '{ print $3; }')
+          echo $branch
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+      - name: Install Dependencies
+        shell: bash
+        run: npm ci
+      - name: Install cargo-messages
+        shell: bash
+        run: npm ci
+        working-directory: ./pkgs/cargo-messages
+      - name: Trigger Release (manual only)
+        if: {{#$}} steps.action.outputs.type == 'tag' {{/$}}
+        shell: bash
+        run: |
+          git checkout {{#$}} steps.branch.outputs.branch {{/$}}
+          git config --global user.name {{#$}} env.ACTIONS_USER {{/$}}
+          git config --global user.email {{#$}} env.ACTIONS_EMAIL {{/$}}
+          npm run release -- '{{#$}} (inputs.releaseType == 'custom' && inputs.custom) || inputs.releaseType {{/$}}'
+      - name: Compute Platform Matrix
+        id: matrix
+        shell: bash
+        run: |
+          npx @neon-rs/cli ci github
+          echo "macOS=$(npx @neon-rs/cli ci github | jq -rc .macOS)" >> "$GITHUB_OUTPUT"
+          echo "Windows=$(npx @neon-rs/cli ci github | jq -rc .Windows)" >> "$GITHUB_OUTPUT"
+          echo "Linux=$(npx @neon-rs/cli ci github | jq -rc .Linux)" >> "$GITHUB_OUTPUT"
+
+  macos-builds:
+    name: Builds (macOS)
+    if: {{#$}} needs.setup.outputs.action != 'tag' {{/$}}
+    needs: [setup]
+    strategy:
+      matrix:
+        platform: {{#$}} fromJSON(needs.setup.outputs.macOS) {{/$}}
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@{{versions.actions.checkout}}
+        with:
+          fetch-depth: 0
+      - name: Install Dependencies
+        shell: bash
+        run: npm ci
+      - name: Bump Version (dry-run only)
+        if: {{#$}} needs.setup.outputs.action == 'dryrun' {{/$}}
+        shell: bash
+        run: |
+          git checkout {{#$}} needs.setup.outputs.branch {{/$}}
+          git config --global user.name {{#$}} env.ACTIONS_USER {{/$}}
+          git config --global user.email {{#$}} env.ACTIONS_EMAIL {{/$}}
+          npm version '{{#$}} (inputs.releaseType == 'custom' && inputs.custom) || inputs.releaseType {{/$}}' -m "[dryrun] v%s"
+      - name: Build
+        uses: neon-actions/build@{{versions.actions.neonBuild}}
+        with:
+          node-version: {{#$}} env.NODE_VERSION {{/$}}
+          platform: {{#$}} matrix.platform {{/$}}
+          github-release: {{#$}} needs.setup.outputs.action == 'publish' {{/$}}
+
+  windows-builds:
+    name: Builds (Windows)
+    if: {{#$}} needs.setup.outputs.action != 'tag' {{/$}}
+    needs: [setup]
+    strategy:
+      matrix:
+        platform: {{#$}} fromJSON(needs.setup.outputs.macOS) {{/$}}
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@{{versions.actions.checkout}}
+        with:
+          fetch-depth: 0
+      - name: Install Dependencies
+        shell: bash
+        run: npm ci
+      - name: Bump Version (dry-run only)
+        if: {{#$}} needs.setup.outputs.action == 'dryrun' {{/$}}
+        shell: bash
+        run: |
+          git checkout {{#$}} needs.setup.outputs.branch {{/$}}
+          git config --global user.name {{#$}} env.ACTIONS_USER {{/$}}
+          git config --global user.email {{#$}} env.ACTIONS_EMAIL {{/$}}
+          npm version '{{#$}} (inputs.releaseType == 'custom' && inputs.custom) || inputs.releaseType {{/$}}' -m "[dryrun] v%s"
+      - name: Build
+        uses: neon-actions/build@{{versions.actions.neonBuild}}
+        with:
+          node-version: {{#$}} env.NODE_VERSION {{/$}}
+          platform: {{#$}} matrix.platform {{/$}}
+          github-release: {{#$}} needs.setup.outputs.action == 'publish' {{/$}}
+
+  other-builds:
+    name: Builds (other platforms)
+    if: {{#$}} needs.setup.outputs.action != 'tag' {{/$}}
+    needs: [setup]
+    strategy:
+      matrix:
+        platform: {{#$}} fromJSON(needs.setup.outputs.Linux) {{/$}}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@{{versions.actions.checkout}}
+        with:
+          fetch-depth: 0
+      - name: Install Dependencies
+        shell: bash
+        run: npm ci
+      - name: Bump Version (dry-run only)
+        if: {{#$}} needs.setup.outputs.action == 'dryrun' {{/$}}
+        shell: bash
+        run: |
+          git checkout {{#$}} needs.setup.outputs.branch {{/$}}
+          git config --global user.name {{#$}} env.ACTIONS_USER {{/$}}
+          git config --global user.email {{#$}} env.ACTIONS_EMAIL {{/$}}
+          npm version '{{#$}} (inputs.releaseType == 'custom' && inputs.custom) || inputs.releaseType {{/$}}' -m "[dryrun] v%s"
+      - name: Build
+        uses: neon-actions/build@{{versions.actions.neonBuild}}
+        with:
+          node-version: {{#$}} env.NODE_VERSION {{/$}}
+          use-cross: true
+          platform: {{#$}} matrix.platform {{/$}}
+          github-release: {{#$}} needs.setup.outputs.action == 'publish' {{/$}}
+
+  publish:
+    name: Publish
+    if: {{#$}} needs.setup.outputs.action == 'publish' {{/$}}
+    needs: [macos-builds, windows-builds, other-builds]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@{{versions.actions.checkout}}
+        with:
+          fetch-depth: 0
+      - name: Install Dependencies
+        shell: bash
+        run: npm ci
+      - name: Publish
+        uses: neon-actions/publish@{{versions.actions.neonPublish}}
+        env:
+          NODE_AUTH_TOKEN: {{#$}} secrets.NPM_TOKEN {{/$}}
+        with:
+          node-version: {{#$}} env.NODE_VERSION {{/$}}
+          fetch-binaries: "*.tgz"
+          github-release: true

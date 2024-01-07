@@ -1,0 +1,49 @@
+name: Test
+
+run-name: |
+  {{#$}}
+    format('Test ({0}): {1}',
+      (github.event_name == 'pull_request' && 'PR') || 'push',
+      github.event.head_commit.message
+    )
+  {{/$}}
+
+env:
+  NODE_VERSION: {{versions.node}}.x
+  NEON_PLATFORMS_DIR: platforms
+
+on:
+  push:
+    # Prevent duplicate runs of this workflow on internal PRs.
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
+    branches:
+      - main
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@{{versions.actions.checkout}}
+        with:
+          fetch-depth: 0
+      - name: Install Node
+        uses: actions/setup-node@{{versions.actions.setupNode}}
+        with:
+          node-version: {{#$}}env.NODE_VERSION{{/$}}
+          cache: npm
+      - name: Install Rust
+        uses: actions-rs/toolchain@{{versions.actions.setupRust}}
+      - name: Install Dependencies
+        shell: bash
+        run: npm ci --verbose
+      - name: Build
+        shell: bash
+        run: npm run debug
+      - name: Test
+        shell: bash
+        run: npm test

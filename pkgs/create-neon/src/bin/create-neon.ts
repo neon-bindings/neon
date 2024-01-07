@@ -1,20 +1,13 @@
 #!/usr/bin/env node
 
-import { promises as fs } from 'fs';
 import * as path from 'path';
-import die from '../die.js';
-import Package from '../package.js';
-import { VERSIONS } from '../versions.js';
-import expand from '../expand.js';
-import chalk from 'chalk';
-
-function pink(text: string): string {
-  return chalk.bold.hex('#e75480')(text);
-}
-
-function blue(text: string): string {
-  return chalk.bold.cyanBright(text);
-}
+import commandLineArgs from 'command-line-args';
+import { printErrorWithUsage } from '../print.js';
+import { createNeon } from '../index.js';
+import { Cache } from '../cache.js';
+import { NPM } from '../cache/npm.js';
+import { CI } from '../ci.js';
+import { GitHub } from '../ci/github.js';
 
 const TEMPLATES: Record<string, string> = {
   ".gitignore.hbs": ".gitignore",
@@ -23,58 +16,74 @@ const TEMPLATES: Record<string, string> = {
   "lib.rs.hbs": path.join("src", "lib.rs"),
 };
 
-async function main(name: string) {
-  let tmpFolderName: string = "";
+const OPTIONS = [
+  { name: 'lib', type: Boolean, defaultValue: false },
+  { name: 'bins', type: String, defaultValue: 'none' },
+  { name: 'platform', type: String, multiple: true, defaultValue: [] },
+  { name: 'ci', alias: 'c', type: String, defaultValue: 'github' }
+];
 
-  try {
-    // pretty lightweight way to check both that folder doesn't exist and
-    // that the user has write permissions.
-    await fs.mkdir(name);
-    await fs.rmdir(name);
+try {
+  const opts = commandLineArgs(OPTIONS, { stopAtFirstUnknown: true });
 
-    tmpFolderName = await fs.mkdtemp(`${name}-`);
-  } catch (err: any) {
-    await die(`Could not create \`${name}\`: ${err.message}`, tmpFolderName);
+  if (!opts._unknown || opts._unknown.length === 0) {
+    throw new Error('No package name given');
   }
 
-  let pkg: Package | undefined;
-
-  try {
-    pkg = await Package.create(name, tmpFolderName);
-    await fs.mkdir(path.join(tmpFolderName, "src"));
-  } catch (err: any) {
-    await die("Could not create `package.json`: " + err.message, tmpFolderName);
-  }
-  if (pkg) {
-    for (let source of Object.keys(TEMPLATES)) {
-      let target = path.join(tmpFolderName, TEMPLATES[source]);
-      await expand(source, target, {
-        package: pkg,
-        versions: VERSIONS,
-      });
-    }
+  if (opts._unknown.length > 1) {
+    throw new Error(`unexpected argument (${opts._unknown[1]})`);
   }
 
-  try {
-    await fs.rename(tmpFolderName, name);
-  } catch (err: any) {
-    await die(`Could not create \`${name}\`: ${err.message}`, tmpFolderName);
-  }
-  console.log(`✨ Created Neon project \`${name}\`. Happy 🦀 hacking! ✨`);
-}
+  const [pkg] = opts._unknown;
+  const platforms = parsePlatforms(opts.platform);
+  const cache = parseCache(opts.lib, opts.bins, pkg);
+  const ci = parseCI(opts.ci);
 
-if (process.argv.length < 3) {
-  console.error(
-    `✨ ${pink('create-neon:')} Create a new Neon project with zero configuration. ✨`
-  );
-  console.error();
-  console.error(`${blue('Usage:')} npm init neon name`);
-  console.error();
-  console.error(
-    "  name   The name of your Neon project, placed in a new directory of the same name."
-  );
-  console.error();
+  createNeon(pkg, {
+    templates: TEMPLATES,
+    library: opts.lib,
+    cache,
+    ci,
+    platforms
+  });
+} catch (e) {
+  printErrorWithUsage(e);
   process.exit(1);
 }
 
-main(process.argv[2]);
+function parsePlatforms(platforms: string[]): string | string[] | undefined {
+  if (platforms.length === 0) {
+    return undefined;
+  } else if (platforms.length === 1) {
+    return platforms[0];
+  } else {
+    return platforms;
+  }
+}
+
+function parseCI(ci: string): CI | undefined {
+  switch (ci) {
+    case 'none': return undefined;
+    case 'github': return new GitHub();
+    default:
+      throw new Error(`Unrecognized CI system ${ci}, expected 'github' or 'none'`);
+  }
+}
+
+function parseCache(lib: boolean, bins: string, pkg: string): Cache | undefined {
+  const defaultOrg = '@' + pkg;
+
+  if (bins === 'none') {
+    return lib ? new NPM(defaultOrg) : undefined;
+  }
+
+  if (bins === 'npm') {
+    return new NPM(defaultOrg);
+  }
+
+  if (bins.startsWith('npm:')) {
+    return new NPM(bins.substring(4));
+  }
+
+  throw new Error(`Unrecognized binaries cache ${bins}, expected 'npm[:org]' or 'none'`)
+}

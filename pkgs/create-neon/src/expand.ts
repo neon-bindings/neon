@@ -11,6 +11,12 @@ export interface Metadata {
   versions: Versions;
 }
 
+function ghaDelegate(this: any, options: handlebars.HelperOptions): handlebars.SafeString {
+  return new handlebars.SafeString("${{" + options.fn(this) +"}}");
+}
+
+handlebars.registerHelper('$', ghaDelegate);
+
 export default async function expand(
   source: string,
   target: string,
