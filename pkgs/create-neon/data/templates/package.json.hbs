@@ -47,8 +47,8 @@
     "cross": "npm run cross-build -- --release"{{#if package.isLibrary}},
     "prepack": "neon update-platforms",
     "version": "neon bump --binaries platforms && git add .",
-    "release": "npm version -m 'v%s'",
-    "postrelease": "git push --follow-tags",
+    "remote-publish": "npm version -m 'v%s'",
+    "postremote-publish": "git push --follow-tags",
     "dryrun": "gh workflow run publish.yml -f dryrun=true"{{/if}}
   },
   "devDependencies": {

@@ -4,8 +4,8 @@ run-name: |
   {{#$}}
     (github.event_name == 'workflow_dispatch' && inputs.dryrun && 'Dry run') ||
     (github.event_name == 'workflow_dispatch' &&
-      format('Tag and release: {0}',
-        (inputs.releaseType == 'custom' && inputs.custom) || inputs.releaseType)
+      format('Trigger publish: {0}',
+        (inputs.bumpType == 'custom' && inputs.custom) || inputs.bumpType)
       ) ||
     format('Publish: {0}', github.event.head_commit.message)
   {{/$}}
@@ -27,8 +27,8 @@ on:
         required: false
         type: boolean
         default: true
-      releaseType:
-        description: 'Release type (or custom to specify)'
+      bumpType:
+        description: 'Version bump type (or custom to specify)'
         required: true
         default: 'patch'
         type: choice
@@ -60,10 +60,10 @@ jobs:
       Linux: {{#$}} steps.matrix.outputs.Linux {{/$}}
     steps:
       - name: Validate Workflow Inputs
-        if: {{#$}} inputs.releaseType == 'custom' && inputs.custom == '' {{/$}}
+        if: {{#$}} inputs.bumpType == 'custom' && inputs.custom == '' {{/$}}
         shell: bash
         run: |
-          echo '::error::Missing release version number'
+          echo '::error::No custom version number provided'
           exit 1
       - id: action
         name: Determine Action Type
@@ -95,7 +95,7 @@ jobs:
           fi
           if [[ $action = tag ]] && [[ -z $TAG_TOKEN ]]; then
             echo "::error::Secret TAG_TOKEN is not defined for this GitHub repo."
-            echo "::error::To push a release tag, this action requires:"
+            echo "::error::To push a publish tag, this action requires:"
             echo "::error:: • a GitHub Personal Access Token;"
             echo "::error:: • with Read-Write access to this repo;"
             echo "::error:: • stored as a repo secret named TAG_TOKEN."
@@ -126,14 +126,14 @@ jobs:
         shell: bash
         run: npm ci
         working-directory: ./pkgs/cargo-messages
-      - name: Trigger Release (manual only)
+      - name: Remote Publish (manual only)
         if: {{#$}} steps.action.outputs.type == 'tag' {{/$}}
         shell: bash
         run: |
           git checkout {{#$}} steps.branch.outputs.branch {{/$}}
           git config --global user.name {{#$}} env.ACTIONS_USER {{/$}}
           git config --global user.email {{#$}} env.ACTIONS_EMAIL {{/$}}
-          npm run release -- '{{#$}} (inputs.releaseType == 'custom' && inputs.custom) || inputs.releaseType {{/$}}'
+          npm run remote-publish -- '{{#$}} (inputs.bumpType == 'custom' && inputs.custom) || inputs.bumpType {{/$}}'
       - name: Compute Platform Matrix
         id: matrix
         shell: bash
@@ -168,7 +168,7 @@ jobs:
           git checkout {{#$}} needs.setup.outputs.branch {{/$}}
           git config --global user.name {{#$}} env.ACTIONS_USER {{/$}}
           git config --global user.email {{#$}} env.ACTIONS_EMAIL {{/$}}
-          npm version '{{#$}} (inputs.releaseType == 'custom' && inputs.custom) || inputs.releaseType {{/$}}' -m "[dryrun] v%s"
+          npm version '{{#$}} (inputs.bumpType == 'custom' && inputs.custom) || inputs.bumpType {{/$}}' -m "[dryrun] v%s"
       - name: Build
         uses: neon-actions/build@{{versions.actions.neonBuild}}
         with:
@@ -201,7 +201,7 @@ jobs:
           git checkout {{#$}} needs.setup.outputs.branch {{/$}}
           git config --global user.name {{#$}} env.ACTIONS_USER {{/$}}
           git config --global user.email {{#$}} env.ACTIONS_EMAIL {{/$}}
-          npm version '{{#$}} (inputs.releaseType == 'custom' && inputs.custom) || inputs.releaseType {{/$}}' -m "[dryrun] v%s"
+          npm version '{{#$}} (inputs.bumpType == 'custom' && inputs.custom) || inputs.bumpType {{/$}}' -m "[dryrun] v%s"
       - name: Build
         uses: neon-actions/build@{{versions.actions.neonBuild}}
         with:
@@ -234,7 +234,7 @@ jobs:
           git checkout {{#$}} needs.setup.outputs.branch {{/$}}
           git config --global user.name {{#$}} env.ACTIONS_USER {{/$}}
           git config --global user.email {{#$}} env.ACTIONS_EMAIL {{/$}}
-          npm version '{{#$}} (inputs.releaseType == 'custom' && inputs.custom) || inputs.releaseType {{/$}}' -m "[dryrun] v%s"
+          npm version '{{#$}} (inputs.bumpType == 'custom' && inputs.custom) || inputs.bumpType {{/$}}' -m "[dryrun] v%s"
       - name: Build
         uses: neon-actions/build@{{versions.actions.neonBuild}}
         with:
