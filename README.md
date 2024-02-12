@@ -1,7 +1,6 @@
 # <img src="doc/neon.png" alt="neon" width="100%" />
 
 [![Cargo](https://img.shields.io/crates/v/neon.svg)](https://crates.io/crates/neon)
-[![npm](https://img.shields.io/npm/v/neon-cli.svg)](https://www.npmjs.com/package/neon-cli)
 [![Test Status](https://github.com/neon-bindings/neon/workflows/CI/badge.svg)](https://github.com/neon-bindings/neon/actions?query=workflow%3A%22CI%22)
 [![Lint Status](https://github.com/neon-bindings/neon/workflows/Lints/badge.svg)](https://github.com/neon-bindings/neon/actions?query=workflow%3A%22Lints%22)
 
