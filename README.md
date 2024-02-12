@@ -2,11 +2,10 @@
 
 [![Cargo](https://img.shields.io/crates/v/neon.svg)](https://crates.io/crates/neon)
 [![npm](https://img.shields.io/npm/v/neon-cli.svg)](https://www.npmjs.com/package/neon-cli)
-[![Linux Build Status](https://github.com/neon-bindings/neon/workflows/Test%20on%20Linux/badge.svg)](https://github.com/neon-bindings/neon/actions?query=workflow%3A%22Test+on+Linux%22)
-[![macOS Build Status](https://github.com/neon-bindings/neon/workflows/Test%20on%20MacOS/badge.svg)](https://github.com/neon-bindings/neon/actions?query=workflow%3A%22Test+on+MacOS%22)
-[![Windows Build Status](https://github.com/neon-bindings/neon/workflows/Test%20on%20Windows/badge.svg)](https://github.com/neon-bindings/neon/actions?query=workflow%3A%22Test+on+Windows%22)
+[![Test Status](https://github.com/neon-bindings/neon/workflows/CI/badge.svg)](https://github.com/neon-bindings/neon/actions?query=workflow%3A%22CI%22)
+[![Lint Status](https://github.com/neon-bindings/neon/workflows/Lints/badge.svg)](https://github.com/neon-bindings/neon/actions?query=workflow%3A%22Lints%22)
 
-Rust bindings for writing safe and fast native Node.js modules.
+Rust bindings for writing safe and fast Node.js native addons.
 
 ## Getting started
 
@@ -55,7 +54,7 @@ using a different version of Node and believe it should be supported, let us kno
 
 ### Rust
 
-Neon supports Rust stable version 1.18 and higher. We test on the latest stable, beta, and nightly versions of Rust.
+Neon supports Rust stable version 1.65 and higher. We test on the latest stable, beta, and nightly versions of Rust.
 
 ## A Taste...
 
@@ -67,7 +66,7 @@ fn make_an_array(mut cx: FunctionContext) -> JsResult<JsArray> {
     let b = cx.boolean(true);
 
     // Create a new array:
-    let array: Handle<JsArray> = cx.empty_array();
+    let array = cx.empty_array();
 
     // Push the values into the array:
     array.set(&mut cx, 0, n)?;
@@ -78,12 +77,14 @@ fn make_an_array(mut cx: FunctionContext) -> JsResult<JsArray> {
     Ok(array)
 }
 
-register_module!(mut cx, {
-    cx.export_function("makeAnArray", make_an_array)
-})
+#[neon::main]
+fn main(mut cx: ModuleContext) -> NeonResult<()> {
+    cx.export_function("make_an_array", make_an_array)?;
+    Ok(())
+}
 ```
 
-For more examples, see our [examples repo](https://github.com/neon-bindings/examples).
+For more examples, see our [examples repo](https://github.com/neon-bindings/examples) and [integration tests](test).
 
 ## Get Involved
 
