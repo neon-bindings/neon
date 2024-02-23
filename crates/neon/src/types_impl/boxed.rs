@@ -183,8 +183,8 @@ unsafe impl<T: 'static> TransparentNoCopyWrapper for JsBox<T> {
 }
 
 impl<T: 'static> ValueInternal for JsBox<T> {
-    fn name() -> String {
-        any::type_name::<Self>().to_string()
+    fn name() -> &'static str {
+        any::type_name::<Self>()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {

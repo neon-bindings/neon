@@ -8,6 +8,7 @@ pub mod buffer;
 #[cfg(feature = "napi-5")]
 pub(crate) mod date;
 pub(crate) mod error;
+pub mod extract;
 pub mod function;
 pub(crate) mod promise;
 
@@ -167,8 +168,8 @@ unsafe impl TransparentNoCopyWrapper for JsValue {
 }
 
 impl ValueInternal for JsValue {
-    fn name() -> String {
-        "any".to_string()
+    fn name() -> &'static str {
+        "any"
     }
 
     fn is_typeof<Other: Value>(_env: Env, _other: &Other) -> bool {
@@ -245,8 +246,8 @@ unsafe impl TransparentNoCopyWrapper for JsUndefined {
 }
 
 impl ValueInternal for JsUndefined {
-    fn name() -> String {
-        "undefined".to_string()
+    fn name() -> &'static str {
+        "undefined"
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
@@ -313,8 +314,8 @@ unsafe impl TransparentNoCopyWrapper for JsNull {
 }
 
 impl ValueInternal for JsNull {
-    fn name() -> String {
-        "null".to_string()
+    fn name() -> &'static str {
+        "null"
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
@@ -390,8 +391,8 @@ unsafe impl TransparentNoCopyWrapper for JsBoolean {
 }
 
 impl ValueInternal for JsBoolean {
-    fn name() -> String {
-        "boolean".to_string()
+    fn name() -> &'static str {
+        "boolean"
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
@@ -465,8 +466,8 @@ unsafe impl TransparentNoCopyWrapper for JsString {
 }
 
 impl ValueInternal for JsString {
-    fn name() -> String {
-        "string".to_string()
+    fn name() -> &'static str {
+        "string"
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
@@ -743,8 +744,8 @@ unsafe impl TransparentNoCopyWrapper for JsNumber {
 }
 
 impl ValueInternal for JsNumber {
-    fn name() -> String {
-        "number".to_string()
+    fn name() -> &'static str {
+        "number"
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
@@ -802,8 +803,8 @@ unsafe impl TransparentNoCopyWrapper for JsObject {
 }
 
 impl ValueInternal for JsObject {
-    fn name() -> String {
-        "object".to_string()
+    fn name() -> &'static str {
+        "object"
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
@@ -944,8 +945,8 @@ unsafe impl TransparentNoCopyWrapper for JsArray {
 }
 
 impl ValueInternal for JsArray {
-    fn name() -> String {
-        "Array".to_string()
+    fn name() -> &'static str {
+        "Array"
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
@@ -1226,8 +1227,8 @@ unsafe impl TransparentNoCopyWrapper for JsFunction {
 }
 
 impl ValueInternal for JsFunction {
-    fn name() -> String {
-        "function".to_string()
+    fn name() -> &'static str {
+        "function"
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
