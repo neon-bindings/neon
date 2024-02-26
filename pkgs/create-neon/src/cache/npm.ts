@@ -1,9 +1,11 @@
 import { Cache } from '../cache.js';
 
 export class NPM implements Cache {
-  private _org: string | null;
+  readonly org: string | null;
+
+  readonly type: string = "npm";
 
   constructor(org: string | null) {
-    this._org = org;
+    this.org = org;
   }
 }

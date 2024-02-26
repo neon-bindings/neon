@@ -1,5 +1,5 @@
 {
-{{#if package.lang.isTypeScript}}
+{{#eq packageSpec.library.lang compare="ts"}}
   "extends": "@tsconfig/node{{versions.tsconfigNode.major}}/tsconfig.json",
   "compilerOptions": {
     "module": "node{{versions.tsconfigNode.module}}",
@@ -9,5 +9,5 @@
   "exclude": ["lib"]
 {{else}}
   "extends": "@tsconfig/node{{versions.tsconfigNode.major}}/tsconfig.json"
-{{/if}}
+{{/eq}}
 }

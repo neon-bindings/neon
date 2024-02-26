@@ -1,1 +1,4 @@
-module.exports = require('@neon-rs/load').proxy({});
+module.exports = require('@neon-rs/load').proxy({
+  platforms: {},
+  debug: () => require('../index.node')
+});

@@ -12,11 +12,33 @@
 import { createRequire } from 'module';
 
 export type Versions = {
-  neon: string,
-  "cargo-cp-artifact": string
+  "neon": string,
+  "neonCLI": string,
+  "neonLoad": string,
+  "typescript": string,
+  "typesNode": string,
+  "tsconfigNode": {
+    "major": string,
+    "semver": string,
+    "module": string
+  },
+  "node": string,
+  "actions": {
+    "checkout": string,
+    "githubScript": string,
+    "setupNode": string,
+    "setupRust": string,
+    "neonBuild": string,
+    "neonPublish": string,
+    "dotenv": string
+  }
 };
 
-const KEYS = ['neon', 'cargo-cp-artifact'];
+const KEYS = [
+  "neon", "neonCLI", "neonLoad",
+  "typescript", "typesNode", "tsconfigNode",
+  "node", "actions"
+];
 
 function assertIsVersions(data: unknown): asserts data is Versions {
   if (!data || typeof data !== 'object') {

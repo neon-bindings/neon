@@ -1,0 +1,124 @@
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: 'Branch to check out'
+        required: false
+        type: string
+        default: {{#$}} github.event.repository.default_branch {{/$}}
+      update-version:
+        description: 'Update version before building?'
+        required: false
+        type: boolean
+        default: false
+      version:
+        description: 'Version update (ignored if update-version if false)'
+        required: false
+        type: string
+        default: 'patch'
+      github-release:
+        description: 'Publish GitHub release?'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  matrix:
+    name: Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: {{#$}} steps.matrix.outputs.result {{/$}}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@{{versions.actions.checkout}}
+        with:
+          token: {{#$}} secrets.TAG_TOKEN || github.token {{/$}}
+          ref: {{#$}} inputs.branch {{/$}}
+      - name: Set Environment Variables
+        uses: falti/dotenv-action@{{versions.actions.dotenv}}
+        with:
+          path: ./.github/workflows/.env
+          export-variables: true
+          keys-case: bypass
+      - name: Install Node
+        uses: actions/setup-node@{{versions.actions.setupNode}}
+        with:
+          node-version: {{#$}} env.NODE_VERSION {{/$}}
+          registry-url: {{#$}} env.NPM_REGISTRY {{/$}}
+          cache: npm
+      - name: Install Dependencies
+        shell: bash
+        run: npm ci
+      - name: Install cargo-messages
+        shell: bash
+        run: npm ci
+        working-directory: ./pkgs/cargo-messages
+      - name: Look Up Matrix Data
+        id: matrixData
+        shell: bash
+        run: |
+          echo "json=$(node ../../dist/cli ci github | jq -rc)" >> "$GITHUB_OUTPUT"
+        working-directory: ./pkgs/cargo-messages
+      - name: Compute Matrix
+        id: matrix
+        uses: actions/github-script@{{versions.actions.githubScript}}
+        with:
+          script: |
+            const platforms = {{#$}} steps.matrixData.outputs.json {{/$}};
+            const macOS = platforms.macOS.map(platform => {
+              return { os: "macos-latest", platform, cross: false };
+            });
+            const windows = platforms.Windows.map(platform => {
+              return { os: "windows-latest", platform, cross: false };
+            });
+            const linux = platforms.Linux.map(platform => {
+              return { os: "ubuntu-latest", platform, cross: true };
+            });
+            return [...macOS, ...windows, ...linux];
+
+  binaries:
+    name: Binaries
+    needs: [matrix]
+    strategy:
+      matrix:
+        cfg: {{#$}} fromJSON(needs.matrix.outputs.matrix) {{/$}}
+    runs-on: {{#$}} matrix.cfg.os {{/$}}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@{{versions.actions.checkout}}
+        with:
+          fetch-depth: 0
+      - name: Set Environment Variables
+        uses: falti/dotenv-action@{{versions.actions.dotenv}}
+        with:
+          path: ./.github/workflows/.env
+          export-variables: true
+          keys-case: bypass
+      - name: Diagnostics
+        shell: bash
+        run: git log -10
+      - name: Install Dependencies
+        shell: bash
+        run: npm ci
+      - name: Update Version
+        if: {{#$}} inputs.update-version {{/$}}
+        shell: bash
+        run: |
+          git config --global user.name $ACTIONS_USER
+          git config --global user.email $ACTIONS_EMAIL
+          npm version {{#$}} inputs.version {{/$}} -m "v%s"
+      - name: Check Versions
+        shell: bash
+        run: ./test/lint/check-versions.sh
+      - name: Build
+        uses: neon-actions/build@{{versions.actions.neonBuild}}
+        with:
+          working-directory: ./pkgs/cargo-messages
+          node-version: {{#$}} env.NODE_VERSION {{/$}}
+          use-cross: {{#$}} !!matrix.cfg.cross {{/$}}
+          platform: {{#$}} matrix.cfg.platform {{/$}}
+          github-release: {{#$}} inputs.github-release {{/$}}

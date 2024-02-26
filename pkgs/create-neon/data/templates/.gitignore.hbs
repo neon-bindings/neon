@@ -3,8 +3,7 @@ index.node
 **/node_modules
 **/.DS_Store
 npm-debug.log*
-{{#if package.lang.isTypeScript}}
+{{#eq package.library.lang compare="ts"}}
 lib
-{{/if}}
-cargo.log
+{{/eq}}cargo.log
 cross.log

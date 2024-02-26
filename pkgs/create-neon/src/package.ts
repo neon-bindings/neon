@@ -2,6 +2,48 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import shell from './shell.js';
 import { VERSIONS } from './versions.js';
+import { Cache } from './cache.js';
+import { CI } from './ci.js';
+import { Metadata, expand, expandTo } from './expand.js';
+import { PlatformPreset } from '@neon-rs/manifest/platform';
+
+export enum Lang {
+  JS = "js",
+  DTS = "dts",
+  TS = "ts"
+}
+
+export const LANG_TEMPLATES: Record<Lang, Record<string, string>> = {
+  [Lang.JS]: {},
+  [Lang.DTS]: {},
+  [Lang.TS]: {
+    "tsconfig.json.hbs": "tsconfig.json",
+    "ts/index.cts.hbs": path.join("ts", "index.cts"),
+    "ts/index.mts.hbs": path.join("ts", "index.mts"),
+    "ts/load.cts.hbs": path.join("ts", "load.cts")
+  }
+};
+
+export enum ModuleType {
+  ESM = "esm",
+  CJS = "cjs"
+}
+
+export type LibrarySpec = {
+  lang: Lang,
+  module: ModuleType,
+  cache?: Cache,
+  ci?: CI,
+  platforms?: PlatformPreset | PlatformPreset[]
+};
+
+export type PackageSpec = {
+  name: string,
+  library: LibrarySpec | null,
+  cache?: Cache | undefined,
+  ci?: CI | undefined,
+  yes: boolean | undefined
+};
 
 const KEYS = [
   "name",
@@ -32,33 +74,33 @@ export default class Package {
   description: string;
   quotedDescription: string;
 
-  static async create(name: string, dir: string): Promise<Package> {
-    let seed = {
-      name: name,
-      version: "0.1.0",
-      main: "index.node",
-      scripts: {
-        build: "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
-        "build-debug": "npm run build --",
-        "build-release": "npm run build -- --release",
-        install: "npm run build-release",
-        test: "cargo test",
-      },
-      devDependencies: {
-        "cargo-cp-artifact": `^${VERSIONS["cargo-cp-artifact"]}`,
-      },
-    };
+  static async create(metadata: Metadata, dir: string): Promise<Package> {
+    const baseTemplate = metadata.packageSpec.library
+      ? 'manifest/base/library.json.hbs'
+      : 'manifest/base/default.json.hbs';
 
-    let filename = path.join(dir, "package.json");
+    // 1. Load the base contents of the manifest from the base template.
+    const seed = JSON.parse(await expand(baseTemplate, metadata));
+
+    // 2. Mixin the scripts from the scripts template.
+    seed.scripts = JSON.parse(await expand('manifest/scripts.json.hbs', metadata));
+
+    // 3. Mixin any scripts from the CI scripts template.
+    if (metadata.packageSpec.library && metadata.packageSpec.library.ci) {
+      const mixinTemplate = `ci/${metadata.packageSpec.library.ci.type}/manifest/scripts.json.hbs`;
+      Object.assign(seed.scripts, JSON.parse(await expand(mixinTemplate, metadata)));
+    }
+
+    const filename = path.join(dir, "package.json");
 
     // 1. Write initial values to prevent `npm init` from asking unnecessary questions.
     await fs.writeFile(filename, JSON.stringify(seed));
 
     // 2. Call `npm init` to ask the user remaining questions.
-    await shell("npm", ["init"], dir);
+    await shell("npm", ["init", ...(metadata.packageSpec.yes ? ["--yes"] : [])], dir);
 
     // 3. Sort the values in idiomatic `npm init` order.
-    let sorted = sort(JSON.parse(await fs.readFile(filename, "utf8")));
+    const sorted = sort(JSON.parse(await fs.readFile(filename, "utf8")));
 
     // 4. Save the result to package.json.
     await fs.writeFile(filename, JSON.stringify(sorted, undefined, 2));

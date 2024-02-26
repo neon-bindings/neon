@@ -1,22 +1,18 @@
 name: Test
 
 run-name: |
-  {{#$}}
-    format('Test ({0}): {1}',
-      (github.event_name == 'pull_request' && 'PR') || 'push',
-      github.event.head_commit.message
-    )
-  {{/$}}
-
-env:
-  NODE_VERSION: {{versions.node}}.x
-  NEON_PLATFORMS_DIR: platforms
+  {{#$}} (github.event_name == 'pull_request' && format('Test (PR #{0}): {1}', github.event.number, github.event.pull_request.title))
+   || format('Test: {0}', github.event.head_commit.message) {{/$}}
 
 on:
+  # Event: A maintainer has pushed commits or merged a PR to main.
   push:
-    # Prevent duplicate runs of this workflow on internal PRs.
+    # Limiting push events to 'main' prevents duplicate runs of this workflow
+    # when maintainers push to internal PRs.
     branches:
       - main
+
+  # Event: A contributor has created or updated a PR.
   pull_request:
     types: [opened, synchronize, reopened, labeled]
     branches:
@@ -31,10 +27,17 @@ jobs:
         uses: actions/checkout@{{versions.actions.checkout}}
         with:
           fetch-depth: 0
+      - name: Set Environment Variables
+        uses: falti/dotenv-action@{{versions.actions.dotenv}}
+        with:
+          path: ./.github/workflows/.env
+          export-variables: true
+          keys-case: bypass
       - name: Install Node
         uses: actions/setup-node@{{versions.actions.setupNode}}
         with:
-          node-version: {{#$}}env.NODE_VERSION{{/$}}
+          node-version: {{#$}} env.NODE_VERSION {{/$}}
+          registry-url: {{#$}} env.NPM_REGISTRY {{/$}}
           cache: npm
       - name: Install Rust
         uses: actions-rs/toolchain@{{versions.actions.setupRust}}

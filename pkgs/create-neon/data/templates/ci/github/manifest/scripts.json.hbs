@@ -1,0 +1,5 @@
+{
+  "tag": "npm version -m 'v%s'",
+  "posttag": "git push --follow-tags",
+  "dryrun": "gh workflow run publish.yml -f dryrun=true"
+}
