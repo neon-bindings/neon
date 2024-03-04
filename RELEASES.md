@@ -1,3 +1,7 @@
+# Version 1.0.1
+
+Small fix to generated mermaid diagrams in docs.
+
 # Version 1.0.0
 
 ## Commitment to Compatibility
