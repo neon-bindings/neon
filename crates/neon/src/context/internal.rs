@@ -66,7 +66,13 @@ pub unsafe fn initialize_module(
     let env = Env(env);
     let exports = Handle::new_internal(JsObject::from_local(env, exports.cast()));
 
-    ModuleContext::with(env, exports, |cx| {
+    ModuleContext::with(env, exports, |mut cx| {
+        for create in crate::macro_internal::EXPORTS {
+            if let Ok((k, v)) = create(&mut cx) {
+                let _ = cx.export_value(k, v);
+            }
+        }
+
         let _ = init(cx);
     });
 }

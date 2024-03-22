@@ -400,3 +400,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     Ok(())
 }
+
+#[neon::export]
+fn hello_world(mut cx: FunctionContext) -> JsResult<JsString> {
+    Ok(cx.string("Hello, World!"))
+}

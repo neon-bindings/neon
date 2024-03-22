@@ -52,3 +52,38 @@ pub fn main(
     )
     .into()
 }
+
+#[proc_macro_attribute]
+/// Export a function
+pub fn export(
+    _attr: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    let input = syn::parse_macro_input!(item as syn_mid::ItemFn);
+
+    let attrs = &input.attrs;
+    let vis = &input.vis;
+    let sig = &input.sig;
+    let block = &input.block;
+    let name = &sig.ident;
+    let exported_name = quote::format_ident!("__EXPORTED__{name}");
+
+    quote::quote!(
+        #(#attrs)*
+        #vis #sig {
+            #[neon::macro_internal::linkme::distributed_slice(neon::macro_internal::EXPORTS)]
+            #[linkme(crate = neon::macro_internal::linkme)]
+            fn #exported_name<'cx>(
+                cx: &mut neon::context::ModuleContext<'cx>,
+            ) -> neon::result::NeonResult<(&'cx str, neon::handle::Handle<'cx, neon::types::JsValue>)> {
+                neon::types::JsFunction::new(cx, #name).map(|v| (
+                    stringify!(#name),
+                    neon::handle::Handle::upcast(&v),
+                ))
+            }
+
+            #block
+        }
+    )
+    .into()
+}
