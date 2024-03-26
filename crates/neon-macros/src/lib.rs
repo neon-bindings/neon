@@ -55,17 +55,90 @@ pub fn export(
     attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-    let input = syn::parse_macro_input!(item as syn::ItemFn);
+    match syn::parse_macro_input!(item as syn::Item) {
+        syn::Item::Fn(item) => export_fn(attr, item),
+        syn::Item::Const(item) => export_global(attr, item.ident.clone(), quote::quote!(#item)),
+        syn::Item::Static(item) => export_global(attr, item.ident.clone(), quote::quote!(#item)),
+        _ => syn::parse::Error::new(proc_macro::Span::call_site().into(), "Invalid item")
+            .to_compile_error()
+            .into(),
+    }
+}
+
+fn export_global(
+    attr: proc_macro::TokenStream,
+    name: syn::Ident,
+    item: proc_macro2::TokenStream,
+) -> proc_macro::TokenStream {
+    let mut export_name = quote::quote!(#name);
+    let mut use_serde = false;
+    let create_name = quote::format_ident!("__EXPORT_CREATE__{name}");
+    let attr_parser = syn::meta::parser(|meta| {
+        if meta.path.is_ident("name") {
+            let name = meta.value()?.parse::<syn::LitStr>()?;
+
+            export_name = quote::quote!(#name);
+
+            return Ok(());
+        }
+
+        if meta.path.is_ident("serde") {
+            use_serde = true;
+
+            return Ok(());
+        }
+
+        Err(meta.error("unsupported property"))
+    });
+
+    syn::parse_macro_input!(attr with attr_parser);
+
+    let value = if use_serde {
+        quote::quote!(neon::types::extract::Json(&#name))
+    } else {
+        quote::quote!(#name)
+    };
+
+    quote::quote!(
+        #item
+
+        #[neon::macro_internal::linkme::distributed_slice(neon::macro_internal::EXPORTS)]
+        #[linkme(crate = neon::macro_internal::linkme)]
+        fn #create_name<'cx>(
+            cx: &mut neon::context::ModuleContext<'cx>,
+        ) -> neon::result::NeonResult<(&'static str, neon::handle::Handle<'cx, neon::types::JsValue>)> {
+            neon::types::extract::TryIntoJs::try_into_js(#value, cx).map(|v| (
+                stringify!(#export_name),
+                neon::handle::Handle::upcast(&v),
+            ))
+        }
+
+    )
+    .into()
+}
+
+fn export_fn(attr: proc_macro::TokenStream, input: syn::ItemFn) -> proc_macro::TokenStream {
     let name = &input.sig.ident;
     let create_name = quote::format_ident!("__EXPORT_CREATE__{name}");
     let wrapper_name = quote::format_ident!("__EXPORT_WRAPPER__{name}");
-    let mut export_name = syn::LitStr::new(&name.to_string(), name.span());
+    let mut export_name = quote::quote!(#name);
+    let mut force_context = false;
     let attr_parser = syn::meta::parser(|meta| {
         if meta.path.is_ident("name") {
-            export_name = meta.value()?.parse()?;
+            let name = meta.value()?.parse::<syn::LitStr>()?;
+
+            export_name = quote::quote!(#name);
+
+            return Ok(());
         }
 
-        Ok(())
+        if meta.path.is_ident("context") {
+            force_context = true;
+
+            return Ok(());
+        }
+
+        Err(meta.error("unsupported property"))
     });
 
     syn::parse_macro_input!(attr with attr_parser);
@@ -99,7 +172,7 @@ pub fn export(
         })
         .unwrap_or(false);
 
-    let (context_arg, start) = if has_context {
+    let (context_arg, start) = if force_context || has_context {
         (quote::quote!(&mut cx,), 1)
     } else {
         (quote::quote!(), 0)
@@ -124,7 +197,7 @@ pub fn export(
             fn #create_name<'cx>(
                 cx: &mut neon::context::ModuleContext<'cx>,
             ) -> neon::result::NeonResult<(&'static str, neon::handle::Handle<'cx, neon::types::JsValue>)> {
-                static NAME: &str = #export_name;
+                static NAME: &str = stringify!(#export_name);
 
                 neon::types::JsFunction::with_name(cx, NAME, #wrapper_name).map(|v| (
                     NAME,

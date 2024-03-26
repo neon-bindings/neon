@@ -46,6 +46,13 @@ where
 {
 }
 
+impl<T> Sealed for &[T]
+    where
+        JsTypedArray<T>: Value,
+        T: Binary,
+{
+}
+
 impl_sealed!(
     u8,
     u16,

@@ -24,6 +24,18 @@ mod js {
     pub mod workers;
 }
 
+#[neon::export]
+const ANSWER: f64 = 42.0;
+
+#[neon::export]
+static GREETING: &str = "Hello, World!";
+
+#[neon::export]
+static SOME_BYTES: &[u8] = b"Hello, World!";
+
+#[neon::export(serde)]
+static GREETINGS: [&'static str; 2] = ["Hello", "World"];
+
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
     neon::registered().export(&mut cx)?;
@@ -119,9 +131,11 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         "Hello, World!"
     }
 
+    use neon::types::extract::Json;
+
     #[neon::export]
-    fn hello2(_cx: &mut FunctionContext) -> &'static str {
-        "Hello, World!"
+    fn sample() -> Json<Vec<&'static str>> {
+        Json(vec!["hello", "world"])
     }
 
     cx.export_function("return_js_string", return_js_string)?;

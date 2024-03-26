@@ -98,6 +98,21 @@ where
     }
 }
 
+impl<'cx, T> TryIntoJs<'cx> for &'cx [T]
+where
+    JsTypedArray<T>: Value,
+    T: Binary,
+{
+    type Value = JsTypedArray<T>;
+
+    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
+    where
+        C: Context<'cx>,
+    {
+        JsTypedArray::from_slice(cx, self)
+    }
+}
+
 impl<'cx> TryIntoJs<'cx> for bool {
     type Value = JsBoolean;
 

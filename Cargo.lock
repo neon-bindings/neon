@@ -398,6 +398,7 @@ dependencies = [
 name = "neon-macros"
 version = "1.0.0"
 dependencies = [
+ "proc-macro2",
  "quote",
  "syn 2.0.55",
 ]
