@@ -157,6 +157,7 @@ use crate::{
     types::{
         boxed::{Finalize, JsBox},
         error::JsError,
+        extract::FromArgs,
         private::ValueInternal,
         Deferred, JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber,
         JsObject, JsPromise, JsString, JsUndefined, JsValue, StringResult, Value,
@@ -211,6 +212,36 @@ impl CallbackInfo<'_> {
             sys::call::this(env.to_raw(), self.info, &mut local);
             local
         }
+    }
+
+    pub(crate) fn argv_exact<'b, C: Context<'b>, const N: usize>(
+        &self,
+        cx: &mut C,
+    ) -> [Handle<'b, JsValue>; N] {
+        use std::ptr;
+
+        let mut argv = [JsValue::new_internal(ptr::null_mut()); N];
+        let mut argc = argv.len();
+
+        // # Safety
+        // * Node-API fills empty slots with `undefined
+        // * `Handle` and `JsValue` are transparent wrappers around a raw pointer
+        unsafe {
+            assert_eq!(
+                sys::get_cb_info(
+                    cx.env().to_raw(),
+                    self.info,
+                    &mut argc,
+                    argv.as_mut_ptr().cast(),
+                    ptr::null_mut(),
+                    ptr::null_mut(),
+                ),
+                sys::Status::Ok,
+            );
+        }
+
+        // Empty values will be filled with `undefined`
+        argv
     }
 }
 
@@ -682,6 +713,55 @@ impl<'a> FunctionContext<'a> {
     /// Produces a handle to the function's [`this`-binding](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/this#function_context).
     pub fn this_value(&mut self) -> Handle<'a, JsValue> {
         JsValue::new_internal(self.info.this(self))
+    }
+
+    /// Extract Rust data from the JavaScript arguments.
+    ///
+    /// This is frequently more efficient and ergonomic than getting arguments
+    /// individually. See the [`extract`](crate::types::extract) module documentation
+    /// for more examples.
+    ///
+    /// ```
+    /// # use neon::{prelude::*, types::extract::*};
+    /// fn add(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    ///     let (a, b): (f64, f64) = cx.args()?;
+    ///
+    ///     Ok(cx.number(a + b))
+    /// }
+    /// ```
+    pub fn args<T>(&mut self) -> NeonResult<T>
+    where
+        T: FromArgs<'a>,
+    {
+        T::from_args(self)
+    }
+
+    /// Extract Rust data from the JavaScript arguments.
+    ///
+    /// Similar to [`FunctionContext::args`], but does not throw a JavaScript exception on errors. Useful
+    /// for function overloading.
+    ///
+    /// ```
+    /// # use neon::{prelude::*, types::extract::*};
+    /// fn combine(mut cx: FunctionContext) -> JsResult<JsValue> {
+    ///     if let Some((a, b)) = cx.args_opt::<(f64, f64)>()? {
+    ///         return Ok(cx.number(a + b).upcast());
+    ///     }
+    ///
+    ///     let (a, b): (String, String) = cx.args()?;
+    ///
+    ///     Ok(cx.string(a + &b).upcast())
+    /// }
+    /// ```
+    pub fn args_opt<T>(&mut self) -> NeonResult<Option<T>>
+    where
+        T: FromArgs<'a>,
+    {
+        T::from_args_opt(self)
+    }
+
+    pub(crate) fn argv<const N: usize>(&mut self) -> [Handle<'a, JsValue>; N] {
+        self.info.argv_exact(self)
     }
 }
 

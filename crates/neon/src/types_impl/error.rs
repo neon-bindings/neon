@@ -48,8 +48,8 @@ unsafe impl TransparentNoCopyWrapper for JsError {
 }
 
 impl ValueInternal for JsError {
-    fn name() -> String {
-        "Error".to_string()
+    fn name() -> &'static str {
+        "Error"
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {

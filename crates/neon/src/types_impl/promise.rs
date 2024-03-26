@@ -249,8 +249,8 @@ unsafe impl TransparentNoCopyWrapper for JsPromise {
 }
 
 impl ValueInternal for JsPromise {
-    fn name() -> String {
-        "Promise".to_string()
+    fn name() -> &'static str {
+        "Promise"
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {

@@ -20,7 +20,7 @@ impl From<raw::Env> for Env {
 
 thread_local! {
     #[allow(unused)]
-    pub(crate) static IS_RUNNING: RefCell<bool> = RefCell::new(false);
+    pub(crate) static IS_RUNNING: RefCell<bool> = const { RefCell::new(false) };
 }
 
 impl Env {

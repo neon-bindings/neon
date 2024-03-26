@@ -160,8 +160,8 @@ impl JsDate {
 }
 
 impl ValueInternal for JsDate {
-    fn name() -> String {
-        "object".to_string()
+    fn name() -> &'static str {
+        "object"
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
