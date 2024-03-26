@@ -26,6 +26,8 @@ mod js {
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
+    neon::registered().export(&mut cx)?;
+
     let greeting = cx.string("Hello, World!");
     let greeting_copy = greeting.value(&mut cx);
     let greeting_copy = cx.string(greeting_copy);
@@ -102,12 +104,25 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     cx.export_value("rustCreated", rust_created)?;
 
-    fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
-        let x = cx.argument::<JsNumber>(0)?.value(&mut cx);
-        Ok(cx.number(x + 1.0))
+    #[neon::export]
+    fn add1(x: f64) -> f64 {
+        x + 1.0
     }
 
-    cx.export_function("add1", add1)?;
+    #[neon::export]
+    fn add(a: f64, b: f64) -> f64 {
+        a + b
+    }
+
+    #[neon::export]
+    fn hello() -> &'static str {
+        "Hello, World!"
+    }
+
+    #[neon::export]
+    fn hello2(_cx: &mut FunctionContext) -> &'static str {
+        "Hello, World!"
+    }
 
     cx.export_function("return_js_string", return_js_string)?;
     cx.export_function("return_js_string_utf16", return_js_string_utf16)?;

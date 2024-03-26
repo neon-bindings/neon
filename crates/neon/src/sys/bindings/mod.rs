@@ -7,7 +7,7 @@
 //
 // * Run a debug build of Neon at least once to install `nodejs-sys`
 // * Open the generated bindings at `target/debug/build/nodejs-sys-*/out/bindings.rs`
-// * Copy the types needed into `types.rs` and `functions.rs`
+// * Copy the types needed into `try_from_js.rs` and `functions.rs`
 // * Modify to match Rust naming conventions:
 //   - Remove `napi_` prefixes
 //   - Use `PascalCase` for types

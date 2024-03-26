@@ -110,6 +110,8 @@ pub mod macro_internal;
 
 pub use neon_macros::*;
 
+use crate::{context::ModuleContext, handle::Handle, result::NeonResult, types::JsValue};
+
 #[cfg(feature = "napi-6")]
 mod lifecycle;
 
@@ -135,6 +137,38 @@ static MODULE_TAG: once_cell::sync::Lazy<crate::sys::TypeTag> = once_cell::sync:
     // https://github.com/nodejs/node/blob/5fad0b93667ffc6e4def52996b9529ac99b26319/src/js_native_api_v8.cc#L2455
     crate::sys::TypeTag { lower, upper: 1 }
 });
+
+/// Values exported with [`neon::export`]
+pub struct Exports(());
+
+impl Exports {
+    pub fn export(self, cx: &mut ModuleContext) -> NeonResult<()> {
+        for create in self {
+            let (name, value) = create(cx)?;
+
+            cx.export_value(name, value)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl IntoIterator for Exports {
+    type Item = <<Self as IntoIterator>::IntoIter as IntoIterator>::Item;
+    type IntoIter = std::slice::Iter<
+        'static,
+        for<'cx> fn(&mut ModuleContext<'cx>) -> NeonResult<(&'static str, Handle<'cx, JsValue>)>,
+    >;
+
+    fn into_iter(self) -> Self::IntoIter {
+        crate::macro_internal::EXPORTS.into_iter()
+    }
+}
+
+/// Access values exported with [`neon::export`]
+pub fn registered() -> Exports {
+    Exports(())
+}
 
 #[test]
 #[ignore]

@@ -102,18 +102,20 @@
 use crate::{
     context::{Context, FunctionContext},
     handle::Handle,
-    result::NeonResult,
-    types::JsValue,
+    result::{JsResult, NeonResult},
+    types::{JsValue, Value},
 };
 
 #[cfg(feature = "serde")]
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub use self::json::*;
-pub use self::types::*;
+pub use self::try_from_js::*;
 
 #[cfg(feature = "serde")]
 mod json;
-mod types;
+mod private;
+mod try_from_js;
+mod try_into_js;
 
 /// Extract Rust data from a JavaScript value
 pub trait TryFromJs<'cx>
@@ -127,6 +129,17 @@ where
         C: Context<'cx>;
 
     fn from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Self>
+    where
+        C: Context<'cx>;
+}
+
+pub trait TryIntoJs<'cx>
+where
+    Self: private::Sealed,
+{
+    type Value: Value;
+
+    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
     where
         C: Context<'cx>;
 }
@@ -215,15 +228,3 @@ from_args!(
         T27, T28, T29, T30, T31, T32
     ]
 );
-
-mod private {
-    use crate::{context::FunctionContext, result::NeonResult};
-
-    pub trait Sealed {}
-
-    pub trait FromArgsInternal<'cx>: Sized {
-        fn from_args(cx: &mut FunctionContext<'cx>) -> NeonResult<Self>;
-
-        fn from_args_opt(cx: &mut FunctionContext<'cx>) -> NeonResult<Option<Self>>;
-    }
-}
