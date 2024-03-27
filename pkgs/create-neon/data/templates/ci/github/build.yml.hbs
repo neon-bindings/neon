@@ -3,11 +3,10 @@ name: Build
 on:
   workflow_call:
     inputs:
-      branch:
-        description: 'Branch to check out'
-        required: false
+      ref:
+        description: 'The branch, tag, or SHA to check out'
+        required: true
         type: string
-        default: {{#$}} github.event.repository.default_branch {{/$}}
       update-version:
         description: 'Update version before building?'
         required: false
@@ -23,6 +22,11 @@ on:
         required: false
         type: boolean
         default: false
+      tag:
+        description: 'The release tag (ignored if github-release is false)'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   matrix:
@@ -34,33 +38,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@{{versions.actions.checkout}}
         with:
-          token: {{#$}} secrets.TAG_TOKEN || github.token {{/$}}
-          ref: {{#$}} inputs.branch {{/$}}
-      - name: Set Environment Variables
-        uses: falti/dotenv-action@{{versions.actions.dotenv}}
+          ref: {{#$}} inputs.ref {{/$}}
+      - name: Setup Neon Environment
+        uses: ./.github/actions/setup
         with:
-          path: ./.github/workflows/.env
-          export-variables: true
-          keys-case: bypass
-      - name: Install Node
-        uses: actions/setup-node@{{versions.actions.setupNode}}
-        with:
-          node-version: {{#$}} env.NODE_VERSION {{/$}}
-          registry-url: {{#$}} env.NPM_REGISTRY {{/$}}
-          cache: npm
-      - name: Install Dependencies
-        shell: bash
-        run: npm ci
-      - name: Install cargo-messages
-        shell: bash
-        run: npm ci
-        working-directory: ./pkgs/cargo-messages
+          use-rust: false
       - name: Look Up Matrix Data
         id: matrixData
         shell: bash
-        run: |
-          echo "json=$(node ../../dist/cli ci github | jq -rc)" >> "$GITHUB_OUTPUT"
-        working-directory: ./pkgs/cargo-messages
+        run: echo "json=$(npx neon ci github | jq -rc)" >> "$GITHUB_OUTPUT"
       - name: Compute Matrix
         id: matrix
         uses: actions/github-script@{{versions.actions.githubScript}}
@@ -91,19 +77,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@{{versions.actions.checkout}}
         with:
+          ref: {{#$}} inputs.ref {{/$}}
           fetch-depth: 0
-      - name: Set Environment Variables
-        uses: falti/dotenv-action@{{versions.actions.dotenv}}
+      - name: Setup Neon Environment
+        id: neon
+        uses: ./.github/actions/setup
         with:
-          path: ./.github/workflows/.env
-          export-variables: true
-          keys-case: bypass
-      - name: Diagnostics
-        shell: bash
-        run: git log -10
-      - name: Install Dependencies
-        shell: bash
-        run: npm ci
+          use-cross: {{#$}} matrix.cfg.script == 'cross' {{/$}}
+          platform: {{#$}} matrix.cfg.platform {{/$}}
+          workspace: ./pkgs/cargo-messages
       - name: Update Version
         if: {{#$}} inputs.update-version {{/$}}
         shell: bash
@@ -111,14 +93,48 @@ jobs:
           git config --global user.name $ACTIONS_USER
           git config --global user.email $ACTIONS_EMAIL
           npm version {{#$}} inputs.version {{/$}} -m "v%s"
-      - name: Check Versions
-        shell: bash
-        run: ./test/lint/check-versions.sh
       - name: Build
-        uses: neon-actions/build@{{versions.actions.neonBuild}}
+        shell: bash
+        env:
+          CARGO_BUILD_TARGET: {{#$}} steps.neon.outputs.target {{/$}}
+          NEON_BUILD_PLATFORM: {{#$}} matrix.cfg.platform {{/$}}
+        run: npm run ${{ matrix.cfg.script }}
+      - name: Pack
+        id: pack
+        shell: bash
+        run: |
+          mkdir -p dist
+          echo filename=$(basename $(npm pack ./platforms/{{#$}} matrix.cfg.platform {{/$}} --pack-destination=./dist --json | jq -r '.[0].filename')) >> $GITHUB_OUTPUT
+      - name: Release
+        if: {{#$}} inputs.github-release {{/$}}
+        uses: softprops/action-gh-release@{{versions.actions.ghRelease}}
         with:
-          working-directory: ./pkgs/cargo-messages
-          node-version: {{#$}} env.NODE_VERSION {{/$}}
-          use-cross: {{#$}} !!matrix.cfg.cross {{/$}}
-          platform: {{#$}} matrix.cfg.platform {{/$}}
-          github-release: {{#$}} inputs.github-release {{/$}}
+          files: ./dist/{{#$}} steps.build.outputs.filename {{/$}}
+          tag_name: {{#$}} inputs.tag {{/$}}
+
+  main:
+    name: Main
+    needs: [matrix]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@{{versions.actions.checkout}}
+        with:
+          ref: {{#$}} inputs.ref {{/$}}
+          fetch-depth: 0
+      - name: Setup Neon Environment
+        uses: ./.github/actions/setup
+        with:
+          use-rust: false
+      - name: Pack
+        id: pack
+        shell: bash
+        run: |
+          mkdir -p dist
+          echo "filename=$(npm pack --pack-destination=./dist)" >> $GITHUB_OUTPUT
+      - name: Release
+        if: {{#$}} inputs.github-release {{/$}}
+        uses: softprops/action-gh-release@{{versions.actions.ghRelease}}
+        with:
+          files: ./dist/{{#$}} steps.build.outputs.filename {{/$}}
+          tag_name: {{#$}} inputs.tag {{/$}}

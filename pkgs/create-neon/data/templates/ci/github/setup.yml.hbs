@@ -1,0 +1,78 @@
+name: 'Setup Neon'
+description: 'Setup the Neon toolchain.'
+inputs:
+  platform:
+    description: 'Platform being built for.'
+    required: false
+    default: ''
+  use-rust:
+    description: 'Install Rust?'
+    required: false
+    default: 'true'
+  use-cross:
+    description: 'Install cross-rs?'
+    required: false
+    default: 'false'
+  workspace:
+    description: 'Path to workspace being setup.'
+    required: false
+    default: '.'
+outputs:
+  rust:
+    description: 'Rust version installed.'
+    value: {{#$}} steps.rust.outputs.version {{/$}}
+  node:
+    description: 'Node version installed.'
+    value: {{#$}} steps.node.outputs.version {{/$}}
+  target:
+    description: 'Rust target architecture installed.'
+    value: {{#$}} steps.target.outputs.target {{/$}}
+runs:
+  using: "composite"
+  steps:
+    - name: Set Environment Variables
+      uses: falti/dotenv-action@{{versions.actions.dotenv}}
+      with:
+        path: ./.github/.env
+        export-variables: true
+        keys-case: bypass
+    - name: Install Node
+      uses: actions/setup-node@{{versions.actions.setupNode}}
+      with:
+        node-version: {{#$}} env.NODE_VERSION {{/$}}
+        registry-url: {{#$}} env.NPM_REGISTRY {{/$}}
+        cache: npm
+    - name: Install Dependencies
+      shell: bash  
+      run: npm ci   
+    - name: Compute Rust Target
+      if: {{#$}} inputs['use-rust'] == 'true' {{/$}}
+      id: target
+      shell: bash
+      run: echo target=$(npx neon list-platforms | jq -r '.["{{#$}} inputs.platform {{/$}}"]') >> $GITHUB_OUTPUT
+      working-directory: {{#$}} inputs.workspace {{/$}}
+    - name: Install Rust
+      if: {{#$}} inputs['use-rust'] == 'true' {{/$}}
+      uses: actions-rs/toolchain@{{versions.actions.setupRust}}
+      with:
+        toolchain: {{#$}} env.RUST_VERSION {{/$}}
+        target: {{#$}} steps.target.outputs.target {{/$}}
+        override: true
+    - name: Install cross-rs
+      if: {{#$}} inputs['use-cross'] == 'true' {{/$}}
+      uses: baptiste0928/cargo-install@{{versions.actions.cargoInstall}}
+      with:
+        crate: cross
+    - name: Node Version
+      id: node
+      shell: bash
+      run: |
+        # Trim the leading 'v' (e.g. "v18.19.0" ==> "18.19.0")
+        echo version=$(node --version | cut -c 2-) >> $GITHUB_OUTPUT
+    - name: Rust Version
+      if: {{#$}} inputs['use-rust'] == 'true' {{/$}}
+      id: rust
+      shell: bash
+      run: |
+        # Trim extraneous metadata (e.g. "rustc 1.70.0 (90c541806 2023-05-31)" ==> "1.70.0")
+        echo version=$(rustc --version | awk '{ print $2; }') >> $GITHUB_OUTPUT

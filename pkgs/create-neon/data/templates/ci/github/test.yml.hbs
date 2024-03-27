@@ -27,25 +27,16 @@ jobs:
         uses: actions/checkout@{{versions.actions.checkout}}
         with:
           fetch-depth: 0
-      - name: Set Environment Variables
-        uses: falti/dotenv-action@{{versions.actions.dotenv}}
+      - name: Setup Neon Environment
+        id: neon
+        uses: ./.github/actions/setup
         with:
-          path: ./.github/workflows/.env
-          export-variables: true
-          keys-case: bypass
-      - name: Install Node
-        uses: actions/setup-node@{{versions.actions.setupNode}}
-        with:
-          node-version: {{#$}} env.NODE_VERSION {{/$}}
-          registry-url: {{#$}} env.NPM_REGISTRY {{/$}}
-          cache: npm
-      - name: Install Rust
-        uses: actions-rs/toolchain@{{versions.actions.setupRust}}
-      - name: Install Dependencies
-        shell: bash
-        run: npm ci --verbose
+          platform: linux-x64-gnu
       - name: Build
         shell: bash
+        env:
+          CARGO_BUILD_TARGET: {{#$}} steps.neon.outputs.target {{/$}}
+          NEON_BUILD_PLATFORM: linux-x64-gnu
         run: npm run debug
       - name: Test
         shell: bash
