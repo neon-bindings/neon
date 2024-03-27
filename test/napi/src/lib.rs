@@ -439,3 +439,23 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     Ok(())
 }
+
+use neon::types::extract::Json;
+
+#[neon::export(name = "sortManual")]
+fn sort_manual(Json(mut values): Json<Vec<String>>) -> Json<Vec<String>> {
+    values.sort();
+    Json(values)
+}
+
+#[neon::export(serde)]
+fn sort(mut values: Vec<String>) -> Vec<String> {
+    values.sort();
+    values
+}
+
+#[neon::export(serde)]
+fn sort_2(mut values: Vec<String>) -> NeonResult<Vec<String>> {
+    values.sort();
+    Ok(values)
+}

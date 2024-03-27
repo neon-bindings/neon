@@ -47,9 +47,9 @@ where
 }
 
 impl<T> Sealed for &[T]
-    where
-        JsTypedArray<T>: Value,
-        T: Binary,
+where
+    JsTypedArray<T>: Value,
+    T: Binary,
 {
 }
 

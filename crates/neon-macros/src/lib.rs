@@ -70,7 +70,7 @@ fn export_global(
     name: syn::Ident,
     item: proc_macro2::TokenStream,
 ) -> proc_macro::TokenStream {
-    let mut export_name = quote::quote!(#name);
+    let mut export_name = quote::quote!(stringify!(#name));
     let mut use_serde = false;
     let create_name = quote::format_ident!("__EXPORT_CREATE__{name}");
     let attr_parser = syn::meta::parser(|meta| {
@@ -102,13 +102,14 @@ fn export_global(
     quote::quote!(
         #item
 
+        #[doc(hidden)]
         #[neon::macro_internal::linkme::distributed_slice(neon::macro_internal::EXPORTS)]
         #[linkme(crate = neon::macro_internal::linkme)]
         fn #create_name<'cx>(
             cx: &mut neon::context::ModuleContext<'cx>,
         ) -> neon::result::NeonResult<(&'static str, neon::handle::Handle<'cx, neon::types::JsValue>)> {
             neon::types::extract::TryIntoJs::try_into_js(#value, cx).map(|v| (
-                stringify!(#export_name),
+                #export_name,
                 neon::handle::Handle::upcast(&v),
             ))
         }
@@ -117,17 +118,67 @@ fn export_global(
     .into()
 }
 
+fn is_context_arg(arg: &syn::FnArg) -> bool {
+    let ty = match arg {
+        syn::FnArg::Receiver(v) => &*v.ty,
+        syn::FnArg::Typed(v) => &*v.ty,
+    };
+
+    let ty = match ty {
+        syn::Type::Reference(ty) => &*ty.elem,
+        _ => return false,
+    };
+
+    let path = match ty {
+        syn::Type::Path(path) => path,
+        _ => return false,
+    };
+
+    let path = match path.path.segments.last() {
+        Some(path) => path,
+        None => return false,
+    };
+
+    path.ident == "FunctionContext"
+}
+
+fn is_result_output(ret: &syn::ReturnType) -> bool {
+    let ty = match ret {
+        syn::ReturnType::Default => return false,
+        syn::ReturnType::Type(_, ty) => &**ty,
+    };
+
+    let path = match ty {
+        syn::Type::Path(path) => path,
+        _ => return false,
+    };
+
+    let path = match path.path.segments.last() {
+        Some(path) => path,
+        None => return false,
+    };
+
+    path.ident == "Result" || path.ident == "NeonResult" || path.ident == "JsResult"
+}
+
 fn export_fn(attr: proc_macro::TokenStream, input: syn::ItemFn) -> proc_macro::TokenStream {
     let name = &input.sig.ident;
     let create_name = quote::format_ident!("__EXPORT_CREATE__{name}");
     let wrapper_name = quote::format_ident!("__EXPORT_WRAPPER__{name}");
-    let mut export_name = quote::quote!(#name);
+    let mut export_name = quote::quote!(stringify!(#name));
+    let mut use_serde = false;
     let mut force_context = false;
     let attr_parser = syn::meta::parser(|meta| {
         if meta.path.is_ident("name") {
             let name = meta.value()?.parse::<syn::LitStr>()?;
 
             export_name = quote::quote!(#name);
+
+            return Ok(());
+        }
+
+        if meta.path.is_ident("serde") {
+            use_serde = true;
 
             return Ok(());
         }
@@ -147,29 +198,7 @@ fn export_fn(attr: proc_macro::TokenStream, input: syn::ItemFn) -> proc_macro::T
         .sig
         .inputs
         .first()
-        .map(|arg| {
-            let ty = match arg {
-                syn::FnArg::Receiver(v) => &*v.ty,
-                syn::FnArg::Typed(v) => &*v.ty,
-            };
-
-            let ty = match ty {
-                syn::Type::Reference(ty) => &*ty.elem,
-                _ => return false,
-            };
-
-            let path = match ty {
-                syn::Type::Path(path) => path,
-                _ => return false,
-            };
-
-            let path = match path.path.segments.last() {
-                Some(path) => path,
-                None => return false,
-            };
-
-            path.ident == "FunctionContext"
-        })
+        .map(is_context_arg)
         .unwrap_or(false);
 
     let (context_arg, start) = if force_context || has_context {
@@ -178,32 +207,49 @@ fn export_fn(attr: proc_macro::TokenStream, input: syn::ItemFn) -> proc_macro::T
         (quote::quote!(), 0)
     };
 
-    let tuple_names = (start..input.sig.inputs.len()).map(|i| quote::format_ident!("a{i}"));
-    let arg_names = tuple_names.clone();
+    let arg_names = (start..input.sig.inputs.len()).map(|i| quote::format_ident!("a{i}"));
+    let tuple_fields = arg_names.clone().map(|name| {
+        if use_serde {
+            quote::quote!(neon::types::extract::Json(#name))
+        } else {
+            quote::quote!(#name)
+        }
+    });
+
+    let map_res = if use_serde {
+        if is_result_output(&input.sig.output) {
+            quote::quote!(let res = res.map(neon::types::extract::Json);)
+        } else {
+            quote::quote!(let res = neon::types::extract::Json(res);)
+        }
+    } else {
+        quote::quote!()
+    };
 
     quote::quote!(
         #input
 
-        {
-            fn #wrapper_name(mut cx: neon::context::FunctionContext) -> neon::result::JsResult<neon::types::JsValue> {
-                let (#(#tuple_names,)*) = cx.args()?;
-                let res = #name(#context_arg #(#arg_names),*);
+        #[doc(hidden)]
+        fn #wrapper_name(mut cx: neon::context::FunctionContext) -> neon::result::JsResult<neon::types::JsValue> {
+            let (#(#tuple_fields,)*) = cx.args()?;
+            let res = #name(#context_arg #(#arg_names),*);
+            #map_res
 
-                neon::types::extract::TryIntoJs::try_into_js(res, &mut cx).map(|v| neon::handle::Handle::upcast(&v))
-            }
+            neon::types::extract::TryIntoJs::try_into_js(res, &mut cx).map(|v| neon::handle::Handle::upcast(&v))
+        }
 
-            #[neon::macro_internal::linkme::distributed_slice(neon::macro_internal::EXPORTS)]
-            #[linkme(crate = neon::macro_internal::linkme)]
-            fn #create_name<'cx>(
-                cx: &mut neon::context::ModuleContext<'cx>,
-            ) -> neon::result::NeonResult<(&'static str, neon::handle::Handle<'cx, neon::types::JsValue>)> {
-                static NAME: &str = stringify!(#export_name);
+        #[neon::macro_internal::linkme::distributed_slice(neon::macro_internal::EXPORTS)]
+        #[linkme(crate = neon::macro_internal::linkme)]
+        #[doc(hidden)]
+        fn #create_name<'cx>(
+            cx: &mut neon::context::ModuleContext<'cx>,
+        ) -> neon::result::NeonResult<(&'static str, neon::handle::Handle<'cx, neon::types::JsValue>)> {
+            static NAME: &str = #export_name;
 
-                neon::types::JsFunction::with_name(cx, NAME, #wrapper_name).map(|v| (
-                    NAME,
-                    neon::handle::Handle::upcast(&v),
-                ))
-            }
+            neon::types::JsFunction::with_name(cx, NAME, #wrapper_name).map(|v| (
+                NAME,
+                neon::handle::Handle::upcast(&v),
+            ))
         }
     )
     .into()
