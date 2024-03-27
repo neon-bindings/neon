@@ -33,7 +33,7 @@ static GREETING: &str = "Hello, World!";
 #[neon::export]
 static SOME_BYTES: &[u8] = b"Hello, World!";
 
-#[neon::export(serde)]
+#[neon::export(json)]
 static GREETINGS: [&'static str; 2] = ["Hello", "World"];
 
 #[neon::main]
@@ -448,13 +448,13 @@ fn sort_manual(Json(mut values): Json<Vec<String>>) -> Json<Vec<String>> {
     Json(values)
 }
 
-#[neon::export(serde)]
+#[neon::export(json)]
 fn sort(mut values: Vec<String>) -> Vec<String> {
     values.sort();
     values
 }
 
-#[neon::export(serde)]
+#[neon::export(json)]
 fn sort_2(mut values: Vec<String>) -> NeonResult<Vec<String>> {
     values.sort();
     Ok(values)

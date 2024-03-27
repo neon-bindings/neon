@@ -71,7 +71,7 @@ fn export_global(
     item: proc_macro2::TokenStream,
 ) -> proc_macro::TokenStream {
     let mut export_name = quote::quote!(stringify!(#name));
-    let mut use_serde = false;
+    let mut use_json = false;
     let create_name = quote::format_ident!("__EXPORT_CREATE__{name}");
     let attr_parser = syn::meta::parser(|meta| {
         if meta.path.is_ident("name") {
@@ -82,8 +82,8 @@ fn export_global(
             return Ok(());
         }
 
-        if meta.path.is_ident("serde") {
-            use_serde = true;
+        if meta.path.is_ident("json") {
+            use_json = true;
 
             return Ok(());
         }
@@ -93,7 +93,7 @@ fn export_global(
 
     syn::parse_macro_input!(attr with attr_parser);
 
-    let value = if use_serde {
+    let value = if use_json {
         quote::quote!(neon::types::extract::Json(&#name))
     } else {
         quote::quote!(#name)
@@ -166,7 +166,7 @@ fn export_fn(attr: proc_macro::TokenStream, input: syn::ItemFn) -> proc_macro::T
     let create_name = quote::format_ident!("__EXPORT_CREATE__{name}");
     let wrapper_name = quote::format_ident!("__EXPORT_WRAPPER__{name}");
     let mut export_name = quote::quote!(stringify!(#name));
-    let mut use_serde = false;
+    let mut use_json = false;
     let mut force_context = false;
     let attr_parser = syn::meta::parser(|meta| {
         if meta.path.is_ident("name") {
@@ -177,8 +177,8 @@ fn export_fn(attr: proc_macro::TokenStream, input: syn::ItemFn) -> proc_macro::T
             return Ok(());
         }
 
-        if meta.path.is_ident("serde") {
-            use_serde = true;
+        if meta.path.is_ident("json") {
+            use_json = true;
 
             return Ok(());
         }
@@ -209,14 +209,14 @@ fn export_fn(attr: proc_macro::TokenStream, input: syn::ItemFn) -> proc_macro::T
 
     let arg_names = (start..input.sig.inputs.len()).map(|i| quote::format_ident!("a{i}"));
     let tuple_fields = arg_names.clone().map(|name| {
-        if use_serde {
+        if use_json {
             quote::quote!(neon::types::extract::Json(#name))
         } else {
             quote::quote!(#name)
         }
     });
 
-    let map_res = if use_serde {
+    let map_res = if use_json {
         if is_result_output(&input.sig.output) {
             quote::quote!(let res = res.map(neon::types::extract::Json);)
         } else {
