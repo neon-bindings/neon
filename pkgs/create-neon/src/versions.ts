@@ -28,9 +28,12 @@ export type Versions = {
     "githubScript": string,
     "setupNode": string,
     "setupRust": string,
+    "cargoInstall": string,
     "neonBuild": string,
     "neonPublish": string,
-    "dotenv": string
+    "dotenv": string,
+    "ghRelease": string,
+    "releaseDownloader": string
   }
 };
 
