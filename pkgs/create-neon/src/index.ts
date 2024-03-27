@@ -51,6 +51,10 @@ export async function createNeon(name: string, options: CreateNeonOptions) {
     await die("Could not create `package.json`: " + err.message, tmpPackagePath);
   }
   if (pkg) {
+    if (options.library && options.library.ci) {
+      options.library.ci.setup();
+    }
+
     for (const source of Object.keys(options.templates)) {
       const target = path.join(tmpPackagePath, options.templates[source]);
       await expandTo(source, target, metadata);

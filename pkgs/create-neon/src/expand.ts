@@ -13,14 +13,9 @@ export interface Metadata {
   versions: Versions;
 }
 
-// FIXME: move this into the GitHub plugin
-function ghaDelegate(this: any, options: handlebars.HelperOptions): handlebars.SafeString {
-  return new handlebars.SafeString("${{" + options.fn(this) +"}}");
-}
 
 const COMPARISON_HELPERS = helpers('comparison');
 
-handlebars.registerHelper('$', ghaDelegate);
 handlebars.registerHelper('eq', COMPARISON_HELPERS.eq);
 
 export async function expand(source: string, metadata: Metadata): Promise<string> {
