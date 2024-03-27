@@ -229,21 +229,21 @@ fn export_fn(attr: proc_macro::TokenStream, input: syn::ItemFn) -> proc_macro::T
     quote::quote!(
         #input
 
-        #[doc(hidden)]
-        fn #wrapper_name(mut cx: neon::context::FunctionContext) -> neon::result::JsResult<neon::types::JsValue> {
-            let (#(#tuple_fields,)*) = cx.args()?;
-            let res = #name(#context_arg #(#arg_names),*);
-            #map_res
-
-            neon::types::extract::TryIntoJs::try_into_js(res, &mut cx).map(|v| neon::handle::Handle::upcast(&v))
-        }
-
         #[neon::macro_internal::linkme::distributed_slice(neon::macro_internal::EXPORTS)]
         #[linkme(crate = neon::macro_internal::linkme)]
         #[doc(hidden)]
         fn #create_name<'cx>(
             cx: &mut neon::context::ModuleContext<'cx>,
         ) -> neon::result::NeonResult<(&'static str, neon::handle::Handle<'cx, neon::types::JsValue>)> {
+            #[doc(hidden)]
+            fn #wrapper_name(mut cx: neon::context::FunctionContext) -> neon::result::JsResult<neon::types::JsValue> {
+                let (#(#tuple_fields,)*) = cx.args()?;
+                let res = #name(#context_arg #(#arg_names),*);
+                #map_res
+
+                neon::types::extract::TryIntoJs::try_into_js(res, &mut cx).map(|v| neon::handle::Handle::upcast(&v))
+            }
+
             static NAME: &str = #export_name;
 
             neon::types::JsFunction::with_name(cx, NAME, #wrapper_name).map(|v| (
