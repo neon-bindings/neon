@@ -34,7 +34,7 @@ static GREETING: &str = "Hello, World!";
 static SOME_BYTES: &[u8] = b"Hello, World!";
 
 #[neon::export(json)]
-static GREETINGS: [&'static str; 2] = ["Hello", "World"];
+static GREETINGS: [&str; 2] = ["Hello", "World"];
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
@@ -455,7 +455,7 @@ fn sort(mut values: Vec<String>) -> Vec<String> {
 }
 
 #[neon::export(json)]
-fn sort_2(mut values: Vec<String>) -> NeonResult<Vec<String>> {
+fn sort_2(_cx: &mut FunctionContext, mut values: Vec<String>) -> NeonResult<Vec<String>> {
     values.sort();
     Ok(values)
 }

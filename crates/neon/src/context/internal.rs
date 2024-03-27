@@ -59,7 +59,7 @@ fn init(cx: ModuleContext) -> NeonResult<()> {
         panic!("The `neon::main` macro must only be used once");
     }
 
-    if let Some(main) = crate::macro_internal::MAIN.get(0) {
+    if let Some(main) = crate::macro_internal::MAIN.first() {
         main(cx)
     } else {
         default_main(cx)

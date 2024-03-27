@@ -138,7 +138,7 @@ static MODULE_TAG: once_cell::sync::Lazy<crate::sys::TypeTag> = once_cell::sync:
     crate::sys::TypeTag { lower, upper: 1 }
 });
 
-/// Values exported with [`neon::export`]
+/// Values exported with [`neon::export`](export)
 pub struct Exports(());
 
 impl Exports {
@@ -165,7 +165,7 @@ impl IntoIterator for Exports {
     }
 }
 
-/// Access values exported with [`neon::export`]
+/// Access values exported with [`neon::export`](export)
 pub fn registered() -> Exports {
     Exports(())
 }
