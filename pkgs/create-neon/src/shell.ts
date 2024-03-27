@@ -1,6 +1,6 @@
-import { spawn } from 'child_process';
-import { promises as fs } from 'fs';
-import path from 'path';
+import { spawn } from "child_process";
+import { promises as fs } from "fs";
+import path from "path";
 
 /**
  * Transparently shell out to an executable with a list of arguments.

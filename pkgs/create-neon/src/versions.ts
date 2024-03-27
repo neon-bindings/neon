@@ -9,45 +9,50 @@
 // and generates a stable format that Node doesn't complain about, we can eliminate this
 // boilerplate wrapper module.
 
-import { createRequire } from 'module';
+import { createRequire } from "module";
 
 export type Versions = {
-  "neon": string,
-  "neonCLI": string,
-  "neonLoad": string,
-  "typescript": string,
-  "typesNode": string,
-  "tsconfigNode": {
-    "major": string,
-    "semver": string,
-    "module": string
-  },
-  "node": string,
-  "actions": {
-    "checkout": string,
-    "githubScript": string,
-    "setupNode": string,
-    "setupRust": string,
-    "cargoInstall": string,
-    "neonBuild": string,
-    "neonPublish": string,
-    "dotenv": string,
-    "ghRelease": string,
-    "releaseDownloader": string
-  }
+  neon: string;
+  neonCLI: string;
+  neonLoad: string;
+  typescript: string;
+  typesNode: string;
+  tsconfigNode: {
+    major: string;
+    semver: string;
+    module: string;
+  };
+  node: string;
+  actions: {
+    checkout: string;
+    githubScript: string;
+    setupNode: string;
+    setupRust: string;
+    cargoInstall: string;
+    neonBuild: string;
+    neonPublish: string;
+    dotenv: string;
+    ghRelease: string;
+    releaseDownloader: string;
+  };
 };
 
 const KEYS = [
-  "neon", "neonCLI", "neonLoad",
-  "typescript", "typesNode", "tsconfigNode",
-  "node", "actions"
+  "neon",
+  "neonCLI",
+  "neonLoad",
+  "typescript",
+  "typesNode",
+  "tsconfigNode",
+  "node",
+  "actions",
 ];
 
 function assertIsVersions(data: unknown): asserts data is Versions {
-  if (!data || typeof data !== 'object') {
+  if (!data || typeof data !== "object") {
     throw new TypeError("expected object");
   }
-  KEYS.forEach(key => {
+  KEYS.forEach((key) => {
     if (!(key in data)) {
       throw new TypeError(`require '${key}' property not found`);
     }
@@ -57,7 +62,7 @@ function assertIsVersions(data: unknown): asserts data is Versions {
 const dynamicRequire = createRequire(import.meta.url);
 
 function load(): Versions {
-  const data = dynamicRequire('../data/versions.json');
+  const data = dynamicRequire("../data/versions.json");
   assertIsVersions(data);
   return data;
 }

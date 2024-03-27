@@ -1,14 +1,16 @@
-import { assert } from 'chai';
-import { spawn } from 'child_process';
-import * as path from 'path';
-import { promises as fs } from 'fs';
-import * as TOML from 'toml';
-import expect from '../dev/expect.js';
-import { execa } from 'execa';
-import { fileURLToPath } from 'url';
+import { assert } from "chai";
+import { spawn } from "child_process";
+import * as path from "path";
+import { promises as fs } from "fs";
+import * as TOML from "toml";
+import expect from "../dev/expect.js";
+import { execa } from "execa";
+import { fileURLToPath } from "url";
 
 const NODE: string = process.execPath;
-const CREATE_NEON = fileURLToPath(new URL(path.join('..', 'src', 'bin', 'create-neon.js'), import.meta.url));
+const CREATE_NEON = fileURLToPath(
+  new URL(path.join("..", "src", "bin", "create-neon.js"), import.meta.url)
+);
 
 describe("Command-line argument validation", () => {
   it("requires an argument", async () => {

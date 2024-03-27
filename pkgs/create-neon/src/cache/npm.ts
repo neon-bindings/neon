@@ -1,4 +1,4 @@
-import { Cache } from '../cache.js';
+import { Cache } from "../cache.js";
 
 export class NPM implements Cache {
   readonly org: string | null;

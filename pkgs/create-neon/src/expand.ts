@@ -1,11 +1,14 @@
-import { promises as fs } from 'fs';
-import handlebars from 'handlebars';
-import helpers from 'handlebars-helpers';
-import * as path from 'path';
-import Package, { PackageSpec, Lang } from './package.js';
-import { Versions } from './versions.js';
+import { promises as fs } from "fs";
+import handlebars from "handlebars";
+import helpers from "handlebars-helpers";
+import * as path from "path";
+import Package, { PackageSpec, Lang } from "./package.js";
+import { Versions } from "./versions.js";
 
-const TEMPLATES_DIR = new URL(path.join('..', 'data', 'templates', '/'), import.meta.url);
+const TEMPLATES_DIR = new URL(
+  path.join("..", "data", "templates", "/"),
+  import.meta.url
+);
 
 export interface Metadata {
   packageSpec: PackageSpec;
@@ -13,12 +16,14 @@ export interface Metadata {
   versions: Versions;
 }
 
+const COMPARISON_HELPERS = helpers("comparison");
 
-const COMPARISON_HELPERS = helpers('comparison');
+handlebars.registerHelper("eq", COMPARISON_HELPERS.eq);
 
-handlebars.registerHelper('eq', COMPARISON_HELPERS.eq);
-
-export async function expand(source: string, metadata: Metadata): Promise<string> {
+export async function expand(
+  source: string,
+  metadata: Metadata
+): Promise<string> {
   let template = await fs.readFile(new URL(source, TEMPLATES_DIR), "utf8");
   let compiled = handlebars.compile(template, { noEscape: true });
   return compiled(metadata);

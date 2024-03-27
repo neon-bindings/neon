@@ -1,16 +1,16 @@
-import { promises as fs } from 'fs';
-import * as path from 'path';
-import shell from './shell.js';
-import { VERSIONS } from './versions.js';
-import { Cache } from './cache.js';
-import { CI } from './ci.js';
-import { Metadata, expand, expandTo } from './expand.js';
-import { PlatformPreset } from '@neon-rs/manifest/platform';
+import { promises as fs } from "fs";
+import * as path from "path";
+import shell from "./shell.js";
+import { VERSIONS } from "./versions.js";
+import { Cache } from "./cache.js";
+import { CI } from "./ci.js";
+import { Metadata, expand, expandTo } from "./expand.js";
+import { PlatformPreset } from "@neon-rs/manifest/platform";
 
 export enum Lang {
   JS = "js",
   DTS = "dts",
-  TS = "ts"
+  TS = "ts",
 }
 
 export const LANG_TEMPLATES: Record<Lang, Record<string, string>> = {
@@ -20,29 +20,29 @@ export const LANG_TEMPLATES: Record<Lang, Record<string, string>> = {
     "tsconfig.json.hbs": "tsconfig.json",
     "ts/index.cts.hbs": path.join("ts", "index.cts"),
     "ts/index.mts.hbs": path.join("ts", "index.mts"),
-    "ts/load.cts.hbs": path.join("ts", "load.cts")
-  }
+    "ts/load.cts.hbs": path.join("ts", "load.cts"),
+  },
 };
 
 export enum ModuleType {
   ESM = "esm",
-  CJS = "cjs"
+  CJS = "cjs",
 }
 
 export type LibrarySpec = {
-  lang: Lang,
-  module: ModuleType,
-  cache?: Cache,
-  ci?: CI,
-  platforms?: PlatformPreset | PlatformPreset[]
+  lang: Lang;
+  module: ModuleType;
+  cache?: Cache;
+  ci?: CI;
+  platforms?: PlatformPreset | PlatformPreset[];
 };
 
 export type PackageSpec = {
-  name: string,
-  library: LibrarySpec | null,
-  cache?: Cache | undefined,
-  ci?: CI | undefined,
-  yes: boolean | undefined
+  name: string;
+  library: LibrarySpec | null;
+  cache?: Cache | undefined;
+  ci?: CI | undefined;
+  yes: boolean | undefined;
 };
 
 const KEYS = [
@@ -76,19 +76,24 @@ export default class Package {
 
   static async create(metadata: Metadata, dir: string): Promise<Package> {
     const baseTemplate = metadata.packageSpec.library
-      ? 'manifest/base/library.json.hbs'
-      : 'manifest/base/default.json.hbs';
+      ? "manifest/base/library.json.hbs"
+      : "manifest/base/default.json.hbs";
 
     // 1. Load the base contents of the manifest from the base template.
     const seed = JSON.parse(await expand(baseTemplate, metadata));
 
     // 2. Mixin the scripts from the scripts template.
-    seed.scripts = JSON.parse(await expand('manifest/scripts.json.hbs', metadata));
+    seed.scripts = JSON.parse(
+      await expand("manifest/scripts.json.hbs", metadata)
+    );
 
     // 3. Mixin any scripts from the CI scripts template.
     if (metadata.packageSpec.library && metadata.packageSpec.library.ci) {
       const mixinTemplate = `ci/${metadata.packageSpec.library.ci.type}/manifest/scripts.json.hbs`;
-      Object.assign(seed.scripts, JSON.parse(await expand(mixinTemplate, metadata)));
+      Object.assign(
+        seed.scripts,
+        JSON.parse(await expand(mixinTemplate, metadata))
+      );
     }
 
     const filename = path.join(dir, "package.json");
@@ -97,7 +102,11 @@ export default class Package {
     await fs.writeFile(filename, JSON.stringify(seed));
 
     // 2. Call `npm init` to ask the user remaining questions.
-    await shell("npm", ["init", ...(metadata.packageSpec.yes ? ["--yes"] : [])], dir);
+    await shell(
+      "npm",
+      ["init", ...(metadata.packageSpec.yes ? ["--yes"] : [])],
+      dir
+    );
 
     // 3. Sort the values in idiomatic `npm init` order.
     const sorted = sort(JSON.parse(await fs.readFile(filename, "utf8")));
