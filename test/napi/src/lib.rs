@@ -440,7 +440,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     Ok(())
 }
 
-use neon::types::extract::Json;
+use neon::types::extract::{Error, Json};
 
 #[neon::export(name = "sortManual")]
 fn sort_manual(Json(mut values): Json<Vec<String>>) -> Json<Vec<String>> {
@@ -458,4 +458,14 @@ fn sort(mut values: Vec<String>) -> Vec<String> {
 fn sort_2(_cx: &mut FunctionContext, mut values: Vec<String>) -> NeonResult<Vec<String>> {
     values.sort();
     Ok(values)
+}
+
+#[neon::export]
+fn throws() -> Result<(), Error> {
+    Err("Oh, no!".into())
+}
+
+#[neon::export]
+fn extract_error(err: Error) -> Error {
+    err
 }

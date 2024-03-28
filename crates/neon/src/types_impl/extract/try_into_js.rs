@@ -1,7 +1,7 @@
 use crate::{
     context::Context,
     handle::Handle,
-    result::{JsResult, NeonResult, ResultExt},
+    result::{JsResult, ResultExt, Throw},
     types::{
         buffer::Binary,
         extract::{ArrayBuffer, Buffer, Date, TryIntoJs},
@@ -24,9 +24,10 @@ where
     }
 }
 
-impl<'cx, T> TryIntoJs<'cx> for NeonResult<T>
+impl<'cx, T, E> TryIntoJs<'cx> for Result<T, E>
 where
     T: TryIntoJs<'cx>,
+    E: TryIntoJs<'cx>,
 {
     type Value = T::Value;
 
@@ -34,7 +35,43 @@ where
     where
         C: Context<'cx>,
     {
-        self?.try_into_js(cx)
+        match self {
+            Ok(v) => v.try_into_js(cx),
+            Err(err) => {
+                let err = err.try_into_js(cx)?;
+
+                cx.throw(err)
+            }
+        }
+    }
+}
+
+impl<'cx> TryIntoJs<'cx> for Throw {
+    type Value = JsValue;
+
+    fn try_into_js<C>(self, _cx: &mut C) -> JsResult<'cx, Self::Value>
+    where
+        C: Context<'cx>,
+    {
+        Err(self)
+    }
+}
+
+impl<'cx, T> TryIntoJs<'cx> for Option<T>
+where
+    T: TryIntoJs<'cx>,
+{
+    type Value = JsValue;
+
+    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
+    where
+        C: Context<'cx>,
+    {
+        if let Some(val) = self {
+            val.try_into_js(cx).map(|v| v.upcast())
+        } else {
+            Ok(cx.undefined().upcast())
+        }
     }
 }
 
@@ -132,24 +169,6 @@ impl<'cx> TryIntoJs<'cx> for () {
         C: Context<'cx>,
     {
         Ok(cx.undefined())
-    }
-}
-
-impl<'cx, T> TryIntoJs<'cx> for Option<T>
-where
-    T: TryIntoJs<'cx>,
-{
-    type Value = JsValue;
-
-    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
-    where
-        C: Context<'cx>,
-    {
-        if let Some(val) = self {
-            val.try_into_js(cx).map(|v| v.upcast())
-        } else {
-            Ok(cx.undefined().upcast())
-        }
     }
 }
 

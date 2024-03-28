@@ -20,7 +20,7 @@ use crate::types::JsDate;
 pub struct TypeExpected<T: Value>(PhantomData<T>);
 
 impl<T: Value> TypeExpected<T> {
-    fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self(PhantomData)
     }
 }

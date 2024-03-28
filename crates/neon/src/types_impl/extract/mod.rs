@@ -109,8 +109,9 @@ use crate::{
 #[cfg(feature = "serde")]
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub use self::json::*;
-pub use self::try_from_js::*;
+pub use self::{error::*, try_from_js::*};
 
+mod error;
 #[cfg(feature = "serde")]
 mod json;
 mod private;

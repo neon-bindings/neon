@@ -1,10 +1,10 @@
 use crate::{
     context::FunctionContext,
     handle::Handle,
-    result::NeonResult,
+    result::{NeonResult, Throw},
     types::{
         buffer::Binary,
-        extract::{ArrayBuffer, Buffer, Date},
+        extract::{ArrayBuffer, Buffer, Date, Error},
         JsTypedArray, Value,
     },
 };
@@ -31,13 +31,13 @@ macro_rules! impl_sealed {
 
 impl Sealed for () {}
 
-impl<T> Sealed for NeonResult<T> {}
-
 impl Sealed for &str {}
 
 impl<'cx, V: Value> Sealed for Handle<'cx, V> {}
 
 impl<T> Sealed for Option<T> {}
+
+impl<T, E> Sealed for Result<T, E> {}
 
 impl<T> Sealed for Vec<T>
 where
@@ -67,4 +67,6 @@ impl_sealed!(
     Date,
     Buffer,
     ArrayBuffer,
+    Throw,
+    Error,
 );
