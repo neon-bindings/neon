@@ -39,6 +39,7 @@ export type LibrarySpec = {
 
 export type PackageSpec = {
   name: string;
+  version: string;
   library: LibrarySpec | null;
   cache?: Cache | undefined;
   ci?: CI | undefined;

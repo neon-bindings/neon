@@ -22,6 +22,7 @@ export type CreateNeonOptions = {
 export async function createNeon(name: string, options: CreateNeonOptions) {
   const packageSpec: PackageSpec = {
     name,
+    version: "0.1.0",
     library: options.library,
     yes: options.yes,
   };
