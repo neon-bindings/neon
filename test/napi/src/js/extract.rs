@@ -1,6 +1,7 @@
 use neon::{prelude::*, types::extract::*};
 
 pub fn extract_values(mut cx: FunctionContext) -> JsResult<JsArray> {
+    #[allow(clippy::type_complexity)]
     let (boolean, number, _unit, string, Date(date), value, opt_number, opt_string): (
         bool,
         f64,

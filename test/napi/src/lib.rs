@@ -24,8 +24,22 @@ mod js {
     pub mod workers;
 }
 
+#[neon::export]
+const ANSWER: f64 = 42.0;
+
+#[neon::export]
+static GREETING: &str = "Hello, World!";
+
+#[neon::export]
+static SOME_BYTES: &[u8] = b"Hello, World!";
+
+#[neon::export(json)]
+static GREETINGS: [&str; 2] = ["Hello", "World"];
+
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
+    neon::registered().export(&mut cx)?;
+
     let greeting = cx.string("Hello, World!");
     let greeting_copy = greeting.value(&mut cx);
     let greeting_copy = cx.string(greeting_copy);
@@ -102,12 +116,27 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     cx.export_value("rustCreated", rust_created)?;
 
-    fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
-        let x = cx.argument::<JsNumber>(0)?.value(&mut cx);
-        Ok(cx.number(x + 1.0))
+    #[neon::export]
+    fn add1(x: f64) -> f64 {
+        x + 1.0
     }
 
-    cx.export_function("add1", add1)?;
+    #[neon::export]
+    fn add(a: f64, b: f64) -> f64 {
+        a + b
+    }
+
+    #[neon::export]
+    fn hello() -> &'static str {
+        "Hello, World!"
+    }
+
+    use neon::types::extract::Json;
+
+    #[neon::export]
+    fn sample() -> Json<Vec<&'static str>> {
+        Json(vec!["hello", "world"])
+    }
 
     cx.export_function("return_js_string", return_js_string)?;
     cx.export_function("return_js_string_utf16", return_js_string_utf16)?;
@@ -409,4 +438,34 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     )?;
 
     Ok(())
+}
+
+use neon::types::extract::{Error, Json};
+
+#[neon::export(name = "sortManual")]
+fn sort_manual(Json(mut values): Json<Vec<String>>) -> Json<Vec<String>> {
+    values.sort();
+    Json(values)
+}
+
+#[neon::export(json)]
+fn sort(mut values: Vec<String>) -> Vec<String> {
+    values.sort();
+    values
+}
+
+#[neon::export(json)]
+fn sort_2(_cx: &mut FunctionContext, mut values: Vec<String>) -> NeonResult<Vec<String>> {
+    values.sort();
+    Ok(values)
+}
+
+#[neon::export]
+fn throws() -> Result<(), Error> {
+    Err("Oh, no!".into())
+}
+
+#[neon::export]
+fn extract_error(err: Error) -> Error {
+    err
 }
