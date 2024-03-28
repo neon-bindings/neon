@@ -113,7 +113,7 @@ export default class Package {
     const sorted = sort(JSON.parse(await fs.readFile(filename, "utf8")));
 
     // 4. Save the result to package.json.
-    await fs.writeFile(filename, JSON.stringify(sorted, undefined, 2));
+    await fs.writeFile(filename, JSON.stringify(sorted, undefined, 2) + "\n");
 
     return new Package(sorted);
   }
