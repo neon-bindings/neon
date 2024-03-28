@@ -1,4 +1,25 @@
 {
   "neon": "1",
-  "cargo-cp-artifact": "0.1"
+  "neonCLI": "0.1.64",
+  "neonLoad": "0.1.64",
+  "typescript": "5.3.3",
+  "typesNode": "20.11.16",
+  "tsconfigNode": {
+    "major": "18",
+    "semver": "18.2.2",
+    "module": "16"
+  },
+  "node": "18",
+  "actions": {
+    "checkout": "v3",
+    "githubScript": "v7",
+    "setupNode": "v3",
+    "setupRust": "v1",
+    "cargoInstall": "v2",
+    "neonBuild": "v0.9",
+    "neonPublish": "v0.4.1",
+    "dotenv": "v1",
+    "ghRelease": "v1",
+    "releaseDownloader": "v1.7"
+  }
 }

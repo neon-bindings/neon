@@ -1,0 +1,13 @@
+{
+{{#eq packageSpec.library.lang compare="ts"}}
+  "extends": "@tsconfig/node{{versions.tsconfigNode.major}}/tsconfig.json",
+  "compilerOptions": {
+    "module": "node{{versions.tsconfigNode.module}}",
+    "declaration": true,
+    "outDir": "lib",
+  },
+  "exclude": ["lib"]
+{{else}}
+  "extends": "@tsconfig/node{{versions.tsconfigNode.major}}/tsconfig.json"
+{{/eq}}
+}

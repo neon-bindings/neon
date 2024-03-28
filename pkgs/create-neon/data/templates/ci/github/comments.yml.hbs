@@ -1,0 +1,40 @@
+name: Comments
+
+run-name: |
+  {{#$}} (github.event.issue.pull_request
+       && contains(github.event.comment.body, '/build-all')
+       && format('Full build (PR #{0})', github.event.issue.number))
+   || 'Issue comment (no action)' {{/$}}
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    if: {{#$}} github.event.issue.pull_request && contains(github.event.comment.body, '/build-all') {{/$}}
+    outputs:
+      branch: {{#$}} steps.pr-ref.outputs.branch || github.event.repository.default_branch {{/$}}
+    steps:
+      - name: PR Branch
+        if: {{#$}} github.event.issue.pull_request {{/$}}
+        id: pr-ref
+        shell: bash
+        run: echo "branch=$(gh pr view $PR_NO --repo $REPO --json headRefName --jq '.headRefName')" >> "$GITHUB_OUTPUT"
+        env:
+          REPO: {{#$}} github.repository {{/$}}
+          PR_NO: {{#$}} github.event.issue.number {{/$}}
+          GITHUB_TOKEN: {{#$}} secrets.GITHUB_TOKEN {{/$}}
+
+  build-all:
+    name: Build
+    needs: [setup]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/build.yml
+    with:
+      branch: {{#$}} needs.setup.outputs.branch {{/$}}
+      update-version: true
+      github-release: false
