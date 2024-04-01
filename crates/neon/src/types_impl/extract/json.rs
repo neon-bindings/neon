@@ -20,6 +20,10 @@ where
 }
 
 #[cfg(not(feature = "napi-6"))]
+// N.B.: This is not semantically identical to Node-API >= 6. Patching the global
+// method could cause differences between calls. However, threading a `Root` through
+// would require a significant refactor and "don't do this or things will break" is
+// fairly common in JS.
 fn json_stringify<'cx, C>(cx: &mut C) -> JsResult<'cx, JsFunction>
 where
     C: Context<'cx>,

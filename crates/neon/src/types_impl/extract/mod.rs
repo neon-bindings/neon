@@ -1,4 +1,4 @@
-//! Traits and utilities for extract Rust data from JavaScript values
+//! Traits and utilities for extract Rust data from JavaScript values.
 //!
 //! The full list of included extractors can be found on [`TryFromJs`].
 //!
@@ -120,6 +120,8 @@ pub trait TryFromJs<'cx>
 where
     Self: private::Sealed + Sized,
 {
+    // Consider adding a trait bound prior to unsealing `TryFromjs`
+    // https://github.com/neon-bindings/neon/issues/1026
     type Error;
 
     fn try_from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Result<Self, Self::Error>>
@@ -159,6 +161,8 @@ where
 
 impl<'cx, T> FromArgs<'cx> for T where T: TryFromJs<'cx> {}
 
+// N.B.: `FromArgs` _could_ have a blanket impl for `T` where `T: FromArgsInternal`.
+// However, it is explicitly implemented in the macro in order for it to be included in docs.
 macro_rules! from_args_impl {
     ($(#[$attrs:meta])? [$($ty:ident),*]) => {
         $(#[$attrs])?
@@ -208,6 +212,8 @@ macro_rules! from_args {
     };
 }
 
+// Implement `FromArgs` for tuples up to length `32`. The first list is included
+// in docs and the second list is `#[doc(hidden)]`.
 from_args!(
     [T1, T2, T3, T4, T5, T6, T7, T8],
     [

@@ -1,3 +1,8 @@
+// Implementations in this file are equivalent to a call to `.downcast()` and
+// `.value(&mut cx)`. These specialized versions provide a performance benefit
+// because they can combine two Node-API calls into a single call that both
+// gets the value and checks the type at the same time.
+
 use std::{convert::Infallible, error, fmt, marker::PhantomData, ptr};
 
 use crate::{
@@ -237,6 +242,16 @@ impl<'cx> TryFromJs<'cx> for Date {
 
 impl private::Sealed for Date {}
 
+// This implementation primarily exists for macro authors. It is infallible, rather
+// than checking a type, to match the JavaScript conventions of ignoring additional
+// arguments.
+//
+// N.B.: There is a blanket impl of `FromArgs` for `T` where `T: TryFromJs` to make
+// the common case of `arity == 1` more ergonomic and avoid `(T)` is *not* a tuple
+// foot-gun (but, `(T,)` is). This creates ambiguity for `()`. Are we extracting
+// unit from the first argument of a function with `arity == 1` or is this a function
+// with `arity == 0`? By making extraction of unit infallible, we eliminate any
+// impact from the ambiguity.
 impl<'cx> TryFromJs<'cx> for () {
     type Error = Infallible;
 

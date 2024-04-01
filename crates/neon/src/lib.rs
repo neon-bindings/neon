@@ -78,8 +78,6 @@
 //! [supported]: https://github.com/neon-bindings/neon#platform-support
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-extern crate core;
-
 pub mod context;
 pub mod event;
 pub mod handle;

@@ -224,7 +224,7 @@ impl CallbackInfo<'_> {
         let mut argc = argv.len();
 
         // # Safety
-        // * Node-API fills empty slots with `undefined
+        // * Node-API fills empty slots with `undefined`
         // * `Handle` and `JsValue` are transparent wrappers around a raw pointer
         unsafe {
             assert_eq!(
