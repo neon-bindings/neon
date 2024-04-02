@@ -4,7 +4,7 @@ use crate::{
     object::Object,
     result::{JsResult, NeonResult},
     types::{
-        extract::{private, TryFromJs},
+        extract::{private, TryFromJs, TryIntoJs},
         JsFunction, JsObject, JsString, JsValue,
     },
 };
@@ -53,7 +53,44 @@ where
         .map(|s| s.value(cx))
 }
 
-/// Extract a value by serializing to JSON
+fn global_json_parse<'cx, C>(cx: &mut C) -> JsResult<'cx, JsFunction>
+where
+    C: Context<'cx>,
+{
+    cx.global::<JsObject>("JSON")?.get(cx, "parse")
+}
+
+#[cfg(not(feature = "napi-6"))]
+fn json_parse<'cx, C>(cx: &mut C) -> JsResult<'cx, JsFunction>
+where
+    C: Context<'cx>,
+{
+    global_json_parse(cx)
+}
+
+#[cfg(feature = "napi-6")]
+fn json_parse<'cx, C>(cx: &mut C) -> JsResult<'cx, JsFunction>
+where
+    C: Context<'cx>,
+{
+    static PARSE: LocalKey<Root<JsFunction>> = LocalKey::new();
+
+    PARSE
+        .get_or_try_init(cx, |cx| global_json_parse(cx).map(|f| f.root(cx)))
+        .map(|f| f.to_inner(cx))
+}
+
+fn parse<'cx, C>(cx: &mut C, s: &str) -> JsResult<'cx, JsValue>
+where
+    C: Context<'cx>,
+{
+    let s = cx.string(s).upcast();
+
+    json_parse(cx)?.call(cx, s, [s])
+}
+
+/// Wrapper for converting between `T` and [`JsValue`](crate::types::JsValue) by
+/// serializing with JSON.
 pub struct Json<T>(pub T);
 
 impl<'cx, T> TryFromJs<'cx> for Json<T>
@@ -74,6 +111,22 @@ where
         C: Context<'cx>,
     {
         Self::try_from_js(cx, v)?.or_else(|err| cx.throw_error(err.to_string()))
+    }
+}
+
+impl<'cx, T> TryIntoJs<'cx> for Json<T>
+where
+    T: serde::Serialize,
+{
+    type Value = JsValue;
+
+    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
+    where
+        C: Context<'cx>,
+    {
+        let s = serde_json::to_string(&self.0).or_else(|err| cx.throw_error(err.to_string()))?;
+
+        parse(cx, &s)
     }
 }
 

@@ -9,34 +9,31 @@ describe("Extractors", () => {
 
   it("Kitchen Sink", () => {
     const symbol = Symbol("Test");
-
-    assert.deepStrictEqual(
-      addon.extract_values(
-        true,
-        42,
-        undefined,
-        "hello",
-        new Date(0),
-        symbol,
-        100,
-        "exists"
-      ),
-      [true, 42, "hello", new Date(0), symbol, 100, "exists"]
-    );
+    const values = [
+      true,
+      42,
+      undefined,
+      "hello",
+      new Date(),
+      symbol,
+      new ArrayBuffer(100),
+      new Uint8Array(Buffer.from("Buffer")),
+      Buffer.from("Uint8Array"),
+    ];
 
     // Pass `null` and `undefined` for `None`
-    assert.deepStrictEqual(
-      addon.extract_values(
-        true,
-        42,
-        undefined,
-        "hello",
-        new Date(0),
-        symbol,
-        null
-      ),
-      [true, 42, "hello", new Date(0), symbol, undefined, undefined]
-    );
+    assert.deepStrictEqual(addon.extract_values(...values, null), [
+      ...values,
+      undefined,
+      undefined,
+    ]);
+
+    // Pass values for optional
+    assert.deepStrictEqual(addon.extract_values(...values, 100, "exists"), [
+      ...values,
+      100,
+      "exists",
+    ]);
   });
 
   it("Buffers", () => {

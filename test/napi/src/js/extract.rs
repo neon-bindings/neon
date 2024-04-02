@@ -2,38 +2,55 @@ use neon::{prelude::*, types::extract::*};
 
 pub fn extract_values(mut cx: FunctionContext) -> JsResult<JsArray> {
     #[allow(clippy::type_complexity)]
-    let (boolean, number, _unit, string, Date(date), value, opt_number, opt_string): (
+    let (
+        boolean,
+        number,
+        unit,
+        string,
+        Date(date),
+        value,
+        array_buf,
+        buf,
+        view,
+        opt_number,
+        opt_string,
+    ): (
         bool,
         f64,
         (),
         String,
         Date,
         Handle<JsValue>,
+        ArrayBuffer,
+        Vec<u8>,
+        Buffer,
         Option<f64>,
         Option<String>,
     ) = cx.args()?;
 
+    let values = [
+        boolean.try_into_js(&mut cx)?.upcast(),
+        number.try_into_js(&mut cx)?.upcast(),
+        unit.try_into_js(&mut cx)?.upcast(),
+        string.try_into_js(&mut cx)?.upcast(),
+        Date(date).try_into_js(&mut cx)?.upcast(),
+        value,
+        array_buf.try_into_js(&mut cx)?.upcast(),
+        buf.try_into_js(&mut cx)?.upcast(),
+        view.try_into_js(&mut cx)?.upcast(),
+        opt_number
+            .map(|n| cx.number(n).upcast::<JsValue>())
+            .unwrap_or_else(|| cx.undefined().upcast()),
+        opt_string
+            .map(|n| cx.string(n).upcast::<JsValue>())
+            .unwrap_or_else(|| cx.undefined().upcast()),
+    ];
+
     let arr = cx.empty_array();
-    let boolean = cx.boolean(boolean);
-    let number = cx.number(number);
-    let string = cx.string(string);
-    let date = cx.date(date).or_throw(&mut cx)?;
 
-    let opt_number = opt_number
-        .map(|n| cx.number(n).upcast::<JsValue>())
-        .unwrap_or_else(|| cx.undefined().upcast());
-
-    let opt_string = opt_string
-        .map(|n| cx.string(n).upcast::<JsValue>())
-        .unwrap_or_else(|| cx.undefined().upcast());
-
-    arr.set(&mut cx, 0, boolean)?;
-    arr.set(&mut cx, 1, number)?;
-    arr.set(&mut cx, 2, string)?;
-    arr.set(&mut cx, 3, date)?;
-    arr.set(&mut cx, 4, value)?;
-    arr.set(&mut cx, 5, opt_number)?;
-    arr.set(&mut cx, 6, opt_string)?;
+    for (i, v) in values.into_iter().enumerate() {
+        arr.set(&mut cx, i as u32, v)?;
+    }
 
     Ok(arr)
 }
