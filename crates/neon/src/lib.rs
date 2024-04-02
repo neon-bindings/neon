@@ -88,6 +88,7 @@ pub mod reflect;
 pub mod result;
 #[cfg(not(feature = "sys"))]
 mod sys;
+#[cfg_attr(docsrs, doc(cfg(feature = "napi-6")))]
 #[cfg(feature = "napi-6")]
 pub mod thread;
 // To use the #[aquamarine] attribute on the top-level neon::types module docs, we have to
@@ -140,6 +141,7 @@ fn feature_matrix() {
 
     const EXTERNAL_BUFFERS: &str = "external-buffers";
     const FUTURES: &str = "futures";
+    const SERDE: &str = "serde";
     const NODE_API_VERSIONS: &[&str] = &[
         "napi-1", "napi-2", "napi-3", "napi-4", "napi-5", "napi-6", "napi-7", "napi-8",
     ];
@@ -150,7 +152,11 @@ fn feature_matrix() {
         &[],
         &[EXTERNAL_BUFFERS],
         &[FUTURES],
+        &[SERDE],
         &[EXTERNAL_BUFFERS, FUTURES],
+        &[EXTERNAL_BUFFERS, SERDE],
+        &[FUTURES, SERDE],
+        &[EXTERNAL_BUFFERS, FUTURES, SERDE],
     ];
 
     let cargo = env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
