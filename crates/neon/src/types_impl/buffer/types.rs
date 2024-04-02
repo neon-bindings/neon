@@ -124,8 +124,8 @@ unsafe impl TransparentNoCopyWrapper for JsBuffer {
 }
 
 impl ValueInternal for JsBuffer {
-    fn name() -> &'static str {
-        "Buffer"
+    fn name() -> String {
+        "Buffer".to_string()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
@@ -341,8 +341,8 @@ unsafe impl TransparentNoCopyWrapper for JsArrayBuffer {
 }
 
 impl ValueInternal for JsArrayBuffer {
-    fn name() -> &'static str {
-        "JsArrayBuffer"
+    fn name() -> String {
+        "JsArrayBuffer".to_string()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
@@ -791,8 +791,8 @@ macro_rules! impl_typed_array {
         impl Object for JsTypedArray<$etyp> {}
 
         impl ValueInternal for JsTypedArray<$etyp> {
-            fn name() -> &'static str {
-                stringify!($typ)
+            fn name() -> String {
+                stringify!($typ).to_string()
             }
 
             fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {

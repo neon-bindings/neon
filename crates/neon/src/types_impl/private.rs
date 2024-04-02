@@ -6,7 +6,7 @@ use crate::{
 };
 
 pub trait ValueInternal: TransparentNoCopyWrapper + 'static {
-    fn name() -> &'static str;
+    fn name() -> String;
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool;
 

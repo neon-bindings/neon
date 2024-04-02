@@ -32,8 +32,6 @@ aquamarine = { version = "0.3.2", optional = true }
 easy-cast = { version = "0.5.2", optional = true }
 doc-comment = { version = "0.3.3", optional = true }
 send_wrapper = "0.6.0"
-serde = { version = "1.0.197", optional = true }
-serde_json = { version = "1.0.114", optional = true }
 
 [dependencies.tokio]
 version = "1.34.0"
@@ -43,9 +41,6 @@ optional = true
 
 [features]
 default = ["napi-8"]
-
-# Enable extracting values by serializing to JSON
-serde = ["dep:serde", "dep:serde_json"]
 
 # Enable the creation of external binary buffers. This is disabled by default
 # since these APIs fail at runtime in environments that enable the V8 memory

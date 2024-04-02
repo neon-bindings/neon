@@ -12,7 +12,6 @@ mod js {
     pub mod coercions;
     pub mod date;
     pub mod errors;
-    pub mod extract;
     pub mod functions;
     pub mod futures;
     pub mod numbers;
@@ -398,15 +397,6 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     // JsBigInt test suite
     cx.export_function("bigint_suite", js::bigint::bigint_suite)?;
-
-    // Extractors
-    cx.export_function("extract_values", js::extract::extract_values)?;
-    cx.export_function("extract_buffer_sum", js::extract::extract_buffer_sum)?;
-    cx.export_function("extract_json_sum", js::extract::extract_json_sum)?;
-    cx.export_function(
-        "extract_single_add_one",
-        js::extract::extract_single_add_one,
-    )?;
 
     Ok(())
 }

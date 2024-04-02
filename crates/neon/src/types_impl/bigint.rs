@@ -428,8 +428,8 @@ unsafe impl TransparentNoCopyWrapper for JsBigInt {
 }
 
 impl private::ValueInternal for JsBigInt {
-    fn name() -> &'static str {
-        "BigInt"
+    fn name() -> String {
+        "BigInt".to_string()
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
