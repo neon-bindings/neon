@@ -1,5 +1,7 @@
 //! Procedural macros supporting [Neon](https://docs.rs/neon/latest/neon/)
 
+mod export;
+
 #[proc_macro_attribute]
 /// Marks a function as the main entry point for initialization in
 /// a Neon module.
@@ -57,4 +59,43 @@ pub fn main(
         }
     )
     .into()
+}
+
+#[proc_macro_attribute]
+/// Register an item to be exported by the Neon addon
+///
+/// ## Exporting constants and statics
+///
+/// ```ignore
+/// #[neon::export]
+/// static GREETING: &str = "Hello, Neon!";
+///
+/// #[neon::export]
+/// const ANSWER: u8 = 42;
+/// ```
+///
+/// ### Renaming an export
+///
+/// By default, items will be exported with their Rust name. Exports may
+/// be renamed by providing the `name` attribute.
+///
+/// ```ignore
+/// #[neon::export(name = "myGreeting")]
+/// static GREETING: &str = "Hello, Neon!";
+/// ```
+///
+/// ### JSON exports
+///
+/// Complex values may be exported by automatically serializing to JSON and
+/// parsing in JavaScript. Any type that implements `serde::Serialize` may be used.
+///
+/// ```ignore
+/// #[neon::export]
+/// static MESSAGES: &[&str] = &["hello", "goodbye"];
+/// ```
+pub fn export(
+    attr: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    export::export(attr, item)
 }
