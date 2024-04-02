@@ -1,3 +1,4 @@
+mod function;
 mod global;
 
 // N.B.: Meta attribute parsing happens in this function because `syn::parse_macro_input!`
@@ -10,6 +11,13 @@ pub(crate) fn export(
     let item = syn::parse_macro_input!(item as syn::Item);
 
     match item {
+        // Export a function
+        syn::Item::Fn(item) => {
+            let meta = syn::parse_macro_input!(attr with function::meta::Parser);
+
+            function::export(meta, item)
+        }
+
         // Export a `const`
         syn::Item::Const(mut item) => {
             let meta = syn::parse_macro_input!(attr with global::meta::Parser);
@@ -36,7 +44,7 @@ pub(crate) fn export(
 // Generate an error for unsupported item types
 fn unsupported(item: syn::Item) -> proc_macro::TokenStream {
     let span = syn::spanned::Spanned::span(&item);
-    let msg = "`neon::export` can only be applied to consts, and statics.";
+    let msg = "`neon::export` can only be applied to functions, consts, and statics.";
     let err = syn::Error::new(span, msg);
 
     err.into_compile_error().into()

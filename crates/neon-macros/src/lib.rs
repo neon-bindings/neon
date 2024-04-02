@@ -93,6 +93,91 @@ pub fn main(
 /// #[neon::export]
 /// static MESSAGES: &[&str] = &["hello", "goodbye"];
 /// ```
+///
+/// ## Exporting functions
+///
+/// Functions may take any type that implements [`neon::types::extract::TryFromJs`] as
+/// an argument and return any type that implements [`neon::types::extract::TryIntoJs`].
+///
+/// ```ignore
+/// #[neon::export]
+/// fn add(a: f64, b: f64) -> f64 {
+///     a + b
+/// }
+/// ```
+///
+/// ### Interact with the JavaScript runtime
+///
+/// More complex functions may need to interact directly with the JavaScript runtime,
+/// for example with [`neon::context::Context`] or handles to JavaScript values.
+///
+/// Functions may optionally include a [`neon::context::FunctionContext`] argument. Note
+/// that unlike functions created with [`neon::types::JsFunction::new`], exported function
+/// receive a borrowed context and may require explicit lifetimes.
+///
+/// ```ignore
+/// #[neon::export]
+/// fn add<'cx>(
+///     cx: &mut FunctionContext<'cx>,
+///     a: Handle<JsNumber>,
+///     b: Handle<JsNumber>,
+/// ) -> JsResult<'cx, JsNumber> {
+///     let a = a.value(cx);
+///     let b = b.value(cx);
+///
+///     Ok(cx.number(a + b))
+/// }
+/// ```
+///
+/// ### Exporting a function that uses JSON
+///
+/// The [`neon::types::extract::Json`] wrapper allows ergonomically handling complex
+/// types that implement `serde::Deserialize` and `serde::Serialize`.
+///
+/// ```ignore
+/// #[neon::export]
+/// fn sort(Json(mut items): Json<Vec<String>>) -> Json<Vec<String>> {
+///     items.sort();
+///     Json(items)
+/// }
+/// ```
+///
+/// As a convenience, macro uses may add the `json` attribute to automatically
+/// wrap arguments and return values with `Json`.
+///
+/// ```ignore
+/// #[neon::export]
+/// fn sort(mut items: Vec<String>) -> Vec<String> {
+///     items.sort();
+///     items
+/// }
+/// ```
+///
+/// ### Tasks
+///
+/// Neon provides an API for spawning tasks to execute asynchronously on Node's worker
+/// pool. JavaScript may await a promise for completion of the task.
+///
+/// ```ignore
+/// #[neon::export]
+/// fn add<'cx>(cx: FunctionContext<'cx>, a: f64, b: f64) -> JsResult<'cx, JsPromise> {
+///     let promise = cx
+///         .task(move || a + b)
+///         .promise(|mut cx, res| Ok(cx.number(res)));
+///
+///     Ok(promise)
+/// }
+/// ```
+///
+/// As a convenience, macro users may indicate that a function should be executed
+/// asynchronously on the worker pool by adding the `task` attribute.
+///
+/// ```ignore
+/// #[neon::export(task)]
+/// fn add(a: f64, b: f64) -> f64 {
+///     a + b
+/// }
+/// ```
 pub fn export(
     attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
