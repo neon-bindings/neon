@@ -81,6 +81,7 @@
 pub mod context;
 pub mod event;
 pub mod handle;
+mod macros;
 pub mod meta;
 pub mod object;
 pub mod prelude;
@@ -106,7 +107,7 @@ pub use types_docs::exports as types;
 #[doc(hidden)]
 pub mod macro_internal;
 
-pub use neon_macros::*;
+pub use crate::macros::*;
 
 use crate::{context::ModuleContext, handle::Handle, result::NeonResult, types::JsValue};
 
