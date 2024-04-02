@@ -16,6 +16,7 @@ pub(crate) mod private;
 pub(crate) mod utf8;
 
 use std::{
+    any,
     fmt::{self, Debug},
     os::raw::c_void,
 };
@@ -1063,6 +1064,7 @@ unsafe fn prepare_call<'a, 'b, C: Context<'a>>(
 
 impl JsFunction {
     #[cfg(not(feature = "napi-5"))]
+    /// Returns a new `JsFunction` implemented by `f`.
     pub fn new<'a, C, U>(
         cx: &mut C,
         f: fn(FunctionContext) -> JsResult<U>,
@@ -1071,7 +1073,9 @@ impl JsFunction {
         C: Context<'a>,
         U: Value,
     {
-        Self::new_internal(cx, f)
+        let name = any::type_name::<F>();
+
+        Self::new_internal(cx, f, name)
     }
 
     #[cfg(feature = "napi-5")]
@@ -1082,23 +1086,48 @@ impl JsFunction {
         F: Fn(FunctionContext) -> JsResult<V> + 'static,
         V: Value,
     {
-        Self::new_internal(cx, f)
+        let name = any::type_name::<F>();
+
+        Self::new_internal(cx, f, name)
     }
 
-    fn new_internal<'a, C, F, V>(cx: &mut C, f: F) -> JsResult<'a, JsFunction>
+    #[cfg(not(feature = "napi-5"))]
+    /// Returns a new `JsFunction` implemented by `f` with specified name
+    pub fn with_name<'a, C, U>(
+        cx: &mut C,
+        name: &str,
+        f: fn(FunctionContext) -> JsResult<U>,
+    ) -> JsResult<'a, JsFunction>
+    where
+        C: Context<'a>,
+        U: Value,
+    {
+        Self::new_internal(cx, f, name)
+    }
+
+    #[cfg(feature = "napi-5")]
+    /// Returns a new `JsFunction` implemented by `f` with specified name
+    pub fn with_name<'a, C, F, V>(cx: &mut C, name: &str, f: F) -> JsResult<'a, JsFunction>
     where
         C: Context<'a>,
         F: Fn(FunctionContext) -> JsResult<V> + 'static,
         V: Value,
     {
-        use std::any;
+        Self::new_internal(cx, f, name)
+    }
+
+    fn new_internal<'a, C, F, V>(cx: &mut C, f: F, name: &str) -> JsResult<'a, JsFunction>
+    where
+        C: Context<'a>,
+        F: Fn(FunctionContext) -> JsResult<V> + 'static,
+        V: Value,
+    {
         use std::panic::AssertUnwindSafe;
         use std::ptr;
 
         use crate::context::CallbackInfo;
         use crate::types::error::convert_panics;
 
-        let name = any::type_name::<F>();
         let f = move |env: raw::Env, info| {
             let env = env.into();
             let info = unsafe { CallbackInfo::new(info) };
