@@ -12,6 +12,7 @@ mod js {
     pub mod coercions;
     pub mod date;
     pub mod errors;
+    pub mod export;
     pub mod extract;
     pub mod functions;
     pub mod futures;
@@ -26,6 +27,10 @@ mod js {
 
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
+    neon::registered().export(&mut cx)?;
+
+    assert!(neon::registered().into_iter().next().is_some());
+
     let greeting = cx.string("Hello, World!");
     let greeting_copy = greeting.value(&mut cx);
     let greeting_copy = cx.string(greeting_copy);
