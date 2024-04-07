@@ -1,1 +1,1 @@
-export { hello, Greeting } from './index.cjs';
+export * from './index.cjs';
