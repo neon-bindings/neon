@@ -18,7 +18,7 @@
     "dist/data/**/*"
   ],
   "scripts": {
-    "build": "tsc && cp -r data dist/data/ && ls -R dist/data",
+    "build": "tsc && rm -rf dist/data && cp -r data dist/data/ && ls -R dist/data",
     "prepublishOnly": "npm run build",
     "pretest": "npm run build",
     "test": "mocha",
