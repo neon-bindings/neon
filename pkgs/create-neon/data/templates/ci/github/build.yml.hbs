@@ -109,7 +109,7 @@ jobs:
         if: {{#$}} inputs.github-release {{/$}}
         uses: softprops/action-gh-release@{{versions.actions.ghRelease}}
         with:
-          files: ./dist/{{#$}} steps.build.outputs.filename {{/$}}
+          files: ./dist/{{#$}} steps.pack.outputs.filename {{/$}}
           tag_name: {{#$}} inputs.tag {{/$}}
 
   main:
@@ -136,5 +136,5 @@ jobs:
         if: {{#$}} inputs.github-release {{/$}}
         uses: softprops/action-gh-release@{{versions.actions.ghRelease}}
         with:
-          files: ./dist/{{#$}} steps.build.outputs.filename {{/$}}
+          files: ./dist/{{#$}} steps.pack.outputs.filename {{/$}}
           tag_name: {{#$}} inputs.tag {{/$}}
