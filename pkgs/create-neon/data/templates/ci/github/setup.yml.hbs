@@ -67,12 +67,10 @@ runs:
       id: node
       shell: bash
       run: |
-        # Trim the leading 'v' (e.g. "v18.19.0" ==> "18.19.0")
-        echo version=$(node --version | cut -c 2-) >> $GITHUB_OUTPUT
+        echo version=$(node -e 'console.log(process.versions.node)') | tee -a $GITHUB_OUTPUT
     - name: Rust Version
       if: {{#$}} inputs['use-rust'] == 'true' {{/$}}
       id: rust
       shell: bash
       run: |
-        # Trim extraneous metadata (e.g. "rustc 1.70.0 (90c541806 2023-05-31)" ==> "1.70.0")
-        echo version=$(rustc --version | awk '{ print $2; }') >> $GITHUB_OUTPUT
+        echo version=$(cargo -Vv | fgrep release: | cut -d' ' -f2) | tee -a $GITHUB_OUTPUT
