@@ -33,7 +33,7 @@ export type LibrarySpec = {
   lang: Lang;
   module: ModuleType;
   cache?: Cache;
-  ci?: CI;
+  ci?: CI | undefined;
   platforms?: PlatformPreset | PlatformPreset[];
 };
 
