@@ -17,7 +17,6 @@ import {
 
 const TEMPLATES: Record<string, string> = {
   ".gitignore.hbs": ".gitignore",
-  ".npmignore.hbs": ".npmignore",
   "Cargo.toml.hbs": "Cargo.toml",
   "README.md.hbs": "README.md",
   "lib.rs.hbs": path.join("src", "lib.rs"),
