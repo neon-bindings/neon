@@ -46,7 +46,7 @@ jobs:
       - name: Look Up Matrix Data
         id: matrixData
         shell: bash
-        run: echo "json=$(npx neon ci github | jq -rc)" >> "$GITHUB_OUTPUT"
+        run: echo "json=$(npx neon ci github | jq -rc)" | tee -a $GITHUB_OUTPUT
       - name: Compute Matrix
         id: matrix
         uses: actions/github-script@{{versions.actions.githubScript}}
@@ -104,7 +104,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist
-          echo filename=$(basename $(npm pack ./platforms/{{#$}} matrix.cfg.platform {{/$}} --pack-destination=./dist --json | jq -r '.[0].filename')) >> $GITHUB_OUTPUT
+          echo filename=$(basename $(npm pack ./platforms/{{#$}} matrix.cfg.platform {{/$}} --pack-destination=./dist --json | jq -r '.[0].filename')) | tee -a $GITHUB_OUTPUT
       - name: Release
         if: {{#$}} inputs.github-release {{/$}}
         uses: softprops/action-gh-release@{{versions.actions.ghRelease}}
@@ -131,7 +131,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist
-          echo "filename=$(npm pack --pack-destination=./dist)" >> $GITHUB_OUTPUT
+          echo "filename=$(npm pack --pack-destination=./dist)" | tee -a $GITHUB_OUTPUT
       - name: Release
         if: {{#$}} inputs.github-release {{/$}}
         uses: softprops/action-gh-release@{{versions.actions.ghRelease}}

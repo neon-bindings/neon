@@ -22,7 +22,7 @@ jobs:
         if: {{#$}} github.event.issue.pull_request {{/$}}
         id: pr-ref
         shell: bash
-        run: echo "branch=$(gh pr view $PR_NO --repo $REPO --json headRefName --jq '.headRefName')" >> "$GITHUB_OUTPUT"
+        run: echo "branch=$(gh pr view $PR_NO --repo $REPO --json headRefName --jq '.headRefName')" | tee -a $GITHUB_OUTPUT
         env:
           REPO: {{#$}} github.repository {{/$}}
           PR_NO: {{#$}} github.event.issue.number {{/$}}

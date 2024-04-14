@@ -49,7 +49,7 @@ runs:
       if: {{#$}} inputs['use-rust'] == 'true' {{/$}}
       id: target
       shell: bash
-      run: echo target=$(npx neon list-platforms | jq -r '.["{{#$}} inputs.platform {{/$}}"]') >> $GITHUB_OUTPUT
+      run: echo target=$(npx neon list-platforms | jq -r '.["{{#$}} inputs.platform {{/$}}"]') | tee -a $GITHUB_OUTPUT
       working-directory: {{#$}} inputs.workspace {{/$}}
     - name: Install Rust
       if: {{#$}} inputs['use-rust'] == 'true' {{/$}}
