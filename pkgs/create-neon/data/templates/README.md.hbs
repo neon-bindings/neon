@@ -85,16 +85,18 @@ The directory structure of this project is:
 ├── src/
 |   ├── index.mts
 |   └── index.cts
-{{/eq}}
-├── platforms/
-{{else}}
-├── index.node
-{{/if}}
-├── package.json
 ├── crates/
 |   └── {{package.name}}/
 |       └── src/
 |           └── lib.rs
+{{/eq}}
+├── platforms/
+{{else}}
+├── src/
+|   └── lib.rs
+├── index.node
+{{/if}}
+├── package.json
 └── target/
 ```
 
