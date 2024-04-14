@@ -53,7 +53,6 @@ export async function createNeon(name: string, options: CreateNeonOptions) {
   try {
     pkg = await Package.create(metadata, tmpPackagePath);
     metadata.package = pkg;
-    await fs.mkdir(path.join(tmpPackagePath, "src"));
   } catch (err: any) {
     await die(
       "Could not create `package.json`: " + err.message,

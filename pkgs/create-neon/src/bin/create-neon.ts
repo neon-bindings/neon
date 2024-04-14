@@ -15,12 +15,22 @@ import {
   isPlatformPreset,
 } from "@neon-rs/manifest/platform";
 
-const TEMPLATES: Record<string, string> = {
+const JS_TEMPLATES: Record<string, string> = {
   ".gitignore.hbs": ".gitignore",
   "Cargo.toml.hbs": "Cargo.toml",
   "README.md.hbs": "README.md",
   "lib.rs.hbs": path.join("src", "lib.rs"),
 };
+
+function tsTemplates(pkg: string): Record<string, string> {
+  return {
+    ".gitignore.hbs": ".gitignore",
+    "Cargo.toml.hbs": path.join("crates", pkg, "Cargo.toml"),
+    "Workspace.toml.hbs": "Cargo.toml",
+    "README.md.hbs": "README.md",
+    "lib.rs.hbs": path.join("crates", pkg, "src", "lib.rs"),
+  };
+}
 
 const OPTIONS = [
   { name: "lib", type: Boolean, defaultValue: false },
@@ -48,7 +58,7 @@ try {
   const yes = !!opts.yes;
 
   createNeon(pkg, {
-    templates: TEMPLATES,
+    templates: opts.lib ? tsTemplates(pkg) : JS_TEMPLATES,
     library: opts.lib
       ? {
           lang: Lang.TS,

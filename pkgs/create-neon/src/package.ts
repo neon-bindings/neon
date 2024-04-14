@@ -18,9 +18,9 @@ export const LANG_TEMPLATES: Record<Lang, Record<string, string>> = {
   [Lang.DTS]: {},
   [Lang.TS]: {
     "tsconfig.json.hbs": "tsconfig.json",
-    "ts/index.cts.hbs": path.join("ts", "index.cts"),
-    "ts/index.mts.hbs": path.join("ts", "index.mts"),
-    "ts/load.cts.hbs": path.join("ts", "load.cts"),
+    "ts/index.cts.hbs": path.join("src", "index.cts"),
+    "ts/index.mts.hbs": path.join("src", "index.mts"),
+    "ts/load.cts.hbs": path.join("src", "load.cts"),
   },
 };
 
