@@ -5,11 +5,11 @@
   "typescript": "5.3.3",
   "typesNode": "20.11.16",
   "tsconfigNode": {
-    "major": "18",
-    "semver": "18.2.2",
+    "major": "20",
+    "semver": "20.1.4",
     "module": "16"
   },
-  "node": "18",
+  "node": "20",
   "actions": {
     "checkout": "v3",
     "githubScript": "v7",
