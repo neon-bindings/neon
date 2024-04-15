@@ -22,12 +22,23 @@ This command uses the [@neon-rs/cli](https://www.npmjs.com/package/@neon-rs/cli)
 
 After building {{package.name}}, you can explore its exports at the Node console:
 
+{{#if packageSpec.library}}
 ```sh
+$ npm i
+$ npm run build
+$ node
+> require('.').greeting()
+{ message: 'hello node' }
+```
+{{else}}
+```sh
+$ npm i
 $ npm run build
 $ node
 > require('.').hello()
-"hello node"
+'hello node'
 ```
+{{/if}}
 
 ## Available Scripts
 
