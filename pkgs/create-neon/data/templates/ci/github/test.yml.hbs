@@ -35,8 +35,8 @@ jobs:
           PR_NO: {{#$}} github.event.number {{/$}}
           GH_TOKEN: {{#$}} github.token {{/$}}
 
-  # Labeling a PR with a `ci:full-matrix` label to a PR also runs a full
-  # matrix build on every run of this workflow for that PR.
+  # Labeling a PR with a `ci:full-matrix` label does a full matrix build on
+  # every run of this workflow for that PR, in addition to the other tests.
   full-matrix:
     name: Build
     if: {{#$}} github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:full-matrix') {{/$}}
