@@ -78,7 +78,6 @@ jobs:
         uses: actions/checkout@{{versions.actions.checkout}}
         with:
           ref: {{#$}} inputs.ref {{/$}}
-          fetch-depth: 0
       - name: Setup Neon Environment
         id: neon
         uses: ./.github/actions/setup
@@ -104,7 +103,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist
-          echo filename=$(basename $(npm pack ./platforms/{{#$}} matrix.cfg.platform {{/$}} --pack-destination=./dist --json | jq -r '.[0].filename')) | tee -a $GITHUB_OUTPUT
+          echo filename=$(basename $(npm pack ./platforms/{{#$}} matrix.cfg.platform {{/$}} --silent --pack-destination=./dist --json | jq -r '.[0].filename')) | tee -a $GITHUB_OUTPUT
       - name: Release
         if: {{#$}} inputs.github-release {{/$}}
         uses: softprops/action-gh-release@{{versions.actions.ghRelease}}
@@ -121,7 +120,6 @@ jobs:
         uses: actions/checkout@{{versions.actions.checkout}}
         with:
           ref: {{#$}} inputs.ref {{/$}}
-          fetch-depth: 0
       - name: Setup Neon Environment
         uses: ./.github/actions/setup
         with:
@@ -131,7 +129,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist
-          echo "filename=$(npm pack --pack-destination=./dist)" | tee -a $GITHUB_OUTPUT
+          echo "filename=$(npm pack --silent --pack-destination=./dist)" | tee -a $GITHUB_OUTPUT
       - name: Release
         if: {{#$}} inputs.github-release {{/$}}
         uses: softprops/action-gh-release@{{versions.actions.ghRelease}}
