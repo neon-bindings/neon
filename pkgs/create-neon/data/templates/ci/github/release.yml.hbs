@@ -111,7 +111,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@{{versions.actions.checkout}}
         with:
-          fetch-depth: 0
           ref: {{#$}} needs.setup.outputs.ref {{/$}}
       - name: Setup Neon Environment
         uses: ./.github/actions/setup

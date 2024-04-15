@@ -55,8 +55,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@{{versions.actions.checkout}}
-        with:
-          fetch-depth: 0
       - name: Setup Neon Environment
         id: neon
         uses: ./.github/actions/setup
