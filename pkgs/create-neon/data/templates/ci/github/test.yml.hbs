@@ -19,6 +19,36 @@ on:
       - main
 
 jobs:
+  pr:
+    name: Pull Request Details
+    runs-on: ubuntu-latest
+    if: {{#$}} github.event_name == 'pull_request' {{/$}}
+    outputs:
+      branch: {{#$}} steps.pr-ref.outputs.branch || github.event.repository.default_branch {{/$}}
+    steps:
+      - name: PR Branch
+        id: pr-ref
+        shell: bash
+        run: echo "branch=$(gh pr view $PR_NO --repo $REPO --json headRefName --jq '.headRefName')" | tee -a "$GITHUB_OUTPUT"
+        env:
+          REPO: {{#$}} github.repository {{/$}}
+          PR_NO: {{#$}} github.event.number {{/$}}
+          GH_TOKEN: {{#$}} github.token {{/$}}
+
+  # Labeling a PR with a `ci:full-matrix` label to a PR also runs a full
+  # matrix build on every run of this workflow for that PR.
+  full-matrix:
+    name: Build
+    if: {{#$}} github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci:full-matrix') {{/$}}
+    needs: [pr]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/build.yml
+    with:
+      ref: {{#$}} needs.pr.outputs.branch {{/$}}
+      update-version: true
+      github-release: false
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
