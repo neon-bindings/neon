@@ -1,7 +1,14 @@
-const addon = require('./load.cjs');
+import * as addon from './load.cjs';
 
-export type Greeting = "hello node";
+declare module "./load.cjs" {
+  function hello(): string;
+}
 
-export function hello(): Greeting {
-  return addon.hello();
+export type Greeting = {
+  message: string
+};
+
+export function greeting(): Greeting {
+  const message = addon.hello();
+  return { message };
 }
