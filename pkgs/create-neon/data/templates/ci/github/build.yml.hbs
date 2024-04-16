@@ -84,7 +84,6 @@ jobs:
         with:
           use-cross: {{#$}} matrix.cfg.script == 'cross' {{/$}}
           platform: {{#$}} matrix.cfg.platform {{/$}}
-          workspace: ./pkgs/cargo-messages
       - name: Update Version
         if: {{#$}} inputs.update-version {{/$}}
         shell: bash
