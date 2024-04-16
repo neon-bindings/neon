@@ -77,8 +77,9 @@ jobs:
         uses: ./.github/actions/setup
         with:
           use-rust: false
-      - name: Tag Release (manual only)
+      - name: Tag Release
         if: {{#$}} !inputs.dryrun {{/$}}
+        id: tag
         shell: bash
         run: |
           git config --global user.name $ACTIONS_USER
