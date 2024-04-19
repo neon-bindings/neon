@@ -54,13 +54,13 @@ jobs:
           script: |
             const platforms = {{#$}} steps.matrixData.outputs.json {{/$}};
             const macOS = platforms.macOS.map(platform => {
-              return { os: "macos-latest", platform, cross: false };
+              return { os: "macos-latest", platform, script: "build" };
             });
             const windows = platforms.Windows.map(platform => {
-              return { os: "windows-latest", platform, cross: false };
+              return { os: "windows-latest", platform, script: "build" };
             });
             const linux = platforms.Linux.map(platform => {
-              return { os: "ubuntu-latest", platform, cross: true };
+              return { os: "ubuntu-latest", platform, script: "cross" };
             });
             return [...macOS, ...windows, ...linux];
 

@@ -7,6 +7,6 @@
   "debug": "npm run cargo-build --",
   "build": "npm run cargo-build -- --release",
   "cross": "npm run cross-build -- --release"{{#if packageSpec.library}},
-  "prepack": "neon update-platforms",
+  "prepack": "{{#eq packageSpec.library.lang compare="ts"}}tsc && {{/eq}}neon update-platforms",
   "version": "neon bump --binaries platforms && git add ."{{/if}}
 }
