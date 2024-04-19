@@ -67,6 +67,8 @@ jobs:
             echo "::error:: • with Read-Write access to this project's npm packages;"
             echo "::error:: • stored as a repo secret named NPM_TOKEN."
             echo "::error::See https://docs.npmjs.com/about-access-tokens for info about creating npm tokens."
+            echo "::error:: 💡 The simplest method is to create a Classic npm token of type Automation."
+            echo "::error:: 💡 For greater security, consider using a Granual access token."
             echo "::error::See https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions for info about how to store GitHub repo secrets."
             exit 1
           fi
