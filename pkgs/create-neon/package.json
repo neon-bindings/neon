@@ -47,7 +47,7 @@
     "typescript": "^5.3.2"
   },
   "dependencies": {
-    "@neon-rs/manifest": "^0.0.4",
+    "@neon-rs/manifest": "^0.0.6",
     "chalk": "^5.3.0",
     "command-line-args": "^5.2.1",
     "command-line-usage": "^7.0.1",
