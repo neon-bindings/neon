@@ -70,30 +70,6 @@ pub use neon_macros::main;
 /// }
 /// ```
 ///
-/// ### Interact with the JavaScript runtime
-///
-/// More complex functions may need to interact directly with the JavaScript runtime,
-/// for example with [`Context`](crate::context::Context) or handles to JavaScript values.
-///
-/// Functions may optionally include a [`FunctionContext`](crate::context::FunctionContext) argument. Note
-/// that unlike functions created with [`JsFunction::new`](crate::types::JsFunction), exported function
-/// receive a borrowed context and may require explicit lifetimes.
-///
-/// ```
-/// # use neon::prelude::*;
-/// #[neon::export]
-/// fn add<'cx>(
-///     cx: &mut FunctionContext<'cx>,
-///     a: Handle<JsNumber>,
-///     b: Handle<JsNumber>,
-/// ) -> JsResult<'cx, JsNumber> {
-///     let a = a.value(cx);
-///     let b = b.value(cx);
-///
-///     Ok(cx.number(a + b))
-/// }
-/// ```
-///
 /// ### Exporting a function that uses JSON
 ///
 /// The [`Json`](crate::types::extract::Json) wrapper allows ergonomically handling complex
@@ -143,6 +119,96 @@ pub use neon_macros::main;
 /// #[neon::export(task)]
 /// fn add(a: f64, b: f64) -> f64 {
 ///     a + b
+/// }
+/// ```
+///
+/// ### Error Handling
+///
+/// If an exported function returns a [`Result`], a JavaScript exception will be thrown
+/// with the [`Err`]. Any error type that implements [`TryIntoJs`](crate::types::extract::TryIntoJs)
+/// may be used.
+///
+/// ```
+/// #[neon::export]
+/// fn throw(msg: String) -> Result<(), String> {
+///     Err(msg)
+/// }
+/// ```
+///
+/// The [`Error`](crate::types::extract::Error) type is provided for ergonomic error conversions
+/// from most error types using the `?` operator.
+///
+/// ```
+/// use neon::types::extract::Error;
+///
+/// #[neon::export]
+/// fn read_file(path: String) -> Result<String, Error> {
+///     let contents = std::fs::read_to_string(path)?;
+///     Ok(contents)
+/// }
+/// ```
+///
+/// ### Interact with the JavaScript runtime
+///
+/// More complex functions may need to interact directly with the JavaScript runtime,
+/// for example with [`Context`](crate::context::Context) or handles to JavaScript values.
+///
+/// Functions may optionally include a [`FunctionContext`](crate::context::FunctionContext) argument. Note
+/// that unlike functions created with [`JsFunction::new`](crate::types::JsFunction), exported function
+/// receive a borrowed context and may require explicit lifetimes.
+///
+/// ```
+/// # use neon::prelude::*;
+/// #[neon::export]
+/// fn add<'cx>(
+///     cx: &mut FunctionContext<'cx>,
+///     a: Handle<JsNumber>,
+///     b: Handle<JsNumber>,
+/// ) -> JsResult<'cx, JsNumber> {
+///     let a = a.value(cx);
+///     let b = b.value(cx);
+///
+///     Ok(cx.number(a + b))
+/// }
+/// ```
+///
+/// ### Advanced
+///
+/// The following attributes are for advanced configuration and may not be
+/// necessary for most users.
+///
+/// #### `context`
+///
+/// The `#[neon::export]` macro looks checks if the first argument has a type of
+/// &mut FunctionContext` to determine if the [`Context`](crate::context::Context)
+/// should be passed to the function.
+///
+/// If the type has been renamed when importing, the `context` attribute can be
+/// added to force it to be passed.
+///
+/// ```
+/// use neon::context::{FunctionContext as FnCtx};
+///
+/// #[neon::export(context)]
+/// fn add(_cx: &mut FnCtx, a: f64, b: f64) -> f64 {
+///     a + b
+/// }
+/// ```
+///
+/// ### `result`
+///
+/// The `#[neon::export]` macro will infer an exported function returns a [`Result`]
+/// if the type is named [`Result`], [`NeonResult`](crate::result::NeonResult) or
+/// [`JsResult`](crate::result::JsResult).
+///
+/// If a type alias is used for [`Result`], the `result` attribute can be added to
+/// inform the generated code.
+///
+/// ```
+/// use neon::result::{NeonResult as Res};
+///
+/// fn add(a: f64, b: f64) -> Res<f64> {
+///     Ok(a + b)
 /// }
 /// ```
 pub use neon_macros::export;

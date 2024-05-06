@@ -16,6 +16,21 @@ type BoxError = Box<dyn error::Error + Send + Sync + 'static>;
 #[derive(Debug)]
 /// Error that implements [`TryFromJs`] and [`TryIntoJs`] and can produce specific error types
 ///
+/// [`Error`] implements [`From`] for most error types, allowing ergonomic error handling in
+/// exported functions with the `?` operator.
+///
+/// ### Example
+///
+/// ```
+/// use neon::types::extract::Error;
+///
+/// #[neon::export]
+/// fn read_file(path: String) -> Result<String, Error> {
+///     let contents = std::fs::read_to_string(path)?;
+///     Ok(contents)
+/// }
+/// ```
+///
 /// **Note**: Extracting an [`Error`] from a [`JsValue`] with [`TryFromJs`] and converting
 /// back to a [`JsError`] with [`TryIntoJs`] is _lossy_. It is not guaranteed that the same
 /// type will be returned.

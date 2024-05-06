@@ -21,20 +21,13 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
     let wrapper_name = quote::format_ident!("__NEON_EXPORT_WRAPPER__{name}");
 
     // Determine if the first argument is `FunctionContext`
-    let has_context = meta.context
-        || match has_context_arg(&meta, &sig) {
-            Ok(has_context) => has_context,
-            Err(err) => return err.into_compile_error().into(),
-        };
+    let has_context = match has_context_arg(&meta, &sig) {
+        Ok(has_context) => has_context,
+        Err(err) => return err.into_compile_error().into(),
+    };
 
     // Retain the context argument, if necessary
     let context_arg = has_context.then(|| quote::quote!(&mut cx,));
-
-    // Default export name as identity unless a name is provided
-    let export_name = meta
-        .name
-        .map(|name| quote::quote!(#name))
-        .unwrap_or_else(|| quote::quote!(stringify!(#name)));
 
     // Generate an argument list used when calling the original function
     let start = if has_context { 1 } else { 0 };
@@ -49,12 +42,18 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
 
     // If necessary, wrap the return value in `Json` before calling `TryIntoJs`
     let json_return = meta.json.then(|| {
-        is_result_output(&sig.output)
+        is_result_output(&meta, &sig.output)
             // Use `.map(Json)` on a `Result`
             .then(|| quote::quote!(let res = res.map(neon::types::extract::Json);))
             // Wrap other values with `Json(res)`
             .unwrap_or_else(|| quote::quote!(let res = neon::types::extract::Json(res);))
     });
+
+    // Default export name as identity unless a name is provided
+    let export_name = meta
+        .name
+        .map(|name| quote::quote!(#name))
+        .unwrap_or_else(|| quote::quote!(stringify!(#name)));
 
     // Generate the call to the original function
     let call_body = match meta.kind {
@@ -119,7 +118,7 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
 }
 
 // Get the ident for the first argument
-fn first_arg_ident(sig: &syn::Signature) -> Option<&syn::Ident> {
+fn first_arg_ty(sig: &syn::Signature) -> Option<&syn::Ident> {
     let arg = sig.inputs.first()?;
     let ty = match arg {
         syn::FnArg::Receiver(v) => &*v.ty,
@@ -136,18 +135,20 @@ fn first_arg_ident(sig: &syn::Signature) -> Option<&syn::Ident> {
         _ => return None,
     };
 
-    let path = match path.path.segments.last() {
-        Some(path) => path,
-        None => return None,
-    };
+    let path = path.path.segments.last()?;
 
     Some(&path.ident)
 }
 
 // Determine if the function has a context argument and if it is allowed
 fn has_context_arg(meta: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool> {
+    // Forced context argument
+    if meta.context {
+        return Ok(true);
+    }
+
     // Return early if no arguments
-    let first = match first_arg_ident(sig) {
+    let first = match first_arg_ty(sig) {
         Some(first) => first,
         None => return Ok(false),
     };
@@ -167,7 +168,12 @@ fn has_context_arg(meta: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool>
 }
 
 // Determine if a return type is a `Result`
-fn is_result_output(ret: &syn::ReturnType) -> bool {
+fn is_result_output(meta: &meta::Meta, ret: &syn::ReturnType) -> bool {
+    // Forced result output
+    if meta.result {
+        return true;
+    }
+
     let ty = match ret {
         syn::ReturnType::Default => return false,
         syn::ReturnType::Type(_, ty) => &**ty,

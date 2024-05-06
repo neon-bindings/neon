@@ -19,6 +19,11 @@ pub(super) fn export(meta: meta::Meta, name: &syn::Ident, expr: Box<syn::Expr>) 
 
     // Generate the function that is registered to create the global on addon initialization.
     // Braces are included to prevent names from polluting user code.
+    //
+    // N.B.: The `linkme(..)` attribute informs the `distributed_slice(..)` macro where
+    // to find the `linkme` crate. It is re-exported from neon to avoid dependents from
+    // needing to adding a direct dependency on `linkme`. It is an undocumented feature.
+    // https://github.com/dtolnay/linkme/issues/54
     let create_fn = quote::quote!({
         #[doc(hidden)]
         #[neon::macro_internal::linkme::distributed_slice(neon::macro_internal::EXPORTS)]
