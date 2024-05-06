@@ -11,15 +11,28 @@
   },
   "node": "20",
   "actions": {
-    "checkout": "v3",
-    "githubScript": "v7",
-    "setupNode": "v3",
-    "setupRust": "v1",
-    "cargoInstall": "v2",
-    "neonBuild": "v0.9",
-    "neonPublish": "v0.4.1",
-    "dotenv": "v1",
-    "ghRelease": "v1",
-    "releaseDownloader": "v1.7"
+    "verified": {
+      "checkout": "v3",
+      "githubScript": "v7",
+      "setupNode": "v3",
+      "setupRust": "v1",
+      "cargoInstall": "v2",
+      "neonBuild": "v0.9",
+      "neonPublish": "v0.4.1"
+    },
+    "unverified": {
+      "dotenv": {
+        "tag": "v1.1.2",
+        "sha": "d1cd55661714e830a6e26f608f81d36e23424fed"
+      },
+      "ghRelease": {
+        "tag": "v2.0.4",
+        "sha": "9d7c94cfd0a1f3ed45544c887983e9fa900f0564"
+      },
+      "releaseDownloader": {
+        "tag": "v1.10",
+        "sha": "c39a3b234af58f0cf85888573d361fb6fa281534"
+      }
+    }
   }
 }

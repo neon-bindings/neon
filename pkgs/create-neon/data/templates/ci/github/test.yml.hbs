@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@{{versions.actions.checkout}}
+        uses: actions/checkout@{{versions.actions.verified.checkout}}
       - name: Setup Neon Environment
         id: neon
         uses: ./.github/actions/setup

@@ -74,7 +74,7 @@ jobs:
           fi
           echo publish=true | tee -a $GITHUB_OUTPUT
       - name: Checkout Code
-        uses: actions/checkout@{{versions.actions.checkout}}
+        uses: actions/checkout@{{versions.actions.verified.checkout}}
       - name: Setup Neon Environment
         uses: ./.github/actions/setup
         with:
@@ -112,7 +112,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@{{versions.actions.checkout}}
+        uses: actions/checkout@{{versions.actions.verified.checkout}}
         with:
           ref: {{#$}} needs.setup.outputs.ref {{/$}}
       - name: Setup Neon Environment
@@ -120,7 +120,7 @@ jobs:
         with:
           use-rust: false
       - name: Fetch
-        uses: robinraju/release-downloader@{{versions.actions.releaseDownloader}}
+        uses: robinraju/release-downloader@{{versions.actions.unverified.releaseDownloader.sha}} # {{versions.actions.unverified.releaseDownloader.tag}}
         with:
           tag: {{#$}} needs.setup.outputs.tag {{/$}}
           fileName: "*.tgz"

@@ -36,7 +36,7 @@ jobs:
       matrix: {{#$}} steps.matrix.outputs.result {{/$}}
     steps:
       - name: Checkout Code
-        uses: actions/checkout@{{versions.actions.checkout}}
+        uses: actions/checkout@{{versions.actions.verified.checkout}}
         with:
           ref: {{#$}} inputs.ref {{/$}}
       - name: Setup Neon Environment
@@ -49,7 +49,7 @@ jobs:
         run: echo "json=$(npx neon show ci github | jq -rc)" | tee -a $GITHUB_OUTPUT
       - name: Compute Matrix
         id: matrix
-        uses: actions/github-script@{{versions.actions.githubScript}}
+        uses: actions/github-script@{{versions.actions.verified.githubScript}}
         with:
           script: |
             const platforms = {{#$}} steps.matrixData.outputs.json {{/$}};
@@ -75,7 +75,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@{{versions.actions.checkout}}
+        uses: actions/checkout@{{versions.actions.verified.checkout}}
         with:
           ref: {{#$}} inputs.ref {{/$}}
       - name: Setup Neon Environment
@@ -105,7 +105,7 @@ jobs:
           echo filename=$(basename $(npm pack ./platforms/{{#$}} matrix.cfg.platform {{/$}} --silent --pack-destination=./dist --json | jq -r '.[0].filename')) | tee -a $GITHUB_OUTPUT
       - name: Release
         if: {{#$}} inputs.github-release {{/$}}
-        uses: softprops/action-gh-release@{{versions.actions.ghRelease}}
+        uses: softprops/action-gh-release@{{versions.actions.unverified.ghRelease.sha}} # {{versions.actions.unverified.ghRelease.tag}}
         with:
           files: ./dist/{{#$}} steps.pack.outputs.filename {{/$}}
           tag_name: {{#$}} inputs.tag {{/$}}
@@ -116,7 +116,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@{{versions.actions.checkout}}
+        uses: actions/checkout@{{versions.actions.verified.checkout}}
         with:
           ref: {{#$}} inputs.ref {{/$}}
       - name: Setup Neon Environment
@@ -131,7 +131,7 @@ jobs:
           echo "filename=$(npm pack --silent --pack-destination=./dist)" | tee -a $GITHUB_OUTPUT
       - name: Release
         if: {{#$}} inputs.github-release {{/$}}
-        uses: softprops/action-gh-release@{{versions.actions.ghRelease}}
+        uses: softprops/action-gh-release@{{versions.actions.unverified.ghRelease.sha}} # {{versions.actions.unverified.ghRelease.tag}}
         with:
           files: ./dist/{{#$}} steps.pack.outputs.filename {{/$}}
           tag_name: {{#$}} inputs.tag {{/$}}

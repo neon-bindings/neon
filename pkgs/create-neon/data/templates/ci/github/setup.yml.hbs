@@ -31,13 +31,13 @@ runs:
   using: "composite"
   steps:
     - name: Set Environment Variables
-      uses: falti/dotenv-action@{{versions.actions.dotenv}}
+      uses: falti/dotenv-action@{{versions.actions.unverified.dotenv.sha}} # {{versions.actions.unverified.dotenv.tag}}
       with:
         path: ./.github/.env
         export-variables: true
         keys-case: bypass
     - name: Install Node
-      uses: actions/setup-node@{{versions.actions.setupNode}}
+      uses: actions/setup-node@{{versions.actions.verified.setupNode}}
       with:
         node-version: {{#$}} env.NODE_VERSION {{/$}}
         registry-url: {{#$}} env.NPM_REGISTRY {{/$}}
@@ -53,14 +53,14 @@ runs:
       working-directory: {{#$}} inputs.workspace {{/$}}
     - name: Install Rust
       if: {{#$}} inputs['use-rust'] == 'true' {{/$}}
-      uses: actions-rs/toolchain@{{versions.actions.setupRust}}
+      uses: actions-rs/toolchain@{{versions.actions.verified.setupRust}}
       with:
         toolchain: {{#$}} env.RUST_VERSION {{/$}}
         target: {{#$}} steps.target.outputs.target {{/$}}
         override: true
     - name: Install cross-rs
       if: {{#$}} inputs['use-cross'] == 'true' {{/$}}
-      uses: baptiste0928/cargo-install@{{versions.actions.cargoInstall}}
+      uses: baptiste0928/cargo-install@{{versions.actions.verified.cargoInstall}}
       with:
         crate: cross
     - name: Node Version
