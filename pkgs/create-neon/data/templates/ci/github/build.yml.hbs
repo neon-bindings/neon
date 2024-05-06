@@ -46,7 +46,7 @@ jobs:
       - name: Look Up Matrix Data
         id: matrixData
         shell: bash
-        run: echo "json=$(npx neon ci github | jq -rc)" | tee -a $GITHUB_OUTPUT
+        run: echo "json=$(npx neon show ci github | jq -rc)" | tee -a $GITHUB_OUTPUT
       - name: Compute Matrix
         id: matrix
         uses: actions/github-script@{{versions.actions.githubScript}}

@@ -39,6 +39,14 @@ describe("Project creation", () => {
     await fs.rm(PROJECT, { recursive: true, maxRetries: 3 });
   });
 
+  it("succeeds with --yes", async () => {
+    try {
+      await expect(spawn(NODE, [CREATE_NEON, PROJECT, "--yes"]), {});
+    } catch (error: any) {
+      assert.fail("create-neon unexpectedly failed: " + error.message);
+    }
+  });
+
   it("succeeds with all default answers", async () => {
     try {
       await expect(spawn(NODE, [CREATE_NEON, PROJECT]), {
