@@ -41,7 +41,7 @@ describe("Project creation", () => {
 
   it("succeeds with --yes", async () => {
     try {
-      await expect(spawn(NODE, [CREATE_NEON, PROJECT, "--yes"]), {});
+      await execa(NODE, [CREATE_NEON, "--yes", PROJECT]);
     } catch (error: any) {
       assert.fail("create-neon unexpectedly failed: " + error.message);
     }
