@@ -1,71 +1,130 @@
 #!/usr/bin/env node
 
-import { promises as fs } from "fs";
 import * as path from "path";
-import die from "../die";
-import Package from "../package";
-import expand from "../expand";
-import versions from "../../data/versions.json";
+import commandLineArgs from "command-line-args";
+import { printErrorWithUsage } from "../print.js";
+import { createNeon } from "../index.js";
+import { Cache } from "../cache.js";
+import { NPM } from "../cache/npm.js";
+import { CI } from "../ci.js";
+import { GitHub } from "../ci/github.js";
+import { Lang, ModuleType } from "../package.js";
+import {
+  PlatformPreset,
+  assertIsPlatformPreset,
+  isPlatformPreset,
+} from "@neon-rs/manifest/platform";
 
-const TEMPLATES: Record<string, string> = {
+const JS_TEMPLATES: Record<string, string> = {
   ".gitignore.hbs": ".gitignore",
   "Cargo.toml.hbs": "Cargo.toml",
   "README.md.hbs": "README.md",
   "lib.rs.hbs": path.join("src", "lib.rs"),
 };
 
-async function main(name: string) {
-  let tmpFolderName: string = "";
-
-  try {
-    // pretty lightweight way to check both that folder doesn't exist and
-    // that the user has write permissions.
-    await fs.mkdir(name);
-    await fs.rmdir(name);
-
-    tmpFolderName = await fs.mkdtemp(`${name}-`);
-  } catch (err: any) {
-    await die(`Could not create \`${name}\`: ${err.message}`, tmpFolderName);
-  }
-
-  let pkg: Package | undefined;
-
-  try {
-    pkg = await Package.create(name, tmpFolderName);
-    await fs.mkdir(path.join(tmpFolderName, "src"));
-  } catch (err: any) {
-    await die("Could not create `package.json`: " + err.message, tmpFolderName);
-  }
-  if (pkg) {
-    for (let source of Object.keys(TEMPLATES)) {
-      let target = path.join(tmpFolderName, TEMPLATES[source]);
-      await expand(source, target, {
-        package: pkg,
-        versions,
-      });
-    }
-  }
-
-  try {
-    await fs.rename(tmpFolderName, name);
-  } catch (err: any) {
-    await die(`Could not create \`${name}\`: ${err.message}`, tmpFolderName);
-  }
-  console.log(`✨ Created Neon project \`${name}\`. Happy 🦀 hacking! ✨`);
+function tsTemplates(pkg: string): Record<string, string> {
+  return {
+    ".gitignore.hbs": ".gitignore",
+    "Cargo.toml.hbs": path.join("crates", pkg, "Cargo.toml"),
+    "Workspace.toml.hbs": "Cargo.toml",
+    "README.md.hbs": "README.md",
+    "lib.rs.hbs": path.join("crates", pkg, "src", "lib.rs"),
+  };
 }
 
-if (process.argv.length < 3) {
-  console.error(
-    "✨ create-neon: Create a new Neon project with zero configuration. ✨"
-  );
-  console.error();
-  console.error("Usage: npm init neon name");
-  console.error();
-  console.error(
-    "  name   The name of your Neon project, placed in a new directory of the same name."
-  );
-  console.error();
+const OPTIONS = [
+  { name: "lib", type: Boolean, defaultValue: false },
+  { name: "bins", type: String, defaultValue: "none" },
+  { name: "platform", type: String, multiple: true, defaultValue: ["common"] },
+  { name: "ci", alias: "c", type: String, defaultValue: "github" },
+  { name: "yes", alias: "y", type: Boolean, defaultValue: false },
+];
+
+try {
+  const opts = commandLineArgs(OPTIONS, { stopAtFirstUnknown: true });
+
+  if (!opts._unknown || opts._unknown.length === 0) {
+    throw new Error("No package name given");
+  }
+
+  if (opts._unknown.length > 1) {
+    throw new Error(`unexpected argument (${opts._unknown[1]})`);
+  }
+
+  const [pkg] = opts._unknown;
+  const platforms = parsePlatforms(opts.platform);
+  const cache = parseCache(opts.lib, opts.bins, pkg);
+  const ci = parseCI(opts.ci);
+  const yes = !!opts.yes;
+
+  createNeon(pkg, {
+    templates: opts.lib ? tsTemplates(pkg) : JS_TEMPLATES,
+    library: opts.lib
+      ? {
+          lang: Lang.TS,
+          module: ModuleType.ESM,
+          cache,
+          ci,
+          platforms,
+        }
+      : null,
+    yes,
+  });
+} catch (e) {
+  printErrorWithUsage(e);
   process.exit(1);
 }
 
-main(process.argv[2]);
+function parsePlatforms(
+  platforms: string[]
+): PlatformPreset | PlatformPreset[] | undefined {
+  if (platforms.length === 0) {
+    return undefined;
+  } else if (platforms.length === 1) {
+    const preset = platforms[0];
+    assertIsPlatformPreset(preset);
+    return preset;
+  } else {
+    return platforms.map((preset) => {
+      assertIsPlatformPreset(preset);
+      return preset;
+    });
+  }
+}
+
+function parseCI(ci: string): CI | undefined {
+  switch (ci) {
+    case "none":
+      return undefined;
+    case "github":
+      return new GitHub();
+    default:
+      throw new Error(
+        `Unrecognized CI system ${ci}, expected 'github' or 'none'`
+      );
+  }
+}
+
+function parseCache(
+  lib: boolean,
+  bins: string,
+  pkg: string
+): Cache | undefined {
+  const defaultOrg = "@" + pkg;
+
+  if (bins === "none") {
+    return lib ? new NPM(defaultOrg) : undefined;
+  }
+
+  if (bins === "npm") {
+    return new NPM(defaultOrg);
+  }
+
+  if (bins.startsWith("npm:")) {
+    return new NPM(bins.substring(4));
+  }
+
+  throw new Error(
+    `Unrecognized binaries cache ${bins}, expected 'npm[:org]' or 'none'`
+  );
+}

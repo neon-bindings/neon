@@ -1,0 +1,44 @@
+
+{
+  "name": "{{packageSpec.name}}",
+  "version": "{{packageSpec.version}}",
+{{#eq packageSpec.library.module compare="esm"}}
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./lib/index.d.mts",
+        "default": "./lib/index.mjs"
+      },
+      "require": {
+        "types": "./lib/index.d.cts",
+        "default": "./lib/index.cjs"
+      }
+    }
+  },
+{{/eq}}
+  "types": "./lib/index.d.cts",
+  "main": "./lib/index.cjs",
+  "files": [
+    "lib/**/*.?({c,m}){t,j}s"
+  ],
+  "scripts": {},
+  "neon": {
+    "type": "library",
+{{#eq packageSpec.library.cache.type compare="npm"}}
+{{#if packageSpec.library.cache.org}}
+    "org": "{{packageSpec.library.cache.org}}",
+{{/if}}
+{{/eq}}
+    "platforms": {},
+    "load": "./src/load.cts"
+  },
+  "devDependencies": {
+    "@neon-rs/cli": "^{{versions.neonCLI}}"{{#eq packageSpec.library.lang compare="ts"}},
+    "@tsconfig/node{{versions.tsconfigNode.major}}": "^{{versions.tsconfigNode.semver}}",
+    "@types/node": "^{{versions.typesNode}}",
+    "typescript": "^{{versions.typescript}}"{{/eq}}
+  },
+  "dependencies": {
+    "@neon-rs/load": "^{{versions.neonLoad}}"
+  }
+}

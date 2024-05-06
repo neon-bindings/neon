@@ -1,19 +1,10 @@
 {
+  "extends": "@tsconfig/node18/tsconfig.json",
   "compilerOptions": {
-    "module": "commonjs",
-    "target": "es6",
-    "lib": ["es6", "es7"],
-    "allowJs": false,
-
-    "sourceMap": false,
+    "module": "es2022",
+    "moduleResolution": "bundler",
     "outDir": "dist",
-
-    "esModuleInterop": true,
-    "strict": true,
-    "noImplicitReturns": true,
-    "allowUnreachableCode": false,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noImplicitAny": true,
     "resolveJsonModule": true
   },
   "include": ["src/**/*", "dev/**/*", "test/**/*"],
