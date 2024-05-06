@@ -22,6 +22,8 @@ $ npm init neon [<opts> ...] my-project
 
 ### Creating a Portable Library
 
+Neon also makes it easy to create **portable, cross-platform libraries** by publishing pre-built binaries. This means you can implement your Node.js library in Rust and publish the binaries so that users of your library (and any downstream users of theirs!) on all major hardware and operating systems can take a dependency on your library---_without having to install Rust or run any builds_.
+
 To create a portable npm library with pre-built binaries:
 
 ```sh
