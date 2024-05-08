@@ -1,3 +1,7 @@
+# `cargo-cp-artifact`
+
+`0.1.9` supports a [breaking change in `cargo`](https://github.com/rust-lang/cargo/issues/13867) that converts artifact names from `kebab-case` to `snake_case`.
+
 # Version 1.0.0
 
 ## Commitment to Compatibility
