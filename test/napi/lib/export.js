@@ -77,7 +77,7 @@ function functions() {
   });
 
   it("tasks are concurrent", async () => {
-    const time = 100;
+    const time = 500;
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const start = process.hrtime.bigint();
 
