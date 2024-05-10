@@ -180,7 +180,7 @@ pub use neon_macros::main;
 /// #### `context`
 ///
 /// The `#[neon::export]` macro looks checks if the first argument has a type of
-/// &mut FunctionContext` to determine if the [`Context`](crate::context::Context)
+/// `&mut FunctionContext` to determine if the [`Context`](crate::context::Context)
 /// should be passed to the function.
 ///
 /// If the type has been renamed when importing, the `context` attribute can be

@@ -2,19 +2,14 @@ use std::{error, fmt};
 
 use crate::{
     context::Context,
-    handle::Handle,
-    object::Object,
-    result::{JsResult, NeonResult, ResultExt},
-    types::{
-        extract::{TryFromJs, TryIntoJs, TypeExpected},
-        JsError, JsString, JsValue,
-    },
+    result::JsResult,
+    types::{extract::TryIntoJs, JsError},
 };
 
 type BoxError = Box<dyn error::Error + Send + Sync + 'static>;
 
 #[derive(Debug)]
-/// Error that implements [`TryFromJs`] and [`TryIntoJs`] and can produce specific error types
+/// Error that implements [`TryIntoJs`] and can produce specific error types.
 ///
 /// [`Error`] implements [`From`] for most error types, allowing ergonomic error handling in
 /// exported functions with the `?` operator.
@@ -30,10 +25,6 @@ type BoxError = Box<dyn error::Error + Send + Sync + 'static>;
 ///     Ok(contents)
 /// }
 /// ```
-///
-/// **Note**: Extracting an [`Error`] from a [`JsValue`] with [`TryFromJs`] and converting
-/// back to a [`JsError`] with [`TryIntoJs`] is _lossy_. It is not guaranteed that the same
-/// type will be returned.
 pub struct Error {
     cause: BoxError,
     kind: Option<ErrorKind>,
@@ -118,8 +109,8 @@ impl fmt::Display for Error {
     }
 }
 
-// `TryFromJs` followed by `TryIntoJs` is *lossy*. We cannot guarantee the same type
-// will be created.
+// N.B.: `TryFromJs` is not included. If Neon were to add support for additional error types,
+// this would be a *breaking* change. We will wait for user demand before providing this feature.
 impl<'cx> TryIntoJs<'cx> for Error {
     type Value = JsError;
 
@@ -135,59 +126,4 @@ impl<'cx> TryIntoJs<'cx> for Error {
             _ => cx.error(message),
         }
     }
-}
-
-impl<'cx> TryFromJs<'cx> for Error {
-    type Error = TypeExpected<JsError>;
-
-    fn try_from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Result<Self, Self::Error>>
-    where
-        C: Context<'cx>,
-    {
-        let err = match v.downcast::<JsError, _>(cx) {
-            Ok(err) => err,
-            Err(_) => return Ok(Err(Self::Error::new())),
-        };
-
-        Ok(Ok(Self {
-            cause: get_message(cx, err)?.into(),
-            kind: get_kind(cx, err)?,
-        }))
-    }
-
-    fn from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Self>
-    where
-        C: Context<'cx>,
-    {
-        Self::try_from_js(cx, v)?.or_throw(cx)
-    }
-}
-
-fn get_message<'cx, C>(cx: &mut C, err: Handle<JsError>) -> NeonResult<String>
-where
-    C: Context<'cx>,
-{
-    let message = err
-        .get_value(cx, "message")?
-        .downcast::<JsString, _>(cx)
-        .map(|v| v.value(cx))
-        .unwrap_or_default();
-
-    Ok(message)
-}
-
-fn get_kind<'cx, C>(cx: &mut C, err: Handle<JsError>) -> NeonResult<Option<ErrorKind>>
-where
-    C: Context<'cx>,
-{
-    let name = match err.get_value(cx, "name")?.downcast::<JsString, _>(cx) {
-        Ok(v) => v.value(cx),
-        Err(_) => return Ok(None),
-    };
-
-    Ok(Some(match name.as_str() {
-        "TypeError" => ErrorKind::TypeError,
-        "RangeError" => ErrorKind::RangeError,
-        _ => return Ok(None),
-    }))
 }
