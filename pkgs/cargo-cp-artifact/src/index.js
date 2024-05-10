@@ -80,8 +80,8 @@ function processCargoBuildLine(options, copied, line) {
   // `kind` and `filenames` zip up as key/value pairs
   kinds.forEach((kind, i) => {
     const filename = filenames[i];
-    const key = getArtifactName({ artifactType: kind, crateName: name });
-    const outputFiles = options.artifacts[key];
+    const { key, outputFiles } =
+      getOutputFiles(kind, name, options.artifacts) || {};
 
     if (!outputFiles || !filename) {
       return;
@@ -98,6 +98,24 @@ function processCargoBuildLine(options, copied, line) {
         console.error(err);
       });
   });
+}
+
+function getOutputFiles(kind, name, artifacts) {
+  const key = getArtifactName({ artifactType: kind, crateName: name });
+  const outputFiles = artifacts[key];
+
+  if (outputFiles) {
+    return { key, outputFiles };
+  }
+
+  // Cargo started replacing `-` with `_` in artifact names. Reverse the process
+  // and check again. https://github.com/rust-lang/cargo/issues/13867
+  const altKey = key.replace(/_/g, "-");
+
+  return {
+    key: altKey,
+    outputFiles: artifacts[altKey],
+  };
 }
 
 async function isNewer(filename, outputFile) {
