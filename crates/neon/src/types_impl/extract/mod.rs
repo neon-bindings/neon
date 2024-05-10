@@ -99,38 +99,103 @@
 //! Note well, in this example, type annotations are not required on the tuple because
 //! Rust is able to infer it from the type arguments on `add` and `concat`.
 
+use std::{fmt, marker::PhantomData};
+
 use crate::{
     context::{Context, FunctionContext},
     handle::Handle,
-    result::NeonResult,
-    types::JsValue,
+    result::{JsResult, NeonResult, ResultExt},
+    types::{JsValue, Value},
 };
 
+pub use self::error::Error;
 #[cfg(feature = "serde")]
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
-pub use self::json::*;
-pub use self::types::*;
+pub use self::json::Json;
 
+mod error;
 #[cfg(feature = "serde")]
 mod json;
-mod types;
+mod private;
+mod try_from_js;
+mod try_into_js;
 
 /// Extract Rust data from a JavaScript value
 pub trait TryFromJs<'cx>
 where
     Self: private::Sealed + Sized,
 {
+    /// Error indicating non-JavaScript exception failure when extracting
     // Consider adding a trait bound prior to unsealing `TryFromjs`
     // https://github.com/neon-bindings/neon/issues/1026
     type Error;
 
+    /// Extract this Rust type from a JavaScript value
     fn try_from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Result<Self, Self::Error>>
     where
         C: Context<'cx>;
 
+    /// Same as [`TryFromJs`], but all errors are converted to JavaScript exceptions
     fn from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Self>
     where
         C: Context<'cx>;
+}
+
+/// Convert Rust data into a JavaScript value
+pub trait TryIntoJs<'cx>
+where
+    Self: private::Sealed,
+{
+    /// The type of JavaScript value that will be created
+    type Value: Value;
+
+    /// Convert `self` into a JavaScript value
+    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
+    where
+        C: Context<'cx>;
+}
+
+#[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
+#[cfg(feature = "napi-5")]
+/// Wrapper for converting between [`f64`] and [`JsDate`](super::JsDate)
+pub struct Date(pub f64);
+
+/// Wrapper for converting between [`Vec<u8>`] and [`JsArrayBuffer`](super::JsArrayBuffer)
+pub struct ArrayBuffer(pub Vec<u8>);
+
+/// Wrapper for converting between [`Vec<u8>`] and [`JsBuffer`](super::JsBuffer)
+pub struct Buffer(pub Vec<u8>);
+
+/// Error returned when a JavaScript value is not the type expected
+pub struct TypeExpected<T: Value>(PhantomData<T>);
+
+impl<T: Value> TypeExpected<T> {
+    fn new() -> Self {
+        Self(PhantomData)
+    }
+}
+
+impl<T: Value> fmt::Display for TypeExpected<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "expected {}", T::name())
+    }
+}
+
+impl<T: Value> fmt::Debug for TypeExpected<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_tuple("TypeExpected").field(&T::name()).finish()
+    }
+}
+
+impl<T: Value> std::error::Error for TypeExpected<T> {}
+
+impl<T, U: Value> ResultExt<T> for Result<T, TypeExpected<U>> {
+    fn or_throw<'a, C: Context<'a>>(self, cx: &mut C) -> NeonResult<T> {
+        match self {
+            Ok(v) => Ok(v),
+            Err(_) => cx.throw_type_error(format!("expected {}", U::name())),
+        }
+    }
 }
 
 /// Trait specifying values that may be extracted from function arguments.
@@ -221,15 +286,3 @@ from_args!(
         T27, T28, T29, T30, T31, T32
     ]
 );
-
-mod private {
-    use crate::{context::FunctionContext, result::NeonResult};
-
-    pub trait Sealed {}
-
-    pub trait FromArgsInternal<'cx>: Sized {
-        fn from_args(cx: &mut FunctionContext<'cx>) -> NeonResult<Self>;
-
-        fn from_args_opt(cx: &mut FunctionContext<'cx>) -> NeonResult<Option<Self>>;
-    }
-}

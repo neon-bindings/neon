@@ -50,11 +50,24 @@ pub trait ContextInternal<'a>: Sized {
     fn env(&self) -> Env;
 }
 
-pub unsafe fn initialize_module(
-    env: *mut c_void,
-    exports: *mut c_void,
-    init: fn(ModuleContext) -> NeonResult<()>,
-) {
+fn default_main(mut cx: ModuleContext) -> NeonResult<()> {
+    crate::registered().export(&mut cx)
+}
+
+fn init(cx: ModuleContext) -> NeonResult<()> {
+    if crate::macro_internal::MAIN.len() > 1 {
+        panic!("The `neon::main` macro must only be used once");
+    }
+
+    if let Some(main) = crate::macro_internal::MAIN.first() {
+        main(cx)
+    } else {
+        default_main(cx)
+    }
+}
+
+#[no_mangle]
+unsafe extern "C" fn napi_register_module_v1(env: *mut c_void, m: *mut c_void) -> *mut c_void {
     let env = env.cast();
 
     sys::setup(env);
@@ -64,9 +77,8 @@ pub unsafe fn initialize_module(
     });
 
     let env = Env(env);
-    let exports = Handle::new_internal(JsObject::from_local(env, exports.cast()));
+    let exports = Handle::new_internal(JsObject::from_local(env, m.cast()));
+    let _ = ModuleContext::with(env, exports, init);
 
-    ModuleContext::with(env, exports, |cx| {
-        let _ = init(cx);
-    });
+    m
 }

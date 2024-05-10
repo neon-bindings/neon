@@ -3,7 +3,7 @@
 // because they can combine two Node-API calls into a single call that both
 // gets the value and checks the type at the same time.
 
-use std::{convert::Infallible, error, fmt, marker::PhantomData, ptr};
+use std::{convert::Infallible, ptr};
 
 use crate::{
     context::Context,
@@ -12,7 +12,7 @@ use crate::{
     sys,
     types::{
         buffer::{Binary, TypedArray},
-        extract::{private, TryFromJs},
+        extract::{ArrayBuffer, Buffer, Date, TryFromJs, TypeExpected},
         private::ValueInternal,
         JsArrayBuffer, JsBoolean, JsBuffer, JsNumber, JsString, JsTypedArray, JsValue, Value,
     },
@@ -20,38 +20,6 @@ use crate::{
 
 #[cfg(feature = "napi-5")]
 use crate::types::JsDate;
-
-/// Error returned when a JavaScript value is not the type expected
-pub struct TypeExpected<T: Value>(PhantomData<T>);
-
-impl<T: Value> TypeExpected<T> {
-    fn new() -> Self {
-        Self(PhantomData)
-    }
-}
-
-impl<T: Value> fmt::Display for TypeExpected<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "expected {}", T::name())
-    }
-}
-
-impl<T: Value> fmt::Debug for TypeExpected<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_tuple("TypeExpected").field(&T::name()).finish()
-    }
-}
-
-impl<T: Value> error::Error for TypeExpected<T> {}
-
-impl<T, U: Value> ResultExt<T> for Result<T, TypeExpected<U>> {
-    fn or_throw<'a, C: Context<'a>>(self, cx: &mut C) -> NeonResult<T> {
-        match self {
-            Ok(v) => Ok(v),
-            Err(_) => cx.throw_type_error(format!("expected {}", U::name())),
-        }
-    }
-}
 
 macro_rules! from_js {
     () => {
@@ -79,8 +47,6 @@ where
 
     from_js!();
 }
-
-impl<'cx, V: Value> private::Sealed for Handle<'cx, V> {}
 
 impl<'cx, T> TryFromJs<'cx> for Option<T>
 where
@@ -111,8 +77,6 @@ where
     }
 }
 
-impl<'cx, T> private::Sealed for Option<T> where T: TryFromJs<'cx> {}
-
 impl<'cx> TryFromJs<'cx> for f64 {
     type Error = TypeExpected<JsNumber>;
 
@@ -136,8 +100,6 @@ impl<'cx> TryFromJs<'cx> for f64 {
     from_js!();
 }
 
-impl private::Sealed for f64 {}
-
 impl<'cx> TryFromJs<'cx> for bool {
     type Error = TypeExpected<JsBoolean>;
 
@@ -160,8 +122,6 @@ impl<'cx> TryFromJs<'cx> for bool {
 
     from_js!();
 }
-
-impl private::Sealed for bool {}
 
 impl<'cx> TryFromJs<'cx> for String {
     type Error = TypeExpected<JsString>;
@@ -208,13 +168,6 @@ impl<'cx> TryFromJs<'cx> for String {
     from_js!();
 }
 
-impl private::Sealed for String {}
-
-#[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
-#[cfg(feature = "napi-5")]
-/// Extract an [`f64`] from a [`JsDate`]
-pub struct Date(pub f64);
-
 #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
 #[cfg(feature = "napi-5")]
 impl<'cx> TryFromJs<'cx> for Date {
@@ -239,8 +192,6 @@ impl<'cx> TryFromJs<'cx> for Date {
 
     from_js!();
 }
-
-impl private::Sealed for Date {}
 
 // This implementation primarily exists for macro authors. It is infallible, rather
 // than checking a type, to match the JavaScript conventions of ignoring additional
@@ -273,8 +224,6 @@ impl<'cx> TryFromJs<'cx> for () {
     }
 }
 
-impl private::Sealed for () {}
-
 impl<'cx, T> TryFromJs<'cx> for Vec<T>
 where
     JsTypedArray<T>: Value,
@@ -297,16 +246,6 @@ where
     from_js!();
 }
 
-impl<T> private::Sealed for Vec<T>
-where
-    JsTypedArray<T>: Value,
-    T: Binary,
-{
-}
-
-/// Extract a [`Vec<u8>`] from a [`JsBuffer`]
-pub struct Buffer(pub Vec<u8>);
-
 impl<'cx> TryFromJs<'cx> for Buffer {
     type Error = TypeExpected<JsBuffer>;
 
@@ -325,11 +264,6 @@ impl<'cx> TryFromJs<'cx> for Buffer {
     from_js!();
 }
 
-impl private::Sealed for Buffer {}
-
-/// Extract a [`Vec<u8>`] from a [`JsArrayBuffer`]
-pub struct ArrayBuffer(pub Vec<u8>);
-
 impl<'cx> TryFromJs<'cx> for ArrayBuffer {
     type Error = TypeExpected<JsBuffer>;
 
@@ -347,8 +281,6 @@ impl<'cx> TryFromJs<'cx> for ArrayBuffer {
 
     from_js!();
 }
-
-impl private::Sealed for ArrayBuffer {}
 
 fn is_null_or_undefined<'cx, C, V>(cx: &mut C, v: Handle<V>) -> NeonResult<bool>
 where
