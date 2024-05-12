@@ -182,7 +182,7 @@ describe("Project creation", () => {
 
     assert.strictEqual(json.neon.type, "library");
     assert.strictEqual(json.neon.org, "@create-neon-test-project");
-    assert.deepEqual(json.neon.platforms, ["common"]);
+    assert.strictEqual(json.neon.platforms, "common");
     assert.strictEqual(json.neon.load, "./src/load.cts");
 
     TOML.parse(
