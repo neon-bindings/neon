@@ -16,13 +16,16 @@ export function readChunks(input: Readable): Readable {
   return output;
 }
 
+// A child process representing a modified `npm init` invocation:
+// - If interactive, the initial prelude of stdout text is suppressed
+//   so we can present a modified prelude for create-neon.
+// - The process is being run in a temp subdirectory, so any output that
+//   includes the temp directory in a path is transformed to remove it.
 class NpmInit {
-  private _tmp: string;
   private _regexp: RegExp;
   private _child: ChildProcess;
 
   constructor(interactive: boolean, args: string[], cwd: string, tmp: string) {
-    this._tmp = tmp;
     this._regexp = new RegExp(tmp + ".");
     this._child = spawn('npm', ['init', ...args], {
       stdio: ['inherit', 'pipe', 'inherit'],
@@ -51,16 +54,16 @@ class NpmInit {
     for await (const chunk of readChunks(this._child.stdout!)) {
       const lines = (chunk as string).split(/\r?\n/);
       if (opts.interactive && inPrelude) {
-        // The first interactive prompt marks the end of the prelude.
-        const i = lines.findIndex(line => line.match(/^[a-z ]+:/));
-
-        // No prompt? We're still in the prelude so ignore and continue.
-        if (i === -1) {
+        // If there's a prompt, it'll be at the end of the data chunk
+        // since npm init will have flushed stdout to block on stdin.
+        if (!lines[lines.length - 1].match(/^[a-z ]+:/)) {
+          // We're still in the prelude so suppress all the lines and
+          // wait for the next chunk of stdout data.
           continue;
         }
 
-        // Ignore the prelude lines up to the first interactive prompt.
-        lines.splice(0, i);
+        // Suppress the prelude lines up to the prompt.
+        lines.splice(0, lines.length - 1);
         inPrelude = false;
       }
 
