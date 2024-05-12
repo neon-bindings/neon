@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import * as path from "path";
-import { npmInit } from './shell.js';
+import { npmInit } from "./shell.js";
 import { VERSIONS } from "./versions.js";
 import { Cache } from "./cache.js";
 import { CI } from "./ci.js";
@@ -76,7 +76,11 @@ export default class Package {
   description: string;
   quotedDescription: string;
 
-  static async create(metadata: Metadata, tmp: string, dir: string): Promise<Package> {
+  static async create(
+    metadata: Metadata,
+    tmp: string,
+    dir: string
+  ): Promise<Package> {
     const baseTemplate = metadata.packageSpec.library
       ? "manifest/base/library.json.hbs"
       : "manifest/base/default.json.hbs";

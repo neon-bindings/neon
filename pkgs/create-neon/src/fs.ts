@@ -1,6 +1,6 @@
-import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
-import { existsSync, rmSync } from 'node:fs';
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import { existsSync, rmSync } from "node:fs";
 
 export async function assertCanMkdir(dir: string) {
   // pretty lightweight way to check both that folder doesn't exist and
@@ -21,8 +21,8 @@ export async function mktemp(): Promise<string> {
       console.error(`warning: could not delete ${tmpFolderName}: ${e}`);
     }
   }
-  process.on('exit', cleanupTmp);
-  process.on('SIGINT', cleanupTmp);
-  process.on('uncaughtException', cleanupTmp);
+  process.on("exit", cleanupTmp);
+  process.on("SIGINT", cleanupTmp);
+  process.on("uncaughtException", cleanupTmp);
   return tmpFolderName;
 }

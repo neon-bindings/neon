@@ -1,6 +1,6 @@
-import { promises as fs } from 'fs';
-import * as path from 'path';
-import die from './die.js';
+import { promises as fs } from "fs";
+import * as path from "path";
+import die from "./die.js";
 import Package, {
   PackageSpec,
   LibrarySpec,
@@ -11,11 +11,16 @@ import Package, {
 import { VERSIONS } from "./versions.js";
 import { Metadata, expandTo } from "./expand.js";
 import { LibraryManifest } from "@neon-rs/manifest";
-import { NodePlatform, PlatformPreset, isNodePlatform, isPlatformPreset } from "@neon-rs/manifest/platform";
-import { assertCanMkdir, mktemp } from './fs.js';
-import { Dialog, oneOf } from './shell.js';
-import { NPM } from './cache/npm.js';
-import { GitHub } from './ci/github.js';
+import {
+  NodePlatform,
+  PlatformPreset,
+  isNodePlatform,
+  isPlatformPreset,
+} from "@neon-rs/manifest/platform";
+import { assertCanMkdir, mktemp } from "./fs.js";
+import { Dialog, oneOf } from "./shell.js";
+import { NPM } from "./cache/npm.js";
+import { GitHub } from "./ci/github.js";
 
 const CREATE_NEON_PRELUDE: string = `
 This utility will walk you through creating a Neon project.
@@ -39,52 +44,58 @@ async function askProjectType(packageSpec: PackageSpec) {
   // Otherwise, find out interactively.
   const dialog = new Dialog();
   const ty = await dialog.ask({
-    prompt: 'project type',
-    parse: oneOf({ app: 'app' as const, lib: 'lib' as const }),
-    default: 'app' as const,
-    error: "type should be a valid Neon project type (\"app\" or \"lib\")."
+    prompt: "project type",
+    parse: oneOf({ app: "app" as const, lib: "lib" as const }),
+    default: "app" as const,
+    error: 'type should be a valid Neon project type ("app" or "lib").',
   });
 
-  if (ty === 'lib') {
+  if (ty === "lib") {
     const platforms: (NodePlatform | PlatformPreset)[] = await dialog.ask({
-      prompt: 'target platforms',
+      prompt: "target platforms",
       parse: (v: string): (NodePlatform | PlatformPreset)[] => {
-        const a = v.split(',').map(s => s.trim());
-        if (a.some(elt => !isNodePlatform(elt) && !isPlatformPreset(elt))) {
+        const a = v.split(",").map((s) => s.trim());
+        if (a.some((elt) => !isNodePlatform(elt) && !isPlatformPreset(elt))) {
           throw new Error("parse error");
         }
         return a as (NodePlatform | PlatformPreset)[];
       },
-      default: ['common'],
-      error: "platforms should be a comma-separated list of platforms or platform presets."
+      default: ["common"],
+      error:
+        "platforms should be a comma-separated list of platforms or platform presets.",
     });
 
     const cache = await dialog.ask({
-      prompt: 'binary cache',
-      parse: oneOf({ npm: 'npm' as const, none: undefined }),
-      default: 'npm' as const,
-      error: "cache should be a supported Neon binary cache type (\"npm\" or \"none\")."
+      prompt: "binary cache",
+      parse: oneOf({ npm: "npm" as const, none: undefined }),
+      default: "npm" as const,
+      error:
+        'cache should be a supported Neon binary cache type ("npm" or "none").',
     });
 
-    const org = cache === 'npm' ? await dialog.ask({
-      prompt: 'cache org',
-      parse: (v: string): string => v,
-      default: NPM.inferOrg(packageSpec.name)
-    }) : null;
+    const org =
+      cache === "npm"
+        ? await dialog.ask({
+            prompt: "cache org",
+            parse: (v: string): string => v,
+            default: NPM.inferOrg(packageSpec.name),
+          })
+        : null;
 
     const ci = await dialog.ask({
-      prompt: 'ci provider',
-      parse: oneOf({ npm: 'github' as const, none: undefined }),
-      default: 'github' as const,
-      error: "provider should be a supported Neon CI provider (\"github\" or \"none\")."
+      prompt: "ci provider",
+      parse: oneOf({ npm: "github" as const, none: undefined }),
+      default: "github" as const,
+      error:
+        'provider should be a supported Neon CI provider ("github" or "none").',
     });
 
     packageSpec.library = {
       lang: Lang.TS,
       module: ModuleType.ESM,
-      cache: cache === 'npm' ? new NPM(packageSpec.name, org!) : undefined,
-      ci: ci === 'github' ? new GitHub() : undefined,
-      platforms: (platforms.length === 1) ? platforms[0] : platforms
+      cache: cache === "npm" ? new NPM(packageSpec.name, org!) : undefined,
+      ci: ci === "github" ? new GitHub() : undefined,
+      platforms: platforms.length === 1 ? platforms[0] : platforms,
     };
   } else {
     packageSpec.app = true;
@@ -107,7 +118,7 @@ export async function createNeon(name: string, options: CreateNeonOptions) {
     // Even if the user specifies this with a flag (e.g. `npm init -y neon`),
     // `npm init` sets this env var to 'true' before invoking create-neon.
     // So this is the most general way to check this configuration option.
-    yes: process.env['npm_configure_yes'] === 'true',
+    yes: process.env["npm_configure_yes"] === "true",
   };
 
   const metadata: Metadata = {
@@ -140,7 +151,11 @@ export async function createNeon(name: string, options: CreateNeonOptions) {
   }
 
   try {
-    metadata.package = await Package.create(metadata, tmpFolderName, tmpPackagePath);
+    metadata.package = await Package.create(
+      metadata,
+      tmpFolderName,
+      tmpPackagePath
+    );
   } catch (err: any) {
     await die(
       "Could not create `package.json`: " + err.message,
@@ -185,7 +200,7 @@ export async function createNeon(name: string, options: CreateNeonOptions) {
     )
       ? packageSpec.library.platforms
       : !packageSpec.library.platforms
-      ? ['common']
+      ? ["common"]
       : [packageSpec.library.platforms];
 
     for (const platform of platforms) {

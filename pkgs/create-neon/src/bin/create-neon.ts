@@ -64,7 +64,7 @@ try {
   const ci = parseCI(opts.ci);
 
   if (opts.yes) {
-    process.env['npm_configure_yes'] = 'true';
+    process.env["npm_configure_yes"] = "true";
   }
 
   createNeon(pkg, {
@@ -78,7 +78,7 @@ try {
           platforms,
         }
       : null,
-    app: opts.app ? true : null
+    app: opts.app ? true : null,
   });
 } catch (e) {
   printErrorWithUsage(e);
@@ -87,7 +87,11 @@ try {
 
 function parsePlatforms(
   platforms: string[]
-): NodePlatform | PlatformPreset | (NodePlatform | PlatformPreset)[] | undefined {
+):
+  | NodePlatform
+  | PlatformPreset
+  | (NodePlatform | PlatformPreset)[]
+  | undefined {
   if (platforms.length === 0) {
     return undefined;
   } else if (platforms.length === 1) {

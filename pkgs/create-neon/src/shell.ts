@@ -1,15 +1,15 @@
-import { ChildProcess, spawn } from 'node:child_process';
-import { PassThrough, Readable, Writable } from 'node:stream';
-import { StringDecoder } from 'node:string_decoder';
-import readline from 'node:readline/promises';
+import { ChildProcess, spawn } from "node:child_process";
+import { PassThrough, Readable, Writable } from "node:stream";
+import { StringDecoder } from "node:string_decoder";
+import readline from "node:readline/promises";
 
 export function readChunks(input: Readable): Readable {
   let output = new PassThrough({ objectMode: true });
-  let decoder = new StringDecoder('utf8');
-  input.on('data', (data) => {
+  let decoder = new StringDecoder("utf8");
+  input.on("data", (data) => {
     output.write(decoder.write(data));
   });
-  input.on('close', () => {
+  input.on("close", () => {
     output.write(decoder.end());
     output.end();
   });
@@ -27,10 +27,10 @@ class NpmInit {
 
   constructor(interactive: boolean, args: string[], cwd: string, tmp: string) {
     this._regexp = new RegExp(tmp + ".");
-    this._child = spawn('npm', ['init', ...args], {
-      stdio: ['inherit', 'pipe', 'inherit'],
+    this._child = spawn("npm", ["init", ...args], {
+      stdio: ["inherit", "pipe", "inherit"],
       shell: true,
-      cwd
+      cwd,
     });
     this.filterStdout({ interactive }).then(() => {});
   }
@@ -40,7 +40,7 @@ class NpmInit {
     const result: Promise<number | null> = new Promise((res) => {
       resolve = res;
     });
-    this._child.on('exit', (code) => {
+    this._child.on("exit", (code) => {
       resolve(code);
     });
     return result;
@@ -72,7 +72,7 @@ class NpmInit {
         // Remove the temp dir from any paths printed out by `npm init`.
         process.stdout.write(line.replace(this._regexp, ""));
         if (i < lines.length - 1) {
-          process.stdout.write('\n');
+          process.stdout.write("\n");
         }
       });
     }
@@ -85,7 +85,7 @@ export function npmInit(
   cwd: string,
   tmp: string
 ): Promise<number | null> {
-  return (new NpmInit(interactive, args, cwd, tmp)).exit();
+  return new NpmInit(interactive, args, cwd, tmp).exit();
 }
 
 export type Parser<T> = (v: string) => T;
@@ -97,22 +97,25 @@ export function oneOf<T extends {}>(opts: T): Parser<T[keyof T]> {
         return opts[key];
       }
     }
-    throw new Error('parse error');
+    throw new Error("parse error");
   };
 }
 
 export interface Question<T> {
-  prompt: string,
-  parse: Parser<T>,
-  default: T,
-  error?: string
-};
+  prompt: string;
+  parse: Parser<T>;
+  default: T;
+  error?: string;
+}
 
 export class Dialog {
   private _rl: readline.Interface | undefined;
 
   constructor() {
-    this._rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    this._rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
   }
 
   private rl(): readline.Interface {
@@ -130,7 +133,11 @@ export class Dialog {
   async ask<T>(opts: Question<T>): Promise<T> {
     while (true) {
       try {
-        const answer = (await this.rl().question(`neon ${opts.prompt}: (${String(opts.default)}) `)).trim();
+        const answer = (
+          await this.rl().question(
+            `neon ${opts.prompt}: (${String(opts.default)}) `
+          )
+        ).trim();
         return answer === "" ? opts.default : opts.parse(answer);
       } catch (_ignored) {
         if (opts.error) {
