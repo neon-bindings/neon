@@ -1,20 +1,7 @@
 import { ChildProcess } from "child_process";
-import { PassThrough, Readable, Writable } from "stream";
-import { StringDecoder } from "string_decoder";
+import { Readable, Writable } from "stream";
 import readStream from "stream-to-string";
-
-function readChunks(input: Readable): Readable {
-  let output = new PassThrough({ objectMode: true });
-  let decoder = new StringDecoder("utf8");
-  input.on("data", (data) => {
-    output.write(decoder.write(data));
-  });
-  input.on("close", () => {
-    output.write(decoder.end());
-    output.end();
-  });
-  return output;
-}
+import { readChunks } from "../src/shell.js";
 
 function splitLines(s: string): string[] {
   return s.split(/([^\n]*\r?\n)/).filter((x) => x);

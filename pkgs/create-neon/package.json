@@ -22,6 +22,7 @@
     "prepublishOnly": "npm run build",
     "pretest": "npm run build",
     "test": "mocha",
+    "manual-interactive-test": "npm run build && rm -rf create-neon-manual-test-project && node ./dist/src/bin/create-neon.js create-neon-manual-test-project",
     "manual-test": "npm run build && rm -rf create-neon-manual-test-project && node ./dist/src/bin/create-neon.js --lib --yes create-neon-manual-test-project"
   },
   "repository": {

@@ -1,11 +1,11 @@
 import { promises as fs } from "fs";
 import * as path from "path";
-import shell from "./shell.js";
+import { npmInit } from './shell.js';
 import { VERSIONS } from "./versions.js";
 import { Cache } from "./cache.js";
 import { CI } from "./ci.js";
 import { Metadata, expand, expandTo } from "./expand.js";
-import { PlatformPreset } from "@neon-rs/manifest/platform";
+import { NodePlatform, PlatformPreset } from "@neon-rs/manifest/platform";
 
 export enum Lang {
   JS = "js",
@@ -34,13 +34,14 @@ export type LibrarySpec = {
   module: ModuleType;
   cache?: Cache;
   ci?: CI | undefined;
-  platforms?: PlatformPreset | PlatformPreset[];
+  platforms?: NodePlatform | PlatformPreset | (NodePlatform | PlatformPreset)[];
 };
 
 export type PackageSpec = {
   name: string;
   version: string;
   library: LibrarySpec | null;
+  app: boolean | null;
   cache?: Cache | undefined;
   ci?: CI | undefined;
   yes: boolean | undefined;
@@ -75,7 +76,7 @@ export default class Package {
   description: string;
   quotedDescription: string;
 
-  static async create(metadata: Metadata, dir: string): Promise<Package> {
+  static async create(metadata: Metadata, tmp: string, dir: string): Promise<Package> {
     const baseTemplate = metadata.packageSpec.library
       ? "manifest/base/library.json.hbs"
       : "manifest/base/default.json.hbs";
@@ -103,10 +104,11 @@ export default class Package {
     await fs.writeFile(filename, JSON.stringify(seed));
 
     // 2. Call `npm init` to ask the user remaining questions.
-    await shell(
-      "npm",
-      ["init", ...(metadata.packageSpec.yes ? ["--yes"] : [])],
-      dir
+    await npmInit(
+      !metadata.packageSpec.yes,
+      metadata.packageSpec.yes ? ["--yes"] : [],
+      dir,
+      tmp
     );
 
     // 3. Sort the values in idiomatic `npm init` order.
