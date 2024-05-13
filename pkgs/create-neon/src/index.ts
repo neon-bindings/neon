@@ -163,15 +163,13 @@ export async function createNeon(name: string, options: CreateNeonOptions) {
     );
   }
 
-  if (metadata.package) {
-    if (packageSpec.library && packageSpec.library.ci) {
-      packageSpec.library.ci.setup();
-    }
+  if (packageSpec.library && packageSpec.library.ci) {
+    packageSpec.library.ci.setup();
+  }
 
-    for (const source of Object.keys(options.templates)) {
-      const target = path.join(tmpPackagePath, options.templates[source]);
-      await expandTo(source, target, metadata);
-    }
+  for (const source of Object.keys(options.templates)) {
+    const target = path.join(tmpPackagePath, options.templates[source]);
+    await expandTo(source, target, metadata);
   }
 
   if (packageSpec.library) {
