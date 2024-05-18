@@ -1,7 +1,7 @@
 {
   "neon": "1",
-  "neonCLI": "0.1.68",
-  "neonLoad": "0.1.68",
+  "neonCLI": "0.1.72",
+  "neonLoad": "0.1.72",
   "typescript": "5.3.3",
   "typesNode": "20.11.16",
   "tsconfigNode": {
