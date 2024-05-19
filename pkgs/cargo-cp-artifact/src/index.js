@@ -1,11 +1,8 @@
 "use strict";
 
 const { spawn } = require("child_process");
-const {
-  promises: { copyFile, mkdir, stat, unlink },
-} = require("fs");
-const { dirname, extname } = require("path");
 const readline = require("readline");
+const { copyArtifact } = require("@neon-rs/artifact");
 
 const { ParseError, getArtifactName, parse } = require("./args");
 
@@ -116,50 +113,6 @@ function getOutputFiles(kind, name, artifacts) {
     key: altKey,
     outputFiles: artifacts[altKey],
   };
-}
-
-async function isNewer(filename, outputFile) {
-  try {
-    const prevStats = await stat(outputFile);
-    const nextStats = await stat(filename);
-
-    return nextStats.mtime > prevStats.mtime;
-  } catch (_err) {}
-
-  return true;
-}
-
-async function copyArtifact(filename, outputFile) {
-  if (!(await isNewer(filename, outputFile))) {
-    return;
-  }
-
-  const outputDir = dirname(outputFile);
-
-  // Don't try to create the current directory
-  if (outputDir && outputDir !== ".") {
-    await mkdir(outputDir, { recursive: true });
-  }
-
-  // Apple Silicon (M1, etc.) requires shared libraries to be signed. However,
-  // the macOS code signing cache isn't cleared when overwriting a file.
-  // Deleting the file before copying works around the issue.
-  //
-  // Unfortunately, this workaround is incomplete because the file must be
-  // deleted from the location it is loaded. If further steps in the user's
-  // build process copy or move the file in place, the code signing cache
-  // will not be cleared.
-  //
-  // https://github.com/neon-bindings/neon/issues/911
-  if (extname(outputFile) === ".node") {
-    try {
-      await unlink(outputFile);
-    } catch (_e) {
-      // Ignore errors; the file might not exist
-    }
-  }
-
-  await copyFile(filename, outputFile);
 }
 
 function parseArgs(argv, env) {
