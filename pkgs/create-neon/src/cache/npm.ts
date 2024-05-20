@@ -10,7 +10,7 @@ export class NPM implements Cache {
   }
 
   static inferOrg(pkg: string): string {
-    const m = pkg.match(/^@([^/]+)\/([^/]+)/);
-    return "@" + (m ? m[1] : pkg);
+    const m = pkg.match(/^@([^/]+)\/(.*)/);
+    return `@${m?.[1] ?? pkg}`;
   }
 }
