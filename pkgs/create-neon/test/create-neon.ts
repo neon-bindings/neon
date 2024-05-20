@@ -49,7 +49,7 @@ describe("Project creation", () => {
 
   it("succeeds with all default answers", async () => {
     try {
-      await expect(spawn(NODE, [CREATE_NEON, PROJECT]), {
+      await expect(spawn(NODE, [CREATE_NEON, "--app", PROJECT]), {
         "package name:": "",
         "version:": "",
         "description:": "",
@@ -89,7 +89,7 @@ describe("Project creation", () => {
 
   it("handles quotation marks in author and description", async () => {
     try {
-      await expect(spawn(NODE, [CREATE_NEON, PROJECT]), {
+      await expect(spawn(NODE, [CREATE_NEON, "--app", PROJECT]), {
         "package name:": "",
         "version:": "",
         "description:": 'the "hello world" of examples',
@@ -123,5 +123,70 @@ describe("Project creation", () => {
     assert.deepEqual(toml.package.authors, [
       '"Dave Herman" <dherman@example.com>',
     ]);
+  });
+
+  it("asks Neon project type if not specified", async () => {
+    try {
+      await expect(spawn(NODE, [CREATE_NEON, PROJECT]), {
+        "neon project type": "",
+        "package name:": "",
+        "version:": "",
+        "description:": "",
+        "git repository:": "",
+        "keywords:": "",
+        "author:": "",
+        "license:": "",
+        "Is this OK?": "",
+      });
+    } catch (error: any) {
+      assert.fail("create-neon unexpectedly failed: " + error.message);
+    }
+
+    JSON.parse(
+      await fs.readFile(path.join(PROJECT, "package.json"), {
+        encoding: "utf8",
+      })
+    );
+
+    TOML.parse(
+      await fs.readFile(path.join(PROJECT, "Cargo.toml"), { encoding: "utf8" })
+    );
+  });
+
+  it("asks Neon lib questions interactively", async () => {
+    try {
+      await expect(spawn(NODE, [CREATE_NEON, PROJECT]), {
+        "neon project type": "lib",
+        "neon target platforms": "",
+        "neon binary cache": "",
+        "neon cache org": "",
+        "neon ci provider": "",
+        "package name:": "",
+        "version:": "",
+        "description:": "",
+        "git repository:": "",
+        "keywords:": "",
+        "author:": "",
+        "license:": "",
+        "Is this OK?": "",
+      });
+    } catch (error: any) {
+      assert.fail("create-neon unexpectedly failed: " + error.message);
+    }
+
+    let json = JSON.parse(
+      await fs.readFile(path.join(PROJECT, "package.json"), {
+        encoding: "utf8",
+      })
+    );
+
+    assert.strictEqual(json.neon.type, "library");
+    assert.strictEqual(json.neon.org, "@create-neon-test-project");
+    assert.strictEqual(json.neon.platforms, "common");
+    assert.strictEqual(json.neon.load, "./src/load.cts");
+
+    TOML.parse(
+      await fs.readFile(path.join(PROJECT, "Cargo.toml"), { encoding: "utf8" })
+    );
   });
 });

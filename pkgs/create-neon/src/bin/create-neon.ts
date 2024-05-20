@@ -10,8 +10,10 @@ import { CI } from "../ci.js";
 import { GitHub } from "../ci/github.js";
 import { Lang, ModuleType } from "../package.js";
 import {
+  NodePlatform,
   PlatformPreset,
   assertIsPlatformPreset,
+  isNodePlatform,
   isPlatformPreset,
 } from "@neon-rs/manifest/platform";
 
@@ -33,6 +35,7 @@ function tsTemplates(pkg: string): Record<string, string> {
 }
 
 const OPTIONS = [
+  { name: "app", type: Boolean, defaultValue: false },
   { name: "lib", type: Boolean, defaultValue: false },
   { name: "bins", type: String, defaultValue: "none" },
   { name: "platform", type: String, multiple: true, defaultValue: ["common"] },
@@ -42,6 +45,10 @@ const OPTIONS = [
 
 try {
   const opts = commandLineArgs(OPTIONS, { stopAtFirstUnknown: true });
+
+  if (opts.app && opts.lib) {
+    throw new Error("Cannot choose both --app and --lib");
+  }
 
   if (!opts._unknown || opts._unknown.length === 0) {
     throw new Error("No package name given");
@@ -55,7 +62,10 @@ try {
   const platforms = parsePlatforms(opts.platform);
   const cache = parseCache(opts.lib, opts.bins, pkg);
   const ci = parseCI(opts.ci);
-  const yes = !!opts.yes;
+
+  if (opts.yes) {
+    process.env["npm_configure_yes"] = "true";
+  }
 
   createNeon(pkg, {
     templates: opts.lib ? tsTemplates(pkg) : JS_TEMPLATES,
@@ -68,7 +78,7 @@ try {
           platforms,
         }
       : null,
-    yes,
+    app: opts.app ? true : null,
   });
 } catch (e) {
   printErrorWithUsage(e);
@@ -77,17 +87,25 @@ try {
 
 function parsePlatforms(
   platforms: string[]
-): PlatformPreset | PlatformPreset[] | undefined {
+):
+  | NodePlatform
+  | PlatformPreset
+  | (NodePlatform | PlatformPreset)[]
+  | undefined {
   if (platforms.length === 0) {
     return undefined;
   } else if (platforms.length === 1) {
-    const preset = platforms[0];
-    assertIsPlatformPreset(preset);
-    return preset;
+    const platform = platforms[0];
+    if (isNodePlatform(platform) || isPlatformPreset(platform)) {
+      return platform;
+    }
+    throw new TypeError(`expected platform or preset, got ${platform}`);
   } else {
-    return platforms.map((preset) => {
-      assertIsPlatformPreset(preset);
-      return preset;
+    return platforms.map((platform) => {
+      if (isNodePlatform(platform) || isPlatformPreset(platform)) {
+        return platform;
+      }
+      throw new TypeError(`expected platform or preset, got ${platform}`);
     });
   }
 }
@@ -110,18 +128,16 @@ function parseCache(
   bins: string,
   pkg: string
 ): Cache | undefined {
-  const defaultOrg = "@" + pkg;
-
   if (bins === "none") {
-    return lib ? new NPM(defaultOrg) : undefined;
+    return lib ? new NPM(pkg) : undefined;
   }
 
   if (bins === "npm") {
-    return new NPM(defaultOrg);
+    return new NPM(pkg);
   }
 
   if (bins.startsWith("npm:")) {
-    return new NPM(bins.substring(4));
+    return new NPM(pkg, bins.substring(4));
   }
 
   throw new Error(

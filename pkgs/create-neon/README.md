@@ -11,8 +11,10 @@ You can conveniently use this tool with the [`npm init`](https://docs.npmjs.com/
 To create a simple Neon project that consists purely of Rust code:
 
 ```sh
-$ npm init neon [<opts> ...] my-project
+$ npm init neon -- [<opts> ...] my-project
 ```
+
+**Note:** The initial `--` is necessary for `npm init` to pass any command-line options to Neon.
 
 #### Global Options
 
@@ -27,8 +29,10 @@ Neon also makes it easy to create **portable, cross-platform libraries** by publ
 To create a portable npm library with pre-built binaries:
 
 ```sh
-$ npm init neon [<opts> ...] --lib [<lib-opts> ...] my-project
+$ npm init neon -- [<opts> ...] --lib [<lib-opts> ...] my-project
 ```
+
+**Note:** The initial `--` is necessary for `npm init` to pass any command-line options to Neon.
 
 This will generate a project that can be used by pure JavaScript or TypeScript consumers without them even being aware of the use of Rust under the hood. It achieves this by publishing pre-built binaries for common Node platform architectures that are loaded just-in-time by a JS wrapper module.
 
