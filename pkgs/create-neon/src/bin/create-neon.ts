@@ -67,8 +67,9 @@ try {
     process.env["npm_configure_yes"] = "true";
   }
 
-  createNeon(pkg, {
-    templates: opts.lib ? tsTemplates(pkg) : JS_TEMPLATES,
+  createNeon(opts.lib ? tsTemplates(pkg) : JS_TEMPLATES, {
+    name: pkg,
+    version: "0.1.0",
     library: opts.lib
       ? {
           lang: Lang.TS,
@@ -78,7 +79,11 @@ try {
           platforms,
         }
       : null,
-    app: opts.app ? true : null,
+    app: opts.app ? true : opts.lib ? false : null,
+    // Even if the user specifies this with a flag (e.g. `npm init -y neon`),
+    // `npm init` sets this env var to 'true' before invoking create-neon.
+    // So this is the most general way to check this configuration option.
+    interactive: process.env["npm_configure_yes"] !== "true",
   });
 } catch (e) {
   printErrorWithUsage(e);

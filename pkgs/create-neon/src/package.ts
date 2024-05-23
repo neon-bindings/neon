@@ -29,7 +29,7 @@ export enum ModuleType {
   CJS = "cjs",
 }
 
-export type LibrarySpec = {
+export type LibraryOptions = {
   lang: Lang;
   module: ModuleType;
   cache?: Cache;
@@ -37,14 +37,14 @@ export type LibrarySpec = {
   platforms?: NodePlatform | PlatformPreset | (NodePlatform | PlatformPreset)[];
 };
 
-export type PackageSpec = {
+export type PackageOptions = {
   name: string;
   version: string;
-  library: LibrarySpec | null;
+  library: LibraryOptions | null;
   app: boolean | null;
   cache?: Cache | undefined;
   ci?: CI | undefined;
-  yes: boolean | undefined;
+  interactive: boolean;
 };
 
 const KEYS = [
@@ -81,7 +81,7 @@ export default class Package {
     tmp: string,
     dir: string
   ): Promise<Package> {
-    const baseTemplate = metadata.packageSpec.library
+    const baseTemplate = metadata.options.library
       ? "manifest/base/library.json.hbs"
       : "manifest/base/default.json.hbs";
 
@@ -94,8 +94,8 @@ export default class Package {
     );
 
     // 3. Mixin any scripts from the CI scripts template.
-    if (metadata.packageSpec.library && metadata.packageSpec.library.ci) {
-      const mixinTemplate = `ci/${metadata.packageSpec.library.ci.type}/manifest/scripts.json.hbs`;
+    if (metadata.options.library && metadata.options.library.ci) {
+      const mixinTemplate = `ci/${metadata.options.library.ci.type}/manifest/scripts.json.hbs`;
       Object.assign(
         seed.scripts,
         JSON.parse(await expand(mixinTemplate, metadata))
@@ -109,8 +109,8 @@ export default class Package {
 
     // 2. Call `npm init` to ask the user remaining questions.
     await npmInit(
-      !metadata.packageSpec.yes,
-      metadata.packageSpec.yes ? ["--yes"] : [],
+      metadata.options.interactive,
+      metadata.options.interactive ? [] : ["--yes"],
       dir,
       tmp
     );

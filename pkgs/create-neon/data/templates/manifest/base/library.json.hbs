@@ -1,8 +1,8 @@
 
 {
-  "name": "{{packageSpec.name}}",
-  "version": "{{packageSpec.version}}",
-{{#eq packageSpec.library.module compare="esm"}}
+  "name": "{{options.name}}",
+  "version": "{{options.version}}",
+{{#eq options.library.module compare="esm"}}
   "exports": {
     ".": {
       "import": {
@@ -24,16 +24,16 @@
   "scripts": {},
   "neon": {
     "type": "library",
-{{#eq packageSpec.library.cache.type compare="npm"}}
-{{#if packageSpec.library.cache.org}}
-    "org": "{{packageSpec.library.cache.org}}",
+{{#eq options.library.cache.type compare="npm"}}
+{{#if options.library.cache.org}}
+    "org": "{{options.library.cache.org}}",
 {{/if}}
 {{/eq}}
     "platforms": {},
     "load": "./src/load.cts"
   },
   "devDependencies": {
-    "@neon-rs/cli": "^{{versions.neonCLI}}"{{#eq packageSpec.library.lang compare="ts"}},
+    "@neon-rs/cli": "^{{versions.neonCLI}}"{{#eq options.library.lang compare="ts"}},
     "@tsconfig/node{{versions.tsconfigNode.major}}": "^{{versions.tsconfigNode.semver}}",
     "@types/node": "^{{versions.typesNode}}",
     "typescript": "^{{versions.typescript}}"{{/eq}}

@@ -2,7 +2,7 @@ import { promises as fs } from "fs";
 import handlebars from "handlebars";
 import helpers from "handlebars-helpers";
 import * as path from "path";
-import Package, { PackageSpec, Lang } from "./package.js";
+import Package, { PackageOptions, Lang } from "./package.js";
 import { Versions } from "./versions.js";
 
 const TEMPLATES_DIR = new URL(
@@ -11,7 +11,7 @@ const TEMPLATES_DIR = new URL(
 );
 
 export interface Metadata {
-  packageSpec: PackageSpec;
+  options: PackageOptions;
   package?: Package | undefined;
   versions: Versions;
 }
