@@ -7,8 +7,8 @@ import Package, {
   ModuleType,
   LANG_TEMPLATES,
 } from "./package.js";
-import { VERSIONS } from "./versions.js";
-import { Metadata, expandTo } from "./expand.js";
+import { Context } from "./expand/context.js";
+import { expandTo } from "./expand/index.js";
 import { LibraryManifest } from "@neon-rs/manifest";
 import {
   NodePlatform,
@@ -96,10 +96,7 @@ async function askProjectType(options: PackageOptions) {
 }
 
 export async function createNeon(templates: Record<string, string>, options: PackageOptions) {
-  const metadata: Metadata = {
-    options,
-    versions: VERSIONS,
-  };
+  const cx = new Context(options);
 
   let tmpFolderName: string = "";
   let tmpPackagePath: string = "";
@@ -130,8 +127,8 @@ export async function createNeon(templates: Record<string, string>, options: Pac
   }
 
   try {
-    metadata.package = await Package.create(
-      metadata,
+    cx.package = await Package.create(
+      cx,
       tmpFolderName,
       tmpPackagePath
     );
@@ -148,14 +145,14 @@ export async function createNeon(templates: Record<string, string>, options: Pac
 
   for (const source of Object.keys(templates)) {
     const target = path.join(tmpPackagePath, templates[source]);
-    await expandTo(source, target, metadata);
+    await expandTo(source, target, cx);
   }
 
   if (options.library) {
     const templates = LANG_TEMPLATES[options.library.lang];
     for (const source of Object.keys(templates)) {
       const target = path.join(tmpPackagePath, templates[source]);
-      await expandTo(source, target, metadata);
+      await expandTo(source, target, cx);
     }
 
     if (options.library.ci) {
@@ -165,7 +162,7 @@ export async function createNeon(templates: Record<string, string>, options: Pac
         await expandTo(
           `ci/${options.library.ci.type}/${source}`,
           target,
-          metadata
+          cx
         );
       }
     }

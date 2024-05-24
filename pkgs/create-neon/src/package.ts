@@ -1,10 +1,10 @@
 import { promises as fs } from "fs";
 import * as path from "path";
 import { npmInit } from "./shell.js";
-import { VERSIONS } from "./versions.js";
 import { Cache } from "./cache.js";
 import { CI } from "./ci.js";
-import { Metadata, expand, expandTo } from "./expand.js";
+import { Context } from "./expand/context.js";
+import { expand } from "./expand/index.js";
 import { NodePlatform, PlatformPreset } from "@neon-rs/manifest/platform";
 
 export enum Lang {
@@ -76,29 +76,25 @@ export default class Package {
   description: string;
   quotedDescription: string;
 
-  static async create(
-    metadata: Metadata,
-    tmp: string,
-    dir: string
-  ): Promise<Package> {
-    const baseTemplate = metadata.options.library
+  static async create(cx: Context, tmp: string, dir: string): Promise<Package> {
+    const baseTemplate = cx.options.library
       ? "manifest/base/library.json.hbs"
       : "manifest/base/default.json.hbs";
 
     // 1. Load the base contents of the manifest from the base template.
-    const seed = JSON.parse(await expand(baseTemplate, metadata));
+    const seed = JSON.parse(await expand(baseTemplate, cx));
 
     // 2. Mixin the scripts from the scripts template.
     seed.scripts = JSON.parse(
-      await expand("manifest/scripts.json.hbs", metadata)
+      await expand("manifest/scripts.json.hbs", cx)
     );
 
     // 3. Mixin any scripts from the CI scripts template.
-    if (metadata.options.library && metadata.options.library.ci) {
-      const mixinTemplate = `ci/${metadata.options.library.ci.type}/manifest/scripts.json.hbs`;
+    if (cx.options.library && cx.options.library.ci) {
+      const mixinTemplate = `ci/${cx.options.library.ci.type}/manifest/scripts.json.hbs`;
       Object.assign(
         seed.scripts,
-        JSON.parse(await expand(mixinTemplate, metadata))
+        JSON.parse(await expand(mixinTemplate, cx))
       );
     }
 
@@ -109,8 +105,8 @@ export default class Package {
 
     // 2. Call `npm init` to ask the user remaining questions.
     await npmInit(
-      metadata.options.interactive,
-      metadata.options.interactive ? [] : ["--yes"],
+      cx.options.interactive,
+      cx.options.interactive ? [] : ["--yes"],
       dir,
       tmp
     );
