@@ -19,6 +19,11 @@ export function readChunks(input: Readable): Readable {
   return output;
 }
 
+type NpmInitExit = {
+  code: number | null,
+  signal: string | null
+};
+
 // A child process representing a modified `npm init` invocation:
 // - If interactive, the initial prelude of stdout text is suppressed
 //   so we can present a modified prelude for create-neon.
@@ -38,13 +43,13 @@ class NpmInitProcess {
     this.filterStdout({ interactive }).then(() => {});
   }
 
-  exit(): Promise<number | null> {
-    let resolve: (code: number | null) => void;
-    const result: Promise<number | null> = new Promise((res) => {
+  exit(): Promise<NpmInitExit> {
+    let resolve: (exit: NpmInitExit) => void;
+    const result: Promise<NpmInitExit> = new Promise((res) => {
       resolve = res;
     });
-    this._child.on("exit", (code) => {
-      resolve(code);
+    this._child.on("exit", (code, signal) => {
+      resolve({ code, signal });
     });
     return result;
   }
@@ -109,12 +114,13 @@ export async function npmInit(
   cwd: string,
   tmp: string
 ): Promise<any> {
-  const process = new NpmInitProcess(interactive, args, cwd, tmp);
-  const exitCode = await process.exit();
-  console.error("exited.");
-  if (exitCode !== 0) {
-    // FIXME: better just to silently die since npm init already produced an error
-    await die(`\`npm init\` failed with exit code ${exitCode}.`, tmp);
+  const child = new NpmInitProcess(interactive, args, cwd, tmp);
+  const { code, signal } = await child.exit();
+
+  if (code === null) {
+    process.kill(process.pid, signal!);
+  } else if (code !== 0) {
+    process.exit(code);
   }
 
   const filename = path.join(cwd, "package.json");
