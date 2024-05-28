@@ -104,5 +104,7 @@ export async function createNeon(options: ProjectOptions): Promise<void> {
   const creator = await Creator.for(options);
   await creator.create(cx);
 
-  console.log(`✨ Created Neon project \`${options.name}\`. Happy 🦀 hacking! ✨`);
+  console.log(
+    `✨ Created Neon project \`${options.name}\`. Happy 🦀 hacking! ✨`
+  );
 }

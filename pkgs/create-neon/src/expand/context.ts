@@ -2,19 +2,19 @@ import { ProjectOptions } from "../create/creator.js";
 import { VERSIONS, Versions } from "./versions.js";
 
 export type PackageContext = {
-  name: string,
-  version: string,
-  author: string,
-  license: string,
-  description: string
+  name: string;
+  version: string;
+  author: string;
+  license: string;
+  description: string;
 };
 
 export type CrateContext = {
-  name: string,
-  version: string,
-  description: string | undefined,
-  author: string | undefined,
-  license: string | undefined,
+  name: string;
+  version: string;
+  description: string | undefined;
+  author: string | undefined;
+  license: string | undefined;
 };
 
 export class Context {

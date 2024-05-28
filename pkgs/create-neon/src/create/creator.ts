@@ -43,17 +43,16 @@ function stripNpmNamespace(pkg: string): string {
 }
 
 export abstract class Creator {
-
   protected _options: ProjectOptions;
   protected _temp: string = "";
   protected _tempPkg: string = "";
 
   static async for(options: ProjectOptions): Promise<Creator> {
     if (options.library) {
-      const LibCreator = (await import('./lib.js')).LibCreator;
+      const LibCreator = (await import("./lib.js")).LibCreator;
       return new LibCreator(options);
     } else {
-      const AppCreator = (await import('./app.js')).AppCreator;
+      const AppCreator = (await import("./app.js")).AppCreator;
       return new AppCreator(options);
     }
   }
@@ -65,13 +64,16 @@ export abstract class Creator {
   async create(cx: Context): Promise<void> {
     try {
       await assertCanMkdir(this._options.name);
-  
+
       this._temp = await mktemp();
       this._tempPkg = path.join(this._temp, this._options.name);
-  
+
       await fs.mkdir(this._tempPkg);
     } catch (err: any) {
-      await die(`Could not create \`${this._options.name}\`: ${err.message}`, this._temp);
+      await die(
+        `Could not create \`${this._options.name}\`: ${err.message}`,
+        this._temp
+      );
     }
 
     await this.prepare(cx);
@@ -89,7 +91,7 @@ export abstract class Creator {
         version: manifest.version,
         author: manifest.author,
         license: manifest.license,
-        description: manifest.description
+        description: manifest.description,
       };
 
       const crateName = stripNpmNamespace(manifest.name);
@@ -106,11 +108,18 @@ export abstract class Creator {
         name: JSON.stringify(crateName),
         version: JSON.stringify(manifest.version),
         author: manifest.author ? JSON.stringify(manifest.author) : undefined,
-        description: manifest.description ? JSON.stringify(manifest.description) : undefined,
-        license: manifest.license ? JSON.stringify(manifest.license) : undefined
+        description: manifest.description
+          ? JSON.stringify(manifest.description)
+          : undefined,
+        license: manifest.license
+          ? JSON.stringify(manifest.license)
+          : undefined,
       };
     } catch (err: any) {
-      await die("Could not create `package.json`: " + err.message, this._tempPkg);
+      await die(
+        "Could not create `package.json`: " + err.message,
+        this._tempPkg
+      );
     }
 
     await this.createNeonBoilerplate(cx);
@@ -119,7 +128,10 @@ export abstract class Creator {
       await fs.rename(this._tempPkg, this._options.name);
       await fs.rmdir(this._temp);
     } catch (err: any) {
-      await die(`Could not create \`${this._options.name}\`: ${err.message}`, this._tempPkg);
+      await die(
+        `Could not create \`${this._options.name}\`: ${err.message}`,
+        this._tempPkg
+      );
     }
   }
 

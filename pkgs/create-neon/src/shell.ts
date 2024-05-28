@@ -20,8 +20,8 @@ export function readChunks(input: Readable): Readable {
 }
 
 type NpmInitExit = {
-  code: number | null,
-  signal: string | null
+  code: number | null;
+  signal: string | null;
 };
 
 // A child process representing a modified `npm init` invocation:

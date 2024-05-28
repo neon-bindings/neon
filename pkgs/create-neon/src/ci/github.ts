@@ -32,8 +32,8 @@ export class GitHub implements CI {
 
   scripts(): Record<string, string> {
     return {
-      "release": "gh workflow run release.yml -f dryrun=false -f version=patch",
-      "dryrun": "gh workflow run publish.yml -f dryrun=true"
+      release: "gh workflow run release.yml -f dryrun=false -f version=patch",
+      dryrun: "gh workflow run publish.yml -f dryrun=true",
     };
   }
 }

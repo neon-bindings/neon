@@ -3,7 +3,11 @@ import { Context } from "../expand/context.js";
 import * as path from "node:path";
 import { expandTo } from "../expand/index.js";
 import { LibraryManifest } from "@neon-rs/manifest";
-import { NodePlatform, PlatformPreset, isNodePlatform } from "@neon-rs/manifest/platform";
+import {
+  NodePlatform,
+  PlatformPreset,
+  isNodePlatform,
+} from "@neon-rs/manifest/platform";
 
 const TS_TEMPLATES: Record<string, string> = {
   "tsconfig.json.hbs": "tsconfig.json",
@@ -13,7 +17,6 @@ const TS_TEMPLATES: Record<string, string> = {
 };
 
 export class LibCreator extends Creator {
-
   private _libOptions: LibraryOptions;
 
   constructor(options: ProjectOptions) {
@@ -27,12 +30,12 @@ export class LibCreator extends Creator {
   templates(pkg: string): Record<string, string> {
     return this._libOptions.lang === Lang.TS
       ? {
-        ".gitignore.hbs": ".gitignore",
-        "Cargo.toml.hbs": path.join("crates", pkg, "Cargo.toml"),
-        "Workspace.toml.hbs": "Cargo.toml",
-        "README.md.hbs": "README.md",
-        "lib.rs.hbs": path.join("crates", pkg, "src", "lib.rs")
-      }
+          ".gitignore.hbs": ".gitignore",
+          "Cargo.toml.hbs": path.join("crates", pkg, "Cargo.toml"),
+          "Workspace.toml.hbs": "Cargo.toml",
+          "README.md.hbs": "README.md",
+          "lib.rs.hbs": path.join("crates", pkg, "src", "lib.rs"),
+        }
       : super.templates(pkg);
   }
 
@@ -61,11 +64,7 @@ export class LibCreator extends Creator {
     const templates = this._libOptions.ci!.templates();
     for (const source of Object.keys(templates)) {
       const target = path.join(this._tempPkg, templates[source]);
-      await expandTo(
-        `ci/${this._libOptions.ci!.type}/${source}`,
-        target,
-        cx
-      );
+      await expandTo(`ci/${this._libOptions.ci!.type}/${source}`, target, cx);
     }
   }
 
@@ -95,16 +94,16 @@ export class LibCreator extends Creator {
     const tscAnd = this._libOptions.lang === Lang.TS ? "tsc &&" : "";
 
     let scripts: Record<string, string> = {
-      "test": `${tscAnd}cargo test`,
+      test: `${tscAnd}cargo test`,
       "cargo-build": `${tscAnd}cargo build --message-format=json > cargo.log`,
       "cross-build": `${tscAnd}cross build --message-format=json > cross.log`,
       "postcargo-build": "neon dist < cargo.log",
       "postcross-build": "neon dist -m /target < cross.log",
-      "debug": "npm run cargo-build --",
-      "build": "npm run cargo-build -- --release",
-      "cross": "npm run cross-build -- --release",
-      "prepack": `${tscAnd}neon update`,
-      "version": "neon bump --binaries platforms && git add ."
+      debug: "npm run cargo-build --",
+      build: "npm run cargo-build -- --release",
+      cross: "npm run cross-build -- --release",
+      prepack: `${tscAnd}neon update`,
+      version: "neon bump --binaries platforms && git add .",
     };
 
     if (this._libOptions.ci) {
