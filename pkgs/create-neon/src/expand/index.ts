@@ -5,7 +5,7 @@ import * as path from "path";
 import { Context } from "./context.js";
 
 const TEMPLATES_DIR = new URL(
-  path.join("..", "data", "templates", "/"),
+  path.join("..", "..", "data", "templates", "/"),
   import.meta.url
 );
 
