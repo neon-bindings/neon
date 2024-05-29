@@ -100,18 +100,17 @@ export abstract class Creator {
         author: manifest.author,
         description: manifest.description,
         license: manifest.license,
-      };
-
-      cx.crateStrings = {
-        name: JSON.stringify(crateName),
-        version: JSON.stringify(manifest.version),
-        author: manifest.author ? JSON.stringify(manifest.author) : undefined,
-        description: manifest.description
-          ? JSON.stringify(manifest.description)
-          : undefined,
-        license: manifest.license
-          ? JSON.stringify(manifest.license)
-          : undefined,
+        escaped: {
+          name: JSON.stringify(crateName),
+          version: JSON.stringify(manifest.version),
+          author: manifest.author ? JSON.stringify(manifest.author) : undefined,
+          description: manifest.description
+            ? JSON.stringify(manifest.description)
+            : undefined,
+          license: manifest.license
+            ? JSON.stringify(manifest.license)
+            : undefined,
+        },
       };
     } catch (err: any) {
       await die(

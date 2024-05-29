@@ -1,15 +1,7 @@
 import { ProjectOptions } from "../create/creator.js";
 import { VERSIONS, Versions } from "./versions.js";
 
-export type PackageContext = {
-  name: string;
-  version: string;
-  author: string;
-  license: string;
-  description: string;
-};
-
-export type CrateContext = {
+export type ManifestData = {
   name: string;
   version: string;
   description: string | undefined;
@@ -17,18 +9,22 @@ export type CrateContext = {
   license: string | undefined;
 };
 
+type CrateData = ManifestData & {
+  // The same manifest data but escaped as string literals
+  // so they can be embedded in TOML.
+  escaped: ManifestData;
+};
+
 export class Context {
   options: ProjectOptions;
-  package: PackageContext | undefined;
-  crate: CrateContext | undefined;
-  crateStrings: CrateContext | undefined;
+  package: ManifestData | undefined;
+  crate: CrateData | undefined;
   versions: Versions;
 
   constructor(options: ProjectOptions) {
     this.options = options;
     this.package = undefined;
     this.crate = undefined;
-    this.crateStrings = undefined;
     this.versions = VERSIONS;
   }
 }
