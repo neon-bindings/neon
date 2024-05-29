@@ -6,7 +6,7 @@ function deleteNeonDir(dir: string): Promise<void> {
 
 export default async function die(
   message: string,
-  tmpFolderName: string
+  tmpFolderName?: string | undefined
 ): Promise<never> {
   console.error(`❌ ${message}`);
   if (tmpFolderName) {

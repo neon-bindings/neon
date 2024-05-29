@@ -63,8 +63,6 @@ export abstract class Creator {
 
   async create(cx: Context): Promise<void> {
     try {
-      await assertCanMkdir(this._options.name);
-
       this._temp = await mktemp();
       this._tempPkg = path.join(this._temp, this._options.name);
 

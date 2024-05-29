@@ -9,6 +9,8 @@ import { Dialog, oneOf } from "./shell.js";
 import { NPM } from "./cache/npm.js";
 import { GitHub } from "./ci/github.js";
 import { Creator, ProjectOptions, Lang, ModuleType } from "./create/creator.js";
+import { assertCanMkdir } from "./fs.js";
+import die from "./die.js";
 
 const CREATE_NEON_PRELUDE: string = `
 This utility will walk you through creating a Neon project.
@@ -85,6 +87,12 @@ async function askProjectType(options: ProjectOptions) {
 }
 
 export async function createNeon(options: ProjectOptions): Promise<void> {
+  try {
+    await assertCanMkdir(options.name);
+  } catch (err: any) {
+    await die(`Could not create \`${options.name}\`: ${err.message}`);
+  }
+
   const cx = new Context(options);
 
   // Print a Neon variation of the `npm init` prelude text.
