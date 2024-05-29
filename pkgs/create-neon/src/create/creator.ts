@@ -1,5 +1,5 @@
 import die from "../die.js";
-import { assertCanMkdir, mktemp } from "../fs.js";
+import { mktemp } from "../fs.js";
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
 import { Context } from "../expand/context.js";

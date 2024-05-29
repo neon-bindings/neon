@@ -2,7 +2,6 @@ import { ChildProcess, spawn } from "node:child_process";
 import { PassThrough, Readable, Writable } from "node:stream";
 import { StringDecoder } from "node:string_decoder";
 import readline from "node:readline/promises";
-import die from "./die.js";
 import * as path from "node:path";
 import * as fs from "node:fs/promises";
 

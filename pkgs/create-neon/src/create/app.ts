@@ -1,5 +1,4 @@
 import { Creator, ProjectOptions } from "./creator.js";
-import { Context } from "../expand/context.js";
 
 export class AppCreator extends Creator {
   constructor(options: ProjectOptions) {
