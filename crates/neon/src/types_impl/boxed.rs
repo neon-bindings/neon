@@ -244,7 +244,7 @@ impl<T: Finalize + 'static> JsBox<T> {
             let data = *data.downcast::<U>().unwrap();
             let env = unsafe { std::mem::transmute(env) };
 
-            FinalizeContext::with(env, move |mut cx| data.finalize(&mut cx));
+            FinalizeContext::with_context(env, move |mut cx| data.finalize(&mut cx));
         }
 
         let v = Box::new(value) as BoxAny;
