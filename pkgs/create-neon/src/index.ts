@@ -1,26 +1,16 @@
-import { promises as fs } from "fs";
-import * as path from "path";
-import die from "./die.js";
-import Package, {
-  PackageSpec,
-  LibrarySpec,
-  Lang,
-  ModuleType,
-  LANG_TEMPLATES,
-} from "./package.js";
-import { VERSIONS } from "./versions.js";
-import { Metadata, expandTo } from "./expand.js";
-import { LibraryManifest } from "@neon-rs/manifest";
+import { Context } from "./expand/context.js";
 import {
   NodePlatform,
   PlatformPreset,
   isNodePlatform,
   isPlatformPreset,
 } from "@neon-rs/manifest/platform";
-import { assertCanMkdir, mktemp } from "./fs.js";
 import { Dialog, oneOf } from "./shell.js";
 import { NPM } from "./cache/npm.js";
 import { GitHub } from "./ci/github.js";
+import { Creator, ProjectOptions, Lang, ModuleType } from "./create/creator.js";
+import { assertCanMkdir } from "./fs.js";
+import die from "./die.js";
 
 const CREATE_NEON_PRELUDE: string = `
 This utility will walk you through creating a Neon project.
@@ -34,14 +24,7 @@ Use \`npm run build\` to build the Neon project from source.
 Press ^C at any time to quit.      
 `.trim();
 
-async function askProjectType(packageSpec: PackageSpec) {
-  // If non-interactive, use the default (--app).
-  if (packageSpec.yes) {
-    packageSpec.app = true;
-    return;
-  }
-
-  // Otherwise, find out interactively.
+async function askProjectType(options: ProjectOptions) {
   const dialog = new Dialog();
   const ty = await dialog.ask({
     prompt: "project type",
@@ -78,7 +61,7 @@ async function askProjectType(packageSpec: PackageSpec) {
         ? await dialog.ask({
             prompt: "cache org",
             parse: (v: string): string => v,
-            default: NPM.inferOrg(packageSpec.name),
+            default: NPM.inferOrg(options.name),
           })
         : null;
 
@@ -90,134 +73,46 @@ async function askProjectType(packageSpec: PackageSpec) {
         'provider should be a supported Neon CI provider ("github" or "none").',
     });
 
-    packageSpec.library = {
+    options.library = {
       lang: Lang.TS,
       module: ModuleType.ESM,
-      cache: cache === "npm" ? new NPM(packageSpec.name, org!) : undefined,
+      cache: cache === "npm" ? new NPM(options.name, org!) : undefined,
       ci: ci === "github" ? new GitHub() : undefined,
       platforms: platforms.length === 1 ? platforms[0] : platforms,
     };
   } else {
-    packageSpec.app = true;
+    options.app = true;
   }
   dialog.end();
 }
 
-export type CreateNeonOptions = {
-  templates: Record<string, string>;
-  library: LibrarySpec | null;
-  app: boolean | null;
-};
-
-export async function createNeon(name: string, options: CreateNeonOptions) {
-  const packageSpec: PackageSpec = {
-    name,
-    version: "0.1.0",
-    library: options.library,
-    app: options.app,
-    // Even if the user specifies this with a flag (e.g. `npm init -y neon`),
-    // `npm init` sets this env var to 'true' before invoking create-neon.
-    // So this is the most general way to check this configuration option.
-    yes: process.env["npm_configure_yes"] === "true",
-  };
-
-  const metadata: Metadata = {
-    packageSpec,
-    versions: VERSIONS,
-  };
-
-  let tmpFolderName: string = "";
-  let tmpPackagePath: string = "";
-
+export async function createNeon(options: ProjectOptions): Promise<void> {
   try {
-    await assertCanMkdir(name);
-
-    tmpFolderName = await mktemp();
-    tmpPackagePath = path.join(tmpFolderName, name);
-
-    await fs.mkdir(tmpPackagePath);
+    await assertCanMkdir(options.name);
   } catch (err: any) {
-    await die(`Could not create \`${name}\`: ${err.message}`, tmpFolderName);
+    await die(`Could not create \`${options.name}\`: ${err.message}`);
   }
 
+  const cx = new Context(options);
+
   // Print a Neon variation of the `npm init` prelude text.
-  if (!packageSpec.yes) {
+  if (options.interactive) {
     console.log(CREATE_NEON_PRELUDE);
   }
 
   // If neither --lib nor --app was specified, find out.
-  if (packageSpec.library === null && packageSpec.app === null) {
-    await askProjectType(packageSpec);
-  }
-
-  try {
-    metadata.package = await Package.create(
-      metadata,
-      tmpFolderName,
-      tmpPackagePath
-    );
-  } catch (err: any) {
-    await die(
-      "Could not create `package.json`: " + err.message,
-      tmpPackagePath
-    );
-  }
-
-  if (packageSpec.library && packageSpec.library.ci) {
-    packageSpec.library.ci.setup();
-  }
-
-  for (const source of Object.keys(options.templates)) {
-    const target = path.join(tmpPackagePath, options.templates[source]);
-    await expandTo(source, target, metadata);
-  }
-
-  if (packageSpec.library) {
-    const templates = LANG_TEMPLATES[packageSpec.library.lang];
-    for (const source of Object.keys(templates)) {
-      const target = path.join(tmpPackagePath, templates[source]);
-      await expandTo(source, target, metadata);
+  if (options.library === null && options.app === null) {
+    if (options.interactive) {
+      await askProjectType(options);
+    } else {
+      options.app = true;
     }
-
-    if (packageSpec.library.ci) {
-      const templates = packageSpec.library.ci.templates();
-      for (const source of Object.keys(templates)) {
-        const target = path.join(tmpPackagePath, templates[source]);
-        await expandTo(
-          `ci/${packageSpec.library.ci.type}/${source}`,
-          target,
-          metadata
-        );
-      }
-    }
-
-    const manifest = await LibraryManifest.load(tmpPackagePath);
-
-    const platforms: (NodePlatform | PlatformPreset)[] = Array.isArray(
-      packageSpec.library.platforms
-    )
-      ? packageSpec.library.platforms
-      : !packageSpec.library.platforms
-      ? ["common"]
-      : [packageSpec.library.platforms];
-
-    for (const platform of platforms) {
-      if (isNodePlatform(platform)) {
-        await manifest.addNodePlatform(platform);
-      } else {
-        await manifest.addPlatformPreset(platform);
-      }
-    }
-
-    await manifest.saveChanges((msg) => {});
   }
 
-  try {
-    await fs.rename(tmpPackagePath, name);
-    await fs.rmdir(tmpFolderName);
-  } catch (err: any) {
-    await die(`Could not create \`${name}\`: ${err.message}`, tmpFolderName);
-  }
+  const creator = await Creator.for(options);
+  await creator.create(cx);
 
-  console.log(`✨ Created Neon project \`${name}\`. Happy 🦀 hacking! ✨`);
+  console.log(
+    `✨ Created Neon project \`${options.name}\`. Happy 🦀 hacking! ✨`
+  );
 }

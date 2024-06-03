@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import * as path from "path";
 import commandLineArgs from "command-line-args";
 import { printErrorWithUsage } from "../print.js";
 import { createNeon } from "../index.js";
@@ -8,31 +7,13 @@ import { Cache } from "../cache.js";
 import { NPM } from "../cache/npm.js";
 import { CI } from "../ci.js";
 import { GitHub } from "../ci/github.js";
-import { Lang, ModuleType } from "../package.js";
+import { Lang, ModuleType } from "../create/creator.js";
 import {
   NodePlatform,
   PlatformPreset,
-  assertIsPlatformPreset,
   isNodePlatform,
   isPlatformPreset,
 } from "@neon-rs/manifest/platform";
-
-const JS_TEMPLATES: Record<string, string> = {
-  ".gitignore.hbs": ".gitignore",
-  "Cargo.toml.hbs": "Cargo.toml",
-  "README.md.hbs": "README.md",
-  "lib.rs.hbs": path.join("src", "lib.rs"),
-};
-
-function tsTemplates(pkg: string): Record<string, string> {
-  return {
-    ".gitignore.hbs": ".gitignore",
-    "Cargo.toml.hbs": path.join("crates", pkg, "Cargo.toml"),
-    "Workspace.toml.hbs": "Cargo.toml",
-    "README.md.hbs": "README.md",
-    "lib.rs.hbs": path.join("crates", pkg, "src", "lib.rs"),
-  };
-}
 
 const OPTIONS = [
   { name: "app", type: Boolean, defaultValue: false },
@@ -67,8 +48,9 @@ try {
     process.env["npm_configure_yes"] = "true";
   }
 
-  createNeon(pkg, {
-    templates: opts.lib ? tsTemplates(pkg) : JS_TEMPLATES,
+  createNeon({
+    name: pkg,
+    version: "0.1.0",
     library: opts.lib
       ? {
           lang: Lang.TS,
@@ -78,7 +60,11 @@ try {
           platforms,
         }
       : null,
-    app: opts.app ? true : null,
+    app: opts.app ? true : opts.lib ? false : null,
+    // Even if the user specifies this with a flag (e.g. `npm init -y neon`),
+    // `npm init` sets this env var to 'true' before invoking create-neon.
+    // So this is the most general way to check this configuration option.
+    interactive: process.env["npm_configure_yes"] !== "true",
   });
 } catch (e) {
   printErrorWithUsage(e);

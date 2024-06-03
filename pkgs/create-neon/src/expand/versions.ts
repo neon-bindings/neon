@@ -62,7 +62,7 @@ function assertIsVersions(data: unknown): asserts data is Versions {
 const dynamicRequire = createRequire(import.meta.url);
 
 function load(): Versions {
-  const data = dynamicRequire("../data/versions.json");
+  const data = dynamicRequire("../../data/versions.json");
   assertIsVersions(data);
   return data;
 }

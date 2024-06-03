@@ -1,14 +1,14 @@
 [package]
-name = "{{package.name}}"
-version = "{{package.version}}"
-{{#if package.description}}
-description = {{package.quotedDescription}}
+name = {{crate.escaped.name}}
+version = {{crate.escaped.version}}
+{{#if crate.description}}
+description = {{crate.escaped.description}}
 {{/if}}
-{{#if package.author}}
-authors = [{{package.quotedAuthor}}]
+{{#if crate.author}}
+authors = [{{crate.escaped.author}}]
 {{/if}}
-{{#if package.license}}
-license = "{{package.license}}"
+{{#if crate.license}}
+license = {{crate.escaped.license}}
 {{/if}}
 edition = "2021"
 exclude = ["index.node"]

@@ -22,7 +22,7 @@ This command uses the [@neon-rs/cli](https://www.npmjs.com/package/@neon-rs/cli)
 
 After building {{package.name}}, you can explore its exports at the Node console:
 
-{{#if packageSpec.library}}
+{{#if options.library}}
 ```sh
 $ npm i
 $ npm run build
@@ -44,7 +44,7 @@ $ node
 
 In the project directory, you can run:
 
-{{#unless packageSpec.library}}
+{{#unless options.library}}
 #### `npm install`
 
 Installs the project, including running `npm run build`.
@@ -68,7 +68,7 @@ Similar to `npm run build` but generates a debug build with `cargo`.
 
 Similar to `npm run build` but uses [cross-rs](https://github.com/cross-rs/cross) to cross-compile for another platform. Use the [`CARGO_BUILD_TARGET`](https://doc.rust-lang.org/cargo/reference/config.html#buildtarget) environment variable to select the build target.
 
-{{#eq packageSpec.library.ci.type compare="github"}}
+{{#eq options.library.ci.type compare="github"}}
 #### `npm run release`
 
 Initiate a full build and publication of a new patch release of this library via GitHub Actions.
@@ -90,9 +90,9 @@ The directory structure of this project is:
 {{package.name}}/
 ├── Cargo.toml
 ├── README.md
-{{#if packageSpec.library}}
+{{#if options.library}}
 ├── lib/
-{{#eq packageSpec.library.lang compare="ts"}}
+{{#eq options.library.lang compare="ts"}}
 ├── src/
 |   ├── index.mts
 |   └── index.cts
@@ -115,8 +115,8 @@ The directory structure of this project is:
 |----------------|------------------------------------------------------------------------------------------------------------------------------------------|
 | `Cargo.toml`   | The Cargo [manifest file](https://doc.rust-lang.org/cargo/reference/manifest.html), which informs the `cargo` command.                   |
 | `README.md`    | This file.                                                                                                                               |
-{{#if packageSpec.library}}
-{{#eq packageSpec.library.lang compare="ts"}}
+{{#if options.library}}
+{{#eq options.library.lang compare="ts"}}
 | `lib/`         | The directory containing the generated output from [tsc](https://typescriptlang.org).                                                    |
 | `src/`         | The directory containing the TypeScript source files.                                                                                    |
 | `index.mts`    | Entry point for when this library is loaded via [ESM `import`](https://nodejs.org/api/esm.html#modules-ecmascript-modules) syntax.       |
