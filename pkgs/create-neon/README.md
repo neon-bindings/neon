@@ -11,10 +11,12 @@ You can conveniently use this tool with the [`npm init`](https://docs.npmjs.com/
 To create a simple Neon project that consists purely of Rust code:
 
 ```sh
-$ npm init neon -- [<opts> ...] my-project
+$ npm init neon[@latest] -- [<opts> ...] my-project
 ```
 
 **Note:** The initial `--` is necessary for `npm init` to pass any command-line options to Neon.
+
+**Note:** The `@latest` ensures that npm uses the latest version of this tool.
 
 #### Global Options
 
@@ -29,7 +31,7 @@ Neon also makes it easy to create **portable, cross-platform libraries** by publ
 To create a portable npm library with pre-built binaries:
 
 ```sh
-$ npm init neon -- [<opts> ...] --lib [<lib-opts> ...] my-project
+$ npm init neon[@latest] -- [<opts> ...] --lib [<lib-opts> ...] my-project
 ```
 
 **Note:** The initial `--` is necessary for `npm init` to pass any command-line options to Neon.
