@@ -141,7 +141,12 @@
 
 pub(crate) mod internal;
 
-use std::{convert::Into, marker::PhantomData, panic::UnwindSafe};
+use std::{
+    convert::Into,
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+    panic::UnwindSafe,
+};
 
 pub use crate::types::buffer::lock::Lock;
 
@@ -176,29 +181,29 @@ use crate::types::date::{DateError, JsDate};
 use crate::lifecycle::InstanceData;
 
 /// An execution context of a task completion callback.
-pub type TaskContext<'cx> = Ctx<'cx>;
+pub type TaskContext<'cx> = Cx<'cx>;
 
 /// An execution context of a scope created by [`Context::execute_scoped()`](Context::execute_scoped).
-pub type ExecuteContext<'cx> = Ctx<'cx>;
+pub type ExecuteContext<'cx> = Cx<'cx>;
 
 /// An execution context of a scope created by [`Context::compute_scoped()`](Context::compute_scoped).
-pub type ComputeContext<'cx> = Ctx<'cx>;
+pub type ComputeContext<'cx> = Cx<'cx>;
 
 /// A view of the JS engine in the context of a finalize method on garbage collection
-pub type FinalizeContext<'cx> = Ctx<'cx>;
+pub type FinalizeContext<'cx> = Cx<'cx>;
 
 /// An execution context constructed from a raw [`Env`](crate::sys::bindings::Env).
 #[cfg(feature = "sys")]
 #[cfg_attr(docsrs, doc(cfg(feature = "sys")))]
-pub type SysContext<'cx> = Ctx<'cx>;
+pub type SysContext<'cx> = Cx<'cx>;
 
 /// Context representing access to the JavaScript runtime
-pub struct Ctx<'cx> {
+pub struct Cx<'cx> {
     env: Env,
     _phantom_inner: PhantomData<&'cx ()>,
 }
 
-impl<'cx> Ctx<'cx> {
+impl<'cx> Cx<'cx> {
     /// Creates a context from a raw `Env`.
     ///
     /// # Safety
@@ -222,7 +227,7 @@ impl<'cx> Ctx<'cx> {
         }
     }
 
-    pub(crate) fn with_context<T, F: for<'b> FnOnce(Ctx<'b>) -> T>(env: Env, f: F) -> T {
+    pub(crate) fn with_context<T, F: for<'b> FnOnce(Cx<'b>) -> T>(env: Env, f: F) -> T {
         f(Self {
             env,
             _phantom_inner: PhantomData,
@@ -234,21 +239,21 @@ impl<'cx> Ctx<'cx> {
     }
 }
 
-impl<'cx> AsRef<Ctx<'cx>> for Ctx<'cx> {
-    fn as_ref(&self) -> &Ctx<'cx> {
+impl<'cx> AsRef<Cx<'cx>> for Cx<'cx> {
+    fn as_ref(&self) -> &Cx<'cx> {
         self
     }
 }
 
-impl<'cx> AsMut<Ctx<'cx>> for Ctx<'cx> {
-    fn as_mut(&mut self) -> &mut Ctx<'cx> {
+impl<'cx> AsMut<Cx<'cx>> for Cx<'cx> {
+    fn as_mut(&mut self) -> &mut Cx<'cx> {
         self
     }
 }
 
-impl<'cx> ContextInternal<'cx> for Ctx<'cx> {}
+impl<'cx> ContextInternal<'cx> for Cx<'cx> {}
 
-impl<'cx> Context<'cx> for Ctx<'cx> {}
+impl<'cx> Context<'cx> for Cx<'cx> {}
 
 #[repr(C)]
 pub(crate) struct CallbackInfo<'cx> {
@@ -355,7 +360,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     {
         let env = self.env();
         let scope = unsafe { HandleScope::new(env.to_raw()) };
-        let result = f(Ctx::new(env));
+        let result = f(Cx::new(env));
 
         drop(scope);
 
@@ -375,7 +380,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     {
         let env = self.env();
         let scope = unsafe { EscapableHandleScope::new(env.to_raw()) };
-        let cx = Ctx::new(env);
+        let cx = Cx::new(env);
 
         let escapee = unsafe { scope.escape(f(cx)?.to_local()) };
 
@@ -621,19 +626,33 @@ pub trait Context<'a>: ContextInternal<'a> {
 
 /// An execution context of module initialization.
 pub struct ModuleContext<'cx> {
-    cx: Ctx<'cx>,
+    cx: Cx<'cx>,
     exports: Handle<'cx, JsObject>,
 }
 
-impl<'cx> AsRef<Ctx<'cx>> for ModuleContext<'cx> {
-    fn as_ref(&self) -> &Ctx<'cx> {
+impl<'cx> Deref for ModuleContext<'cx> {
+    type Target = Cx<'cx>;
+
+    fn deref(&self) -> &Self::Target {
         &self.cx
     }
 }
 
-impl<'cx> AsMut<Ctx<'cx>> for ModuleContext<'cx> {
-    fn as_mut(&mut self) -> &mut Ctx<'cx> {
+impl<'cx> DerefMut for ModuleContext<'cx> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.cx
+    }
+}
+
+impl<'cx> AsRef<Cx<'cx>> for ModuleContext<'cx> {
+    fn as_ref(&self) -> &Cx<'cx> {
+        self
+    }
+}
+
+impl<'cx> AsMut<Cx<'cx>> for ModuleContext<'cx> {
+    fn as_mut(&mut self) -> &mut Cx<'cx> {
+        self
     }
 }
 
@@ -646,7 +665,7 @@ impl<'cx> ModuleContext<'cx> {
         f: F,
     ) -> T {
         f(ModuleContext {
-            cx: Ctx::new(env),
+            cx: Cx::new(env),
             exports,
         })
     }
@@ -697,21 +716,35 @@ impl<'cx> Context<'cx> for ModuleContext<'cx> {}
 ///
 /// The type parameter `T` is the type of the `this`-binding.
 pub struct FunctionContext<'cx> {
-    cx: Ctx<'cx>,
+    cx: Cx<'cx>,
     info: &'cx CallbackInfo<'cx>,
 
     arguments: Option<sys::call::Arguments>,
 }
 
-impl<'cx> AsRef<Ctx<'cx>> for FunctionContext<'cx> {
-    fn as_ref(&self) -> &Ctx<'cx> {
+impl<'cx> Deref for FunctionContext<'cx> {
+    type Target = Cx<'cx>;
+
+    fn deref(&self) -> &Self::Target {
         &self.cx
     }
 }
 
-impl<'cx> AsMut<Ctx<'cx>> for FunctionContext<'cx> {
-    fn as_mut(&mut self) -> &mut Ctx<'cx> {
+impl<'cx> DerefMut for FunctionContext<'cx> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.cx
+    }
+}
+
+impl<'cx> AsRef<Cx<'cx>> for FunctionContext<'cx> {
+    fn as_ref(&self) -> &Cx<'cx> {
+        self
+    }
+}
+
+impl<'cx> AsMut<Cx<'cx>> for FunctionContext<'cx> {
+    fn as_mut(&mut self) -> &mut Cx<'cx> {
+        self
     }
 }
 
@@ -729,7 +762,7 @@ impl<'cx> FunctionContext<'cx> {
         f: F,
     ) -> U {
         f(FunctionContext {
-            cx: Ctx::new(env),
+            cx: Cx::new(env),
             info,
             arguments: None,
         })
