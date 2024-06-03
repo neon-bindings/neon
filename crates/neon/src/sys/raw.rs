@@ -47,6 +47,3 @@ impl Default for EscapableHandleScope {
         Self::new()
     }
 }
-
-#[derive(Clone, Copy)]
-pub struct InheritedHandleScope;

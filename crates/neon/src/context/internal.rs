@@ -46,7 +46,7 @@ impl Env {
     }
 }
 
-pub trait ContextInternal<'a>: Sized {
+pub trait ContextInternal<'cx>: Sized {
     fn env(&self) -> Env;
 }
 

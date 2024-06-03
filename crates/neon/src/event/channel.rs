@@ -161,7 +161,7 @@ impl Channel {
         let callback = Box::new(move |env| {
             let env = unsafe { mem::transmute(env) };
 
-            // Note: It is sufficient to use `TaskContext`'s `InheritedHandleScope` because
+            // Note: It is sufficient to use `TaskContext` because
             // N-API creates a `HandleScope` before calling the callback.
             TaskContext::with_context(env, move |cx| {
                 // Error can be ignored; it only means the user didn't join
