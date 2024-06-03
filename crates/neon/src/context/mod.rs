@@ -233,25 +233,13 @@ impl<'cx> Cx<'cx> {
             _phantom_inner: PhantomData,
         })
     }
+}
 
+impl<'cx> ContextInternal<'cx> for Cx<'cx> {
     fn env(&self) -> Env {
         self.env
     }
 }
-
-impl<'cx> AsRef<Cx<'cx>> for Cx<'cx> {
-    fn as_ref(&self) -> &Cx<'cx> {
-        self
-    }
-}
-
-impl<'cx> AsMut<Cx<'cx>> for Cx<'cx> {
-    fn as_mut(&mut self) -> &mut Cx<'cx> {
-        self
-    }
-}
-
-impl<'cx> ContextInternal<'cx> for Cx<'cx> {}
 
 impl<'cx> Context<'cx> for Cx<'cx> {}
 
@@ -644,18 +632,6 @@ impl<'cx> DerefMut for ModuleContext<'cx> {
     }
 }
 
-impl<'cx> AsRef<Cx<'cx>> for ModuleContext<'cx> {
-    fn as_ref(&self) -> &Cx<'cx> {
-        self
-    }
-}
-
-impl<'cx> AsMut<Cx<'cx>> for ModuleContext<'cx> {
-    fn as_mut(&mut self) -> &mut Cx<'cx> {
-        self
-    }
-}
-
 impl<'cx> UnwindSafe for ModuleContext<'cx> {}
 
 impl<'cx> ModuleContext<'cx> {
@@ -708,7 +684,11 @@ impl<'cx> ModuleContext<'cx> {
     }
 }
 
-impl<'cx> ContextInternal<'cx> for ModuleContext<'cx> {}
+impl<'cx> ContextInternal<'cx> for ModuleContext<'cx> {
+    fn env(&self) -> Env {
+        self.cx.env
+    }
+}
 
 impl<'cx> Context<'cx> for ModuleContext<'cx> {}
 
@@ -733,18 +713,6 @@ impl<'cx> Deref for FunctionContext<'cx> {
 impl<'cx> DerefMut for FunctionContext<'cx> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.cx
-    }
-}
-
-impl<'cx> AsRef<Cx<'cx>> for FunctionContext<'cx> {
-    fn as_ref(&self) -> &Cx<'cx> {
-        self
-    }
-}
-
-impl<'cx> AsMut<Cx<'cx>> for FunctionContext<'cx> {
-    fn as_mut(&mut self) -> &mut Cx<'cx> {
-        self
     }
 }
 
@@ -862,6 +830,10 @@ impl<'cx> FunctionContext<'cx> {
     }
 }
 
-impl<'cx> ContextInternal<'cx> for FunctionContext<'cx> {}
+impl<'cx> ContextInternal<'cx> for FunctionContext<'cx> {
+    fn env(&self) -> Env {
+        self.cx.env
+    }
+}
 
 impl<'cx> Context<'cx> for FunctionContext<'cx> {}
