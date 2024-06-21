@@ -145,6 +145,11 @@ use std::{convert::Into, marker::PhantomData, panic::UnwindSafe};
 
 pub use crate::types::buffer::lock::Lock;
 
+#[cfg(feature = "asynch")]
+use crate::asynch::{root::RootGlobal, spawn_async_local};
+#[cfg(feature = "asynch")]
+use futures::Future;
+
 use crate::{
     event::TaskBuilder,
     handle::Handle,
@@ -288,6 +293,24 @@ pub trait Context<'a>: ContextInternal<'a> {
         drop(scope);
 
         result
+    }
+
+    #[cfg(feature = "asynch")]
+    fn execute_async<F, Fut>(&mut self, f: F)
+    where
+        Fut: Future<Output = ()>,
+        F: FnOnce(AsyncContext) -> Fut + 'static,
+    {
+        use futures::Future;
+
+        let env = self.env();
+
+        spawn_async_local(&env, async move {
+            let scope = unsafe { HandleScope::new(env.to_raw()) };
+            let future = f(AsyncContext { env });
+            future.await;
+            drop(scope);
+        });
     }
 
     /// Executes a computation in a new memory management scope and computes a single result value that outlives the computation.
@@ -593,6 +616,39 @@ impl<'a> ModuleContext<'a> {
         Ok(())
     }
 
+    #[cfg(feature = "asynch")]
+    pub fn export_function_async<'b, F, V, Fut>(&mut self, key: &str, f: F) -> NeonResult<()>
+    where
+        Fut: Future<Output = JsResult<'b, V>>,
+        F: Fn(AsyncFunctionContext) -> Fut + 'static + Copy,
+        V: Value,
+    {
+        let wrapper = JsFunction::new(self, move |mut cx| {
+            let mut args = vec![];
+
+            while let Some(arg) = cx.argument_opt(args.len()) {
+                let arg = arg.as_value(&mut cx);
+                let arg = RootGlobal::new(&mut cx, arg);
+                args.push(arg);
+            }
+
+            let (deferred, promise) = cx.promise();
+            cx.execute_async(move |mut cx| async move {
+                let acx = AsyncFunctionContext {
+                    env: cx.env(),
+                    arguments: args,
+                };
+                deferred.resolve(&mut cx, f(acx).await.unwrap());
+                ()
+            });
+
+            Ok(promise)
+        })?;
+
+        self.exports.clone().set(self, key, wrapper)?;
+        Ok(())
+    }
+
     /// Exports a JavaScript value from a Neon module.
     pub fn export_value<T: Value>(&mut self, key: &str, val: Handle<T>) -> NeonResult<()> {
         self.exports.clone().set(self, key, val)?;
@@ -626,6 +682,22 @@ impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
 }
 
 impl<'a> Context<'a> for ExecuteContext<'a> {}
+
+/// An execution context of a scope created by [`Context::execute_async()`](Context::execute_async).
+#[cfg(feature = "asynch")]
+pub struct AsyncContext {
+    env: Env,
+}
+
+#[cfg(feature = "asynch")]
+impl<'a> ContextInternal<'static> for AsyncContext {
+    fn env(&self) -> Env {
+        self.env
+    }
+}
+
+#[cfg(feature = "asynch")]
+impl Context<'static> for AsyncContext {}
 
 /// An execution context of a scope created by [`Context::compute_scoped()`](Context::compute_scoped).
 pub struct ComputeContext<'a> {
@@ -772,6 +844,43 @@ impl<'a> ContextInternal<'a> for FunctionContext<'a> {
 }
 
 impl<'a> Context<'a> for FunctionContext<'a> {}
+
+/// An execution context of an async function call.
+///
+/// The type parameter `T` is the type of the `this`-binding.
+#[cfg(feature = "asynch")]
+pub struct AsyncFunctionContext {
+    env: Env,
+    arguments: Vec<RootGlobal>,
+}
+
+#[cfg(feature = "asynch")]
+impl<'a> AsyncFunctionContext {
+    pub fn argument<V: Value>(&mut self, i: usize) -> JsResult<'a, V> {
+        let arg = self.arguments.get(i).unwrap().clone();
+        let handle = arg.into_inner(self);
+        Ok(handle)
+    }
+}
+
+#[cfg(feature = "asynch")]
+impl<'a> ContextInternal<'a> for AsyncFunctionContext {
+    fn env(&self) -> Env {
+        self.env
+    }
+}
+
+#[cfg(feature = "asynch")]
+impl<'a> Context<'a> for AsyncFunctionContext {}
+
+#[cfg(feature = "asynch")]
+impl Drop for AsyncFunctionContext {
+    fn drop(&mut self) {
+        while let Some(arg) = self.arguments.pop() {
+            arg.remove(self);
+        }
+    }
+}
 
 /// An execution context of a task completion callback.
 pub struct TaskContext<'a> {

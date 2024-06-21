@@ -70,6 +70,19 @@ pub type Ref = *mut Ref__;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 #[doc(hidden)]
+pub struct UvEventLoop__ {
+    _unused: [u8; 0],
+}
+
+#[cfg_attr(docsrs, doc(cfg(feature = "napi-4")))]
+#[cfg(feature = "napi-4")]
+/// [`napi_threadsafe_function`](https://nodejs.org/api/n-api.html#napi_threadsafe_function)
+pub type UvEventLoop = *mut UvEventLoop__;
+
+#[cfg(feature = "napi-4")]
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+#[doc(hidden)]
 pub struct ThreadsafeFunction__ {
     _unused: [u8; 0],
 }

@@ -35,6 +35,9 @@ doc-comment = { version = "0.3.3", optional = true }
 send_wrapper = "0.6.0"
 serde = { version = "1.0.197", optional = true }
 serde_json = { version = "1.0.114", optional = true }
+futures = { version = "0.3", optional = true }
+# Fork of libuv bindings for Rust
+libuv = { package = "alsh_libuv", version = "2", features = ["sys"], optional = true }
 
 [dependencies.tokio]
 version = "1.34.0"
@@ -43,7 +46,7 @@ features = ["sync"]
 optional = true
 
 [features]
-default = ["napi-8"]
+default = ["napi-8", "futures"]
 
 # Enable extracting values by serializing to JSON
 serde = ["dep:serde", "dep:serde_json"]
@@ -56,6 +59,8 @@ external-buffers = []
 # Experimental Rust Futures API
 # https://github.com/neon-bindings/rfcs/pull/46
 futures = ["tokio"]
+
+asynch = ["dep:futures", "dep:libuv"]
 
 # Enable low-level system APIs. The `sys` API allows augmenting the Neon API
 # from external crates.
