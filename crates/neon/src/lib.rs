@@ -78,8 +78,8 @@
 //! [supported]: https://github.com/neon-bindings/neon#platform-support
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-#[cfg(feature = "asynch")]
-mod asynch;
+#[cfg(feature = "async_local")]
+mod async_local;
 pub mod context;
 pub mod event;
 pub mod handle;

@@ -145,9 +145,9 @@ use std::{convert::Into, marker::PhantomData, panic::UnwindSafe};
 
 pub use crate::types::buffer::lock::Lock;
 
-#[cfg(feature = "asynch")]
-use crate::asynch::{root::RootGlobal, spawn_async_local};
-#[cfg(feature = "asynch")]
+// #[cfg(feature = "async_local")]
+// use crate::async_local::{root::RootGlobal, spawn_async_local};
+#[cfg(feature = "async_local")]
 use futures::Future;
 
 use crate::{
@@ -295,8 +295,8 @@ pub trait Context<'a>: ContextInternal<'a> {
         result
     }
 
-    #[cfg(feature = "asynch")]
-    fn execute_async<F, Fut>(&mut self, f: F)
+    #[cfg(feature = "async_local")]
+    fn execute_async_local<F, Fut>(&mut self, f: F)
     where
         Fut: Future<Output = ()>,
         F: FnOnce(AsyncContext) -> Fut + 'static,
@@ -305,12 +305,12 @@ pub trait Context<'a>: ContextInternal<'a> {
 
         let env = self.env();
 
-        spawn_async_local(&env, async move {
-            let scope = unsafe { HandleScope::new(env.to_raw()) };
-            let future = f(AsyncContext { env });
-            future.await;
-            drop(scope);
-        });
+        // spawn_async_local(&env, async move {
+        //     let scope = unsafe { HandleScope::new(env.to_raw()) };
+        //     let future = f(AsyncContext { env });
+        //     future.await;
+        //     drop(scope);
+        // });
     }
 
     /// Executes a computation in a new memory management scope and computes a single result value that outlives the computation.
@@ -499,6 +499,10 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsBox::new(self, v)
     }
 
+    // fn rc<V>() -> Handle<> {
+
+    // }
+
     #[cfg(feature = "napi-4")]
     #[deprecated(since = "0.9.0", note = "Please use the channel() method instead")]
     #[doc(hidden)]
@@ -616,36 +620,36 @@ impl<'a> ModuleContext<'a> {
         Ok(())
     }
 
-    #[cfg(feature = "asynch")]
+    #[cfg(feature = "async_local")]
     pub fn export_function_async<'b, F, V, Fut>(&mut self, key: &str, f: F) -> NeonResult<()>
     where
         Fut: Future<Output = JsResult<'b, V>>,
         F: Fn(AsyncFunctionContext) -> Fut + 'static + Copy,
         V: Value,
     {
-        let wrapper = JsFunction::new(self, move |mut cx| {
-            let mut args = vec![];
+        // let wrapper = JsFunction::new(self, move |mut cx| {
+        //     let mut args = vec![];
 
-            while let Some(arg) = cx.argument_opt(args.len()) {
-                let arg = arg.as_value(&mut cx);
-                let arg = RootGlobal::new(&mut cx, arg);
-                args.push(arg);
-            }
+        //     while let Some(arg) = cx.argument_opt(args.len()) {
+        //         let arg = arg.as_value(&mut cx);
+        //         let arg = RootGlobal::new(&mut cx, arg);
+        //         args.push(arg);
+        //     }
 
-            let (deferred, promise) = cx.promise();
-            cx.execute_async(move |mut cx| async move {
-                let acx = AsyncFunctionContext {
-                    env: cx.env(),
-                    arguments: args,
-                };
-                deferred.resolve(&mut cx, f(acx).await.unwrap());
-                ()
-            });
+        //     let (deferred, promise) = cx.promise();
+        //     cx.execute_async_local(move |mut cx| async move {
+        //         let acx = AsyncFunctionContext {
+        //             env: cx.env(),
+        //             arguments: args,
+        //         };
+        //         deferred.resolve(&mut cx, f(acx).await.unwrap());
+        //         ()
+        //     });
 
-            Ok(promise)
-        })?;
+        //     Ok(promise)
+        // })?;
 
-        self.exports.clone().set(self, key, wrapper)?;
+        // self.exports.clone().set(self, key, wrapper)?;
         Ok(())
     }
 
@@ -684,19 +688,19 @@ impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
 impl<'a> Context<'a> for ExecuteContext<'a> {}
 
 /// An execution context of a scope created by [`Context::execute_async()`](Context::execute_async).
-#[cfg(feature = "asynch")]
+#[cfg(feature = "async_local")]
 pub struct AsyncContext {
     env: Env,
 }
 
-#[cfg(feature = "asynch")]
+#[cfg(feature = "async_local")]
 impl<'a> ContextInternal<'static> for AsyncContext {
     fn env(&self) -> Env {
         self.env
     }
 }
 
-#[cfg(feature = "asynch")]
+#[cfg(feature = "async_local")]
 impl Context<'static> for AsyncContext {}
 
 /// An execution context of a scope created by [`Context::compute_scoped()`](Context::compute_scoped).
@@ -848,37 +852,38 @@ impl<'a> Context<'a> for FunctionContext<'a> {}
 /// An execution context of an async function call.
 ///
 /// The type parameter `T` is the type of the `this`-binding.
-#[cfg(feature = "asynch")]
+#[cfg(feature = "async_local")]
 pub struct AsyncFunctionContext {
     env: Env,
-    arguments: Vec<RootGlobal>,
+    // arguments: Vec<RootGlobal>,
 }
 
-#[cfg(feature = "asynch")]
+#[cfg(feature = "async_local")]
 impl<'a> AsyncFunctionContext {
     pub fn argument<V: Value>(&mut self, i: usize) -> JsResult<'a, V> {
-        let arg = self.arguments.get(i).unwrap().clone();
-        let handle = arg.into_inner(self);
-        Ok(handle)
+        // let arg = self.arguments.get(i).unwrap().clone();
+        // let handle = arg.into_inner(self);
+        // Ok(handle)
+        todo!()
     }
 }
 
-#[cfg(feature = "asynch")]
+#[cfg(feature = "async_local")]
 impl<'a> ContextInternal<'a> for AsyncFunctionContext {
     fn env(&self) -> Env {
         self.env
     }
 }
 
-#[cfg(feature = "asynch")]
+#[cfg(feature = "async_local")]
 impl<'a> Context<'a> for AsyncFunctionContext {}
 
-#[cfg(feature = "asynch")]
+#[cfg(feature = "async_local")]
 impl Drop for AsyncFunctionContext {
     fn drop(&mut self) {
-        while let Some(arg) = self.arguments.pop() {
-            arg.remove(self);
-        }
+        // while let Some(arg) = self.arguments.pop() {
+        //     arg.remove(self);
+        // }
     }
 }
 

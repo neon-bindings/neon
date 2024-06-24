@@ -27,16 +27,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "alsh_libuv"
-version = "2.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bc181a3a77b87d8e49d24e02fe13d3371906bfcd13820db8cbb400e48d51e8b"
-dependencies = [
- "bitflags 1.2.1",
- "libuv-sys2",
-]
-
-[[package]]
 name = "anyhow"
 version = "1.0.75"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -98,26 +88,6 @@ dependencies = [
  "shlex",
  "syn 2.0.57",
  "which",
-]
-
-[[package]]
-name = "bindgen"
-version = "0.68.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "726e4313eb6ec35d2730258ad4e15b547ee75d6afaa1361a922e78e59b7d8078"
-dependencies = [
- "bitflags 2.4.1",
- "cexpr",
- "clang-sys",
- "lazy_static",
- "lazycell",
- "peeking_take_while",
- "proc-macro2",
- "quote",
- "regex",
- "rustc-hash",
- "shlex",
- "syn 2.0.57",
 ]
 
 [[package]]
@@ -417,17 +387,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ec2a862134d2a7d32d7983ddcdd1c4923530833c9f2ea1a44fc5fa473989058"
 
 [[package]]
-name = "libuv-sys2"
-version = "1.48.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6125e1a220a5698a154ce76762d2ef8884baf9f77da7ceb8a3bd8c5ce27df343"
-dependencies = [
- "bindgen 0.68.1",
- "cc",
- "pkg-config",
-]
-
-[[package]]
 name = "linkify"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -503,7 +462,6 @@ dependencies = [
 name = "neon"
 version = "1.0.0"
 dependencies = [
- "alsh_libuv",
  "anyhow",
  "aquamarine",
  "doc-comment",
@@ -541,7 +499,7 @@ version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d252ccdd7b72dd5e92ab65471d6a26ba47375139a6071ead3dbf191f60de9903"
 dependencies = [
- "bindgen 0.65.1",
+ "bindgen",
 ]
 
 [[package]]
@@ -643,12 +601,6 @@ name = "pin-utils"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
-
-[[package]]
-name = "pkg-config"
-version = "0.3.30"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
 
 [[package]]
 name = "ppv-lite86"
