@@ -96,8 +96,11 @@ impl<'a, V: Value + 'a> Handle<'a, V> {
         }
     }
 
-    pub fn root_global(self, cx: &mut impl Context<'a>) -> NeonResult<RootGlobal<V>> {
-        RootGlobal::new(cx, self)
+    /// Detaches the value from the Nodejs garbage collector
+    /// and manages the variable lifetime via reference counting.
+    /// Useful when interacting with a value within async closures
+    pub fn to_static(self, cx: &mut impl Context<'a>) -> NeonResult<StaticHandle<V>> {
+        StaticHandle::new(cx, self)
     }
 }
 

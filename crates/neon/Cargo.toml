@@ -44,7 +44,7 @@ features = ["sync"]
 optional = true
 
 [features]
-default = ["napi-8", "futures"]
+default = ["napi-8"]
 
 # Enable extracting values by serializing to JSON
 serde = ["dep:serde", "dep:serde_json"]

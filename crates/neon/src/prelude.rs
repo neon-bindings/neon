@@ -3,8 +3,8 @@
 #[doc(no_inline)]
 pub use crate::{
     context::{
-        CallKind, ComputeContext, Context, ExecuteContext, FunctionContext, ModuleContext,
-        TaskContext,
+        AsyncContext, AsyncFunctionContext, CallKind, ComputeContext, Context, ExecuteContext,
+        FunctionContext, ModuleContext, TaskContext,
     },
     handle::{Handle, Root},
     object::Object,

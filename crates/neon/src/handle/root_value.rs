@@ -12,24 +12,28 @@ use crate::result::JsResult;
 use crate::result::NeonResult;
 use crate::types::JsFunction;
 use crate::types::JsObject;
+use crate::types::JsSymbol;
+
+// This creates a rooted object and stores javascript
+// values on it as a way to grant any JavaScript value
+// a static lifetime
 
 thread_local! {
-    // Symbol("__neon_cache")
     static NEON_CACHE: OnceCell<Root<JsObject>> = OnceCell::default();
 }
 
 /// Reference counted JavaScript value with a static lifetime for use in async closures
-pub struct RootGlobal<T> {
+pub struct StaticHandle<T> {
     pub(crate) count: Rc<RefCell<u32>>,
-    pub(crate) inner: Rc<String>,
+    pub(crate) inner: Rc<Root<JsSymbol>>,
     _p: PhantomData<T>,
 }
 
-impl<T: Value> RootGlobal<T> {
+impl<T: Value> StaticHandle<T> {
     pub(crate) fn new<'a>(
         cx: &mut impl Context<'a>,
         value: Handle<'a, T>,
-    ) -> NeonResult<RootGlobal<T>> {
+    ) -> NeonResult<StaticHandle<T>> {
         Ok(Self {
             count: Rc::new(RefCell::new(1)),
             inner: Rc::new(set_ref(cx, value)?),
@@ -37,7 +41,7 @@ impl<T: Value> RootGlobal<T> {
         })
     }
 
-    pub fn clone<'a>(&self) -> RootGlobal<T> {
+    pub fn clone(&self) -> StaticHandle<T> {
         let mut count = self.count.borrow_mut();
         *count += 1;
         drop(count);
@@ -49,8 +53,8 @@ impl<T: Value> RootGlobal<T> {
         }
     }
 
-    pub fn into_inner<'a>(&self, cx: &mut impl Context<'a>) -> JsResult<'a, T> {
-        get_ref(cx, &*self.inner)
+    pub fn from_static<'a>(&self, cx: &mut impl Context<'a>) -> JsResult<'a, T> {
+        get_ref(cx, &self.inner)
     }
 
     pub fn drop<'a>(&self, cx: &mut impl Context<'a>) -> NeonResult<()> {
@@ -58,7 +62,7 @@ impl<T: Value> RootGlobal<T> {
         *count -= 1;
 
         if *count == 0 {
-            delete_ref(cx, &*self.inner)?
+            delete_ref(cx, &self.inner)?
         }
 
         Ok(())
@@ -81,41 +85,43 @@ fn get_cache<'a>(cx: &mut impl Context<'a>) -> JsResult<'a, JsObject> {
     Ok(neon_cache.into_inner(cx))
 }
 
-fn set_ref<'a, V: Value>(cx: &mut impl Context<'a>, value: Handle<'a, V>) -> NeonResult<String> {
+fn set_ref<'a, V: Value>(
+    cx: &mut impl Context<'a>,
+    value: Handle<'a, V>,
+) -> NeonResult<Root<JsSymbol>> {
     let neon_cache = get_cache(cx)?;
-    // Is this safe?
-    let key = format!("{:?}", value.to_local());
+    let symbol = cx.symbol(format!("{:?}", value.to_local())).root(cx);
 
     get_cache(cx)?
         .get::<JsFunction, _, _>(cx, "set")?
         .call_with(cx)
         .this(neon_cache)
-        .arg(cx.string(&key))
+        .arg(symbol.clone(cx).into_inner(cx))
         .arg(value)
         .exec(cx)?;
 
-    Ok(key)
+    Ok(symbol)
 }
 
-fn get_ref<'a, V: Value>(cx: &mut impl Context<'a>, key: &str) -> JsResult<'a, V> {
+fn get_ref<'a, V: Value>(cx: &mut impl Context<'a>, key: &Root<JsSymbol>) -> JsResult<'a, V> {
     let neon_cache = get_cache(cx)?;
 
     get_cache(cx)?
         .get::<JsFunction, _, _>(cx, "get")?
         .call_with(cx)
         .this(neon_cache)
-        .arg(cx.string(&key))
+        .arg(key.clone(cx).into_inner(cx))
         .apply(cx)
 }
 
-fn delete_ref<'a>(cx: &mut impl Context<'a>, key: &str) -> NeonResult<()> {
+fn delete_ref<'a>(cx: &mut impl Context<'a>, key: &Root<JsSymbol>) -> NeonResult<()> {
     let neon_cache = get_cache(cx)?;
 
     get_cache(cx)?
         .get::<JsFunction, _, _>(cx, "delete")?
         .call_with(cx)
         .this(neon_cache)
-        .arg(cx.string(&key))
+        .arg(key.clone(cx).into_inner(cx))
         .exec(cx)?;
 
     Ok(())

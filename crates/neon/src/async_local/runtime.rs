@@ -5,7 +5,6 @@ use super::executor::LocalPool;
 use super::executor::LocalSpawner;
 use super::executor::ThreadNotifyRef;
 use futures::task::LocalSpawnExt;
-use futures::task::SpawnError;
 use once_cell::unsync::Lazy;
 
 thread_local! {
@@ -21,12 +20,12 @@ impl LocalRuntime {
         Self::count()
     }
 
-    pub fn queue_future(future: impl Future<Output = ()> + 'static) -> Result<(), SpawnError> {
+    pub fn queue_future(future: impl Future<Output = ()> + 'static) {
         Self::increment();
         SPAWNER.with(move |ls| ls.spawn_local(async move {
             future.await;
             Self::decrement();
-        }))
+        })).expect("Unable to spawn future on local pool");
     }
 
     pub fn run_until_stalled(thread_notify: ThreadNotifyRef) -> bool {
