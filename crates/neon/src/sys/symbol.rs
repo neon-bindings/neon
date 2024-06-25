@@ -1,5 +1,3 @@
-use std::{mem::MaybeUninit, ptr};
-
 use super::{
     bindings as napi,
     raw::{Env, Local},

@@ -426,6 +426,8 @@ unsafe impl TransparentNoCopyWrapper for JsSymbol {
 
 impl Value for JsSymbol {}
 
+impl Object for JsSymbol {}
+
 impl ValueInternal for JsSymbol {
     fn name() -> &'static str {
         "symbol"
