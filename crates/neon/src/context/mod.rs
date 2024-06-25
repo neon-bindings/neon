@@ -160,12 +160,7 @@ use crate::{
         scope::{EscapableHandleScope, HandleScope},
     },
     types::{
-        boxed::{Finalize, JsBox},
-        error::JsError,
-        extract::FromArgs,
-        private::ValueInternal,
-        Deferred, JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber,
-        JsObject, JsPromise, JsString, JsUndefined, JsValue, StringResult, Value,
+        boxed::{Finalize, JsBox}, error::JsError, extract::FromArgs, private::ValueInternal, Deferred, JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber, JsObject, JsPromise, JsString, JsSymbol, JsUndefined, JsValue, StringResult, Value
     },
 };
 
@@ -357,6 +352,11 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Convenience method for creating a `JsNumber` value.
     fn number<T: Into<f64>>(&mut self, x: T) -> Handle<'a, JsNumber> {
         JsNumber::new(self, x.into())
+    }
+
+    /// Convenience method for creating a `JsSymbol` value.
+    fn symbol<D: AsRef<str>>(&mut self, d: D) -> Handle<'a, JsSymbol> {
+        JsSymbol::new(self, d)
     }
 
     /// Convenience method for creating a `JsString` value.

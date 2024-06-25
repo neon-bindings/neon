@@ -65,7 +65,7 @@ pub use self::root_global::*;
 use crate::{
     context::Context,
     handle::internal::{SuperType, TransparentNoCopyWrapper},
-    result::{JsResult, ResultExt},
+    result::{JsResult, NeonResult, ResultExt},
     sys,
     types::Value,
 };
@@ -94,6 +94,10 @@ impl<'a, V: Value + 'a> Handle<'a, V> {
             value: value.into_inner(),
             phantom: PhantomData,
         }
+    }
+
+    pub fn root_global(self, cx: &mut impl Context<'a>) -> NeonResult<RootGlobal<V>> {
+        RootGlobal::new(cx, self)
     }
 }
 
