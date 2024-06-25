@@ -434,8 +434,7 @@ impl ValueInternal for JsSymbol {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        true
-        // unsafe { sys::tag::is_string(env.to_raw(), other.to_local()) }
+        unsafe { sys::tag::is_symbol(env.to_raw(), other.to_local()) }
     }
 
     fn to_local(&self) -> raw::Local {
