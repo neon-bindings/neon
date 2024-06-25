@@ -266,11 +266,6 @@ mod napi4 {
     generate!(
         #[cfg_attr(docsrs, doc(cfg(feature = "napi-4")))]
         extern "C" {
-            fn get_uv_event_loop(
-                env: Env,
-                uv_loop: *mut UvEventLoop,
-            );
-
             fn create_threadsafe_function(
                 env: Env,
                 func: Value,

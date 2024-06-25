@@ -305,12 +305,12 @@ pub trait Context<'a>: ContextInternal<'a> {
 
         let env = self.env();
 
-        // spawn_async_local(&env, async move {
-        //     let scope = unsafe { HandleScope::new(env.to_raw()) };
-        //     let future = f(AsyncContext { env });
-        //     future.await;
-        //     drop(scope);
-        // });
+        crate::async_local::spawn_async_local(self, async move {
+            // let scope = unsafe { HandleScope::new(env.to_raw()) };
+            let future = f(AsyncContext { env });
+            future.await;
+            // drop(scope);
+        }).unwrap();
     }
 
     /// Executes a computation in a new memory management scope and computes a single result value that outlives the computation.

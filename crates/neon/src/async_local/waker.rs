@@ -1,18 +1,19 @@
 use std::sync::mpsc::channel;
-use std::sync::mpsc::SendError;
 use std::sync::mpsc::Sender;
-use std::sync::Arc;
 use std::thread;
 
-use super::super::executor::wait_for_wake;
-use super::super::executor::ThreadNotify;
+use crate::sys;
+
+use super::executor::wait_for_wake;
+use super::executor::ThreadNotify;
+use super::executor::ThreadNotifyRef;
 use once_cell::unsync::Lazy;
 
 thread_local! {
     static WAKER_THREAD: Lazy<Sender<WakerEvent>> = Lazy::new(LocalWaker::start_waker_thread);
 }
 
-pub type WakerInit = Arc<u32>;
+pub type WakerInit = sys::tsfn::ThreadsafeFunction<ThreadNotifyRef>;
 
 pub enum WakerEvent {
     Init(WakerInit),
@@ -33,11 +34,13 @@ pub enum WakerEvent {
 ///
 /// This allows for the execution of Rust futures to integrate with the
 /// Nodejs event loop without blocking either
-pub  struct LocalWaker;
+pub struct LocalWaker;
 
 impl LocalWaker {
-    pub fn send(event: WakerEvent) -> Result<(), SendError<WakerEvent>> {
-        WAKER_THREAD.with(|tx| tx.send(event))
+    pub fn send(event: WakerEvent) {
+        WAKER_THREAD
+            .with(|tx| tx.send(event))
+            .expect("Unable to communicate with waker");
     }
 
     fn start_waker_thread() -> Sender<WakerEvent> {
@@ -52,13 +55,19 @@ impl LocalWaker {
                 match event {
                     WakerEvent::Init(incoming) => {
                         if handle.replace(incoming).is_some() {
-                            // Error
+                            panic!("Handle already init");
                         };
-                        // Call JS
+                        let Some(ref handle) = handle else {
+                            panic!("No handle");
+                        };
+                        handle.call(thread_notify.clone(), None).ok();
                     }
                     WakerEvent::Next => {
                         wait_for_wake(&thread_notify);
-                        // Call JS
+                        let Some(ref handle) = handle else {
+                            panic!("No handle");
+                        };
+                        handle.call(thread_notify.clone(), None).ok();
                     }
                     WakerEvent::Done => {
                         if let Some(handle) = handle.take() {
@@ -72,4 +81,3 @@ impl LocalWaker {
         tx
     }
 }
-
