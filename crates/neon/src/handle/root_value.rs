@@ -12,13 +12,10 @@ use crate::result::JsResult;
 use crate::result::NeonResult;
 use crate::types::JsFunction;
 use crate::types::JsObject;
-use crate::types::JsSymbol;
-
-static KEY_NEON_CACHE: &str = "__neon_cache";
 
 thread_local! {
     // Symbol("__neon_cache")
-    static CACHE_SYMBOL: OnceCell<Root<JsSymbol>> = OnceCell::default();
+    static NEON_CACHE: OnceCell<Root<JsObject>> = OnceCell::default();
 }
 
 /// Reference counted JavaScript value with a static lifetime for use in async closures
@@ -68,47 +65,25 @@ impl<T: Value> RootGlobal<T> {
     }
 }
 
-/*
-  globalThis = {
-    [key: Symbol("__neon_cache")]: Set<any>
-  }
-*/
 fn get_cache<'a>(cx: &mut impl Context<'a>) -> JsResult<'a, JsObject> {
-    let global_this = cx.global_object();
-
-    let neon_cache_symbol = CACHE_SYMBOL.with({
+    let neon_cache = NEON_CACHE.with({
         |raw_value| {
             raw_value
-                .get_or_try_init(|| -> NeonResult<Root<JsSymbol>> {
-                    let set_ctor = global_this.get::<JsFunction, _, _>(cx, "Map")?;
+                .get_or_try_init(|| -> NeonResult<Root<JsObject>> {
+                    let set_ctor = cx.global_object().get::<JsFunction, _, _>(cx, "Map")?;
                     let neon_cache = set_ctor.construct(cx, &[])?;
-
-                    let symbol = cx.symbol(KEY_NEON_CACHE);
-                    let symbol = symbol.root(cx);
-
-                    {
-                        let symbol = symbol.clone(cx);
-                        let symbol = symbol.into_inner(cx);
-                        global_this.set(cx, symbol, neon_cache)?;
-                    }
-
-                    Ok(symbol)
+                    Ok(neon_cache.root(cx))
                 })
                 .and_then(|e| Ok(e.clone(cx)))
         }
     })?;
 
-    let neon_cache_symbol = neon_cache_symbol.into_inner(cx);
-
-    let Some(neon_cache) = global_this.get_opt::<JsObject, _, _>(cx, neon_cache_symbol)? else {
-        return Err(cx.throw_error("Unable to find cache")?);
-    };
-
-    Ok(neon_cache)
+    Ok(neon_cache.into_inner(cx))
 }
 
 fn set_ref<'a, V: Value>(cx: &mut impl Context<'a>, value: Handle<'a, V>) -> NeonResult<String> {
     let neon_cache = get_cache(cx)?;
+    // Is this safe?
     let key = format!("{:?}", value.to_local());
 
     get_cache(cx)?

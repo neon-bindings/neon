@@ -20,7 +20,7 @@ use std::{
 use crate::{
     context::Context,
     event::Channel,
-    handle::root::NapiRef,
+    handle::root_object::NapiRef,
     sys::{lifecycle, raw::Env, tsfn::ThreadsafeFunction},
     types::promise::NodeApiDeferred,
 };

@@ -48,8 +48,8 @@
 
 pub(crate) mod internal;
 
-pub(crate) mod root;
-pub(crate) mod root_global;
+pub(crate) mod root_object;
+pub(crate) mod root_value;
 
 use std::{
     error::Error,
@@ -59,8 +59,8 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-pub use self::root::Root;
-pub use self::root_global::*;
+pub use self::root_object::Root;
+pub use self::root_value::*;
 
 use crate::{
     context::Context,
