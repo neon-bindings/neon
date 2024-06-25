@@ -49,7 +49,7 @@
 pub(crate) mod internal;
 
 pub(crate) mod root;
-pub(crate) mod js_rc;
+pub(crate) mod root_global;
 
 use std::{
     error::Error,
@@ -60,7 +60,7 @@ use std::{
 };
 
 pub use self::root::Root;
-pub use self::js_rc::*;
+pub use self::root_global::*;
 
 use crate::{
     context::Context,

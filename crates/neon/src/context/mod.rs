@@ -499,10 +499,6 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsBox::new(self, v)
     }
 
-    // fn rc<V>() -> Handle<> {
-
-    // }
-
     #[cfg(feature = "napi-4")]
     #[deprecated(since = "0.9.0", note = "Please use the channel() method instead")]
     #[doc(hidden)]

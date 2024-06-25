@@ -42,7 +42,7 @@ macro_rules! napi_name {
 /// ```ignore
 /// extern "C" {
 ///     fn get_undefined(env: Env, result: *mut Value) -> Status;
-///     /* Additional functions may be included */
+///     /* Additional functions may be included */  
 /// }
 /// ```
 ///
@@ -177,4 +177,3 @@ pub use self::{functions::*, types::*};
 
 mod functions;
 mod types;
-mod libuv;
