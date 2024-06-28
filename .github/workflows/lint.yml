@@ -20,15 +20,17 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20.x]
+        node-version: [22.x]
         rust-toolchain: [nightly]
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
       - name: Use Rust ${{ matrix.rust-toolchain }}
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ matrix.rust-toolchain }}
+          components: clippy,rustfmt
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
       - name: Use Node.js ${{ matrix.node-version }}
