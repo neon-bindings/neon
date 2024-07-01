@@ -12,3 +12,4 @@ pkgs/create-neon/create-neon-manual-test-project
 test/cli/lib
 npm-debug.log
 rls*.log
+.vscode
