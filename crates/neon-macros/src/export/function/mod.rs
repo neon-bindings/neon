@@ -2,6 +2,7 @@ use crate::export::function::meta::Kind;
 
 pub(crate) mod meta;
 
+static ASYNC_CX_ERROR: &str = "`FunctionContext` is not allowed in async functions";
 static TASK_CX_ERROR: &str = "`FunctionContext` is not allowed with `task` attribute";
 
 pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenStream {
@@ -63,6 +64,25 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
 
     // Generate the call to the original function
     let call_body = match meta.kind {
+        // TODO: Should this be moved inside of Neon in some way?
+        Kind::Async => quote::quote!(
+            let rt = match neon::RUNTIME.get(&mut cx) {
+                Some(rt) => rt,
+                None => return neon::context::Context::throw_error(&mut cx, "neon::RUNTIME is not initialized"),
+            };
+
+            let (#(#tuple_fields,)*) = cx.args()?;
+            let ch = neon::context::Context::channel(&mut cx);
+            let (d, promise) = neon::context::Context::promise(&mut cx);
+            let fut = #name(#context_arg #(#args),*);
+
+            rt.spawn(Box::pin(async move {
+                let res = fut.await;
+                let _ = d.try_settle_with(&ch, move |mut cx| #result_extract);
+            }));
+
+            Ok(promise.upcast())
+        ),
         Kind::Normal => quote::quote!(
             let (#(#tuple_fields,)*) = cx.args()?;
             let res = #name(#context_arg #(#args),*);
@@ -160,6 +180,7 @@ fn has_context_arg(meta: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool>
 
     // Context is only allowed for normal functions
     match meta.kind {
+        Kind::Async => return Err(syn::Error::new(first.span(), ASYNC_CX_ERROR)),
         Kind::Normal => {}
         Kind::Task => return Err(syn::Error::new(first.span(), TASK_CX_ERROR)),
     }

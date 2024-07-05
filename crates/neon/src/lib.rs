@@ -114,6 +114,41 @@ use crate::{context::ModuleContext, handle::Handle, result::NeonResult, types::J
 #[cfg(feature = "napi-6")]
 mod lifecycle;
 
+#[cfg(all(feature = "napi-6", feature = "futures"))]
+mod runtime;
+
+#[cfg(all(feature = "napi-6", feature = "futures"))]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-6", feature = "futures"))))]
+/// Async runtime registered globally to the addon.
+///
+/// **Note**: Each instance of the addon will have its own [`RUNTIME`]. It is recommended
+/// to init the async runtime once in a process global to share it across instances.
+///
+/// ```
+/// # #[cfg(feature = "tokio")]
+/// # fn example() {
+/// # use neon::prelude::*;
+/// use once_cell::sync::OnceCell;
+/// use tokio::runtime::Runtime;
+///
+/// static RUNTIME: OnceCell<Runtime> = OnceCell::new();
+///
+/// #[neon::main]
+/// fn main(mut cx: ModuleContext) -> NeonResult<()> {
+///     neon::RUNTIME.get_or_try_init(&mut cx, |cx| {
+///         let runtime = RUNTIME
+///             .get_or_try_init(Runtime::new)
+///             .or_else(|err| cx.throw_error(err.to_string()))?;
+///
+///         Ok(Box::new(runtime))
+///     })?;
+///
+///     Ok(())
+/// }
+/// # }
+/// ```
+pub static RUNTIME: thread::LocalKey<Box<dyn runtime::Runtime>> = thread::LocalKey::new();
+
 #[cfg(feature = "napi-8")]
 static MODULE_TAG: once_cell::sync::Lazy<crate::sys::TypeTag> = once_cell::sync::Lazy::new(|| {
     let mut lower = [0; std::mem::size_of::<u64>()];

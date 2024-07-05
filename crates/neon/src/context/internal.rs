@@ -1,5 +1,3 @@
-use std::{cell::RefCell, ffi::c_void, mem::MaybeUninit};
-
 use crate::{
     context::ModuleContext,
     handle::Handle,
@@ -7,6 +5,7 @@ use crate::{
     sys::{self, raw},
     types::{private::ValueInternal, JsObject},
 };
+use std::{cell::RefCell, ffi::c_void, mem::MaybeUninit};
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -50,7 +49,38 @@ pub trait ContextInternal<'a>: Sized {
     fn env(&self) -> Env;
 }
 
+#[cfg(feature = "tokio-rt")]
+fn init_tokio(cx: &mut ModuleContext) -> NeonResult<()> {
+    use once_cell::sync::OnceCell;
+    use tokio::runtime::{Builder, Runtime};
+
+    use crate::context::Context;
+
+    static RUNTIME: OnceCell<Runtime> = OnceCell::new();
+
+    crate::RUNTIME.get_or_try_init(cx, |cx| {
+        let runtime = RUNTIME
+            .get_or_try_init(|| {
+                #[cfg(feature = "tokio-rt-multi-thread")]
+                let mut builder = Builder::new_multi_thread();
+
+                #[cfg(not(feature = "tokio-rt-multi-thread"))]
+                let mut builder = Builder::new_current_thread();
+
+                builder.enable_all().build()
+            })
+            .or_else(|err| cx.throw_error(err.to_string()))?;
+
+        Ok(Box::new(runtime))
+    })?;
+
+    Ok(())
+}
+
 fn default_main(mut cx: ModuleContext) -> NeonResult<()> {
+    #[cfg(feature = "tokio-rt")]
+    init_tokio(&mut cx)?;
+
     crate::registered().export(&mut cx)
 }
 

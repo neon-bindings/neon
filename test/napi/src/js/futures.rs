@@ -7,9 +7,14 @@ use {
 fn runtime<'a, C: Context<'a>>(cx: &mut C) -> NeonResult<&'static Runtime> {
     static RUNTIME: OnceCell<Runtime> = OnceCell::new();
 
-    RUNTIME
-        .get_or_try_init(Runtime::new)
-        .or_else(|err| cx.throw_error(&err.to_string()))
+    RUNTIME.get_or_try_init(|| {
+        let runtime = Runtime::new().or_else(|err| cx.throw_error(&err.to_string()))?;
+        let handle = runtime.handle().clone();
+
+        neon::RUNTIME.get_or_init(cx, || Box::new(handle));
+
+        Ok(runtime)
+    })
 }
 
 // Accepts two functions that take no parameters and return numbers.

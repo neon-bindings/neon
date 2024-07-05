@@ -415,3 +415,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     Ok(())
 }
+
+#[neon::export]
+async fn async_add(a: f64, b: f64) -> f64 {
+    a + b
+}

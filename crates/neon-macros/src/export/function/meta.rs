@@ -8,6 +8,7 @@ pub(crate) struct Meta {
 
 #[derive(Default)]
 pub(super) enum Kind {
+    Async,
     #[default]
     Normal,
     Task,
@@ -28,11 +29,22 @@ impl Meta {
 
     fn force_context(&mut self, meta: syn::meta::ParseNestedMeta) -> syn::Result<()> {
         match self.kind {
+            Kind::Async => return Err(meta.error(super::ASYNC_CX_ERROR)),
             Kind::Normal => {}
             Kind::Task => return Err(meta.error(super::TASK_CX_ERROR)),
         }
 
         self.context = true;
+
+        Ok(())
+    }
+
+    fn make_async(&mut self, meta: syn::meta::ParseNestedMeta) -> syn::Result<()> {
+        if self.context {
+            return Err(meta.error(super::ASYNC_CX_ERROR));
+        }
+
+        self.kind = Kind::Async;
 
         Ok(())
     }
@@ -48,13 +60,25 @@ impl Meta {
     }
 }
 
-pub(crate) struct Parser;
+pub(crate) struct Parser(syn::ItemFn);
+
+impl Parser {
+    pub(crate) fn new(item: syn::ItemFn) -> Self {
+        Self(item)
+    }
+}
 
 impl syn::parse::Parser for Parser {
-    type Output = Meta;
+    type Output = (syn::ItemFn, Meta);
 
     fn parse2(self, tokens: proc_macro2::TokenStream) -> syn::Result<Self::Output> {
+        let Self(item) = self;
         let mut attr = Meta::default();
+
+        if item.sig.asyncness.is_some() {
+            attr.kind = Kind::Async;
+        }
+
         let parser = syn::meta::parser(|meta| {
             if meta.path.is_ident("name") {
                 return attr.set_name(meta);
@@ -68,6 +92,10 @@ impl syn::parse::Parser for Parser {
                 return attr.force_context(meta);
             }
 
+            if meta.path.is_ident("async") {
+                return attr.make_async(meta);
+            }
+
             if meta.path.is_ident("task") {
                 return attr.make_task(meta);
             }
@@ -77,6 +105,6 @@ impl syn::parse::Parser for Parser {
 
         parser.parse2(tokens)?;
 
-        Ok(attr)
+        Ok((item, attr))
     }
 }
