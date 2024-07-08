@@ -26,6 +26,17 @@ pub fn call_js_function_idiomatically(mut cx: FunctionContext) -> JsResult<JsNum
         .apply(&mut cx)
 }
 
+pub fn call_js_function_with_bind(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let f = cx.argument::<JsFunction>(0)?;
+    let n: f64 = f
+        .bind(&mut cx)
+        .args((1, 2, 3))?
+        .arg(4)?
+        .arg_with(|cx| Ok(cx.number(5)))?
+        .apply()?;
+    Ok(cx.number(n))
+}
+
 fn get_math_max<'a>(cx: &mut FunctionContext<'a>) -> JsResult<'a, JsFunction> {
     let math: Handle<JsObject> = cx.global("Math")?;
     let max: Handle<JsFunction> = math.get(cx, "max")?;

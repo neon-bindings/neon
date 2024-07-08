@@ -33,7 +33,7 @@ use crate::{
     result::{JsResult, NeonResult, ResultExt, Throw},
     sys::{self, raw},
     types::{
-        function::{CallOptions, ConstructOptions},
+        function::{BindOptions, CallOptions, ConstructOptions},
         private::ValueInternal,
         utf8::Utf8,
     },
@@ -1208,6 +1208,17 @@ impl JsFunction {
         build(cx.env(), |out| unsafe {
             sys::fun::construct(out, env, self.to_local(), argc, argv)
         })
+    }
+}
+
+impl JsFunction {
+    pub fn bind<'a, 'cx: 'a, C: Context<'cx>>(&self, cx: &'a mut C) -> BindOptions<'a, 'cx, C> {
+        BindOptions {
+            cx,
+            callee: Handle::new_internal(unsafe { self.clone() }),
+            this: None,
+            args: smallvec![],
+        }
     }
 }
 
