@@ -7,7 +7,10 @@ use crate::{
     handle::Handle,
     object::Object,
     result::{JsResult, NeonResult},
-    types::{extract::{TryFromJs, TryIntoJs}, JsFunction, JsObject, JsValue, Value},
+    types::{
+        extract::{TryFromJs, TryIntoJs},
+        JsFunction, JsObject, JsValue, Value,
+    },
 };
 
 pub(crate) mod private;
@@ -41,8 +44,9 @@ impl<'a, 'cx: 'a, C: Context<'cx>> BindOptions<'a, 'cx, C> {
 
     /// Add an argument to the arguments list, computed from a closure.
     pub fn arg_with<R, F>(&mut self, f: F) -> NeonResult<&mut Self>
-      where R: TryIntoJs<'cx>,
-            F: FnOnce(&mut C) -> NeonResult<R>
+    where
+        R: TryIntoJs<'cx>,
+        F: FnOnce(&mut C) -> NeonResult<R>,
     {
         let v = f(self.cx)?.try_into_js(self.cx)?;
         self.args.push(v.upcast());

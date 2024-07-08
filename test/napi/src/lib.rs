@@ -153,10 +153,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         "call_js_function_idiomatically",
         call_js_function_idiomatically,
     )?;
-    cx.export_function(
-        "call_js_function_with_bind",
-        call_js_function_with_bind
-    )?;
+    cx.export_function("call_js_function_with_bind", call_js_function_with_bind)?;
     cx.export_function(
         "call_js_function_with_zero_args",
         call_js_function_with_zero_args,
