@@ -33,7 +33,7 @@ describe("JsFunction", function () {
       addon.call_js_function_with_bind(function (a, b, c, d, e) {
         return a * b * c * d * e;
       }),
-      (1 * 2 * 3 * 4 * 5)
+      1 * 2 * 3 * 4 * 5
     );
   });
 
