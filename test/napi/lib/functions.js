@@ -28,6 +28,15 @@ describe("JsFunction", function () {
     );
   });
 
+  it("call a JsFunction built in JS with .bind().apply()", function () {
+    assert.equal(
+      addon.call_js_function_with_bind(function (a, b, c, d, e) {
+        return a * b * c * d * e;
+      }),
+      (1 * 2 * 3 * 4 * 5)
+    );
+  });
+
   it("call a JsFunction with zero args", function () {
     assert.equal(addon.call_js_function_with_zero_args(), -Infinity);
   });
