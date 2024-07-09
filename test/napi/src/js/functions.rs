@@ -27,14 +27,20 @@ pub fn call_js_function_idiomatically(mut cx: FunctionContext) -> JsResult<JsNum
 }
 
 pub fn call_js_function_with_bind(mut cx: FunctionContext) -> JsResult<JsNumber> {
-    let f = cx.argument::<JsFunction>(0)?;
-    let n: f64 = f
+    let n: f64 = cx
+        .argument::<JsFunction>(0)?
         .bind(&mut cx)
         .args((1, 2, 3))?
         .arg(4)?
         .arg_with(|cx| Ok(cx.number(5)))?
         .apply()?;
     Ok(cx.number(n))
+}
+
+pub fn call_parse_int_with_bind(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let parse_int: Handle<JsFunction> = cx.global("parseInt")?;
+    let x: f64 = parse_int.bind(&mut cx).arg("41")?.apply()?;
+    Ok(cx.number(x + 1.0))
 }
 
 fn get_math_max<'a>(cx: &mut FunctionContext<'a>) -> JsResult<'a, JsFunction> {
