@@ -152,7 +152,7 @@ describe("JsObject", function () {
 
     assert.strictEqual(obj.toString(), "[object Diana Prince]");
     assert.strictEqual(
-      addon.call_method_with_prop(obj),
+      addon.call_methods_with_prop(obj),
       "[object Wonder Woman]"
     );
     assert.strictEqual(obj.toString(), "[object Wonder Woman]");

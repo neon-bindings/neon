@@ -300,7 +300,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("call_symbol_method", call_symbol_method)?;
     cx.export_function("get_property_with_prop", get_property_with_prop)?;
     cx.export_function("set_property_with_prop", set_property_with_prop)?;
-    cx.export_function("call_method_with_prop", call_method_with_prop)?;
+    cx.export_function("call_methods_with_prop", call_methods_with_prop)?;
 
     cx.export_function("create_date", create_date)?;
     cx.export_function("get_date_value", get_date_value)?;
