@@ -151,8 +151,10 @@ impl<'a> PropertyKey for &'a str {
 /// let x: f64 = obj
 ///     .prop(&mut cx, "x")
 ///     .get()?;
+///
 /// obj.prop(&mut cx, "y")
 ///     .set(x)?;
+///
 /// let s: String = obj.prop(&mut cx, "toString")
 ///     .bind()?
 ///     .apply()?;
