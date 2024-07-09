@@ -15,6 +15,20 @@ use crate::{
 
 pub(crate) mod private;
 
+/// A builder for making a JavaScript function call like `parseInt("42")`.
+///
+/// The builder methods make it convenient to assemble the call from parts:
+/// ```
+/// # use neon::prelude::*;
+/// # fn foo(mut cx: FunctionContext) -> JsResult<JsNumber> {
+/// # let parse_int: Handle<JsFunction> = cx.global("parseInt")?;
+/// let x: f64 = parse_int
+///     .bind(&mut cx)
+///     .arg("42")?
+///     .apply()?;
+/// # Ok(cx.number(x))
+/// # }
+/// ```
 pub struct BindOptions<'a, 'cx: 'a, C: Context<'cx>> {
     pub(crate) cx: &'a mut C,
     pub(crate) callee: Handle<'cx, JsFunction>,

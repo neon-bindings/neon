@@ -37,6 +37,10 @@ describe("JsFunction", function () {
     );
   });
 
+  it("call parseInt with .bind().apply()", function () {
+    assert.equal(addon.call_parse_int_with_bind(), 42);
+  });
+
   it("call a JsFunction with zero args", function () {
     assert.equal(addon.call_js_function_with_zero_args(), -Infinity);
   });

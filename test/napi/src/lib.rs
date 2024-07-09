@@ -154,6 +154,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         call_js_function_idiomatically,
     )?;
     cx.export_function("call_js_function_with_bind", call_js_function_with_bind)?;
+    cx.export_function("call_parse_int_with_bind", call_parse_int_with_bind)?;
     cx.export_function(
         "call_js_function_with_zero_args",
         call_js_function_with_zero_args,
@@ -297,6 +298,9 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("call_nullary_method", call_nullary_method)?;
     cx.export_function("call_unary_method", call_unary_method)?;
     cx.export_function("call_symbol_method", call_symbol_method)?;
+    cx.export_function("get_property_with_prop", get_property_with_prop)?;
+    cx.export_function("set_property_with_prop", set_property_with_prop)?;
+    cx.export_function("call_method_with_prop", call_method_with_prop)?;
 
     cx.export_function("create_date", create_date)?;
     cx.export_function("get_date_value", get_date_value)?;

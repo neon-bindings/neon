@@ -37,14 +37,20 @@ use crate::{
     handle::{Handle, Root},
     result::{NeonResult, Throw},
     sys::{self, raw},
-    types::{build, function::CallOptions, utf8::Utf8, JsFunction, JsUndefined, JsValue, Value},
+    types::{
+        build,
+        extract::{TryFromJs, TryIntoJs},
+        function::{BindOptions, CallOptions},
+        utf8::Utf8,
+        JsFunction, JsUndefined, JsValue, Value,
+    },
 };
 
 #[cfg(feature = "napi-6")]
 use crate::{result::JsResult, types::JsArray};
 
 /// A property key in a JavaScript object.
-pub trait PropertyKey {
+pub trait PropertyKey: Copy {
     unsafe fn get_from<'c, C: Context<'c>>(
         self,
         cx: &mut C,
@@ -134,8 +140,75 @@ impl<'a> PropertyKey for &'a str {
     }
 }
 
+/// A builder for accessing an object property.
+///
+/// The builder methods make it convenient to get and set properties
+/// as well as to bind and call methods.
+/// ```
+/// # use neon::prelude::*;
+/// # fn foo(mut cx: FunctionContext) -> JsResult<JsString> {
+/// # let obj: Handle<JsObject> = cx.argument(0)?;
+/// let x: f64 = obj
+///     .prop(&mut cx, "x")
+///     .get()?;
+/// obj.prop(&mut cx, "y")
+///     .set(x)?;
+/// let s: String = obj.prop(&mut cx, "toString")
+///     .bind()?
+///     .apply()?;
+/// # Ok(cx.string(s))
+/// # }
+/// ```
+pub struct PropOptions<'a, 'cx: 'a, C: Context<'cx>, O: Object, K: PropertyKey> {
+    pub(crate) cx: &'a mut C,
+    pub(crate) this: Handle<'cx, O>,
+    pub(crate) key: K,
+}
+
+impl<'a, 'cx: 'a, C: Context<'cx>, O: Object, K: PropertyKey> PropOptions<'a, 'cx, C, O, K> {
+    /// Gets the property from the object and attempts to convert it to a Rust value.
+    /// Equivalent to calling `R::from_js(cx, obj.get(cx)?)`.
+    ///
+    /// May throw an exception either during accessing the property or converting the
+    /// result type.
+    pub fn get<R: TryFromJs<'cx>>(&mut self) -> NeonResult<R> {
+        let v = self.this.get_value(self.cx, self.key)?;
+        R::from_js(self.cx, v)
+    }
+
+    /// Sets the property on the object to a value converted from Rust.
+    /// Equivalent to calling `obj.set(cx, v.try_into_js(cx)?)`.
+    ///
+    /// May throw an exception either during converting the value or setting the property.
+    pub fn set<V: TryIntoJs<'cx>>(&mut self, v: V) -> NeonResult<bool> {
+        let v = v.try_into_js(self.cx)?;
+        self.this.set(self.cx, self.key, v)
+    }
+
+    /// Gets the property from the object as a method and binds `this` to the object.
+    ///
+    /// May throw an exception either during accessing the property or downcasting it
+    /// to a function.
+    pub fn bind(&'a mut self) -> NeonResult<BindOptions<'a, 'cx, C>> {
+        let callee: Handle<JsFunction> = self.this.get(self.cx, self.key)?;
+        let mut bind = callee.bind(self.cx);
+        bind.this(self.this);
+        Ok(bind)
+    }
+}
+
 /// The trait of all object types.
 pub trait Object: Value {
+    /// Create a [`PropOptions`] for accessing a property.
+    fn prop<'a, 'cx: 'a, C: Context<'cx>, K: PropertyKey>(
+        &self,
+        cx: &'a mut C,
+        key: K,
+    ) -> PropOptions<'a, 'cx, C, Self, K> {
+        let this = Handle::new_internal(unsafe { Self::from_local(cx.env(), self.to_local()) });
+        PropOptions { cx, this, key }
+    }
+
     /// Gets a property from a JavaScript object that may be `undefined` and
     /// attempts to downcast the value if it existed.
     fn get_opt<'a, V: Value, C: Context<'a>, K: PropertyKey>(
