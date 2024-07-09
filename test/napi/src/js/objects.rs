@@ -108,7 +108,7 @@ pub fn set_property_with_prop(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     Ok(cx.boolean(b))
 }
 
-pub fn call_method_with_prop(mut cx: FunctionContext) -> JsResult<JsString> {
+pub fn call_methods_with_prop(mut cx: FunctionContext) -> JsResult<JsString> {
     let obj: Handle<JsObject> = cx.argument::<JsObject>(0)?;
     obj.prop(&mut cx, "setName")
         .bind()?
