@@ -1154,6 +1154,23 @@ impl JsFunction {
     }
 }
 
+pub(crate) unsafe fn call_local<'a, 'b, C: Context<'a>, T, AS>(
+    cx: &mut C,
+    callee: raw::Local,
+    this: Handle<'b, T>,
+    args: AS
+) -> JsResult<'a, JsValue>
+where
+    T: Value,
+    AS: AsRef<[Handle<'b, JsValue>]>,
+{
+    let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
+    let env = cx.env().to_raw();
+    build(cx.env(), |out| unsafe {
+        sys::fun::call(out, env, callee, this.to_local(), argc, argv)
+    })
+}
+
 impl JsFunction {
     /// Calls this function.
     ///
@@ -1168,11 +1185,9 @@ impl JsFunction {
         T: Value,
         AS: AsRef<[Handle<'b, JsValue>]>,
     {
-        let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
-        let env = cx.env().to_raw();
-        build(cx.env(), |out| unsafe {
-            sys::fun::call(out, env, self.to_local(), this.to_local(), argc, argv)
-        })
+        unsafe {
+            call_local(cx, self.to_local(), this, args)
+        }
     }
 
     /// Calls this function for side effect, discarding its result.
@@ -1215,7 +1230,7 @@ impl JsFunction {
     pub fn bind<'a, 'cx: 'a, C: Context<'cx>>(&self, cx: &'a mut C) -> BindOptions<'a, 'cx, C> {
         BindOptions {
             cx,
-            callee: Handle::new_internal(unsafe { self.clone() }),
+            callee: Handle::new_internal(JsValue(self.to_local())),
             this: None,
             args: smallvec![],
         }
