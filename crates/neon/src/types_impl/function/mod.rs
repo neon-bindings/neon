@@ -8,7 +8,9 @@ use crate::{
     object::Object,
     result::{JsResult, NeonResult},
     types::{
+        call_local,
         extract::{TryFromJs, TryIntoJs},
+        private::ValueInternal,
         JsFunction, JsObject, JsValue, Value,
     },
 };
@@ -31,7 +33,7 @@ pub(crate) mod private;
 /// ```
 pub struct BindOptions<'a, 'cx: 'a, C: Context<'cx>> {
     pub(crate) cx: &'a mut C,
-    pub(crate) callee: Handle<'cx, JsFunction>,
+    pub(crate) callee: Handle<'cx, JsValue>,
     pub(crate) this: Option<Handle<'cx, JsValue>>,
     pub(crate) args: private::ArgsVec<'cx>,
 }
@@ -71,7 +73,9 @@ impl<'a, 'cx: 'a, C: Context<'cx>> BindOptions<'a, 'cx, C> {
     /// is converted to a Rust value with `TryFromJs::from_js`.
     pub fn apply<R: TryFromJs<'cx>>(&mut self) -> NeonResult<R> {
         let this = self.this.unwrap_or_else(|| self.cx.undefined().upcast());
-        let v: Handle<JsValue> = self.callee.call(self.cx, this, &self.args)?;
+        let v: Handle<JsValue> = unsafe {
+            call_local(self.cx, self.callee.to_local(), this, &self.args)?
+        };
         R::from_js(self.cx, v)
     }
 }
