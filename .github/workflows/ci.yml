@@ -25,19 +25,19 @@ jobs:
       - name: Set Matrix
         id: set_matrix
         env:
-          FULL_NODE_VERSIONS: '["18.x", "20.x", "21.x"]'
+          FULL_NODE_VERSIONS: '["18.x", "20.x", "22.x"]'
           FULL_RUST_TOOLCHAINS: '["stable", "nightly"]'
-          PARTIAL_NODE_VERSIONS: '["20.x"]'
+          PARTIAL_NODE_VERSIONS: '["22.x"]'
           PARTIAL_RUST_TOOLCHAINS: '["stable"]'
           HAS_FULL_MATRIX_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'full matrix') }}
           IS_PUSHED: ${{ github.event_name == 'push' }}
         run: |
           if [[ "$HAS_FULL_MATRIX_LABEL" == "true" ]] || [[ "$IS_PUSHED" == "true" ]]; then
-            echo "::set-output name=node_version::$FULL_NODE_VERSIONS"
-            echo "::set-output name=rust_toolchain::$FULL_RUST_TOOLCHAINS"
+            echo "node_version=$FULL_NODE_VERSIONS" >> $GITHUB_OUTPUT
+            echo "rust_toolchain=$FULL_RUST_TOOLCHAINS" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=node_version::$PARTIAL_NODE_VERSIONS"
-            echo "::set-output name=rust_toolchain::$PARTIAL_RUST_TOOLCHAINS"
+            echo "node_version=$PARTIAL_NODE_VERSIONS" >> $GITHUB_OUTPUT
+            echo "rust_toolchain=$PARTIAL_RUST_TOOLCHAINS" >> $GITHUB_OUTPUT
           fi
 
   build:
@@ -54,9 +54,16 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Use Rust ${{ matrix.rust-toolchain }}
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@v1
         with:
           toolchain: ${{ matrix.rust-toolchain }}
+          components: clippy,rustfmt
+
+      - name: Linkme nightly workaround
+        if: matrix.rust-toolchain == 'nightly' && matrix.os == 'ubuntu-latest'
+        # Workaround for linkme with `rust-lld`
+        # https://blog.rust-lang.org/2024/05/17/enabling-rust-lld-on-linux.html#possible-drawbacks
+        run: echo RUSTFLAGS=${RUSTFLAGS}\ -Clink-arg=-Wl,-z,nostart-stop-gc >> $GITHUB_ENV
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
@@ -67,21 +74,17 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: npm
 
-      - name: Electron Cache Variables
-        id: electron_cache_vars
-        run: |
-          echo "::set-output name=key::${{ runner.os }}-electron-${{ hashFiles('./package-lock.json') }}"
       - name: Cache Electron (Linux)
         if: matrix.os == 'ubuntu-latest'
         uses: actions/cache@v4
         with:
-          key: ${{ steps.electron_cache_vars.outputs.key }}
+          key: ${{ runner.os }}-electron-${{ hashFiles('./package-lock.json') }}
           path: ~/.cache/electron
       - name: Cache Electron (Windows)
         if: matrix.os == 'windows-latest'
         uses: actions/cache@v4
         with:
-          key: ${{ steps.electron_cache_vars.outputs.key }}
+          key: ${{ runner.os }}-electron-${{ hashFiles('./package-lock.json') }}
           path: "%LOCALAPPDATA%\\electron\\Cache"
       - name: Cache Electron (macOS)
         if: matrix.os == 'macos-latest'
