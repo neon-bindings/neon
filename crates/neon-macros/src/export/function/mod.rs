@@ -64,24 +64,11 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
 
     // Generate the call to the original function
     let call_body = match meta.kind {
-        // TODO: Should this be moved inside of Neon in some way?
         Kind::Async => quote::quote!(
-            let rt = match neon::RUNTIME.get(&mut cx) {
-                Some(rt) => rt,
-                None => return neon::context::Context::throw_error(&mut cx, "neon::RUNTIME is not initialized"),
-            };
-
             let (#(#tuple_fields,)*) = cx.args()?;
-            let ch = neon::context::Context::channel(&mut cx);
-            let (d, promise) = neon::context::Context::promise(&mut cx);
             let fut = #name(#context_arg #(#args),*);
 
-            rt.spawn(Box::pin(async move {
-                let res = fut.await;
-                let _ = d.try_settle_with(&ch, move |mut cx| #result_extract);
-            }));
-
-            Ok(promise.upcast())
+            neon::macro_internal::spawn(&mut cx, fut, |mut cx, res| #result_extract)
         ),
         Kind::Normal => quote::quote!(
             let (#(#tuple_fields,)*) = cx.args()?;

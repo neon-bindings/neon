@@ -9,6 +9,12 @@ use crate::{
     types::{extract::TryIntoJs, JsValue},
 };
 
+#[cfg(all(feature = "napi-6", feature = "futures"))]
+pub use self::futures::spawn;
+
+#[cfg(all(feature = "napi-6", feature = "futures"))]
+mod futures;
+
 type Export<'cx> = (&'static str, Handle<'cx, JsValue>);
 
 #[linkme::distributed_slice]
