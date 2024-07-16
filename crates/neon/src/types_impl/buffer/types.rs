@@ -765,7 +765,7 @@ where
     /// Note that, depending on the element size, this is not necessarily the same as
     /// [`size()`](crate::types::buffer::TypedArray::size). In particular:
     ///
-    /// ```ignore
+    /// ```skip
     /// self.size() == self.len() * size_of::<T>()
     /// ```
     #[allow(clippy::len_without_is_empty)]

@@ -178,18 +178,21 @@ pub struct Exports(());
 impl Exports {
     /// Export all values exported with [`neon::export`](export)
     ///
-    /// ```ignore
+    /// ```
+    /// # fn main() {
     /// # use neon::prelude::*;
     /// #[neon::main]
     /// fn main(mut cx: ModuleContext) -> NeonResult<()> {
     ///     neon::registered().export(&mut cx)?;
     ///     Ok(())
     /// }
+    /// # }
     /// ```
     ///
     /// For more control, iterate over exports.
     ///
-    /// ```ignore
+    /// ```
+    /// # fn main() {
     /// # use neon::prelude::*;
     /// #[neon::main]
     /// fn main(mut cx: ModuleContext) -> NeonResult<()> {
@@ -201,6 +204,7 @@ impl Exports {
     ///
     ///     Ok(())
     /// }
+    /// # }
     /// ```
     pub fn export(self, cx: &mut ModuleContext) -> NeonResult<()> {
         for create in self {
@@ -238,6 +242,7 @@ fn feature_matrix() {
     const EXTERNAL_BUFFERS: &str = "external-buffers";
     const FUTURES: &str = "futures";
     const SERDE: &str = "serde";
+    const TOKIO: &str = "tokio";
     const NODE_API_VERSIONS: &[&str] = &[
         "napi-1", "napi-2", "napi-3", "napi-4", "napi-5", "napi-6", "napi-7", "napi-8",
     ];
@@ -249,10 +254,18 @@ fn feature_matrix() {
         &[EXTERNAL_BUFFERS],
         &[FUTURES],
         &[SERDE],
+        &[TOKIO],
         &[EXTERNAL_BUFFERS, FUTURES],
         &[EXTERNAL_BUFFERS, SERDE],
+        &[EXTERNAL_BUFFERS, TOKIO],
         &[FUTURES, SERDE],
+        &[FUTURES, TOKIO],
+        &[SERDE, TOKIO],
         &[EXTERNAL_BUFFERS, FUTURES, SERDE],
+        &[EXTERNAL_BUFFERS, FUTURES, TOKIO],
+        &[EXTERNAL_BUFFERS, SERDE, TOKIO],
+        &[FUTURES, SERDE, TOKIO],
+        &[EXTERNAL_BUFFERS, FUTURES, SERDE, TOKIO],
     ];
 
     let cargo = env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
