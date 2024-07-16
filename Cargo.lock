@@ -378,6 +378,7 @@ dependencies = [
  "doc-comment",
  "easy-cast",
  "getrandom",
+ "itertools",
  "libloading 0.8.1",
  "linkify",
  "linkme",
