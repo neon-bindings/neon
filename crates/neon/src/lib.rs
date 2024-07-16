@@ -235,7 +235,6 @@ pub fn registered() -> Exports {
 }
 
 #[test]
-#[ignore]
 fn feature_matrix() {
     use std::{env, process::Command};
 
