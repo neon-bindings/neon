@@ -3,6 +3,7 @@ use crate::export::function::meta::Kind;
 pub(crate) mod meta;
 
 static ASYNC_CX_ERROR: &str = "`FunctionContext` is not allowed in async functions";
+static ASYNC_FN_ERROR: &str = "`async` attribute should not be used with an `async fn`";
 static TASK_CX_ERROR: &str = "`FunctionContext` is not allowed with `task` attribute";
 
 pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenStream {
@@ -64,9 +65,14 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
 
     // Generate the call to the original function
     let call_body = match meta.kind {
-        Kind::Async => quote::quote!(
+        Kind::Async | Kind::AsyncFn => quote::quote!(
             let (#(#tuple_fields,)*) = cx.args()?;
             let fut = #name(#context_arg #(#args),*);
+            let fut = {
+                use neon::macro_internal::ToNeonFutureMarker;
+
+                (&fut).to_neon_future_marker().make_result(&mut cx, fut)?
+            };
 
             neon::macro_internal::spawn(&mut cx, fut, |mut cx, res| #result_extract)
         ),
@@ -167,8 +173,8 @@ fn has_context_arg(meta: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool>
 
     // Context is only allowed for normal functions
     match meta.kind {
-        Kind::Async => return Err(syn::Error::new(first.span(), ASYNC_CX_ERROR)),
-        Kind::Normal => {}
+        Kind::Normal | Kind::Async => {}
+        Kind::AsyncFn => return Err(syn::Error::new(first.span(), ASYNC_CX_ERROR)),
         Kind::Task => return Err(syn::Error::new(first.span(), TASK_CX_ERROR)),
     }
 

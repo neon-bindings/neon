@@ -9,6 +9,7 @@ pub(crate) struct Meta {
 #[derive(Default)]
 pub(super) enum Kind {
     Async,
+    AsyncFn,
     #[default]
     Normal,
     Task,
@@ -29,8 +30,8 @@ impl Meta {
 
     fn force_context(&mut self, meta: syn::meta::ParseNestedMeta) -> syn::Result<()> {
         match self.kind {
+            Kind::Normal | Kind::AsyncFn => {}
             Kind::Async => return Err(meta.error(super::ASYNC_CX_ERROR)),
-            Kind::Normal => {}
             Kind::Task => return Err(meta.error(super::TASK_CX_ERROR)),
         }
 
@@ -40,8 +41,8 @@ impl Meta {
     }
 
     fn make_async(&mut self, meta: syn::meta::ParseNestedMeta) -> syn::Result<()> {
-        if self.context {
-            return Err(meta.error(super::ASYNC_CX_ERROR));
+        if matches!(self.kind, Kind::AsyncFn) {
+            return Err(meta.error(super::ASYNC_FN_ERROR));
         }
 
         self.kind = Kind::Async;
@@ -76,7 +77,7 @@ impl syn::parse::Parser for Parser {
         let mut attr = Meta::default();
 
         if item.sig.asyncness.is_some() {
-            attr.kind = Kind::Async;
+            attr.kind = Kind::AsyncFn;
         }
 
         let parser = syn::meta::parser(|meta| {

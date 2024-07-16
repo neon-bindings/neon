@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[cfg(all(feature = "napi-6", feature = "futures"))]
-pub use self::futures::spawn;
+pub use self::futures::*;
 
 #[cfg(all(feature = "napi-6", feature = "futures"))]
 mod futures;
