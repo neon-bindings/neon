@@ -194,21 +194,4 @@ pub use neon_macros::main;
 ///     a + b
 /// }
 /// ```
-///
-/// ### `result`
-///
-/// The `#[neon::export]` macro will infer an exported function returns a [`Result`]
-/// if the type is named [`Result`], [`NeonResult`](crate::result::NeonResult) or
-/// [`JsResult`](crate::result::JsResult).
-///
-/// If a type alias is used for [`Result`], the `result` attribute can be added to
-/// inform the generated code.
-///
-/// ```
-/// use neon::result::{NeonResult as Res};
-///
-/// fn add(a: f64, b: f64) -> Res<f64> {
-///     Ok(a + b)
-/// }
-/// ```
 pub use neon_macros::export;

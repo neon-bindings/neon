@@ -4,7 +4,6 @@ pub(crate) struct Meta {
     pub(super) name: Option<syn::LitStr>,
     pub(super) json: bool,
     pub(super) context: bool,
-    pub(super) result: bool,
 }
 
 #[derive(Default)]
@@ -38,12 +37,6 @@ impl Meta {
         Ok(())
     }
 
-    fn force_result(&mut self, _meta: syn::meta::ParseNestedMeta) -> syn::Result<()> {
-        self.result = true;
-
-        Ok(())
-    }
-
     fn make_task(&mut self, meta: syn::meta::ParseNestedMeta) -> syn::Result<()> {
         if self.context {
             return Err(meta.error(super::TASK_CX_ERROR));
@@ -73,10 +66,6 @@ impl syn::parse::Parser for Parser {
 
             if meta.path.is_ident("context") {
                 return attr.force_context(meta);
-            }
-
-            if meta.path.is_ident("result") {
-                return attr.force_result(meta);
             }
 
             if meta.path.is_ident("task") {

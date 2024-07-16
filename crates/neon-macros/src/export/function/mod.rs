@@ -40,13 +40,19 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
             .unwrap_or_else(|| quote::quote!(#name))
     });
 
-    // If necessary, wrap the return value in `Json` before calling `TryIntoJs`
-    let json_return = meta.json.then(|| {
-        is_result_output(&meta, &sig.output)
-            // Use `.map(Json)` on a `Result`
-            .then(|| quote::quote!(let res = res.map(neon::types::extract::Json);))
-            // Wrap other values with `Json(res)`
-            .unwrap_or_else(|| quote::quote!(let res = neon::types::extract::Json(res);))
+    // Import the value or JSON trait for conversion
+    let result_trait_name = if meta.json {
+        quote::format_ident!("NeonExportReturnJson")
+    } else {
+        quote::format_ident!("NeonExportReturnValue")
+    };
+
+    // Convert the result
+    // N.B.: Braces are intentionally included to avoid leaking trait to function body
+    let result_extract = quote::quote!({
+        use neon::macro_internal::#result_trait_name;
+
+        res.try_neon_export_return(&mut cx)
     });
 
     // Default export name as identity unless a name is provided
@@ -60,19 +66,13 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
         Kind::Normal => quote::quote!(
             let (#(#tuple_fields,)*) = cx.args()?;
             let res = #name(#context_arg #(#args),*);
-            #json_return
 
-            neon::types::extract::TryIntoJs::try_into_js(res, &mut cx)
-                .map(|v| neon::handle::Handle::upcast(&v))
+            #result_extract
         ),
         Kind::Task => quote::quote!(
             let (#(#tuple_fields,)*) = cx.args()?;
-            let promise = neon::context::Context::task(&mut cx, move || {
-                let res = #name(#context_arg #(#args),*);
-                #json_return
-                res
-            })
-            .promise(|mut cx, res| neon::types::extract::TryIntoJs::try_into_js(res, &mut cx));
+            let promise = neon::context::Context::task(&mut cx, move || #name(#context_arg #(#args),*))
+                .promise(|mut cx, res| #result_extract);
 
             Ok(neon::handle::Handle::upcast(&promise))
         ),
@@ -165,29 +165,4 @@ fn has_context_arg(meta: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool>
     }
 
     Ok(true)
-}
-
-// Determine if a return type is a `Result`
-fn is_result_output(meta: &meta::Meta, ret: &syn::ReturnType) -> bool {
-    // Forced result output
-    if meta.result {
-        return true;
-    }
-
-    let ty = match ret {
-        syn::ReturnType::Default => return false,
-        syn::ReturnType::Type(_, ty) => &**ty,
-    };
-
-    let path = match ty {
-        syn::Type::Path(path) => path,
-        _ => return false,
-    };
-
-    let path = match path.path.segments.last() {
-        Some(path) => path,
-        None => return false,
-    };
-
-    path.ident == "Result" || path.ident == "NeonResult" || path.ident == "JsResult"
 }
