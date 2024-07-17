@@ -379,3 +379,32 @@ pub fn write_buffer_with_borrow_mut(mut cx: FunctionContext) -> JsResult<JsUndef
 
     Ok(cx.undefined())
 }
+
+pub fn copy_buffer(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let a = cx.argument::<JsTypedArray<u8>>(0)?;
+    let mut b = cx.argument::<JsTypedArray<u8>>(1)?;
+    let a_len = a.as_slice(&cx).len();
+    let b_len = b.as_slice(&cx).len();
+    let n = a_len.min(b_len);
+    let a = a.as_slice(&cx)[..n].to_vec();
+
+    b.as_mut_slice(&mut cx)[..n].copy_from_slice(&a);
+
+    Ok(cx.undefined())
+}
+
+pub fn copy_buffer_with_borrow(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let a = cx.argument::<JsTypedArray<u8>>(0)?;
+    let mut b = cx.argument::<JsTypedArray<u8>>(1)?;
+    let lock = cx.lock();
+    let (Ok(a), Ok(mut b)) = (a.try_borrow(&lock), b.try_borrow_mut(&lock)) else {
+        return cx.throw_error("Borrow Error");
+    };
+
+    let n = a.len().min(b.len());
+
+    b[..n].copy_from_slice(&a);
+    drop((a, b));
+
+    Ok(cx.undefined())
+}

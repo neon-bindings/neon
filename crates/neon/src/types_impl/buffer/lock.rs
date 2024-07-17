@@ -58,7 +58,9 @@ impl Ledger {
         ledger: &'a RefCell<Self>,
         data: &'a [T],
     ) -> Result<Ref<'a, T>, BorrowError> {
-        ledger.borrow_mut().try_add_borrow(data)?;
+        if !data.is_empty() {
+            ledger.borrow_mut().try_add_borrow(data)?;
+        }
 
         Ok(Ref { ledger, data })
     }
@@ -69,7 +71,9 @@ impl Ledger {
         ledger: &'a RefCell<Self>,
         data: &'a mut [T],
     ) -> Result<RefMut<'a, T>, BorrowError> {
-        ledger.borrow_mut().try_add_borrow_mut(data)?;
+        if !data.is_empty() {
+            ledger.borrow_mut().try_add_borrow_mut(data)?;
+        }
 
         Ok(RefMut { ledger, data })
     }

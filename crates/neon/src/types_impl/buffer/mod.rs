@@ -138,6 +138,10 @@ impl<'a, T> DerefMut for RefMut<'a, T> {
 
 impl<'a, T> Drop for Ref<'a, T> {
     fn drop(&mut self) {
+        if self.is_empty() {
+            return;
+        }
+
         let mut ledger = self.ledger.borrow_mut();
         let range = Ledger::slice_to_range(self.data);
         let i = ledger.shared.iter().rposition(|r| r == &range).unwrap();
@@ -148,6 +152,10 @@ impl<'a, T> Drop for Ref<'a, T> {
 
 impl<'a, T> Drop for RefMut<'a, T> {
     fn drop(&mut self) {
+        if self.is_empty() {
+            return;
+        }
+
         let mut ledger = self.ledger.borrow_mut();
         let range = Ledger::slice_to_range(self.data);
         let i = ledger.owned.iter().rposition(|r| r == &range).unwrap();

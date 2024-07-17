@@ -5,7 +5,7 @@ use crate::{
     handle::{internal::TransparentNoCopyWrapper, Handle},
     object::Object,
     result::{JsResult, Throw},
-    sys::{self, raw, TypedArrayType},
+    sys::{self, raw, typedarray::TypedArrayInfo, TypedArrayType},
     types_impl::{
         buffer::{
             lock::{Ledger, Lock},
@@ -549,7 +549,7 @@ where
             let value = self.to_local();
             let info = sys::typedarray::info(env, value);
 
-            slice::from_raw_parts(info.data.cast(), info.length)
+            slice_from_info(info)
         }
     }
 
@@ -562,7 +562,7 @@ where
             let value = self.to_local();
             let info = sys::typedarray::info(env, value);
 
-            slice::from_raw_parts_mut(info.data.cast(), info.length)
+            slice_from_info_mut(info)
         }
     }
 
@@ -579,10 +579,7 @@ where
             let info = sys::typedarray::info(env, value);
 
             // The borrowed data must be guarded by `Ledger` before returning
-            Ledger::try_borrow(
-                &lock.ledger,
-                slice::from_raw_parts(info.data.cast(), info.length),
-            )
+            Ledger::try_borrow(&lock.ledger, slice_from_info(info))
         }
     }
 
@@ -599,10 +596,7 @@ where
             let info = sys::typedarray::info(env, value);
 
             // The borrowed data must be guarded by `Ledger` before returning
-            Ledger::try_borrow_mut(
-                &lock.ledger,
-                slice::from_raw_parts_mut(info.data.cast(), info.length),
-            )
+            Ledger::try_borrow_mut(&lock.ledger, slice_from_info_mut(info))
         }
     }
 
@@ -775,6 +769,22 @@ where
     {
         let info = unsafe { sys::typedarray::info(cx.env().to_raw(), self.to_local()) };
         info.length
+    }
+}
+
+unsafe fn slice_from_info<'a, T>(info: TypedArrayInfo) -> &'a [T] {
+    if info.length == 0 {
+        &[]
+    } else {
+        slice::from_raw_parts(info.data.cast(), info.length)
+    }
+}
+
+unsafe fn slice_from_info_mut<'a, T>(info: TypedArrayInfo) -> &'a mut [T] {
+    if info.length == 0 {
+        &mut []
+    } else {
+        slice::from_raw_parts_mut(info.data.cast(), info.length)
     }
 }
 
