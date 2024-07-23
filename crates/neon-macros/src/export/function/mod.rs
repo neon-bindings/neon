@@ -2,6 +2,8 @@ use crate::export::function::meta::Kind;
 
 pub(crate) mod meta;
 
+static ASYNC_CX_ERROR: &str = "`FunctionContext` is not allowed in async functions";
+static ASYNC_FN_ERROR: &str = "`async` attribute should not be used with an `async fn`";
 static TASK_CX_ERROR: &str = "`FunctionContext` is not allowed with `task` attribute";
 
 pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenStream {
@@ -40,13 +42,19 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
             .unwrap_or_else(|| quote::quote!(#name))
     });
 
-    // If necessary, wrap the return value in `Json` before calling `TryIntoJs`
-    let json_return = meta.json.then(|| {
-        is_result_output(&meta, &sig.output)
-            // Use `.map(Json)` on a `Result`
-            .then(|| quote::quote!(let res = res.map(neon::types::extract::Json);))
-            // Wrap other values with `Json(res)`
-            .unwrap_or_else(|| quote::quote!(let res = neon::types::extract::Json(res);))
+    // Import the value or JSON trait for conversion
+    let result_trait_name = if meta.json {
+        quote::format_ident!("NeonExportReturnJson")
+    } else {
+        quote::format_ident!("NeonExportReturnValue")
+    };
+
+    // Convert the result
+    // N.B.: Braces are intentionally included to avoid leaking trait to function body
+    let result_extract = quote::quote!({
+        use neon::macro_internal::#result_trait_name;
+
+        res.try_neon_export_return(&mut cx)
     });
 
     // Default export name as identity unless a name is provided
@@ -57,22 +65,27 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
 
     // Generate the call to the original function
     let call_body = match meta.kind {
+        Kind::Async | Kind::AsyncFn => quote::quote!(
+            let (#(#tuple_fields,)*) = cx.args()?;
+            let fut = #name(#context_arg #(#args),*);
+            let fut = {
+                use neon::macro_internal::ToNeonFutureMarker;
+
+                (&fut).to_neon_future_marker().make_result(&mut cx, fut)?
+            };
+
+            neon::macro_internal::spawn(&mut cx, fut, |mut cx, res| #result_extract)
+        ),
         Kind::Normal => quote::quote!(
             let (#(#tuple_fields,)*) = cx.args()?;
             let res = #name(#context_arg #(#args),*);
-            #json_return
 
-            neon::types::extract::TryIntoJs::try_into_js(res, &mut cx)
-                .map(|v| neon::handle::Handle::upcast(&v))
+            #result_extract
         ),
         Kind::Task => quote::quote!(
             let (#(#tuple_fields,)*) = cx.args()?;
-            let promise = neon::context::Context::task(&mut cx, move || {
-                let res = #name(#context_arg #(#args),*);
-                #json_return
-                res
-            })
-            .promise(|mut cx, res| neon::types::extract::TryIntoJs::try_into_js(res, &mut cx));
+            let promise = neon::context::Context::task(&mut cx, move || #name(#context_arg #(#args),*))
+                .promise(|mut cx, res| #result_extract);
 
             Ok(neon::handle::Handle::upcast(&promise))
         ),
@@ -160,34 +173,10 @@ fn has_context_arg(meta: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool>
 
     // Context is only allowed for normal functions
     match meta.kind {
-        Kind::Normal => {}
+        Kind::Normal | Kind::Async => {}
+        Kind::AsyncFn => return Err(syn::Error::new(first.span(), ASYNC_CX_ERROR)),
         Kind::Task => return Err(syn::Error::new(first.span(), TASK_CX_ERROR)),
     }
 
     Ok(true)
-}
-
-// Determine if a return type is a `Result`
-fn is_result_output(meta: &meta::Meta, ret: &syn::ReturnType) -> bool {
-    // Forced result output
-    if meta.result {
-        return true;
-    }
-
-    let ty = match ret {
-        syn::ReturnType::Default => return false,
-        syn::ReturnType::Type(_, ty) => &**ty,
-    };
-
-    let path = match ty {
-        syn::Type::Path(path) => path,
-        _ => return false,
-    };
-
-    let path = match path.path.segments.last() {
-        Some(path) => path,
-        None => return false,
-    };
-
-    path.ident == "Result" || path.ident == "NeonResult" || path.ident == "JsResult"
 }

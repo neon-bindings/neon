@@ -23,6 +23,8 @@ use crate::{
 /// [`SystemTime`](std::time::SystemTime) timestamps to JavaScript `Date` objects.
 ///
 /// ```
+/// # #[cfg(feature = "easy-cast")]
+/// # {
 /// # use neon::prelude::*;
 /// use easy_cast::Cast; // for safe numeric conversions
 /// use neon::types::JsDate;
@@ -45,6 +47,7 @@ use crate::{
 ///         .and_then(|n| Ok(cx.date(n)?))
 ///         .or_else(|err| cx.throw_error(err.to_string()))
 /// }
+/// # }
 /// ```
 #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
 #[derive(Debug)]

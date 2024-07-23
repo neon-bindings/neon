@@ -39,7 +39,7 @@ macro_rules! napi_name {
 ///
 /// Sample input:
 ///
-/// ```ignore
+/// ```skip
 /// extern "C" {
 ///     fn get_undefined(env: Env, result: *mut Value) -> Status;
 ///     /* Additional functions may be included */  
@@ -48,7 +48,7 @@ macro_rules! napi_name {
 ///
 /// Generated output:
 ///
-/// ```ignore
+/// ```skip
 /// // Each field is a pointer to a N-API function
 /// struct Napi {
 ///     get_undefined: unsafe extern "C" fn(env: Env, result: *mut Value) -> Status,

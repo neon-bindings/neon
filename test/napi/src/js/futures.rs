@@ -1,16 +1,11 @@
-use {
-    neon::{prelude::*, types::buffer::TypedArray},
-    once_cell::sync::OnceCell,
-    tokio::runtime::Runtime,
+use std::future::Future;
+
+use neon::{
+    prelude::*,
+    types::{buffer::TypedArray, extract::Error},
 };
 
-fn runtime<'a, C: Context<'a>>(cx: &mut C) -> NeonResult<&'static Runtime> {
-    static RUNTIME: OnceCell<Runtime> = OnceCell::new();
-
-    RUNTIME
-        .get_or_try_init(Runtime::new)
-        .or_else(|err| cx.throw_error(&err.to_string()))
-}
+use crate::runtime;
 
 // Accepts two functions that take no parameters and return numbers.
 // Resolves with the sum of the two numbers.
@@ -79,4 +74,36 @@ pub fn lazy_async_sum(mut cx: FunctionContext) -> JsResult<JsPromise> {
     });
 
     Ok(promise)
+}
+
+#[neon::export]
+async fn async_fn_add(a: f64, b: f64) -> f64 {
+    a + b
+}
+
+#[neon::export(async)]
+fn async_add(a: f64, b: f64) -> impl Future<Output = f64> {
+    async move { a + b }
+}
+
+#[neon::export]
+async fn async_fn_div(a: f64, b: f64) -> Result<f64, Error> {
+    if b == 0.0 {
+        return Err(Error::from("Divide by zero"));
+    }
+
+    Ok(a / b)
+}
+
+#[neon::export(async)]
+fn async_div(cx: &mut FunctionContext) -> NeonResult<impl Future<Output = Result<f64, Error>>> {
+    let (a, b): (f64, f64) = cx.args()?;
+
+    Ok(async move {
+        if b == 0.0 {
+            return Err(Error::from("Divide by zero"));
+        }
+
+        Ok(a / b)
+    })
 }
