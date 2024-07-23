@@ -414,6 +414,20 @@ describe("Typed arrays", function () {
     assert.equal(b[3], 55);
   });
 
+  it("copies from a source buffer to a destination with borrow API", function () {
+    for (const f of [addon.copy_buffer, addon.copy_buffer_with_borrow]) {
+      const a = Buffer.from([1, 2, 3]);
+      const b = Buffer.from([0, 0, 0, 4, 5, 6]);
+
+      // Full
+      addon.copy_buffer(a, b);
+      assert.deepEqual([...b], [1, 2, 3, 4, 5, 6]);
+
+      // Empty buffers
+      addon.copy_buffer(Buffer.alloc(0), Buffer.alloc(0));
+    }
+  });
+
   it("zeroes the byteLength when an ArrayBuffer is detached", function () {
     var buf = new ArrayBuffer(16);
     assert.strictEqual(buf.byteLength, 16);

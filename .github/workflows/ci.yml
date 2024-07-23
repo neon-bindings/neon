@@ -25,9 +25,9 @@ jobs:
       - name: Set Matrix
         id: set_matrix
         env:
-          FULL_NODE_VERSIONS: '["18.x", "20.x", "22.x"]'
+          FULL_NODE_VERSIONS: '["18.x", "20.x"]'
           FULL_RUST_TOOLCHAINS: '["stable", "nightly"]'
-          PARTIAL_NODE_VERSIONS: '["22.x"]'
+          PARTIAL_NODE_VERSIONS: '["20.x"]'
           PARTIAL_RUST_TOOLCHAINS: '["stable"]'
           HAS_FULL_MATRIX_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'full matrix') }}
           IS_PUSHED: ${{ github.event_name == 'push' }}

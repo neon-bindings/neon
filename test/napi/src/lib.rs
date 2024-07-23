@@ -285,6 +285,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("read_buffer_with_borrow", read_buffer_with_borrow)?;
     cx.export_function("write_buffer_with_lock", write_buffer_with_lock)?;
     cx.export_function("write_buffer_with_borrow_mut", write_buffer_with_borrow_mut)?;
+    cx.export_function("copy_buffer", copy_buffer)?;
+    cx.export_function("copy_buffer_with_borrow", copy_buffer_with_borrow)?;
     cx.export_function("byte_length", byte_length)?;
     cx.export_function("call_nullary_method", call_nullary_method)?;
     cx.export_function("call_unary_method", call_unary_method)?;
