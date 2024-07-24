@@ -34,6 +34,31 @@
 //! }
 //! ```
 //!
+//! ## Writing Generic Helpers
+//!
+//! Depending on the entrypoint, a user may have a [`FunctionContext`], [`ModuleContext`], or
+//! generic [`Cx`]. While it is possible to write a helper that is generic over the [`Context`]
+//! trait, it is often simpler to accept a [`Cx`] argument. Due to deref coercion, other contexts
+//! may be passed into a function that accepts a reference to [`Cx`].
+//!
+//! ```
+//! # use neon::prelude::*;
+//! fn log(cx: &mut Cx, msg: &str) -> NeonResult<()> {
+//!     cx.global::<JsObject>("console")?
+//!         .call_method_with(cx, "log")?
+//!         .arg(cx.string(msg))
+//!         .exec(cx)?;
+//!
+//!     Ok(())
+//! }
+//!
+//! fn print(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+//!     let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+//!     log(&mut cx, &msg)?;
+//!     Ok(cx.undefined())
+//! }
+//! ```
+//!
 //! ## Memory Management
 //!
 //! Because contexts represent the engine at a point in time, they are associated with a
@@ -247,6 +272,18 @@ impl<'cx> ContextInternal<'cx> for Cx<'cx> {
 }
 
 impl<'cx> Context<'cx> for Cx<'cx> {}
+
+impl<'cx> From<FunctionContext<'cx>> for Cx<'cx> {
+    fn from(cx: FunctionContext<'cx>) -> Self {
+        cx.cx
+    }
+}
+
+impl<'cx> From<ModuleContext<'cx>> for Cx<'cx> {
+    fn from(cx: ModuleContext<'cx>) -> Self {
+        cx.cx
+    }
+}
 
 #[repr(C)]
 pub(crate) struct CallbackInfo<'cx> {
