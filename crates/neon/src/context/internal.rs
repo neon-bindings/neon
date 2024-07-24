@@ -1,7 +1,7 @@
 use std::{cell::RefCell, ffi::c_void, mem::MaybeUninit};
 
 use crate::{
-    context::ModuleContext,
+    context::{Cx, ModuleContext},
     handle::Handle,
     result::NeonResult,
     sys::{self, raw},
@@ -47,7 +47,11 @@ impl Env {
 }
 
 pub trait ContextInternal<'cx>: Sized {
-    fn env(&self) -> Env;
+    fn cx(&self) -> &Cx<'cx>;
+    fn cx_mut(&mut self) -> &mut Cx<'cx>;
+    fn env(&self) -> Env {
+        self.cx().env
+    }
 }
 
 fn default_main(mut cx: ModuleContext) -> NeonResult<()> {

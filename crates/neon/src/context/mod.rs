@@ -266,8 +266,12 @@ impl<'cx> Cx<'cx> {
 }
 
 impl<'cx> ContextInternal<'cx> for Cx<'cx> {
-    fn env(&self) -> Env {
-        self.env
+    fn cx(&self) -> &Cx<'cx> {
+        self
+    }
+
+    fn cx_mut(&mut self) -> &mut Cx<'cx> {
+        self
     }
 }
 
@@ -664,13 +668,13 @@ impl<'cx> Deref for ModuleContext<'cx> {
     type Target = Cx<'cx>;
 
     fn deref(&self) -> &Self::Target {
-        &self.cx
+        self.cx()
     }
 }
 
 impl<'cx> DerefMut for ModuleContext<'cx> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.cx
+        self.cx_mut()
     }
 }
 
@@ -727,8 +731,12 @@ impl<'cx> ModuleContext<'cx> {
 }
 
 impl<'cx> ContextInternal<'cx> for ModuleContext<'cx> {
-    fn env(&self) -> Env {
-        self.cx.env
+    fn cx(&self) -> &Cx<'cx> {
+        &self.cx
+    }
+
+    fn cx_mut(&mut self) -> &mut Cx<'cx> {
+        &mut self.cx
     }
 }
 
@@ -873,8 +881,12 @@ impl<'cx> FunctionContext<'cx> {
 }
 
 impl<'cx> ContextInternal<'cx> for FunctionContext<'cx> {
-    fn env(&self) -> Env {
-        self.cx.env
+    fn cx(&self) -> &Cx<'cx> {
+        &self.cx
+    }
+
+    fn cx_mut(&mut self) -> &mut Cx<'cx> {
+        &mut self.cx
     }
 }
 
