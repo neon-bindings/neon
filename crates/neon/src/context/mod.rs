@@ -180,21 +180,26 @@ use crate::types::date::{DateError, JsDate};
 #[cfg(feature = "napi-6")]
 use crate::lifecycle::InstanceData;
 
+#[doc(hidden)]
 /// An execution context of a task completion callback.
 pub type TaskContext<'cx> = Cx<'cx>;
 
+#[doc(hidden)]
 /// An execution context of a scope created by [`Context::execute_scoped()`](Context::execute_scoped).
 pub type ExecuteContext<'cx> = Cx<'cx>;
 
+#[doc(hidden)]
 /// An execution context of a scope created by [`Context::compute_scoped()`](Context::compute_scoped).
 pub type ComputeContext<'cx> = Cx<'cx>;
 
+#[doc(hidden)]
 /// A view of the JS engine in the context of a finalize method on garbage collection
 pub type FinalizeContext<'cx> = Cx<'cx>;
 
 /// An execution context constructed from a raw [`Env`](crate::sys::bindings::Env).
 #[cfg(feature = "sys")]
 #[cfg_attr(docsrs, doc(cfg(feature = "sys")))]
+#[doc(hidden)]
 pub type SysContext<'cx> = Cx<'cx>;
 
 /// Context representing access to the JavaScript runtime
@@ -208,7 +213,7 @@ impl<'cx> Cx<'cx> {
     ///
     /// # Safety
     ///
-    /// Once a `SysContext` has been created, it is unsafe to use
+    /// Once a [`Cx`] has been created, it is unsafe to use
     /// the `Env`. The handle scope for the `Env` must be valid for
     /// the lifetime `'cx`.
     #[cfg(feature = "sys")]
@@ -344,7 +349,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     fn execute_scoped<'b, T, F>(&mut self, f: F) -> T
     where
         'a: 'b,
-        F: FnOnce(ExecuteContext<'b>) -> T,
+        F: FnOnce(Cx<'b>) -> T,
     {
         let env = self.env();
         let scope = unsafe { HandleScope::new(env.to_raw()) };
@@ -364,7 +369,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     where
         'a: 'b,
         V: Value,
-        F: FnOnce(ComputeContext<'b>) -> JsResult<'b, V>,
+        F: FnOnce(Cx<'b>) -> JsResult<'b, V>,
     {
         let env = self.env();
         let scope = unsafe { EscapableHandleScope::new(env.to_raw()) };

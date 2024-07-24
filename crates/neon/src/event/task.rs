@@ -1,7 +1,7 @@
 use std::{panic::resume_unwind, thread};
 
 use crate::{
-    context::{internal::Env, Context, TaskContext},
+    context::{internal::Env, Context, Cx},
     handle::Handle,
     result::{JsResult, NeonResult},
     sys::{async_work, raw},
@@ -44,7 +44,7 @@ where
     /// of the `execute` callback
     pub fn and_then<F>(self, complete: F)
     where
-        F: FnOnce(TaskContext, O) -> NeonResult<()> + 'static,
+        F: FnOnce(Cx, O) -> NeonResult<()> + 'static,
     {
         let env = self.cx.env();
         let execute = self.execute;
@@ -61,7 +61,7 @@ where
     pub fn promise<V, F>(self, complete: F) -> Handle<'a, JsPromise>
     where
         V: Value,
-        F: FnOnce(TaskContext, O) -> JsResult<V> + 'static,
+        F: FnOnce(Cx, O) -> JsResult<V> + 'static,
     {
         let env = self.cx.env();
         let (deferred, promise) = JsPromise::new(self.cx);
@@ -78,7 +78,7 @@ fn schedule<I, O, D>(env: Env, input: I, data: D)
 where
     I: FnOnce() -> O + Send + 'static,
     O: Send + 'static,
-    D: FnOnce(TaskContext, O) -> NeonResult<()> + 'static,
+    D: FnOnce(Cx, O) -> NeonResult<()> + 'static,
 {
     unsafe {
         async_work::schedule(env.to_raw(), input, execute::<I, O>, complete::<O, D>, data);
@@ -96,7 +96,7 @@ where
 fn complete<O, D>(env: raw::Env, output: thread::Result<O>, callback: D)
 where
     O: Send + 'static,
-    D: FnOnce(TaskContext, O) -> NeonResult<()> + 'static,
+    D: FnOnce(Cx, O) -> NeonResult<()> + 'static,
 {
     let output = output.unwrap_or_else(|panic| {
         // If a panic was caught while executing the task on the Node Worker
@@ -104,7 +104,7 @@ where
         resume_unwind(panic)
     });
 
-    TaskContext::with_context(env.into(), move |cx| {
+    Cx::with_context(env.into(), move |cx| {
         let _ = callback(cx, output);
     });
 }
@@ -114,7 +114,7 @@ fn schedule_promise<I, O, D, V>(env: Env, input: I, complete: D, deferred: Defer
 where
     I: FnOnce() -> O + Send + 'static,
     O: Send + 'static,
-    D: FnOnce(TaskContext, O) -> JsResult<V> + 'static,
+    D: FnOnce(Cx, O) -> JsResult<V> + 'static,
     V: Value,
 {
     unsafe {
@@ -134,12 +134,12 @@ fn complete_promise<O, D, V>(
     (complete, deferred): (D, Deferred),
 ) where
     O: Send + 'static,
-    D: FnOnce(TaskContext, O) -> JsResult<V> + 'static,
+    D: FnOnce(Cx, O) -> JsResult<V> + 'static,
     V: Value,
 {
     let env = env.into();
 
-    TaskContext::with_context(env, move |cx| {
+    Cx::with_context(env, move |cx| {
         deferred.try_catch_settle(cx, move |cx| {
             let output = output.unwrap_or_else(|panic| resume_unwind(panic));
 

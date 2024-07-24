@@ -7,7 +7,7 @@ use std::{
 };
 
 use crate::{
-    context::{Context, TaskContext},
+    context::{Context, Cx},
     result::{NeonResult, ResultExt, Throw},
     sys::{raw::Env, tsfn::ThreadsafeFunction},
 };
@@ -143,7 +143,7 @@ impl Channel {
     pub fn send<T, F>(&self, f: F) -> JoinHandle<T>
     where
         T: Send + 'static,
-        F: FnOnce(TaskContext) -> NeonResult<T> + Send + 'static,
+        F: FnOnce(Cx) -> NeonResult<T> + Send + 'static,
     {
         self.try_send(f).unwrap()
     }
@@ -155,15 +155,15 @@ impl Channel {
     pub fn try_send<T, F>(&self, f: F) -> Result<JoinHandle<T>, SendError>
     where
         T: Send + 'static,
-        F: FnOnce(TaskContext) -> NeonResult<T> + Send + 'static,
+        F: FnOnce(Cx) -> NeonResult<T> + Send + 'static,
     {
         let (tx, rx) = oneshot::channel();
         let callback = Box::new(move |env| {
             let env = unsafe { mem::transmute(env) };
 
-            // Note: It is sufficient to use `TaskContext` because
+            // Note: It is sufficient to use `Cx` because
             // N-API creates a `HandleScope` before calling the callback.
-            TaskContext::with_context(env, move |cx| {
+            Cx::with_context(env, move |cx| {
                 // Error can be ignored; it only means the user didn't join
                 let _ = tx.send(f(cx).map_err(Into::into));
             });

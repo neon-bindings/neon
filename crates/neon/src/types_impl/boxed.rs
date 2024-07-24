@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    context::{internal::Env, Context, FinalizeContext},
+    context::{internal::Env, Context, Cx},
     handle::{internal::TransparentNoCopyWrapper, Handle},
     object::Object,
     sys::{external, raw},
@@ -244,7 +244,7 @@ impl<T: Finalize + 'static> JsBox<T> {
             let data = *data.downcast::<U>().unwrap();
             let env = unsafe { std::mem::transmute(env) };
 
-            FinalizeContext::with_context(env, move |mut cx| data.finalize(&mut cx));
+            Cx::with_context(env, move |mut cx| data.finalize(&mut cx));
         }
 
         let v = Box::new(value) as BoxAny;
