@@ -108,7 +108,8 @@ use crate::{
     types::{JsValue, Value},
 };
 
-pub use self::error::Error;
+pub use self::{error::Error, with::With};
+
 #[cfg(feature = "serde")]
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub use self::json::Json;
@@ -119,6 +120,7 @@ mod json;
 mod private;
 mod try_from_js;
 mod try_into_js;
+mod with;
 
 /// Extract Rust data from a JavaScript value
 pub trait TryFromJs<'cx>
