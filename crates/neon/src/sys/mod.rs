@@ -53,12 +53,12 @@
 //! # #[cfg(feature = "sys")]
 //! # {
 //! # let env = std::ptr::null_mut().cast();
-//! use neon::{context::SysContext, prelude::*, sys::bindings};
+//! use neon::{context::Cx, prelude::*, sys::bindings};
 //!
 //! let cx = unsafe {
 //!     neon::sys::setup(env);
 //!
-//!     SysContext::from_raw(env)
+//!     Cx::from_raw(env)
 //! };
 //!
 //! let raw_string: bindings::Value = cx.string("Hello, World!").to_raw();

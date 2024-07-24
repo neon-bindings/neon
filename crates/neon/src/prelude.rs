@@ -2,10 +2,7 @@
 
 #[doc(no_inline)]
 pub use crate::{
-    context::{
-        CallKind, ComputeContext, Context, ExecuteContext, FunctionContext, ModuleContext,
-        TaskContext,
-    },
+    context::{CallKind, Context, Cx, FunctionContext, ModuleContext},
     handle::{Handle, Root},
     object::Object,
     result::{JsResult, NeonResult, ResultExt as NeonResultExt},
@@ -17,6 +14,9 @@ pub use crate::{
         JsUint32Array, JsUint8Array, JsUndefined, JsValue, Value,
     },
 };
+
+#[doc(hidden)]
+pub use crate::context::{ComputeContext, ExecuteContext, TaskContext};
 
 #[cfg(feature = "napi-4")]
 #[doc(no_inline)]
