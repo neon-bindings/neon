@@ -31,6 +31,11 @@ pub unsafe fn is_boolean(env: Env, val: Local) -> bool {
     is_type(env, val, napi::ValueType::Boolean)
 }
 
+/// Is `val` a JavaScript symbol?
+pub unsafe fn is_symbol(env: Env, val: Local) -> bool {
+    is_type(env, val, napi::ValueType::Symbol)
+}
+
 /// Is `val` a JavaScript string?
 pub unsafe fn is_string(env: Env, val: Local) -> bool {
     is_type(env, val, napi::ValueType::String)

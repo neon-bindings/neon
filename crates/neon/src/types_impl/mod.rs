@@ -410,6 +410,58 @@ impl ValueInternal for JsBoolean {
 }
 
 /// The type of JavaScript
+/// [symbol](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol)
+/// primitives.
+#[derive(Debug)]
+#[repr(transparent)]
+pub struct JsSymbol(raw::Local);
+
+unsafe impl TransparentNoCopyWrapper for JsSymbol {
+    type Inner = raw::Local;
+
+    fn into_inner(self) -> Self::Inner {
+        self.0
+    }
+}
+
+impl Value for JsSymbol {}
+
+impl Object for JsSymbol {}
+
+impl ValueInternal for JsSymbol {
+    fn name() -> &'static str {
+        "symbol"
+    }
+
+    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
+        unsafe { sys::tag::is_symbol(env.to_raw(), other.to_local()) }
+    }
+
+    fn to_local(&self) -> raw::Local {
+        self.0
+    }
+
+    unsafe fn from_local(_env: Env, h: raw::Local) -> Self {
+        JsSymbol(h)
+    }
+}
+
+impl JsSymbol {
+    pub fn new<'a, C: Context<'a>, S: AsRef<str>>(
+        cx: &mut C,
+        description: S,
+    ) -> Handle<'a, JsSymbol> {
+        let description = JsString::new(cx, description);
+
+        unsafe {
+            let mut local: raw::Local = std::mem::zeroed();
+            sys::symbol::new(&mut local, cx.env().to_raw(), description.to_local());
+            Handle::new_internal(JsSymbol(local))
+        }
+    }
+}
+
+/// The type of JavaScript
 /// [string](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Data_structures#primitive_values)
 /// primitives.
 ///

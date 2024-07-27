@@ -48,7 +48,8 @@
 
 pub(crate) mod internal;
 
-pub(crate) mod root;
+pub(crate) mod root_object;
+pub(crate) mod root_value;
 
 use std::{
     error::Error,
@@ -58,12 +59,13 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-pub use self::root::Root;
+pub use self::root_object::Root;
+pub use self::root_value::*;
 
 use crate::{
     context::Context,
     handle::internal::{SuperType, TransparentNoCopyWrapper},
-    result::{JsResult, ResultExt},
+    result::{JsResult, NeonResult, ResultExt},
     sys,
     types::Value,
 };
@@ -92,6 +94,13 @@ impl<'a, V: Value + 'a> Handle<'a, V> {
             value: value.into_inner(),
             phantom: PhantomData,
         }
+    }
+
+    /// Detaches the value from the Nodejs garbage collector
+    /// and manages the variable lifetime via reference counting.
+    /// Useful when interacting with a value within async closures
+    pub fn to_static(self, cx: &mut impl Context<'a>) -> NeonResult<StaticHandle<V>> {
+        StaticHandle::new(cx, self)
     }
 }
 

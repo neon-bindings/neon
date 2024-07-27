@@ -89,6 +89,7 @@ pub(crate) mod raw;
 pub(crate) mod reference;
 pub(crate) mod scope;
 pub(crate) mod string;
+pub(crate) mod symbol;
 pub(crate) mod tag;
 pub(crate) mod typedarray;
 
