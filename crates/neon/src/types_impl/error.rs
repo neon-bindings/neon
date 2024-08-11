@@ -121,9 +121,9 @@ pub(crate) fn convert_panics<T, F: UnwindSafe + FnOnce() -> NeonResult<T>>(
         Ok(result) => result,
         Err(panic) => {
             let msg = if let Some(string) = panic.downcast_ref::<String>() {
-                format!("internal error in Neon module: {}", string)
+                format!("internal error in Neon module: {string}")
             } else if let Some(str) = panic.downcast_ref::<&str>() {
-                format!("internal error in Neon module: {}", str)
+                format!("internal error in Neon module: {str}")
             } else {
                 "internal error in Neon module".to_string()
             };

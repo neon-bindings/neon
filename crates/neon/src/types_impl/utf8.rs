@@ -47,7 +47,7 @@ impl<'a> Utf8<'a> {
     pub fn into_small_unwrap(self) -> SmallUtf8<'a> {
         let size = self.size();
         self.into_small().unwrap_or_else(|| {
-            panic!("{} >= i32::MAX", size);
+            panic!("{size} >= i32::MAX");
         })
     }
 
