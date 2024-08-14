@@ -115,11 +115,20 @@ use crate::{context::ModuleContext, handle::Handle, result::NeonResult, types::J
 mod lifecycle;
 
 #[cfg(feature = "napi-8")]
+#[repr(u64)]
+// Note: `upper` must be non-zero or `napi_check_object_type_tag` will always return false
+// https://github.com/nodejs/node/blob/5fad0b93667ffc6e4def52996b9529ac99b26319/src/js_native_api_v8.cc#L2455
+pub(crate) enum UpperTypeTag {
+    Module = 1,
+    Tsfn = 2,
+}
+
+#[cfg(feature = "napi-8")]
 static MODULE_TAG: once_cell::sync::Lazy<crate::sys::TypeTag> = once_cell::sync::Lazy::new(|| {
     let mut lower = [0; std::mem::size_of::<u64>()];
 
     // Generating a random module tag at runtime allows Neon builds to be reproducible. A few
-    //  alternativeswere considered:
+    //  alternatives were considered:
     // * Generating a random value at build time; this reduces runtime dependencies but, breaks
     //   reproducible builds
     // * A static random value; this solves the previous issues, but does not protect against ABI
@@ -132,9 +141,10 @@ static MODULE_TAG: once_cell::sync::Lazy<crate::sys::TypeTag> = once_cell::sync:
     // expansion of implementation.
     let lower = u64::from_ne_bytes(lower);
 
-    // Note: `upper` must be non-zero or `napi_check_object_type_tag` will always return false
-    // https://github.com/nodejs/node/blob/5fad0b93667ffc6e4def52996b9529ac99b26319/src/js_native_api_v8.cc#L2455
-    crate::sys::TypeTag { lower, upper: 1 }
+    crate::sys::TypeTag {
+        lower,
+        upper: UpperTypeTag::Module as u64,
+    }
 });
 
 /// Values exported with [`neon::export`](export)
