@@ -27,7 +27,7 @@ pub fn throw_error(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 pub fn downcast_error(mut cx: FunctionContext) -> JsResult<JsString> {
     let s = cx.string("hi");
     if let Err(e) = s.downcast::<JsNumber, _>(&mut cx) {
-        Ok(cx.string(format!("{}", e)))
+        Ok(cx.string(format!("{e}")))
     } else {
         panic!()
     }

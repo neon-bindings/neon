@@ -195,7 +195,7 @@ pub fn channel_join(mut cx: FunctionContext) -> JsResult<JsUndefined> {
             .unwrap();
 
         // Process the message
-        let response = format!("Received: {}", message);
+        let response = format!("Received: {message}");
 
         // Call back to JavaScript with the response
         channel.send(move |mut cx| {

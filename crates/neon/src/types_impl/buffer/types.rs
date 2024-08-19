@@ -657,8 +657,7 @@ where
 
         if (len * elt_size) != size {
             return cx.throw_range_error(format!(
-                "byte length of typed array should be a multiple of {}",
-                elt_size
+                "byte length of typed array should be a multiple of {elt_size}"
             ));
         }
 
