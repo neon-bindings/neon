@@ -34,6 +34,31 @@
 //! }
 //! ```
 //!
+//! ## Writing Generic Helpers
+//!
+//! Depending on the entrypoint, a user may have a [`FunctionContext`], [`ModuleContext`], or
+//! generic [`Cx`]. While it is possible to write a helper that is generic over the [`Context`]
+//! trait, it is often simpler to accept a [`Cx`] argument. Due to deref coercion, other contexts
+//! may be passed into a function that accepts a reference to [`Cx`].
+//!
+//! ```
+//! # use neon::prelude::*;
+//! fn log(cx: &mut Cx, msg: &str) -> NeonResult<()> {
+//!     cx.global::<JsObject>("console")?
+//!         .call_method_with(cx, "log")?
+//!         .arg(cx.string(msg))
+//!         .exec(cx)?;
+//!
+//!     Ok(())
+//! }
+//!
+//! fn print(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+//!     let msg = cx.argument::<JsString>(0)?.value(&mut cx);
+//!     log(&mut cx, &msg)?;
+//!     Ok(cx.undefined())
+//! }
+//! ```
+//!
 //! ## Memory Management
 //!
 //! Because contexts represent the engine at a point in time, they are associated with a
@@ -141,7 +166,12 @@
 
 pub(crate) mod internal;
 
-use std::{convert::Into, marker::PhantomData, panic::UnwindSafe};
+use std::{
+    convert::Into,
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+    panic::UnwindSafe,
+};
 
 pub use crate::types::buffer::lock::Lock;
 
@@ -175,10 +205,94 @@ use crate::types::date::{DateError, JsDate};
 #[cfg(feature = "napi-6")]
 use crate::lifecycle::InstanceData;
 
+#[doc(hidden)]
+/// An execution context of a task completion callback.
+pub type TaskContext<'cx> = Cx<'cx>;
+
+#[doc(hidden)]
+/// An execution context of a scope created by [`Context::execute_scoped()`](Context::execute_scoped).
+pub type ExecuteContext<'cx> = Cx<'cx>;
+
+#[doc(hidden)]
+/// An execution context of a scope created by [`Context::compute_scoped()`](Context::compute_scoped).
+pub type ComputeContext<'cx> = Cx<'cx>;
+
+#[doc(hidden)]
+/// A view of the JS engine in the context of a finalize method on garbage collection
+pub type FinalizeContext<'cx> = Cx<'cx>;
+
+/// An execution context constructed from a raw [`Env`](crate::sys::bindings::Env).
+#[cfg(feature = "sys")]
+#[cfg_attr(docsrs, doc(cfg(feature = "sys")))]
+#[doc(hidden)]
+pub type SysContext<'cx> = Cx<'cx>;
+
+/// Context representing access to the JavaScript runtime
+pub struct Cx<'cx> {
+    env: Env,
+    _phantom_inner: PhantomData<&'cx ()>,
+}
+
+impl<'cx> Cx<'cx> {
+    /// Creates a context from a raw `Env`.
+    ///
+    /// # Safety
+    ///
+    /// Once a [`Cx`] has been created, it is unsafe to use
+    /// the `Env`. The handle scope for the `Env` must be valid for
+    /// the lifetime `'cx`.
+    #[cfg(feature = "sys")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "sys")))]
+    pub unsafe fn from_raw(env: sys::Env) -> Self {
+        Self {
+            env: env.into(),
+            _phantom_inner: PhantomData,
+        }
+    }
+
+    fn new(env: Env) -> Self {
+        Self {
+            env,
+            _phantom_inner: PhantomData,
+        }
+    }
+
+    pub(crate) fn with_context<T, F: for<'b> FnOnce(Cx<'b>) -> T>(env: Env, f: F) -> T {
+        f(Self {
+            env,
+            _phantom_inner: PhantomData,
+        })
+    }
+}
+
+impl<'cx> ContextInternal<'cx> for Cx<'cx> {
+    fn cx(&self) -> &Cx<'cx> {
+        self
+    }
+
+    fn cx_mut(&mut self) -> &mut Cx<'cx> {
+        self
+    }
+}
+
+impl<'cx> Context<'cx> for Cx<'cx> {}
+
+impl<'cx> From<FunctionContext<'cx>> for Cx<'cx> {
+    fn from(cx: FunctionContext<'cx>) -> Self {
+        cx.cx
+    }
+}
+
+impl<'cx> From<ModuleContext<'cx>> for Cx<'cx> {
+    fn from(cx: ModuleContext<'cx>) -> Self {
+        cx.cx
+    }
+}
+
 #[repr(C)]
-pub(crate) struct CallbackInfo<'a> {
+pub(crate) struct CallbackInfo<'cx> {
     info: raw::FunctionCallbackInfo,
-    _lifetime: PhantomData<&'a raw::FunctionCallbackInfo>,
+    _lifetime: PhantomData<&'cx raw::FunctionCallbackInfo>,
 }
 
 impl CallbackInfo<'_> {
@@ -276,14 +390,11 @@ pub trait Context<'a>: ContextInternal<'a> {
     fn execute_scoped<'b, T, F>(&mut self, f: F) -> T
     where
         'a: 'b,
-        F: FnOnce(ExecuteContext<'b>) -> T,
+        F: FnOnce(Cx<'b>) -> T,
     {
         let env = self.env();
         let scope = unsafe { HandleScope::new(env.to_raw()) };
-        let result = f(ExecuteContext {
-            env,
-            _phantom_inner: PhantomData,
-        });
+        let result = f(Cx::new(env));
 
         drop(scope);
 
@@ -299,14 +410,11 @@ pub trait Context<'a>: ContextInternal<'a> {
     where
         'a: 'b,
         V: Value,
-        F: FnOnce(ComputeContext<'b>) -> JsResult<'b, V>,
+        F: FnOnce(Cx<'b>) -> JsResult<'b, V>,
     {
         let env = self.env();
         let scope = unsafe { EscapableHandleScope::new(env.to_raw()) };
-        let cx = ComputeContext {
-            env,
-            phantom_inner: PhantomData,
-        };
+        let cx = Cx::new(env);
 
         let escapee = unsafe { scope.escape(f(cx)?.to_local()) };
 
@@ -551,20 +659,37 @@ pub trait Context<'a>: ContextInternal<'a> {
 }
 
 /// An execution context of module initialization.
-pub struct ModuleContext<'a> {
-    env: Env,
-    exports: Handle<'a, JsObject>,
+pub struct ModuleContext<'cx> {
+    cx: Cx<'cx>,
+    exports: Handle<'cx, JsObject>,
 }
 
-impl<'a> UnwindSafe for ModuleContext<'a> {}
+impl<'cx> Deref for ModuleContext<'cx> {
+    type Target = Cx<'cx>;
 
-impl<'a> ModuleContext<'a> {
+    fn deref(&self) -> &Self::Target {
+        self.cx()
+    }
+}
+
+impl<'cx> DerefMut for ModuleContext<'cx> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.cx_mut()
+    }
+}
+
+impl<'cx> UnwindSafe for ModuleContext<'cx> {}
+
+impl<'cx> ModuleContext<'cx> {
     pub(crate) fn with<T, F: for<'b> FnOnce(ModuleContext<'b>) -> T>(
         env: Env,
-        exports: Handle<'a, JsObject>,
+        exports: Handle<'cx, JsObject>,
         f: F,
     ) -> T {
-        f(ModuleContext { env, exports })
+        f(ModuleContext {
+            cx: Cx::new(env),
+            exports,
+        })
     }
 
     #[cfg(not(feature = "napi-5"))]
@@ -600,60 +725,50 @@ impl<'a> ModuleContext<'a> {
     }
 
     /// Produces a handle to a module's exports object.
-    pub fn exports_object(&mut self) -> JsResult<'a, JsObject> {
+    pub fn exports_object(&mut self) -> JsResult<'cx, JsObject> {
         Ok(self.exports)
     }
 }
 
-impl<'a> ContextInternal<'a> for ModuleContext<'a> {
-    fn env(&self) -> Env {
-        self.env
+impl<'cx> ContextInternal<'cx> for ModuleContext<'cx> {
+    fn cx(&self) -> &Cx<'cx> {
+        &self.cx
+    }
+
+    fn cx_mut(&mut self) -> &mut Cx<'cx> {
+        &mut self.cx
     }
 }
 
-impl<'a> Context<'a> for ModuleContext<'a> {}
-
-/// An execution context of a scope created by [`Context::execute_scoped()`](Context::execute_scoped).
-pub struct ExecuteContext<'a> {
-    env: Env,
-    _phantom_inner: PhantomData<&'a ()>,
-}
-
-impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
-    fn env(&self) -> Env {
-        self.env
-    }
-}
-
-impl<'a> Context<'a> for ExecuteContext<'a> {}
-
-/// An execution context of a scope created by [`Context::compute_scoped()`](Context::compute_scoped).
-pub struct ComputeContext<'a> {
-    env: Env,
-    phantom_inner: PhantomData<&'a ()>,
-}
-
-impl<'a> ContextInternal<'a> for ComputeContext<'a> {
-    fn env(&self) -> Env {
-        self.env
-    }
-}
-
-impl<'a> Context<'a> for ComputeContext<'a> {}
+impl<'cx> Context<'cx> for ModuleContext<'cx> {}
 
 /// An execution context of a function call.
 ///
 /// The type parameter `T` is the type of the `this`-binding.
-pub struct FunctionContext<'a> {
-    env: Env,
-    info: &'a CallbackInfo<'a>,
+pub struct FunctionContext<'cx> {
+    cx: Cx<'cx>,
+    info: &'cx CallbackInfo<'cx>,
 
     arguments: Option<sys::call::Arguments>,
 }
 
-impl<'a> UnwindSafe for FunctionContext<'a> {}
+impl<'cx> Deref for FunctionContext<'cx> {
+    type Target = Cx<'cx>;
 
-impl<'a> FunctionContext<'a> {
+    fn deref(&self) -> &Self::Target {
+        &self.cx
+    }
+}
+
+impl<'cx> DerefMut for FunctionContext<'cx> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.cx
+    }
+}
+
+impl<'cx> UnwindSafe for FunctionContext<'cx> {}
+
+impl<'cx> FunctionContext<'cx> {
     /// Indicates whether the function was called with `new`.
     pub fn kind(&self) -> CallKind {
         self.info.kind(self)
@@ -661,11 +776,11 @@ impl<'a> FunctionContext<'a> {
 
     pub(crate) fn with<U, F: for<'b> FnOnce(FunctionContext<'b>) -> U>(
         env: Env,
-        info: &'a CallbackInfo<'a>,
+        info: &'cx CallbackInfo<'cx>,
         f: F,
     ) -> U {
         f(FunctionContext {
-            env,
+            cx: Cx::new(env),
             info,
             arguments: None,
         })
@@ -682,7 +797,7 @@ impl<'a> FunctionContext<'a> {
     }
 
     /// Produces the `i`th argument, or `None` if `i` is greater than or equal to `self.len()`.
-    pub fn argument_opt(&mut self, i: usize) -> Option<Handle<'a, JsValue>> {
+    pub fn argument_opt(&mut self, i: usize) -> Option<Handle<'cx, JsValue>> {
         let argv = if let Some(argv) = self.arguments.as_ref() {
             argv
         } else {
@@ -695,7 +810,7 @@ impl<'a> FunctionContext<'a> {
     }
 
     /// Produces the `i`th argument and casts it to the type `V`, or throws an exception if `i` is greater than or equal to `self.len()` or cannot be cast to `V`.
-    pub fn argument<V: Value>(&mut self, i: usize) -> JsResult<'a, V> {
+    pub fn argument<V: Value>(&mut self, i: usize) -> JsResult<'cx, V> {
         match self.argument_opt(i) {
             Some(v) => v.downcast_or_throw(self),
             None => self.throw_type_error("not enough arguments"),
@@ -706,12 +821,12 @@ impl<'a> FunctionContext<'a> {
     /// Equivalent to calling `cx.this_value().downcast_or_throw(&mut cx)`.
     ///
     /// Throws an exception if the value is a different type.
-    pub fn this<T: Value>(&mut self) -> JsResult<'a, T> {
+    pub fn this<T: Value>(&mut self) -> JsResult<'cx, T> {
         self.this_value().downcast_or_throw(self)
     }
 
     /// Produces a handle to the function's [`this`-binding](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/this#function_context).
-    pub fn this_value(&mut self) -> Handle<'a, JsValue> {
+    pub fn this_value(&mut self) -> Handle<'cx, JsValue> {
         JsValue::new_internal(self.info.this(self))
     }
 
@@ -731,7 +846,7 @@ impl<'a> FunctionContext<'a> {
     /// ```
     pub fn args<T>(&mut self) -> NeonResult<T>
     where
-        T: FromArgs<'a>,
+        T: FromArgs<'cx>,
     {
         T::from_args(self)
     }
@@ -755,104 +870,24 @@ impl<'a> FunctionContext<'a> {
     /// ```
     pub fn args_opt<T>(&mut self) -> NeonResult<Option<T>>
     where
-        T: FromArgs<'a>,
+        T: FromArgs<'cx>,
     {
         T::from_args_opt(self)
     }
 
-    pub(crate) fn argv<const N: usize>(&mut self) -> [Handle<'a, JsValue>; N] {
+    pub(crate) fn argv<const N: usize>(&mut self) -> [Handle<'cx, JsValue>; N] {
         self.info.argv_exact(self)
     }
 }
 
-impl<'a> ContextInternal<'a> for FunctionContext<'a> {
-    fn env(&self) -> Env {
-        self.env
+impl<'cx> ContextInternal<'cx> for FunctionContext<'cx> {
+    fn cx(&self) -> &Cx<'cx> {
+        &self.cx
+    }
+
+    fn cx_mut(&mut self) -> &mut Cx<'cx> {
+        &mut self.cx
     }
 }
 
-impl<'a> Context<'a> for FunctionContext<'a> {}
-
-/// An execution context of a task completion callback.
-pub struct TaskContext<'a> {
-    env: Env,
-    _phantom_inner: PhantomData<&'a ()>,
-}
-
-impl<'a> TaskContext<'a> {
-    pub(crate) fn with_context<T, F: for<'b> FnOnce(TaskContext<'b>) -> T>(env: Env, f: F) -> T {
-        f(Self {
-            env,
-            _phantom_inner: PhantomData,
-        })
-    }
-}
-
-impl<'a> ContextInternal<'a> for TaskContext<'a> {
-    fn env(&self) -> Env {
-        self.env
-    }
-}
-
-impl<'a> Context<'a> for TaskContext<'a> {}
-
-/// A view of the JS engine in the context of a finalize method on garbage collection
-pub(crate) struct FinalizeContext<'a> {
-    env: Env,
-    _phantom_inner: PhantomData<&'a ()>,
-}
-
-impl<'a> FinalizeContext<'a> {
-    pub(crate) fn with<T, F: for<'b> FnOnce(FinalizeContext<'b>) -> T>(env: Env, f: F) -> T {
-        f(Self {
-            env,
-            _phantom_inner: PhantomData,
-        })
-    }
-}
-
-impl<'a> ContextInternal<'a> for FinalizeContext<'a> {
-    fn env(&self) -> Env {
-        self.env
-    }
-}
-
-impl<'a> Context<'a> for FinalizeContext<'a> {}
-
-#[cfg(feature = "sys")]
-#[cfg_attr(docsrs, doc(cfg(feature = "sys")))]
-/// An execution context constructed from a raw [`Env`](crate::sys::bindings::Env).
-pub struct SysContext<'cx> {
-    env: Env,
-    _phantom_inner: PhantomData<&'cx ()>,
-}
-
-#[cfg(feature = "sys")]
-impl<'cx> SysContext<'cx> {
-    /// Creates a context from a raw `Env`.
-    ///
-    /// # Safety
-    ///
-    /// Once a `SysContext` has been created, it is unsafe to use
-    /// the `Env`. The handle scope for the `Env` must be valid for
-    /// the lifetime `'cx`.
-    pub unsafe fn from_raw(env: sys::Env) -> Self {
-        Self {
-            env: env.into(),
-            _phantom_inner: PhantomData,
-        }
-    }
-}
-
-#[cfg(feature = "sys")]
-impl<'cx> SysContext<'cx> {}
-
-#[cfg(feature = "sys")]
-impl<'cx> ContextInternal<'cx> for SysContext<'cx> {
-    fn env(&self) -> Env {
-        self.env
-    }
-}
-
-#[cfg(feature = "sys")]
-impl<'cx> Context<'cx> for SysContext<'cx> {}
+impl<'cx> Context<'cx> for FunctionContext<'cx> {}

@@ -11,7 +11,7 @@ use crate::{
 
 #[cfg(feature = "napi-4")]
 use crate::{
-    context::TaskContext,
+    context::Cx,
     event::{Channel, JoinHandle, SendError},
 };
 
@@ -177,9 +177,7 @@ impl JsPromise {
     where
         O: Send + 'static,
         C: Context<'a>,
-        F: FnOnce(TaskContext, Result<Handle<JsValue>, Handle<JsValue>>) -> NeonResult<O>
-            + Send
-            + 'static,
+        F: FnOnce(Cx, Result<Handle<JsValue>, Handle<JsValue>>) -> NeonResult<O> + Send + 'static,
     {
         let then = self.get::<JsFunction, _, _>(cx, "then")?;
 
@@ -207,7 +205,7 @@ impl JsPromise {
                 let (f, tx) = take_state();
                 let v = cx.argument::<JsValue>(0)?;
 
-                TaskContext::with_context(cx.env(), move |cx| {
+                Cx::with_context(cx.env(), move |cx| {
                     // Error indicates that the `Future` has already dropped; ignore
                     let _ = tx.send(f(cx, Ok(v)).map_err(Into::into));
                 });
@@ -221,7 +219,7 @@ impl JsPromise {
                 let (f, tx) = take_state();
                 let v = cx.argument::<JsValue>(0)?;
 
-                TaskContext::with_context(cx.env(), move |cx| {
+                Cx::with_context(cx.env(), move |cx| {
                     // Error indicates that the `Future` has already dropped; ignore
                     let _ = tx.send(f(cx, Err(v)).map_err(Into::into));
                 });
@@ -327,7 +325,7 @@ impl Deferred {
     ) -> Result<JoinHandle<()>, SendError>
     where
         V: Value,
-        F: FnOnce(TaskContext) -> JsResult<V> + Send + 'static,
+        F: FnOnce(Cx) -> JsResult<V> + Send + 'static,
     {
         channel.try_send(move |cx| {
             self.try_catch_settle(cx, complete);
@@ -356,7 +354,7 @@ impl Deferred {
     pub fn settle_with<V, F>(self, channel: &Channel, complete: F) -> JoinHandle<()>
     where
         V: Value,
-        F: FnOnce(TaskContext) -> JsResult<V> + Send + 'static,
+        F: FnOnce(Cx) -> JsResult<V> + Send + 'static,
     {
         self.try_settle_with(channel, complete).unwrap()
     }
