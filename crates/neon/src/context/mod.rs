@@ -145,6 +145,11 @@ use std::{convert::Into, marker::PhantomData, panic::UnwindSafe};
 
 pub use crate::types::buffer::lock::Lock;
 
+#[cfg(feature = "async_local")]
+use futures::Future;
+#[cfg(feature = "async_local")]
+use crate::handle::StaticHandle;
+
 use crate::{
     event::TaskBuilder,
     handle::Handle,
@@ -155,12 +160,7 @@ use crate::{
         scope::{EscapableHandleScope, HandleScope},
     },
     types::{
-        boxed::{Finalize, JsBox},
-        error::JsError,
-        extract::FromArgs,
-        private::ValueInternal,
-        Deferred, JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber,
-        JsObject, JsPromise, JsString, JsUndefined, JsValue, StringResult, Value,
+        boxed::{Finalize, JsBox}, error::JsError, extract::FromArgs, private::ValueInternal, Deferred, JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber, JsObject, JsPromise, JsString, JsSymbol, JsUndefined, JsValue, StringResult, Value
     },
 };
 
@@ -290,6 +290,24 @@ pub trait Context<'a>: ContextInternal<'a> {
         result
     }
 
+    /// Execute a future on the local JavaScript thread. This does not block JavaScript execution.
+    ///
+    /// Note: Avoid doing heavy computation on the main thread. The intended use case for this is
+    /// waiting on channel receivers for data coming from other threads, waiting on timers and
+    /// handling async behaviors from JavaScript.
+    #[cfg(feature = "async_local")]
+    fn spawn_local<F, Fut>(&mut self, f: F)
+    where
+        Fut: Future<Output = ()>,
+        F: FnOnce(AsyncContext) -> Fut + 'static,
+    {
+        let env = self.env();
+        crate::async_local::spawn_async_local(self, async move {
+            let future = f(AsyncContext { env });
+            future.await;
+        });
+    }
+
     /// Executes a computation in a new memory management scope and computes a single result value that outlives the computation.
     ///
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape, with the exception of the result value, which is rooted in the outer context.
@@ -334,6 +352,11 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Convenience method for creating a `JsNumber` value.
     fn number<T: Into<f64>>(&mut self, x: T) -> Handle<'a, JsNumber> {
         JsNumber::new(self, x.into())
+    }
+
+    /// Convenience method for creating a `JsSymbol` value.
+    fn symbol<D: AsRef<str>>(&mut self, d: D) -> Handle<'a, JsSymbol> {
+        JsSymbol::new(self, d)
     }
 
     /// Convenience method for creating a `JsString` value.
@@ -593,6 +616,41 @@ impl<'a> ModuleContext<'a> {
         Ok(())
     }
 
+    #[cfg(feature = "async_local")]
+    pub fn export_function_async<'b, F, V, Fut>(&mut self, key: &str, f: F) -> NeonResult<()>
+    where
+        Fut: Future<Output = JsResult<'b, V>>,
+        F: Fn(AsyncFunctionContext) -> Fut + 'static + Copy,
+        V: Value,
+    {
+        use crate::handle::StaticHandle;
+
+        let wrapper = JsFunction::new(self, move |mut cx| {
+            let mut args = vec![];
+
+            while let Some(arg) = cx.argument_opt(args.len()) {
+                let arg = arg.as_value(&mut cx);
+                let arg = StaticHandle::new(&mut cx, arg)?;
+                args.push(arg);
+            }
+
+            let (deferred, promise) = cx.promise();
+            cx.spawn_local(move |mut cx| async move {
+                let acx = AsyncFunctionContext {
+                    env: cx.env(),
+                    arguments: args,
+                };
+                deferred.resolve(&mut cx, f(acx).await.unwrap());
+                ()
+            });
+
+            Ok(promise)
+        })?;
+
+        self.exports.clone().set(self, key, wrapper)?;
+        Ok(())
+    }
+
     /// Exports a JavaScript value from a Neon module.
     pub fn export_value<T: Value>(&mut self, key: &str, val: Handle<T>) -> NeonResult<()> {
         self.exports.clone().set(self, key, val)?;
@@ -626,6 +684,22 @@ impl<'a> ContextInternal<'a> for ExecuteContext<'a> {
 }
 
 impl<'a> Context<'a> for ExecuteContext<'a> {}
+
+/// An execution context of a scope created by [`Context::execute_async()`](Context::execute_async).
+#[cfg(feature = "async_local")]
+pub struct AsyncContext {
+    env: Env,
+}
+
+#[cfg(feature = "async_local")]
+impl<'a> ContextInternal<'static> for AsyncContext {
+    fn env(&self) -> Env {
+        self.env
+    }
+}
+
+#[cfg(feature = "async_local")]
+impl Context<'static> for AsyncContext {}
 
 /// An execution context of a scope created by [`Context::compute_scoped()`](Context::compute_scoped).
 pub struct ComputeContext<'a> {
@@ -772,6 +846,45 @@ impl<'a> ContextInternal<'a> for FunctionContext<'a> {
 }
 
 impl<'a> Context<'a> for FunctionContext<'a> {}
+
+/// An execution context of an async function call.
+///
+/// The type parameter `T` is the type of the `this`-binding.
+#[cfg(feature = "async_local")]
+pub struct AsyncFunctionContext {
+    env: Env,
+    arguments: Vec<StaticHandle<JsValue>>,
+}
+
+#[cfg(feature = "async_local")]
+impl<'a> AsyncFunctionContext {
+    pub fn argument<V: Value>(&mut self, i: usize) -> JsResult<'a, V> {
+        let arg = self.arguments.get(i).unwrap().clone();
+        let arg = arg.from_static(self)?;
+        let value = unsafe { V::from_local(self.env(), arg.to_local()) };
+        let handle = Handle::new_internal(value);
+        Ok(handle)
+    }
+}
+
+#[cfg(feature = "async_local")]
+impl<'a> ContextInternal<'a> for AsyncFunctionContext {
+    fn env(&self) -> Env {
+        self.env
+    }
+}
+
+#[cfg(feature = "async_local")]
+impl<'a> Context<'a> for AsyncFunctionContext {}
+
+#[cfg(feature = "async_local")]
+impl Drop for AsyncFunctionContext {
+    fn drop(&mut self) {
+        while let Some(arg) = self.arguments.pop() {
+            arg.drop(self).unwrap();
+        }
+    }
+}
 
 /// An execution context of a task completion callback.
 pub struct TaskContext<'a> {

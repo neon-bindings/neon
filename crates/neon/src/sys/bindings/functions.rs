@@ -81,6 +81,8 @@ mod napi1 {
 
             fn create_range_error(env: Env, code: Value, msg: Value, result: *mut Value) -> Status;
 
+            fn create_symbol(env: Env, description: Value, result: *mut Value) -> Status;
+
             fn create_string_utf8(
                 env: Env,
                 str: *const c_char,
