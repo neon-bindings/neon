@@ -1,5 +1,5 @@
 use crate::{
-    context::Context,
+    context::{Context, Cx},
     handle::Handle,
     result::{JsResult, ResultExt, Throw},
     types::{
@@ -16,10 +16,7 @@ where
 {
     type Value = T;
 
-    fn try_into_js<C>(self, _cx: &mut C) -> JsResult<'cx, Self::Value>
-    where
-        C: Context<'cx>,
-    {
+    fn try_into_js(self, _cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         Ok(self)
     }
 }
@@ -31,10 +28,7 @@ where
 {
     type Value = T::Value;
 
-    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
-    where
-        C: Context<'cx>,
-    {
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         match self {
             Ok(v) => v.try_into_js(cx),
             Err(err) => {
@@ -49,10 +43,7 @@ where
 impl<'cx> TryIntoJs<'cx> for Throw {
     type Value = JsValue;
 
-    fn try_into_js<C>(self, _cx: &mut C) -> JsResult<'cx, Self::Value>
-    where
-        C: Context<'cx>,
-    {
+    fn try_into_js(self, _cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         Err(self)
     }
 }
@@ -63,10 +54,7 @@ where
 {
     type Value = JsValue;
 
-    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
-    where
-        C: Context<'cx>,
-    {
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         if let Some(val) = self {
             val.try_into_js(cx).map(|v| v.upcast())
         } else {
@@ -80,10 +68,7 @@ macro_rules! impl_number {
         impl<'cx> TryIntoJs<'cx> for $ty {
             type Value = JsNumber;
 
-            fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
-            where
-                C: Context<'cx>,
-            {
+            fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
                 Ok(cx.number(self))
             }
         }
@@ -101,10 +86,7 @@ impl_number!(u8, u16, u32, i8, i16, i32, f32, f64);
 impl<'cx> TryIntoJs<'cx> for String {
     type Value = JsString;
 
-    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
-    where
-        C: Context<'cx>,
-    {
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         Ok(cx.string(self))
     }
 }
@@ -112,10 +94,7 @@ impl<'cx> TryIntoJs<'cx> for String {
 impl<'cx> TryIntoJs<'cx> for &'cx str {
     type Value = JsString;
 
-    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
-    where
-        C: Context<'cx>,
-    {
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         Ok(cx.string(self))
     }
 }
@@ -127,10 +106,7 @@ where
 {
     type Value = JsTypedArray<T>;
 
-    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
-    where
-        C: Context<'cx>,
-    {
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         JsTypedArray::from_slice(cx, &self)
     }
 }
@@ -142,10 +118,7 @@ where
 {
     type Value = JsTypedArray<T>;
 
-    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
-    where
-        C: Context<'cx>,
-    {
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         JsTypedArray::from_slice(cx, self)
     }
 }
@@ -153,10 +126,7 @@ where
 impl<'cx> TryIntoJs<'cx> for bool {
     type Value = JsBoolean;
 
-    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
-    where
-        C: Context<'cx>,
-    {
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         Ok(cx.boolean(self))
     }
 }
@@ -164,10 +134,7 @@ impl<'cx> TryIntoJs<'cx> for bool {
 impl<'cx> TryIntoJs<'cx> for () {
     type Value = JsUndefined;
 
-    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
-    where
-        C: Context<'cx>,
-    {
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         Ok(cx.undefined())
     }
 }
@@ -175,10 +142,7 @@ impl<'cx> TryIntoJs<'cx> for () {
 impl<'cx> TryIntoJs<'cx> for ArrayBuffer {
     type Value = JsArrayBuffer;
 
-    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
-    where
-        C: Context<'cx>,
-    {
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         JsArrayBuffer::from_slice(cx, &self.0)
     }
 }
@@ -186,10 +150,7 @@ impl<'cx> TryIntoJs<'cx> for ArrayBuffer {
 impl<'cx> TryIntoJs<'cx> for Buffer {
     type Value = JsBuffer;
 
-    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
-    where
-        C: Context<'cx>,
-    {
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         JsBuffer::from_slice(cx, &self.0)
     }
 }
@@ -197,10 +158,7 @@ impl<'cx> TryIntoJs<'cx> for Buffer {
 impl<'cx> TryIntoJs<'cx> for Date {
     type Value = JsDate;
 
-    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
-    where
-        C: Context<'cx>,
-    {
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         cx.date(self.0).or_throw(cx)
     }
 }

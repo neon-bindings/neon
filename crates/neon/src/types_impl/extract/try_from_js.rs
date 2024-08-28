@@ -6,7 +6,7 @@
 use std::{convert::Infallible, ptr};
 
 use crate::{
-    context::Context,
+    context::{internal::ContextInternal, Cx},
     handle::Handle,
     result::{NeonResult, ResultExt, Throw},
     sys,
@@ -23,10 +23,7 @@ use crate::types::JsDate;
 
 macro_rules! from_js {
     () => {
-        fn from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Self>
-        where
-            C: Context<'cx>,
-        {
+        fn from_js(cx: &mut Cx<'cx>, v: Handle<'cx, JsValue>) -> NeonResult<Self> {
             Self::try_from_js(cx, v)?.or_throw(cx)
         }
     };
@@ -38,10 +35,10 @@ where
 {
     type Error = TypeExpected<V>;
 
-    fn try_from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Result<Self, Self::Error>>
-    where
-        C: Context<'cx>,
-    {
+    fn try_from_js(
+        cx: &mut Cx<'cx>,
+        v: Handle<'cx, JsValue>,
+    ) -> NeonResult<Result<Self, Self::Error>> {
         Ok(v.downcast(cx).map_err(|_| TypeExpected::new()))
     }
 
@@ -54,10 +51,10 @@ where
 {
     type Error = T::Error;
 
-    fn try_from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Result<Self, Self::Error>>
-    where
-        C: Context<'cx>,
-    {
+    fn try_from_js(
+        cx: &mut Cx<'cx>,
+        v: Handle<'cx, JsValue>,
+    ) -> NeonResult<Result<Self, Self::Error>> {
         if is_null_or_undefined(cx, v)? {
             return Ok(Ok(None));
         }
@@ -65,10 +62,7 @@ where
         T::try_from_js(cx, v).map(|v| v.map(Some))
     }
 
-    fn from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Self>
-    where
-        C: Context<'cx>,
-    {
+    fn from_js(cx: &mut Cx<'cx>, v: Handle<'cx, JsValue>) -> NeonResult<Self> {
         if is_null_or_undefined(cx, v)? {
             return Ok(None);
         }
@@ -80,10 +74,10 @@ where
 impl<'cx> TryFromJs<'cx> for f64 {
     type Error = TypeExpected<JsNumber>;
 
-    fn try_from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Result<Self, Self::Error>>
-    where
-        C: Context<'cx>,
-    {
+    fn try_from_js(
+        cx: &mut Cx<'cx>,
+        v: Handle<'cx, JsValue>,
+    ) -> NeonResult<Result<Self, Self::Error>> {
         let mut n = 0f64;
 
         unsafe {
@@ -103,10 +97,10 @@ impl<'cx> TryFromJs<'cx> for f64 {
 impl<'cx> TryFromJs<'cx> for bool {
     type Error = TypeExpected<JsBoolean>;
 
-    fn try_from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Result<Self, Self::Error>>
-    where
-        C: Context<'cx>,
-    {
+    fn try_from_js(
+        cx: &mut Cx<'cx>,
+        v: Handle<'cx, JsValue>,
+    ) -> NeonResult<Result<Self, Self::Error>> {
         let mut b = false;
 
         unsafe {
@@ -126,10 +120,10 @@ impl<'cx> TryFromJs<'cx> for bool {
 impl<'cx> TryFromJs<'cx> for String {
     type Error = TypeExpected<JsString>;
 
-    fn try_from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Result<Self, Self::Error>>
-    where
-        C: Context<'cx>,
-    {
+    fn try_from_js(
+        cx: &mut Cx<'cx>,
+        v: Handle<'cx, JsValue>,
+    ) -> NeonResult<Result<Self, Self::Error>> {
         let env = cx.env().to_raw();
         let v = v.to_local();
         let mut len = 0usize;
@@ -173,10 +167,10 @@ impl<'cx> TryFromJs<'cx> for String {
 impl<'cx> TryFromJs<'cx> for Date {
     type Error = TypeExpected<JsDate>;
 
-    fn try_from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Result<Self, Self::Error>>
-    where
-        C: Context<'cx>,
-    {
+    fn try_from_js(
+        cx: &mut Cx<'cx>,
+        v: Handle<'cx, JsValue>,
+    ) -> NeonResult<Result<Self, Self::Error>> {
         let mut d = 0f64;
 
         unsafe {
@@ -206,20 +200,14 @@ impl<'cx> TryFromJs<'cx> for Date {
 impl<'cx> TryFromJs<'cx> for () {
     type Error = Infallible;
 
-    fn try_from_js<C>(
-        _cx: &mut C,
+    fn try_from_js(
+        _cx: &mut Cx<'cx>,
         _v: Handle<'cx, JsValue>,
-    ) -> NeonResult<Result<Self, Self::Error>>
-    where
-        C: Context<'cx>,
-    {
+    ) -> NeonResult<Result<Self, Self::Error>> {
         Ok(Ok(()))
     }
 
-    fn from_js<C>(_cx: &mut C, _v: Handle<'cx, JsValue>) -> NeonResult<Self>
-    where
-        C: Context<'cx>,
-    {
+    fn from_js(_cx: &mut Cx<'cx>, _v: Handle<'cx, JsValue>) -> NeonResult<Self> {
         Ok(())
     }
 }
@@ -231,10 +219,10 @@ where
 {
     type Error = TypeExpected<JsTypedArray<T>>;
 
-    fn try_from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Result<Self, Self::Error>>
-    where
-        C: Context<'cx>,
-    {
+    fn try_from_js(
+        cx: &mut Cx<'cx>,
+        v: Handle<'cx, JsValue>,
+    ) -> NeonResult<Result<Self, Self::Error>> {
         let v = match v.downcast::<JsTypedArray<T>, _>(cx) {
             Ok(v) => v,
             Err(_) => return Ok(Err(Self::Error::new())),
@@ -249,10 +237,10 @@ where
 impl<'cx> TryFromJs<'cx> for Buffer {
     type Error = TypeExpected<JsBuffer>;
 
-    fn try_from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Result<Self, Self::Error>>
-    where
-        C: Context<'cx>,
-    {
+    fn try_from_js(
+        cx: &mut Cx<'cx>,
+        v: Handle<'cx, JsValue>,
+    ) -> NeonResult<Result<Self, Self::Error>> {
         let v = match v.downcast::<JsBuffer, _>(cx) {
             Ok(v) => v,
             Err(_) => return Ok(Err(Self::Error::new())),
@@ -267,10 +255,10 @@ impl<'cx> TryFromJs<'cx> for Buffer {
 impl<'cx> TryFromJs<'cx> for ArrayBuffer {
     type Error = TypeExpected<JsBuffer>;
 
-    fn try_from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Result<Self, Self::Error>>
-    where
-        C: Context<'cx>,
-    {
+    fn try_from_js(
+        cx: &mut Cx<'cx>,
+        v: Handle<'cx, JsValue>,
+    ) -> NeonResult<Result<Self, Self::Error>> {
         let v = match v.downcast::<JsArrayBuffer, _>(cx) {
             Ok(v) => v,
             Err(_) => return Ok(Err(Self::Error::new())),
@@ -282,9 +270,8 @@ impl<'cx> TryFromJs<'cx> for ArrayBuffer {
     from_js!();
 }
 
-fn is_null_or_undefined<'cx, C, V>(cx: &mut C, v: Handle<V>) -> NeonResult<bool>
+fn is_null_or_undefined<'cx, V>(cx: &mut Cx<'cx>, v: Handle<V>) -> NeonResult<bool>
 where
-    C: Context<'cx>,
     V: Value,
 {
     let mut ty = sys::ValueType::Object;

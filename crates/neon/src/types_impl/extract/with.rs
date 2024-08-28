@@ -1,8 +1,4 @@
-use crate::{
-    context::{Context, Cx},
-    result::JsResult,
-    types::extract::TryIntoJs,
-};
+use crate::{context::Cx, result::JsResult, types::extract::TryIntoJs};
 
 /// Wraps a closure that will be lazily evaluated when [`TryIntoJs::try_into_js`] is
 /// called.
@@ -47,11 +43,8 @@ where
 {
     type Value = O::Value;
 
-    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
-    where
-        C: Context<'cx>,
-    {
-        (self.0)(cx.cx_mut()).try_into_js(cx)
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
+        (self.0)(cx).try_into_js(cx)
     }
 }
 

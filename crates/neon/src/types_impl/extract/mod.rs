@@ -102,7 +102,7 @@
 use std::{fmt, marker::PhantomData};
 
 use crate::{
-    context::{Context, FunctionContext},
+    context::{Context, Cx, FunctionContext},
     handle::Handle,
     result::{JsResult, NeonResult, ResultExt},
     types::{JsValue, Value},
@@ -133,14 +133,13 @@ where
     type Error;
 
     /// Extract this Rust type from a JavaScript value
-    fn try_from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Result<Self, Self::Error>>
-    where
-        C: Context<'cx>;
+    fn try_from_js(
+        cx: &mut Cx<'cx>,
+        v: Handle<'cx, JsValue>,
+    ) -> NeonResult<Result<Self, Self::Error>>;
 
     /// Same as [`TryFromJs`], but all errors are converted to JavaScript exceptions
-    fn from_js<C>(cx: &mut C, v: Handle<'cx, JsValue>) -> NeonResult<Self>
-    where
-        C: Context<'cx>;
+    fn from_js(cx: &mut Cx<'cx>, v: Handle<'cx, JsValue>) -> NeonResult<Self>;
 }
 
 /// Convert Rust data into a JavaScript value
@@ -152,9 +151,7 @@ where
     type Value: Value;
 
     /// Convert `self` into a JavaScript value
-    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
-    where
-        C: Context<'cx>;
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value>;
 }
 
 #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]

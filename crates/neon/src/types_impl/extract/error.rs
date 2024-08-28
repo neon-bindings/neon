@@ -1,7 +1,7 @@
 use std::{error, fmt};
 
 use crate::{
-    context::Context,
+    context::{Context, Cx},
     result::JsResult,
     types::{extract::TryIntoJs, JsError},
 };
@@ -114,10 +114,7 @@ impl fmt::Display for Error {
 impl<'cx> TryIntoJs<'cx> for Error {
     type Value = JsError;
 
-    fn try_into_js<C>(self, cx: &mut C) -> JsResult<'cx, Self::Value>
-    where
-        C: Context<'cx>,
-    {
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         let message = self.cause.to_string();
 
         match self.kind {
