@@ -500,7 +500,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     ///
     /// ```
     /// # use neon::prelude::*;
-    /// # fn get_array_global<'cx, C: Context<'cx>>(cx: &mut C) -> JsResult<'cx, JsFunction> {
+    /// # fn get_array_global<'cx>(cx: &mut Cx<'cx>) -> JsResult<'cx, JsFunction> {
     /// #     let name = "Array";
     /// #     let v: Handle<JsFunction> =
     /// {

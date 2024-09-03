@@ -453,7 +453,7 @@ impl Drop for Deferred {
 /// use tokio::runtime::Runtime;
 ///
 /// // Lazily allocate a Tokio runtime to use as the thread pool.
-/// fn runtime<'a, C: Context<'a>>(cx: &mut C) -> NeonResult<&'static Runtime> {
+/// fn runtime(cx: &mut Cx) -> NeonResult<&'static Runtime> {
 ///     static RUNTIME: OnceCell<Runtime> = OnceCell::new();
 ///
 ///     RUNTIME
