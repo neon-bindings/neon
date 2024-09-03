@@ -13,7 +13,7 @@
 //! # use neon::thread::LocalKey;
 //! static THREAD_ID: LocalKey<u32> = LocalKey::new();
 //!
-//! pub fn thread_id<'cx, C: Context<'cx>>(cx: &mut C) -> NeonResult<u32> {
+//! pub fn thread_id(cx: &mut Cx) -> NeonResult<u32> {
 //!     THREAD_ID.get_or_try_init(cx, |cx| {
 //!         let require: Handle<JsFunction> = cx.global("require")?;
 //!         let worker: Handle<JsObject> = require.call_with(cx)
