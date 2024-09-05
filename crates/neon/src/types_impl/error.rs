@@ -8,7 +8,7 @@ use crate::{
     object::Object,
     result::{NeonResult, Throw},
     sys::{self, raw},
-    types::{build, private::ValueInternal, utf8::Utf8, Value},
+    types::{build_result, private::ValueInternal, utf8::Utf8, Value},
 };
 
 /// The type of JavaScript
@@ -77,10 +77,12 @@ impl JsError {
         cx: &mut C,
         msg: S,
     ) -> NeonResult<Handle<'a, JsError>> {
+        let env = cx.env();
         let msg = cx.string(msg.as_ref());
-        build(cx.env(), |out| unsafe {
-            sys::error::new_error(cx.env().to_raw(), out, msg.to_local());
-            true
+        build_result(env, || unsafe {
+            let mut out = std::ptr::null_mut();
+            sys::error::new_error(env.to_raw(), &mut out, msg.to_local());
+            Ok(out)
         })
     }
 
@@ -91,10 +93,12 @@ impl JsError {
         cx: &mut C,
         msg: S,
     ) -> NeonResult<Handle<'a, JsError>> {
+        let env = cx.env();
         let msg = cx.string(msg.as_ref());
-        build(cx.env(), |out| unsafe {
-            sys::error::new_type_error(cx.env().to_raw(), out, msg.to_local());
-            true
+        build_result(env, || unsafe {
+            let mut out = std::ptr::null_mut();
+            sys::error::new_type_error(env.to_raw(), &mut out, msg.to_local());
+            Ok(out)
         })
     }
 
@@ -105,10 +109,12 @@ impl JsError {
         cx: &mut C,
         msg: S,
     ) -> NeonResult<Handle<'a, JsError>> {
+        let env = cx.env();
         let msg = cx.string(msg.as_ref());
-        build(cx.env(), |out| unsafe {
-            sys::error::new_range_error(cx.env().to_raw(), out, msg.to_local());
-            true
+        build_result(env, move || unsafe {
+            let mut out: raw::Local = std::ptr::null_mut();
+            sys::error::new_range_error(env.to_raw(), &mut out, msg.to_local());
+            Ok(out)
         })
     }
 }

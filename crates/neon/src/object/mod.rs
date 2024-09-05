@@ -37,7 +37,9 @@ use crate::{
     handle::{Handle, Root},
     result::{NeonResult, Throw},
     sys::{self, raw},
-    types::{build, function::CallOptions, utf8::Utf8, JsFunction, JsUndefined, JsValue, Value},
+    types::{
+        build_result, function::CallOptions, utf8::Utf8, JsFunction, JsUndefined, JsValue, Value,
+    },
 };
 
 #[cfg(feature = "napi-6")]
@@ -161,8 +163,12 @@ pub trait Object: Value {
         cx: &mut C,
         key: K,
     ) -> NeonResult<Handle<'a, JsValue>> {
-        build(cx.env(), |out| unsafe {
-            key.get_from(cx, out, self.to_local())
+        let env = cx.env();
+        build_result(env, move || unsafe {
+            let mut out: raw::Local = std::ptr::null_mut();
+            key.get_from(cx, &mut out, self.to_local())
+                .then_some(out)
+                .ok_or(Throw::new())
         })
     }
 
@@ -183,8 +189,11 @@ pub trait Object: Value {
     fn get_own_property_names<'a, C: Context<'a>>(&self, cx: &mut C) -> JsResult<'a, JsArray> {
         let env = cx.env();
 
-        build(cx.env(), |out| unsafe {
-            sys::object::get_own_property_names(out, env.to_raw(), self.to_local())
+        build_result(env, move || unsafe {
+            let mut out: raw::Local = std::ptr::null_mut();
+            sys::object::get_own_property_names(&mut out, env.to_raw(), self.to_local())
+                .then_some(out)
+                .ok_or(Throw::new())
         })
     }
 
