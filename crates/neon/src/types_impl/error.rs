@@ -8,7 +8,7 @@ use crate::{
     object::Object,
     result::{NeonResult, Throw},
     sys::{self, raw},
-    types::{build_result, private::ValueInternal, utf8::Utf8, Value},
+    types::{build, private::ValueInternal, utf8::Utf8, Value},
 };
 
 /// The type of JavaScript
@@ -79,11 +79,13 @@ impl JsError {
     ) -> NeonResult<Handle<'a, JsError>> {
         let env = cx.env();
         let msg = cx.string(msg.as_ref());
-        build_result(env, || unsafe {
-            let mut out = std::ptr::null_mut();
+
+        let mut out = std::ptr::null_mut();
+        let value = unsafe {
             sys::error::new_error(env.to_raw(), &mut out, msg.to_local());
-            Ok(out)
-        })
+            Self::from_local(env, out)
+        };
+        Ok(Handle::new_internal(value))
     }
 
     /// Creates an instance of the [`TypeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypeError) class.
@@ -95,7 +97,7 @@ impl JsError {
     ) -> NeonResult<Handle<'a, JsError>> {
         let env = cx.env();
         let msg = cx.string(msg.as_ref());
-        build_result(env, || unsafe {
+        build(env, || unsafe {
             let mut out = std::ptr::null_mut();
             sys::error::new_type_error(env.to_raw(), &mut out, msg.to_local());
             Ok(out)
@@ -111,7 +113,7 @@ impl JsError {
     ) -> NeonResult<Handle<'a, JsError>> {
         let env = cx.env();
         let msg = cx.string(msg.as_ref());
-        build_result(env, move || unsafe {
+        build(env, move || unsafe {
             let mut out: raw::Local = std::ptr::null_mut();
             sys::error::new_range_error(env.to_raw(), &mut out, msg.to_local());
             Ok(out)

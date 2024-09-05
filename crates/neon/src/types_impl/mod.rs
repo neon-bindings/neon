@@ -59,7 +59,7 @@ pub use self::promise::JsFuture;
 
 // This should be considered deprecated and will be removed:
 // https://github.com/neon-bindings/neon/issues/983
-pub(crate) fn build_result<'a, T: Value, E, F: FnOnce() -> Result<raw::Local, E>>(
+pub(crate) fn build<'a, T: Value, E, F: FnOnce() -> Result<raw::Local, E>>(
     env: Env,
     init: F,
 ) -> Result<Handle<'a, T>, E> {
@@ -84,7 +84,7 @@ impl<T: Object> SuperType<T> for JsObject {
 pub trait Value: ValueInternal {
     fn to_string<'cx, C: Context<'cx>>(&self, cx: &mut C) -> JsResult<'cx, JsString> {
         let env = cx.env();
-        build_result(env, || unsafe {
+        build(env, || unsafe {
             let mut out = std::ptr::null_mut();
             sys::convert::to_string(&mut out, env.to_raw(), self.to_local())
                 .then_some(out)
@@ -1168,7 +1168,7 @@ impl JsFunction {
     {
         let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
         let env = cx.env();
-        build_result(env, move || unsafe {
+        build(env, move || unsafe {
             let mut out: raw::Local = std::ptr::null_mut();
 
             sys::fun::call(
@@ -1215,7 +1215,7 @@ impl JsFunction {
         let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
         let env = cx.env();
         {
-            build_result(env, move || unsafe {
+            build(env, move || unsafe {
                 let mut out: raw::Local = std::ptr::null_mut();
                 sys::fun::construct(&mut out, env.to_raw(), self.to_local(), argc, argv)
                     .then_some(out)
