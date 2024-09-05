@@ -63,14 +63,22 @@ pub(crate) fn build<'a, T: Value, F: FnOnce(&mut raw::Local) -> bool>(
     env: Env,
     init: F,
 ) -> JsResult<'a, T> {
-    unsafe {
-        let mut local: raw::Local = std::mem::zeroed();
-        if init(&mut local) {
-            Ok(Handle::new_internal(T::from_local(env, local)))
-        } else {
-            Err(Throw::new())
+    build_result(env, move || {
+        let mut local: raw::Local = std::ptr::null_mut();
+        if !init(&mut local) {
+            unsafe { return Err(Throw::new()) }
         }
-    }
+        Ok(local)
+    })
+}
+
+pub(crate) fn build_result<'a, T: Value, E, F: FnOnce() -> Result<raw::Local, E>>(
+    env: Env,
+    init: F,
+) -> Result<Handle<'a, T>, E> {
+    let local = init()?;
+    let value = unsafe { T::from_local(env, local) };
+    Ok(Handle::new_internal(value))
 }
 
 impl<T: Value> SuperType<T> for JsValue {
