@@ -13,7 +13,8 @@ pub(crate) fn export(
     match item {
         // Export a function
         syn::Item::Fn(item) => {
-            let meta = syn::parse_macro_input!(attr with function::meta::Parser);
+            let parser = function::meta::Parser::new(item);
+            let (item, meta) = syn::parse_macro_input!(attr with parser);
 
             function::export(meta, item)
         }

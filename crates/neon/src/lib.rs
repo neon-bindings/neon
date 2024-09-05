@@ -102,6 +102,9 @@ mod types_impl;
 #[cfg_attr(docsrs, doc(cfg(feature = "sys")))]
 pub mod sys;
 
+#[cfg(all(feature = "napi-6", feature = "futures"))]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-6", feature = "futures"))))]
+pub use executor::set_global_executor;
 pub use types_docs::exports as types;
 
 #[doc(hidden)]
@@ -114,12 +117,15 @@ use crate::{context::ModuleContext, handle::Handle, result::NeonResult, types::J
 #[cfg(feature = "napi-6")]
 mod lifecycle;
 
+#[cfg(all(feature = "napi-6", feature = "futures"))]
+mod executor;
+
 #[cfg(feature = "napi-8")]
 static MODULE_TAG: once_cell::sync::Lazy<crate::sys::TypeTag> = once_cell::sync::Lazy::new(|| {
     let mut lower = [0; std::mem::size_of::<u64>()];
 
     // Generating a random module tag at runtime allows Neon builds to be reproducible. A few
-    //  alternativeswere considered:
+    //  alternatives considered:
     // * Generating a random value at build time; this reduces runtime dependencies but, breaks
     //   reproducible builds
     // * A static random value; this solves the previous issues, but does not protect against ABI

@@ -1,13 +1,24 @@
 //! Internals needed by macros. These have to be exported for the macros to work
 
+use std::marker::PhantomData;
+
 pub use linkme;
 
 use crate::{
-    context::{Cx, ModuleContext},
+    context::{Context, Cx, ModuleContext},
     handle::Handle,
     result::{JsResult, NeonResult},
     types::{extract::TryIntoJs, JsValue},
 };
+
+#[cfg(feature = "serde")]
+use crate::types::extract::Json;
+
+#[cfg(all(feature = "napi-6", feature = "futures"))]
+pub use self::futures::*;
+
+#[cfg(all(feature = "napi-6", feature = "futures"))]
+mod futures;
 
 type Export<'cx> = (&'static str, Handle<'cx, JsValue>);
 
@@ -17,46 +28,86 @@ pub static EXPORTS: [for<'cx> fn(&mut ModuleContext<'cx>) -> NeonResult<Export<'
 #[linkme::distributed_slice]
 pub static MAIN: [for<'cx> fn(ModuleContext<'cx>) -> NeonResult<()>];
 
-// Provides an identically named method to `NeonExportReturnJson` for easy swapping in macros
-pub trait NeonExportReturnValue<'cx> {
-    fn try_neon_export_return(self, cx: &mut Cx<'cx>) -> JsResult<'cx, JsValue>;
+// Wrapper for the value type and return type tags
+pub struct NeonMarker<Tag, Return>(PhantomData<Tag>, PhantomData<Return>);
+
+// Markers to determine the type of a value
+#[cfg(feature = "serde")]
+pub struct NeonJsonTag;
+pub struct NeonValueTag;
+pub struct NeonResultTag;
+
+pub trait ToNeonMarker {
+    type Return;
+
+    fn to_neon_marker<Tag>(&self) -> NeonMarker<Tag, Self::Return>;
 }
 
-impl<'cx, T> NeonExportReturnValue<'cx> for T
-where
-    T: TryIntoJs<'cx>,
-{
-    fn try_neon_export_return(self, cx: &mut Cx<'cx>) -> JsResult<'cx, JsValue> {
-        self.try_into_js(cx).map(|v| v.upcast())
+// Specialized implementation for `Result`
+impl<T, E> ToNeonMarker for Result<T, E> {
+    type Return = NeonResultTag;
+
+    fn to_neon_marker<Tag>(&self) -> NeonMarker<Tag, Self::Return> {
+        NeonMarker(PhantomData, PhantomData)
+    }
+}
+
+// Default implementation that takes lower precedence due to autoref
+impl<T> ToNeonMarker for &T {
+    type Return = NeonValueTag;
+
+    fn to_neon_marker<Tag>(&self) -> NeonMarker<Tag, Self::Return> {
+        NeonMarker(PhantomData, PhantomData)
+    }
+}
+
+impl<Return> NeonMarker<NeonValueTag, Return> {
+    pub fn neon_into_js<'cx, T>(self, cx: &mut Cx<'cx>, v: T) -> JsResult<'cx, JsValue>
+    where
+        T: TryIntoJs<'cx>,
+    {
+        v.try_into_js(cx).map(|v| v.upcast())
     }
 }
 
 #[cfg(feature = "serde")]
-// Trait used for specializing `Json` wrapping of `T` or `Result<T, _>` in macros
-// Leverages the [autoref specialization](https://github.com/dtolnay/case-studies/blob/master/autoref-specialization/README.md) technique
-pub trait NeonExportReturnJson<'cx> {
-    fn try_neon_export_return(self, cx: &mut Cx<'cx>) -> JsResult<'cx, JsValue>;
-}
-
-#[cfg(feature = "serde")]
-// More specific behavior wraps `Result::Ok` in `Json`
-impl<'cx, T, E> NeonExportReturnJson<'cx> for Result<T, E>
-where
-    T: serde::Serialize,
-    E: TryIntoJs<'cx>,
-{
-    fn try_neon_export_return(self, cx: &mut Cx<'cx>) -> JsResult<'cx, JsValue> {
-        self.map(crate::types::extract::Json).try_into_js(cx)
+impl NeonMarker<NeonJsonTag, NeonValueTag> {
+    pub fn neon_into_js<'cx, T>(self, cx: &mut Cx<'cx>, v: T) -> JsResult<'cx, JsValue>
+    where
+        Json<T>: TryIntoJs<'cx>,
+    {
+        Json(v).try_into_js(cx).map(|v| v.upcast())
     }
 }
 
 #[cfg(feature = "serde")]
-// Due to autoref behavior, this is less specific than the other implementation
-impl<'cx, T> NeonExportReturnJson<'cx> for &T
-where
-    T: serde::Serialize,
-{
-    fn try_neon_export_return(self, cx: &mut Cx<'cx>) -> JsResult<'cx, JsValue> {
-        crate::types::extract::Json(self).try_into_js(cx)
+impl NeonMarker<NeonJsonTag, NeonResultTag> {
+    pub fn neon_into_js<'cx, T, E>(
+        self,
+        cx: &mut Cx<'cx>,
+        res: Result<T, E>,
+    ) -> JsResult<'cx, JsValue>
+    where
+        Result<Json<T>, E>: TryIntoJs<'cx>,
+    {
+        res.map(Json).try_into_js(cx).map(|v| v.upcast())
+    }
+}
+
+impl<Tag> NeonMarker<Tag, NeonValueTag> {
+    pub fn into_neon_result<T>(self, _cx: &mut Cx, v: T) -> NeonResult<T> {
+        Ok(v)
+    }
+}
+
+impl<Tag> NeonMarker<Tag, NeonResultTag> {
+    pub fn into_neon_result<'cx, T, E>(self, cx: &mut Cx<'cx>, res: Result<T, E>) -> NeonResult<T>
+    where
+        E: TryIntoJs<'cx>,
+    {
+        match res {
+            Ok(v) => Ok(v),
+            Err(err) => err.try_into_js(cx).and_then(|err| cx.throw(err)),
+        }
     }
 }

@@ -6,7 +6,9 @@
 /// This attribute should only be used _once_ in a module and will
 /// be called each time the module is initialized in a context.
 ///
-/// If a `main` function is not provided, all registered exports will be exported.
+/// If a `main` function is not provided, all registered exports will be exported. If
+/// the `tokio` feature flag is enabled, a multithreaded tokio runtime will also be
+/// registered globally.
 ///
 /// ```
 /// # use neon::prelude::*;
@@ -120,6 +122,61 @@ pub use neon_macros::main;
 /// fn add(a: f64, b: f64) -> f64 {
 ///     a + b
 /// }
+/// ```
+///
+/// ### Async Functions
+///
+/// The [`export`] macro can export `async fn`, converting to a JavaScript `Promise`, if a global
+/// future executor is registered. See [`neon::set_global_executor`](crate::set_global_executor) for
+/// more details.
+///
+/// ```
+/// # #[cfg(all(feature = "napi-6", feature = "futures"))]
+/// # {
+/// #[neon::export]
+/// async fn add(a: f64, b: f64) -> f64 {
+///     a + b
+/// }
+/// # }
+/// ```
+///
+/// A `fn` that returns a [`Future`](std::future::Future) can be annotated with `#[neon::export(async)]`
+/// if it needs to perform some setup on the JavaScript main thread before running asynchronously.
+///
+/// ```
+/// # #[cfg(all(feature = "napi-6", feature = "futures"))]
+/// # {
+/// # use std::future::Future;
+/// # use neon::prelude::*;
+/// #[neon::export(async)]
+/// fn add(a: f64, b: f64) -> impl Future<Output = f64> {
+///     println!("Hello from the JavaScript main thread!");
+///
+///     async move {
+///         a + b
+///     }
+/// }
+/// # }
+/// ```
+///
+/// If work needs to be performed on the JavaScript main thread _after_ the asynchronous operation,
+/// the [`With`](crate::types::extract::With) extractor can be used to execute a closure before returning.
+///
+/// ```
+/// # #[cfg(all(feature = "napi-6", feature = "futures"))]
+/// # {
+/// # use neon::types::extract::{TryIntoJs, With};
+/// #[neon::export]
+/// async fn add(a: f64, b: f64) -> impl for<'cx> TryIntoJs<'cx> {
+///     let sum = a + b;
+///
+///     With(move |_cx| {
+///         println!("Hello from the JavaScript main thread!");
+///
+///         sum
+///     })
+/// }
+/// # }
 /// ```
 ///
 /// ### Error Handling
