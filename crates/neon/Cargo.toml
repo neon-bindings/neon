@@ -16,6 +16,7 @@ psd = "0.3.4"        # used for a doc example
 anyhow = "1.0.75"    # used for a doc example
 widestring = "1.0.2" # used for a doc example
 linkify = "0.10.0"   # used for a doc example
+easy-cast = "0.5.2"  # used for a doc example
 
 [target.'cfg(not(target = "windows"))'.dev-dependencies]
 # Avoid `clang` as a dependency on windows
