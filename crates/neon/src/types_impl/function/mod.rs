@@ -3,7 +3,7 @@
 use smallvec::smallvec;
 
 use crate::{
-    context::Context,
+    context::{Context, Cx},
     handle::Handle,
     object::Object,
     result::{JsResult, NeonResult},
@@ -31,14 +31,14 @@ pub(crate) mod private;
 /// # Ok(cx.number(x))
 /// # }
 /// ```
-pub struct BindOptions<'a, 'cx: 'a, C: Context<'cx>> {
-    pub(crate) cx: &'a mut C,
+pub struct BindOptions<'a, 'cx: 'a> {
+    pub(crate) cx: &'a mut Cx<'cx>,
     pub(crate) callee: Handle<'cx, JsValue>,
     pub(crate) this: Option<Handle<'cx, JsValue>>,
     pub(crate) args: private::ArgsVec<'cx>,
 }
 
-impl<'a, 'cx: 'a, C: Context<'cx>> BindOptions<'a, 'cx, C> {
+impl<'a, 'cx: 'a> BindOptions<'a, 'cx> {
     /// Set the value of `this` for the function call.
     pub fn this<V: Value>(&mut self, this: Handle<'cx, V>) -> &mut Self {
         self.this = Some(this.upcast());
@@ -62,7 +62,7 @@ impl<'a, 'cx: 'a, C: Context<'cx>> BindOptions<'a, 'cx, C> {
     pub fn arg_with<R, F>(&mut self, f: F) -> NeonResult<&mut Self>
     where
         R: TryIntoJs<'cx>,
-        F: FnOnce(&mut C) -> NeonResult<R>,
+        F: FnOnce(&mut Cx<'cx>) -> NeonResult<R>,
     {
         let v = f(self.cx)?.try_into_js(self.cx)?;
         self.args.push(v.upcast());
@@ -187,7 +187,7 @@ impl<'a> ConstructOptions<'a> {
 pub trait TryIntoArguments<'cx>: private::TryIntoArgumentsInternal<'cx> {}
 
 impl<'cx> private::TryIntoArgumentsInternal<'cx> for () {
-    fn try_into_args_vec<C: Context<'cx>>(self, _cx: &mut C) -> NeonResult<private::ArgsVec<'cx>> {
+    fn try_into_args_vec(self, _cx: &mut Cx<'cx>) -> NeonResult<private::ArgsVec<'cx>> {
         Ok(smallvec![])
     }
 }
@@ -204,7 +204,7 @@ macro_rules! impl_into_arguments {
     } => {
         $(#[$attr1])?
         impl<'cx, $($tprefix: TryIntoJs<'cx> + 'cx, )* $tname1: TryIntoJs<'cx> + 'cx> private::TryIntoArgumentsInternal<'cx> for ($($tprefix, )* $tname1, ) {
-            fn try_into_args_vec<C: Context<'cx>>(self, cx: &mut C) -> NeonResult<private::ArgsVec<'cx>> {
+            fn try_into_args_vec(self, cx: &mut Cx<'cx>) -> NeonResult<private::ArgsVec<'cx>> {
                 let ($($vprefix, )* $vname1, ) = self;
                 Ok(smallvec![ $($vprefix.try_into_js(cx)?.upcast(),)* $vname1.try_into_js(cx)?.upcast() ])
              }

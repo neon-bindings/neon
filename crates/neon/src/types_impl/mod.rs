@@ -24,7 +24,7 @@ use std::{
 use smallvec::smallvec;
 
 use crate::{
-    context::{internal::Env, Context, FunctionContext},
+    context::{internal::Env, Context, Cx, FunctionContext},
     handle::{
         internal::{SuperType, TransparentNoCopyWrapper},
         Handle,
@@ -1227,7 +1227,7 @@ impl JsFunction {
 }
 
 impl JsFunction {
-    pub fn bind<'a, 'cx: 'a, C: Context<'cx>>(&self, cx: &'a mut C) -> BindOptions<'a, 'cx, C> {
+    pub fn bind<'a, 'cx: 'a>(&self, cx: &'a mut Cx<'cx>) -> BindOptions<'a, 'cx> {
         BindOptions {
             cx,
             callee: Handle::new_internal(JsValue(self.to_local())),
