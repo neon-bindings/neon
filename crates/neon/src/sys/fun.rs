@@ -83,26 +83,6 @@ where
     callback(env, info)
 }
 
-pub unsafe fn call(
-    out: &mut Local,
-    env: Env,
-    fun: Local,
-    this: Local,
-    argc: i32,
-    argv: *const c_void,
-) -> bool {
-    let status = napi::call_function(
-        env,
-        this,
-        fun,
-        argc as usize,
-        argv as *const _,
-        out as *mut _,
-    );
-
-    status == napi::Status::Ok
-}
-
 pub unsafe fn construct(
     out: &mut Local,
     env: Env,

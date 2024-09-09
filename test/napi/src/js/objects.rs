@@ -116,3 +116,11 @@ pub fn call_methods_with_prop(mut cx: FunctionContext) -> JsResult<JsString> {
         .apply()?;
     obj.prop(&mut cx, "toString").bind()?.apply()
 }
+
+pub fn call_non_method_with_prop(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let obj: Handle<JsObject> = cx.argument::<JsObject>(0)?;
+    obj.prop(&mut cx, "number")
+        .bind()?
+        .apply()?;
+    Ok(cx.undefined())
+}

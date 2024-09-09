@@ -157,4 +157,12 @@ describe("JsObject", function () {
     );
     assert.strictEqual(obj.toString(), "[object Wonder Woman]");
   });
+
+  it("throws a TypeError when calling a non-method with .prop()", function () {
+    const obj = {
+      number: 42
+    };
+
+    assert.throws(() => { addon.call_non_method_with_prop(obj) }, /failed to downcast/);
+  });
 });

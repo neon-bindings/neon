@@ -16,9 +16,7 @@ pub(crate) mod private;
 pub(crate) mod utf8;
 
 use std::{
-    any,
-    fmt::{self, Debug},
-    os::raw::c_void,
+    any, fmt::{self, Debug}, mem::MaybeUninit, os::raw::c_void
 };
 
 use smallvec::smallvec;
@@ -31,7 +29,7 @@ use crate::{
     },
     object::Object,
     result::{JsResult, NeonResult, ResultExt, Throw},
-    sys::{self, raw},
+    sys::{self, bindings as napi, raw},
     types::{
         function::{BindOptions, CallOptions, ConstructOptions},
         private::ValueInternal,
@@ -1165,10 +1163,31 @@ where
     AS: AsRef<[Handle<'b, JsValue>]>,
 {
     let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
-    let env = cx.env().to_raw();
-    build(cx.env(), |out| unsafe {
-        sys::fun::call(out, env, callee, this.to_local(), argc, argv)
-    })
+    let env = cx.env();
+    let mut result: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
+
+    let status = napi::call_function(
+        env.to_raw(),
+        this.to_local(),
+        callee,
+        argc as usize,
+        argv.cast(),
+        result.as_mut_ptr(),
+     );
+
+    match status {
+        sys::Status::FunctionExpected => {
+            return cx.throw_type_error("not a function");
+        }
+        sys::Status::PendingException => {
+            return Err(Throw::new());
+        }
+        status => {
+            assert_eq!(status, sys::Status::Ok);
+        }
+    }
+
+    Ok(Handle::new_internal(JsValue::from_local(env, result.assume_init())))
 }
 
 impl JsFunction {
