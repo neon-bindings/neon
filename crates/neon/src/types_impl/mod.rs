@@ -1251,9 +1251,10 @@ impl JsFunction {
 
 impl JsFunction {
     pub fn bind<'a, 'cx: 'a>(&self, cx: &'a mut Cx<'cx>) -> BindOptions<'a, 'cx> {
+        let callee = self.as_value(cx);
         BindOptions {
             cx,
-            callee: Handle::new_internal(JsValue(self.to_local())),
+            callee,
             this: None,
             args: smallvec![],
         }
