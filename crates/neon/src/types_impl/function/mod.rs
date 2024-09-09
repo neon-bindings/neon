@@ -62,9 +62,9 @@ impl<'a, 'cx: 'a> BindOptions<'a, 'cx> {
     pub fn arg_with<R, F>(&mut self, f: F) -> NeonResult<&mut Self>
     where
         R: TryIntoJs<'cx>,
-        F: FnOnce(&mut Cx<'cx>) -> NeonResult<R>,
+        F: FnOnce(&mut Cx<'cx>) -> R,
     {
-        let v = f(self.cx)?.try_into_js(self.cx)?;
+        let v = f(self.cx).try_into_js(self.cx)?;
         self.args.push(v.upcast());
         Ok(self)
     }

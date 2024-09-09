@@ -32,7 +32,7 @@ pub fn call_js_function_with_bind(mut cx: FunctionContext) -> JsResult<JsNumber>
         .bind(&mut cx)
         .args((1, 2, 3))?
         .arg(4)?
-        .arg_with(|cx| Ok(cx.number(5)))?
+        .arg_with(|cx| cx.number(5))?
         .apply()?;
     Ok(cx.number(n))
 }
