@@ -16,7 +16,10 @@ pub(crate) mod private;
 pub(crate) mod utf8;
 
 use std::{
-    any, fmt::{self, Debug}, mem::MaybeUninit, os::raw::c_void
+    any,
+    fmt::{self, Debug},
+    mem::MaybeUninit,
+    os::raw::c_void,
 };
 
 use smallvec::smallvec;
@@ -1156,7 +1159,7 @@ pub(crate) unsafe fn call_local<'a, 'b, C: Context<'a>, T, AS>(
     cx: &mut C,
     callee: raw::Local,
     this: Handle<'b, T>,
-    args: AS
+    args: AS,
 ) -> JsResult<'a, JsValue>
 where
     T: Value,
@@ -1173,7 +1176,7 @@ where
         argc as usize,
         argv.cast(),
         result.as_mut_ptr(),
-     );
+    );
 
     match status {
         sys::Status::FunctionExpected => {
@@ -1187,7 +1190,10 @@ where
         }
     }
 
-    Ok(Handle::new_internal(JsValue::from_local(env, result.assume_init())))
+    Ok(Handle::new_internal(JsValue::from_local(
+        env,
+        result.assume_init(),
+    )))
 }
 
 impl JsFunction {
@@ -1204,9 +1210,7 @@ impl JsFunction {
         T: Value,
         AS: AsRef<[Handle<'b, JsValue>]>,
     {
-        unsafe {
-            call_local(cx, self.to_local(), this, args)
-        }
+        unsafe { call_local(cx, self.to_local(), this, args) }
     }
 
     /// Calls this function for side effect, discarding its result.

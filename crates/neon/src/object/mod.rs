@@ -33,7 +33,7 @@
 //! [symbol]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol
 
 use crate::{
-    context::{Cx, Context, internal::ContextInternal},
+    context::{internal::ContextInternal, Context, Cx},
     handle::{Handle, Root},
     result::{NeonResult, Throw},
     sys::{self, raw},
