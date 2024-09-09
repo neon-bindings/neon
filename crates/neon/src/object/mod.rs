@@ -161,14 +161,20 @@ impl<'a> PropertyKey for &'a str {
 /// # Ok(cx.string(s))
 /// # }
 /// ```
-pub struct PropOptions<'a, 'cx: 'a, O: Object, K: PropertyKey> {
+pub struct PropOptions<'a, 'cx, O, K>
+where
+    'cx: 'a,
+    O: Object,
+    K: PropertyKey,
+{
     pub(crate) cx: &'a mut Cx<'cx>,
     pub(crate) this: Handle<'cx, O>,
     pub(crate) key: K,
 }
 
-impl<'a, 'cx: 'a, O, K> PropOptions<'a, 'cx, O, K>
+impl<'a, 'cx, O, K> PropOptions<'a, 'cx, O, K>
 where
+    'cx: 'a,
     O: Object,
     K: PropertyKey,
 {
