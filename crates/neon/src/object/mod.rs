@@ -167,7 +167,11 @@ pub struct PropOptions<'a, 'cx: 'a, O: Object, K: PropertyKey> {
     pub(crate) key: K,
 }
 
-impl<'a, 'cx: 'a, O: Object, K: PropertyKey> PropOptions<'a, 'cx, O, K> {
+impl<'a, 'cx: 'a, O, K> PropOptions<'a, 'cx, O, K>
+where
+    O: Object,
+    K: PropertyKey,
+{
     /// Gets the property from the object and attempts to convert it to a Rust value.
     /// Equivalent to calling `R::from_js(cx, obj.get(cx)?)`.
     ///
