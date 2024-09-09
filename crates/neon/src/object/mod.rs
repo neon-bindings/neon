@@ -204,7 +204,7 @@ where
     pub fn bind(&'a mut self) -> NeonResult<BindOptions<'a, 'cx>> {
         let callee: Handle<JsFunction> = self.this.get(self.cx, self.key)?;
         let mut bind = callee.bind(self.cx);
-        bind.this(self.this);
+        bind.this(self.this)?;
         Ok(bind)
     }
 }

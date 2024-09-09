@@ -43,6 +43,18 @@ pub fn call_parse_int_with_bind(mut cx: FunctionContext) -> JsResult<JsNumber> {
     Ok(cx.number(x + 1.0))
 }
 
+pub fn bind_js_function_to_object(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let f = cx.argument::<JsFunction>(0)?;
+    let obj = cx.empty_object();
+    obj.prop(&mut cx, "prop").set(42)?;
+    f.bind(&mut cx).this(obj)?.apply()
+}
+
+pub fn bind_js_function_to_number(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let f = cx.argument::<JsFunction>(0)?;
+    f.bind(&mut cx).this(42)?.apply()
+}
+
 fn get_math_max<'a>(cx: &mut FunctionContext<'a>) -> JsResult<'a, JsFunction> {
     let math: Handle<JsObject> = cx.global("Math")?;
     let max: Handle<JsFunction> = math.get(cx, "max")?;

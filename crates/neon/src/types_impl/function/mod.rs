@@ -40,9 +40,10 @@ pub struct BindOptions<'a, 'cx: 'a> {
 
 impl<'a, 'cx: 'a> BindOptions<'a, 'cx> {
     /// Set the value of `this` for the function call.
-    pub fn this<V: Value>(&mut self, this: Handle<'cx, V>) -> &mut Self {
-        self.this = Some(this.upcast());
-        self
+    pub fn this<T: TryIntoJs<'cx>>(&mut self, this: T) -> NeonResult<&mut Self> {
+        let v = this.try_into_js(self.cx)?;
+        self.this = Some(v.upcast());
+        Ok(self)
     }
 
     /// Replaces the arguments list with the given arguments.

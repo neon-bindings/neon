@@ -155,6 +155,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     )?;
     cx.export_function("call_js_function_with_bind", call_js_function_with_bind)?;
     cx.export_function("call_parse_int_with_bind", call_parse_int_with_bind)?;
+    cx.export_function("bind_js_function_to_object", bind_js_function_to_object)?;
+    cx.export_function("bind_js_function_to_number", bind_js_function_to_number)?;
     cx.export_function(
         "call_js_function_with_zero_args",
         call_js_function_with_zero_args,
