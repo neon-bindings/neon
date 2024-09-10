@@ -17,7 +17,7 @@ pub unsafe fn create(env: Env) -> (napi::Deferred, napi::Value) {
 
     assert_eq!(
         napi::create_promise(env, deferred.as_mut_ptr(), promise.as_mut_ptr()),
-        napi::Status::Ok,
+        Ok(()),
     );
 
     (deferred.assume_init(), promise.assume_init())
@@ -29,10 +29,7 @@ pub unsafe fn create(env: Env) -> (napi::Deferred, napi::Value) {
 /// * `env` is a valid `napi_env` for the current thread
 /// * `resolution` is a valid `napi::Value`
 pub unsafe fn resolve(env: Env, deferred: napi::Deferred, resolution: napi::Value) {
-    assert_eq!(
-        napi::resolve_deferred(env, deferred, resolution),
-        napi::Status::Ok,
-    );
+    assert_eq!(napi::resolve_deferred(env, deferred, resolution), Ok(()),);
 }
 
 /// Rejects a promise from a `napi::Deferred` handle
@@ -41,10 +38,7 @@ pub unsafe fn resolve(env: Env, deferred: napi::Deferred, resolution: napi::Valu
 /// * `env` is a valid `napi_env` for the current thread
 /// * `rejection` is a valid `napi::Value`
 pub unsafe fn reject(env: Env, deferred: napi::Deferred, rejection: napi::Value) {
-    assert_eq!(
-        napi::reject_deferred(env, deferred, rejection),
-        napi::Status::Ok,
-    );
+    assert_eq!(napi::reject_deferred(env, deferred, rejection), Ok(()),);
 }
 
 #[cfg(feature = "napi-6")]
@@ -58,7 +52,7 @@ pub unsafe fn reject_err_message(env: Env, deferred: napi::Deferred, msg: impl A
 
     assert_eq!(
         napi::create_error(env, std::ptr::null_mut(), msg, err.as_mut_ptr()),
-        napi::Status::Ok,
+        Ok(()),
     );
 
     reject(env, deferred, err.assume_init());

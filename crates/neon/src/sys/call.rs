@@ -35,7 +35,7 @@ pub unsafe fn is_construct(env: Env, info: FunctionCallbackInfo) -> bool {
 
     let status = napi::get_new_target(env, info, target.as_mut_ptr());
 
-    assert_eq!(status, napi::Status::Ok);
+    assert_eq!(status, Ok(()));
 
     // get_new_target is guaranteed to assign to target, so it's initialized.
     let target: Local = target.assume_init();
@@ -48,7 +48,7 @@ pub unsafe fn is_construct(env: Env, info: FunctionCallbackInfo) -> bool {
 
 pub unsafe fn this(env: Env, info: FunctionCallbackInfo, out: &mut Local) {
     let status = napi::get_cb_info(env, info, null_mut(), null_mut(), out as *mut _, null_mut());
-    assert_eq!(status, napi::Status::Ok);
+    assert_eq!(status, Ok(()));
 }
 
 /// Gets the number of arguments passed to the function.
@@ -63,7 +63,7 @@ pub unsafe fn len(env: Env, info: FunctionCallbackInfo) -> usize {
         null_mut(),
         null_mut(),
     );
-    assert_eq!(status, napi::Status::Ok);
+    assert_eq!(status, Ok(()));
     argc
 }
 
@@ -84,7 +84,7 @@ pub unsafe fn argv(env: Env, info: FunctionCallbackInfo) -> Arguments {
             null_mut(),
             null_mut(),
         ),
-        napi::Status::Ok,
+        Ok(()),
     );
 
     // We did not allocate enough space; allocate on the heap and try again
@@ -101,7 +101,7 @@ pub unsafe fn argv(env: Env, info: FunctionCallbackInfo) -> Arguments {
                 null_mut(),
                 null_mut(),
             ),
-            napi::Status::Ok,
+            Ok(()),
         );
 
         // Set the size of `argv` to the number of initialized elements

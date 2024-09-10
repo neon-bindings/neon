@@ -112,17 +112,17 @@ pub trait ValueInternal: TransparentNoCopyWrapper + 'static {
 unsafe fn check_call_status<'a, C: Context<'a>>(
     cx: &mut C,
     callee: raw::Local,
-    status: sys::Status,
+    status: Result<(), sys::Status>,
 ) -> NeonResult<()> {
     match status {
-        sys::Status::InvalidArg if !sys::tag::is_function(cx.env().to_raw(), callee) => {
+        Err(sys::Status::InvalidArg) if !sys::tag::is_function(cx.env().to_raw(), callee) => {
             return cx.throw_error("not a function");
         }
-        sys::Status::PendingException => {
+        Err(sys::Status::PendingException) => {
             return Err(Throw::new());
         }
         status => {
-            assert_eq!(status, sys::Status::Ok);
+            assert_eq!(status, Ok(()));
         }
     }
 

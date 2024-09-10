@@ -14,10 +14,7 @@ impl HandleScope {
     pub(crate) unsafe fn new(env: Env) -> Self {
         let mut scope = MaybeUninit::uninit();
 
-        assert_eq!(
-            napi::open_handle_scope(env, scope.as_mut_ptr()),
-            napi::Status::Ok,
-        );
+        assert_eq!(napi::open_handle_scope(env, scope.as_mut_ptr()), Ok(()),);
 
         Self {
             env,
@@ -31,7 +28,7 @@ impl Drop for HandleScope {
         unsafe {
             let _status = napi::close_handle_scope(self.env, self.scope);
 
-            debug_assert_eq!(_status, napi::Status::Ok,);
+            debug_assert_eq!(_status, Ok(()),);
         }
     }
 }
@@ -47,7 +44,7 @@ impl EscapableHandleScope {
 
         assert_eq!(
             napi::open_escapable_handle_scope(env, scope.as_mut_ptr()),
-            napi::Status::Ok,
+            Ok(()),
         );
 
         Self {
@@ -61,7 +58,7 @@ impl EscapableHandleScope {
 
         assert_eq!(
             napi::escape_handle(self.env, self.scope, value, escapee.as_mut_ptr()),
-            napi::Status::Ok,
+            Ok(()),
         );
 
         escapee.assume_init()
@@ -73,11 +70,11 @@ impl Drop for EscapableHandleScope {
         unsafe {
             let _status = napi::close_escapable_handle_scope(self.env, self.scope);
 
-            debug_assert_eq!(_status, napi::Status::Ok,);
+            debug_assert_eq!(_status, Ok(()),);
         }
     }
 }
 
 pub unsafe fn get_global(env: Env, out: &mut Local) {
-    assert_eq!(super::get_global(env, out as *mut _), napi::Status::Ok);
+    assert_eq!(super::get_global(env, out as *mut _), Ok(()));
 }

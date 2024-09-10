@@ -73,7 +73,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
                 Some(Self::callback),
                 result.as_mut_ptr(),
             ),
-            napi::Status::Ok,
+            Ok(()),
         );
 
         Self {
@@ -102,7 +102,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
 
         let status = {
             if *is_finalized {
-                napi::Status::Closing
+                Err(napi::Status::Closing)
             } else {
                 unsafe {
                     napi::call_threadsafe_function(self.tsfn.0, callback as *mut _, is_blocking)
@@ -110,37 +110,32 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
             }
         };
 
-        if status == napi::Status::Ok {
-            Ok(())
-        } else {
-            // Prevent further calls to `call_threadsafe_function`
-            if status == napi::Status::Closing {
-                *is_finalized = true;
+        match status {
+            Ok(()) => Ok(()),
+            Err(status) => {
+                // Prevent further calls to `call_threadsafe_function`
+                if status == napi::Status::Closing {
+                    *is_finalized = true;
+                }
+
+                // If the call failed, the callback won't execute
+                let _ = unsafe { Box::from_raw(callback) };
+
+                Err(CallError)
             }
-
-            // If the call failed, the callback won't execute
-            let _ = unsafe { Box::from_raw(callback) };
-
-            Err(CallError)
         }
     }
 
     /// References a threadsafe function to prevent exiting the event loop until it has been dropped. (Default)
     /// Safety: `Env` must be valid for the current thread
     pub unsafe fn reference(&self, env: Env) {
-        assert_eq!(
-            napi::ref_threadsafe_function(env, self.tsfn.0),
-            napi::Status::Ok,
-        );
+        assert_eq!(napi::ref_threadsafe_function(env, self.tsfn.0), Ok(()),);
     }
 
     /// Unreferences a threadsafe function to allow exiting the event loop before it has been dropped.
     /// Safety: `Env` must be valid for the current thread
     pub unsafe fn unref(&self, env: Env) {
-        assert_eq!(
-            napi::unref_threadsafe_function(env, self.tsfn.0),
-            napi::Status::Ok,
-        );
+        assert_eq!(napi::unref_threadsafe_function(env, self.tsfn.0), Ok(()),);
     }
 
     // Provides a C ABI wrapper for a napi callback notifying us about tsfn

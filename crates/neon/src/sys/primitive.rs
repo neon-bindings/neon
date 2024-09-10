@@ -24,7 +24,7 @@ pub unsafe fn boolean_value(env: Env, p: Local) -> bool {
     let mut value = false;
     assert_eq!(
         napi::get_value_bool(env, p, &mut value as *mut bool),
-        napi::Status::Ok
+        Ok(())
     );
     value
 }
@@ -41,7 +41,7 @@ pub unsafe fn number_value(env: Env, p: Local) -> f64 {
     let mut value = 0.0;
     assert_eq!(
         napi::get_value_double(env, p, &mut value as *mut f64),
-        napi::Status::Ok
+        Ok(())
     );
     value
 }

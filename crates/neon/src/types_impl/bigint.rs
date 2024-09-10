@@ -78,7 +78,7 @@ impl JsBigInt {
         let v = unsafe {
             assert_eq!(
                 sys::create_bigint_int64(cx.env().to_raw(), n, v.as_mut_ptr(),),
-                sys::Status::Ok,
+                Ok(()),
             );
 
             v.assume_init()
@@ -106,7 +106,7 @@ impl JsBigInt {
         let v = unsafe {
             assert_eq!(
                 sys::create_bigint_uint64(cx.env().to_raw(), n, v.as_mut_ptr(),),
-                sys::Status::Ok,
+                Ok(())
             );
 
             v.assume_init()
@@ -210,7 +210,7 @@ impl JsBigInt {
                     digits.as_ptr(),
                     v.as_mut_ptr(),
                 ),
-                sys::Status::Ok,
+                Ok(())
             );
 
             v.assume_init()
@@ -236,7 +236,7 @@ impl JsBigInt {
         unsafe {
             assert_eq!(
                 sys::get_value_bigint_int64(cx.env().to_raw(), self.0, &mut n, &mut lossless),
-                sys::Status::Ok,
+                Ok(())
             );
         }
 
@@ -260,7 +260,7 @@ impl JsBigInt {
         unsafe {
             assert_eq!(
                 sys::get_value_bigint_uint64(cx.env().to_raw(), self.0, &mut n, &mut lossless),
-                sys::Status::Ok,
+                Ok(())
             );
         }
 
@@ -394,7 +394,7 @@ impl JsBigInt {
                     &mut word_count,
                     digits.as_mut_ptr(),
                 ),
-                sys::Status::Ok,
+                Ok(())
             );
         }
 

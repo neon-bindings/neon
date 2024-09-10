@@ -32,7 +32,7 @@ pub unsafe fn deref<T: 'static>(env: Env, local: Local) -> Option<*const T> {
     let mut result = MaybeUninit::uninit();
     let status = napi::typeof_value(env, local, result.as_mut_ptr());
 
-    assert_eq!(status, napi::Status::Ok);
+    assert_eq!(status, Ok(()));
 
     let result = result.assume_init();
 
@@ -52,7 +52,7 @@ pub unsafe fn deref<T: 'static>(env: Env, local: Local) -> Option<*const T> {
     let mut result = MaybeUninit::uninit();
     let status = napi::get_value_external(env, local, result.as_mut_ptr());
 
-    assert_eq!(status, napi::Status::Ok);
+    assert_eq!(status, Ok(()));
 
     let v = result.assume_init();
     let v = &**v.cast_const().cast::<DebugSendWrapper<T>>() as *const T;
@@ -77,7 +77,7 @@ pub unsafe fn create<T: 'static>(env: Env, v: T, finalizer: fn(Env, T)) -> Local
 
     // `napi_create_external` will only fail if the VM is in a throwing state
     // or shutting down.
-    assert_eq!(status, napi::Status::Ok);
+    assert_eq!(status, Ok(()));
 
     let external = result.assume_init();
 

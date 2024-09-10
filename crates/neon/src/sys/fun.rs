@@ -22,13 +22,13 @@ where
         out.as_mut_ptr(),
     );
 
-    if status == napi::Status::PendingException {
+    if status == Err(napi::Status::PendingException) {
         drop(Box::from_raw(data));
 
-        return Err(status);
+        return Err(napi::Status::PendingException);
     }
 
-    assert_eq!(status, napi::Status::Ok);
+    assert_eq!(status, Ok(()));
 
     let out = out.assume_init();
 
@@ -54,7 +54,7 @@ where
         // If adding the finalizer fails the closure will leak, but it would
         // be unsafe to drop it because there's no guarantee V8 won't use the
         // pointer.
-        assert_eq!(status, napi::Status::Ok);
+        assert_eq!(status, Ok(()));
     }
 
     Ok(out)
@@ -76,7 +76,7 @@ where
         data.as_mut_ptr(),
     );
 
-    assert_eq!(status, napi::Status::Ok);
+    assert_eq!(status, Ok(()));
 
     let callback = &*data.assume_init().cast::<F>();
 
@@ -92,5 +92,5 @@ pub unsafe fn construct(
 ) -> bool {
     let status = napi::new_instance(env, fun, argc, argv as *const _, out as *mut _);
 
-    status == napi::Status::Ok
+    status.is_ok()
 }

@@ -20,11 +20,11 @@ pub unsafe fn uninitialized(env: Env, len: usize) -> Result<(Local, *mut u8), na
     let mut bytes = MaybeUninit::uninit();
     let status = napi::create_buffer(env, len, bytes.as_mut_ptr(), buf.as_mut_ptr());
 
-    if status == napi::Status::PendingException {
-        return Err(status);
+    if status == Err(napi::Status::PendingException) {
+        return Err(napi::Status::PendingException);
     }
 
-    assert_eq!(status, napi::Status::Ok);
+    assert_eq!(status, Ok(()));
 
     Ok((buf.assume_init(), bytes.assume_init().cast()))
 }
@@ -49,7 +49,7 @@ where
             Box::into_raw(data) as *mut _,
             result.as_mut_ptr(),
         ),
-        napi::Status::Ok,
+        Ok(())
     );
 
     result.assume_init()
@@ -69,7 +69,7 @@ pub unsafe fn as_mut_slice<'a>(env: Env, buf: Local) -> &'a mut [u8] {
 
     assert_eq!(
         napi::get_buffer_info(env, buf, data.as_mut_ptr(), &mut size as *mut _),
-        napi::Status::Ok,
+        Ok(())
     );
 
     if size == 0 {
@@ -87,7 +87,7 @@ pub unsafe fn size(env: Env, buf: Local) -> usize {
 
     assert_eq!(
         napi::get_buffer_info(env, buf, data.as_mut_ptr(), &mut size as *mut _),
-        napi::Status::Ok,
+        Ok(())
     );
 
     size
