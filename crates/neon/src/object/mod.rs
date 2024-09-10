@@ -38,11 +38,8 @@ use crate::{
     result::{NeonResult, Throw},
     sys::{self, raw},
     types::{
-        build,
-        extract::{TryFromJs, TryIntoJs},
-        function::{BindOptions, CallOptions},
-        utf8::Utf8,
-        JsFunction, JsUndefined, JsValue, Value,
+        build, extract::{TryFromJs, TryIntoJs}, function::{BindOptions, CallOptions}, utf8::Utf8, JsFunction, JsObject, JsUndefined, JsValue, Value,
+        private::ValueInternal
     },
 };
 
@@ -161,21 +158,19 @@ impl<'a> PropertyKey for &'a str {
 /// # Ok(cx.string(s))
 /// # }
 /// ```
-pub struct PropOptions<'a, 'cx, O, K>
+pub struct PropOptions<'a, 'cx, K>
 where
     'cx: 'a,
-    O: Object,
     K: PropertyKey,
 {
     pub(crate) cx: &'a mut Cx<'cx>,
-    pub(crate) this: Handle<'cx, O>,
+    pub(crate) this: Handle<'cx, JsObject>,
     pub(crate) key: K,
 }
 
-impl<'a, 'cx, O, K> PropOptions<'a, 'cx, O, K>
+impl<'a, 'cx, K> PropOptions<'a, 'cx, K>
 where
     'cx: 'a,
-    O: Object,
     K: PropertyKey,
 {
     /// Gets the property from the object and attempts to convert it to a Rust value.
@@ -216,8 +211,8 @@ pub trait Object: Value {
         &self,
         cx: &'a mut Cx<'cx>,
         key: K,
-    ) -> PropOptions<'a, 'cx, Self, K> {
-        let this = Handle::new_internal(unsafe { Self::from_local(cx.env(), self.to_local()) });
+    ) -> PropOptions<'a, 'cx, K> {
+        let this: Handle<'_, JsObject> = Handle::new_internal(unsafe { ValueInternal::from_local(cx.env(), self.to_local()) });
         PropOptions { cx, this, key }
     }
 
