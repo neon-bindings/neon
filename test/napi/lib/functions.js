@@ -1,8 +1,11 @@
 var addon = require("..");
 var assert = require("chai").assert;
 
-const STRICT = function() { "use strict"; return this; };
-const SLOPPY = Function('return this;');
+const STRICT = function () {
+  "use strict";
+  return this;
+};
+const SLOPPY = Function("return this;");
 
 function isStrict(f) {
   try {
@@ -61,7 +64,7 @@ describe("JsFunction", function () {
     assert.equal(result, 42);
   });
 
-  it("bind a strict JsFunction to a number", function() {
+  it("bind a strict JsFunction to a number", function () {
     assert.isTrue(isStrict(STRICT));
 
     // strict mode functions are allowed to have a primitive this binding
@@ -70,7 +73,7 @@ describe("JsFunction", function () {
     assert.strictEqual(result, 42);
   });
 
-  it("bind a sloppy JsFunction to a primitive", function() {
+  it("bind a sloppy JsFunction to a primitive", function () {
     assert.isFalse(isStrict(SLOPPY));
 
     // legacy JS functions (aka "sloppy mode") replace primitive this bindings
@@ -78,7 +81,7 @@ describe("JsFunction", function () {
     const result = addon.bind_js_function_to_number(SLOPPY);
 
     assert.instanceOf(result, Number);
-    assert.strictEqual(typeof result, 'object');
+    assert.strictEqual(typeof result, "object");
     assert.strictEqual(result.valueOf(), 42);
   });
 

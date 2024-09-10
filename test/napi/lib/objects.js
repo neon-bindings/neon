@@ -165,6 +165,6 @@ describe("JsObject", function () {
 
     assert.throws(() => {
       addon.call_non_method_with_prop(obj);
-    }, /failed to downcast/);
+    }, /not a function/);
   });
 });

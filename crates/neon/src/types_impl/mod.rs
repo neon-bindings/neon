@@ -1179,8 +1179,11 @@ where
     );
 
     match status {
-        sys::Status::FunctionExpected => {
-            return cx.throw_type_error("not a function");
+        sys::Status::InvalidArg => {
+            if !sys::tag::is_function(env.to_raw(), callee) {
+                return cx.throw_error("not a function");
+            }
+            panic!("invalid argument");
         }
         sys::Status::PendingException => {
             return Err(Throw::new());

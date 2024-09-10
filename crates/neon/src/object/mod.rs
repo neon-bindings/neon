@@ -32,14 +32,20 @@
 //! [hierarchy]: crate::types#the-javascript-type-hierarchy
 //! [symbol]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol
 
+use smallvec::smallvec;
+
 use crate::{
     context::{internal::ContextInternal, Context, Cx},
     handle::{Handle, Root},
     result::{NeonResult, Throw},
     sys::{self, raw},
     types::{
-        build, extract::{TryFromJs, TryIntoJs}, function::{BindOptions, CallOptions}, utf8::Utf8, JsFunction, JsObject, JsUndefined, JsValue, Value,
-        private::ValueInternal
+        build,
+        extract::{TryFromJs, TryIntoJs},
+        function::{BindOptions, CallOptions},
+        private::ValueInternal,
+        utf8::Utf8,
+        JsFunction, JsObject, JsUndefined, JsValue, Value,
     },
 };
 
@@ -197,10 +203,14 @@ where
     /// May throw an exception either during accessing the property or downcasting it
     /// to a function.
     pub fn bind(&'a mut self) -> NeonResult<BindOptions<'a, 'cx>> {
-        let callee: Handle<JsFunction> = self.this.get(self.cx, self.key)?;
-        let mut bind = callee.bind(self.cx);
-        bind.this(self.this)?;
-        Ok(bind)
+        let callee: Handle<JsValue> = self.this.get(self.cx, self.key)?;
+        let this = Some(self.this.upcast());
+        Ok(BindOptions {
+            cx: self.cx,
+            callee,
+            this,
+            args: smallvec![],
+        })
     }
 }
 
@@ -212,7 +222,8 @@ pub trait Object: Value {
         cx: &'a mut Cx<'cx>,
         key: K,
     ) -> PropOptions<'a, 'cx, K> {
-        let this: Handle<'_, JsObject> = Handle::new_internal(unsafe { ValueInternal::from_local(cx.env(), self.to_local()) });
+        let this: Handle<'_, JsObject> =
+            Handle::new_internal(unsafe { ValueInternal::from_local(cx.env(), self.to_local()) });
         PropOptions { cx, this, key }
     }
 
