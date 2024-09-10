@@ -19,7 +19,7 @@ pub unsafe fn set_instance_data<T: Send + 'static>(env: Env, data: T) -> *mut T 
 
     assert_eq!(
         napi::set_instance_data(env, data.cast(), Some(drop_box::<T>), ptr::null_mut(),),
-        napi::Status::Ok,
+        Ok(()),
     );
 
     data
@@ -35,7 +35,7 @@ pub unsafe fn get_instance_data<T: Send + 'static>(env: Env) -> *mut T {
 
     assert_eq!(
         napi::get_instance_data(env, data.as_mut_ptr(),),
-        napi::Status::Ok,
+        Ok(()),
     );
 
     data.assume_init().cast()

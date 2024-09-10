@@ -10,7 +10,7 @@ pub unsafe fn new(env: Env, value: Local) -> napi::Ref {
 
     assert_eq!(
         napi::create_reference(env, value, 1, result.as_mut_ptr()),
-        napi::Status::Ok,
+        Ok(()),
     );
 
     result.assume_init()
@@ -21,10 +21,7 @@ pub unsafe fn new(env: Env, value: Local) -> napi::Ref {
 pub unsafe fn reference(env: Env, value: napi::Ref) -> usize {
     let mut result = MaybeUninit::uninit();
 
-    assert_eq!(
-        napi::reference_ref(env, value, result.as_mut_ptr()),
-        napi::Status::Ok,
-    );
+    assert_eq!(napi::reference_ref(env, value, result.as_mut_ptr()), Ok(()),);
 
     result.assume_init() as usize
 }
@@ -36,11 +33,11 @@ pub unsafe fn unreference(env: Env, value: napi::Ref) {
 
     assert_eq!(
         napi::reference_unref(env, value, result.as_mut_ptr()),
-        napi::Status::Ok,
+        Ok(()),
     );
 
     if result.assume_init() == 0 {
-        assert_eq!(napi::delete_reference(env, value), napi::Status::Ok);
+        assert_eq!(napi::delete_reference(env, value), Ok(()));
     }
 }
 
@@ -51,7 +48,7 @@ pub unsafe fn get(env: Env, value: napi::Ref) -> Local {
 
     assert_eq!(
         napi::get_reference_value(env, value, result.as_mut_ptr()),
-        napi::Status::Ok,
+        Ok(()),
     );
 
     result.assume_init()

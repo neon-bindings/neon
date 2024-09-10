@@ -120,7 +120,7 @@ unsafe fn string(env: Env, s: impl AsRef<str>) -> raw::Local {
             s.len(),
             result.as_mut_ptr(),
         ),
-        Status::Ok,
+        Ok(())
     );
 
     result.assume_init()

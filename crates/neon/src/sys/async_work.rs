@@ -68,13 +68,13 @@ pub unsafe fn schedule<I, O, D>(
             Box::into_raw(data).cast(),
             work,
         ),
-        napi::Status::Ok,
+        Ok(())
     );
 
     // Queue the work
     match napi::queue_async_work(env, *work) {
-        napi::Status::Ok => {}
-        status => {
+        Ok(()) => {}
+        Err(status) => {
             // If queueing failed, delete the work to prevent a leak
             napi::delete_async_work(env, *work);
             assert_eq!(status, napi::Status::Ok);

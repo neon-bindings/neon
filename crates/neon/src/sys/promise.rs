@@ -17,7 +17,7 @@ pub unsafe fn create(env: Env) -> (napi::Deferred, napi::Value) {
 
     assert_eq!(
         napi::create_promise(env, deferred.as_mut_ptr(), promise.as_mut_ptr()),
-        napi::Status::Ok,
+        Ok(()),
     );
 
     (deferred.assume_init(), promise.assume_init())
@@ -31,7 +31,7 @@ pub unsafe fn create(env: Env) -> (napi::Deferred, napi::Value) {
 pub unsafe fn resolve(env: Env, deferred: napi::Deferred, resolution: napi::Value) {
     assert_eq!(
         napi::resolve_deferred(env, deferred, resolution),
-        napi::Status::Ok,
+        Ok(()),
     );
 }
 
@@ -43,7 +43,7 @@ pub unsafe fn resolve(env: Env, deferred: napi::Deferred, resolution: napi::Valu
 pub unsafe fn reject(env: Env, deferred: napi::Deferred, rejection: napi::Value) {
     assert_eq!(
         napi::reject_deferred(env, deferred, rejection),
-        napi::Status::Ok,
+        Ok(()),
     );
 }
 
@@ -58,7 +58,7 @@ pub unsafe fn reject_err_message(env: Env, deferred: napi::Deferred, msg: impl A
 
     assert_eq!(
         napi::create_error(env, std::ptr::null_mut(), msg, err.as_mut_ptr()),
-        napi::Status::Ok,
+        Ok(()),
     );
 
     reject(env, deferred, err.assume_init());

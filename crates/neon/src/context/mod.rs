@@ -350,7 +350,7 @@ impl CallbackInfo<'_> {
                     ptr::null_mut(),
                     ptr::null_mut(),
                 ),
-                sys::Status::Ok,
+                Ok(())
             );
         }
 
