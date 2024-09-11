@@ -87,10 +87,10 @@ pub unsafe fn construct(
     out: &mut Local,
     env: Env,
     fun: Local,
-    argc: i32,
+    argc: usize,
     argv: *const c_void,
 ) -> bool {
-    let status = napi::new_instance(env, fun, argc as usize, argv as *const _, out as *mut _);
+    let status = napi::new_instance(env, fun, argc, argv as *const _, out as *mut _);
 
     status == napi::Status::Ok
 }

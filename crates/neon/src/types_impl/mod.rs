@@ -1051,7 +1051,7 @@ const V8_ARGC_LIMIT: usize = 65535;
 unsafe fn prepare_call<'a, 'b, C: Context<'a>>(
     cx: &mut C,
     args: &[Handle<'b, JsValue>],
-) -> NeonResult<(i32, *const c_void)> {
+) -> NeonResult<(usize, *const c_void)> {
     // Note: This cast is only save because `Handle<'_, JsValue>` is
     // guaranteed to have the same layout as a pointer because `Handle`
     // and `JsValue` are both `repr(C)` newtypes.
@@ -1060,7 +1060,7 @@ unsafe fn prepare_call<'a, 'b, C: Context<'a>>(
     if argc > V8_ARGC_LIMIT {
         return cx.throw_range_error("too many arguments");
     }
-    Ok((argc as i32, argv))
+    Ok((argc, argv))
 }
 
 impl JsFunction {
@@ -1173,7 +1173,7 @@ where
         env.to_raw(),
         this.to_local(),
         callee,
-        argc as usize,
+        argc,
         argv.cast(),
         result.as_mut_ptr(),
     );
