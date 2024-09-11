@@ -76,10 +76,7 @@ impl JsBigInt {
     {
         let mut v = MaybeUninit::uninit();
         let v = unsafe {
-            assert_eq!(
-                sys::create_bigint_int64(cx.env().to_raw(), n, v.as_mut_ptr(),),
-                Ok(()),
-            );
+            let () = sys::create_bigint_int64(cx.env().to_raw(), n, v.as_mut_ptr()).unwrap();
 
             v.assume_init()
         };
@@ -104,10 +101,7 @@ impl JsBigInt {
     {
         let mut v = MaybeUninit::uninit();
         let v = unsafe {
-            assert_eq!(
-                sys::create_bigint_uint64(cx.env().to_raw(), n, v.as_mut_ptr(),),
-                Ok(())
-            );
+            let () = sys::create_bigint_uint64(cx.env().to_raw(), n, v.as_mut_ptr()).unwrap();
 
             v.assume_init()
         };
@@ -202,16 +196,14 @@ impl JsBigInt {
 
         let mut v = MaybeUninit::uninit();
         let v = unsafe {
-            assert_eq!(
-                sys::create_bigint_words(
-                    cx.env().to_raw(),
-                    sign_bit,
-                    digits.len(),
-                    digits.as_ptr(),
-                    v.as_mut_ptr(),
-                ),
-                Ok(())
-            );
+            let () = sys::create_bigint_words(
+                cx.env().to_raw(),
+                sign_bit,
+                digits.len(),
+                digits.as_ptr(),
+                v.as_mut_ptr(),
+            )
+            .unwrap();
 
             v.assume_init()
         };
@@ -234,10 +226,8 @@ impl JsBigInt {
         let mut lossless = false;
 
         unsafe {
-            assert_eq!(
-                sys::get_value_bigint_int64(cx.env().to_raw(), self.0, &mut n, &mut lossless),
-                Ok(())
-            );
+            let () = sys::get_value_bigint_int64(cx.env().to_raw(), self.0, &mut n, &mut lossless)
+                .unwrap();
         }
 
         if lossless {
@@ -258,10 +248,8 @@ impl JsBigInt {
         let mut lossless = false;
 
         unsafe {
-            assert_eq!(
-                sys::get_value_bigint_uint64(cx.env().to_raw(), self.0, &mut n, &mut lossless),
-                Ok(())
-            );
+            let () = sys::get_value_bigint_uint64(cx.env().to_raw(), self.0, &mut n, &mut lossless)
+                .unwrap();
         }
 
         if lossless {
@@ -386,16 +374,14 @@ impl JsBigInt {
         let mut word_count = digits.len();
 
         unsafe {
-            assert_eq!(
-                sys::get_value_bigint_words(
-                    cx.env().to_raw(),
-                    self.0,
-                    &mut sign_bit,
-                    &mut word_count,
-                    digits.as_mut_ptr(),
-                ),
-                Ok(())
-            );
+            let () = sys::get_value_bigint_words(
+                cx.env().to_raw(),
+                self.0,
+                &mut sign_bit,
+                &mut word_count,
+                digits.as_mut_ptr(),
+            )
+            .unwrap();
         }
 
         let sign = if sign_bit == 0 {

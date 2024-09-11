@@ -271,9 +271,9 @@ unsafe fn external_from_panic(env: Env, panic: Panic) -> Local {
     let external = result.assume_init();
 
     #[cfg(feature = "napi-8")]
-    match  napi::type_tag_object(env, external, &*crate::MODULE_TAG) {
+    match napi::type_tag_object(env, external, &*crate::MODULE_TAG) {
         Err(_) => fail(),
-        Ok(()) => ()
+        Ok(()) => (),
     }
 
     external
@@ -292,7 +292,7 @@ unsafe fn create_string(env: Env, msg: &str) -> Local {
 
     match status {
         Err(_) => fatal_error("Failed to create a String"),
-        Ok(()) => ()
+        Ok(()) => (),
     }
 
     string.assume_init()
