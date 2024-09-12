@@ -1,4 +1,4 @@
-use neon::prelude::*;
+use neon::{prelude::*, types::extract::With};
 
 fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let x = cx.argument::<JsNumber>(0)?.value(&mut cx);
@@ -33,6 +33,24 @@ pub fn call_js_function_with_bind(mut cx: FunctionContext) -> JsResult<JsNumber>
         .args((1, 2, 3))?
         .arg(4)?
         .arg_with(|cx| cx.number(5))?
+        .apply()?;
+    Ok(cx.number(n))
+}
+
+pub fn call_js_function_with_bind_and_args_with(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let n: f64 = cx
+        .argument::<JsFunction>(0)?
+        .bind(&mut cx)
+        .args_with(|cx| (1, 2, 3))?
+        .apply()?;
+    Ok(cx.number(n))
+}
+
+pub fn call_js_function_with_bind_and_args_and_with(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let n: f64 = cx
+        .argument::<JsFunction>(0)?
+        .bind(&mut cx)
+        .args(With(|_| (1, 2, 3)))?
         .apply()?;
     Ok(cx.number(n))
 }

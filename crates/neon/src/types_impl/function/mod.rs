@@ -52,6 +52,16 @@ impl<'a, 'cx: 'a> BindOptions<'a, 'cx> {
         Ok(self)
     }
 
+    /// Replaces the arguments list with a list computed from a closure.
+    pub fn args_with<R, F>(&mut self, f: F) -> NeonResult<&mut Self>
+    where
+        R: TryIntoArguments<'cx>,
+        F: FnOnce(&mut Cx<'cx>) -> R,
+    {
+        self.args = f(self.cx).try_into_args_vec(self.cx)?;
+        Ok(self)
+    }
+
     /// Add an argument to the arguments list.
     pub fn arg<A: TryIntoJs<'cx>>(&mut self, a: A) -> NeonResult<&mut Self> {
         let v = a.try_into_js(self.cx)?;

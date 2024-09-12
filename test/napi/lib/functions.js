@@ -52,6 +52,24 @@ describe("JsFunction", function () {
     );
   });
 
+  it("call a JsFunction build in JS with .bind and .args_with", function () {
+    assert.equal(
+      addon.call_js_function_with_bind_and_args_with(function (a, b, c) {
+        return a + b + c;
+      }),
+      1 + 2 + 3
+    );
+  });
+
+  it("call a JsFunction build in JS with .bind and .args and With", function () {
+    assert.equal(
+      addon.call_js_function_with_bind_and_args_and_with(function (a, b, c) {
+        return a + b + c;
+      }),
+      1 + 2 + 3
+    );
+  });
+
   it("call parseInt with .bind().apply()", function () {
     assert.equal(addon.call_parse_int_with_bind(), 42);
   });
