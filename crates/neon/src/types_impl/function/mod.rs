@@ -202,93 +202,57 @@ impl<'cx> private::TryIntoArgumentsInternal<'cx> for () {
     }
 }
 
-macro_rules! impl_into_arguments {
+macro_rules! impl_into_arguments_expand {
     {
-        [ $(($tprefix:ident, $vprefix:ident), )* ];
+        $(#[$attrs:meta])?
+        [ $($prefix:ident ),* ];
         [];
     } => {};
 
     {
-        [ $(($tprefix:ident, $vprefix:ident), )* ];
-        [ $(#[$attr1:meta])? ($tname1:ident, $vname1:ident), $($(#[$attrs:meta])? ($tnames:ident, $vnames:ident), )* ];
+        $(#[$attrs:meta])?
+        [ $($prefix:ident),* ];
+        [ $head:ident $(, $tail:ident)* ];
     } => {
-        $(#[$attr1])?
-        impl<'cx, $($tprefix: TryIntoJs<'cx> + 'cx, )* $tname1: TryIntoJs<'cx> + 'cx> private::TryIntoArgumentsInternal<'cx> for ($($tprefix, )* $tname1, ) {
+        $(#[$attrs])?
+        impl<'cx, $($prefix: TryIntoJs<'cx> + 'cx, )* $head: TryIntoJs<'cx> + 'cx> private::TryIntoArgumentsInternal<'cx> for ($($prefix, )* $head, ) {
+            #[allow(non_snake_case)]
             fn try_into_args_vec(self, cx: &mut Cx<'cx>) -> NeonResult<private::ArgsVec<'cx>> {
-                let ($($vprefix, )* $vname1, ) = self;
-                Ok(smallvec![ $($vprefix.try_into_js(cx)?.upcast(),)* $vname1.try_into_js(cx)?.upcast() ])
+                let ($($prefix, )* $head, ) = self;
+                Ok(smallvec![ $($prefix.try_into_js(cx)?.upcast(),)* $head.try_into_js(cx)?.upcast() ])
              }
          }
 
-         $(#[$attr1])?
-         impl<'cx, $($tprefix: TryIntoJs<'cx> + 'cx, )* $tname1: TryIntoJs<'cx> + 'cx> TryIntoArguments<'cx> for ($($tprefix, )* $tname1, ) {}
+         $(#[$attrs])?
+         impl<'cx, $($prefix: TryIntoJs<'cx> + 'cx, )* $head: TryIntoJs<'cx> + 'cx> TryIntoArguments<'cx> for ($($prefix, )* $head, ) {}
 
-         impl_into_arguments! {
-             [ $(($tprefix, $vprefix), )* ($tname1, $vname1), ];
-             [ $($(#[$attrs])? ($tnames, $vnames), )* ];
-         }
-     };
+        impl_into_arguments_expand! {
+            $(#[$attrs])?
+            [ $($prefix, )* $head ];
+            [ $($tail),* ];
+        }
+   }
+}
+
+macro_rules! impl_into_arguments {
+    {
+        [ $($show:ident),* ];
+        [ $($hide:ident),* ];
+    } => {
+        impl_into_arguments_expand! { []; [ $($show),* ]; }
+        impl_into_arguments_expand! { #[doc(hidden)] [ $($show),* ]; [ $($hide),* ]; }
+    }
 }
 
 impl_into_arguments! {
-    [];
+    // Tuples up to length 8 are included in the docs.
+    [V1, V2, V3, V4, V5, V6, V7, V8];
+
+    // Tuples up to length 32 are not included in the docs.
     [
-        (V1, v1),
-        (V2, v2),
-        (V3, v3),
-        (V4, v4),
-        (V5, v5),
-        (V6, v6),
-        (V7, v7),
-        (V8, v8),
-        #[doc(hidden)]
-        (V9, v9),
-        #[doc(hidden)]
-        (V10, v10),
-        #[doc(hidden)]
-        (V11, v11),
-        #[doc(hidden)]
-        (V12, v12),
-        #[doc(hidden)]
-        (V13, v13),
-        #[doc(hidden)]
-        (V14, v14),
-        #[doc(hidden)]
-        (V15, v15),
-        #[doc(hidden)]
-        (V16, v16),
-        #[doc(hidden)]
-        (V17, v17),
-        #[doc(hidden)]
-        (V18, v18),
-        #[doc(hidden)]
-        (V19, v19),
-        #[doc(hidden)]
-        (V20, v20),
-        #[doc(hidden)]
-        (V21, v21),
-        #[doc(hidden)]
-        (V22, v22),
-        #[doc(hidden)]
-        (V23, v23),
-        #[doc(hidden)]
-        (V24, v24),
-        #[doc(hidden)]
-        (V25, v25),
-        #[doc(hidden)]
-        (V26, v26),
-        #[doc(hidden)]
-        (V27, v27),
-        #[doc(hidden)]
-        (V28, v28),
-        #[doc(hidden)]
-        (V29, v29),
-        #[doc(hidden)]
-        (V30, v30),
-        #[doc(hidden)]
-        (V31, v31),
-        #[doc(hidden)]
-        (V32, v32),
+        V9, V10, V11, V12, V13, V14, V15, V16,
+        V17, V18, V19, V20, V21, V22, V23, V24,
+        V25, V26, V27, V28, V29, V30, V31, V32
     ];
 }
 
@@ -307,92 +271,56 @@ impl<'a> private::ArgumentsInternal<'a> for () {
 
 impl<'a> Arguments<'a> for () {}
 
-macro_rules! impl_arguments {
+macro_rules! impl_arguments_expand {
     {
-        [ $(($tprefix:ident, $vprefix:ident), )* ];
+        $(#[$attrs:meta])?
+        [ $($prefix:ident),* ];
         [];
     } => {};
 
     {
-        [ $(($tprefix:ident, $vprefix:ident), )* ];
-        [ $(#[$attr1:meta])? ($tname1:ident, $vname1:ident), $($(#[$attrs:meta])? ($tnames:ident, $vnames:ident), )* ];
+        $(#[$attrs:meta])?
+        [ $($prefix:ident),* ];
+        [ $head:ident $(, $tail:ident)* ];
     } => {
-        $(#[$attr1])?
-        impl<'a, $($tprefix: Value, )* $tname1: Value> private::ArgumentsInternal<'a> for ($(Handle<'a, $tprefix>, )* Handle<'a, $tname1>, ) {
+        $(#[$attrs])?
+        impl<'a, $($prefix: Value, )* $head: Value> private::ArgumentsInternal<'a> for ($(Handle<'a, $prefix>, )* Handle<'a, $head>, ) {
+            #[allow(non_snake_case)]
             fn into_args_vec(self) -> private::ArgsVec<'a> {
-                let ($($vprefix, )* $vname1, ) = self;
-                smallvec![$($vprefix.upcast(),)* $vname1.upcast()]
+                let ($($prefix, )* $head, ) = self;
+                smallvec![$($prefix.upcast(),)* $head.upcast()]
              }
          }
 
-         $(#[$attr1])?
-         impl<'a, $($tprefix: Value, )* $tname1: Value> Arguments<'a> for ($(Handle<'a, $tprefix>, )* Handle<'a, $tname1>, ) {}
+         $(#[$attrs])?
+         impl<'a, $($prefix: Value, )* $head: Value> Arguments<'a> for ($(Handle<'a, $prefix>, )* Handle<'a, $head>, ) {}
 
-         impl_arguments! {
-             [ $(($tprefix, $vprefix), )* ($tname1, $vname1), ];
-             [ $($(#[$attrs])? ($tnames, $vnames), )* ];
+         impl_arguments_expand! {
+            $(#[$attrs])?
+            [ $($prefix, )* $head ];
+            [ $($tail),* ];
          }
-     };
- }
+    };
+}
+
+macro_rules! impl_arguments {
+    {
+        [ $($show:ident),* ];
+        [ $($hide:ident),* ];
+    } => {
+        impl_arguments_expand! { []; [ $($show),* ]; }
+        impl_arguments_expand! { #[doc(hidden)] [ $($show),* ]; [ $($hide),* ]; }
+    }
+}
 
 impl_arguments! {
-    [];
+    // Tuples up to length 8 are included in the docs.
+    [V1, V2, V3, V4, V5, V6, V7, V8];
+
+    // Tuples up to length 32 are not included in the docs.
     [
-        (V1, v1),
-        (V2, v2),
-        (V3, v3),
-        (V4, v4),
-        (V5, v5),
-        (V6, v6),
-        (V7, v7),
-        (V8, v8),
-        #[doc(hidden)]
-        (V9, v9),
-        #[doc(hidden)]
-        (V10, v10),
-        #[doc(hidden)]
-        (V11, v11),
-        #[doc(hidden)]
-        (V12, v12),
-        #[doc(hidden)]
-        (V13, v13),
-        #[doc(hidden)]
-        (V14, v14),
-        #[doc(hidden)]
-        (V15, v15),
-        #[doc(hidden)]
-        (V16, v16),
-        #[doc(hidden)]
-        (V17, v17),
-        #[doc(hidden)]
-        (V18, v18),
-        #[doc(hidden)]
-        (V19, v19),
-        #[doc(hidden)]
-        (V20, v20),
-        #[doc(hidden)]
-        (V21, v21),
-        #[doc(hidden)]
-        (V22, v22),
-        #[doc(hidden)]
-        (V23, v23),
-        #[doc(hidden)]
-        (V24, v24),
-        #[doc(hidden)]
-        (V25, v25),
-        #[doc(hidden)]
-        (V26, v26),
-        #[doc(hidden)]
-        (V27, v27),
-        #[doc(hidden)]
-        (V28, v28),
-        #[doc(hidden)]
-        (V29, v29),
-        #[doc(hidden)]
-        (V30, v30),
-        #[doc(hidden)]
-        (V31, v31),
-        #[doc(hidden)]
-        (V32, v32),
+        V9, V10, V11, V12, V13, V14, V15, V16,
+        V17, V18, V19, V20, V21, V22, V23, V24,
+        V25, V26, V27, V28, V29, V30, V31, V32
     ];
 }
