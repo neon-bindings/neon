@@ -1,6 +1,7 @@
 use crate::{
     context::FunctionContext,
-    handle::Handle,
+    handle::{Handle, Root},
+    object::Object,
     result::{NeonResult, Throw},
     types::{
         buffer::Binary,
@@ -34,6 +35,8 @@ impl Sealed for () {}
 impl Sealed for &str {}
 
 impl<'cx, V: Value> Sealed for Handle<'cx, V> {}
+
+impl<O: Object> Sealed for Root<O> {}
 
 impl<T> Sealed for Option<T> {}
 
