@@ -34,7 +34,7 @@ fn json_stringify<'cx>(cx: &mut Cx<'cx>) -> JsResult<'cx, JsFunction> {
         .map(|f| f.to_inner(cx))
 }
 
-fn stringify<'cx>(cx: &mut Cx<'cx>, v: Handle<JsValue>) -> NeonResult<String> {
+fn stringify(cx: &mut Cx, v: Handle<JsValue>) -> NeonResult<String> {
     json_stringify(cx)?
         .call(cx, v, [v])?
         .downcast_or_throw::<JsString, _>(cx)

@@ -451,7 +451,7 @@ impl<'a> ResultExt<Handle<'a, JsString>> for StringResult<'a> {
     fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, JsString> {
         match self {
             Ok(v) => Ok(v),
-            Err(e) => cx.throw_range_error(&e.to_string()),
+            Err(e) => cx.throw_range_error(e.to_string()),
         }
     }
 }

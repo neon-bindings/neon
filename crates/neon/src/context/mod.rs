@@ -375,7 +375,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Lock the JavaScript engine, returning an RAII guard that keeps the lock active as long as the guard is alive.
     ///
     /// If this is not the currently active context (for example, if it was used to spawn a scoped context with `execute_scoped` or `compute_scoped`), this method will panic.
-    fn lock<'b>(&'b mut self) -> Lock<Self>
+    fn lock<'b>(&'b mut self) -> Lock<'b, Self>
     where
         'a: 'b,
     {
@@ -641,7 +641,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     ///     Ok(promise)
     /// }
     /// ```
-    fn task<'cx, O, E>(&'cx mut self, execute: E) -> TaskBuilder<Self, E>
+    fn task<'cx, O, E>(&'cx mut self, execute: E) -> TaskBuilder<'cx, Self, E>
     where
         'a: 'cx,
         O: Send + 'static,

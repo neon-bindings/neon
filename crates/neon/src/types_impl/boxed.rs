@@ -242,7 +242,7 @@ impl<T: Finalize + 'static> JsBox<T> {
         // contained value `T`.
         fn finalizer<U: Finalize + 'static>(env: raw::Env, data: BoxAny) {
             let data = *data.downcast::<U>().unwrap();
-            let env = unsafe { std::mem::transmute(env) };
+            let env = Env::from(env);
 
             Cx::with_context(env, move |mut cx| data.finalize(&mut cx));
         }
