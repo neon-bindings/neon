@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     context::FunctionContext,
     handle::{Handle, Root},
@@ -5,7 +7,7 @@ use crate::{
     result::{NeonResult, Throw},
     types::{
         buffer::Binary,
-        extract::{ArrayBuffer, Buffer, Date, Error},
+        extract::{ArrayBuffer, Buffer, Date, Error, TryIntoJs},
         JsTypedArray, Value,
     },
 };
@@ -34,6 +36,8 @@ impl Sealed for () {}
 
 impl Sealed for &str {}
 
+impl Sealed for &String {}
+
 impl<'cx, V: Value> Sealed for Handle<'cx, V> {}
 
 impl<O: Object> Sealed for Root<O> {}
@@ -49,12 +53,37 @@ where
 {
 }
 
+impl<T> Sealed for Box<[T]>
+where
+    JsTypedArray<T>: Value,
+    T: Binary,
+{
+}
+
+impl<T, const N: usize> Sealed for [T; N]
+where
+    JsTypedArray<T>: Value,
+    T: Binary,
+{
+}
+
+impl<T> Sealed for &Vec<T>
+where
+    JsTypedArray<T>: Value,
+    T: Binary,
+{
+}
+
 impl<T> Sealed for &[T]
 where
     JsTypedArray<T>: Value,
     T: Binary,
 {
 }
+
+impl<'cx, T> Sealed for Arc<T> where for<'a> &'a T: TryIntoJs<'cx> {}
+
+impl<'cx, T> Sealed for Box<T> where T: TryIntoJs<'cx> {}
 
 impl_sealed!(
     u8,
