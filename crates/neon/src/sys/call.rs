@@ -33,7 +33,7 @@ impl Arguments {
 pub unsafe fn is_construct(env: Env, info: FunctionCallbackInfo) -> bool {
     let mut target: MaybeUninit<Local> = MaybeUninit::zeroed();
 
-    let () = napi::get_new_target(env, info, target.as_mut_ptr()).unwrap();
+    napi::get_new_target(env, info, target.as_mut_ptr()).unwrap();
 
     // get_new_target is guaranteed to assign to target, so it's initialized.
     let target: Local = target.assume_init();
@@ -45,15 +45,14 @@ pub unsafe fn is_construct(env: Env, info: FunctionCallbackInfo) -> bool {
 }
 
 pub unsafe fn this(env: Env, info: FunctionCallbackInfo, out: &mut Local) {
-    let () =
-        napi::get_cb_info(env, info, null_mut(), null_mut(), out as *mut _, null_mut()).unwrap();
+    napi::get_cb_info(env, info, null_mut(), null_mut(), out as *mut _, null_mut()).unwrap();
 }
 
 /// Gets the number of arguments passed to the function.
 // TODO: Remove this when `FunctionContext` is refactored to get call info upfront.
 pub unsafe fn len(env: Env, info: FunctionCallbackInfo) -> usize {
     let mut argc = 0usize;
-    let () = napi::get_cb_info(
+    napi::get_cb_info(
         env,
         info,
         &mut argc as *mut _,
@@ -73,7 +72,7 @@ pub unsafe fn argv(env: Env, info: FunctionCallbackInfo) -> Arguments {
     // Starts as the size allocated; after `get_cb_info` it is the number of arguments
     let mut argc = ARGV_SIZE;
 
-    let () = napi::get_cb_info(
+    napi::get_cb_info(
         env,
         info,
         &mut argc as *mut _,
@@ -88,7 +87,7 @@ pub unsafe fn argv(env: Env, info: FunctionCallbackInfo) -> Arguments {
         // We know exactly how much space to reserve
         let mut argv = Vec::with_capacity(argc);
 
-        let () = napi::get_cb_info(
+        napi::get_cb_info(
             env,
             info,
             &mut argc as *mut _,

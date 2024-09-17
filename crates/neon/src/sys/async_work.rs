@@ -58,7 +58,7 @@ pub unsafe fn schedule<I, O, D>(
     let work = &mut data.work as *mut _;
 
     // Create the `async_work`
-    let () = napi::create_async_work(
+    napi::create_async_work(
         env,
         ptr::null_mut(),
         super::string(env, "neon_async_work"),

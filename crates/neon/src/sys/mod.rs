@@ -113,7 +113,7 @@ unsafe fn string(env: Env, s: impl AsRef<str>) -> raw::Local {
     let s = s.as_ref();
     let mut result = MaybeUninit::uninit();
 
-    let () = create_string_utf8(
+    create_string_utf8(
         env,
         s.as_bytes().as_ptr() as *const _,
         s.len(),

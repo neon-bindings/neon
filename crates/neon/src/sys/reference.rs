@@ -8,7 +8,7 @@ use super::{
 pub unsafe fn new(env: Env, value: Local) -> napi::Ref {
     let mut result = MaybeUninit::uninit();
 
-    let () = napi::create_reference(env, value, 1, result.as_mut_ptr()).unwrap();
+    napi::create_reference(env, value, 1, result.as_mut_ptr()).unwrap();
 
     result.assume_init()
 }
@@ -18,7 +18,7 @@ pub unsafe fn new(env: Env, value: Local) -> napi::Ref {
 pub unsafe fn reference(env: Env, value: napi::Ref) -> usize {
     let mut result = MaybeUninit::uninit();
 
-    let () = napi::reference_ref(env, value, result.as_mut_ptr()).unwrap();
+    napi::reference_ref(env, value, result.as_mut_ptr()).unwrap();
 
     result.assume_init() as usize
 }
@@ -28,7 +28,7 @@ pub unsafe fn reference(env: Env, value: napi::Ref) -> usize {
 pub unsafe fn unreference(env: Env, value: napi::Ref) {
     let mut result = MaybeUninit::uninit();
 
-    let () = napi::reference_unref(env, value, result.as_mut_ptr()).unwrap();
+    napi::reference_unref(env, value, result.as_mut_ptr()).unwrap();
 
     if result.assume_init() == 0 {
         assert_eq!(napi::delete_reference(env, value), Ok(()));
@@ -40,7 +40,7 @@ pub unsafe fn unreference(env: Env, value: napi::Ref) {
 pub unsafe fn get(env: Env, value: napi::Ref) -> Local {
     let mut result = MaybeUninit::uninit();
 
-    let () = napi::get_reference_value(env, value, result.as_mut_ptr()).unwrap();
+    napi::get_reference_value(env, value, result.as_mut_ptr()).unwrap();
 
     result.assume_init()
 }

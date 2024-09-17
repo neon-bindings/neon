@@ -12,7 +12,7 @@ use super::{
 /// `env` is a raw pointer. Please ensure it points to a napi_env that is valid for the current context.
 pub unsafe fn new_date(env: Env, value: f64) -> Local {
     let mut local = MaybeUninit::zeroed();
-    let () = napi::create_date(env, value, local.as_mut_ptr()).unwrap();
+    napi::create_date(env, value, local.as_mut_ptr()).unwrap();
     local.assume_init()
 }
 
@@ -24,6 +24,6 @@ pub unsafe fn new_date(env: Env, value: f64) -> Local {
 /// `Local` must be an NAPI value associated with the given `Env`
 pub unsafe fn value(env: Env, p: Local) -> f64 {
     let mut value = 0.0;
-    let () = napi::get_date_value(env, p, &mut value as *mut _).unwrap();
+    napi::get_date_value(env, p, &mut value as *mut _).unwrap();
     value
 }

@@ -17,8 +17,7 @@ use super::{bindings as napi, raw::Env};
 pub unsafe fn set_instance_data<T: Send + 'static>(env: Env, data: T) -> *mut T {
     let data = Box::into_raw(Box::new(data));
 
-    let () =
-        napi::set_instance_data(env, data.cast(), Some(drop_box::<T>), ptr::null_mut()).unwrap();
+    napi::set_instance_data(env, data.cast(), Some(drop_box::<T>), ptr::null_mut()).unwrap();
 
     data
 }
@@ -31,7 +30,7 @@ pub unsafe fn set_instance_data<T: Send + 'static>(env: Env, data: T) -> *mut T 
 pub unsafe fn get_instance_data<T: Send + 'static>(env: Env) -> *mut T {
     let mut data = MaybeUninit::uninit();
 
-    let () = napi::get_instance_data(env, data.as_mut_ptr()).unwrap();
+    napi::get_instance_data(env, data.as_mut_ptr()).unwrap();
 
     data.assume_init().cast()
 }
