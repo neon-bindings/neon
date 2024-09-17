@@ -6,7 +6,7 @@ use super::{
 };
 
 pub unsafe fn new(out: &mut Local, env: Env, length: usize) {
-    let () = napi::create_array_with_length(env, length, out as *mut _).unwrap();
+    napi::create_array_with_length(env, length, out as *mut _).unwrap();
 }
 
 /// Gets the length of a `napi_value` containing a JavaScript Array.
@@ -16,6 +16,6 @@ pub unsafe fn new(out: &mut Local, env: Env, length: usize) {
 /// exception.
 pub unsafe fn len(env: Env, array: Local) -> u32 {
     let mut len = 0;
-    let () = napi::get_array_length(env, array, &mut len as *mut _).unwrap();
+    napi::get_array_length(env, array, &mut len as *mut _).unwrap();
     len
 }

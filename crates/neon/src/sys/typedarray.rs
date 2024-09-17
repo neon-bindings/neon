@@ -50,7 +50,7 @@ pub unsafe fn new(
     let mut array = MaybeUninit::uninit();
     let status = napi::create_typedarray(env, typ, len, buffer, offset, array.as_mut_ptr());
 
-    let () = match status {
+    match status {
         Err(err @ napi::Status::PendingException) => return Err(err),
         status => status.unwrap(),
     };

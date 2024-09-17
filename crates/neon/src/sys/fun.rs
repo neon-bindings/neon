@@ -22,7 +22,7 @@ where
         out.as_mut_ptr(),
     );
 
-    let () = match status {
+    match status {
         Err(err @ napi::Status::PendingException) => {
             drop(Box::from_raw(data));
 
@@ -55,7 +55,7 @@ where
         // If adding the finalizer fails the closure will leak, but it would
         // be unsafe to drop it because there's no guarantee V8 won't use the
         // pointer.
-        let () = status.unwrap();
+        status.unwrap();
     }
 
     Ok(out)
@@ -68,7 +68,7 @@ where
     F: Fn(Env, napi::CallbackInfo) -> Local + 'static,
 {
     let mut data = MaybeUninit::uninit();
-    let () = napi::get_cb_info(
+    napi::get_cb_info(
         env,
         info,
         ptr::null_mut(),

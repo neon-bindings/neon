@@ -81,7 +81,7 @@ impl<'cx> TryFromJs<'cx> for f64 {
         let mut n = 0f64;
 
         unsafe {
-            let () = match sys::get_value_double(cx.env().to_raw(), v.to_local(), &mut n) {
+            match sys::get_value_double(cx.env().to_raw(), v.to_local(), &mut n) {
                 Err(sys::Status::NumberExpected) => return Ok(Err(TypeExpected::new())),
                 Err(sys::Status::PendingException) => return Err(Throw::new()),
                 status => status.unwrap(),
@@ -102,7 +102,7 @@ impl<'cx> TryFromJs<'cx> for bool {
         let mut b = false;
 
         unsafe {
-            let () = match sys::get_value_bool(cx.env().to_raw(), v.to_local(), &mut b) {
+            match sys::get_value_bool(cx.env().to_raw(), v.to_local(), &mut b) {
                 Err(sys::Status::BooleanExpected) => return Ok(Err(TypeExpected::new())),
                 Err(sys::Status::PendingException) => return Err(Throw::new()),
                 status => status.unwrap(),
@@ -125,7 +125,7 @@ impl<'cx> TryFromJs<'cx> for String {
         let mut len = 0usize;
 
         unsafe {
-            let () = match sys::get_value_string_utf8(env, v, ptr::null_mut(), 0, &mut len) {
+            match sys::get_value_string_utf8(env, v, ptr::null_mut(), 0, &mut len) {
                 Err(sys::Status::StringExpected) => return Ok(Err(TypeExpected::new())),
                 Err(sys::Status::PendingException) => return Err(Throw::new()),
                 status => status.unwrap(),
@@ -168,7 +168,7 @@ impl<'cx> TryFromJs<'cx> for Date {
         let mut d = 0f64;
 
         unsafe {
-            let () = match sys::get_date_value(cx.env().to_raw(), v.to_local(), &mut d) {
+            match sys::get_date_value(cx.env().to_raw(), v.to_local(), &mut d) {
                 Err(sys::Status::DateExpected) => return Ok(Err(TypeExpected::new())),
                 Err(sys::Status::PendingException) => return Err(Throw::new()),
                 status => status.unwrap(),
@@ -259,7 +259,7 @@ where
     let mut ty = sys::ValueType::Object;
 
     unsafe {
-        let () = match sys::typeof_value(cx.env().to_raw(), v.to_local(), &mut ty) {
+        match sys::typeof_value(cx.env().to_raw(), v.to_local(), &mut ty) {
             Err(sys::Status::PendingException) => return Err(Throw::new()),
             status => status.unwrap(),
         };
