@@ -153,15 +153,16 @@ pub use neon_macros::main;
 /// More complex functions may need to interact directly with the JavaScript runtime,
 /// for example with [`Context`](crate::context::Context) or handles to JavaScript values.
 ///
-/// Functions may optionally include a [`FunctionContext`](crate::context::FunctionContext) argument. Note
-/// that unlike functions created with [`JsFunction::new`](crate::types::JsFunction), exported function
-/// receive a borrowed context and may require explicit lifetimes.
+/// Functions may optionally include a [`Cx`](crate::context::Cx) or
+/// [`FunctionContext`](crate::context::FunctionContext) argument. Note that unlike functions
+/// created with [`JsFunction::new`](crate::types::JsFunction), exported function receive a borrowed
+/// context and may require explicit lifetimes.
 ///
 /// ```
 /// # use neon::prelude::*;
 /// #[neon::export]
 /// fn add<'cx>(
-///     cx: &mut FunctionContext<'cx>,
+///     cx: &mut Cx<'cx>,
 ///     a: Handle<JsNumber>,
 ///     b: Handle<JsNumber>,
 /// ) -> JsResult<'cx, JsNumber> {
@@ -180,7 +181,7 @@ pub use neon_macros::main;
 /// #### `context`
 ///
 /// The `#[neon::export]` macro looks checks if the first argument has a type of
-/// `&mut FunctionContext` to determine if the [`Context`](crate::context::Context)
+/// `&mut Cx` or `&mut FunctionContext` to determine if the [`Context`](crate::context::Context)
 /// should be passed to the function.
 ///
 /// If the type has been renamed when importing, the `context` attribute can be
