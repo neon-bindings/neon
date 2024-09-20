@@ -2,6 +2,8 @@ use crate::export::function::meta::Kind;
 
 pub(crate) mod meta;
 
+static ASYNC_CX_ERROR: &str = "`FunctionContext` is not allowed in async functions";
+static ASYNC_FN_ERROR: &str = "`async` attribute should not be used with an `async fn`";
 static TASK_CX_ERROR: &str = "`FunctionContext` is not allowed with `task` attribute";
 
 pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenStream {
@@ -40,19 +42,19 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
             .unwrap_or_else(|| quote::quote!(#name))
     });
 
-    // Import the value or JSON trait for conversion
-    let result_trait_name = if meta.json {
-        quote::format_ident!("NeonExportReturnJson")
+    // Tag whether we should JSON wrap results
+    let return_tag = if meta.json {
+        quote::format_ident!("NeonJsonTag")
     } else {
-        quote::format_ident!("NeonExportReturnValue")
+        quote::format_ident!("NeonValueTag")
     };
 
     // Convert the result
     // N.B.: Braces are intentionally included to avoid leaking trait to function body
     let result_extract = quote::quote!({
-        use neon::macro_internal::#result_trait_name;
+        use neon::macro_internal::{ToNeonMarker, #return_tag as NeonReturnTag};
 
-        res.try_neon_export_return(&mut cx)
+        (&res).to_neon_marker::<NeonReturnTag>().neon_into_js(&mut cx, res)
     });
 
     // Default export name as identity unless a name is provided
@@ -63,6 +65,17 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
 
     // Generate the call to the original function
     let call_body = match meta.kind {
+        Kind::Async | Kind::AsyncFn => quote::quote!(
+            let (#(#tuple_fields,)*) = cx.args()?;
+            let fut = #name(#context_arg #(#args),*);
+            let fut = {
+                use neon::macro_internal::{ToNeonMarker, NeonValueTag};
+
+                (&fut).to_neon_marker::<NeonValueTag>().into_neon_result(&mut cx, fut)?
+            };
+
+            neon::macro_internal::spawn(&mut cx, fut, |mut cx, res| #result_extract)
+        ),
         Kind::Normal => quote::quote!(
             let (#(#tuple_fields,)*) = cx.args()?;
             let res = #name(#context_arg #(#args),*);
@@ -160,7 +173,8 @@ fn has_context_arg(meta: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool>
 
     // Context is only allowed for normal functions
     match meta.kind {
-        Kind::Normal => {}
+        Kind::Normal | Kind::Async => {}
+        Kind::AsyncFn => return Err(syn::Error::new(first.span(), ASYNC_CX_ERROR)),
         Kind::Task => return Err(syn::Error::new(first.span(), TASK_CX_ERROR)),
     }
 

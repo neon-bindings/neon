@@ -102,6 +102,9 @@ mod types_impl;
 #[cfg_attr(docsrs, doc(cfg(feature = "sys")))]
 pub mod sys;
 
+#[cfg(all(feature = "napi-6", feature = "futures"))]
+#[cfg_attr(docsrs, doc(cfg(all(feature = "napi-6", feature = "futures"))))]
+pub use executor::set_global_executor;
 pub use types_docs::exports as types;
 
 #[doc(hidden)]
@@ -114,12 +117,15 @@ use crate::{context::ModuleContext, handle::Handle, result::NeonResult, types::J
 #[cfg(feature = "napi-6")]
 mod lifecycle;
 
+#[cfg(all(feature = "napi-6", feature = "futures"))]
+mod executor;
+
 #[cfg(feature = "napi-8")]
 static MODULE_TAG: once_cell::sync::Lazy<crate::sys::TypeTag> = once_cell::sync::Lazy::new(|| {
     let mut lower = [0; std::mem::size_of::<u64>()];
 
     // Generating a random module tag at runtime allows Neon builds to be reproducible. A few
-    //  alternativeswere considered:
+    //  alternatives considered:
     // * Generating a random value at build time; this reduces runtime dependencies but, breaks
     //   reproducible builds
     // * A static random value; this solves the previous issues, but does not protect against ABI
@@ -143,18 +149,21 @@ pub struct Exports(());
 impl Exports {
     /// Export all values exported with [`neon::export`](export)
     ///
-    /// ```ignore
+    /// ```
+    /// # fn main() {
     /// # use neon::prelude::*;
     /// #[neon::main]
     /// fn main(mut cx: ModuleContext) -> NeonResult<()> {
     ///     neon::registered().export(&mut cx)?;
     ///     Ok(())
     /// }
+    /// # }
     /// ```
     ///
     /// For more control, iterate over exports.
     ///
-    /// ```ignore
+    /// ```
+    /// # fn main() {
     /// # use neon::prelude::*;
     /// #[neon::main]
     /// fn main(mut cx: ModuleContext) -> NeonResult<()> {
@@ -166,6 +175,7 @@ impl Exports {
     ///
     ///     Ok(())
     /// }
+    /// # }
     /// ```
     pub fn export(self, cx: &mut ModuleContext) -> NeonResult<()> {
         for create in self {
@@ -196,33 +206,18 @@ pub fn registered() -> Exports {
 }
 
 #[test]
-#[ignore]
 fn feature_matrix() {
     use std::{env, process::Command};
 
-    const EXTERNAL_BUFFERS: &str = "external-buffers";
-    const FUTURES: &str = "futures";
-    const SERDE: &str = "serde";
     const NODE_API_VERSIONS: &[&str] = &[
         "napi-1", "napi-2", "napi-3", "napi-4", "napi-5", "napi-6", "napi-7", "napi-8",
     ];
 
-    // If the number of features in Neon grows, we can use `itertools` to generate permutations.
-    // https://docs.rs/itertools/latest/itertools/trait.Itertools.html#method.permutations
-    const FEATURES: &[&[&str]] = &[
-        &[],
-        &[EXTERNAL_BUFFERS],
-        &[FUTURES],
-        &[SERDE],
-        &[EXTERNAL_BUFFERS, FUTURES],
-        &[EXTERNAL_BUFFERS, SERDE],
-        &[FUTURES, SERDE],
-        &[EXTERNAL_BUFFERS, FUTURES, SERDE],
-    ];
+    const FEATURES: &[&str] = &["external-buffers", "futures", "serde", "tokio", "tokio-rt"];
 
     let cargo = env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
 
-    for features in FEATURES {
+    for features in itertools::Itertools::powerset(FEATURES.iter()) {
         for version in NODE_API_VERSIONS.iter().map(|f| f.to_string()) {
             let features = features.iter().fold(version, |f, s| f + "," + s);
             let status = Command::new(&cargo)
