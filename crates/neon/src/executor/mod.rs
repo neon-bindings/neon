@@ -25,6 +25,7 @@ pub trait Runtime: Send + Sync + 'static {
 /// to initialize the async runtime once in a process global and share it across instances.
 ///
 /// ```
+/// # fn main() {
 /// # #[cfg(feature = "tokio-rt-multi-thread")]
 /// # fn example() {
 /// # use neon::prelude::*;
@@ -43,6 +44,7 @@ pub trait Runtime: Send + Sync + 'static {
 ///
 ///     Ok(())
 /// }
+/// # }
 /// # }
 /// ```
 pub fn set_global_executor<R>(cx: &mut Cx, runtime: R) -> Result<(), R>
