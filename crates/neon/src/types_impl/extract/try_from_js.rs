@@ -7,7 +7,8 @@ use std::{convert::Infallible, ptr};
 
 use crate::{
     context::{internal::ContextInternal, Cx},
-    handle::Handle,
+    handle::{Handle, Root},
+    object::Object,
     result::{NeonResult, ResultExt, Throw},
     sys,
     types::{
@@ -40,6 +41,25 @@ where
         v: Handle<'cx, JsValue>,
     ) -> NeonResult<Result<Self, Self::Error>> {
         Ok(v.downcast(cx).map_err(|_| TypeExpected::new()))
+    }
+
+    from_js!();
+}
+
+impl<'cx, O> TryFromJs<'cx> for Root<O>
+where
+    O: Object,
+{
+    type Error = TypeExpected<O>;
+
+    fn try_from_js(
+        cx: &mut Cx<'cx>,
+        v: Handle<'cx, JsValue>,
+    ) -> NeonResult<Result<Self, Self::Error>> {
+        Ok(match v.downcast::<O, _>(cx) {
+            Ok(v) => Ok(v.root(cx)),
+            Err(_) => Err(TypeExpected::new()),
+        })
     }
 
     from_js!();

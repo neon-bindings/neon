@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     context::{Context, Cx},
     handle::Handle,
@@ -63,6 +65,29 @@ where
     }
 }
 
+impl<'cx, T> TryIntoJs<'cx> for Box<T>
+where
+    T: TryIntoJs<'cx>,
+{
+    type Value = T::Value;
+
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
+        (*self).try_into_js(cx)
+    }
+}
+
+impl<'cx, T, V> TryIntoJs<'cx> for Arc<T>
+where
+    for<'a> &'a T: TryIntoJs<'cx, Value = V>,
+    V: Value,
+{
+    type Value = V;
+
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
+        self.as_ref().try_into_js(cx)
+    }
+}
+
 macro_rules! impl_number {
     ($ty:ident) => {
         impl<'cx> TryIntoJs<'cx> for $ty {
@@ -91,7 +116,15 @@ impl<'cx> TryIntoJs<'cx> for String {
     }
 }
 
-impl<'cx> TryIntoJs<'cx> for &'cx str {
+impl<'a, 'cx> TryIntoJs<'cx> for &'a str {
+    type Value = JsString;
+
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
+        Ok(cx.string(self))
+    }
+}
+
+impl<'a, 'cx> TryIntoJs<'cx> for &'a String {
     type Value = JsString;
 
     fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
@@ -111,7 +144,43 @@ where
     }
 }
 
-impl<'cx, T> TryIntoJs<'cx> for &'cx [T]
+impl<'cx, T> TryIntoJs<'cx> for Box<[T]>
+where
+    JsTypedArray<T>: Value,
+    T: Binary,
+{
+    type Value = JsTypedArray<T>;
+
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
+        JsTypedArray::from_slice(cx, &self)
+    }
+}
+
+impl<'cx, T, const N: usize> TryIntoJs<'cx> for [T; N]
+where
+    JsTypedArray<T>: Value,
+    T: Binary,
+{
+    type Value = JsTypedArray<T>;
+
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
+        JsTypedArray::from_slice(cx, self.as_slice())
+    }
+}
+
+impl<'a, 'cx, T> TryIntoJs<'cx> for &'a Vec<T>
+where
+    JsTypedArray<T>: Value,
+    T: Binary,
+{
+    type Value = JsTypedArray<T>;
+
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
+        JsTypedArray::from_slice(cx, self)
+    }
+}
+
+impl<'a, 'cx, T> TryIntoJs<'cx> for &'a [T]
 where
     JsTypedArray<T>: Value,
     T: Binary,
