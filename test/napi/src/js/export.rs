@@ -88,3 +88,8 @@ fn sleep_task(ms: f64) {
 
     thread::sleep(Duration::from_millis(ms as u64));
 }
+
+#[neon::export]
+fn number_with_cx<'cx>(cx: &mut Cx<'cx>, n: f64) -> Handle<'cx, JsNumber> {
+    cx.number(n)
+}

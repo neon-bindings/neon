@@ -167,7 +167,7 @@ fn has_context_arg(meta: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool>
     };
 
     // First argument isn't context
-    if first != "FunctionContext" {
+    if first != "FunctionContext" && first != "Cx" {
         return Ok(false);
     }
 

@@ -93,4 +93,8 @@ function functions() {
 
     assert.ok(duration < maxExpected);
   });
+
+  it("can use generic Cx in exported functions", () => {
+    assert.strictEqual(addon.number_with_cx(42), 42);
+  });
 }
