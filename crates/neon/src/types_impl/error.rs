@@ -77,11 +77,15 @@ impl JsError {
         cx: &mut C,
         msg: S,
     ) -> NeonResult<Handle<'a, JsError>> {
+        let env = cx.env();
         let msg = cx.string(msg.as_ref());
-        build(cx.env(), |out| unsafe {
-            sys::error::new_error(cx.env().to_raw(), out, msg.to_local());
-            true
-        })
+
+        let mut out = std::ptr::null_mut();
+        let value = unsafe {
+            sys::error::new_error(env.to_raw(), &mut out, msg.to_local());
+            Self::from_local(env, out)
+        };
+        Ok(Handle::new_internal(value))
     }
 
     /// Creates an instance of the [`TypeError`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/TypeError) class.
@@ -91,10 +95,12 @@ impl JsError {
         cx: &mut C,
         msg: S,
     ) -> NeonResult<Handle<'a, JsError>> {
+        let env = cx.env();
         let msg = cx.string(msg.as_ref());
-        build(cx.env(), |out| unsafe {
-            sys::error::new_type_error(cx.env().to_raw(), out, msg.to_local());
-            true
+        build(env, || unsafe {
+            let mut out = std::ptr::null_mut();
+            sys::error::new_type_error(env.to_raw(), &mut out, msg.to_local());
+            Ok(out)
         })
     }
 
@@ -105,10 +111,12 @@ impl JsError {
         cx: &mut C,
         msg: S,
     ) -> NeonResult<Handle<'a, JsError>> {
+        let env = cx.env();
         let msg = cx.string(msg.as_ref());
-        build(cx.env(), |out| unsafe {
-            sys::error::new_range_error(cx.env().to_raw(), out, msg.to_local());
-            true
+        build(env, move || unsafe {
+            let mut out: raw::Local = std::ptr::null_mut();
+            sys::error::new_range_error(env.to_raw(), &mut out, msg.to_local());
+            Ok(out)
         })
     }
 }

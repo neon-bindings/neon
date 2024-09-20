@@ -59,18 +59,13 @@ pub use self::promise::JsFuture;
 
 // This should be considered deprecated and will be removed:
 // https://github.com/neon-bindings/neon/issues/983
-pub(crate) fn build<'a, T: Value, F: FnOnce(&mut raw::Local) -> bool>(
+pub(crate) fn build<'a, T: Value, E, F: FnOnce() -> Result<raw::Local, E>>(
     env: Env,
     init: F,
-) -> JsResult<'a, T> {
-    unsafe {
-        let mut local: raw::Local = std::mem::zeroed();
-        if init(&mut local) {
-            Ok(Handle::new_internal(T::from_local(env, local)))
-        } else {
-            Err(Throw::new())
-        }
-    }
+) -> Result<Handle<'a, T>, E> {
+    let local = init()?;
+    let value = unsafe { T::from_local(env, local) };
+    Ok(Handle::new_internal(value))
 }
 
 impl<T: Value> SuperType<T> for JsValue {
@@ -89,8 +84,11 @@ impl<T: Object> SuperType<T> for JsObject {
 pub trait Value: ValueInternal {
     fn to_string<'cx, C: Context<'cx>>(&self, cx: &mut C) -> JsResult<'cx, JsString> {
         let env = cx.env();
-        build(env, |out| unsafe {
-            sys::convert::to_string(out, env.to_raw(), self.to_local())
+        build(env, || unsafe {
+            let mut out = std::ptr::null_mut();
+            sys::convert::to_string(&mut out, env.to_raw(), self.to_local())
+                .then_some(out)
+                .ok_or(Throw::new())
         })
     }
 
@@ -1169,9 +1167,20 @@ impl JsFunction {
         AS: AsRef<[Handle<'b, JsValue>]>,
     {
         let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
-        let env = cx.env().to_raw();
-        build(cx.env(), |out| unsafe {
-            sys::fun::call(out, env, self.to_local(), this.to_local(), argc, argv)
+        let env = cx.env();
+        build(env, move || unsafe {
+            let mut out: raw::Local = std::ptr::null_mut();
+
+            sys::fun::call(
+                &mut out,
+                env.to_raw(),
+                self.to_local(),
+                this.to_local(),
+                argc,
+                argv,
+            )
+            .then_some(out)
+            .ok_or(Throw::new())
         })
     }
 
@@ -1204,10 +1213,15 @@ impl JsFunction {
         AS: AsRef<[Handle<'b, JsValue>]>,
     {
         let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
-        let env = cx.env().to_raw();
-        build(cx.env(), |out| unsafe {
-            sys::fun::construct(out, env, self.to_local(), argc, argv)
-        })
+        let env = cx.env();
+        {
+            build(env, move || unsafe {
+                let mut out: raw::Local = std::ptr::null_mut();
+                sys::fun::construct(&mut out, env.to_raw(), self.to_local(), argc, argv)
+                    .then_some(out)
+                    .ok_or(Throw::new())
+            })
+        }
     }
 }
 
