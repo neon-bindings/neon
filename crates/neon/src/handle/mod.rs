@@ -132,7 +132,7 @@ impl<'a, F: Value, T: Value> ResultExt<Handle<'a, T>> for DowncastResult<'a, F, 
     fn or_throw<'b, C: Context<'b>>(self, cx: &mut C) -> JsResult<'a, T> {
         match self {
             Ok(v) => Ok(v),
-            Err(e) => cx.throw_type_error(&e.to_string()),
+            Err(e) => cx.throw_type_error(e.to_string()),
         }
     }
 }

@@ -9,7 +9,7 @@ fn runtime<'a, C: Context<'a>>(cx: &mut C) -> NeonResult<&'static Runtime> {
 
     RUNTIME
         .get_or_try_init(Runtime::new)
-        .or_else(|err| cx.throw_error(&err.to_string()))
+        .or_else(|err| cx.throw_error(err.to_string()))
 }
 
 // Accepts two functions that take no parameters and return numbers.

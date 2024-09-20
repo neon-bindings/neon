@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-const SMALL_MAX: usize = std::i32::MAX as usize;
+const SMALL_MAX: usize = i32::MAX as usize;
 
 /// V8 APIs that take UTF-8 strings take their length in the form of 32-bit
 /// signed integers. This type represents a UTF-8 string that contains no

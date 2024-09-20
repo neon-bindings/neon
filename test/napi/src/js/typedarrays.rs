@@ -216,7 +216,7 @@ where
     Ok(obj)
 }
 
-fn detach_and_then<'cx, F>(mut cx: FunctionContext<'cx>, f: F) -> JsResult<JsObject>
+fn detach_and_then<'cx, F>(mut cx: FunctionContext<'cx>, f: F) -> JsResult<'cx, JsObject>
 where
     F: FnOnce(
         &mut FunctionContext<'cx>,

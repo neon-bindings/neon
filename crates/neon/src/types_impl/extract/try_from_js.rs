@@ -270,7 +270,7 @@ impl<'cx> TryFromJs<'cx> for ArrayBuffer {
     from_js!();
 }
 
-fn is_null_or_undefined<'cx, V>(cx: &mut Cx<'cx>, v: Handle<V>) -> NeonResult<bool>
+fn is_null_or_undefined<V>(cx: &mut Cx, v: Handle<V>) -> NeonResult<bool>
 where
     V: Value,
 {

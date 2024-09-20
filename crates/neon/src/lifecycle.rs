@@ -102,7 +102,7 @@ impl LocalCell {
         }
     }
 
-    pub(crate) fn get<'cx, 'a, C>(cx: &'a mut C, id: usize) -> Option<&mut LocalCellValue>
+    pub(crate) fn get<'cx, 'a, C>(cx: &'a mut C, id: usize) -> Option<&'a mut LocalCellValue>
     where
         C: Context<'cx>,
     {
@@ -113,7 +113,11 @@ impl LocalCell {
         }
     }
 
-    pub(crate) fn get_or_init<'cx, 'a, C, F>(cx: &'a mut C, id: usize, f: F) -> &mut LocalCellValue
+    pub(crate) fn get_or_init<'cx, 'a, C, F>(
+        cx: &'a mut C,
+        id: usize,
+        f: F,
+    ) -> &'a mut LocalCellValue
     where
         C: Context<'cx>,
         F: FnOnce() -> LocalCellValue,
@@ -129,7 +133,7 @@ impl LocalCell {
         cx: &'a mut C,
         id: usize,
         f: F,
-    ) -> Result<&mut LocalCellValue, E>
+    ) -> Result<&'a mut LocalCellValue, E>
     where
         C: Context<'cx>,
         F: FnOnce(&mut C) -> Result<LocalCellValue, E>,
