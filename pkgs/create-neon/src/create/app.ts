@@ -8,8 +8,10 @@ export class AppCreator extends Creator {
   scripts(): Record<string, string> {
     return {
       test: "cargo test",
-      "cargo-build": "cargo build --message-format=json > cargo.log",
-      "cross-build": "cross build --message-format=json > cross.log",
+      "cargo-build":
+        "cargo build --message-format=json-render-diagnostics > cargo.log",
+      "cross-build":
+        "cross build --message-format=json-render-diagnostics > cross.log",
       "postcargo-build": "neon dist < cargo.log",
       "postcross-build": "neon dist -m /target < cross.log",
       debug: "npm run cargo-build --",
