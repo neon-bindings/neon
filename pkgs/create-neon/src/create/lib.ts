@@ -95,8 +95,8 @@ export class LibCreator extends Creator {
 
     let scripts: Record<string, string> = {
       test: `${tscAnd}cargo test`,
-      "cargo-build": `${tscAnd}cargo build --message-format=json > cargo.log`,
-      "cross-build": `${tscAnd}cross build --message-format=json > cross.log`,
+      "cargo-build": `${tscAnd}cargo build --message-format=json-render-diagnostics > cargo.log`,
+      "cross-build": `${tscAnd}cross build --message-format=json-render-diagnostics > cross.log`,
       "postcargo-build": "neon dist < cargo.log",
       "postcross-build": "neon dist -m /target < cross.log",
       debug: "npm run cargo-build --",
