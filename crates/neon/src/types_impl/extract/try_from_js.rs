@@ -102,10 +102,10 @@ impl<'cx> TryFromJs<'cx> for f64 {
 
         unsafe {
             match sys::get_value_double(cx.env().to_raw(), v.to_local(), &mut n) {
-                sys::Status::NumberExpected => return Ok(Err(TypeExpected::new())),
-                sys::Status::PendingException => return Err(Throw::new()),
-                status => assert_eq!(status, sys::Status::Ok),
-            }
+                Err(sys::Status::NumberExpected) => return Ok(Err(TypeExpected::new())),
+                Err(sys::Status::PendingException) => return Err(Throw::new()),
+                status => status.unwrap(),
+            };
         }
 
         Ok(Ok(n))
@@ -125,10 +125,10 @@ impl<'cx> TryFromJs<'cx> for bool {
 
         unsafe {
             match sys::get_value_bool(cx.env().to_raw(), v.to_local(), &mut b) {
-                sys::Status::BooleanExpected => return Ok(Err(TypeExpected::new())),
-                sys::Status::PendingException => return Err(Throw::new()),
-                status => assert_eq!(status, sys::Status::Ok),
-            }
+                Err(sys::Status::BooleanExpected) => return Ok(Err(TypeExpected::new())),
+                Err(sys::Status::PendingException) => return Err(Throw::new()),
+                status => status.unwrap(),
+            };
         }
 
         Ok(Ok(b))
@@ -150,10 +150,10 @@ impl<'cx> TryFromJs<'cx> for String {
 
         unsafe {
             match sys::get_value_string_utf8(env, v, ptr::null_mut(), 0, &mut len) {
-                sys::Status::StringExpected => return Ok(Err(TypeExpected::new())),
-                sys::Status::PendingException => return Err(Throw::new()),
-                status => assert_eq!(status, sys::Status::Ok),
-            }
+                Err(sys::Status::StringExpected) => return Ok(Err(TypeExpected::new())),
+                Err(sys::Status::PendingException) => return Err(Throw::new()),
+                status => status.unwrap(),
+            };
         }
 
         // Make room for null terminator to avoid losing a character
@@ -169,7 +169,7 @@ impl<'cx> TryFromJs<'cx> for String {
                     buf.capacity(),
                     &mut written,
                 ),
-                sys::Status::Ok,
+                Ok(())
             );
 
             debug_assert_eq!(len, written);
@@ -195,10 +195,10 @@ impl<'cx> TryFromJs<'cx> for Date {
 
         unsafe {
             match sys::get_date_value(cx.env().to_raw(), v.to_local(), &mut d) {
-                sys::Status::DateExpected => return Ok(Err(TypeExpected::new())),
-                sys::Status::PendingException => return Err(Throw::new()),
-                status => assert_eq!(status, sys::Status::Ok),
-            }
+                Err(sys::Status::DateExpected) => return Ok(Err(TypeExpected::new())),
+                Err(sys::Status::PendingException) => return Err(Throw::new()),
+                status => status.unwrap(),
+            };
         }
 
         Ok(Ok(Date(d)))
@@ -298,9 +298,9 @@ where
 
     unsafe {
         match sys::typeof_value(cx.env().to_raw(), v.to_local(), &mut ty) {
-            sys::Status::PendingException => return Err(Throw::new()),
-            status => assert_eq!(status, sys::Status::Ok),
-        }
+            Err(sys::Status::PendingException) => return Err(Throw::new()),
+            status => status.unwrap(),
+        };
     }
 
     Ok(matches!(

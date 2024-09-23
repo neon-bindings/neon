@@ -34,7 +34,7 @@ pub unsafe fn info(env: Env, value: Local) -> TypedArrayInfo {
             &mut (*ptr).buf,
             &mut (*ptr).offset,
         ),
-        napi::Status::Ok,
+        Ok(()),
     );
 
     info.assume_init()
@@ -50,11 +50,10 @@ pub unsafe fn new(
     let mut array = MaybeUninit::uninit();
     let status = napi::create_typedarray(env, typ, len, buffer, offset, array.as_mut_ptr());
 
-    if status == napi::Status::PendingException {
-        return Err(status);
-    }
-
-    assert_eq!(status, napi::Status::Ok);
+    match status {
+        Err(err @ napi::Status::PendingException) => return Err(err),
+        status => status.unwrap(),
+    };
 
     Ok(array.assume_init())
 }
