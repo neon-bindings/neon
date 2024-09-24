@@ -217,6 +217,14 @@ where
 /// The trait of all object types.
 pub trait Object: Value {
     /// Create a [`PropOptions`] for accessing a property.
+    ///
+    /// # Safety
+    ///
+    /// Because `cx` is a mutable reference, Neon guarantees it
+    /// is the context with the shortest possible lifetime, so
+    /// replacing the lifetime `'self` with `'cx` cannot extend
+    /// the lifetime of the property beyond the lifetime of the
+    /// object.
     fn prop<'a, 'cx: 'a, K: PropertyKey>(
         &self,
         cx: &'a mut Cx<'cx>,
