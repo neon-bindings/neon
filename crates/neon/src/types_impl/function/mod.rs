@@ -8,7 +8,7 @@ use crate::{
     object::Object,
     result::{JsResult, NeonResult},
     types::{
-        extract::{TryFromJs, TryIntoJs},
+        extract::{TryFromJs, TryIntoJs, With},
         private::ValueInternal,
         JsFunction, JsObject, JsValue, Value,
     },
@@ -198,6 +198,23 @@ impl<'cx> private::TryIntoArgumentsInternal<'cx> for () {
     fn try_into_args_vec(self, _cx: &mut Cx<'cx>) -> NeonResult<private::ArgsVec<'cx>> {
         Ok(smallvec![])
     }
+}
+
+impl<'cx, F, O> private::TryIntoArgumentsInternal<'cx> for With<F, O>
+where
+    F: FnOnce(&mut Cx) -> O,
+    O: private::TryIntoArgumentsInternal<'cx>,
+{
+    fn try_into_args_vec(self, cx: &mut Cx<'cx>) -> NeonResult<private::ArgsVec<'cx>> {
+        (self.0)(cx).try_into_args_vec(cx)
+    }
+}
+
+impl<'cx, F, O> TryIntoArguments<'cx> for With<F, O>
+where
+    F: FnOnce(&mut Cx) -> O,
+    O: TryIntoArguments<'cx>,
+{
 }
 
 macro_rules! impl_into_arguments_expand {

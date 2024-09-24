@@ -1,14 +1,4 @@
-use crate::{
-    context::Cx,
-    result::{JsResult, NeonResult},
-    types::{
-        extract::TryIntoJs,
-        function::{
-            private::{ArgsVec, TryIntoArgumentsInternal},
-            TryIntoArguments,
-        },
-    },
-};
+use crate::{context::Cx, result::JsResult, types::extract::TryIntoJs};
 
 /// Wraps a closure that will be lazily evaluated when [`TryIntoJs::try_into_js`] is
 /// called.
@@ -56,23 +46,6 @@ where
     fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         (self.0)(cx).try_into_js(cx)
     }
-}
-
-impl<'cx, F, O> TryIntoArgumentsInternal<'cx> for With<F, O>
-where
-    F: FnOnce(&mut Cx) -> O,
-    O: TryIntoArgumentsInternal<'cx>,
-{
-    fn try_into_args_vec(self, cx: &mut Cx<'cx>) -> NeonResult<ArgsVec<'cx>> {
-        (self.0)(cx).try_into_args_vec(cx)
-    }
-}
-
-impl<'cx, F, O> TryIntoArguments<'cx> for With<F, O>
-where
-    F: FnOnce(&mut Cx) -> O,
-    O: TryIntoArguments<'cx>,
-{
 }
 
 impl<F, O> super::private::Sealed for With<F, O> where for<'cx> F: FnOnce(&mut Cx<'cx>) -> O {}
