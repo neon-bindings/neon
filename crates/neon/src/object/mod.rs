@@ -193,9 +193,10 @@ where
     /// Equivalent to calling `obj.set(cx, v.try_into_js(cx)?)`.
     ///
     /// May throw an exception either during converting the value or setting the property.
-    pub fn set<V: TryIntoJs<'cx>>(&mut self, v: V) -> NeonResult<bool> {
+    pub fn set<V: TryIntoJs<'cx>>(&mut self, v: V) -> NeonResult<&mut Self> {
         let v = v.try_into_js(self.cx)?;
-        self.this.set(self.cx, self.key, v)
+        self.this.set(self.cx, self.key, v)?;
+        Ok(self)
     }
 
     /// Gets the property from the object as a method and binds `this` to the object.

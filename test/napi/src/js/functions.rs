@@ -41,7 +41,7 @@ pub fn call_js_function_with_bind_and_args_with(mut cx: FunctionContext) -> JsRe
     let n: f64 = cx
         .argument::<JsFunction>(0)?
         .bind(&mut cx)
-        .args_with(|cx| (1, 2, 3))?
+        .args_with(|_| (1, 2, 3))?
         .apply()?;
     Ok(cx.number(n))
 }

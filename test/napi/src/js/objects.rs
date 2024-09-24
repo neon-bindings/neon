@@ -102,10 +102,10 @@ pub fn get_property_with_prop(mut cx: FunctionContext) -> JsResult<JsNumber> {
     Ok(cx.number(n))
 }
 
-pub fn set_property_with_prop(mut cx: FunctionContext) -> JsResult<JsBoolean> {
+pub fn set_property_with_prop(mut cx: FunctionContext) -> JsResult<JsUndefined> {
     let obj: Handle<JsObject> = cx.argument::<JsObject>(0)?;
-    let b = obj.prop(&mut cx, "number").set(42)?;
-    Ok(cx.boolean(b))
+    obj.prop(&mut cx, "number").set(42)?;
+    Ok(cx.undefined())
 }
 
 pub fn call_methods_with_prop(mut cx: FunctionContext) -> JsResult<JsString> {
