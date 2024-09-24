@@ -18,10 +18,9 @@ pub(crate) mod utf8;
 use std::{
     any,
     fmt::{self, Debug},
-    mem::MaybeUninit,
-    os::raw::c_void,
 };
 
+use private::prepare_call;
 use smallvec::smallvec;
 
 use crate::{
@@ -32,7 +31,7 @@ use crate::{
     },
     object::Object,
     result::{JsResult, NeonResult, ResultExt, Throw},
-    sys::{self, bindings as napi, raw},
+    sys::{self, raw},
     types::{
         function::{BindOptions, CallOptions, ConstructOptions},
         private::ValueInternal,
@@ -1045,24 +1044,6 @@ pub struct JsFunction {
 
 impl Object for JsFunction {}
 
-// Maximum number of function arguments in V8.
-const V8_ARGC_LIMIT: usize = 65535;
-
-unsafe fn prepare_call<'a, 'b, C: Context<'a>>(
-    cx: &mut C,
-    args: &[Handle<'b, JsValue>],
-) -> NeonResult<(usize, *const c_void)> {
-    // Note: This cast is only save because `Handle<'_, JsValue>` is
-    // guaranteed to have the same layout as a pointer because `Handle`
-    // and `JsValue` are both `repr(C)` newtypes.
-    let argv = args.as_ptr().cast();
-    let argc = args.len();
-    if argc > V8_ARGC_LIMIT {
-        return cx.throw_range_error("too many arguments");
-    }
-    Ok((argc, argv))
-}
-
 impl JsFunction {
     #[cfg(not(feature = "napi-5"))]
     /// Returns a new `JsFunction` implemented by `f`.
@@ -1155,47 +1136,6 @@ impl JsFunction {
     }
 }
 
-pub(crate) unsafe fn call_local<'a, 'b, C: Context<'a>, T, AS>(
-    cx: &mut C,
-    callee: raw::Local,
-    this: Handle<'b, T>,
-    args: AS,
-) -> JsResult<'a, JsValue>
-where
-    T: Value,
-    AS: AsRef<[Handle<'b, JsValue>]>,
-{
-    let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
-    let env = cx.env();
-    let mut result: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
-
-    let status = napi::call_function(
-        env.to_raw(),
-        this.to_local(),
-        callee,
-        argc,
-        argv.cast(),
-        result.as_mut_ptr(),
-    );
-
-    match status {
-        sys::Status::InvalidArg if !sys::tag::is_function(env.to_raw(), callee) => {
-            return cx.throw_error("not a function");
-        }
-        sys::Status::PendingException => {
-            return Err(Throw::new());
-        }
-        status => {
-            assert_eq!(status, sys::Status::Ok);
-        }
-    }
-
-    Ok(Handle::new_internal(JsValue::from_local(
-        env,
-        result.assume_init(),
-    )))
-}
-
 impl JsFunction {
     /// Calls this function.
     ///
@@ -1210,7 +1150,7 @@ impl JsFunction {
         T: Value,
         AS: AsRef<[Handle<'b, JsValue>]>,
     {
-        unsafe { call_local(cx, self.to_local(), this, args) }
+        unsafe { self.try_call(cx, this, args) }
     }
 
     /// Calls this function for side effect, discarding its result.
