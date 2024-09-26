@@ -45,7 +45,7 @@ use crate::{
         function::{BindOptions, CallOptions},
         private::ValueInternal,
         utf8::Utf8,
-        JsFunction, JsObject, JsUndefined, JsValue, Value,
+        JsFunction, JsUndefined, JsValue, Value,
     },
 };
 
@@ -225,6 +225,20 @@ where
     /// May throw an exception either during converting the value or setting the property.
     pub fn set<V: TryIntoJs<'cx>>(&mut self, v: V) -> NeonResult<&mut Self> {
         let v = v.try_into_js(self.cx)?;
+        self.this.set(self.cx, self.key, v)?;
+        Ok(self)
+    }
+
+    /// Sets the property on the object to a value computed from a closure.
+    /// Equivalent to calling `obj.set(cx, f(cx).try_into_js(cx)?)`.
+    ///
+    /// May throw an exception either during converting the value or setting the property.
+    pub fn set_with<R, F>(&mut self, f: F) -> NeonResult<&mut Self>
+    where
+        R: TryIntoJs<'cx>,
+        F: FnOnce(&mut Cx<'cx>) -> R,
+    {
+        let v = f(self.cx).try_into_js(self.cx)?;
         self.this.set(self.cx, self.key, v)?;
         Ok(self)
     }
