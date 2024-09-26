@@ -164,21 +164,51 @@ impl<'a> PropertyKey for &'a str {
 /// # Ok(cx.string(s))
 /// # }
 /// ```
-pub struct PropOptions<'a, 'cx, K>
+pub struct PropOptions<'a, 'cx, O, K>
 where
     'cx: 'a,
+    O: Object,
     K: PropertyKey,
 {
     pub(crate) cx: &'a mut Cx<'cx>,
-    pub(crate) this: Handle<'cx, JsObject>,
+    pub(crate) this: Handle<'cx, O>,
     pub(crate) key: K,
 }
 
-impl<'a, 'cx, K> PropOptions<'a, 'cx, K>
+impl<'a, 'cx, O, K> PropOptions<'a, 'cx, O, K>
 where
     'cx: 'a,
+    O: Object,
     K: PropertyKey,
 {
+    /// Returns the original object from which the property was accessed.
+    pub fn this(&self) -> Handle<'cx, O> {
+        self.this
+    }
+
+    /// Updates the property key.
+    ///
+    /// This method is useful for chaining multiple property assignments:
+    ///
+    /// ```
+    /// # use neon::prelude::*;
+    /// # fn foo(mut cx: FunctionContext) -> JsResult<JsObject> {
+    /// let obj = cx.empty_object()
+    ///     .prop(&mut cx, "x")
+    ///     .set(1)?
+    ///     .prop("y")
+    ///     .set(2)?
+    ///     .prop("color")
+    ///     .set("blue")?
+    ///     .this();
+    /// # Ok(obj)
+    /// # }
+    /// ```
+    pub fn prop(&mut self, key: K) -> &mut Self {
+        self.key = key;
+        self
+    }
+
     /// Gets the property from the object and attempts to convert it to a Rust value.
     /// Equivalent to calling `R::from_js(cx, obj.get(cx)?)`.
     ///
@@ -230,8 +260,8 @@ pub trait Object: Value {
         &self,
         cx: &'a mut Cx<'cx>,
         key: K,
-    ) -> PropOptions<'a, 'cx, K> {
-        let this: Handle<'_, JsObject> =
+    ) -> PropOptions<'a, 'cx, Self, K> {
+        let this: Handle<'_, Self> =
             Handle::new_internal(unsafe { ValueInternal::from_local(cx.env(), self.to_local()) });
         PropOptions { cx, this, key }
     }
