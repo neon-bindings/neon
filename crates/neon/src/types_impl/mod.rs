@@ -343,7 +343,7 @@ impl ValueInternal for JsNull {
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// // Extract the console.log function:
 /// let console: Handle<JsObject> = cx.global("console")?;
-/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
+/// let log: Handle<JsFunction> = console.prop(&mut cx, "log").get()?;
 ///
 /// // The two Boolean values:
 /// let t = cx.boolean(true);
@@ -420,7 +420,7 @@ impl ValueInternal for JsBoolean {
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// // Extract the console.log function:
 /// let console: Handle<JsObject> = cx.global("console")?;
-/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
+/// let log: Handle<JsFunction> = console.prop(&mut cx, "log").get()?;
 ///
 /// // Create a string:
 /// let s = cx.string("hello 🥹");
@@ -697,7 +697,7 @@ impl JsString {
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// // Extract the console.log function:
 /// let console: Handle<JsObject> = cx.global("console")?;
-/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
+/// let log: Handle<JsFunction> = console.prop(&mut cx, "log").get()?;
 ///
 /// // Create a number:
 /// let n = cx.number(17.0);
@@ -773,16 +773,15 @@ impl ValueInternal for JsNumber {
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// // Extract the console.log function:
 /// let console: Handle<JsObject> = cx.global("console")?;
-/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
+/// let log: Handle<JsFunction> = console.prop(&mut cx, "log").get()?;
 ///
 /// // Create an object:
-/// let obj = cx.empty_object();
-///
-/// let name = cx.string("Neon");
-/// obj.set(&mut cx, "name", name)?;
-///
-/// let url = cx.string("https://neon-bindings.com");
-/// obj.set(&mut cx, "url", url)?;
+/// let obj = cx.empty_object()
+///     .prop(&mut cx, "name")
+///     .set("Neon")?
+///     .prop("url")
+///     .set("https://neon-bindings.com")?
+///     .this();
 ///
 /// // Call console.log(obj):
 /// log.call_with(&cx).arg(obj).exec(&mut cx)?;
@@ -860,13 +859,9 @@ impl JsObject {
 /// // Create a new empty array:
 /// let a: Handle<JsArray> = cx.empty_array();
 ///
-/// // Create some new values to push onto the array:
-/// let n = cx.number(17);
-/// let s = cx.string("hello");
-///
-/// // Push the elements onto the array:
-/// a.set(&mut cx, 0, n)?;
-/// a.set(&mut cx, 1, s)?;
+/// // Push some values onto the array:
+/// a.prop(&mut cx, 0).set(17)?;
+/// a.prop(&mut cx, 1).set("hello")?;
 /// # Ok(a)
 /// # }
 /// ```

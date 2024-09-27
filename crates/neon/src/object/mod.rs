@@ -16,16 +16,15 @@
 //!
 //! ```
 //! # use neon::prelude::*;
-//! fn set_and_check<'a>(
-//!     cx: &mut impl Context<'a>,
-//!     obj: Handle<'a, JsObject>
-//! ) -> JsResult<'a, JsValue> {
-//!     let value = cx.string("hello!");
+//! fn set_and_check<'cx>(
+//!     cx: &mut Cx<'cx>,
+//!     obj: Handle<'cx, JsObject>
+//! ) -> JsResult<'cx, JsValue> {
 //!     // set property "17" with integer shorthand
-//!     obj.set(cx, 17, value)?;
+//!     obj.prop(cx, 17).set("hello")?;
 //!     // get property "17" with string shorthand
 //!     // returns the same value ("hello!")
-//!     obj.get(cx, "17")
+//!     obj.prop(cx, "17").get()
 //! }
 //! ```
 //!
@@ -210,7 +209,6 @@ where
     }
 
     /// Gets the property from the object and attempts to convert it to a Rust value.
-    /// Equivalent to calling `R::from_js(cx, obj.get(cx)?)`.
     ///
     /// May throw an exception either during accessing the property or converting the
     /// result type.
@@ -220,7 +218,6 @@ where
     }
 
     /// Sets the property on the object to a value converted from Rust.
-    /// Equivalent to calling `obj.set(cx, v.try_into_js(cx)?)`.
     ///
     /// May throw an exception either during converting the value or setting the property.
     pub fn set<V: TryIntoJs<'cx>>(&mut self, v: V) -> NeonResult<&mut Self> {
@@ -230,7 +227,6 @@ where
     }
 
     /// Sets the property on the object to a value computed from a closure.
-    /// Equivalent to calling `obj.set(cx, f(cx).try_into_js(cx)?)`.
     ///
     /// May throw an exception either during converting the value or setting the property.
     pub fn set_with<R, F>(&mut self, f: F) -> NeonResult<&mut Self>
@@ -280,8 +276,7 @@ pub trait Object: Value {
         PropOptions { cx, this, key }
     }
 
-    /// Gets a property from a JavaScript object that may be `undefined` and
-    /// attempts to downcast the value if it existed.
+    #[doc(hidden)]
     fn get_opt<'a, V: Value, C: Context<'a>, K: PropertyKey>(
         &self,
         cx: &mut C,
@@ -296,10 +291,7 @@ pub trait Object: Value {
         v.downcast_or_throw(cx).map(Some)
     }
 
-    /// Gets a property from a JavaScript object as a [`JsValue`].
-    ///
-    /// If a [`getter`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/get)
-    /// is defined on the object, it will be called.
+    #[doc(hidden)]
     fn get_value<'a, C: Context<'a>, K: PropertyKey>(
         &self,
         cx: &mut C,
@@ -310,10 +302,7 @@ pub trait Object: Value {
         })
     }
 
-    /// Gets a property from a JavaScript object and attempts to downcast as a specific type.
-    /// Equivalent to calling `obj.get_value(&mut cx)?.downcast_or_throw(&mut cx)`.
-    ///
-    /// Throws an exception if the value is a different type.
+    #[doc(hidden)]
     fn get<'a, V: Value, C: Context<'a>, K: PropertyKey>(
         &self,
         cx: &mut C,
@@ -358,6 +347,7 @@ pub trait Object: Value {
         }
     }
 
+    #[doc(hidden)]
     fn set<'a, C: Context<'a>, K: PropertyKey, W: Value>(
         &self,
         cx: &mut C,
@@ -378,6 +368,7 @@ pub trait Object: Value {
         Root::new(cx, self)
     }
 
+    #[doc(hidden)]
     fn call_method_with<'a, C, K>(&self, cx: &mut C, method: K) -> NeonResult<CallOptions<'a>>
     where
         C: Context<'a>,

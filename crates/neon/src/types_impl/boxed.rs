@@ -295,7 +295,8 @@ impl<T: 'static> Deref for JsBox<T> {
 ///     fn finalize<'a, C: Context<'a>>(self, cx: &mut C) {
 ///         let global = cx.global_object();
 ///         let emit: Handle<JsFunction> = global
-///             .get(cx, "emit")
+///             .prop(cx.cx_mut(), "emit")
+///             .get()
 ///             .unwrap();
 ///
 ///         let args = vec![

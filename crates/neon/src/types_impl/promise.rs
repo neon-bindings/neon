@@ -123,10 +123,12 @@ const BOUNDARY: FailureBoundary = FailureBoundary {
 ///         .promise(|mut cx, (indices, kinds)| {
 ///             let indices = JsUint32Array::from_slice(&mut cx, &indices)?;
 ///             let kinds = JsUint8Array::from_slice(&mut cx, &kinds)?;
-///             let result = cx.empty_object();
-///             result.set(&mut cx, "indices", indices)?;
-///             result.set(&mut cx, "kinds", kinds)?;
-///             Ok(result)
+///             Ok(cx.empty_object()
+///                 .prop(&mut cx, "indices")
+///                 .set(indices)?
+///                 .prop("kinds")
+///                 .set(kinds)?
+///                 .this())
 ///         });
 ///
 ///     Ok(promise)

@@ -19,8 +19,8 @@
 //!         let worker: Handle<JsObject> = require.call_with(cx)
 //!             .arg(cx.string("node:worker_threads"))
 //!             .apply(cx)?;
-//!         let thread_id: Handle<JsNumber> = worker.get(cx, "threadId")?;
-//!         Ok(thread_id.value(cx) as u32)
+//!         let thread_id: f64 = worker.prop(cx, "threadId").get()?;
+//!         Ok(thread_id as u32)
 //!     }).cloned()
 //! }
 //! ```

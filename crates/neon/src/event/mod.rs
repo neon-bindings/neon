@@ -82,13 +82,9 @@
 //!         let args = match result {
 //!             Ok(psd) => {
 //!                 // Extract data from the parsed file.
-//!                 let width = cx.number(psd.width());
-//!                 let height = cx.number(psd.height());
-//!
-//!                 // Save the data in a result object.
 //!                 let obj = cx.empty_object();
-//!                 obj.set(&mut cx, "width", width)?;
-//!                 obj.set(&mut cx, "height", height)?;
+//!                 obj.prop(&mut cx, "width").set(psd.width())?;
+//!                 obj.prop(&mut cx, "height").set(psd.height())?;
 //!                 vec![
 //!                     cx.null().upcast::<JsValue>(),
 //!                     obj.upcast(),
