@@ -108,12 +108,13 @@ use crate::{
     types::{JsValue, Value},
 };
 
-pub use self::{error::Error, with::With};
+pub use self::{boxed::Boxed, error::Error, with::With};
 
 #[cfg(feature = "serde")]
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub use self::json::Json;
 
+mod boxed;
 mod error;
 #[cfg(feature = "serde")]
 mod json;
