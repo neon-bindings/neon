@@ -225,6 +225,26 @@ where
 {
 }
 
+impl<'cx, T, E> private::TryIntoArgumentsInternal<'cx> for Result<T, E>
+where
+    T: private::TryIntoArgumentsInternal<'cx>,
+    E: TryIntoJs<'cx>,
+{
+    fn try_into_args_vec(self, cx: &mut Cx<'cx>) -> NeonResult<private::ArgsVec<'cx>> {
+        match self {
+            Ok(v) => v.try_into_args_vec(cx),
+            Err(err) => err.try_into_js(cx).and_then(|err| cx.throw(err)),
+        }
+    }
+}
+
+impl<'cx, T, E> TryIntoArguments<'cx> for Result<T, E>
+where
+    T: TryIntoArguments<'cx>,
+    E: TryIntoJs<'cx>,
+{
+}
+
 macro_rules! impl_into_arguments_expand {
     {
         $(#[$attrs:meta])?
