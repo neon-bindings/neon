@@ -45,10 +45,9 @@
 //! # use neon::prelude::*;
 //! fn log(cx: &mut Cx, msg: &str) -> NeonResult<()> {
 //!     cx.global::<JsObject>("console")?
-//!         .call_method_with(cx, "log")?
-//!         .arg(cx.string(msg))
-//!         .exec(cx)?;
-//!
+//!         .method(cx, "log")?
+//!         .arg(msg)?
+//!         .exec()?;
 //!     Ok(())
 //! }
 //!

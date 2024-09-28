@@ -26,7 +26,7 @@ pub(crate) mod private;
 /// let x: f64 = parse_int
 ///     .bind(&mut cx)
 ///     .arg("42")?
-///     .apply()?;
+///     .call()?;
 /// # Ok(cx.number(x))
 /// # }
 /// ```
@@ -81,10 +81,18 @@ impl<'a, 'cx: 'a> BindOptions<'a, 'cx> {
 
     /// Make the function call. If the function returns without throwing, the result value
     /// is converted to a Rust value with `TryFromJs::from_js`.
-    pub fn apply<R: TryFromJs<'cx>>(&mut self) -> NeonResult<R> {
+    pub fn call<R: TryFromJs<'cx>>(&mut self) -> NeonResult<R> {
         let this = self.this.unwrap_or_else(|| self.cx.undefined().upcast());
         let v: Handle<JsValue> = unsafe { self.callee.try_call(self.cx, this, &self.args)? };
         R::from_js(self.cx, v)
+    }
+
+    /// Make the function call for side effect, discarding the result value. This method is
+    /// preferable to [`call()`](BindOptions::call) when the result value isn't needed,
+    /// since it doesn't require specifying a result type.
+    pub fn exec(&mut self) -> NeonResult<()> {
+        let _ignore: Handle<JsValue> = self.call()?;
+        Ok(())
     }
 }
 

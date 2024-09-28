@@ -157,9 +157,7 @@ impl<'a> PropertyKey for &'a str {
 /// obj.prop(&mut cx, "y")
 ///     .set(x)?;
 ///
-/// let s: String = obj.prop(&mut cx, "toString")
-///     .bind()?
-///     .apply()?;
+/// let s: String = obj.method(&mut cx, "toString")?.call()?;
 /// # Ok(cx.string(s))
 /// # }
 /// ```
@@ -241,8 +239,9 @@ where
 
     /// Gets the property from the object as a method and binds `this` to the object.
     ///
-    /// May throw an exception either during accessing the property or downcasting it
-    /// to a function.
+    /// May throw an exception when accessing the property.
+    ///
+    /// Defers checking that the method is callable until call time.
     pub fn bind(&'a mut self) -> NeonResult<BindOptions<'a, 'cx>> {
         let callee: Handle<JsValue> = self.this.get(self.cx, self.key)?;
         let this = Some(self.this.upcast());
@@ -274,6 +273,28 @@ pub trait Object: Value {
         let this: Handle<'_, Self> =
             Handle::new_internal(unsafe { ValueInternal::from_local(cx.env(), self.to_local()) });
         PropOptions { cx, this, key }
+    }
+
+    /// Gets a property from the object as a method and binds `this` to the object.
+    ///
+    /// May throw an exception either from accessing the property.
+    ///
+    /// Defers checking that the method is callable until call time.
+    fn method<'a, 'cx: 'a, K: PropertyKey>(
+        &self,
+        cx: &'a mut Cx<'cx>,
+        key: K,
+    ) -> NeonResult<BindOptions<'a, 'cx>> {
+        let callee: Handle<JsValue> = self
+            .prop(cx, key)
+            .get()?;
+        let this = Some(self.as_value(cx));
+        Ok(BindOptions {
+            cx,
+            callee,
+            this,
+            args: smallvec![],
+        })
     }
 
     #[doc(hidden)]

@@ -20,9 +20,9 @@ use crate::{context::Cx, result::JsResult, types::extract::TryIntoJs};
 ///
 ///     With(move |cx| -> NeonResult<_> {
 ///         cx.global::<JsObject>("console")?
-///             .call_method_with(cx, "log")?
-///             .arg(cx.string(log))
-///             .exec(cx)?;
+///             .method(cx, "log")?
+///             .arg(&log)?
+///             .exec()?;
 ///
 ///         Ok(sum)
 ///     })

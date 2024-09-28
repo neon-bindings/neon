@@ -208,7 +208,7 @@ impl JsValue {
 /// let undefined = cx.undefined();
 ///
 /// // Call console.log(undefined):
-/// console.call_method_with(&mut cx, "log")?.arg(undefined).exec(&mut cx)?;
+/// console.method(&mut cx, "log")?.arg(undefined)?.exec()?;
 /// # Ok(undefined)
 /// # }
 /// ```
@@ -273,11 +273,12 @@ impl ValueInternal for JsUndefined {
 /// ```
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsNull> {
+/// let null = cx.null();
 /// cx.global::<JsObject>("console")?
-///     .call_method_with(&mut cx, "log")?
-///     .arg(cx.null())
-///     .exec(&mut cx)?;
-/// # Ok(cx.null())
+///     .method(&mut cx, "log")?
+///     .arg(null)?
+///     .exec()?;
+/// # Ok(null)
 /// # }
 /// ```
 #[derive(Debug)]
