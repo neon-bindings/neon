@@ -113,9 +113,9 @@
 //!     while !done {
 //!         done = cx.execute_scoped(|mut cx| {                   // temporary scope
 //!             let obj: Handle<JsObject> = next                  // temporary object
-//!                 .call_with(&cx)
-//!                 .this(iterator)
-//!                 .apply(&mut cx)?;
+//!                 .bind(&mut cx)
+//!                 .this(iterator)?
+//!                 .call()?;
 //!             numbers.push(obj.prop(&mut cx, "value").get()?);  // temporary number
 //!             obj.prop(&mut cx, "done").get()                   // temporary boolean
 //!         })?;

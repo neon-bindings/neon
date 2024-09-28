@@ -78,27 +78,28 @@
 //!     // loop. This _will_ block the event loop while executing.
 //!     channel.send(move |mut cx| {
 //!         let callback = callback.into_inner(&mut cx);
-//!         let this = cx.undefined();
-//!         let args = match result {
+//!
+//!         match result {
 //!             Ok(psd) => {
 //!                 // Extract data from the parsed file.
-//!                 let obj = cx.empty_object();
-//!                 obj.prop(&mut cx, "width").set(psd.width())?;
-//!                 obj.prop(&mut cx, "height").set(psd.height())?;
-//!                 vec![
-//!                     cx.null().upcast::<JsValue>(),
-//!                     obj.upcast(),
-//!                 ]
+//!                 let obj = cx.empty_object()
+//!                     .prop(&mut cx, "width").set(psd.width())?
+//!                     .prop("height").set(psd.height())?
+//!                     .this();
+//!                 let null = cx.null();
+//!
+//!                 callback
+//!                     .bind(&mut cx)
+//!                     .args((null, obj))?
+//!                     .exec()?;
 //!             }
 //!             Err(err) => {
-//!                 let err = cx.string(err.to_string());
-//!                 vec![
-//!                     err.upcast::<JsValue>(),
-//!                 ]
+//!                 callback
+//!                     .bind(&mut cx)
+//!                     .arg(err.to_string())?
+//!                     .exec()?;
 //!             }
-//!         };
-//!
-//!         callback.call(&mut cx, this, args)?;
+//!         }
 //!
 //!         Ok(())
 //!     });

@@ -75,13 +75,12 @@ type Callback = Box<dyn FnOnce(sys::Env) + Send + 'static>;
 ///         // loop. This _will_ block the event loop while executing.
 ///         channel.send(move |mut cx| {
 ///             let callback = callback.into_inner(&mut cx);
-///             let this = cx.undefined();
-///             let args = vec![
-///                 cx.null().upcast::<JsValue>(),
-///                 cx.number(result).upcast(),
-///             ];
+///             let null = cx.null();
 ///
-///             callback.call(&mut cx, this, args)?;
+///             callback
+///                 .bind(&mut cx)
+///                 .args((null, result))?
+///                 .exec()?;
 ///
 ///             Ok(())
 ///         });

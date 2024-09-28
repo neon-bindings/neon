@@ -16,9 +16,10 @@
 //! pub fn thread_id(cx: &mut Cx) -> NeonResult<u32> {
 //!     THREAD_ID.get_or_try_init(cx, |cx| {
 //!         let require: Handle<JsFunction> = cx.global("require")?;
-//!         let worker: Handle<JsObject> = require.call_with(cx)
-//!             .arg(cx.string("node:worker_threads"))
-//!             .apply(cx)?;
+//!         let worker: Handle<JsObject> = require
+//!             .bind(cx)
+//!             .arg("node:worker_threads")?
+//!             .call()?;
 //!         let thread_id: f64 = worker.prop(cx, "threadId").get()?;
 //!         Ok(thread_id as u32)
 //!     }).cloned()

@@ -342,16 +342,12 @@ impl ValueInternal for JsNull {
 /// ```
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-/// // Extract the console.log function:
-/// let console: Handle<JsObject> = cx.global("console")?;
-/// let log: Handle<JsFunction> = console.prop(&mut cx, "log").get()?;
-///
 /// // The two Boolean values:
 /// let t = cx.boolean(true);
 /// let f = cx.boolean(false);
 ///
 /// // Call console.log(true, false):
-/// log.call_with(&cx).arg(t).arg(f).exec(&mut cx)?;
+/// cx.global::<JsObject>("console")?.method(&mut cx, "log")?.args((t, f))?.exec()?;
 /// # Ok(cx.undefined())
 /// # }
 /// ```
@@ -419,15 +415,11 @@ impl ValueInternal for JsBoolean {
 /// ```
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-/// // Extract the console.log function:
-/// let console: Handle<JsObject> = cx.global("console")?;
-/// let log: Handle<JsFunction> = console.prop(&mut cx, "log").get()?;
-///
 /// // Create a string:
 /// let s = cx.string("hello 🥹");
 ///
 /// // Call console.log(s):
-/// log.call_with(&cx).arg(s).exec(&mut cx)?;
+/// cx.global::<JsObject>("console")?.method(&mut cx, "log")?.arg(s)?.exec()?;
 /// # Ok(cx.undefined())
 /// # }
 /// ```
@@ -696,15 +688,11 @@ impl JsString {
 /// ```
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-/// // Extract the console.log function:
-/// let console: Handle<JsObject> = cx.global("console")?;
-/// let log: Handle<JsFunction> = console.prop(&mut cx, "log").get()?;
-///
 /// // Create a number:
 /// let n = cx.number(17.0);
 ///
 /// // Call console.log(n):
-/// log.call_with(&cx).arg(n).exec(&mut cx)?;
+/// cx.global::<JsObject>("console")?.method(&mut cx, "log")?.arg(n)?.exec()?;
 /// # Ok(cx.undefined())
 /// # }
 /// ```
@@ -772,10 +760,6 @@ impl ValueInternal for JsNumber {
 /// ```
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-/// // Extract the console.log function:
-/// let console: Handle<JsObject> = cx.global("console")?;
-/// let log: Handle<JsFunction> = console.prop(&mut cx, "log").get()?;
-///
 /// // Create an object:
 /// let obj = cx.empty_object()
 ///     .prop(&mut cx, "name")
@@ -785,7 +769,7 @@ impl ValueInternal for JsNumber {
 ///     .this();
 ///
 /// // Call console.log(obj):
-/// log.call_with(&cx).arg(obj).exec(&mut cx)?;
+/// cx.global::<JsObject>("console")?.method(&mut cx, "log")?.arg(obj)?.exec()?;
 /// # Ok(cx.undefined())
 /// # }
 /// ```
@@ -975,7 +959,7 @@ impl Object for JsArray {}
 /// ## Calling functions
 ///
 /// Neon provides a convenient syntax for calling JavaScript functions with the
-/// [`call_with()`](JsFunction::call_with) method, which produces a [`CallOptions`](CallOptions)
+/// [`bind()`](JsFunction::bind) method, which produces a [`BindOptions`](BindOptions)
 /// struct that can be used to provide the function arguments (and optionally, the binding for
 /// `this`) before calling the function:
 /// ```
@@ -986,9 +970,9 @@ impl Object for JsArray {}
 ///
 /// // Call parseInt("42")
 /// let x: Handle<JsNumber> = parse_int
-///     .call_with(&mut cx)
-///     .arg(cx.string("42"))
-///     .apply(&mut cx)?;
+///     .bind(&mut cx)
+///     .arg("42")?
+///     .call()?;
 /// # Ok(x)
 /// # }
 /// ```
@@ -997,7 +981,7 @@ impl Object for JsArray {}
 ///
 /// A `JsFunction` can be called as a constructor (like `new Array(16)` or
 /// `new URL("https://neon-bindings.com")`) with the
-/// [`construct_with()`](JsFunction::construct_with) method:
+/// [`construct()`](BindOptions::construct) method:
 /// ```
 /// # use neon::prelude::*;
 /// # fn foo(mut cx: FunctionContext) -> JsResult<JsObject> {
@@ -1006,9 +990,9 @@ impl Object for JsArray {}
 ///
 /// // Call new URL("https://neon-bindings.com")
 /// let obj = url
-///     .construct_with(&cx)
-///     .arg(cx.string("https://neon-bindings.com"))
-///     .apply(&mut cx)?;
+///     .bind(&mut cx)
+///     .arg("https://neon-bindings.com")?
+///     .construct()?;
 /// # Ok(obj)
 /// # }
 /// ```

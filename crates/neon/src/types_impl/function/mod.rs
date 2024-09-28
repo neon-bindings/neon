@@ -117,6 +117,7 @@ impl<'a, 'cx: 'a> BindOptions<'a, 'cx> {
 /// # Ok(x)
 /// # }
 /// ```
+#[deprecated(since = "TBD", note = "use `JsFunction::bind()` instead")]
 #[derive(Clone)]
 pub struct CallOptions<'a> {
     pub(crate) callee: Handle<'a, JsFunction>,
@@ -175,6 +176,7 @@ impl<'a> CallOptions<'a> {
 /// # Ok(obj)
 /// # }
 /// ```
+#[deprecated(since = "TBD", note = "use `JsFunction::bind()` instead")]
 #[derive(Clone)]
 pub struct ConstructOptions<'a> {
     pub(crate) callee: Handle<'a, JsFunction>,
