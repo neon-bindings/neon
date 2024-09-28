@@ -297,7 +297,7 @@ pub trait Object: Value {
         })
     }
 
-    #[doc(hidden)]
+    #[deprecated(since = "TBD", note = "use `Object::prop()` instead")]
     fn get_opt<'a, V: Value, C: Context<'a>, K: PropertyKey>(
         &self,
         cx: &mut C,
@@ -312,7 +312,7 @@ pub trait Object: Value {
         v.downcast_or_throw(cx).map(Some)
     }
 
-    #[doc(hidden)]
+    #[deprecated(since = "TBD", note = "use `Object::prop()` instead")]
     fn get_value<'a, C: Context<'a>, K: PropertyKey>(
         &self,
         cx: &mut C,
@@ -323,7 +323,7 @@ pub trait Object: Value {
         })
     }
 
-    #[doc(hidden)]
+    #[deprecated(since = "TBD", note = "use `Object::prop()` instead")]
     fn get<'a, V: Value, C: Context<'a>, K: PropertyKey>(
         &self,
         cx: &mut C,
@@ -368,7 +368,7 @@ pub trait Object: Value {
         }
     }
 
-    #[doc(hidden)]
+    #[deprecated(since = "TBD", note = "use `Object::prop()` instead")]
     fn set<'a, C: Context<'a>, K: PropertyKey, W: Value>(
         &self,
         cx: &mut C,
@@ -389,7 +389,7 @@ pub trait Object: Value {
         Root::new(cx, self)
     }
 
-    #[doc(hidden)]
+    #[deprecated(since = "TBD", note = "use `Object::method()` instead")]
     fn call_method_with<'a, C, K>(&self, cx: &mut C, method: K) -> NeonResult<CallOptions<'a>>
     where
         C: Context<'a>,
