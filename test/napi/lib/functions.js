@@ -74,6 +74,27 @@ describe("JsFunction", function () {
     assert.equal(addon.call_parse_int_with_bind(), 42);
   });
 
+  it("call a JsFunction built in JS with .bind and .exec", function () {
+    let local = 41;
+    addon.call_js_function_with_bind_and_exec(function (x) {
+      local += x;
+    });
+    assert.equal(local, 42);
+  });
+
+  it("call a JsFunction built in JS as a constructor with .bind and .construct", function () {
+    function MyClass(number, string) {
+      this.number = number;
+      this.string = string;
+    }
+
+    const obj = addon.call_js_constructor_with_bind(MyClass);
+
+    assert.instanceOf(obj, MyClass);
+    assert.equal(obj.number, 42);
+    assert.equal(obj.string, "hello");
+  });
+
   it("bind a JsFunction to an object", function () {
     const result = addon.bind_js_function_to_object(function () {
       return this.prop;

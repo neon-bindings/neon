@@ -61,6 +61,18 @@ pub fn call_parse_int_with_bind(mut cx: FunctionContext) -> JsResult<JsNumber> {
     Ok(cx.number(x + 1.0))
 }
 
+pub fn call_js_function_with_bind_and_exec(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    cx.argument::<JsFunction>(0)?.bind(&mut cx).arg(1)?.exec()?;
+    Ok(cx.undefined())
+}
+
+pub fn call_js_constructor_with_bind(mut cx: FunctionContext) -> JsResult<JsObject> {
+    cx.argument::<JsFunction>(0)?
+        .bind(&mut cx)
+        .args((42, "hello"))?
+        .construct()
+}
+
 pub fn bind_js_function_to_object(mut cx: FunctionContext) -> JsResult<JsValue> {
     let f = cx.argument::<JsFunction>(0)?;
     let obj = cx.empty_object();

@@ -285,9 +285,7 @@ pub trait Object: Value {
         cx: &'a mut Cx<'cx>,
         key: K,
     ) -> NeonResult<BindOptions<'a, 'cx>> {
-        let callee: Handle<JsValue> = self
-            .prop(cx, key)
-            .get()?;
+        let callee: Handle<JsValue> = self.prop(cx, key).get()?;
         let this = Some(self.as_value(cx));
         Ok(BindOptions {
             cx,
