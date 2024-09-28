@@ -1173,6 +1173,20 @@ impl JsFunction {
 }
 
 impl JsFunction {
+    /// Create a [`BindOptions`] builder for calling this function.
+    ///
+    /// The builder methods make it convenient to assemble the call from parts:
+    /// ```
+    /// # use neon::prelude::*;
+    /// # fn foo(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    /// # let parse_int: Handle<JsFunction> = cx.global("parseInt")?;
+    /// let x: f64 = parse_int
+    ///     .bind(&mut cx)
+    ///     .arg("42")?
+    ///     .call()?;
+    /// # Ok(cx.number(x))
+    /// # }
+    /// ```
     pub fn bind<'a, 'cx: 'a>(&self, cx: &'a mut Cx<'cx>) -> BindOptions<'a, 'cx> {
         let callee = self.as_value(cx);
         BindOptions {
