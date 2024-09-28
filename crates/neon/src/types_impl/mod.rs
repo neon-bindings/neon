@@ -1136,6 +1136,7 @@ impl JsFunction {
     /// Calls this function.
     ///
     /// **See also:** [`JsFunction::call_with`].
+    #[deprecated(since = "TBD", note = "use `JsFunction::bind` instead")]
     pub fn call<'a, 'b, C: Context<'a>, T, AS>(
         &self,
         cx: &mut C,
@@ -1152,6 +1153,7 @@ impl JsFunction {
     /// Calls this function for side effect, discarding its result.
     ///
     /// **See also:** [`JsFunction::call_with`].
+    #[deprecated(since = "TBD", note = "use `JsFunction::bind` instead")]
     pub fn exec<'a, 'b, C: Context<'a>, T, AS>(
         &self,
         cx: &mut C,
@@ -1169,6 +1171,7 @@ impl JsFunction {
     /// Calls this function as a constructor.
     ///
     /// **See also:** [`JsFunction::construct_with`].
+    #[deprecated(since = "TBD", note = "use `JsFunction::bind` instead")]
     pub fn construct<'a, 'b, C: Context<'a>, AS>(
         &self,
         cx: &mut C,
@@ -1199,6 +1202,7 @@ impl JsFunction {
 
 impl JsFunction {
     /// Create a [`CallOptions`](function::CallOptions) for calling this function.
+    #[deprecated(since = "TBD", note = "use `JsFunction::bind` instead")]
     pub fn call_with<'a, C: Context<'a>>(&self, _cx: &C) -> CallOptions<'a> {
         CallOptions {
             this: None,
@@ -1213,6 +1217,7 @@ impl JsFunction {
 
     /// Create a [`ConstructOptions`](function::ConstructOptions) for calling this function
     /// as a constructor.
+    #[deprecated(since = "TBD", note = "use `JsFunction::bind` instead")]
     pub fn construct_with<'a, C: Context<'a>>(&self, _cx: &C) -> ConstructOptions<'a> {
         ConstructOptions {
             // # Safety
