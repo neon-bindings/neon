@@ -86,17 +86,17 @@
 //!                     .prop(&mut cx, "width").set(psd.width())?
 //!                     .prop("height").set(psd.height())?
 //!                     .this();
-//!                 let null = cx.null();
 //!
 //!                 callback
 //!                     .bind(&mut cx)
-//!                     .args((null, obj))?
+//!                     .args(((), obj))?
 //!                     .exec()?;
 //!             }
 //!             Err(err) => {
+//!                 use neon::types::extract::Error;
 //!                 callback
 //!                     .bind(&mut cx)
-//!                     .arg(err.to_string())?
+//!                     .arg(Error::from(err))?
 //!                     .exec()?;
 //!             }
 //!         }
