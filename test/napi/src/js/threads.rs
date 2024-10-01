@@ -1,6 +1,9 @@
 use std::{cell::RefCell, sync::Arc, time::Duration};
 
-use neon::{prelude::*, types::buffer::TypedArray};
+use neon::{
+    prelude::*,
+    types::{buffer::TypedArray, extract::Error},
+};
 
 pub fn useless_root(mut cx: FunctionContext) -> JsResult<JsObject> {
     let object = cx.argument::<JsObject>(0)?;
@@ -462,4 +465,20 @@ pub fn deferred_settle_with_panic_throw(mut cx: FunctionContext) -> JsResult<JsP
     });
 
     Ok(promise)
+}
+
+#[neon::export(task)]
+fn block_task_callback(ch: Channel, cb: Root<JsFunction>) -> Result<Root<JsObject>, Error> {
+    let res = ch
+        .send(move |mut cx| {
+            let this = cx.undefined();
+
+            cb.into_inner(&mut cx)
+                .call(&mut cx, this, [])
+                .and_then(|v| v.downcast_or_throw::<JsObject, _>(&mut cx))
+                .map(|v| v.root(&mut cx))
+        })
+        .join()?;
+
+    Ok(res)
 }

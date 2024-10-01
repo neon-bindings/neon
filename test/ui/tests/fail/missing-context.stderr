@@ -1,0 +1,7 @@
+error: Expected a context argument. Try removing the `context` attribute.
+ --> tests/fail/missing-context.rs:1:1
+  |
+1 | #[neon::export(context)]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `neon::export` (in Nightly builds, run with -Z macro-backtrace for more info)

@@ -237,19 +237,62 @@ pub use neon_macros::main;
 ///
 /// #### `context`
 ///
-/// The `#[neon::export]` macro looks checks if the first argument has a type of
-/// `&mut Cx` or `&mut FunctionContext` to determine if the [`Context`](crate::context::Context)
-/// should be passed to the function.
+/// The `#[neon::export]` uses a heuristic to determine if the first argument
+/// to a function is a _context_ argument.
+///
+/// * In a function executed on the JavaScript main thread, it looks for `&mut Cx`
+///     or `&mut FunctionContext` to determine if the [`Context`](crate::context::Context)
+///     should be passed.
+/// * In a function executed on another thread, it looks for [`Channel`](crate::event::Channel).
 ///
 /// If the type has been renamed when importing, the `context` attribute can be
 /// added to force it to be passed.
 ///
 /// ```
-/// use neon::context::{FunctionContext as FnCtx};
+/// use neon::event::Channel as Ch;
+/// use neon::context::FunctionContext as FnCtx;
 ///
 /// #[neon::export(context)]
 /// fn add(_cx: &mut FnCtx, a: f64, b: f64) -> f64 {
 ///     a + b
+/// }
+///
+/// #[neon::export(context)]
+/// async fn div(_ch: Ch, a: f64, b: f64) -> f64 {
+///     a / b
+/// }
+/// ```
+///
+/// #### `this`
+///
+/// The `#[neon::export]` uses a heuristic to determine if an argument to this function is
+/// referring to [`this`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/this).
+///
+/// 1. If the first argument is a [context](#context), use the 0th argument, otherwise use the 1st.
+/// 2. If the argument binding is named `this`
+/// 3. Or if it is a tuple struct pattern with an element named `this`
+///
+/// ```
+/// use neon::types::extract::Boxed;
+///
+/// #[neon::export]
+/// fn buffer_clone(this: Vec<u8>) -> Vec<u8> {
+///     this
+/// }
+///
+/// #[neon::export]
+/// fn box_to_string(Boxed(this): Boxed<String>) -> String {
+///     this
+/// }
+/// ```
+///
+/// If the function uses a variable name other than `this`, the `this` attribute may
+/// be added.
+///
+/// ```
+/// #[neon::export(this)]
+/// fn buffer_clone(me: Vec<u8>) -> Vec<u8> {
+///     me
 /// }
 /// ```
 pub use neon_macros::export;

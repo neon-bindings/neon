@@ -1,0 +1,17 @@
+[package]
+name = "ui-test"
+version = "0.1.0"
+edition = "2021"
+authors = ["The Neon Community"]
+license = "MIT/Apache-2.0"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies.neon]
+version = "1.0.0"
+path = "../../crates/neon"
+features = ["futures", "napi-experimental", "serde"]
+
+[dev-dependencies]
+trybuild = "1"
