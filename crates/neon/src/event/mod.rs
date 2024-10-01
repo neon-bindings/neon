@@ -78,31 +78,28 @@
 //!     // loop. This _will_ block the event loop while executing.
 //!     channel.send(move |mut cx| {
 //!         let callback = callback.into_inner(&mut cx);
-//!         let this = cx.undefined();
-//!         let args = match result {
+//!
+//!         match result {
 //!             Ok(psd) => {
 //!                 // Extract data from the parsed file.
-//!                 let width = cx.number(psd.width());
-//!                 let height = cx.number(psd.height());
+//!                 let obj = cx.empty_object()
+//!                     .prop(&mut cx, "width").set(psd.width())?
+//!                     .prop("height").set(psd.height())?
+//!                     .this();
 //!
-//!                 // Save the data in a result object.
-//!                 let obj = cx.empty_object();
-//!                 obj.set(&mut cx, "width", width)?;
-//!                 obj.set(&mut cx, "height", height)?;
-//!                 vec![
-//!                     cx.null().upcast::<JsValue>(),
-//!                     obj.upcast(),
-//!                 ]
+//!                 callback
+//!                     .bind(&mut cx)
+//!                     .args(((), obj))?
+//!                     .exec()?;
 //!             }
 //!             Err(err) => {
-//!                 let err = cx.string(err.to_string());
-//!                 vec![
-//!                     err.upcast::<JsValue>(),
-//!                 ]
+//!                 use neon::types::extract::Error;
+//!                 callback
+//!                     .bind(&mut cx)
+//!                     .arg(Error::from(err))?
+//!                     .exec()?;
 //!             }
-//!         };
-//!
-//!         callback.call(&mut cx, this, args)?;
+//!         }
 //!
 //!         Ok(())
 //!     });

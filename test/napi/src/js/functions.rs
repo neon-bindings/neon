@@ -1,4 +1,4 @@
-use neon::prelude::*;
+use neon::{prelude::*, types::extract::With};
 
 fn add1(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let x = cx.argument::<JsNumber>(0)?.value(&mut cx);
@@ -24,6 +24,65 @@ pub fn call_js_function_idiomatically(mut cx: FunctionContext) -> JsResult<JsNum
         .this(cx.null())
         .arg(cx.number(16.0))
         .apply(&mut cx)
+}
+
+pub fn call_js_function_with_bind(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let n: f64 = cx
+        .argument::<JsFunction>(0)?
+        .bind(&mut cx)
+        .args((1, 2, 3))?
+        .arg(4)?
+        .arg_with(|cx| cx.number(5))?
+        .call()?;
+    Ok(cx.number(n))
+}
+
+pub fn call_js_function_with_bind_and_args_with(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let n: f64 = cx
+        .argument::<JsFunction>(0)?
+        .bind(&mut cx)
+        .args_with(|_| (1, 2, 3))?
+        .call()?;
+    Ok(cx.number(n))
+}
+
+pub fn call_js_function_with_bind_and_args_and_with(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let n: f64 = cx
+        .argument::<JsFunction>(0)?
+        .bind(&mut cx)
+        .args(With(|_| (1, 2, 3)))?
+        .call()?;
+    Ok(cx.number(n))
+}
+
+pub fn call_parse_int_with_bind(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let parse_int: Handle<JsFunction> = cx.global("parseInt")?;
+    let x: f64 = parse_int.bind(&mut cx).arg("41")?.call()?;
+    Ok(cx.number(x + 1.0))
+}
+
+pub fn call_js_function_with_bind_and_exec(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    cx.argument::<JsFunction>(0)?.bind(&mut cx).arg(1)?.exec()?;
+    Ok(cx.undefined())
+}
+
+pub fn call_js_constructor_with_bind(mut cx: FunctionContext) -> JsResult<JsObject> {
+    cx.argument::<JsFunction>(0)?
+        .bind(&mut cx)
+        .args((42, "hello"))?
+        .construct()
+}
+
+pub fn bind_js_function_to_object(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let f = cx.argument::<JsFunction>(0)?;
+    let obj = cx.empty_object();
+    obj.prop(&mut cx, "prop").set(42)?;
+    f.bind(&mut cx).this(obj)?.call()
+}
+
+pub fn bind_js_function_to_number(mut cx: FunctionContext) -> JsResult<JsValue> {
+    let f = cx.argument::<JsFunction>(0)?;
+    f.bind(&mut cx).this(42)?.call()
 }
 
 fn get_math_max<'a>(cx: &mut FunctionContext<'a>) -> JsResult<'a, JsFunction> {

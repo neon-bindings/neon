@@ -24,11 +24,8 @@ use crate::{
 /// let err = cx.type_error("expected a number, found a string")?;
 ///
 /// // Add some custom diagnostic properties to the error:
-/// let expected = cx.string("number");
-/// err.set(&mut cx, "expected", expected)?;
-///
-/// let found = cx.string("string");
-/// err.set(&mut cx, "found", found)?;
+/// err.prop(&mut cx, "expected").set("number")?;
+/// err.prop(&mut cx, "found").set("string")?;
 ///
 /// // Throw the error:
 /// cx.throw(err)?;

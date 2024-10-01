@@ -1,6 +1,21 @@
 var addon = require("..");
 var assert = require("chai").assert;
 
+const STRICT = function () {
+  "use strict";
+  return this;
+};
+const SLOPPY = Function("return this;");
+
+function isStrict(f) {
+  try {
+    f.caller;
+    return false;
+  } catch (e) {
+    return true;
+  }
+}
+
 describe("JsFunction", function () {
   it("return a JsFunction built in Rust", function () {
     assert.isFunction(addon.return_js_function());
@@ -26,6 +41,87 @@ describe("JsFunction", function () {
       }),
       17
     );
+  });
+
+  it("call a JsFunction built in JS with .bind().apply()", function () {
+    assert.equal(
+      addon.call_js_function_with_bind(function (a, b, c, d, e) {
+        return a * b * c * d * e;
+      }),
+      1 * 2 * 3 * 4 * 5
+    );
+  });
+
+  it("call a JsFunction build in JS with .bind and .args_with", function () {
+    assert.equal(
+      addon.call_js_function_with_bind_and_args_with(function (a, b, c) {
+        return a + b + c;
+      }),
+      1 + 2 + 3
+    );
+  });
+
+  it("call a JsFunction build in JS with .bind and .args and With", function () {
+    assert.equal(
+      addon.call_js_function_with_bind_and_args_and_with(function (a, b, c) {
+        return a + b + c;
+      }),
+      1 + 2 + 3
+    );
+  });
+
+  it("call parseInt with .bind().apply()", function () {
+    assert.equal(addon.call_parse_int_with_bind(), 42);
+  });
+
+  it("call a JsFunction built in JS with .bind and .exec", function () {
+    let local = 41;
+    addon.call_js_function_with_bind_and_exec(function (x) {
+      local += x;
+    });
+    assert.equal(local, 42);
+  });
+
+  it("call a JsFunction built in JS as a constructor with .bind and .construct", function () {
+    function MyClass(number, string) {
+      this.number = number;
+      this.string = string;
+    }
+
+    const obj = addon.call_js_constructor_with_bind(MyClass);
+
+    assert.instanceOf(obj, MyClass);
+    assert.equal(obj.number, 42);
+    assert.equal(obj.string, "hello");
+  });
+
+  it("bind a JsFunction to an object", function () {
+    const result = addon.bind_js_function_to_object(function () {
+      return this.prop;
+    });
+
+    assert.equal(result, 42);
+  });
+
+  it("bind a strict JsFunction to a number", function () {
+    assert.isTrue(isStrict(STRICT));
+
+    // strict mode functions are allowed to have a primitive this binding
+    const result = addon.bind_js_function_to_number(STRICT);
+
+    assert.strictEqual(result, 42);
+  });
+
+  it("bind a sloppy JsFunction to a primitive", function () {
+    assert.isFalse(isStrict(SLOPPY));
+
+    // legacy JS functions (aka "sloppy mode") replace primitive this bindings
+    // with object wrappers, so 42 will get wrapped as new Number(42)
+    const result = addon.bind_js_function_to_number(SLOPPY);
+
+    assert.instanceOf(result, Number);
+    assert.strictEqual(typeof result, "object");
+    assert.strictEqual(result.valueOf(), 42);
   });
 
   it("call a JsFunction with zero args", function () {

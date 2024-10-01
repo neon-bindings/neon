@@ -95,3 +95,30 @@ pub fn call_symbol_method(mut cx: FunctionContext) -> JsResult<JsString> {
     let sym: Handle<JsValue> = cx.argument::<JsValue>(1)?;
     obj.call_method_with(&mut cx, sym)?.apply(&mut cx)
 }
+
+pub fn get_property_with_prop(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    let obj: Handle<JsObject> = cx.argument::<JsObject>(0)?;
+    let n: f64 = obj.prop(&mut cx, "number").get()?;
+    Ok(cx.number(n))
+}
+
+pub fn set_property_with_prop(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let obj: Handle<JsObject> = cx.argument::<JsObject>(0)?;
+    obj.prop(&mut cx, "number").set(42)?;
+    Ok(cx.undefined())
+}
+
+pub fn call_methods_with_prop(mut cx: FunctionContext) -> JsResult<JsString> {
+    let obj: Handle<JsObject> = cx.argument::<JsObject>(0)?;
+    obj.prop(&mut cx, "setName")
+        .bind()?
+        .arg("Wonder Woman")?
+        .call()?;
+    obj.prop(&mut cx, "toString").bind()?.call()
+}
+
+pub fn call_non_method_with_prop(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+    let obj: Handle<JsObject> = cx.argument::<JsObject>(0)?;
+    obj.prop(&mut cx, "number").bind()?.call()?;
+    Ok(cx.undefined())
+}

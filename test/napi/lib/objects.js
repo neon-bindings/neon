@@ -124,4 +124,47 @@ describe("JsObject", function () {
 
     assert.strictEqual(addon.call_symbol_method(obj, sym), "hello");
   });
+
+  it("extracts an object property with .prop()", function () {
+    const obj = { number: 3.141593 };
+
+    assert.strictEqual(addon.get_property_with_prop(obj), 3.141593);
+  });
+
+  it("sets an object property with .prop()", function () {
+    const obj = { number: 3.141593 };
+
+    addon.set_property_with_prop(obj);
+
+    assert.strictEqual(obj.number, 42);
+  });
+
+  it("calls a method with .prop()", function () {
+    const obj = {
+      name: "Diana Prince",
+      setName(name) {
+        this.name = name;
+      },
+      toString() {
+        return `[object ${this.name}]`;
+      },
+    };
+
+    assert.strictEqual(obj.toString(), "[object Diana Prince]");
+    assert.strictEqual(
+      addon.call_methods_with_prop(obj),
+      "[object Wonder Woman]"
+    );
+    assert.strictEqual(obj.toString(), "[object Wonder Woman]");
+  });
+
+  it("throws a TypeError when calling a non-method with .prop()", function () {
+    const obj = {
+      number: 42,
+    };
+
+    assert.throws(() => {
+      addon.call_non_method_with_prop(obj);
+    }, /not a function/);
+  });
 });

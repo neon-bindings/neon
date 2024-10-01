@@ -26,8 +26,7 @@
 //! # use neon::prelude::*;
 //! fn get_message(mut cx: FunctionContext) -> JsResult<JsValue> {
 //!     let obj: Handle<JsObject> = cx.argument(0)?;
-//!     let prop: Handle<JsValue> = obj.get(&mut cx, "message")?;
-//!     Ok(prop)
+//!     obj.prop(&mut cx, "message").get()
 //! }
 //! ```
 //!

@@ -18,13 +18,13 @@ pub(crate) mod utf8;
 use std::{
     any,
     fmt::{self, Debug},
-    os::raw::c_void,
 };
 
+use private::prepare_call;
 use smallvec::smallvec;
 
 use crate::{
-    context::{internal::Env, Context, FunctionContext},
+    context::{internal::Env, Context, Cx, FunctionContext},
     handle::{
         internal::{SuperType, TransparentNoCopyWrapper},
         Handle,
@@ -33,7 +33,7 @@ use crate::{
     result::{JsResult, NeonResult, ResultExt, Throw},
     sys::{self, raw},
     types::{
-        function::{CallOptions, ConstructOptions},
+        function::{BindOptions, CallOptions, ConstructOptions},
         private::ValueInternal,
         utf8::Utf8,
     },
@@ -208,7 +208,7 @@ impl JsValue {
 /// let undefined = cx.undefined();
 ///
 /// // Call console.log(undefined):
-/// console.call_method_with(&mut cx, "log")?.arg(undefined).exec(&mut cx)?;
+/// console.method(&mut cx, "log")?.arg(undefined)?.exec()?;
 /// # Ok(undefined)
 /// # }
 /// ```
@@ -273,11 +273,12 @@ impl ValueInternal for JsUndefined {
 /// ```
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsNull> {
+/// let null = cx.null();
 /// cx.global::<JsObject>("console")?
-///     .call_method_with(&mut cx, "log")?
-///     .arg(cx.null())
-///     .exec(&mut cx)?;
-/// # Ok(cx.null())
+///     .method(&mut cx, "log")?
+///     .arg(null)?
+///     .exec()?;
+/// # Ok(null)
 /// # }
 /// ```
 #[derive(Debug)]
@@ -341,16 +342,12 @@ impl ValueInternal for JsNull {
 /// ```
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-/// // Extract the console.log function:
-/// let console: Handle<JsObject> = cx.global("console")?;
-/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
-///
 /// // The two Boolean values:
 /// let t = cx.boolean(true);
 /// let f = cx.boolean(false);
 ///
 /// // Call console.log(true, false):
-/// log.call_with(&cx).arg(t).arg(f).exec(&mut cx)?;
+/// cx.global::<JsObject>("console")?.method(&mut cx, "log")?.args((t, f))?.exec()?;
 /// # Ok(cx.undefined())
 /// # }
 /// ```
@@ -418,15 +415,11 @@ impl ValueInternal for JsBoolean {
 /// ```
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-/// // Extract the console.log function:
-/// let console: Handle<JsObject> = cx.global("console")?;
-/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
-///
 /// // Create a string:
 /// let s = cx.string("hello 🥹");
 ///
 /// // Call console.log(s):
-/// log.call_with(&cx).arg(s).exec(&mut cx)?;
+/// cx.global::<JsObject>("console")?.method(&mut cx, "log")?.arg(s)?.exec()?;
 /// # Ok(cx.undefined())
 /// # }
 /// ```
@@ -695,15 +688,11 @@ impl JsString {
 /// ```
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-/// // Extract the console.log function:
-/// let console: Handle<JsObject> = cx.global("console")?;
-/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
-///
 /// // Create a number:
 /// let n = cx.number(17.0);
 ///
 /// // Call console.log(n):
-/// log.call_with(&cx).arg(n).exec(&mut cx)?;
+/// cx.global::<JsObject>("console")?.method(&mut cx, "log")?.arg(n)?.exec()?;
 /// # Ok(cx.undefined())
 /// # }
 /// ```
@@ -771,21 +760,16 @@ impl ValueInternal for JsNumber {
 /// ```
 /// # use neon::prelude::*;
 /// # fn test(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-/// // Extract the console.log function:
-/// let console: Handle<JsObject> = cx.global("console")?;
-/// let log: Handle<JsFunction> = console.get(&mut cx, "log")?;
-///
 /// // Create an object:
-/// let obj = cx.empty_object();
-///
-/// let name = cx.string("Neon");
-/// obj.set(&mut cx, "name", name)?;
-///
-/// let url = cx.string("https://neon-bindings.com");
-/// obj.set(&mut cx, "url", url)?;
+/// let obj = cx.empty_object()
+///     .prop(&mut cx, "name")
+///     .set("Neon")?
+///     .prop("url")
+///     .set("https://neon-bindings.com")?
+///     .this();
 ///
 /// // Call console.log(obj):
-/// log.call_with(&cx).arg(obj).exec(&mut cx)?;
+/// cx.global::<JsObject>("console")?.method(&mut cx, "log")?.arg(obj)?.exec()?;
 /// # Ok(cx.undefined())
 /// # }
 /// ```
@@ -860,13 +844,9 @@ impl JsObject {
 /// // Create a new empty array:
 /// let a: Handle<JsArray> = cx.empty_array();
 ///
-/// // Create some new values to push onto the array:
-/// let n = cx.number(17);
-/// let s = cx.string("hello");
-///
-/// // Push the elements onto the array:
-/// a.set(&mut cx, 0, n)?;
-/// a.set(&mut cx, 1, s)?;
+/// // Push some values onto the array:
+/// a.prop(&mut cx, 0).set(17)?;
+/// a.prop(&mut cx, 1).set("hello")?;
 /// # Ok(a)
 /// # }
 /// ```
@@ -979,7 +959,7 @@ impl Object for JsArray {}
 /// ## Calling functions
 ///
 /// Neon provides a convenient syntax for calling JavaScript functions with the
-/// [`call_with()`](JsFunction::call_with) method, which produces a [`CallOptions`](CallOptions)
+/// [`bind()`](JsFunction::bind) method, which produces a [`BindOptions`](BindOptions)
 /// struct that can be used to provide the function arguments (and optionally, the binding for
 /// `this`) before calling the function:
 /// ```
@@ -990,9 +970,9 @@ impl Object for JsArray {}
 ///
 /// // Call parseInt("42")
 /// let x: Handle<JsNumber> = parse_int
-///     .call_with(&mut cx)
-///     .arg(cx.string("42"))
-///     .apply(&mut cx)?;
+///     .bind(&mut cx)
+///     .arg("42")?
+///     .call()?;
 /// # Ok(x)
 /// # }
 /// ```
@@ -1001,7 +981,7 @@ impl Object for JsArray {}
 ///
 /// A `JsFunction` can be called as a constructor (like `new Array(16)` or
 /// `new URL("https://neon-bindings.com")`) with the
-/// [`construct_with()`](JsFunction::construct_with) method:
+/// [`construct()`](BindOptions::construct) method:
 /// ```
 /// # use neon::prelude::*;
 /// # fn foo(mut cx: FunctionContext) -> JsResult<JsObject> {
@@ -1010,9 +990,9 @@ impl Object for JsArray {}
 ///
 /// // Call new URL("https://neon-bindings.com")
 /// let obj = url
-///     .construct_with(&cx)
-///     .arg(cx.string("https://neon-bindings.com"))
-///     .apply(&mut cx)?;
+///     .bind(&mut cx)
+///     .arg("https://neon-bindings.com")?
+///     .construct()?;
 /// # Ok(obj)
 /// # }
 /// ```
@@ -1043,24 +1023,6 @@ pub struct JsFunction {
 }
 
 impl Object for JsFunction {}
-
-// Maximum number of function arguments in V8.
-const V8_ARGC_LIMIT: usize = 65535;
-
-unsafe fn prepare_call<'a, 'b, C: Context<'a>>(
-    cx: &mut C,
-    args: &[Handle<'b, JsValue>],
-) -> NeonResult<(i32, *const c_void)> {
-    // Note: This cast is only save because `Handle<'_, JsValue>` is
-    // guaranteed to have the same layout as a pointer because `Handle`
-    // and `JsValue` are both `repr(C)` newtypes.
-    let argv = args.as_ptr().cast();
-    let argc = args.len();
-    if argc > V8_ARGC_LIMIT {
-        return cx.throw_range_error("too many arguments");
-    }
-    Ok((argc as i32, argv))
-}
 
 impl JsFunction {
     #[cfg(not(feature = "napi-5"))]
@@ -1158,6 +1120,7 @@ impl JsFunction {
     /// Calls this function.
     ///
     /// **See also:** [`JsFunction::call_with`].
+    #[deprecated(since = "TBD", note = "use `JsFunction::bind` instead")]
     pub fn call<'a, 'b, C: Context<'a>, T, AS>(
         &self,
         cx: &mut C,
@@ -1168,16 +1131,13 @@ impl JsFunction {
         T: Value,
         AS: AsRef<[Handle<'b, JsValue>]>,
     {
-        let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
-        let env = cx.env().to_raw();
-        build(cx.env(), |out| unsafe {
-            sys::fun::call(out, env, self.to_local(), this.to_local(), argc, argv)
-        })
+        unsafe { self.try_call(cx, this, args) }
     }
 
     /// Calls this function for side effect, discarding its result.
     ///
     /// **See also:** [`JsFunction::call_with`].
+    #[deprecated(since = "TBD", note = "use `JsFunction::bind` instead")]
     pub fn exec<'a, 'b, C: Context<'a>, T, AS>(
         &self,
         cx: &mut C,
@@ -1195,6 +1155,7 @@ impl JsFunction {
     /// Calls this function as a constructor.
     ///
     /// **See also:** [`JsFunction::construct_with`].
+    #[deprecated(since = "TBD", note = "use `JsFunction::bind` instead")]
     pub fn construct<'a, 'b, C: Context<'a>, AS>(
         &self,
         cx: &mut C,
@@ -1212,7 +1173,34 @@ impl JsFunction {
 }
 
 impl JsFunction {
+    /// Create a [`BindOptions`] builder for calling this function.
+    ///
+    /// The builder methods make it convenient to assemble the call from parts:
+    /// ```
+    /// # use neon::prelude::*;
+    /// # fn foo(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    /// # let parse_int: Handle<JsFunction> = cx.global("parseInt")?;
+    /// let x: f64 = parse_int
+    ///     .bind(&mut cx)
+    ///     .arg("42")?
+    ///     .call()?;
+    /// # Ok(cx.number(x))
+    /// # }
+    /// ```
+    pub fn bind<'a, 'cx: 'a>(&self, cx: &'a mut Cx<'cx>) -> BindOptions<'a, 'cx> {
+        let callee = self.as_value(cx);
+        BindOptions {
+            cx,
+            callee,
+            this: None,
+            args: smallvec![],
+        }
+    }
+}
+
+impl JsFunction {
     /// Create a [`CallOptions`](function::CallOptions) for calling this function.
+    #[deprecated(since = "TBD", note = "use `JsFunction::bind` instead")]
     pub fn call_with<'a, C: Context<'a>>(&self, _cx: &C) -> CallOptions<'a> {
         CallOptions {
             this: None,
@@ -1227,6 +1215,7 @@ impl JsFunction {
 
     /// Create a [`ConstructOptions`](function::ConstructOptions) for calling this function
     /// as a constructor.
+    #[deprecated(since = "TBD", note = "use `JsFunction::bind` instead")]
     pub fn construct_with<'a, C: Context<'a>>(&self, _cx: &C) -> ConstructOptions<'a> {
         ConstructOptions {
             // # Safety

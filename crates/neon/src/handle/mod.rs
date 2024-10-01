@@ -27,22 +27,18 @@
 //!
 //! ## Example
 //!
-//! This Neon function takes an object as its argument, extracts two properties,
-//! `width` and `height`, and multiplies them together as numbers. Each JavaScript
-//! value in the calculation is stored locally in a `Handle`.
+//! This Neon function takes an object as its argument, extracts an object property,
+//! `homeAddress`, and then extracts a string property, `zipCode` from that second
+//! object. Each JavaScript value in the calculation is stored locally in a `Handle`.
 //!
 //! ```
 //! # use neon::prelude::*;
-//! fn area(mut cx: FunctionContext) -> JsResult<JsNumber> {
-//!     let rect: Handle<JsObject> = cx.argument(0)?;
-//!
-//!     let width: Handle<JsNumber> = rect.get(&mut cx, "width")?;
-//!     let w: f64 = width.value(&mut cx);
-//!
-//!     let height: Handle<JsNumber> = rect.get(&mut cx, "height")?;
-//!     let h: f64 = height.value(&mut cx);
-//!
-//!     Ok(cx.number(w * h))
+//! # use neon::export;
+//! #[export]
+//! fn customer_zip_code<'cx>(cx: &mut FunctionContext<'cx>, customer: Handle<'cx, JsObject>) -> JsResult<'cx, JsString> {
+//!     let home_address: Handle<JsObject> = customer.prop(cx, "homeAddress").get()?;
+//!     let zip_code: Handle<JsString> = home_address.prop(cx, "zipCode").get()?;
+//!     Ok(zip_code)
 //! }
 //! ```
 

@@ -45,10 +45,9 @@
 //! # use neon::prelude::*;
 //! fn log(cx: &mut Cx, msg: &str) -> NeonResult<()> {
 //!     cx.global::<JsObject>("console")?
-//!         .call_method_with(cx, "log")?
-//!         .arg(cx.string(msg))
-//!         .exec(cx)?;
-//!
+//!         .method(cx, "log")?
+//!         .arg(msg)?
+//!         .exec()?;
 //!     Ok(())
 //! }
 //!
@@ -107,22 +106,18 @@
 //! # fn iterate(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 //!     let iterator = cx.argument::<JsObject>(0)?;         // iterator object
 //!     let next: Handle<JsFunction> =                      // iterator's `next` method
-//!         iterator.get(&mut cx, "next")?;
+//!         iterator.prop(&mut cx, "next").get()?;
 //!     let mut numbers = vec![];                           // results vector
 //!     let mut done = false;                               // loop controller
 //!
 //!     while !done {
 //!         done = cx.execute_scoped(|mut cx| {                   // temporary scope
 //!             let obj: Handle<JsObject> = next                  // temporary object
-//!                 .call_with(&cx)
-//!                 .this(iterator)
-//!                 .apply(&mut cx)?;
-//!             let number: Handle<JsNumber> =                    // temporary number
-//!                 obj.get(&mut cx, "value")?;
-//!             numbers.push(number.value(&mut cx));
-//!             let done: Handle<JsBoolean> =                     // temporary boolean
-//!                 obj.get(&mut cx, "done")?;
-//!             Ok(done.value(&mut cx))
+//!                 .bind(&mut cx)
+//!                 .this(iterator)?
+//!                 .call()?;
+//!             numbers.push(obj.prop(&mut cx, "value").get()?);  // temporary number
+//!             obj.prop(&mut cx, "done").get()                   // temporary boolean
 //!         })?;
 //!     }
 //! #   Ok(cx.undefined())
@@ -505,7 +500,7 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// #     let v: Handle<JsFunction> =
     /// {
     ///     let global = cx.global_object();
-    ///     global.get(cx, name)
+    ///     global.prop(cx, name).get()
     /// }
     /// #     ?;
     /// #     Ok(v)
