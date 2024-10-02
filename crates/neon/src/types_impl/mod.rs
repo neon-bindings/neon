@@ -1119,8 +1119,7 @@ impl JsFunction {
 impl JsFunction {
     /// Calls this function.
     ///
-    /// **See also:** [`JsFunction::call_with`].
-    #[deprecated(since = "TBD", note = "use `JsFunction::bind` instead")]
+    /// **See also:** [`JsFunction::bind`].
     pub fn call<'a, 'b, C: Context<'a>, T, AS>(
         &self,
         cx: &mut C,
@@ -1136,8 +1135,7 @@ impl JsFunction {
 
     /// Calls this function for side effect, discarding its result.
     ///
-    /// **See also:** [`JsFunction::call_with`].
-    #[deprecated(since = "TBD", note = "use `JsFunction::bind` instead")]
+    /// **See also:** [`JsFunction::bind`].
     pub fn exec<'a, 'b, C: Context<'a>, T, AS>(
         &self,
         cx: &mut C,
@@ -1154,8 +1152,7 @@ impl JsFunction {
 
     /// Calls this function as a constructor.
     ///
-    /// **See also:** [`JsFunction::construct_with`].
-    #[deprecated(since = "TBD", note = "use `JsFunction::bind` instead")]
+    /// **See also:** [`JsFunction::bind`].
     pub fn construct<'a, 'b, C: Context<'a>, AS>(
         &self,
         cx: &mut C,
