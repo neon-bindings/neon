@@ -1,3 +1,4 @@
+use either::Either;
 use neon::{prelude::*, types::extract::*};
 
 pub fn extract_values(mut cx: FunctionContext) -> JsResult<JsArray> {
@@ -135,4 +136,12 @@ pub fn extract_single_add_one(mut cx: FunctionContext) -> JsResult<JsNumber> {
     let n: f64 = cx.args()?;
 
     Ok(cx.number(n + 1.0))
+}
+
+#[neon::export]
+pub fn extract_either(either: Either<String, f64>) -> String {
+    match either {
+        Either::Left(s) => format!("String: {s}"),
+        Either::Right(n) => format!("Number: {n}"),
+    }
 }

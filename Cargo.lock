@@ -157,9 +157,9 @@ checksum = "10936778145f3bea71fd9bf61332cce28c28e96a380714f7ab34838b80733fd6"
 
 [[package]]
 name = "either"
-version = "1.9.0"
+version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
+checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 
 [[package]]
 name = "electron-tests"
@@ -385,6 +385,7 @@ dependencies = [
 name = "napi-tests"
 version = "0.1.0"
 dependencies = [
+ "either",
  "neon",
  "num-bigint-dig",
  "once_cell",
@@ -399,6 +400,7 @@ dependencies = [
  "aquamarine",
  "doc-comment",
  "easy-cast",
+ "either",
  "getrandom",
  "itertools",
  "libloading 0.8.1",

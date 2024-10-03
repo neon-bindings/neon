@@ -121,6 +121,7 @@ pub use self::json::Json;
 pub mod json;
 
 mod boxed;
+mod either;
 mod error;
 mod private;
 mod try_from_js;
