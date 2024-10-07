@@ -24,6 +24,7 @@ easy-cast = "0.5.2"  # used for a doc example
 nodejs-sys = "0.15.0"
 
 [dependencies]
+either = "1.13.0"
 getrandom = { version = "0.2.11", optional = true }
 libloading = "0.8.1"
 linkme = "0.3.25"

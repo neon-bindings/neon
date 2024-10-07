@@ -62,4 +62,20 @@ describe("Extractors", () => {
     assert.strictEqual(addon.extract_json_sum([1, 2, 3, 4]), 10);
     assert.strictEqual(addon.extract_json_sum([8, 16, 18]), 42);
   });
+
+  it("Either", () => {
+    assert.strictEqual(addon.extract_either("hello"), "String: hello");
+    assert.strictEqual(addon.extract_either(42), "Number: 42");
+
+    assert.throws(
+      () => addon.extract_either({}),
+      (err) => {
+        assert.match(err.message, /expected either.*String.*f64/);
+        assert.match(err.left.message, /expected string/);
+        assert.match(err.right.message, /expected number/);
+
+        return true;
+      }
+    );
+  });
 });
