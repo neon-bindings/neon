@@ -1,3 +1,21 @@
+//! Extract JavaScript values with JSON serialization
+//!
+//! For complex objects that implement [`serde::Serialize`] and [`serde::Deserialize`],
+//! it is more ergonomic--and often faster--to extract with JSON serialization. The [`Json`]
+//! extractor automatically calls `JSON.stringify` and `JSON.parse` as necessary.
+//!
+//! ```
+//! use neon::types::extract::Json;
+//!
+//! #[neon::export]
+//! fn sort(Json(mut strings): Json<Vec<String>>) -> Json<Vec<String>> {
+//!     strings.sort();
+//!     Json(strings)
+//! }
+//! ```
+
+use std::{error, fmt};
+
 use crate::{
     context::{Context, Cx},
     handle::Handle,
@@ -5,7 +23,7 @@ use crate::{
     result::{JsResult, NeonResult},
     types::{
         extract::{private, TryFromJs, TryIntoJs},
-        JsFunction, JsObject, JsString, JsValue,
+        JsError, JsFunction, JsObject, JsString, JsValue,
     },
 };
 
@@ -73,17 +91,15 @@ impl<'cx, T> TryFromJs<'cx> for Json<T>
 where
     for<'de> T: serde::de::Deserialize<'de>,
 {
-    type Error = serde_json::Error;
+    type Error = Error;
 
     fn try_from_js(
         cx: &mut Cx<'cx>,
         v: Handle<'cx, JsValue>,
     ) -> NeonResult<Result<Self, Self::Error>> {
-        Ok(serde_json::from_str(&stringify(cx, v)?).map(Json))
-    }
-
-    fn from_js(cx: &mut Cx<'cx>, v: Handle<'cx, JsValue>) -> NeonResult<Self> {
-        Self::try_from_js(cx, v)?.or_else(|err| cx.throw_error(err.to_string()))
+        Ok(serde_json::from_str(&stringify(cx, v)?)
+            .map(Json)
+            .map_err(Error))
     }
 }
 
@@ -101,3 +117,30 @@ where
 }
 
 impl<T> private::Sealed for Json<T> {}
+
+/// Error returned when a value is invalid JSON
+pub struct Error(serde_json::Error);
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(&self.0, f)
+    }
+}
+
+impl fmt::Debug for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(&self.0, f)
+    }
+}
+
+impl error::Error for Error {}
+
+impl<'cx> TryIntoJs<'cx> for Error {
+    type Value = JsError;
+
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
+        JsError::error(cx, self.to_string())
+    }
+}
+
+impl private::Sealed for Error {}

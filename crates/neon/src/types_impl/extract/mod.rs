@@ -99,25 +99,29 @@
 //! Note well, in this example, type annotations are not required on the tuple because
 //! Rust is able to infer it from the type arguments on `add` and `concat`.
 
-use std::{fmt, marker::PhantomData};
-
 use crate::{
     context::{Context, Cx, FunctionContext},
     handle::Handle,
-    result::{JsResult, NeonResult, ResultExt},
+    result::{JsResult, NeonResult},
     types::{JsValue, Value},
 };
 
-pub use self::{boxed::Boxed, error::Error, with::With};
+pub use self::{
+    boxed::Boxed,
+    error::{Error, TypeExpected},
+    with::With,
+};
 
 #[cfg(feature = "serde")]
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub use self::json::Json;
 
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+pub mod json;
+
 mod boxed;
 mod error;
-#[cfg(feature = "serde")]
-mod json;
 mod private;
 mod try_from_js;
 mod try_into_js;
@@ -128,10 +132,7 @@ pub trait TryFromJs<'cx>
 where
     Self: private::Sealed + Sized,
 {
-    /// Error indicating non-JavaScript exception failure when extracting
-    // Consider adding a trait bound prior to unsealing `TryFromjs`
-    // https://github.com/neon-bindings/neon/issues/1026
-    type Error;
+    type Error: TryIntoJs<'cx>;
 
     /// Extract this Rust type from a JavaScript value
     fn try_from_js(
@@ -140,7 +141,16 @@ where
     ) -> NeonResult<Result<Self, Self::Error>>;
 
     /// Same as [`TryFromJs`], but all errors are converted to JavaScript exceptions
-    fn from_js(cx: &mut Cx<'cx>, v: Handle<'cx, JsValue>) -> NeonResult<Self>;
+    fn from_js(cx: &mut Cx<'cx>, v: Handle<'cx, JsValue>) -> NeonResult<Self> {
+        match Self::try_from_js(cx, v)? {
+            Ok(v) => Ok(v),
+            Err(err) => {
+                let err = err.try_into_js(cx)?;
+
+                cx.throw(err)
+            }
+        }
+    }
 }
 
 /// Convert Rust data into a JavaScript value
@@ -165,38 +175,6 @@ pub struct ArrayBuffer(pub Vec<u8>);
 
 /// Wrapper for converting between [`Vec<u8>`] and [`JsBuffer`](super::JsBuffer)
 pub struct Buffer(pub Vec<u8>);
-
-/// Error returned when a JavaScript value is not the type expected
-pub struct TypeExpected<T: Value>(PhantomData<T>);
-
-impl<T: Value> TypeExpected<T> {
-    fn new() -> Self {
-        Self(PhantomData)
-    }
-}
-
-impl<T: Value> fmt::Display for TypeExpected<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "expected {}", T::name())
-    }
-}
-
-impl<T: Value> fmt::Debug for TypeExpected<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_tuple("TypeExpected").field(&T::name()).finish()
-    }
-}
-
-impl<T: Value> std::error::Error for TypeExpected<T> {}
-
-impl<T, U: Value> ResultExt<T> for Result<T, TypeExpected<U>> {
-    fn or_throw<'a, C: Context<'a>>(self, cx: &mut C) -> NeonResult<T> {
-        match self {
-            Ok(v) => Ok(v),
-            Err(_) => cx.throw_type_error(format!("expected {}", U::name())),
-        }
-    }
-}
 
 /// Trait specifying values that may be extracted from function arguments.
 ///
