@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
+use crate::prelude::Object;
 use crate::{
     context::{Context, Cx},
-    handle::Handle,
+    handle::{Handle, Root},
     result::{JsResult, ResultExt, Throw},
     types::{
         buffer::Binary,
@@ -20,6 +21,17 @@ where
 
     fn try_into_js(self, _cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         Ok(self)
+    }
+}
+
+impl<'cx, O> TryIntoJs<'cx> for Root<O>
+where
+    O: Object,
+{
+    type Value = O;
+
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
+        Ok(self.into_inner(cx))
     }
 }
 

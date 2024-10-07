@@ -4,6 +4,7 @@ pub(crate) struct Meta {
     pub(super) name: Option<syn::LitStr>,
     pub(super) json: bool,
     pub(super) context: bool,
+    pub(super) this: bool,
 }
 
 #[derive(Default)]
@@ -28,21 +29,21 @@ impl Meta {
         Ok(())
     }
 
-    fn force_context(&mut self, meta: syn::meta::ParseNestedMeta) -> syn::Result<()> {
-        match self.kind {
-            Kind::Normal | Kind::AsyncFn => {}
-            Kind::Async => return Err(meta.error(super::ASYNC_CX_ERROR)),
-            Kind::Task => return Err(meta.error(super::TASK_CX_ERROR)),
-        }
-
+    fn force_context(&mut self, _meta: syn::meta::ParseNestedMeta) -> syn::Result<()> {
         self.context = true;
+
+        Ok(())
+    }
+
+    fn force_this(&mut self, _meta: syn::meta::ParseNestedMeta) -> syn::Result<()> {
+        self.this = true;
 
         Ok(())
     }
 
     fn make_async(&mut self, meta: syn::meta::ParseNestedMeta) -> syn::Result<()> {
         if matches!(self.kind, Kind::AsyncFn) {
-            return Err(meta.error(super::ASYNC_FN_ERROR));
+            return Err(meta.error("`async` attribute should not be used with an `async fn`"));
         }
 
         self.kind = Kind::Async;
@@ -50,11 +51,7 @@ impl Meta {
         Ok(())
     }
 
-    fn make_task(&mut self, meta: syn::meta::ParseNestedMeta) -> syn::Result<()> {
-        if self.context {
-            return Err(meta.error(super::TASK_CX_ERROR));
-        }
-
+    fn make_task(&mut self, _meta: syn::meta::ParseNestedMeta) -> syn::Result<()> {
         self.kind = Kind::Task;
 
         Ok(())
@@ -91,6 +88,10 @@ impl syn::parse::Parser for Parser {
 
             if meta.path.is_ident("context") {
                 return attr.force_context(meta);
+            }
+
+            if meta.path.is_ident("this") {
+                return attr.force_this(meta);
             }
 
             if meta.path.is_ident("async") {

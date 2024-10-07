@@ -135,3 +135,19 @@ fn async_with_events(
         })
     })
 }
+
+#[neon::export]
+async fn await_callback(ch: Channel, cb: Root<JsFunction>) -> Result<Root<JsObject>, Error> {
+    let res = ch
+        .send(move |mut cx| {
+            let this = cx.undefined();
+
+            cb.into_inner(&mut cx)
+                .call(&mut cx, this, [])
+                .and_then(|v| v.downcast_or_throw::<JsObject, _>(&mut cx))
+                .map(|v| v.root(&mut cx))
+        })
+        .await?;
+
+    Ok(res)
+}

@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 
-use neon::prelude::*;
+use neon::{prelude::*, types::extract::Boxed};
 
 pub struct Person {
     name: String,
@@ -71,4 +71,20 @@ pub fn ref_person_fail(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
 pub fn external_unit(mut cx: FunctionContext) -> JsResult<JsBox<()>> {
     Ok(cx.boxed(()))
+}
+
+#[neon::export]
+fn create_boxed_string(s: String) -> Boxed<String> {
+    Boxed(s)
+}
+
+#[neon::export]
+fn boxed_string_concat(Boxed(this): Boxed<String>, rhs: String) -> String {
+    this + &rhs
+}
+
+#[neon::export]
+// N.B.: Intentionally including unused `cx` and not using tuple struct pattern to test the macro
+fn boxed_string_repeat(_cx: &mut FunctionContext, this: Boxed<String>, n: f64) -> String {
+    this.0.repeat(n as usize)
 }

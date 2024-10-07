@@ -1,0 +1,17 @@
+error: Exported functions cannot receive `self`.
+ --> tests/fail/unexpected-self.rs:5:15
+  |
+5 |     fn borrow(&self) {}
+  |               ^
+
+error: Exported functions cannot receive `self`.
+ --> tests/fail/unexpected-self.rs:8:19
+  |
+8 |     fn borrow_mut(&mut self) {}
+  |                   ^
+
+error: Exported functions cannot receive `self`.
+  --> tests/fail/unexpected-self.rs:11:14
+   |
+11 |     fn owned(self) {}
+   |              ^^^^
