@@ -1,7 +1,7 @@
 use crate::{
     context::{Context, Cx},
     handle::Handle,
-    result::{JsResult, NeonResult, ResultExt},
+    result::{JsResult, NeonResult},
     types::{
         extract::{private, TryFromJs, TryIntoJs, TypeExpected},
         Finalize, JsBox, JsValue,
@@ -58,10 +58,6 @@ where
             Ok(v) => Ok(Ok(Self(T::clone(&v)))),
             Err(_) => Ok(Err(TypeExpected::new())),
         }
-    }
-
-    fn from_js(cx: &mut Cx<'cx>, v: Handle<'cx, JsValue>) -> NeonResult<Self> {
-        Self::try_from_js(cx, v)?.or_throw(cx)
     }
 }
 

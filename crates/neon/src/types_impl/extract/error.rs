@@ -1,12 +1,58 @@
-use std::{error, fmt};
+use std::{convert::Infallible, error, fmt, marker::PhantomData};
 
 use crate::{
     context::{Context, Cx},
     result::JsResult,
-    types::{extract::TryIntoJs, JsError},
+    types::{
+        extract::{private, TryIntoJs},
+        JsError, JsValue, Value,
+    },
 };
 
 type BoxError = Box<dyn error::Error + Send + Sync + 'static>;
+
+/// Error returned when a JavaScript value is not the type expected
+pub struct TypeExpected<T: Value>(PhantomData<T>);
+
+impl<T: Value> TypeExpected<T> {
+    pub(super) fn new() -> Self {
+        Self(PhantomData)
+    }
+}
+
+impl<T: Value> fmt::Display for TypeExpected<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "expected {}", T::name())
+    }
+}
+
+impl<T: Value> fmt::Debug for TypeExpected<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_tuple("TypeExpected").field(&T::name()).finish()
+    }
+}
+
+impl<T: Value> error::Error for TypeExpected<T> {}
+
+impl<'cx, T: Value> TryIntoJs<'cx> for TypeExpected<T> {
+    type Value = JsError;
+
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
+        JsError::type_error(cx, self.to_string())
+    }
+}
+
+impl<T: Value> private::Sealed for TypeExpected<T> {}
+
+impl<'cx> TryIntoJs<'cx> for Infallible {
+    type Value = JsValue;
+
+    fn try_into_js(self, _: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
+        unreachable!()
+    }
+}
+
+impl private::Sealed for Infallible {}
 
 #[derive(Debug)]
 /// Error that implements [`TryIntoJs`] and can produce specific error types.

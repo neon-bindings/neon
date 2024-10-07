@@ -9,7 +9,7 @@ use crate::{
     context::{internal::ContextInternal, Cx},
     handle::{Handle, Root},
     object::Object,
-    result::{NeonResult, ResultExt, Throw},
+    result::{NeonResult, Throw},
     sys,
     types::{
         buffer::{Binary, TypedArray},
@@ -21,14 +21,6 @@ use crate::{
 
 #[cfg(feature = "napi-5")]
 use crate::types::JsDate;
-
-macro_rules! from_js {
-    () => {
-        fn from_js(cx: &mut Cx<'cx>, v: Handle<'cx, JsValue>) -> NeonResult<Self> {
-            Self::try_from_js(cx, v)?.or_throw(cx)
-        }
-    };
-}
 
 impl<'cx, V> TryFromJs<'cx> for Handle<'cx, V>
 where
@@ -42,8 +34,6 @@ where
     ) -> NeonResult<Result<Self, Self::Error>> {
         Ok(v.downcast(cx).map_err(|_| TypeExpected::new()))
     }
-
-    from_js!();
 }
 
 impl<'cx, O> TryFromJs<'cx> for Root<O>
@@ -61,8 +51,6 @@ where
             Err(_) => Err(TypeExpected::new()),
         })
     }
-
-    from_js!();
 }
 
 impl<'cx, T> TryFromJs<'cx> for Option<T>
@@ -80,14 +68,6 @@ where
         }
 
         T::try_from_js(cx, v).map(|v| v.map(Some))
-    }
-
-    fn from_js(cx: &mut Cx<'cx>, v: Handle<'cx, JsValue>) -> NeonResult<Self> {
-        if is_null_or_undefined(cx, v)? {
-            return Ok(None);
-        }
-
-        T::from_js(cx, v).map(Some)
     }
 }
 
@@ -110,8 +90,6 @@ impl<'cx> TryFromJs<'cx> for f64 {
 
         Ok(Ok(n))
     }
-
-    from_js!();
 }
 
 impl<'cx> TryFromJs<'cx> for bool {
@@ -133,8 +111,6 @@ impl<'cx> TryFromJs<'cx> for bool {
 
         Ok(Ok(b))
     }
-
-    from_js!();
 }
 
 impl<'cx> TryFromJs<'cx> for String {
@@ -178,8 +154,6 @@ impl<'cx> TryFromJs<'cx> for String {
             Ok(Ok(String::from_utf8_unchecked(buf)))
         }
     }
-
-    from_js!();
 }
 
 #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
@@ -203,8 +177,6 @@ impl<'cx> TryFromJs<'cx> for Date {
 
         Ok(Ok(Date(d)))
     }
-
-    from_js!();
 }
 
 // This implementation primarily exists for macro authors. It is infallible, rather
@@ -226,10 +198,6 @@ impl<'cx> TryFromJs<'cx> for () {
     ) -> NeonResult<Result<Self, Self::Error>> {
         Ok(Ok(()))
     }
-
-    fn from_js(_cx: &mut Cx<'cx>, _v: Handle<'cx, JsValue>) -> NeonResult<Self> {
-        Ok(())
-    }
 }
 
 impl<'cx, T> TryFromJs<'cx> for Vec<T>
@@ -250,8 +218,6 @@ where
 
         Ok(Ok(v.as_slice(cx).to_vec()))
     }
-
-    from_js!();
 }
 
 impl<'cx> TryFromJs<'cx> for Buffer {
@@ -268,8 +234,6 @@ impl<'cx> TryFromJs<'cx> for Buffer {
 
         Ok(Ok(Buffer(v.as_slice(cx).to_vec())))
     }
-
-    from_js!();
 }
 
 impl<'cx> TryFromJs<'cx> for ArrayBuffer {
@@ -286,8 +250,6 @@ impl<'cx> TryFromJs<'cx> for ArrayBuffer {
 
         Ok(Ok(ArrayBuffer(v.as_slice(cx).to_vec())))
     }
-
-    from_js!();
 }
 
 fn is_null_or_undefined<V>(cx: &mut Cx, v: Handle<V>) -> NeonResult<bool>
