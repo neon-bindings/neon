@@ -1,16 +1,8 @@
-use std::{error, fmt, mem::MaybeUninit};
-
 use crate::{
-    context::{internal::Env, Context},
-    handle::{internal::TransparentNoCopyWrapper, root::NapiRef, Handle},
-    macro_internal::NeonResultTag,
-    object::Object,
-    result::{JsResult, NeonResult, ResultExt},
-    sys::{self, raw},
-    types::{private, JsFunction, JsObject, Value},
+    context::{internal::Env, Context, Cx}, handle::{internal::TransparentNoCopyWrapper, Handle, Root}, object::Object, result::{JsResult, NeonResult}, sys::raw, thread::LocalKey, types::{private, JsFunction, JsObject, Value}
 };
 
-use super::{JsBoolean, JsNumber, JsUndefined};
+use super::extract::{TryFromJs, TryIntoJs};
 
 #[derive(Debug)]
 #[repr(transparent)]
@@ -20,10 +12,7 @@ use super::{JsBoolean, JsNumber, JsUndefined};
 pub struct JsMap(raw::Local);
 
 impl JsMap {
-    pub fn new<'cx, C>(cx: &mut C) -> NeonResult<Handle<'cx, Self>>
-    where
-        C: Context<'cx>,
-    {
+    pub fn new<'cx>(cx: &mut Cx<'cx>) -> NeonResult<Handle<'cx, Self>> {
         let map = cx
             .global::<JsFunction>("Map")?
             .construct_with(cx)
@@ -32,104 +21,107 @@ impl JsMap {
         Ok(map.downcast_or_throw(cx)?)
     }
 
-    pub fn size<'a, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<Handle<'a, JsNumber>> {
-        Object::get(self, cx, "size")
+    pub fn size(&self, cx: &mut Cx) -> NeonResult<f64> {
+        self.prop(cx, "size").get()
     }
 
-    // TODO: is the return type important here ?
-    // I see three possibilities here:
-    // 1. Stick to the JS and return the `undefined` (this is what we do now)
-    // 2. Check we get an `undefined` and return `Ok(())`
-    // 3. Just discard the return value and return `Ok(())`
-    // Solutions 2 & 3 are more user-friendly, but make more assumptions (though it
-    // should be fine given `Map` is not expected to be overridden ?).
-    pub fn clear<'a, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<Handle<'a, JsUndefined>> {
-        Object::call_method_with(self, cx, "clear")?.apply(cx)
+    pub fn clear(&self, cx: &mut Cx) -> NeonResult<()> {
+        self.method(cx, "clear")?.call()
     }
 
-    pub fn delete<'a, C: Context<'a>, K: Value>(
+    pub fn delete<'cx, K>(
         &self,
-        cx: &mut C,
-        key: Handle<'a, K>,
-    ) -> NeonResult<bool> {
-        Object::call_method_with(self, cx, "delete")?
-            .arg(key)
-            .apply::<JsBoolean, _>(cx)
-            .map(|v| v.value(cx))
+        cx: &mut Cx<'cx>,
+        key: K,
+    ) -> NeonResult<bool>
+    where K: TryIntoJs<'cx> {
+        self.method(cx, "delete")?.arg(key)?.call()
     }
 
-    pub fn entries<'a, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<Handle<'a, JsObject>> {
-        Object::call_method_with(self, cx, "entries")?.apply(cx)
+    pub fn entries<'cx, R>(&self, cx: &mut Cx<'cx>) -> NeonResult<R>
+    where R: TryFromJs<'cx>
+    {
+        self.method(cx, "entries")?.call()
     }
 
-    pub fn for_each<'a, C: Context<'a>, F: Value>(
+    pub fn for_each<'cx, F, R>(
         &self,
-        cx: &mut C,
-        cb: Handle<'a, F>,
-    ) -> NeonResult<Handle<'a, JsUndefined>> {
-        Object::call_method_with(self, cx, "forEach")?
-            .arg(cb)
-            .apply(cx)
+        cx: &mut Cx<'cx>,
+        cb: F,
+    ) -> NeonResult<R>
+    where F: TryIntoJs<'cx>, R: TryFromJs<'cx>
+    {
+        self.method(cx, "forEach")?.arg(cb)?.call()
     }
 
-    pub fn get<'a, C: Context<'a>, K: Value, R: Value>(
+    pub fn get<'cx, K, R>(
         &self,
-        cx: &mut C,
-        key: Handle<'a, K>,
-    ) -> NeonResult<Handle<'a, R>> {
-        Object::call_method_with(self, cx, "get")?
-            .arg(key)
-            .apply(cx)
+        cx: &mut Cx<'cx>,
+        key: K,
+    ) -> NeonResult<R>
+    where
+        K: TryIntoJs<'cx>,
+        R: TryFromJs<'cx>
+    {
+        self.method(cx, "get")?.arg(key)?.call()
     }
 
-    pub fn has<'a, C: Context<'a>, K: Value>(
+    pub fn has<'cx, K>(
         &self,
-        cx: &mut C,
-        key: Handle<'a, K>,
-    ) -> NeonResult<bool> {
-        Object::call_method_with(self, cx, "has")?
-            .arg(key)
-            .apply::<JsBoolean, _>(cx)
-            .map(|v| v.value(cx))
+        cx: &mut Cx<'cx>,
+        key: K,
+    ) -> NeonResult<bool>
+    where
+        K: TryIntoJs<'cx>,
+    {
+        self.method(cx, "has")?.arg(key)?.call()
     }
 
-    pub fn keys<'a, C: Context<'a>, R: Value>(&self, cx: &mut C) -> NeonResult<Handle<'a, R>> {
-        Object::call_method_with(self, cx, "keys")?.apply(cx)
+    pub fn keys<'cx, R>(&self, cx: &mut Cx<'cx>) -> NeonResult<R>
+    where
+        R: TryFromJs<'cx>
+    {
+        self.method(cx, "keys")?.call()
     }
 
-    pub fn set<'a, C: Context<'a>, K: Value, V: Value>(
+    pub fn set<'cx, K, V>(
         &self,
-        cx: &mut C,
-        key: Handle<'a, K>,
-        value: Handle<'a, V>,
-    ) -> NeonResult<Handle<'a, JsMap>> {
-        Object::call_method_with(self, cx, "set")?
-            .arg(key)
-            .arg(value)
-            .apply(cx)
+        cx: &mut Cx<'cx>,
+        key: K,
+        value: V,
+    ) -> NeonResult<Handle<'cx, JsMap>>
+    where
+        K: TryIntoJs<'cx>,
+        V: TryIntoJs<'cx>
+    {
+        self.method(cx, "set")?.arg(key)?.arg(value)?.call()
     }
 
-    pub fn values<'a, C: Context<'a>, R: Value>(&self, cx: &mut C) -> NeonResult<Handle<'a, R>> {
-        Object::call_method_with(self, cx, "values")?.apply(cx)
+    pub fn values<'cx, R>(&self, cx: &mut Cx<'cx>) -> NeonResult<R>
+    where
+        R: TryFromJs<'cx>
+    {
+        self.method(cx, "values")?.call()
     }
 
-    pub fn group_by<'a, C: Context<'a>, A: Value, B: Value, R: Value>(
-        cx: &mut C,
-        elements: Handle<'a, A>,
-        cb: Handle<'a, B>,
-    ) -> NeonResult<Handle<'a, R>> {
+    pub fn group_by<'cx, A, B, R>(
+        cx: &mut Cx<'cx>,
+        elements: A,
+        cb: B,
+    ) -> NeonResult<R>
+    where
+        A: TryIntoJs<'cx>,
+        B: TryIntoJs<'cx>,
+        R: TryFromJs<'cx>
+    {
         // TODO: This is broken and leads to a `failed to downcast any to object` error
         // when trying to downcast `Map.groupBy` into a `JsFunction`...
         cx.global::<JsObject>("Map")?
-            .call_method_with(cx, "groupBy")?
-            .arg(elements)
-            .arg(cb)
-            .apply(cx)
+            .method(cx, "groupBy")?
+            .arg(elements)?
+            .arg(cb)?
+            .call()
     }
-
-    // TODO: should we implementd those as well ?
-    // Map[Symbol.species]
-    // Map.prototype[Symbol.iterator]()
 }
 
 unsafe impl TransparentNoCopyWrapper for JsMap {
@@ -146,7 +138,10 @@ impl private::ValueInternal for JsMap {
     }
 
     fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_map(env.to_raw(), other.to_local()) }
+        Cx::with_context(env, |mut cx| {
+            let ctor = map_constructor(&mut cx).unwrap();
+            other.instance_of(&mut cx, &*ctor)
+        })
     }
 
     fn to_local(&self) -> raw::Local {
@@ -161,3 +156,15 @@ impl private::ValueInternal for JsMap {
 impl Value for JsMap {}
 
 impl Object for JsMap {}
+
+fn global_map_constructor<'cx>(cx: &mut Cx<'cx>) -> JsResult<'cx, JsFunction> {
+    cx.global::<JsFunction>("Map")
+}
+
+fn map_constructor<'cx>(cx: &mut Cx<'cx>) -> JsResult<'cx, JsFunction> {
+    static MAP_CONSTRUCTOR: LocalKey<Root<JsFunction>> = LocalKey::new();
+
+    MAP_CONSTRUCTOR
+         .get_or_try_init(cx, |cx| global_map_constructor(cx).map(|f| f.root(cx)))
+         .map(|f| f.to_inner(cx))
+}

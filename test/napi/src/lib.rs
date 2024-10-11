@@ -3,8 +3,8 @@ use once_cell::sync::OnceCell;
 use tokio::runtime::Runtime;
 
 use crate::js::{
-    arrays::*, boxed::*, coercions::*, date::*, errors::*, functions::*, map::*, numbers::*,
-    objects::*, strings::*, threads::*, typedarrays::*, types::*,
+    arrays::*, boxed::*, coercions::*, date::*, errors::*, functions::*, numbers::*, objects::*,
+    strings::*, threads::*, typedarrays::*, types::*,
 };
 
 mod js {
@@ -233,24 +233,6 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("return_js_array_with_number", return_js_array_with_number)?;
     cx.export_function("return_js_array_with_string", return_js_array_with_string)?;
     cx.export_function("read_js_array", read_js_array)?;
-
-    cx.export_function("return_js_map", return_js_map)?;
-    cx.export_function(
-        "return_js_map_with_number_as_keys_and_values",
-        return_js_map_with_number_as_keys_and_values,
-    )?;
-    cx.export_function(
-        "return_js_map_with_heterogeneous_keys_and_values",
-        return_js_map_with_heterogeneous_keys_and_values,
-    )?;
-    cx.export_function("read_js_map", read_js_map)?;
-    cx.export_function("get_js_map_size", get_js_map_size)?;
-    cx.export_function("modify_js_map", modify_js_map)?;
-    cx.export_function("clear_js_map", clear_js_map)?;
-    cx.export_function("delete_js_map", delete_js_map)?;
-    cx.export_function("has_js_map", has_js_map)?;
-    cx.export_function("for_each_js_map", for_each_js_map)?;
-    cx.export_function("group_by_js_map", group_by_js_map)?;
 
     cx.export_function("to_string", to_string)?;
 

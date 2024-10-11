@@ -25,7 +25,7 @@ use private::prepare_call;
 use smallvec::smallvec;
 
 use crate::{
-    context::{internal::Env, Context, Cx, FunctionContext},
+    context::{internal::{ContextInternal, Env}, Context, Cx, FunctionContext},
     handle::{
         internal::{SuperType, TransparentNoCopyWrapper},
         Handle,
@@ -98,6 +98,15 @@ pub trait Value: ValueInternal {
 
     fn as_value<'cx, C: Context<'cx>>(&self, _: &mut C) -> Handle<'cx, JsValue> {
         JsValue::new_internal(self.to_local())
+    }
+
+    fn instance_of<V: Value>(&self, cx: &mut Cx, ctor: &V) -> bool {
+        let mut result = false;
+        assert_eq!(
+            unsafe { sys::bindings::instanceof(cx.env().to_raw(), self.to_local(), ctor.to_local(), &mut result) },
+            sys::bindings::Status::Ok
+        );
+        result
     }
 
     #[cfg(feature = "sys")]
