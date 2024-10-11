@@ -90,4 +90,15 @@ describe("type checks", function () {
     assert(!addon.strict_equals(o1, o2));
     assert(!addon.strict_equals(o1, 17));
   });
+
+  it("instance_of", function () {
+    assert(addon.instance_of(new Error(), Error));
+    assert(!addon.instance_of(new Error(), Map));
+    assert(addon.instance_of(new Map(), Map));
+
+    function Car() {}
+    function Bike() {}
+    assert(addon.instance_of(new Car(), Car));
+    assert(!addon.instance_of(new Car(), Bike));
+  });
 });

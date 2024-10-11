@@ -72,3 +72,11 @@ pub fn strict_equals(mut cx: FunctionContext) -> JsResult<JsBoolean> {
     let eq = v1.strict_equals(&mut cx, v2);
     Ok(cx.boolean(eq))
 }
+
+#[neon::export]
+pub fn instance_of<'cx>(cx: &mut FunctionContext<'cx>) -> JsResult<'cx, JsBoolean> {
+    let val: Handle<JsValue> = cx.argument(0)?;
+    let ctor: Handle<JsFunction> = cx.argument(1)?;
+    let result = val.instance_of(cx, &*ctor);
+    Ok(cx.boolean(result))
+}

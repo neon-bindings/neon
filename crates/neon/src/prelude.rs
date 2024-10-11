@@ -9,7 +9,7 @@ pub use crate::{
     types::{
         boxed::{Finalize, JsBox},
         JsArray, JsArrayBuffer, JsBigInt64Array, JsBigUint64Array, JsBoolean, JsBuffer, JsError,
-        JsFloat32Array, JsFloat64Array, JsFunction, JsInt16Array, JsInt32Array, JsInt8Array,
+        JsFloat32Array, JsFloat64Array, JsFunction, JsInt16Array, JsInt32Array, JsInt8Array, JsMap,
         JsNull, JsNumber, JsObject, JsPromise, JsString, JsTypedArray, JsUint16Array,
         JsUint32Array, JsUint8Array, JsUndefined, JsValue, Value,
     },

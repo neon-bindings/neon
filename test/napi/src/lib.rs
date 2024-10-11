@@ -18,6 +18,7 @@ mod js {
     pub mod extract;
     pub mod functions;
     pub mod futures;
+    pub mod map;
     pub mod numbers;
     pub mod objects;
     pub mod strings;
