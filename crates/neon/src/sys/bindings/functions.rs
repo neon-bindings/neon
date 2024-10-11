@@ -51,6 +51,9 @@ mod napi1 {
 
             fn close_handle_scope(env: Env, scope: HandleScope) -> Status;
 
+            fn instanceof(env: Env, object: Value, constructor: Value, result: *mut bool)
+                -> Status;
+
             fn is_arraybuffer(env: Env, value: Value, result: *mut bool) -> Status;
             fn is_typedarray(env: Env, value: Value, result: *mut bool) -> Status;
             fn is_buffer(env: Env, value: Value, result: *mut bool) -> Status;

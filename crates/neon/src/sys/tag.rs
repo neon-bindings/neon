@@ -1,3 +1,5 @@
+use crate::sys;
+
 use super::{
     bindings as napi,
     raw::{Env, Local},
@@ -136,4 +138,38 @@ pub unsafe fn check_object_type_tag(env: Env, object: Local, tag: &super::TypeTa
 #[cfg(feature = "napi-6")]
 pub unsafe fn is_bigint(env: Env, val: Local) -> bool {
     is_type(env, val, napi::ValueType::BigInt)
+}
+
+pub unsafe fn is_map(env: Env, val: Local) -> bool {
+    let global_object = unsafe {
+        let mut out: super::raw::Local = std::mem::zeroed();
+        super::scope::get_global(env, &mut out);
+        out
+    };
+
+    let map_literal = {
+        let mut out: super::raw::Local = std::mem::zeroed();
+        let literal = b"Map";
+        assert_eq!(
+            super::string::new(&mut out, env, literal.as_ptr(), literal.len() as _),
+            true
+        );
+        out
+    };
+
+    let map_constructor = {
+        let mut out: super::raw::Local = std::mem::zeroed();
+        assert_eq!(
+            sys::object::get(&mut out, env, global_object, map_literal),
+            true
+        );
+        out
+    };
+
+    let mut result = false;
+    assert_eq!(
+        napi::instanceof(env, val, map_constructor, &mut result),
+        napi::Status::Ok
+    );
+    result
 }

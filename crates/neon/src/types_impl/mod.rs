@@ -10,6 +10,7 @@ pub(crate) mod date;
 pub(crate) mod error;
 pub mod extract;
 pub mod function;
+pub(crate) mod map;
 pub(crate) mod promise;
 
 pub(crate) mod private;
@@ -47,6 +48,7 @@ pub use self::{
         JsUint8Array,
     },
     error::JsError,
+    map::JsMap,
     promise::{Deferred, JsPromise},
 };
 
