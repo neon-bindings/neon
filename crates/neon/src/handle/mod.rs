@@ -156,7 +156,7 @@ impl<'a, T: Value> Handle<'a, T> {
     /// # }
     /// ```
     pub fn is_a<'b, U: Value, C: Context<'b>>(&self, cx: &mut C) -> bool {
-        U::is_typeof(cx.env(), self.deref())
+        U::is_typeof(cx.cx_mut(), self.deref())
     }
 
     /// Attempts to downcast a handle to another type, which may fail. A failure
@@ -164,7 +164,7 @@ impl<'a, T: Value> Handle<'a, T> {
     /// continue interacting with the JS engine if this method produces an `Err`
     /// result.
     pub fn downcast<'b, U: Value, C: Context<'b>>(&self, cx: &mut C) -> DowncastResult<'a, T, U> {
-        match U::downcast(cx.env(), self.deref()) {
+        match U::downcast(cx.cx_mut(), self.deref()) {
             Some(v) => Ok(Handle::new_internal(v)),
             None => Err(DowncastError::new()),
         }

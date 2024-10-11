@@ -3,7 +3,10 @@
 use std::panic::{catch_unwind, UnwindSafe};
 
 use crate::{
-    context::{internal::Env, Context},
+    context::{
+        internal::{ContextInternal, Env},
+        Context, Cx,
+    },
     handle::{internal::TransparentNoCopyWrapper, Handle},
     object::Object,
     result::{NeonResult, Throw},
@@ -49,8 +52,8 @@ impl ValueInternal for JsError {
         "Error"
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_error(env.to_raw(), other.to_local()) }
+    fn is_typeof<Other: Value>(cx: &mut Cx, other: &Other) -> bool {
+        unsafe { sys::tag::is_error(cx.env().to_raw(), other.to_local()) }
     }
 
     fn to_local(&self) -> raw::Local {

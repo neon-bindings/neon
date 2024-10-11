@@ -4,7 +4,10 @@ use std::{
 };
 
 use crate::{
-    context::{internal::Env, Context, Cx},
+    context::{
+        internal::{ContextInternal, Env},
+        Context, Cx,
+    },
     handle::{internal::TransparentNoCopyWrapper, Handle},
     object::Object,
     sys::{external, raw},
@@ -187,15 +190,15 @@ impl<T: 'static> ValueInternal for JsBox<T> {
         any::type_name::<Self>()
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        let data = unsafe { maybe_external_deref(env, other.to_local()) };
+    fn is_typeof<Other: Value>(cx: &mut Cx, other: &Other) -> bool {
+        let data = unsafe { maybe_external_deref(cx.env(), other.to_local()) };
 
         data.map(|v| v.is::<T>()).unwrap_or(false)
     }
 
-    fn downcast<Other: Value>(env: Env, other: &Other) -> Option<Self> {
+    fn downcast<Other: Value>(cx: &mut Cx, other: &Other) -> Option<Self> {
         let local = other.to_local();
-        let data = unsafe { maybe_external_deref(env, local) };
+        let data = unsafe { maybe_external_deref(cx.env(), local) };
 
         // Attempt to downcast the `Option<&BoxAny>` to `Option<*const T>`
         data.and_then(|v| v.downcast_ref())
