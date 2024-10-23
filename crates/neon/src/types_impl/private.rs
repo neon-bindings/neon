@@ -121,9 +121,7 @@ unsafe fn check_call_status<'a, C: Context<'a>>(
         Err(sys::Status::PendingException) => {
             return Err(Throw::new());
         }
-        status => {
-            assert_eq!(status, Ok(()));
-        }
+        status => status.unwrap(),
     }
 
     Ok(())

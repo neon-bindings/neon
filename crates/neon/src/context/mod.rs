@@ -336,17 +336,15 @@ impl CallbackInfo<'_> {
         // * Node-API fills empty slots with `undefined`
         // * `Handle` and `JsValue` are transparent wrappers around a raw pointer
         unsafe {
-            assert_eq!(
-                sys::get_cb_info(
-                    cx.env().to_raw(),
-                    self.info,
-                    &mut argc,
-                    argv.as_mut_ptr().cast(),
-                    ptr::null_mut(),
-                    ptr::null_mut(),
-                ),
-                Ok(())
-            );
+            sys::get_cb_info(
+                cx.env().to_raw(),
+                self.info,
+                &mut argc,
+                argv.as_mut_ptr().cast(),
+                ptr::null_mut(),
+                ptr::null_mut(),
+            )
+            .unwrap();
         }
 
         // Empty values will be filled with `undefined`

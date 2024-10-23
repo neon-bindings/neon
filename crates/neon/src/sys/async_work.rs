@@ -58,26 +58,24 @@ pub unsafe fn schedule<I, O, D>(
     let work = &mut data.work as *mut _;
 
     // Create the `async_work`
-    assert_eq!(
-        napi::create_async_work(
-            env,
-            ptr::null_mut(),
-            super::string(env, "neon_async_work"),
-            Some(call_execute::<I, O, D>),
-            Some(call_complete::<I, O, D>),
-            Box::into_raw(data).cast(),
-            work,
-        ),
-        Ok(())
-    );
+    let () = napi::create_async_work(
+        env,
+        ptr::null_mut(),
+        super::string(env, "neon_async_work"),
+        Some(call_execute::<I, O, D>),
+        Some(call_complete::<I, O, D>),
+        Box::into_raw(data).cast(),
+        work,
+    )
+    .unwrap();
 
     // Queue the work
     match napi::queue_async_work(env, *work) {
         Ok(()) => {}
-        Err(status) => {
+        status => {
             // If queueing failed, delete the work to prevent a leak
             napi::delete_async_work(env, *work);
-            assert_eq!(status, napi::Status::Ok);
+            status.unwrap()
         }
     }
 }
