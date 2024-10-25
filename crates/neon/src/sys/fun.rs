@@ -22,13 +22,14 @@ where
         out.as_mut_ptr(),
     );
 
-    if status == napi::Status::PendingException {
-        drop(Box::from_raw(data));
+    match status {
+        Err(err @ napi::Status::PendingException) => {
+            drop(Box::from_raw(data));
 
-        return Err(status);
-    }
-
-    assert_eq!(status, napi::Status::Ok);
+            return Err(err);
+        }
+        status => status.unwrap(),
+    };
 
     let out = out.assume_init();
 
@@ -54,7 +55,7 @@ where
         // If adding the finalizer fails the closure will leak, but it would
         // be unsafe to drop it because there's no guarantee V8 won't use the
         // pointer.
-        assert_eq!(status, napi::Status::Ok);
+        status.unwrap();
     }
 
     Ok(out)
@@ -67,16 +68,15 @@ where
     F: Fn(Env, napi::CallbackInfo) -> Local + 'static,
 {
     let mut data = MaybeUninit::uninit();
-    let status = napi::get_cb_info(
+    napi::get_cb_info(
         env,
         info,
         ptr::null_mut(),
         ptr::null_mut(),
         ptr::null_mut(),
         data.as_mut_ptr(),
-    );
-
-    assert_eq!(status, napi::Status::Ok);
+    )
+    .unwrap();
 
     let callback = &*data.assume_init().cast::<F>();
 
@@ -92,5 +92,5 @@ pub unsafe fn construct(
 ) -> bool {
     let status = napi::new_instance(env, fun, argc, argv as *const _, out as *mut _);
 
-    status == napi::Status::Ok
+    status.is_ok()
 }

@@ -346,8 +346,8 @@ pub trait Object: Value {
         let obj = self.to_local();
         unsafe {
             match sys::object::freeze(env, obj) {
-                sys::Status::Ok => Ok(self),
-                sys::Status::PendingException => Err(Throw::new()),
+                Ok(()) => Ok(self),
+                Err(sys::Status::PendingException) => Err(Throw::new()),
                 _ => cx.throw_type_error("object cannot be frozen"),
             }
         }
@@ -359,8 +359,8 @@ pub trait Object: Value {
         let obj = self.to_local();
         unsafe {
             match sys::object::seal(env, obj) {
-                sys::Status::Ok => Ok(self),
-                sys::Status::PendingException => Err(Throw::new()),
+                Ok(()) => Ok(self),
+                Err(sys::Status::PendingException) => Err(Throw::new()),
                 _ => cx.throw_type_error("object cannot be sealed"),
             }
         }
