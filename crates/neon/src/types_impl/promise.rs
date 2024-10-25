@@ -1,7 +1,10 @@
 use std::ptr;
 
 use crate::{
-    context::{internal::Env, Context},
+    context::{
+        internal::{ContextInternal, Env},
+        Context,
+    },
     handle::{internal::TransparentNoCopyWrapper, Handle},
     object::Object,
     result::JsResult,
@@ -23,7 +26,6 @@ use crate::{
 
 #[cfg(all(feature = "napi-5", feature = "futures"))]
 use {
-    crate::context::internal::ContextInternal,
     crate::event::{JoinError, SendThrow},
     crate::result::NeonResult,
     crate::types::{JsFunction, JsValue},
@@ -253,8 +255,8 @@ impl ValueInternal for JsPromise {
         "Promise"
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_promise(env.to_raw(), other.to_local()) }
+    fn is_typeof<Other: Value>(cx: &mut Cx, other: &Other) -> bool {
+        unsafe { sys::tag::is_promise(cx.env().to_raw(), other.to_local()) }
     }
 
     fn to_local(&self) -> raw::Local {

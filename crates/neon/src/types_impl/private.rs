@@ -1,7 +1,10 @@
 use std::{ffi::c_void, mem::MaybeUninit};
 
 use crate::{
-    context::{internal::Env, Context},
+    context::{
+        internal::{ContextInternal, Env},
+        Context, Cx,
+    },
     handle::{internal::TransparentNoCopyWrapper, Handle},
     result::{JsResult, NeonResult, Throw},
     sys::{self, bindings as napi, raw},
@@ -31,13 +34,13 @@ pub(crate) unsafe fn prepare_call<'a, 'b, C: Context<'a>>(
 pub trait ValueInternal: TransparentNoCopyWrapper + 'static {
     fn name() -> &'static str;
 
-    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool;
+    fn is_typeof<Other: Value>(cx: &mut Cx, other: &Other) -> bool;
 
-    fn downcast<Other: Value>(env: Env, other: &Other) -> Option<Self> {
-        if Self::is_typeof(env, other) {
+    fn downcast<Other: Value>(cx: &mut Cx, other: &Other) -> Option<Self> {
+        if Self::is_typeof(cx, other) {
             // # Safety
             // `is_typeof` check ensures this is the correct JavaScript type
-            Some(unsafe { Self::from_local(env, other.to_local()) })
+            Some(unsafe { Self::from_local(cx.env(), other.to_local()) })
         } else {
             None
         }

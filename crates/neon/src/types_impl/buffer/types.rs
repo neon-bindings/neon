@@ -1,7 +1,10 @@
 use std::{marker::PhantomData, slice};
 
 use crate::{
-    context::{internal::Env, Context},
+    context::{
+        internal::{ContextInternal, Env},
+        Context, Cx,
+    },
     handle::{internal::TransparentNoCopyWrapper, Handle},
     object::Object,
     result::{JsResult, Throw},
@@ -128,8 +131,8 @@ impl ValueInternal for JsBuffer {
         "Buffer"
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_buffer(env.to_raw(), other.to_local()) }
+    fn is_typeof<Other: Value>(cx: &mut Cx, other: &Other) -> bool {
+        unsafe { sys::tag::is_buffer(cx.env().to_raw(), other.to_local()) }
     }
 
     fn to_local(&self) -> raw::Local {
@@ -345,8 +348,8 @@ impl ValueInternal for JsArrayBuffer {
         "JsArrayBuffer"
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_arraybuffer(env.to_raw(), other.to_local()) }
+    fn is_typeof<Other: Value>(cx: &mut Cx, other: &Other) -> bool {
+        unsafe { sys::tag::is_arraybuffer(cx.env().to_raw(), other.to_local()) }
     }
 
     fn to_local(&self) -> raw::Local {
@@ -804,8 +807,8 @@ macro_rules! impl_typed_array {
                 stringify!($typ)
             }
 
-            fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-                let env = env.to_raw();
+            fn is_typeof<Other: Value>(cx: &mut Cx, other: &Other) -> bool {
+                let env = cx.env().to_raw();
                 let other = other.to_local();
 
                 if unsafe { !sys::tag::is_typedarray(env, other) } {

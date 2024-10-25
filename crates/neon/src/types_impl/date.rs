@@ -6,7 +6,10 @@ use std::{
 use super::{private::ValueInternal, Value};
 
 use crate::{
-    context::{internal::Env, Context},
+    context::{
+        internal::{ContextInternal, Env},
+        Context, Cx,
+    },
     handle::{internal::TransparentNoCopyWrapper, Handle},
     object::Object,
     result::{JsResult, ResultExt},
@@ -164,8 +167,8 @@ impl ValueInternal for JsDate {
         "object"
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_date(env.to_raw(), other.to_local()) }
+    fn is_typeof<Other: Value>(cx: &mut Cx, other: &Other) -> bool {
+        unsafe { sys::tag::is_date(cx.env().to_raw(), other.to_local()) }
     }
 
     fn to_local(&self) -> raw::Local {

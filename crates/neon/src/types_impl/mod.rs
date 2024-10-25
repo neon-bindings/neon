@@ -24,7 +24,10 @@ use private::prepare_call;
 use smallvec::smallvec;
 
 use crate::{
-    context::{internal::Env, Context, Cx, FunctionContext},
+    context::{
+        internal::{ContextInternal, Env},
+        Context, Cx, FunctionContext,
+    },
     handle::{
         internal::{SuperType, TransparentNoCopyWrapper},
         Handle,
@@ -173,7 +176,7 @@ impl ValueInternal for JsValue {
         "any"
     }
 
-    fn is_typeof<Other: Value>(_env: Env, _other: &Other) -> bool {
+    fn is_typeof<Other: Value>(_cx: &mut Cx, _other: &Other) -> bool {
         true
     }
 
@@ -251,8 +254,8 @@ impl ValueInternal for JsUndefined {
         "undefined"
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_undefined(env.to_raw(), other.to_local()) }
+    fn is_typeof<Other: Value>(cx: &mut Cx, other: &Other) -> bool {
+        unsafe { sys::tag::is_undefined(cx.env().to_raw(), other.to_local()) }
     }
 
     fn to_local(&self) -> raw::Local {
@@ -320,8 +323,8 @@ impl ValueInternal for JsNull {
         "null"
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_null(env.to_raw(), other.to_local()) }
+    fn is_typeof<Other: Value>(cx: &mut Cx, other: &Other) -> bool {
+        unsafe { sys::tag::is_null(cx.env().to_raw(), other.to_local()) }
     }
 
     fn to_local(&self) -> raw::Local {
@@ -393,8 +396,8 @@ impl ValueInternal for JsBoolean {
         "boolean"
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_boolean(env.to_raw(), other.to_local()) }
+    fn is_typeof<Other: Value>(cx: &mut Cx, other: &Other) -> bool {
+        unsafe { sys::tag::is_boolean(cx.env().to_raw(), other.to_local()) }
     }
 
     fn to_local(&self) -> raw::Local {
@@ -464,8 +467,8 @@ impl ValueInternal for JsString {
         "string"
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_string(env.to_raw(), other.to_local()) }
+    fn is_typeof<Other: Value>(cx: &mut Cx, other: &Other) -> bool {
+        unsafe { sys::tag::is_string(cx.env().to_raw(), other.to_local()) }
     }
 
     fn to_local(&self) -> raw::Local {
@@ -738,8 +741,8 @@ impl ValueInternal for JsNumber {
         "number"
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_number(env.to_raw(), other.to_local()) }
+    fn is_typeof<Other: Value>(cx: &mut Cx, other: &Other) -> bool {
+        unsafe { sys::tag::is_number(cx.env().to_raw(), other.to_local()) }
     }
 
     fn to_local(&self) -> raw::Local {
@@ -792,8 +795,8 @@ impl ValueInternal for JsObject {
         "object"
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_object(env.to_raw(), other.to_local()) }
+    fn is_typeof<Other: Value>(cx: &mut Cx, other: &Other) -> bool {
+        unsafe { sys::tag::is_object(cx.env().to_raw(), other.to_local()) }
     }
 
     fn to_local(&self) -> raw::Local {
@@ -930,8 +933,8 @@ impl ValueInternal for JsArray {
         "Array"
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_array(env.to_raw(), other.to_local()) }
+    fn is_typeof<Other: Value>(cx: &mut Cx, other: &Other) -> bool {
+        unsafe { sys::tag::is_array(cx.env().to_raw(), other.to_local()) }
     }
 
     fn to_local(&self) -> raw::Local {
@@ -1246,8 +1249,8 @@ impl ValueInternal for JsFunction {
         "function"
     }
 
-    fn is_typeof<Other: Value>(env: Env, other: &Other) -> bool {
-        unsafe { sys::tag::is_function(env.to_raw(), other.to_local()) }
+    fn is_typeof<Other: Value>(cx: &mut Cx, other: &Other) -> bool {
+        unsafe { sys::tag::is_function(cx.env().to_raw(), other.to_local()) }
     }
 
     fn to_local(&self) -> raw::Local {
