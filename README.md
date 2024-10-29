@@ -40,16 +40,14 @@ Neon projects to 1.0.0!
 
 ### Node.js
 
-| Node 18 | Node 20 | Node 21 |
-|---------|---------|---------|
-| ✓       | ✓       | ✓       |
-
-Support for [LTS versions of Node](https://github.com/nodejs/LTS#release-schedule) and current are expected. If you're
+Neon actively supports all current and [maintenance releases of Node](https://github.com/nodejs/LTS#release-schedule). If you're
 using a different version of Node and believe it should be supported, let us know.
+
+Older Node version support (minimum v10) may require lower Node-API versions. See the Node [version support matrix](https://nodejs.org/api/n-api.html#node-api-version-matrix) for more details.
 
 ### Bun (experimental)
 
-[Bun](https://bun.sh/) is an alternate JavaScript runtime that targets Node compatibility. In many cases Neon modules will work in bun; however, at the time of this writing, some Node-API functions are [not implemented](https://github.com/Jarred-Sumner/bun/issues/158).
+[Bun](https://bun.sh/) is an alternate JavaScript runtime that targets Node compatibility. In many cases Neon modules will work in bun; however, at the time of this writing, some Node-API functions are [not implemented](https://github.com/oven-sh/bun/issues/158).
 
 ### Rust
 
