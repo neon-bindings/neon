@@ -11,11 +11,10 @@ pub unsafe fn new(env: Env, len: usize) -> Result<Local, napi::Status> {
     let mut buf = MaybeUninit::uninit();
     let status = napi::create_arraybuffer(env, len, null_mut(), buf.as_mut_ptr());
 
-    if status == napi::Status::PendingException {
-        return Err(status);
-    }
-
-    assert_eq!(status, napi::Status::Ok);
+    match status {
+        Err(err @ napi::Status::PendingException) => return Err(err),
+        status => status.unwrap(),
+    };
 
     Ok(buf.assume_init())
 }
@@ -31,17 +30,15 @@ where
     let length = buf.len();
     let mut result = MaybeUninit::uninit();
 
-    assert_eq!(
-        napi::create_external_arraybuffer(
-            env,
-            buf.as_mut_ptr() as *mut _,
-            length,
-            Some(drop_external::<T>),
-            Box::into_raw(data) as *mut _,
-            result.as_mut_ptr(),
-        ),
-        napi::Status::Ok,
-    );
+    napi::create_external_arraybuffer(
+        env,
+        buf.as_mut_ptr() as *mut _,
+        length,
+        Some(drop_external::<T>),
+        Box::into_raw(data) as *mut _,
+        result.as_mut_ptr(),
+    )
+    .unwrap();
 
     result.assume_init()
 }
@@ -58,10 +55,7 @@ pub unsafe fn as_mut_slice<'a>(env: Env, buf: Local) -> &'a mut [u8] {
     let mut data = MaybeUninit::uninit();
     let mut size = 0usize;
 
-    assert_eq!(
-        napi::get_arraybuffer_info(env, buf, data.as_mut_ptr(), &mut size as *mut _),
-        napi::Status::Ok,
-    );
+    napi::get_arraybuffer_info(env, buf, data.as_mut_ptr(), &mut size as *mut _).unwrap();
 
     if size == 0 {
         return &mut [];
@@ -76,10 +70,7 @@ pub unsafe fn size(env: Env, buf: Local) -> usize {
     let mut data = MaybeUninit::uninit();
     let mut size = 0usize;
 
-    assert_eq!(
-        napi::get_arraybuffer_info(env, buf, data.as_mut_ptr(), &mut size as *mut _),
-        napi::Status::Ok,
-    );
+    napi::get_arraybuffer_info(env, buf, data.as_mut_ptr(), &mut size as *mut _).unwrap();
 
     size
 }

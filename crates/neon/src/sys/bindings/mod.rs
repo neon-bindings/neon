@@ -166,8 +166,13 @@ macro_rules! generate {
                 napi_name!($name),
                 ")",
             )]
-            pub unsafe fn $name($($param: $ptype,)*)$( -> $rtype)* {
-                (NAPI.$name)($($param,)*)
+            pub unsafe fn $name($($param: $ptype,)*)$( -> ::core::result::Result<(), $rtype>)* {
+                #[allow(unused)]
+                let r = (NAPI.$name)($($param,)*);
+                $(match r {
+                    <$rtype>::Ok => Ok(()),
+                    status => Err(status)
+                })*
             }
         )*
     };

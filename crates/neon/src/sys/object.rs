@@ -11,17 +11,17 @@ pub unsafe fn new(out: &mut Local, env: Env) {
 }
 
 #[cfg(feature = "napi-8")]
-pub unsafe fn freeze(env: Env, obj: Local) -> napi::Status {
+pub unsafe fn freeze(env: Env, obj: Local) -> Result<(), napi::Status> {
     let status = napi::object_freeze(env, obj);
     debug_assert!(matches!(
         status,
-        napi::Status::Ok | napi::Status::PendingException | napi::Status::GenericFailure
+        Ok(()) | Err(napi::Status::PendingException | napi::Status::GenericFailure)
     ));
     status
 }
 
 #[cfg(feature = "napi-8")]
-pub unsafe fn seal(env: Env, obj: Local) -> napi::Status {
+pub unsafe fn seal(env: Env, obj: Local) -> Result<(), napi::Status> {
     napi::object_seal(env, obj)
 }
 
@@ -31,16 +31,16 @@ pub unsafe fn seal(env: Env, obj: Local) -> napi::Status {
 pub unsafe fn get_own_property_names(out: &mut Local, env: Env, object: Local) -> bool {
     let mut property_names = MaybeUninit::uninit();
 
-    if napi::get_all_property_names(
+    match napi::get_all_property_names(
         env,
         object,
         napi::KeyCollectionMode::OwnOnly,
         napi::KeyFilter::ALL_PROPERTIES | napi::KeyFilter::SKIP_SYMBOLS,
         napi::KeyConversion::NumbersToStrings,
         property_names.as_mut_ptr(),
-    ) != napi::Status::Ok
-    {
-        return false;
+    ) {
+        Err(_) => return false,
+        Ok(()) => (),
     }
 
     *out = property_names.assume_init();
@@ -52,7 +52,7 @@ pub unsafe fn get_own_property_names(out: &mut Local, env: Env, object: Local) -
 pub unsafe fn get_index(out: &mut Local, env: Env, object: Local, index: u32) -> bool {
     let status = napi::get_element(env, object, index, out as *mut _);
 
-    status == napi::Status::Ok
+    status.is_ok()
 }
 
 /// Sets the key value of a `napi_value` at the `index` provided. Returns `true` if the set
@@ -64,7 +64,7 @@ pub unsafe fn get_index(out: &mut Local, env: Env, object: Local, index: u32) ->
 /// [discussion]: https://github.com/neon-bindings/neon/pull/458#discussion_r344827965
 pub unsafe fn set_index(out: &mut bool, env: Env, object: Local, index: u32, val: Local) -> bool {
     let status = napi::set_element(env, object, index, val);
-    *out = status == napi::Status::Ok;
+    *out = status.is_ok();
 
     *out
 }
@@ -81,15 +81,15 @@ pub unsafe fn get_string(
 
     // Not using `crate::string::new()` because it requires a _reference_ to a Local,
     // while we only have uninitialized memory.
-    if napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr())
-        != napi::Status::Ok
-    {
-        return false;
+    match napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()) {
+        Err(_) => return false,
+        Ok(()) => (),
     }
 
     // Not using napi_get_named_property() because the `key` may not be null terminated.
-    if napi::get_property(env, object, key_val.assume_init(), out as *mut _) != napi::Status::Ok {
-        return false;
+    match napi::get_property(env, object, key_val.assume_init(), out as *mut _) {
+        Err(_) => return false,
+        Ok(()) => (),
     }
 
     true
@@ -113,16 +113,20 @@ pub unsafe fn set_string(
 
     *out = true;
 
-    if napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr())
-        != napi::Status::Ok
-    {
-        *out = false;
-        return false;
+    match napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()) {
+        Err(_) => {
+            *out = false;
+            return false;
+        }
+        Ok(()) => (),
     }
 
-    if napi::set_property(env, object, key_val.assume_init(), val) != napi::Status::Ok {
-        *out = false;
-        return false;
+    match napi::set_property(env, object, key_val.assume_init(), val) {
+        Err(_) => {
+            *out = false;
+            return false;
+        }
+        Ok(()) => (),
     }
 
     true
@@ -133,7 +137,7 @@ pub unsafe fn set_string(
 pub unsafe fn get(out: &mut Local, env: Env, object: Local, key: Local) -> bool {
     let status = napi::get_property(env, object, key, out as *mut _);
 
-    status == napi::Status::Ok
+    status.is_ok()
 }
 
 /// Sets the property value of an `napi_value` object, named by another `value` `key`. Returns `true` if the set succeeded.
@@ -144,7 +148,7 @@ pub unsafe fn get(out: &mut Local, env: Env, object: Local, key: Local) -> bool 
 /// [discussion]: https://github.com/neon-bindings/neon/pull/458#discussion_r344827965
 pub unsafe fn set(out: &mut bool, env: Env, object: Local, key: Local, val: Local) -> bool {
     let status = napi::set_property(env, object, key, val);
-    *out = status == napi::Status::Ok;
+    *out = status.is_ok();
 
     *out
 }
