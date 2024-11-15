@@ -67,14 +67,14 @@ async function askProjectType(options: ProjectOptions) {
 
     const prefix =
       cache === "npm" && org === `@${options.name}`
-      ? ""
-      : cache === "npm"
-      ? await dialog.ask({
-          prompt: "cache prefix",
-          parse: (v: string): string => v,
-          default: `${options.name}-`,
-      })
-      : null;
+        ? ""
+        : cache === "npm"
+        ? await dialog.ask({
+            prompt: "cache prefix",
+            parse: (v: string): string => v,
+            default: `${options.name}-`,
+          })
+        : null;
 
     const ci = await dialog.ask({
       prompt: "ci provider",
