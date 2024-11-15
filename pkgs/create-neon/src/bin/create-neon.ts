@@ -40,8 +40,10 @@ try {
   }
 
   const [pkg] = opts._unknown;
-  const { org, name } =
-    /^(@(?<org>[^/]+)\/)?(?<name>.*)/.exec(pkg)?.groups as { org: string; name: string };
+  const { org, name } = /^(@(?<org>[^/]+)\/)?(?<name>.*)/.exec(pkg)?.groups as {
+    org: string;
+    name: string;
+  };
   const platforms = parsePlatforms(opts.platform);
   const cache = parseCache(opts.lib, opts.bins, name, org);
   const ci = parseCI(opts.ci);
@@ -153,7 +155,7 @@ function parseCache(
   //   lib: @acme-libs/logo-generator
   //   bin: @acme-libs/logo-generator-darwin-arm64
   if (bins.startsWith("npm:")) {
-    const split = bins.substring(4).split('/', 2);
+    const split = bins.substring(4).split("/", 2);
 
     return new NPM(split[0], split.length > 1 ? split[1] : prefix);
   }
