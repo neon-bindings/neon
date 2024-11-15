@@ -29,6 +29,7 @@ export type LibraryOptions = {
 };
 
 export type ProjectOptions = {
+  org?: string | undefined;
   name: string;
   version: string;
   library: LibraryOptions | null;
