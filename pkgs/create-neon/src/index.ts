@@ -61,9 +61,20 @@ async function askProjectType(options: ProjectOptions) {
         ? await dialog.ask({
             prompt: "cache org",
             parse: (v: string): string => v,
-            default: NPM.inferOrg(options.name),
+            default: `@${options.org ?? options.name}`,
           })
         : null;
+
+    const prefix =
+      cache === "npm" && org === `@${options.name}`
+      ? ""
+      : cache === "npm"
+      ? await dialog.ask({
+          prompt: "cache prefix",
+          parse: (v: string): string => v,
+          default: `${options.name}-`,
+      })
+      : null;
 
     const ci = await dialog.ask({
       prompt: "ci provider",
@@ -76,7 +87,7 @@ async function askProjectType(options: ProjectOptions) {
     options.library = {
       lang: Lang.TS,
       module: ModuleType.ESM,
-      cache: cache === "npm" ? new NPM(options.name, org!) : undefined,
+      cache: cache === "npm" ? new NPM(org!, prefix!) : undefined,
       ci: ci === "github" ? new GitHub() : undefined,
       platforms: platforms.length === 1 ? platforms[0] : platforms,
     };
