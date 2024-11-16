@@ -222,7 +222,7 @@ describe("Project creation", () => {
 
     assert.strictEqual(json.neon.type, "library");
     assert.strictEqual(json.neon.org, "@dherman");
-    assert.strictEqual(json.neon.prefix, "create-neon-test-project-")
+    assert.strictEqual(json.neon.prefix, "create-neon-test-project-");
     assert.strictEqual(json.neon.platforms, "common");
     assert.strictEqual(json.neon.load, "./src/load.cts");
 
