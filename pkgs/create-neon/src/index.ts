@@ -58,21 +58,21 @@ async function askProjectType(options: ProjectOptions) {
 
     const org =
       cache === "npm"
-        ? await dialog.ask({
+        ? (await dialog.ask({
             prompt: "cache org",
             parse: (v: string): string => v,
-            default: `@${options.org ?? options.name}`,
-          })
+            default: `@${options.org ?? options.basename}`,
+          })).replace(/^@?/, "@") // don't care if they include the @ or not
         : null;
 
     const prefix =
-      cache === "npm" && org === `@${options.name}`
+      cache === "npm" && org === `@${options.basename}`
         ? ""
         : cache === "npm"
         ? await dialog.ask({
             prompt: "cache prefix",
             parse: (v: string): string => v,
-            default: `${options.name}-`,
+            default: `${options.basename}-`,
           })
         : null;
 
@@ -99,9 +99,9 @@ async function askProjectType(options: ProjectOptions) {
 
 export async function createNeon(options: ProjectOptions): Promise<void> {
   try {
-    await assertCanMkdir(options.name);
+    await assertCanMkdir(options.basename);
   } catch (err: any) {
-    await die(`Could not create \`${options.name}\`: ${err.message}`);
+    await die(`Could not create \`${options.basename}\`: ${err.message}`);
   }
 
   const cx = new Context(options);
@@ -124,6 +124,6 @@ export async function createNeon(options: ProjectOptions): Promise<void> {
   await creator.create(cx);
 
   console.log(
-    `✨ Created Neon project \`${options.name}\`. Happy 🦀 hacking! ✨`
+    `✨ Created Neon project \`${options.fullName}\`. Happy 🦀 hacking! ✨`
   );
 }

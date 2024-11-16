@@ -40,12 +40,13 @@ try {
   }
 
   const [pkg] = opts._unknown;
-  const { org, name } = /^(@(?<org>[^/]+)\/)?(?<name>.*)/.exec(pkg)?.groups as {
+  const { org, basename } = /^((?<org>@[^/]+)\/)?(?<basename>.*)/.exec(pkg)?.groups as {
     org: string;
-    name: string;
+    basename: string;
   };
+  const fullName = org ? `${org}/${basename}` : basename;
   const platforms = parsePlatforms(opts.platform);
-  const cache = parseCache(opts.lib, opts.bins, name, org);
+  const cache = parseCache(opts.lib, opts.bins, basename, org);
   const ci = parseCI(opts.ci);
 
   if (opts.yes) {
@@ -54,7 +55,8 @@ try {
 
   createNeon({
     org,
-    name,
+    basename,
+    fullName,
     version: "0.1.0",
     library: opts.lib
       ? {
@@ -120,7 +122,7 @@ function parseCache(
   pkg: string,
   org: string | undefined
 ): Cache | undefined {
-  let prefix = org ? `${pkg}-` : "";
+  const defaultPrefix = org ? `${pkg}-` : "";
   org ??= `@${pkg}`;
 
   // CASE: npm create neon -- --app logos-r-us
@@ -140,7 +142,7 @@ function parseCache(
   //   - lib: `@acme/logo-generator`
   //   - bin: `@acme/logo-generator-darwin-arm64`
   if (bins === "none" || bins === "npm") {
-    return new NPM(org, prefix);
+    return new NPM(org, defaultPrefix);
   }
 
   // CASE: npm create neon -- --lib --bins=npm:acme logo-generator
@@ -156,8 +158,9 @@ function parseCache(
   //   bin: @acme-libs/logo-generator-darwin-arm64
   if (bins.startsWith("npm:")) {
     const split = bins.substring(4).split("/", 2);
-
-    return new NPM(split[0], split.length > 1 ? split[1] : prefix);
+    const org = split[0].replace(/^@?/, '@'); // don't care if they include the @ or not
+    const prefix = split.length > 1 ? split[1] : defaultPrefix;
+    return new NPM(org, prefix);
   }
 
   throw new Error(
