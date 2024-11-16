@@ -33,6 +33,7 @@ describe("Command-line argument validation", () => {
 });
 
 const PROJECT = "create-neon-test-project";
+const NAMESPACED_PROJECT = "@dherman/create-neon-test-project";
 
 describe("Project creation", () => {
   afterEach(async () => {
@@ -182,6 +183,46 @@ describe("Project creation", () => {
 
     assert.strictEqual(json.neon.type, "library");
     assert.strictEqual(json.neon.org, "@create-neon-test-project");
+    assert.notProperty(json.neon, "prefix");
+    assert.strictEqual(json.neon.platforms, "common");
+    assert.strictEqual(json.neon.load, "./src/load.cts");
+
+    TOML.parse(
+      await fs.readFile(path.join(PROJECT, "Cargo.toml"), { encoding: "utf8" })
+    );
+  });
+
+  it("asks for a prefix when Neon lib is namespaced", async () => {
+    try {
+      await expect(spawn(NODE, [CREATE_NEON, NAMESPACED_PROJECT]), {
+        "neon project type": "lib",
+        "neon target platforms": "",
+        "neon binary cache": "",
+        "neon cache org": "",
+        "neon cache prefix": "",
+        "neon ci provider": "",
+        "package name:": "",
+        "version:": "",
+        "description:": "",
+        "git repository:": "",
+        "keywords:": "",
+        "author:": "",
+        "license:": "",
+        "Is this OK?": "",
+      });
+    } catch (error: any) {
+      assert.fail("create-neon unexpectedly failed: " + error.message);
+    }
+
+    let json = JSON.parse(
+      await fs.readFile(path.join(PROJECT, "package.json"), {
+        encoding: "utf8",
+      })
+    );
+
+    assert.strictEqual(json.neon.type, "library");
+    assert.strictEqual(json.neon.org, "@dherman");
+    assert.strictEqual(json.neon.prefix, "create-neon-test-project-")
     assert.strictEqual(json.neon.platforms, "common");
     assert.strictEqual(json.neon.load, "./src/load.cts");
 
