@@ -58,11 +58,13 @@ async function askProjectType(options: ProjectOptions) {
 
     const org =
       cache === "npm"
-        ? (await dialog.ask({
-            prompt: "cache org",
-            parse: (v: string): string => v,
-            default: `@${options.org ?? options.basename}`,
-          })).replace(/^@?/, "@") // don't care if they include the @ or not
+        ? (
+            await dialog.ask({
+              prompt: "cache org",
+              parse: (v: string): string => v,
+              default: `@${options.org ?? options.basename}`,
+            })
+          ).replace(/^@?/, "@") // don't care if they include the @ or not
         : null;
 
     const prefix =

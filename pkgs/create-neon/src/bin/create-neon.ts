@@ -40,7 +40,8 @@ try {
   }
 
   const [pkg] = opts._unknown;
-  const { org, basename } = /^((?<org>@[^/]+)\/)?(?<basename>.*)/.exec(pkg)?.groups as {
+  const { org, basename } = /^((?<org>@[^/]+)\/)?(?<basename>.*)/.exec(pkg)
+    ?.groups as {
     org: string;
     basename: string;
   };
@@ -158,7 +159,7 @@ function parseCache(
   //   bin: @acme-libs/logo-generator-darwin-arm64
   if (bins.startsWith("npm:")) {
     const split = bins.substring(4).split("/", 2);
-    const org = split[0].replace(/^@?/, '@'); // don't care if they include the @ or not
+    const org = split[0].replace(/^@?/, "@"); // don't care if they include the @ or not
     const prefix = split.length > 1 ? split[1] : defaultPrefix;
     return new NPM(org, prefix);
   }
