@@ -45,7 +45,7 @@ try {
     org?: string;
     basename: string;
   };
-  const fullName = org ? `${org}/${basename}` : basename;
+  const fullName = org ? pkg : basename;
   const platforms = parsePlatforms(opts.platform);
   const cache = parseCache(opts.lib, opts.bins, basename, org);
   const ci = parseCI(opts.ci);
