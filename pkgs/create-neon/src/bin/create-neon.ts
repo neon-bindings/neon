@@ -42,7 +42,7 @@ try {
   const [pkg] = opts._unknown;
   const { org, basename } = /^((?<org>@[^/]+)\/)?(?<basename>.*)/.exec(pkg)
     ?.groups as {
-    org: string;
+    org?: string;
     basename: string;
   };
   const fullName = org ? `${org}/${basename}` : basename;
