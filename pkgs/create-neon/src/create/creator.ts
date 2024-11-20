@@ -29,7 +29,9 @@ export type LibraryOptions = {
 };
 
 export type ProjectOptions = {
-  name: string;
+  org?: string | undefined;
+  basename: string;
+  fullName: string;
   version: string;
   library: LibraryOptions | null;
   app: boolean | null;
@@ -64,12 +66,12 @@ export abstract class Creator {
   async create(cx: Context): Promise<void> {
     try {
       this._temp = await mktemp();
-      this._tempPkg = path.join(this._temp, this._options.name);
+      this._tempPkg = path.join(this._temp, this._options.basename);
 
       await fs.mkdir(this._tempPkg);
     } catch (err: any) {
       await die(
-        `Could not create \`${this._options.name}\`: ${err.message}`,
+        `Could not create \`${this._options.basename}\`: ${err.message}`,
         this._temp
       );
     }
@@ -122,11 +124,11 @@ export abstract class Creator {
     await this.createNeonBoilerplate(cx);
 
     try {
-      await fs.rename(this._tempPkg, this._options.name);
+      await fs.rename(this._tempPkg, this._options.basename);
       await fs.rmdir(this._temp);
     } catch (err: any) {
       await die(
-        `Could not create \`${this._options.name}\`: ${err.message}`,
+        `Could not create \`${this._options.basename}\`: ${err.message}`,
         this._tempPkg
       );
     }

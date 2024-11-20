@@ -40,8 +40,14 @@ try {
   }
 
   const [pkg] = opts._unknown;
+  const { org, basename } = /^((?<org>@[^/]+)\/)?(?<basename>.*)/.exec(pkg)
+    ?.groups as {
+    org?: string;
+    basename: string;
+  };
+  const fullName = org ? pkg : basename;
   const platforms = parsePlatforms(opts.platform);
-  const cache = parseCache(opts.lib, opts.bins, pkg);
+  const cache = parseCache(opts.lib, opts.bins, basename, org);
   const ci = parseCI(opts.ci);
 
   if (opts.yes) {
@@ -49,7 +55,9 @@ try {
   }
 
   createNeon({
-    name: pkg,
+    org,
+    basename,
+    fullName,
     version: "0.1.0",
     library: opts.lib
       ? {
@@ -112,21 +120,51 @@ function parseCI(ci: string): CI | undefined {
 function parseCache(
   lib: boolean,
   bins: string,
-  pkg: string
+  pkg: string,
+  org: string | undefined
 ): Cache | undefined {
-  if (bins === "none") {
-    return lib ? new NPM(pkg) : undefined;
+  const defaultPrefix = org ? `${pkg}-` : "";
+  org ??= `@${pkg}`;
+
+  // CASE: npm create neon -- --app logos-r-us
+  // CASE: npm create neon -- --app @acme/logos-r-us
+  //   - <no binaries cache>
+  if (bins === "none" && !lib) {
+    return undefined;
   }
 
-  if (bins === "npm") {
-    return new NPM(pkg);
+  // CASE: npm create neon -- --lib logo-generator
+  // CASE: npm create neon -- --lib --bins npm logo-generator
+  //   - lib: `logo-generator`
+  //   - bin: `@logo-generator/darwin-arm64`
+
+  // CASE: npm create neon -- --lib @acme/logo-generator
+  // CASE: npm create neon -- --lib --bins npm @acme/logo-generator
+  //   - lib: `@acme/logo-generator`
+  //   - bin: `@acme/logo-generator-darwin-arm64`
+  if (bins === "none" || bins === "npm") {
+    return new NPM(org, defaultPrefix);
   }
 
+  // CASE: npm create neon -- --lib --bins=npm:acme logo-generator
+  //   lib: logo-generator
+  //   bin: @acme/logo-generator-darwin-arm64
+
+  // CASE: npm create neon -- --lib --bins=npm:acme/libs-logo-generator- logo-generator
+  //   lib: logo-generator
+  //   bin: @acme/libs-logo-generator-darwin-arm64
+
+  // CASE: npm create neon -- --lib --bins=npm:acme-libs @acme/logo-generator
+  //   lib: @acme-libs/logo-generator
+  //   bin: @acme-libs/logo-generator-darwin-arm64
   if (bins.startsWith("npm:")) {
-    return new NPM(pkg, bins.substring(4));
+    const split = bins.substring(4).split("/", 2);
+    const org = split[0].replace(/^@?/, "@"); // don't care if they include the @ or not
+    const prefix = split.length > 1 ? split[1] : defaultPrefix;
+    return new NPM(org, prefix);
   }
 
   throw new Error(
-    `Unrecognized binaries cache ${bins}, expected 'npm[:org]' or 'none'`
+    `Unrecognized binaries cache ${bins}, expected 'npm[:org[/prefix]]' or 'none'`
   );
 }

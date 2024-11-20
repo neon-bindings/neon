@@ -1,6 +1,6 @@
 
 {
-  "name": "{{options.name}}",
+  "name": "{{options.fullName}}",
   "version": "{{options.version}}",
 {{#eq options.library.module compare="esm"}}
   "exports": {
@@ -27,6 +27,9 @@
 {{#eq options.library.cache.type compare="npm"}}
 {{#if options.library.cache.org}}
     "org": "{{options.library.cache.org}}",
+{{/if}}
+{{#if options.library.cache.prefix}}
+    "prefix": "{{options.library.cache.prefix}}",
 {{/if}}
 {{/eq}}
     "platforms": {},

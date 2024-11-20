@@ -1,6 +1,6 @@
 {
   "name": "create-neon",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "description": "Create Neon projects with no build configuration.",
   "type": "module",
   "exports": "./dist/src/bin/create-neon.js",
@@ -48,7 +48,7 @@
     "typescript": "^5.3.2"
   },
   "dependencies": {
-    "@neon-rs/manifest": "^0.1.0",
+    "@neon-rs/manifest": "^0.2.1",
     "chalk": "^5.3.0",
     "command-line-args": "^5.2.1",
     "command-line-usage": "^7.0.1",
