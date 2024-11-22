@@ -235,9 +235,8 @@ unsafe fn error_from_panic(env: Env, panic: Panic) -> Local {
 unsafe fn set_property(env: Env, object: Local, key: &str, value: Local) {
     let key = create_string(env, key);
 
-    match napi::set_property(env, object, key, value) {
-        Err(_) => fatal_error("Failed to set an object property"),
-        Ok(()) => (),
+    if napi::set_property(env, object, key, value).is_err() {
+        fatal_error("Failed to set an object property");
     }
 }
 
@@ -271,9 +270,8 @@ unsafe fn external_from_panic(env: Env, panic: Panic) -> Local {
     let external = result.assume_init();
 
     #[cfg(feature = "napi-8")]
-    match napi::type_tag_object(env, external, &*crate::MODULE_TAG) {
-        Err(_) => fail(),
-        Ok(()) => (),
+    if napi::type_tag_object(env, external, &*crate::MODULE_TAG).is_err() {
+        fail();
     }
 
     external
@@ -288,11 +286,14 @@ extern "C" fn finalize_panic(_env: Env, data: *mut c_void, _hint: *mut c_void) {
 #[track_caller]
 unsafe fn create_string(env: Env, msg: &str) -> Local {
     let mut string = MaybeUninit::uninit();
-    let status = napi::create_string_utf8(env, msg.as_ptr().cast(), msg.len(), string.as_mut_ptr());
 
-    match status {
-        Err(_) => fatal_error("Failed to create a String"),
-        Ok(()) => (),
+    if napi::create_string_utf8(
+        env,
+        msg.as_ptr().cast(),
+        msg.len(),
+        string.as_mut_ptr(),
+    ).is_err() {
+        fatal_error("Failed to create a String");
     }
 
     string.assume_init()
@@ -301,9 +302,8 @@ unsafe fn create_string(env: Env, msg: &str) -> Local {
 unsafe fn is_exception_pending(env: Env) -> bool {
     let mut throwing = false;
 
-    match napi::is_exception_pending(env, &mut throwing) {
-        Err(_) => fatal_error("Failed to check if an exception is pending"),
-        Ok(()) => (),
+    if napi::is_exception_pending(env, &mut throwing).is_err() {
+        fatal_error("Failed to check if an exception is pending");
     }
 
     throwing

@@ -74,7 +74,7 @@ pub unsafe fn schedule<I, O, D>(
         Ok(()) => {}
         status => {
             // If queueing failed, delete the work to prevent a leak
-            napi::delete_async_work(env, *work);
+            napi::delete_async_work(env, *work).unwrap();
             status.unwrap()
         }
     }
@@ -150,7 +150,9 @@ unsafe extern "C" fn call_complete<I, O, D>(env: Env, status: napi::Status, data
         ..
     } = *Box::<Data<I, O, D>>::from_raw(data.cast());
 
-    napi::delete_async_work(env, work);
+    if napi::delete_async_work(env, work).is_err() {
+        panic!("failed to delete async work");
+    }
 
     BOUNDARY.catch_failure(env, None, move |env| {
         // `unwrap` is okay because `call_complete` should be called exactly once

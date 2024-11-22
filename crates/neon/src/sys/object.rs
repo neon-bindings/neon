@@ -7,7 +7,7 @@ use super::{
 
 /// Mutates the `out` argument to refer to a `napi_value` containing a newly created JavaScript Object.
 pub unsafe fn new(out: &mut Local, env: Env) {
-    napi::create_object(env, out as *mut _);
+    assert!(napi::create_object(env, out as *mut _).is_ok());
 }
 
 #[cfg(feature = "napi-8")]
@@ -31,16 +31,15 @@ pub unsafe fn seal(env: Env, obj: Local) -> Result<(), napi::Status> {
 pub unsafe fn get_own_property_names(out: &mut Local, env: Env, object: Local) -> bool {
     let mut property_names = MaybeUninit::uninit();
 
-    match napi::get_all_property_names(
+    if napi::get_all_property_names(
         env,
         object,
         napi::KeyCollectionMode::OwnOnly,
         napi::KeyFilter::ALL_PROPERTIES | napi::KeyFilter::SKIP_SYMBOLS,
         napi::KeyConversion::NumbersToStrings,
         property_names.as_mut_ptr(),
-    ) {
-        Err(_) => return false,
-        Ok(()) => (),
+    ).is_err() {
+        return false;
     }
 
     *out = property_names.assume_init();
@@ -81,15 +80,18 @@ pub unsafe fn get_string(
 
     // Not using `crate::string::new()` because it requires a _reference_ to a Local,
     // while we only have uninitialized memory.
-    match napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()) {
-        Err(_) => return false,
-        Ok(()) => (),
+    if napi::create_string_utf8(
+        env,
+        key as *const _,
+        len as usize,
+        key_val.as_mut_ptr(),
+    ).is_err() {
+        return false;
     }
 
     // Not using napi_get_named_property() because the `key` may not be null terminated.
-    match napi::get_property(env, object, key_val.assume_init(), out as *mut _) {
-        Err(_) => return false,
-        Ok(()) => (),
+    if napi::get_property(env, object, key_val.assume_init(), out as *mut _).is_err() {
+        return false;
     }
 
     true
@@ -113,20 +115,19 @@ pub unsafe fn set_string(
 
     *out = true;
 
-    match napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()) {
-        Err(_) => {
-            *out = false;
-            return false;
-        }
-        Ok(()) => (),
+    if napi::create_string_utf8(
+        env,
+        key as *const _,
+        len as usize,
+        key_val.as_mut_ptr(),
+    ).is_err() {
+        *out = false;
+        return false;
     }
 
-    match napi::set_property(env, object, key_val.assume_init(), val) {
-        Err(_) => {
-            *out = false;
-            return false;
-        }
-        Ok(()) => (),
+    if napi::set_property(env, object, key_val.assume_init(), val).is_err() {
+        *out = false;
+        return false;
     }
 
     true
