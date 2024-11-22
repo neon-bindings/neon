@@ -185,7 +185,8 @@ impl<T> Drop for ThreadsafeFunction<T> {
             assert!(napi::release_threadsafe_function(
                 self.tsfn.0,
                 napi::ThreadsafeFunctionReleaseMode::Release,
-            ).is_ok());
+            )
+            .is_ok());
         };
     }
 }

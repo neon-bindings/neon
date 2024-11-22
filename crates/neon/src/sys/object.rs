@@ -38,7 +38,9 @@ pub unsafe fn get_own_property_names(out: &mut Local, env: Env, object: Local) -
         napi::KeyFilter::ALL_PROPERTIES | napi::KeyFilter::SKIP_SYMBOLS,
         napi::KeyConversion::NumbersToStrings,
         property_names.as_mut_ptr(),
-    ).is_err() {
+    )
+    .is_err()
+    {
         return false;
     }
 
@@ -80,12 +82,7 @@ pub unsafe fn get_string(
 
     // Not using `crate::string::new()` because it requires a _reference_ to a Local,
     // while we only have uninitialized memory.
-    if napi::create_string_utf8(
-        env,
-        key as *const _,
-        len as usize,
-        key_val.as_mut_ptr(),
-    ).is_err() {
+    if napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()).is_err() {
         return false;
     }
 
@@ -115,12 +112,7 @@ pub unsafe fn set_string(
 
     *out = true;
 
-    if napi::create_string_utf8(
-        env,
-        key as *const _,
-        len as usize,
-        key_val.as_mut_ptr(),
-    ).is_err() {
+    if napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()).is_err() {
         *out = false;
         return false;
     }

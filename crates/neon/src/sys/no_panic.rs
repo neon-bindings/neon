@@ -287,12 +287,7 @@ extern "C" fn finalize_panic(_env: Env, data: *mut c_void, _hint: *mut c_void) {
 unsafe fn create_string(env: Env, msg: &str) -> Local {
     let mut string = MaybeUninit::uninit();
 
-    if napi::create_string_utf8(
-        env,
-        msg.as_ptr().cast(),
-        msg.len(),
-        string.as_mut_ptr(),
-    ).is_err() {
+    if napi::create_string_utf8(env, msg.as_ptr().cast(), msg.len(), string.as_mut_ptr()).is_err() {
         fatal_error("Failed to create a String");
     }
 
