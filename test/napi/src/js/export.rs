@@ -27,7 +27,7 @@ fn simple_add(a: f64, b: f64) -> f64 {
 }
 
 #[neon::export(name = "renamedAdd")]
-fn renamed_add(a: f64, b: f64) -> f64 {
+fn rs_renamed_add(a: f64, b: f64) -> f64 {
     simple_add(a, b)
 }
 
@@ -37,7 +37,7 @@ fn add_task(a: f64, b: f64) -> f64 {
 }
 
 #[neon::export(task, name = "renamedAddTask")]
-fn renamed_add_task(a: f64, b: f64) -> f64 {
+fn rs_renamed_add_task(a: f64, b: f64) -> f64 {
     add_task(a, b)
 }
 
@@ -48,7 +48,7 @@ fn json_sort(mut items: Vec<String>) -> Vec<String> {
 }
 
 #[neon::export(json, name = "renamedJsonSort")]
-fn renamed_json_sort(items: Vec<String>) -> Vec<String> {
+fn rs_renamed_json_sort(items: Vec<String>) -> Vec<String> {
     json_sort(items)
 }
 
@@ -58,7 +58,7 @@ fn json_sort_task(items: Vec<String>) -> Vec<String> {
 }
 
 #[neon::export(json, name = "renamedJsonSortTask", task)]
-fn renamed_json_sort_task(items: Vec<String>) -> Vec<String> {
+fn rs_renamed_json_sort_task(items: Vec<String>) -> Vec<String> {
     json_sort(items)
 }
 

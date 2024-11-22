@@ -58,29 +58,23 @@ describe("Futures", () => {
 
   describe("Exported Async Functions", () => {
     it("should be able to call `async fn`", async () => {
-      assert.strictEqual(await addon.async_fn_add(1, 2), 3);
+      assert.strictEqual(await addon.asyncFnAdd(1, 2), 3);
     });
 
     it("should be able to call fn with async block", async () => {
-      assert.strictEqual(await addon.async_add(1, 2), 3);
+      assert.strictEqual(await addon.asyncAdd(1, 2), 3);
     });
 
     it("should be able to call fallible `async fn`", async () => {
-      assert.strictEqual(await addon.async_fn_div(10, 2), 5);
+      assert.strictEqual(await addon.asyncFnDiv(10, 2), 5);
 
-      await assertRejects(() => addon.async_fn_div(10, 0), /Divide by zero/);
-    });
-
-    it("should be able to call fallible `async fn`", async () => {
-      assert.strictEqual(await addon.async_fn_div(10, 2), 5);
-
-      await assertRejects(() => addon.async_fn_div(10, 0), /Divide by zero/);
+      await assertRejects(() => addon.asyncFnDiv(10, 0), /Divide by zero/);
     });
 
     it("should be able to call fallible fn with async block", async () => {
-      assert.strictEqual(await addon.async_div(10, 2), 5);
+      assert.strictEqual(await addon.asyncDiv(10, 2), 5);
 
-      await assertRejects(() => addon.async_div(10, 0), /Divide by zero/);
+      await assertRejects(() => addon.asyncDiv(10, 0), /Divide by zero/);
     });
 
     it("should be able to code on the event loop before and after async", async () => {
@@ -100,7 +94,7 @@ describe("Futures", () => {
       process.on("async_with_events", eventHandler);
 
       try {
-        let res = await addon.async_with_events([
+        let res = await addon.asyncWithEvents([
           [1, 2],
           [3, 4],
           [5, 6],
