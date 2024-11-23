@@ -7,7 +7,7 @@ use super::{
 
 /// Mutates the `out` argument to refer to a `napi_value` containing a newly created JavaScript Object.
 pub unsafe fn new(out: &mut Local, env: Env) {
-    assert!(napi::create_object(env, out as *mut _).is_ok());
+    assert_eq!(napi::create_object(env, out as *mut _), Ok(()));
 }
 
 #[cfg(feature = "napi-8")]

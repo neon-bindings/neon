@@ -182,11 +182,13 @@ impl<T> Drop for ThreadsafeFunction<T> {
         }
 
         unsafe {
-            assert!(napi::release_threadsafe_function(
-                self.tsfn.0,
-                napi::ThreadsafeFunctionReleaseMode::Release,
-            )
-            .is_ok());
+            assert_eq!(
+                napi::release_threadsafe_function(
+                    self.tsfn.0,
+                    napi::ThreadsafeFunctionReleaseMode::Release,
+                ),
+                Ok(())
+            );
         };
     }
 }
