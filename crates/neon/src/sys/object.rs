@@ -38,8 +38,7 @@ pub unsafe fn get_own_property_names(out: &mut Local, env: Env, object: Local) -
         napi::KeyFilter::ALL_PROPERTIES | napi::KeyFilter::SKIP_SYMBOLS,
         napi::KeyConversion::NumbersToStrings,
         property_names.as_mut_ptr(),
-    )
-    {
+    ) {
         Err(napi::Status::PendingException) => return false,
         status => status.unwrap(),
     }
