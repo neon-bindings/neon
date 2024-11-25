@@ -31,7 +31,7 @@ pub unsafe fn unreference(env: Env, value: napi::Ref) {
     napi::reference_unref(env, value, result.as_mut_ptr()).unwrap();
 
     if result.assume_init() == 0 {
-        assert_eq!(napi::delete_reference(env, value), Ok(()));
+        napi::delete_reference(env, value).unwrap();
     }
 }
 

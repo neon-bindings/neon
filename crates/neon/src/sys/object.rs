@@ -7,7 +7,7 @@ use super::{
 
 /// Mutates the `out` argument to refer to a `napi_value` containing a newly created JavaScript Object.
 pub unsafe fn new(out: &mut Local, env: Env) {
-    assert_eq!(napi::create_object(env, out as *mut _), Ok(()));
+    napi::create_object(env, out as *mut _).unwrap();
 }
 
 #[cfg(feature = "napi-8")]
@@ -31,7 +31,7 @@ pub unsafe fn seal(env: Env, obj: Local) -> Result<(), napi::Status> {
 pub unsafe fn get_own_property_names(out: &mut Local, env: Env, object: Local) -> bool {
     let mut property_names = MaybeUninit::uninit();
 
-    if napi::get_all_property_names(
+    match napi::get_all_property_names(
         env,
         object,
         napi::KeyCollectionMode::OwnOnly,
@@ -39,9 +39,9 @@ pub unsafe fn get_own_property_names(out: &mut Local, env: Env, object: Local) -
         napi::KeyConversion::NumbersToStrings,
         property_names.as_mut_ptr(),
     )
-    .is_err()
     {
-        return false;
+        Err(napi::Status::PendingException) => return false,
+        status => status.unwrap(),
     }
 
     *out = property_names.assume_init();
@@ -82,13 +82,15 @@ pub unsafe fn get_string(
 
     // Not using `crate::string::new()` because it requires a _reference_ to a Local,
     // while we only have uninitialized memory.
-    if napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()).is_err() {
-        return false;
+    match napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()) {
+        Err(napi::Status::PendingException) => return false,
+        status => status.unwrap(),
     }
 
     // Not using napi_get_named_property() because the `key` may not be null terminated.
-    if napi::get_property(env, object, key_val.assume_init(), out as *mut _).is_err() {
-        return false;
+    match napi::get_property(env, object, key_val.assume_init(), out as *mut _) {
+        Err(napi::Status::PendingException) => return false,
+        status => status.unwrap(),
     }
 
     true
@@ -112,14 +114,20 @@ pub unsafe fn set_string(
 
     *out = true;
 
-    if napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()).is_err() {
-        *out = false;
-        return false;
+    match napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()) {
+        Err(napi::Status::PendingException) => {
+            *out = false;
+            return false;
+        }
+        status => status.unwrap(),
     }
 
-    if napi::set_property(env, object, key_val.assume_init(), val).is_err() {
-        *out = false;
-        return false;
+    match napi::set_property(env, object, key_val.assume_init(), val) {
+        Err(napi::Status::PendingException) => {
+            *out = false;
+            return false;
+        }
+        status => status.unwrap(),
     }
 
     true

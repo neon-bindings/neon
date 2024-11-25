@@ -39,7 +39,7 @@ pub unsafe fn is_object(env: Env, val: Local) -> bool {
 
 pub unsafe fn is_array(env: Env, val: Local) -> bool {
     let mut result = false;
-    assert_eq!(napi::is_array(env, val, &mut result as *mut _), Ok(()));
+    napi::is_array(env, val, &mut result as *mut _).unwrap();
     result
 }
 
