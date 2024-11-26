@@ -150,9 +150,7 @@ unsafe extern "C" fn call_complete<I, O, D>(env: Env, status: napi::Status, data
         ..
     } = *Box::<Data<I, O, D>>::from_raw(data.cast());
 
-    if napi::delete_async_work(env, work).is_err() {
-        panic!("Failed to delete async work");
-    }
+    debug_assert_eq!(napi::delete_async_work(env, work), Ok(()));
 
     BOUNDARY.catch_failure(env, None, move |env| {
         // `unwrap` is okay because `call_complete` should be called exactly once
