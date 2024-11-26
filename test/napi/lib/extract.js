@@ -64,11 +64,11 @@ describe("Extractors", () => {
   });
 
   it("Either", () => {
-    assert.strictEqual(addon.extract_either("hello"), "String: hello");
-    assert.strictEqual(addon.extract_either(42), "Number: 42");
+    assert.strictEqual(addon.extractEither("hello"), "String: hello");
+    assert.strictEqual(addon.extractEither(42), "Number: 42");
 
     assert.throws(
-      () => addon.extract_either({}),
+      () => addon.extractEither({}),
       (err) => {
         assert.match(err.message, /expected either.*String.*f64/);
         assert.match(err.left.message, /expected string/);

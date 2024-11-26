@@ -72,6 +72,42 @@ pub use neon_macros::main;
 /// }
 /// ```
 ///
+/// ### Naming exported functions
+///
+/// Conventionally, Rust uses `snake_case` for function identifiers and JavaScript uses `camelCase`.
+/// By default, Neon will attempt to convert function names to camel case. For example:
+///
+/// ```rust
+/// #[neon::export]
+/// fn add_one(n: f64) -> f64 {
+///     n + 1.0
+/// }
+/// ```
+///
+/// The `add_one` function will be exported as `addOne` in JavaScript.
+///
+/// ```js
+/// import { addOne } from ".";
+/// ```
+///
+/// [Similar to globals](#renaming-an-export), exported functions can be overridden with the `name`
+/// attribute.
+///
+/// ```rust
+/// #[neon::export(name = "addOneSync")]
+/// fn add_one(n: f64) -> f64 {
+///     n + 1.0
+/// }
+/// ```
+/// Neon uses the following rules when converting `snake_case` to `camelCase`:
+///
+/// * All _leading_ and _trailing_ underscores (`_`) are preserved
+/// * Characters _immediately_ following a _non-leading_ underscore are converted to uppercase
+/// * If the identifier contains an _unexpected_ character, **no** conversion is performed and
+///   the identifier is used _unchanged_. Unexpected characters include:
+///   - Uppercase characters
+///   - Duplicate _interior_ (non-leading, non-trailing underscores)
+///
 /// ### Exporting a function that uses JSON
 ///
 /// The [`Json`](crate::types::extract::Json) wrapper allows ergonomically handling complex

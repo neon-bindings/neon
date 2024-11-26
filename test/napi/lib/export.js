@@ -22,16 +22,16 @@ function globals() {
 
 function functions() {
   it("void function", () => {
-    assert.strictEqual(addon.no_args_or_return(), undefined);
+    assert.strictEqual(addon.noArgsOrReturn(), undefined);
   });
 
   it("add - sync", () => {
-    assert.strictEqual(addon.simple_add(1, 2), 3);
+    assert.strictEqual(addon.simpleAdd(1, 2), 3);
     assert.strictEqual(addon.renamedAdd(1, 2), 3);
   });
 
   it("add - task", async () => {
-    const p1 = addon.add_task(1, 2);
+    const p1 = addon.addTask(1, 2);
     const p2 = addon.renamedAddTask(1, 2);
 
     assert.ok(p1 instanceof Promise);
@@ -45,14 +45,14 @@ function functions() {
     const arr = ["b", "c", "a"];
     const expected = [...arr].sort();
 
-    assert.deepStrictEqual(addon.json_sort(arr), expected);
+    assert.deepStrictEqual(addon.jsonSort(arr), expected);
     assert.deepStrictEqual(addon.renamedJsonSort(arr), expected);
   });
 
   it("json sort - task", async () => {
     const arr = ["b", "c", "a"];
     const expected = [...arr].sort();
-    const p1 = addon.json_sort_task(arr);
+    const p1 = addon.jsonSortTask(arr);
     const p2 = addon.renamedJsonSortTask(arr);
 
     assert.ok(p1 instanceof Promise);
@@ -63,7 +63,7 @@ function functions() {
   });
 
   it("can use context and handles", () => {
-    const actual = addon.concat_with_cx_and_handle("Hello,", " World!");
+    const actual = addon.concatWithCxAndHandle("Hello,", " World!");
     const expected = "Hello, World!";
 
     assert.strictEqual(actual, expected);
@@ -73,7 +73,7 @@ function functions() {
     const msg = "Oh, no!";
     const expected = new Error(msg);
 
-    assert.throws(() => addon.fail_with_throw(msg), expected);
+    assert.throws(() => addon.failWithThrow(msg), expected);
   });
 
   it("tasks are concurrent", async () => {
@@ -81,12 +81,12 @@ function functions() {
     const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     const start = process.hrtime.bigint();
 
-    await Promise.all([addon.sleep_task(time), sleep(time)]);
+    await Promise.all([addon.sleepTask(time), sleep(time)]);
 
     const end = process.hrtime.bigint();
     const duration = end - start;
 
-    // If `addon.sleep_task` blocks the thread, the tasks will run sequentially
+    // If `addon.sleepTask` blocks the thread, the tasks will run sequentially
     // and take a minimum of 2x `time`. Since they are run concurrently, we
     // expect the time to be closer to 1x `time`.
     const maxExpected = 2000000n * BigInt(time);
@@ -95,6 +95,6 @@ function functions() {
   });
 
   it("can use generic Cx in exported functions", () => {
-    assert.strictEqual(addon.number_with_cx(42), 42);
+    assert.strictEqual(addon.numberWithCx(42), 42);
   });
 }
