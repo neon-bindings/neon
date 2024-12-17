@@ -109,7 +109,7 @@ use crate::{
 pub use self::{
     boxed::Boxed,
     error::{Error, TypeExpected},
-    with::With,
+    with::{with, With},
 };
 
 #[cfg(feature = "serde")]

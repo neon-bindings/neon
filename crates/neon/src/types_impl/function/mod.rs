@@ -217,9 +217,9 @@ impl<'cx> private::TryIntoArgumentsInternal<'cx> for () {
     }
 }
 
-impl<'cx, F, O> private::TryIntoArgumentsInternal<'cx> for With<F, O>
+impl<'cx, F, O> private::TryIntoArgumentsInternal<'cx> for With<F>
 where
-    F: FnOnce(&mut Cx) -> O,
+    F: FnOnce(&mut Cx<'cx>) -> O,
     O: private::TryIntoArgumentsInternal<'cx>,
 {
     fn try_into_args_vec(self, cx: &mut Cx<'cx>) -> NeonResult<private::ArgsVec<'cx>> {
@@ -227,9 +227,9 @@ where
     }
 }
 
-impl<'cx, F, O> TryIntoArguments<'cx> for With<F, O>
+impl<'cx, F, O> TryIntoArguments<'cx> for With<F>
 where
-    F: FnOnce(&mut Cx) -> O,
+    F: FnOnce(&mut Cx<'cx>) -> O,
     O: TryIntoArguments<'cx>,
 {
 }

@@ -47,10 +47,19 @@ pub fn call_js_function_with_bind_and_args_with(mut cx: FunctionContext) -> JsRe
 }
 
 pub fn call_js_function_with_bind_and_args_and_with(mut cx: FunctionContext) -> JsResult<JsNumber> {
+    // HACK: Force HRTB on the closure. Can be replaced with `closure_lifetime_binder`
+    // https://rust-lang.github.io/rfcs/3216-closure-lifetime-binder.html
+    fn bind<O, F>(f: F) -> F
+    where
+        for<'cx> F: FnOnce(&mut Cx<'cx>) -> O,
+    {
+        f
+    }
+
     let n: f64 = cx
         .argument::<JsFunction>(0)?
         .bind(&mut cx)
-        .args(With(|_| (1, 2, 3)))?
+        .args(With(bind(|_| (1, 2, 3))))?
         .call()?;
     Ok(cx.number(n))
 }
