@@ -145,3 +145,45 @@ pub fn extract_either(either: Either<String, f64>) -> String {
         Either::Right(n) => format!("Number: {n}"),
     }
 }
+
+#[neon::export(task)]
+// Ensure that `With` produces a closure that can be moved across thread boundaries
+// and can return a JavaScript value.
+fn sleep_with_js(n: f64) -> impl for<'cx> TryIntoJs<'cx> {
+    use std::{thread, time::Duration};
+
+    thread::sleep(Duration::from_millis(n as u64));
+
+    with(move |cx| Ok(cx.number(n)))
+}
+
+#[neon::export]
+// Ensure that `With` can be used synchronously
+fn sleep_with_js_sync(n: f64) -> impl for<'cx> TryIntoJs<'cx> {
+    sleep_with_js(n)
+}
+
+#[neon::export(task)]
+// Ensure that `With` can be used Rust data
+fn sleep_with(n: f64) -> impl for<'cx> TryIntoJs<'cx> {
+    use std::{thread, time::Duration};
+
+    // HACK: Force HRTB on the closure. Can be replaced with `closure_lifetime_binder`
+    // https://rust-lang.github.io/rfcs/3216-closure-lifetime-binder.html
+    fn bind<O, F>(f: F) -> F
+    where
+        for<'cx> F: FnOnce(&mut Cx<'cx>) -> O,
+    {
+        f
+    }
+
+    thread::sleep(Duration::from_millis(n as u64));
+
+    With(bind(move |_| n))
+}
+
+#[neon::export]
+// Ensure that `With` can be used Rust data synchronously
+fn sleep_with_sync(n: f64) -> impl for<'cx> TryIntoJs<'cx> {
+    sleep_with(n)
+}
