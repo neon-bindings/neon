@@ -96,6 +96,10 @@ jobs:
       - name: npm install
         run: npm ci --prefer-offline --no-audit --no-fund
 
+      - name: Allow unprivileged X server
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: Test (Linux)
         if: matrix.os == 'ubuntu-latest'
         run: xvfb-run --auto-servernum npm test -- --nocapture

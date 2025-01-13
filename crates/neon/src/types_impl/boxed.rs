@@ -259,12 +259,39 @@ impl<T: Finalize + 'static> JsBox<T> {
     }
 }
 
+impl<T: 'static> JsBox<T> {
+    /// Gets a reference to the inner value of a [`JsBox`]. This method is similar to
+    /// [dereferencing](JsBox::deref) a `JsBox` (e.g., `&*boxed`), but the lifetime
+    /// is _safely_ extended to `'cx`.
+    ///
+    /// See also [`Handle<JsBox>::as_inner`].
+    // N.B.: This would be cleaner with https://github.com/rust-lang/rust/issues/44874
+    pub fn deref<'cx>(v: &Handle<'cx, Self>) -> &'cx T {
+        v.as_inner()
+    }
+}
+
+impl<'cx, T: 'static> Handle<'cx, JsBox<T>> {
+    /// Gets a reference to the inner value of a [`JsBox`]. This method is similar to
+    /// [dereferencing](JsBox::deref) a `JsBox` (e.g., `&*boxed`), but the lifetime
+    /// is _safely_ extended to `'cx`.
+    ///
+    /// See also [`JsBox::deref`].
+    pub fn as_inner(&self) -> &'cx T {
+        // # Safety
+        // JS values associated with an in-scope `Context` *cannot* be garbage collected.
+        // This value is guaranteed to live at least as long as `'cx`.
+        unsafe { &*self.0.raw_data }
+    }
+}
+
 impl<T: 'static> Deref for JsBox<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
-        // Safety: This depends on a `Handle<'a, JsBox<T>>` wrapper to provide
-        // a proper lifetime.
+        // # Safety
+        // `T` will live at least as long as `JsBox<T>` because it may not be garbage
+        // collected while in scope and only immutable references can be obtained.
         unsafe { &*self.0.raw_data }
     }
 }
