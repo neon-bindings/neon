@@ -1,14 +1,11 @@
-use std::sync::Arc;
-
 use crate::{
     context::FunctionContext,
     handle::{Handle, Root},
     object::Object,
     result::{NeonResult, Throw},
     types::{
-        buffer::Binary,
-        extract::{ArrayBuffer, Buffer, Date, Error, TryIntoJs},
-        JsTypedArray, Value,
+        extract::{Date, Error, TryIntoJs},
+        Value,
     },
 };
 
@@ -46,59 +43,6 @@ impl<T> Sealed for Option<T> {}
 
 impl<T, E> Sealed for Result<T, E> {}
 
-impl<T> Sealed for Vec<T>
-where
-    JsTypedArray<T>: Value,
-    T: Binary,
-{
-}
-
-impl<T> Sealed for Box<[T]>
-where
-    JsTypedArray<T>: Value,
-    T: Binary,
-{
-}
-
-impl<T, const N: usize> Sealed for [T; N]
-where
-    JsTypedArray<T>: Value,
-    T: Binary,
-{
-}
-
-impl<T> Sealed for &Vec<T>
-where
-    JsTypedArray<T>: Value,
-    T: Binary,
-{
-}
-
-impl<T> Sealed for &[T]
-where
-    JsTypedArray<T>: Value,
-    T: Binary,
-{
-}
-
-impl<'cx, T> Sealed for Arc<T> where for<'a> &'a T: TryIntoJs<'cx> {}
-
 impl<'cx, T> Sealed for Box<T> where T: TryIntoJs<'cx> {}
 
-impl_sealed!(
-    u8,
-    u16,
-    u32,
-    i8,
-    i16,
-    i32,
-    f32,
-    f64,
-    bool,
-    String,
-    Date,
-    Buffer,
-    ArrayBuffer,
-    Throw,
-    Error,
-);
+impl_sealed!(u8, u16, u32, i8, i16, i32, f32, f64, bool, String, Date, Throw, Error,);

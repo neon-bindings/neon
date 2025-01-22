@@ -12,10 +12,9 @@ use crate::{
     result::{NeonResult, Throw},
     sys,
     types::{
-        buffer::{Binary, TypedArray},
-        extract::{ArrayBuffer, Buffer, Date, TryFromJs, TypeExpected},
+        extract::{Date, TryFromJs, TypeExpected},
         private::ValueInternal,
-        JsArrayBuffer, JsBoolean, JsBuffer, JsNumber, JsString, JsTypedArray, JsValue, Value,
+        JsBoolean, JsNumber, JsString, JsValue, Value,
     },
 };
 
@@ -197,58 +196,6 @@ impl<'cx> TryFromJs<'cx> for () {
         _v: Handle<'cx, JsValue>,
     ) -> NeonResult<Result<Self, Self::Error>> {
         Ok(Ok(()))
-    }
-}
-
-impl<'cx, T> TryFromJs<'cx> for Vec<T>
-where
-    JsTypedArray<T>: Value,
-    T: Binary,
-{
-    type Error = TypeExpected<JsTypedArray<T>>;
-
-    fn try_from_js(
-        cx: &mut Cx<'cx>,
-        v: Handle<'cx, JsValue>,
-    ) -> NeonResult<Result<Self, Self::Error>> {
-        let v = match v.downcast::<JsTypedArray<T>, _>(cx) {
-            Ok(v) => v,
-            Err(_) => return Ok(Err(Self::Error::new())),
-        };
-
-        Ok(Ok(v.as_slice(cx).to_vec()))
-    }
-}
-
-impl<'cx> TryFromJs<'cx> for Buffer {
-    type Error = TypeExpected<JsBuffer>;
-
-    fn try_from_js(
-        cx: &mut Cx<'cx>,
-        v: Handle<'cx, JsValue>,
-    ) -> NeonResult<Result<Self, Self::Error>> {
-        let v = match v.downcast::<JsBuffer, _>(cx) {
-            Ok(v) => v,
-            Err(_) => return Ok(Err(Self::Error::new())),
-        };
-
-        Ok(Ok(Buffer(v.as_slice(cx).to_vec())))
-    }
-}
-
-impl<'cx> TryFromJs<'cx> for ArrayBuffer {
-    type Error = TypeExpected<JsBuffer>;
-
-    fn try_from_js(
-        cx: &mut Cx<'cx>,
-        v: Handle<'cx, JsValue>,
-    ) -> NeonResult<Result<Self, Self::Error>> {
-        let v = match v.downcast::<JsArrayBuffer, _>(cx) {
-            Ok(v) => v,
-            Err(_) => return Ok(Err(Self::Error::new())),
-        };
-
-        Ok(Ok(ArrayBuffer(v.as_slice(cx).to_vec())))
     }
 }
 
