@@ -1,15 +1,11 @@
-use std::sync::Arc;
-
-use crate::prelude::Object;
 use crate::{
     context::{Context, Cx},
     handle::{Handle, Root},
+    object::Object,
     result::{JsResult, ResultExt, Throw},
     types::{
-        buffer::Binary,
-        extract::{ArrayBuffer, Buffer, Date, TryIntoJs},
-        JsArrayBuffer, JsBoolean, JsBuffer, JsDate, JsNumber, JsString, JsTypedArray, JsUndefined,
-        JsValue, Value,
+        extract::{Date, TryIntoJs},
+        JsBoolean, JsDate, JsNumber, JsString, JsUndefined, JsValue, Value,
     },
 };
 
@@ -88,18 +84,6 @@ where
     }
 }
 
-impl<'cx, T, V> TryIntoJs<'cx> for Arc<T>
-where
-    for<'a> &'a T: TryIntoJs<'cx, Value = V>,
-    V: Value,
-{
-    type Value = V;
-
-    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
-        self.as_ref().try_into_js(cx)
-    }
-}
-
 macro_rules! impl_number {
     ($ty:ident) => {
         impl<'cx> TryIntoJs<'cx> for $ty {
@@ -144,66 +128,6 @@ impl<'a, 'cx> TryIntoJs<'cx> for &'a String {
     }
 }
 
-impl<'cx, T> TryIntoJs<'cx> for Vec<T>
-where
-    JsTypedArray<T>: Value,
-    T: Binary,
-{
-    type Value = JsTypedArray<T>;
-
-    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
-        JsTypedArray::from_slice(cx, &self)
-    }
-}
-
-impl<'cx, T> TryIntoJs<'cx> for Box<[T]>
-where
-    JsTypedArray<T>: Value,
-    T: Binary,
-{
-    type Value = JsTypedArray<T>;
-
-    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
-        JsTypedArray::from_slice(cx, &self)
-    }
-}
-
-impl<'cx, T, const N: usize> TryIntoJs<'cx> for [T; N]
-where
-    JsTypedArray<T>: Value,
-    T: Binary,
-{
-    type Value = JsTypedArray<T>;
-
-    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
-        JsTypedArray::from_slice(cx, self.as_slice())
-    }
-}
-
-impl<'a, 'cx, T> TryIntoJs<'cx> for &'a Vec<T>
-where
-    JsTypedArray<T>: Value,
-    T: Binary,
-{
-    type Value = JsTypedArray<T>;
-
-    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
-        JsTypedArray::from_slice(cx, self)
-    }
-}
-
-impl<'a, 'cx, T> TryIntoJs<'cx> for &'a [T]
-where
-    JsTypedArray<T>: Value,
-    T: Binary,
-{
-    type Value = JsTypedArray<T>;
-
-    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
-        JsTypedArray::from_slice(cx, self)
-    }
-}
-
 impl<'cx> TryIntoJs<'cx> for bool {
     type Value = JsBoolean;
 
@@ -217,22 +141,6 @@ impl<'cx> TryIntoJs<'cx> for () {
 
     fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         Ok(cx.undefined())
-    }
-}
-
-impl<'cx> TryIntoJs<'cx> for ArrayBuffer {
-    type Value = JsArrayBuffer;
-
-    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
-        JsArrayBuffer::from_slice(cx, &self.0)
-    }
-}
-
-impl<'cx> TryIntoJs<'cx> for Buffer {
-    type Value = JsBuffer;
-
-    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
-        JsBuffer::from_slice(cx, &self.0)
     }
 }
 

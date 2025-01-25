@@ -58,6 +58,18 @@ describe("Extractors", () => {
     test(Float64Array);
   });
 
+  it("TypedArray", () => {
+    assert.deepStrictEqual(
+      Buffer.from(addon.bufferConcat(Buffer.from("abc"), Buffer.from("def"))),
+      Buffer.from("abcdef")
+    );
+
+    assert.deepStrictEqual(
+      Buffer.from(addon.stringToBuf("Hello, World!")),
+      Buffer.from("Hello, World!")
+    );
+  });
+
   it("JSON", () => {
     assert.strictEqual(addon.extract_json_sum([1, 2, 3, 4]), 10);
     assert.strictEqual(addon.extract_json_sum([8, 16, 18]), 42);

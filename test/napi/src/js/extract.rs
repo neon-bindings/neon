@@ -22,9 +22,9 @@ pub fn extract_values(mut cx: FunctionContext) -> JsResult<JsArray> {
         String,
         Date,
         Handle<JsValue>,
-        ArrayBuffer,
+        ArrayBuffer<Vec<u8>>,
         Vec<u8>,
-        Buffer,
+        Buffer<Vec<u8>>,
         Option<f64>,
         Option<String>,
     ) = cx.args()?;
@@ -144,4 +144,17 @@ pub fn extract_either(either: Either<String, f64>) -> String {
         Either::Left(s) => format!("String: {s}"),
         Either::Right(n) => format!("Number: {n}"),
     }
+}
+
+#[neon::export]
+// TypedArrays can be extracted and returned
+pub fn buffer_concat(mut a: Vec<u8>, Uint8Array(b): Uint8Array<Vec<u8>>) -> ArrayBuffer<Vec<u8>> {
+    a.extend(b);
+    ArrayBuffer(a)
+}
+
+#[neon::export]
+// Extractors work with anything that can be used as slice of the correct type
+pub fn string_to_buf(s: String) -> Uint8Array<String> {
+    Uint8Array(s)
 }

@@ -108,6 +108,10 @@ use crate::{
 
 pub use self::{
     boxed::Boxed,
+    buffer::{
+        ArrayBuffer, BigInt64Array, BigUint64Array, Buffer, Float32Array, Float64Array, Int16Array,
+        Int32Array, Int8Array, Uint16Array, Uint32Array, Uint8Array,
+    },
     error::{Error, TypeExpected},
     with::With,
 };
@@ -121,6 +125,7 @@ pub use self::json::Json;
 pub mod json;
 
 mod boxed;
+mod buffer;
 mod either;
 mod error;
 mod private;
@@ -170,12 +175,6 @@ where
 #[cfg(feature = "napi-5")]
 /// Wrapper for converting between [`f64`] and [`JsDate`](super::JsDate)
 pub struct Date(pub f64);
-
-/// Wrapper for converting between [`Vec<u8>`] and [`JsArrayBuffer`](super::JsArrayBuffer)
-pub struct ArrayBuffer(pub Vec<u8>);
-
-/// Wrapper for converting between [`Vec<u8>`] and [`JsBuffer`](super::JsBuffer)
-pub struct Buffer(pub Vec<u8>);
 
 /// Trait specifying values that may be extracted from function arguments.
 ///
