@@ -93,6 +93,14 @@ jobs:
           key: ${{ runner.os }}-electron-${{ hashFiles('./package-lock.json') }}
           path: ~/Library/Caches/electron
 
+      - name: Install cargo-llvm-cov
+        if: matrix.os == 'ubuntu-latest' && matrix.rust-toolchain == 'stable'
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Set coverage environment variables
+        if: matrix.os == 'ubuntu-latest' && matrix.rust-toolchain == 'stable'
+        run: cargo llvm-cov show-env | tr -d "'" >> $GITHUB_ENV
+
       - name: npm install
         run: npm ci --prefer-offline --no-audit --no-fund
 
@@ -106,3 +114,15 @@ jobs:
       - name: Test
         if: matrix.os != 'ubuntu-latest'
         run: npm test
+
+      - name: Generate coverage report
+        if: matrix.os == 'ubuntu-latest' && matrix.rust-toolchain == 'stable'
+        run: cargo llvm-cov report --ignore-filename-regex test --codecov --output-path target/codecov.json
+
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest' && matrix.rust-toolchain == 'stable'
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: neon-bindings/neon
+          files: target/codecov.json
