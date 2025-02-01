@@ -1,6 +1,5 @@
 use std::{
-    any::{self, Any},
-    ops::Deref,
+    any::{self, Any}, marker::PhantomData, ops::Deref
 };
 
 use crate::{
@@ -254,6 +253,23 @@ impl<T: Finalize + 'static> JsBox<T> {
         // Since this value was just constructed, we know it is `T`
         let raw_data = &*v as *const dyn Any as *const T;
         let local = unsafe { external::create(cx.env().to_raw(), v, finalizer::<T>) };
+
+        Handle::new_internal(Self(JsBoxInner { local, raw_data }))
+    }
+}
+
+impl<T: 'static> JsBox<T> {
+    pub(crate) fn manually_finalize<'a, C>(cx: &mut C, value: T) -> Handle<'a, JsBox<T>>
+    where
+        C: Context<'a>,
+        T: 'static,
+    {
+        fn finalizer(_env: raw::Env, _data: BoxAny) {}
+
+        let v = Box::new(value) as BoxAny;
+        // Since this value was just constructed, we know it is `T`
+        let raw_data = &*v as *const dyn Any as *const T;
+        let local = unsafe { external::create(cx.env().to_raw(), v, finalizer) };
 
         Handle::new_internal(Self(JsBoxInner { local, raw_data }))
     }

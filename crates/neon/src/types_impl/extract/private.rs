@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use crate::{
     context::FunctionContext,
     handle::{Handle, Root},
@@ -44,5 +46,9 @@ impl<T> Sealed for Option<T> {}
 impl<T, E> Sealed for Result<T, E> {}
 
 impl<'cx, T> Sealed for Box<T> where T: TryIntoJs<'cx> {}
+
+impl<T> Sealed for RefCell<T> {}
+
+impl<T> Sealed for &RefCell<T> {}
 
 impl_sealed!(u8, u16, u32, i8, i16, i32, f32, f64, bool, String, Date, Throw, Error,);
