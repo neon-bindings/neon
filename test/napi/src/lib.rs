@@ -12,6 +12,7 @@ mod js {
     pub mod bigint;
     pub mod boxed;
     pub mod coercions;
+    pub mod container;
     pub mod date;
     pub mod errors;
     pub mod export;

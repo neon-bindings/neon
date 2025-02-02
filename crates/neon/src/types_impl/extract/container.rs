@@ -22,7 +22,7 @@ impl<T> Container for RefCell<T> {
     }
 }
 
-impl<'cx, T: Container + 'static> TryFromJs<'cx> for &'cx RefCell<T> {
+impl<'cx, T: 'static> TryFromJs<'cx> for &'cx RefCell<T> {
     type Error = RustTypeExpected<RefCell<T>>;
 
     fn try_from_js(
