@@ -56,4 +56,16 @@ describe("Container type extractors", function () {
       assert.strictEqual(err.message, "RefCell is borrowed");
     }
   });
+
+  it("can produce and consume an Rc", function () {
+    const cell = addon.createStringRc("my sekret mesij");
+    const s = addon.readStringRc(cell);
+    assert.strictEqual(s, "my sekret mesij");
+  });
+
+  it("can produce and consume an Arc", function () {
+    const cell = addon.createStringArc("my sekret mesij");
+    const s = addon.readStringArc(cell);
+    assert.strictEqual(s, "my sekret mesij");
+  });
 });

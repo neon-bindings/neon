@@ -1,6 +1,10 @@
 use neon::prelude::*;
 
-use std::cell::{Ref, RefCell, RefMut};
+use std::{
+    cell::{Ref, RefCell, RefMut},
+    rc::Rc,
+    sync::Arc,
+};
 
 #[neon::export]
 fn create_string_ref_cell(s: String) -> RefCell<String> {
@@ -53,4 +57,24 @@ fn borrow_mut_and_then<'cx>(
     f.bind(cx).exec()?;
     *s = "overwritten".to_string();
     Ok(cx.string(s.clone()))
+}
+
+#[neon::export]
+fn create_string_rc(s: String) -> Rc<String> {
+    Rc::new(s)
+}
+
+#[neon::export]
+fn read_string_rc(s: Rc<String>) -> String {
+    (*s).clone()
+}
+
+#[neon::export]
+fn create_string_arc(s: String) -> Arc<String> {
+    Arc::new(s)
+}
+
+#[neon::export]
+fn read_string_arc(s: Arc<String>) -> String {
+    (*s).clone()
 }
