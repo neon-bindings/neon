@@ -1,4 +1,4 @@
-use std::{any::Any, cell::RefCell};
+use std::cell::RefCell;
 
 use crate::{
     context::Cx, handle::Handle, result::{JsResult, NeonResult}, types::{extract::{TryFromJs, TryIntoJs}, JsBox, JsValue}
@@ -32,7 +32,7 @@ impl<'cx, T: Container + 'static> TryFromJs<'cx> for &'cx RefCell<T> {
 
 impl<'cx, T> TryIntoJs<'cx> for RefCell<T>
 where
-    T: Any + 'static,
+    T: 'static,
 {
     type Value = JsBox<RefCell<T>>;
 

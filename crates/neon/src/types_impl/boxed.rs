@@ -1,5 +1,6 @@
 use std::{
-    any::{self, Any}, marker::PhantomData, ops::Deref
+    any::{self, Any},
+    ops::Deref
 };
 
 use crate::{
