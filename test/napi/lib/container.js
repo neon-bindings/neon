@@ -27,7 +27,10 @@ describe("Container type extractors", function () {
       assert.fail("should have thrown");
     } catch (err) {
       assert.instanceOf(err, TypeError);
-      assert.strictEqual(err.message, "expected std::cell::RefCell");
+      assert.strictEqual(
+        err.message,
+        "expected neon::types_impl::boxed::JsBox<core::cell::RefCell<alloc::string::String>>"
+      );
     }
   });
 
@@ -40,7 +43,7 @@ describe("Container type extractors", function () {
       assert.fail("should have thrown");
     } catch (err) {
       assert.instanceOf(err, Error);
-      assert.strictEqual(err.message, "RefCell is mutably borrowed");
+      assert.include(err.message, "already mutably borrowed");
     }
   });
 
@@ -53,7 +56,7 @@ describe("Container type extractors", function () {
       assert.fail("should have thrown");
     } catch (err) {
       assert.instanceOf(err, Error);
-      assert.strictEqual(err.message, "RefCell is borrowed");
+      assert.include(err.message, "already borrowed");
     }
   });
 

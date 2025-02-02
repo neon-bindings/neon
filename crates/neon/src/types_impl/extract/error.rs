@@ -1,4 +1,4 @@
-use std::{cell::RefCell, convert::Infallible, error, fmt, marker::PhantomData};
+use std::{convert::Infallible, error, fmt, marker::PhantomData};
 
 use crate::{
     context::{Context, Cx},
@@ -8,8 +8,6 @@ use crate::{
         JsError, JsValue, Value,
     },
 };
-
-use super::container::Container;
 
 type BoxError = Box<dyn error::Error + Send + Sync + 'static>;
 
@@ -45,83 +43,6 @@ impl<'cx, T: Value> TryIntoJs<'cx> for TypeExpected<T> {
 }
 
 impl<T: Value> private::Sealed for TypeExpected<T> {}
-
-/// Error returned when an implicitly boxed Rust value is not the type expected
-pub struct RustTypeExpected<T: Container>(PhantomData<T>);
-
-impl<T: Container> RustTypeExpected<T> {
-    pub(super) fn new() -> Self {
-        Self(PhantomData)
-    }
-}
-
-impl<T: Container> fmt::Display for RustTypeExpected<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "expected {}", T::container_name())
-    }
-}
-
-impl<T: Container> fmt::Debug for RustTypeExpected<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_tuple("RustTypeExpected")
-            .field(&T::container_name())
-            .finish()
-    }
-}
-
-impl<T: Container> error::Error for RustTypeExpected<T> {}
-
-impl<'cx, T: Container + 'static> TryIntoJs<'cx> for RustTypeExpected<T> {
-    type Value = JsError;
-
-    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
-        JsError::type_error(cx, self.to_string())
-    }
-}
-
-impl<T: Container> private::Sealed for RustTypeExpected<T> {}
-
-pub enum RefCellError {
-    WrongType,
-    MutablyBorrowed,
-    Borrowed,
-}
-
-impl fmt::Display for RefCellError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            RefCellError::WrongType => write!(f, "expected {}", RefCell::<()>::container_name()),
-            RefCellError::MutablyBorrowed => write!(f, "RefCell is mutably borrowed"),
-            RefCellError::Borrowed => write!(f, "RefCell is borrowed"),
-        }
-    }
-}
-
-impl fmt::Debug for RefCellError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            RefCellError::WrongType => f.debug_tuple("RefCellError::WrongType").finish(),
-            RefCellError::MutablyBorrowed => {
-                f.debug_tuple("RefCellError::MutablyBorrowed").finish()
-            }
-            RefCellError::Borrowed => f.debug_tuple("RefCellError::Borrowed").finish(),
-        }
-    }
-}
-
-impl<'cx> TryIntoJs<'cx> for RefCellError {
-    type Value = JsError;
-
-    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
-        match self {
-            RefCellError::WrongType => JsError::type_error(cx, self.to_string()),
-            RefCellError::MutablyBorrowed => JsError::error(cx, self.to_string()),
-            RefCellError::Borrowed => JsError::error(cx, self.to_string()),
-        }
-    }
-}
-
-impl private::Sealed for RefCellError {}
 
 impl<'cx> TryIntoJs<'cx> for Infallible {
     type Value = JsValue;

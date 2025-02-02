@@ -14,32 +14,10 @@ use crate::{
     },
 };
 
-use super::error::{RefCellError, RustTypeExpected};
-
-pub trait Container {
-    fn container_name() -> &'static str;
-}
-
-impl<T> Container for RefCell<T> {
-    fn container_name() -> &'static str {
-        "std::cell::RefCell"
-    }
-}
-
-impl<T> Container for Rc<T> {
-    fn container_name() -> &'static str {
-        "std::rc::Rc"
-    }
-}
-
-impl<T> Container for Arc<T> {
-    fn container_name() -> &'static str {
-        "std::sync::Arc"
-    }
-}
+use super::error::TypeExpected;
 
 impl<'cx, T: 'static> TryFromJs<'cx> for &'cx RefCell<T> {
-    type Error = RustTypeExpected<RefCell<T>>;
+    type Error = TypeExpected<JsBox<RefCell<T>>>;
 
     fn try_from_js(
         cx: &mut Cx<'cx>,
@@ -47,41 +25,35 @@ impl<'cx, T: 'static> TryFromJs<'cx> for &'cx RefCell<T> {
     ) -> NeonResult<Result<Self, Self::Error>> {
         match v.downcast::<JsBox<RefCell<T>>, _>(cx) {
             Ok(v) => Ok(Ok(JsBox::deref(&v))),
-            Err(_) => Ok(Err(RustTypeExpected::new())),
+            Err(_) => Ok(Err(TypeExpected::new())),
         }
     }
 }
 
 impl<'cx, T: 'static> TryFromJs<'cx> for Ref<'cx, T> {
-    type Error = RefCellError;
+    type Error = TypeExpected<JsBox<RefCell<T>>>;
 
     fn try_from_js(
         cx: &mut Cx<'cx>,
         v: Handle<'cx, JsValue>,
     ) -> NeonResult<Result<Self, Self::Error>> {
         match v.downcast::<JsBox<RefCell<T>>, _>(cx) {
-            Ok(v) => {
-                let cell = JsBox::deref(&v);
-                Ok(cell.try_borrow().map_err(|_| RefCellError::MutablyBorrowed))
-            }
-            Err(_) => Ok(Err(RefCellError::WrongType)),
+            Ok(v) => Ok(Ok(JsBox::deref(&v).borrow())),
+            Err(_) => Ok(Err(TypeExpected::new())),
         }
     }
 }
 
 impl<'cx, T: 'static> TryFromJs<'cx> for RefMut<'cx, T> {
-    type Error = RefCellError;
+    type Error = TypeExpected<JsBox<RefCell<T>>>;
 
     fn try_from_js(
         cx: &mut Cx<'cx>,
         v: Handle<'cx, JsValue>,
     ) -> NeonResult<Result<Self, Self::Error>> {
         match v.downcast::<JsBox<RefCell<T>>, _>(cx) {
-            Ok(v) => {
-                let cell = JsBox::deref(&v);
-                Ok(cell.try_borrow_mut().map_err(|_| RefCellError::Borrowed))
-            }
-            Err(_) => Ok(Err(RefCellError::WrongType)),
+            Ok(v) => Ok(Ok(JsBox::deref(&v).borrow_mut())),
+            Err(_) => Ok(Err(TypeExpected::new())),
         }
     }
 }
@@ -98,7 +70,7 @@ where
 }
 
 impl<'cx, T: 'static> TryFromJs<'cx> for Rc<T> {
-    type Error = RustTypeExpected<Rc<T>>;
+    type Error = TypeExpected<JsBox<Rc<T>>>;
 
     fn try_from_js(
         cx: &mut Cx<'cx>,
@@ -106,7 +78,7 @@ impl<'cx, T: 'static> TryFromJs<'cx> for Rc<T> {
     ) -> NeonResult<Result<Self, Self::Error>> {
         match v.downcast::<JsBox<Rc<T>>, _>(cx) {
             Ok(v) => Ok(Ok(JsBox::deref(&v).clone())),
-            Err(_) => Ok(Err(RustTypeExpected::new())),
+            Err(_) => Ok(Err(TypeExpected::new())),
         }
     }
 }
@@ -123,7 +95,7 @@ where
 }
 
 impl<'cx, T: 'static> TryFromJs<'cx> for Arc<T> {
-    type Error = RustTypeExpected<Arc<T>>;
+    type Error = TypeExpected<JsBox<Arc<T>>>;
 
     fn try_from_js(
         cx: &mut Cx<'cx>,
@@ -131,7 +103,7 @@ impl<'cx, T: 'static> TryFromJs<'cx> for Arc<T> {
     ) -> NeonResult<Result<Self, Self::Error>> {
         match v.downcast::<JsBox<Arc<T>>, _>(cx) {
             Ok(v) => Ok(Ok(JsBox::deref(&v).clone())),
-            Err(_) => Ok(Err(RustTypeExpected::new())),
+            Err(_) => Ok(Err(TypeExpected::new())),
         }
     }
 }
