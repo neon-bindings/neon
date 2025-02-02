@@ -1,4 +1,4 @@
-use std::{convert::Infallible, error, fmt, marker::PhantomData};
+use std::{cell::RefCell, convert::Infallible, error, fmt, marker::PhantomData};
 
 use crate::{
     context::{Context, Cx},
@@ -80,6 +80,84 @@ impl<'cx, T: Container + 'static> TryIntoJs<'cx> for RustTypeExpected<T> {
 }
 
 impl<T: Container> private::Sealed for RustTypeExpected<T> {}
+
+pub enum RefCellError {
+    WrongType,
+    MutablyBorrowed,
+    Borrowed,
+}
+
+impl fmt::Display for RefCellError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            RefCellError::WrongType => write!(f, "expected {}", RefCell::<()>::container_name()),
+            RefCellError::MutablyBorrowed => write!(f, "std::cell::RefCell is mutably borrowed"),
+            RefCellError::Borrowed => write!(f, "std::cell::RefCell is borrowed"),
+        }
+    }
+}
+
+impl fmt::Debug for RefCellError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            RefCellError::WrongType => f.debug_tuple("RefCellError::WrongType").finish(),
+            RefCellError::MutablyBorrowed => {
+                f.debug_tuple("RefCellError::MutablyBorrowed").finish()
+            }
+            RefCellError::Borrowed => f.debug_tuple("RefCellError::Borrowed").finish(),
+        }
+    }
+}
+
+impl<'cx> TryIntoJs<'cx> for RefCellError {
+    type Value = JsError;
+
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
+        match self {
+            RefCellError::WrongType => JsError::type_error(cx, self.to_string()),
+            RefCellError::MutablyBorrowed => JsError::error(cx, self.to_string()),
+            RefCellError::Borrowed => JsError::error(cx, self.to_string()),
+        }
+    }
+}
+
+impl private::Sealed for RefCellError {}
+
+pub enum MutexError {
+    WrongType,
+    Poisoned,
+}
+
+impl fmt::Display for MutexError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MutexError::WrongType => write!(f, "expected {}", RefCell::<()>::container_name()),
+            MutexError::Poisoned => write!(f, "std::sync::Mutex is poisoned"),
+        }
+    }
+}
+
+impl fmt::Debug for MutexError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MutexError::WrongType => f.debug_tuple("MutexError::WrongType").finish(),
+            MutexError::Poisoned => f.debug_tuple("MutexError::Poisoned").finish(),
+        }
+    }
+}
+
+impl<'cx> TryIntoJs<'cx> for MutexError {
+    type Value = JsError;
+
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
+        match self {
+            MutexError::WrongType => JsError::type_error(cx, self.to_string()),
+            MutexError::Poisoned => JsError::error(cx, self.to_string()),
+        }
+    }
+}
+
+impl private::Sealed for MutexError {}
 
 impl<'cx> TryIntoJs<'cx> for Infallible {
     type Value = JsValue;
