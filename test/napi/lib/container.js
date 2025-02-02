@@ -18,6 +18,7 @@ describe("container", function () {
   it("fails with a type error when not given a RefCell", function () {
     try {
       addon.stringRefCellConcat("hello", " world");
+      assert.fail("should have thrown");
     } catch (err) {
       assert.instanceOf(err, TypeError);
       assert.strictEqual(err.message, "expected std::cell::RefCell");
