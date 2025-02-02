@@ -6,12 +6,21 @@ describe("container", function () {
   it("can produce and consume a RefCell", function () {
     const cell = addon.createStringRefCell("my sekret mesij");
     const s = addon.readStringRefCell(cell);
-    assert.strictEqual("my sekret mesij", s);
+    assert.strictEqual(s, "my sekret mesij");
   });
 
   it("concatenates a RefCell<String> with a String", function () {
     const cell = addon.createStringRefCell("hello");
     const s = addon.stringRefCellConcat(cell, " world");
-    assert.strictEqual("hello world", s);
+    assert.strictEqual(s, "hello world");
+  });
+
+  it("fails with a type error when not given a RefCell", function () {
+    try {
+      addon.stringRefCellConcat("hello", " world");
+    } catch (err) {
+      assert.instanceOf(err, TypeError);
+      assert.strictEqual(err.message, "expected std::cell::RefCell");
+    }
   });
 });
