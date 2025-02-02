@@ -91,8 +91,8 @@ impl fmt::Display for RefCellError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             RefCellError::WrongType => write!(f, "expected {}", RefCell::<()>::container_name()),
-            RefCellError::MutablyBorrowed => write!(f, "std::cell::RefCell is mutably borrowed"),
-            RefCellError::Borrowed => write!(f, "std::cell::RefCell is borrowed"),
+            RefCellError::MutablyBorrowed => write!(f, "RefCell is mutably borrowed"),
+            RefCellError::Borrowed => write!(f, "RefCell is borrowed"),
         }
     }
 }

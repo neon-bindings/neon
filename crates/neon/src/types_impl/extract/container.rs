@@ -62,7 +62,7 @@ impl<'cx, T: 'static> TryFromJs<'cx> for Ref<'cx, T> {
         match v.downcast::<JsBox<RefCell<T>>, _>(cx) {
             Ok(v) => {
                 let cell = JsBox::deref(&v);
-                Ok(cell.try_borrow().map_err(|_| RefCellError::Borrowed))
+                Ok(cell.try_borrow().map_err(|_| RefCellError::MutablyBorrowed))
             }
             Err(_) => Ok(Err(RefCellError::WrongType)),
         }
@@ -81,7 +81,7 @@ impl<'cx, T: 'static> TryFromJs<'cx> for RefMut<'cx, T> {
                 let cell = JsBox::deref(&v);
                 Ok(cell
                     .try_borrow_mut()
-                    .map_err(|_| RefCellError::MutablyBorrowed))
+                    .map_err(|_| RefCellError::Borrowed))
             }
             Err(_) => Ok(Err(RefCellError::WrongType)),
         }
