@@ -1,4 +1,4 @@
-use neon::{prelude::*, types::extract::Error};
+use neon::prelude::*;
 
 use std::cell::{Ref, RefCell, RefMut};
 
@@ -33,16 +33,22 @@ fn write_string_ref(mut s: RefMut<String>, value: String) {
 }
 
 #[neon::export]
-fn borrow_and_then<'cx>(cx: &mut Cx<'cx>, cell: &RefCell<String>, f: Handle<JsFunction>)
--> JsResult<'cx, JsString> {
+fn borrow_and_then<'cx>(
+    cx: &mut Cx<'cx>,
+    cell: &RefCell<String>,
+    f: Handle<JsFunction>,
+) -> JsResult<'cx, JsString> {
     let s = cell.borrow();
     f.bind(cx).exec()?;
     Ok(cx.string(s.clone()))
 }
 
 #[neon::export]
-fn borrow_mut_and_then<'cx>(cx: &mut Cx<'cx>, cell: &RefCell<String>, f: Handle<JsFunction>)
--> JsResult<'cx, JsString> {
+fn borrow_mut_and_then<'cx>(
+    cx: &mut Cx<'cx>,
+    cell: &RefCell<String>,
+    f: Handle<JsFunction>,
+) -> JsResult<'cx, JsString> {
     let mut s = cell.borrow_mut();
     f.bind(cx).exec()?;
     *s = "overwritten".to_string();
