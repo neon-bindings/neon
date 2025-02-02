@@ -13,7 +13,7 @@ describe("Container type extractors", function () {
     const cell = addon.createStringRefCell("new");
     addon.writeStringRefCell(cell, "modified");
     assert.strictEqual(addon.readStringRefCell(cell), "modified");
-  })
+  });
 
   it("can concatenate a RefCell<String> with a String", function () {
     const cell = addon.createStringRefCell("hello");
