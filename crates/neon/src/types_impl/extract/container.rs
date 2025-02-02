@@ -1,7 +1,7 @@
 use std::{
     cell::{Ref, RefCell, RefMut},
     rc::Rc,
-    sync::{Arc, Mutex, MutexGuard},
+    sync::Arc,
 };
 
 use crate::{
@@ -14,7 +14,7 @@ use crate::{
     },
 };
 
-use super::error::{MutexError, RefCellError, RustTypeExpected};
+use super::error::{RefCellError, RustTypeExpected};
 
 pub trait Container {
     fn container_name() -> &'static str;
@@ -35,12 +35,6 @@ impl<T> Container for Rc<T> {
 impl<T> Container for Arc<T> {
     fn container_name() -> &'static str {
         "std::sync::Arc"
-    }
-}
-
-impl<T> Container for Mutex<T> {
-    fn container_name() -> &'static str {
-        "std::sync::Mutex"
     }
 }
 
@@ -152,51 +146,5 @@ where
 
     fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         Ok(JsBox::manually_finalize(cx, self))
-    }
-}
-
-impl<'cx, T: 'static> TryFromJs<'cx> for &'cx Mutex<T> {
-    type Error = RustTypeExpected<Mutex<T>>;
-
-    fn try_from_js(
-        cx: &mut Cx<'cx>,
-        v: Handle<'cx, JsValue>,
-    ) -> NeonResult<Result<Self, Self::Error>> {
-        match v.downcast::<JsBox<Arc<Mutex<T>>>, _>(cx) {
-            Ok(v) => {
-                let arc = JsBox::deref(&v);
-                Ok(Ok(<Arc<Mutex<T>> as std::ops::Deref>::deref(arc)))
-            }
-            Err(_) => Ok(Err(RustTypeExpected::new())),
-        }
-    }
-}
-
-impl<'cx, T: 'static> TryFromJs<'cx> for MutexGuard<'cx, T> {
-    type Error = MutexError;
-
-    fn try_from_js(
-        cx: &mut Cx<'cx>,
-        v: Handle<'cx, JsValue>,
-    ) -> NeonResult<Result<Self, Self::Error>> {
-        match v.downcast::<JsBox<Arc<Mutex<T>>>, _>(cx) {
-            Ok(v) => {
-                let arc = JsBox::deref(&v);
-                let mutex = <Arc<Mutex<T>> as std::ops::Deref>::deref(arc);
-                Ok(mutex.lock().map_err(|_| MutexError::Poisoned))
-            }
-            Err(_) => Ok(Err(MutexError::WrongType)),
-        }
-    }
-}
-
-impl<'cx, T> TryIntoJs<'cx> for Mutex<T>
-where
-    T: 'static,
-{
-    type Value = JsBox<Arc<Mutex<T>>>;
-
-    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
-        Ok(JsBox::manually_finalize(cx, Arc::new(self)))
     }
 }

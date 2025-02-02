@@ -123,42 +123,6 @@ impl<'cx> TryIntoJs<'cx> for RefCellError {
 
 impl private::Sealed for RefCellError {}
 
-pub enum MutexError {
-    WrongType,
-    Poisoned,
-}
-
-impl fmt::Display for MutexError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            MutexError::WrongType => write!(f, "expected {}", RefCell::<()>::container_name()),
-            MutexError::Poisoned => write!(f, "std::sync::Mutex is poisoned"),
-        }
-    }
-}
-
-impl fmt::Debug for MutexError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            MutexError::WrongType => f.debug_tuple("MutexError::WrongType").finish(),
-            MutexError::Poisoned => f.debug_tuple("MutexError::Poisoned").finish(),
-        }
-    }
-}
-
-impl<'cx> TryIntoJs<'cx> for MutexError {
-    type Value = JsError;
-
-    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
-        match self {
-            MutexError::WrongType => JsError::type_error(cx, self.to_string()),
-            MutexError::Poisoned => JsError::error(cx, self.to_string()),
-        }
-    }
-}
-
-impl private::Sealed for MutexError {}
-
 impl<'cx> TryIntoJs<'cx> for Infallible {
     type Value = JsValue;
 
