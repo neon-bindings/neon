@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    context::Cx,
+    context::{Context, Cx},
     handle::Handle,
     result::{JsResult, NeonResult},
     types::{
@@ -38,7 +38,10 @@ impl<'cx, T: 'static> TryFromJs<'cx> for Ref<'cx, T> {
         v: Handle<'cx, JsValue>,
     ) -> NeonResult<Result<Self, Self::Error>> {
         match v.downcast::<JsBox<RefCell<T>>, _>(cx) {
-            Ok(v) => Ok(Ok(JsBox::deref(&v).borrow())),
+            Ok(v) => match JsBox::deref(&v).try_borrow() {
+                Ok(r) => Ok(Ok(r)),
+                Err(_) => cx.throw_error("RefCell is already mutably borrowed"),
+            },
             Err(_) => Ok(Err(TypeExpected::new())),
         }
     }
@@ -52,7 +55,10 @@ impl<'cx, T: 'static> TryFromJs<'cx> for RefMut<'cx, T> {
         v: Handle<'cx, JsValue>,
     ) -> NeonResult<Result<Self, Self::Error>> {
         match v.downcast::<JsBox<RefCell<T>>, _>(cx) {
-            Ok(v) => Ok(Ok(JsBox::deref(&v).borrow_mut())),
+            Ok(v) => match JsBox::deref(&v).try_borrow_mut() {
+                Ok(r) => Ok(Ok(r)),
+                Err(_) => cx.throw_error("RefCell is already borrowed"),
+            },
             Err(_) => Ok(Err(TypeExpected::new())),
         }
     }
