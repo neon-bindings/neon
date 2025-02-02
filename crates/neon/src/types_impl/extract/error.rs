@@ -63,7 +63,9 @@ impl<T: Container> fmt::Display for RustTypeExpected<T> {
 
 impl<T: Container> fmt::Debug for RustTypeExpected<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_tuple("RustTypeExpected").field(&T::container_name()).finish()
+        f.debug_tuple("RustTypeExpected")
+            .field(&T::container_name())
+            .finish()
     }
 }
 

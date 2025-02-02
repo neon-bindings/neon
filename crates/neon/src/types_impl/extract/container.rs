@@ -1,7 +1,13 @@
 use std::cell::RefCell;
 
 use crate::{
-    context::Cx, handle::Handle, result::{JsResult, NeonResult}, types::{extract::{TryFromJs, TryIntoJs}, JsBox, JsValue}
+    context::Cx,
+    handle::Handle,
+    result::{JsResult, NeonResult},
+    types::{
+        extract::{TryFromJs, TryIntoJs},
+        JsBox, JsValue,
+    },
 };
 
 use super::error::RustTypeExpected;
