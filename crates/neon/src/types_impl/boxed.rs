@@ -1,6 +1,6 @@
 use std::{
     any::{self, Any},
-    ops::Deref
+    ops::Deref,
 };
 
 use crate::{
