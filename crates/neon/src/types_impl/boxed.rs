@@ -234,14 +234,10 @@ impl<T: 'static> ValueInternal for JsBox<T> {
 /// until the application terminates, only that its lifetime is indefinite.
 impl<T: Finalize + 'static> JsBox<T> {
     /// Constructs a new `JsBox` containing `value`.
-    pub fn new<'a, C>(cx: &mut C, value: T) -> Handle<'a, JsBox<T>>
-    where
-        C: Context<'a>,
-        T: 'static,
-    {
+    pub fn new<'cx, C: Context<'cx>>(cx: &mut C, value: T) -> Handle<'cx, JsBox<T>> {
         // This function will execute immediately before the `JsBox` is garbage collected.
         // It unwraps the `napi_external`, downcasts the `BoxAny` and moves the type
-        // out of the `Box`. Lastly, it calls the trait method `Finalize::fianlize` of the
+        // out of the `Box`. Lastly, it calls the trait method `Finalize::finalize` of the
         // contained value `T`.
         fn finalizer<U: Finalize + 'static>(env: raw::Env, data: BoxAny) {
             let data = *data.downcast::<U>().unwrap();
@@ -250,29 +246,29 @@ impl<T: Finalize + 'static> JsBox<T> {
             Cx::with_context(env, move |mut cx| data.finalize(&mut cx));
         }
 
-        let v = Box::new(value) as BoxAny;
-        // Since this value was just constructed, we know it is `T`
-        let raw_data = &*v as *const dyn Any as *const T;
-        let local = unsafe { external::create(cx.env().to_raw(), v, finalizer::<T>) };
-
-        Handle::new_internal(Self(JsBoxInner { local, raw_data }))
+        Self::create_external(cx, value, finalizer::<T>)
     }
 }
 
 impl<T: 'static> JsBox<T> {
-    pub(crate) fn manually_finalize<'a, C>(cx: &mut C, value: T) -> Handle<'a, JsBox<T>>
-    where
-        C: Context<'a>,
-        T: 'static,
-    {
+    pub(crate) fn manually_finalize<'cx>(cx: &mut Cx<'cx>, value: T) -> Handle<'cx, JsBox<T>> {
         fn finalizer(_env: raw::Env, _data: BoxAny) {}
 
+        Self::create_external(cx, value, finalizer)
+    }
+
+    fn create_external<'cx, C: Context<'cx>>(
+        cx: &mut C,
+        value: T,
+        finalizer: fn(raw::Env, BoxAny),
+    ) -> Handle<'cx, JsBox<T>> {
         let v = Box::new(value) as BoxAny;
+
         // Since this value was just constructed, we know it is `T`
         let raw_data = &*v as *const dyn Any as *const T;
         let local = unsafe { external::create(cx.env().to_raw(), v, finalizer) };
 
-        Handle::new_internal(Self(JsBoxInner { local, raw_data }))
+        Handle::new_internal(JsBox(JsBoxInner { local, raw_data }))
     }
 }
 

@@ -59,8 +59,8 @@ impl<T> Sealed for Arc<T> {}
 
 impl<T> Sealed for Rc<T> {}
 
-impl<'a, T> Sealed for Ref<'a, T> {}
+impl<T> Sealed for Ref<'_, T> {}
 
-impl<'a, T> Sealed for RefMut<'a, T> {}
+impl<T> Sealed for RefMut<'_, T> {}
 
 impl_sealed!(u8, u16, u32, i8, i16, i32, f32, f64, bool, String, Date, Throw, Error,);

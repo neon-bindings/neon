@@ -83,7 +83,7 @@ impl<'cx, T: 'static> TryFromJs<'cx> for Rc<T> {
         v: Handle<'cx, JsValue>,
     ) -> NeonResult<Result<Self, Self::Error>> {
         match v.downcast::<JsBox<Rc<T>>, _>(cx) {
-            Ok(v) => Ok(Ok(JsBox::deref(&v).clone())),
+            Ok(v) => Ok(Ok(Rc::clone(&v))),
             Err(_) => Ok(Err(TypeExpected::new())),
         }
     }
@@ -108,7 +108,7 @@ impl<'cx, T: 'static> TryFromJs<'cx> for Arc<T> {
         v: Handle<'cx, JsValue>,
     ) -> NeonResult<Result<Self, Self::Error>> {
         match v.downcast::<JsBox<Arc<T>>, _>(cx) {
-            Ok(v) => Ok(Ok(JsBox::deref(&v).clone())),
+            Ok(v) => Ok(Ok(Arc::clone(&v))),
             Err(_) => Ok(Err(TypeExpected::new())),
         }
     }
