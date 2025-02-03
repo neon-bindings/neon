@@ -1,3 +1,9 @@
+use std::{
+    cell::{Ref, RefCell, RefMut},
+    rc::Rc,
+    sync::Arc,
+};
+
 use crate::{
     context::FunctionContext,
     handle::{Handle, Root},
@@ -44,5 +50,17 @@ impl<T> Sealed for Option<T> {}
 impl<T, E> Sealed for Result<T, E> {}
 
 impl<'cx, T> Sealed for Box<T> where T: TryIntoJs<'cx> {}
+
+impl<T> Sealed for RefCell<T> {}
+
+impl<T> Sealed for &RefCell<T> {}
+
+impl<T> Sealed for Arc<T> {}
+
+impl<T> Sealed for Rc<T> {}
+
+impl<T> Sealed for Ref<'_, T> {}
+
+impl<T> Sealed for RefMut<'_, T> {}
 
 impl_sealed!(u8, u16, u32, i8, i16, i32, f32, f64, bool, String, Date, Throw, Error,);

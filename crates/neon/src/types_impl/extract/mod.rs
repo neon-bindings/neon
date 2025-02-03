@@ -126,6 +126,7 @@ pub mod json;
 
 mod boxed;
 mod buffer;
+mod container;
 mod either;
 mod error;
 mod private;
