@@ -1,0 +1,27 @@
+{
+  "name": "bench",
+  "private": true,
+  "description": "Neon benchmark suite",
+  "main": "index.js",
+  "scripts": {
+    "benchmark": "node --allow-natives-syntax index.js",
+    "cargo-build": "cargo build --message-format=json-render-diagnostics > cargo.log",
+    "postcargo-build": "neon dist < cargo.log",
+    "build": "npm run cargo-build -- --release"
+  },
+  "author": "David Herman <david.herman@gmail.com>",
+  "devDependencies": {
+    "@neon-rs/cli": "0.1.82"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neon-bindings/neon.git"
+  },
+  "bugs": {
+    "url": "https://github.com/neon-bindings/neon/issues"
+  },
+  "homepage": "https://github.com/neon-bindings/neon#readme",
+  "dependencies": {
+    "bench-node": "^0.5.3"
+  }
+}
