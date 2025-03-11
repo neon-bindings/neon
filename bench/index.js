@@ -1,5 +1,5 @@
-const { Suite, jsonReport } = require('bench-node');
-const addon = require('./index.node');
+const { Suite, jsonReport } = require("bench-node");
+const addon = require("./index.node");
 
 // A custom reporter for the bencher.dev benchmarking platform.
 // Format: https://bencher.dev/docs/reference/bencher-metric-format/
@@ -10,8 +10,8 @@ function reportBencherDev(results) {
     // result.histogram to report a "latency" measure with the median as the "value",
     // min as "lower_value", and max as "upper_value".
     bmf[result.name] = {
-      "throughput": {
-        "value": result.opsSec,
+      throughput: {
+        value: result.opsSec,
       },
     };
   }
@@ -20,15 +20,15 @@ function reportBencherDev(results) {
 
 const suite = new Suite({ reporter: reportBencherDev });
 
-suite.add('hello-world', () => {
+suite.add("hello-world", () => {
   addon.hello();
 });
 
-suite.add('manually-exported-noop', () => {
+suite.add("manually-exported-noop", () => {
   addon.manualNoop();
 });
 
-suite.add('auto-exported-noop', () => {
+suite.add("auto-exported-noop", () => {
   addon.exportNoop();
 });
 
@@ -36,15 +36,15 @@ function triple(s, n, b) {
   return [s, n, b];
 }
 
-suite.add('JsFunction::call', () => {
+suite.add("JsFunction::call", () => {
   addon.callCallbackWithCall(triple);
 });
 
-suite.add('JsFunction::call_with', () => {
+suite.add("JsFunction::call_with", () => {
   addon.callCallbackWithCallWith(triple);
 });
 
-suite.add('JsFunction::bind', () => {
+suite.add("JsFunction::bind", () => {
   addon.callCallbackWithBind(triple);
 });
 
