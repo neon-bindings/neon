@@ -1,7 +1,7 @@
 {
   "name": "bench",
   "private": true,
-  "description": "Neon benchmark suite",
+  "description": "Neon performance regression suite",
   "main": "index.js",
   "scripts": {
     "benchmark": "node --allow-natives-syntax index.js",

@@ -1,4 +1,4 @@
-# bench: Neon benchmark suite
+# bench: Neon performance regression suite
 
 ## Building bench
 
