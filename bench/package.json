@@ -22,6 +22,6 @@
   },
   "homepage": "https://github.com/neon-bindings/neon#readme",
   "dependencies": {
-    "bench-node": "^0.5.3"
+    "bench-node": "^0.5.4"
   }
 }
