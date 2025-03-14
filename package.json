@@ -10,7 +10,8 @@
   },
   "workspaces": [
     "pkgs/*",
-    "test/*"
+    "test/*",
+    "bench"
   ],
   "devDependencies": {
     "prettier": "^2.7.1"
