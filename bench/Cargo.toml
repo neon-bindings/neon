@@ -1,0 +1,16 @@
+[package]
+name = "bench"
+version = "0.1.0"
+description = "Neon performance regression suite"
+authors = ["David Herman <david.herman@gmail.com>"]
+license = "MIT"
+edition = "2021"
+exclude = ["index.node"]
+
+[lib]
+crate-type = ["cdylib"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+neon = { path = "../crates/neon" }

@@ -3,4 +3,5 @@ resolver = "2"
 members = [
     "crates/*",
     "test/*",
+    "bench",
 ]
