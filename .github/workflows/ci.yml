@@ -117,7 +117,7 @@ jobs:
 
       - name: Generate coverage report
         if: matrix.os == 'ubuntu-latest' && matrix.rust-toolchain == 'stable'
-        run: cargo llvm-cov report --ignore-filename-regex test --codecov --output-path target/codecov.json
+        run: cargo llvm-cov report --codecov --output-path target/codecov.json
 
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest' && matrix.rust-toolchain == 'stable'
