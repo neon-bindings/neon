@@ -29,8 +29,7 @@ jobs:
         run: npm run build
       - name: Track base branch benchmarks with Bencher
         if: github.ref_name == 'main'
-        run:
-          bencher run
+        run: bencher run
           --project neon
           --token '${{ secrets.BENCHER_API_TOKEN }}'
           --branch main
@@ -41,8 +40,7 @@ jobs:
         with-directory: ./bench
       - name: Track pull request benchmarks with Bencher
         if: github.ref_name != 'main'
-        run:
-          bencher run
+        run: bencher run
           --project neon
           --token '${{ secrets.BENCHER_API_TOKEN }}'
           --branch "$GITHUB_HEAD_REF"
