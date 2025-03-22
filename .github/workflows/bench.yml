@@ -25,7 +25,7 @@ jobs:
       - name: npm install
         run: npm ci --prefer-offline --no-audit --no-fund
       - name: Install Benchmark Dependencies
-        with-directory: ./bench
+        working-directory: ./bench
         run: npm install
       - name: Build Benchmark
         with-directory: ./bench
