@@ -28,7 +28,7 @@ jobs:
         working-directory: ./bench
         run: npm install
       - name: Build Benchmark
-        with-directory: ./bench
+        working-directory: ./bench
         run: npm run build
       - name: Track base branch benchmarks with Bencher
         if: github.ref_name == 'main'
@@ -40,7 +40,7 @@ jobs:
           --adapter json
           --github-actions '${{ secrets.GITHUB_TOKEN }}'
           npm run benchmark
-        with-directory: ./bench
+        working-directory: ./bench
       - name: Track pull request benchmarks with Bencher
         if: github.ref_name != 'main'
         run: bencher run
@@ -55,4 +55,4 @@ jobs:
           --adapter json
           --github-actions '${{ secrets.GITHUB_TOKEN }}'
           npm run benchmark
-        with-directory: ./bench
+        working-directory: ./bench
