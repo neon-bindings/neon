@@ -1,4 +1,4 @@
-name: Bench
+name: Benchmarks
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   bench:
-    name: Performance Regression Tests
+    name: regression
     permissions:
       checks: write
     runs-on: ubuntu-latest
