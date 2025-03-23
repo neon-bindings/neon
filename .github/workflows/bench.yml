@@ -1,3 +1,5 @@
+name: Bench
+
 on:
   push:
     branches:
@@ -8,7 +10,7 @@ on:
 
 jobs:
   bench:
-    name: Performance Regression Tests (Baseline)
+    name: Performance Regression Tests
     permissions:
       checks: write
     runs-on: ubuntu-latest
