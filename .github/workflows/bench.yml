@@ -41,7 +41,7 @@ jobs:
           --testbed ubuntu-latest
           --adapter json
           --github-actions '${{ secrets.GITHUB_TOKEN }}'
-          npm run benchmark
+          npm run --silent benchmark
         working-directory: ./bench
       - name: Track pull request benchmarks with Bencher
         if: github.ref_name != 'main'
