@@ -5,3 +5,6 @@ members = [
     "test/*",
     "bench",
 ]
+
+[profile.release]
+lto = true
