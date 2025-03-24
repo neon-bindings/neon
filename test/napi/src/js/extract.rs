@@ -66,74 +66,74 @@ pub fn extract_buffer_sum(mut cx: FunctionContext) -> JsResult<JsNumber> {
     }
 
     // `Float32Array`
-    if let Some(buf) = cx.args_opt::<Vec<f32>>()? {
+    if let Some(buf) = cx.arg_opt::<Vec<f32>>()? {
         return sum(&mut cx, buf, |n| n.into());
     }
 
     // `Float32Array`
-    if let Some(buf) = cx.args_opt::<Vec<f64>>()? {
+    if let Some(buf) = cx.arg_opt::<Vec<f64>>()? {
         return sum(&mut cx, buf, |n| n);
     }
 
     // `Buffer`
-    if let Some(Buffer(buf)) = cx.args_opt()? {
+    if let Some(Buffer(buf)) = cx.arg_opt()? {
         return sum(&mut cx, buf, |n| n as f64);
     }
 
     // `ArrayBuffer`
-    if let Some(ArrayBuffer(buf)) = cx.args_opt()? {
+    if let Some(ArrayBuffer(buf)) = cx.arg_opt()? {
         return sum(&mut cx, buf, |n| n as f64);
     }
 
     // `Uint8Array`
-    if let Some(buf) = cx.args_opt::<Vec<u8>>()? {
+    if let Some(buf) = cx.arg_opt::<Vec<u8>>()? {
         return sum(&mut cx, buf, |n| n as f64);
     }
 
     // `Uint16Array`
-    if let Some(buf) = cx.args_opt::<Vec<u16>>()? {
+    if let Some(buf) = cx.arg_opt::<Vec<u16>>()? {
         return sum(&mut cx, buf, |n| n as f64);
     }
 
     // `Uint32Array`
-    if let Some(buf) = cx.args_opt::<Vec<u32>>()? {
+    if let Some(buf) = cx.arg_opt::<Vec<u32>>()? {
         return sum(&mut cx, buf, |n| n as f64);
     }
 
     // `Uint64Array`
-    if let Some(buf) = cx.args_opt::<Vec<u64>>()? {
+    if let Some(buf) = cx.arg_opt::<Vec<u64>>()? {
         return sum(&mut cx, buf, |n| n as f64);
     }
 
     // `Int8Array`
-    if let Some(buf) = cx.args_opt::<Vec<i8>>()? {
+    if let Some(buf) = cx.arg_opt::<Vec<i8>>()? {
         return sum(&mut cx, buf, |n| n as f64);
     }
 
     // `Int16Array`
-    if let Some(buf) = cx.args_opt::<Vec<i16>>()? {
+    if let Some(buf) = cx.arg_opt::<Vec<i16>>()? {
         return sum(&mut cx, buf, |n| n as f64);
     }
 
     // `Int32Array`
-    if let Some(buf) = cx.args_opt::<Vec<i32>>()? {
+    if let Some(buf) = cx.arg_opt::<Vec<i32>>()? {
         return sum(&mut cx, buf, |n| n as f64);
     }
 
     // `Int64Array`
-    let buf: Vec<i64> = cx.args()?;
+    let buf: Vec<i64> = cx.arg()?;
 
     sum(&mut cx, buf, |n| n as f64)
 }
 
 pub fn extract_json_sum(mut cx: FunctionContext) -> JsResult<JsNumber> {
-    let Json::<Vec<f64>>(nums) = cx.args()?;
+    let Json::<Vec<f64>>(nums) = cx.arg()?;
 
     Ok(cx.number(nums.into_iter().sum::<f64>()))
 }
 
 pub fn extract_single_add_one(mut cx: FunctionContext) -> JsResult<JsNumber> {
-    let n: f64 = cx.args()?;
+    let n: f64 = cx.arg()?;
 
     Ok(cx.number(n + 1.0))
 }

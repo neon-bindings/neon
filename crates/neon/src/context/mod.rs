@@ -182,7 +182,7 @@ use crate::{
     types::{
         boxed::{Finalize, JsBox},
         error::JsError,
-        extract::FromArgs,
+        extract::{FromArgs, TryFromJs},
         private::ValueInternal,
         Deferred, JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber,
         JsObject, JsPromise, JsString, JsUndefined, JsValue, StringResult, Value,
@@ -844,6 +844,14 @@ impl<'cx> FunctionContext<'cx> {
         T::from_args(self)
     }
 
+    /// Extract a single argument from a unary function. See [`Context::args`] for more details.
+    pub fn arg<T>(&mut self) -> NeonResult<T>
+    where
+        T: TryFromJs<'cx>,
+    {
+        self.args::<(T,)>().map(|(v,)| v)
+    }
+
     /// Extract Rust data from the JavaScript arguments.
     ///
     /// Similar to [`FunctionContext::args`], but does not throw a JavaScript exception on errors. Useful
@@ -866,6 +874,14 @@ impl<'cx> FunctionContext<'cx> {
         T: FromArgs<'cx>,
     {
         T::from_args_opt(self)
+    }
+
+    /// Extract a single optional argument from a unary function. See [`Context::args_opt`] for more details.
+    pub fn arg_opt<T>(&mut self) -> NeonResult<Option<T>>
+    where
+        T: TryFromJs<'cx>,
+    {
+        self.args_opt::<(T,)>().map(|v| v.map(|(v,)| v))
     }
 
     pub(crate) fn argv<const N: usize>(&mut self) -> [Handle<'cx, JsValue>; N] {
