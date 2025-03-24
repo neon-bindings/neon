@@ -184,26 +184,17 @@ pub struct Date(pub f64);
 pub trait FromArgs<'cx>: private::FromArgsInternal<'cx> {}
 
 // Convenience implementation for single arguments instead of needing a single element tuple
-impl<'cx, T> private::FromArgsInternal<'cx> for T
-where
-    T: TryFromJs<'cx>,
-{
-    fn from_args(cx: &mut FunctionContext<'cx>) -> NeonResult<Self> {
-        let (v,) = private::FromArgsInternal::from_args(cx)?;
-
-        Ok(v)
+impl<'cx> private::FromArgsInternal<'cx> for () {
+    fn from_args(_cx: &mut FunctionContext<'cx>) -> NeonResult<Self> {
+        Ok(())
     }
 
-    fn from_args_opt(cx: &mut FunctionContext<'cx>) -> NeonResult<Option<Self>> {
-        if let Some((v,)) = private::FromArgsInternal::from_args_opt(cx)? {
-            Ok(Some(v))
-        } else {
-            Ok(None)
-        }
+    fn from_args_opt(_cx: &mut FunctionContext<'cx>) -> NeonResult<Option<Self>> {
+        Ok(Some(()))
     }
 }
 
-impl<'cx, T> FromArgs<'cx> for T where T: TryFromJs<'cx> {}
+impl<'cx> FromArgs<'cx> for () {}
 
 // N.B.: `FromArgs` _could_ have a blanket impl for `T` where `T: FromArgsInternal`.
 // However, it is explicitly implemented in the macro in order for it to be included in docs.
