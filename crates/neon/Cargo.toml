@@ -1,6 +1,6 @@
 [package]
 name = "neon"
-version = "1.0.0"
+version = "1.1.0-alpha.2"
 authors = ["Dave Herman <david.herman@gmail.com>"]
 description = "A safe abstraction layer for Node.js."
 readme = "../../README.md"

@@ -9,7 +9,6 @@ license = "MIT/Apache-2.0"
 crate-type = ["cdylib"]
 
 [dependencies.neon]
-version = "1.0.0"
 path = "../../crates/neon"
 features = ["futures", "napi-experimental", "serde"]
 
