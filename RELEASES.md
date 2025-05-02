@@ -2,6 +2,60 @@
 
 `0.1.9` supports a [breaking change in `cargo`](https://github.com/rust-lang/cargo/issues/13867) that converts artifact names from `kebab-case` to `snake_case`.
 
+# Version 1.1.0
+
+## Continued Commitment to Compatibility
+
+Our strong commitment to compatibility since the 1.0 release remains unchanged. New functionality
+that has not yet stabilized is published under feature flags, so the only breaking changes that we
+expect to publish are those that affect the unstable features, or, as always, safety bugfixes.
+
+## Version 1.1.0-alpha.2
+
+## Breaking Changes (unstable features only)
+
+* Convert snake_case to camelCase when exporting functions (https://github.com/neon-bindings/neon/pull/1084)
+* Remove `FromArgs` impl on `T: TryFromJs` and add `cx.{arg, arg_opt}` (https://github.com/neon-bindings/neon/pull/1096)
+
+## Other
+
+* Relax lifetime constraints on `With` (https://github.com/neon-bindings/neon/pull/1086)
+* Add `JsBox::{deref, as_inner}` to get long-lived reference to JsBox contents (https://github.com/neon-bindings/neon/pull/1087)
+* Add extractors for TypedArrays (https://github.com/neon-bindings/neon/pull/1089)
+* Add extractors for common container types (https://github.com/neon-bindings/neon/pull/1091)
+
+## Version 1.1.0-alpha.1
+
+## Breaking Changes (unstable features only)
+
+* `TryIntoJs` and `TryFromJs` take `Cx` instead of generic `Context` (https://github.com/neon-bindings/neon/pull/1062)
+
+## Bugfixes
+
+* Fix panic when borrowing empty buffer or typed array (https://github.com/neon-bindings/neon/pull/1058)
+
+## Other
+
+* More reliable checking for `Result` types in `#[export]` (https://github.com/neon-bindings/neon/pull/1057)
+* Allow users to take `Cx` instead of generic `Context` (https://github.com/neon-bindings/neon/pull/1048)
+* Introduce `With` for `TryIntoJs` (https://github.com/neon-bindings/neon/pull/1059)
+* Add tokio async runtime support to `#[export]` (https://github.com/neon-bindings/neon/pull/1055)
+* Add `TryIntoJs` and `TryFromJs` for common container types (https://github.com/neon-bindings/neon/pull/1066)
+* Allow `Cx` in exported functions (https://github.com/neon-bindings/neon/pull/1068)
+
+## Version 1.1.0-alpha.0
+
+## Bugfixes
+
+* Fix build script behavior based on cargo diagnostics format change (https://github.com/neon-bindings/neon/pull/1039)
+
+## Other
+
+* Added Extractors API (https://github.com/neon-bindings/neon/pull/1024)
+* Added `#[export]` macro (https://github.com/neon-bindings/neon/pull/1025)
+* Added `npm init neon --lib` (https://github.com/neon-bindings/neon/pull/1014 and https://github.com/neon-bindings/neon/pull/1041)
+
+
 # Version 1.0.0
 
 ## Commitment to Compatibility
