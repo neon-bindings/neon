@@ -401,7 +401,7 @@ dependencies = [
 
 [[package]]
 name = "neon"
-version = "1.0.0"
+version = "1.1.0-alpha.2"
 dependencies = [
  "anyhow",
  "aquamarine",
@@ -428,7 +428,7 @@ dependencies = [
 
 [[package]]
 name = "neon-macros"
-version = "1.0.0"
+version = "1.1.0-alpha.2"
 dependencies = [
  "proc-macro2",
  "quote",
