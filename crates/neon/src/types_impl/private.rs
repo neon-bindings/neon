@@ -2,10 +2,10 @@ use std::{ffi::c_void, mem::MaybeUninit};
 
 use crate::{
     context::{
-        internal::{ContextInternal, Env},
         Context, Cx,
+        internal::{ContextInternal, Env},
     },
-    handle::{internal::TransparentNoCopyWrapper, Handle},
+    handle::{Handle, internal::TransparentNoCopyWrapper},
     result::{JsResult, NeonResult, Throw},
     sys::{self, bindings as napi, raw},
     types::Value,
@@ -123,7 +123,9 @@ unsafe fn check_call_status<'a, C: Context<'a>>(
     status: Result<(), sys::Status>,
 ) -> NeonResult<()> {
     match status {
-        Err(sys::Status::InvalidArg) if !unsafe { sys::tag::is_function(cx.env().to_raw(), callee) } => {
+        Err(sys::Status::InvalidArg)
+            if !unsafe { sys::tag::is_function(cx.env().to_raw(), callee) } =>
+        {
             return cx.throw_error("not a function");
         }
         Err(sys::Status::PendingException) => {

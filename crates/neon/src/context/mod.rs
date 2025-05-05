@@ -180,12 +180,12 @@ use crate::{
         scope::{EscapableHandleScope, HandleScope},
     },
     types::{
+        Deferred, JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber,
+        JsObject, JsPromise, JsString, JsUndefined, JsValue, StringResult, Value,
         boxed::{Finalize, JsBox},
         error::JsError,
         extract::{FromArgs, TryFromJs},
         private::ValueInternal,
-        Deferred, JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber,
-        JsObject, JsPromise, JsString, JsUndefined, JsValue, StringResult, Value,
     },
 };
 
@@ -313,9 +313,7 @@ impl CallbackInfo<'_> {
     }
 
     pub fn argv<'b, C: Context<'b>>(&self, cx: &mut C) -> sys::call::Arguments {
-        unsafe {
-            sys::call::argv(cx.env().to_raw(), self.info)
-        }
+        unsafe { sys::call::argv(cx.env().to_raw(), self.info) }
     }
 
     pub fn this<'b, C: Context<'b>>(&self, cx: &mut C) -> raw::Local {
@@ -390,9 +388,7 @@ pub trait Context<'a>: ContextInternal<'a> {
         F: FnOnce(Cx<'b>) -> T,
     {
         let env = self.env();
-        let scope = unsafe {
-            HandleScope::new(env.to_raw())
-        };
+        let scope = unsafe { HandleScope::new(env.to_raw()) };
         let result = f(Cx::new(env));
 
         drop(scope);
@@ -412,18 +408,12 @@ pub trait Context<'a>: ContextInternal<'a> {
         F: FnOnce(Cx<'b>) -> JsResult<'b, V>,
     {
         let env = self.env();
-        let scope = unsafe {
-            EscapableHandleScope::new(env.to_raw())
-        };
+        let scope = unsafe { EscapableHandleScope::new(env.to_raw()) };
         let cx = Cx::new(env);
 
-        let escapee = unsafe {
-            scope.escape(f(cx)?.to_local())
-        };
+        let escapee = unsafe { scope.escape(f(cx)?.to_local()) };
 
-        Ok(unsafe {
-            Handle::new_internal(V::from_local(self.env(), escapee))
-        })
+        Ok(unsafe { Handle::new_internal(V::from_local(self.env(), escapee)) })
     }
 
     fn try_catch<T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
@@ -522,7 +512,6 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Produces a handle to the JavaScript global object.
     fn global_object(&mut self) -> Handle<'a, JsObject> {
         JsObject::build(|out| unsafe {
-            
             sys::scope::get_global(self.env().to_raw(), out);
         })
     }
@@ -810,9 +799,7 @@ impl<'cx> FunctionContext<'cx> {
         };
 
         argv.get(i)
-            .map(|v| unsafe {
-                Handle::new_internal(JsValue::from_local(self.env(), v))
-            })
+            .map(|v| unsafe { Handle::new_internal(JsValue::from_local(self.env(), v)) })
     }
 
     /// Produces the `i`th argument and casts it to the type `V`, or throws an exception if `i` is greater than or equal to `self.len()` or cannot be cast to `V`.

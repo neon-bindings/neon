@@ -100,7 +100,8 @@ pub unsafe fn type_tag_object(env: Env, object: Local, tag: &super::TypeTag) {
 pub unsafe fn check_object_type_tag(env: Env, object: Local, tag: &super::TypeTag) -> bool {
     let mut result = false;
 
-    unsafe { napi::check_object_type_tag(env, object, tag as *const _, &mut result as *mut _) }.unwrap();
+    unsafe { napi::check_object_type_tag(env, object, tag as *const _, &mut result as *mut _) }
+        .unwrap();
     result
 }
 

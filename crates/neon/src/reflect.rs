@@ -4,7 +4,7 @@ use crate::{
     context::Context,
     handle::Handle,
     result::JsResult,
-    types::{build, private::ValueInternal, JsString, JsValue},
+    types::{JsString, JsValue, build, private::ValueInternal},
 };
 
 pub fn eval<'a, 'b, C: Context<'a>>(

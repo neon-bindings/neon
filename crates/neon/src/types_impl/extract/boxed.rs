@@ -3,8 +3,8 @@ use crate::{
     handle::Handle,
     result::{JsResult, NeonResult},
     types::{
-        extract::{private, TryFromJs, TryIntoJs, TypeExpected},
         Finalize, JsBox, JsValue,
+        extract::{TryFromJs, TryIntoJs, TypeExpected, private},
     },
 };
 

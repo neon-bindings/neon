@@ -8,8 +8,8 @@ use crate::{
     object::Object,
     result::{JsResult, NeonResult},
     types::{
-        extract::{private, TryFromJs, TryIntoJs},
         JsError, JsValue,
+        extract::{TryFromJs, TryIntoJs, private},
     },
 };
 

@@ -451,7 +451,9 @@ pub(crate) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
     };
 
     if actual_version < expected_version {
-        eprintln!("Minimum required Node-API version {expected_version}, found {actual_version}.\n\nSee the Node-API support matrix for more details: https://nodejs.org/api/n-api.html#node-api-version-matrix");
+        eprintln!(
+            "Minimum required Node-API version {expected_version}, found {actual_version}.\n\nSee the Node-API support matrix for more details: https://nodejs.org/api/n-api.html#node-api-version-matrix"
+        );
     }
 
     unsafe {

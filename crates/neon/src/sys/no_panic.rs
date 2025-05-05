@@ -12,7 +12,7 @@ use std::{
     any::Any,
     ffi::c_void,
     mem::MaybeUninit,
-    panic::{catch_unwind, AssertUnwindSafe},
+    panic::{AssertUnwindSafe, catch_unwind},
     ptr,
 };
 
@@ -144,7 +144,8 @@ unsafe fn fatal_exception(env: Env, error: Local) {
     let mut promise = MaybeUninit::uninit();
 
     unsafe {
-        let deferred = match napi::create_promise(env, deferred.as_mut_ptr(), promise.as_mut_ptr()) {
+        let deferred = match napi::create_promise(env, deferred.as_mut_ptr(), promise.as_mut_ptr())
+        {
             Ok(()) => deferred.assume_init(),
             _ => fatal_error("Failed to create a promise"),
         };
@@ -269,13 +270,15 @@ unsafe fn external_from_panic(env: Env, panic: Panic) -> Local {
     let fail = || unsafe { fatal_error("Failed to create a neon::types::JsBox from a panic") };
     let mut result = MaybeUninit::uninit();
 
-    if unsafe { napi::create_external(
-        env,
-        Box::into_raw(Box::new(DebugSendWrapper::new(panic))).cast(),
-        Some(finalize_panic),
-        ptr::null_mut(),
-        result.as_mut_ptr(),
-    ) }
+    if unsafe {
+        napi::create_external(
+            env,
+            Box::into_raw(Box::new(DebugSendWrapper::new(panic))).cast(),
+            Some(finalize_panic),
+            ptr::null_mut(),
+            result.as_mut_ptr(),
+        )
+    }
     .is_err()
     {
         fail();
@@ -302,7 +305,9 @@ unsafe fn create_string(env: Env, msg: &str) -> Local {
     let mut string = MaybeUninit::uninit();
 
     unsafe {
-        if napi::create_string_utf8(env, msg.as_ptr().cast(), msg.len(), string.as_mut_ptr()).is_err() {
+        if napi::create_string_utf8(env, msg.as_ptr().cast(), msg.len(), string.as_mut_ptr())
+            .is_err()
+        {
             fatal_error("Failed to create a String");
         }
 

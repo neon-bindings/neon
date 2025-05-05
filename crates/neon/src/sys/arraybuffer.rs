@@ -9,9 +9,7 @@ use super::{
 
 pub unsafe fn new(env: Env, len: usize) -> Result<Local, napi::Status> {
     let mut buf = MaybeUninit::uninit();
-    let status = unsafe {
-        napi::create_arraybuffer(env, len, null_mut(), buf.as_mut_ptr())
-    };
+    let status = unsafe { napi::create_arraybuffer(env, len, null_mut(), buf.as_mut_ptr()) };
 
     match status {
         Err(err @ napi::Status::PendingException) => return Err(err),
@@ -67,9 +65,7 @@ pub unsafe fn as_mut_slice<'a>(env: Env, buf: Local) -> &'a mut [u8] {
         return &mut [];
     }
 
-    unsafe {
-        slice::from_raw_parts_mut(data.assume_init().cast(), size)
-    }
+    unsafe { slice::from_raw_parts_mut(data.assume_init().cast(), size) }
 }
 
 /// # Safety

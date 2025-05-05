@@ -10,8 +10,8 @@ use crate::{
     object::Object,
     result::{NeonResult, Throw},
     types::{
-        extract::{Date, Error, TryIntoJs},
         Value,
+        extract::{Date, Error, TryIntoJs},
     },
 };
 
@@ -63,4 +63,6 @@ impl<T> Sealed for Ref<'_, T> {}
 
 impl<T> Sealed for RefMut<'_, T> {}
 
-impl_sealed!(u8, u16, u32, i8, i16, i32, f32, f64, bool, String, Date, Throw, Error,);
+impl_sealed!(
+    u8, u16, u32, i8, i16, i32, f32, f64, bool, String, Date, Throw, Error,
+);

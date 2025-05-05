@@ -2,21 +2,21 @@ use std::{marker::PhantomData, slice};
 
 use crate::{
     context::{
-        internal::{ContextInternal, Env},
         Context, Cx,
+        internal::{ContextInternal, Env},
     },
-    handle::{internal::TransparentNoCopyWrapper, Handle},
+    handle::{Handle, internal::TransparentNoCopyWrapper},
     object::Object,
     result::{JsResult, Throw},
-    sys::{self, raw, typedarray::TypedArrayInfo, TypedArrayType},
+    sys::{self, TypedArrayType, raw, typedarray::TypedArrayInfo},
     types_impl::{
+        Value,
         buffer::{
+            BorrowError, Ref, RefMut, Region, TypedArray,
             lock::{Ledger, Lock},
             private::{self, JsTypedArrayInner},
-            BorrowError, Ref, RefMut, Region, TypedArray,
         },
         private::ValueInternal,
-        Value,
     },
 };
 

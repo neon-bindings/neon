@@ -13,8 +13,8 @@ use crate::{
     handle::Handle,
     result::{JsResult, NeonResult, ResultExt},
     types::{
-        buffer::lock::{Ledger, Lock},
         JsArrayBuffer, JsTypedArray, Value,
+        buffer::lock::{Ledger, Lock},
     },
 };
 

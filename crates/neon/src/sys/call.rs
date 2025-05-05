@@ -113,9 +113,7 @@ pub unsafe fn argv(env: Env, info: FunctionCallbackInfo) -> Arguments {
 
         // There were `ARGV_SIZE` or fewer arguments, use the stack allocated space
     } else {
-        unsafe {
-            SmallVec::from_buf_and_len(argv.assume_init(), argc)
-        }
+        unsafe { SmallVec::from_buf_and_len(argv.assume_init(), argc) }
     };
 
     Arguments(argv)

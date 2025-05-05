@@ -1,7 +1,7 @@
 use std::{panic::resume_unwind, thread};
 
 use crate::{
-    context::{internal::Env, Context, Cx},
+    context::{Context, Cx, internal::Env},
     handle::Handle,
     result::{JsResult, NeonResult},
     sys::{async_work, raw},

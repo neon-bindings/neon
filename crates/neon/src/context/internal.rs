@@ -5,7 +5,7 @@ use crate::{
     handle::Handle,
     result::NeonResult,
     sys::{self, raw},
-    types::{private::ValueInternal, JsObject},
+    types::{JsObject, private::ValueInternal},
 };
 
 #[repr(C)]

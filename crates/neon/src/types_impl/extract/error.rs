@@ -4,8 +4,8 @@ use crate::{
     context::{Context, Cx},
     result::JsResult,
     types::{
-        extract::{private, TryIntoJs},
         JsError, JsValue, Value,
+        extract::{TryIntoJs, private},
     },
 };
 

@@ -1,13 +1,13 @@
 use std::{
     error, fmt,
     sync::{
-        atomic::{AtomicUsize, Ordering},
         Arc,
+        atomic::{AtomicUsize, Ordering},
     },
 };
 
 use crate::{
-    context::{internal::Env, Context, Cx},
+    context::{Context, Cx, internal::Env},
     result::{NeonResult, ResultExt, Throw},
     sys::{self, tsfn::ThreadsafeFunction},
 };

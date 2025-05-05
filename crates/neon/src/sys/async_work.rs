@@ -10,7 +10,7 @@
 use std::{
     ffi::c_void,
     mem,
-    panic::{catch_unwind, resume_unwind, AssertUnwindSafe},
+    panic::{AssertUnwindSafe, catch_unwind, resume_unwind},
     ptr, thread,
 };
 

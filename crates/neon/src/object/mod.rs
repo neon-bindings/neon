@@ -34,17 +34,16 @@
 use smallvec::smallvec;
 
 use crate::{
-    context::{internal::ContextInternal, Context, Cx},
+    context::{Context, Cx, internal::ContextInternal},
     handle::{Handle, Root},
     result::{NeonResult, Throw},
     sys::{self, raw},
     types::{
-        build,
+        JsFunction, JsUndefined, JsValue, Value, build,
         extract::{TryFromJs, TryIntoJs},
         function::{BindOptions, CallOptions},
         private::ValueInternal,
         utf8::Utf8,
-        JsFunction, JsUndefined, JsValue, Value,
     },
 };
 

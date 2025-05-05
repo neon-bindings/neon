@@ -22,8 +22,8 @@ use crate::{
     object::Object,
     result::{JsResult, NeonResult},
     types::{
-        extract::{private, TryFromJs, TryIntoJs},
         JsError, JsFunction, JsObject, JsString, JsValue,
+        extract::{TryFromJs, TryIntoJs, private},
     },
 };
 

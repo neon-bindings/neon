@@ -9,8 +9,8 @@ use crate::{
     handle::Handle,
     result::{JsResult, NeonResult},
     types::{
-        extract::{TryFromJs, TryIntoJs},
         JsBox, JsValue,
+        extract::{TryFromJs, TryIntoJs},
     },
 };
 

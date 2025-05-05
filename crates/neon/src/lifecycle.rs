@@ -12,8 +12,8 @@ use std::{
     any::Any,
     marker::PhantomData,
     sync::{
-        atomic::{AtomicU32, Ordering},
         Arc,
+        atomic::{AtomicU32, Ordering},
     },
 };
 

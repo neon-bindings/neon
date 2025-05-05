@@ -8,7 +8,7 @@ use crate::{
     context::{Context, Cx, ModuleContext},
     handle::Handle,
     result::{JsResult, NeonResult},
-    types::{extract::TryIntoJs, JsValue},
+    types::{JsValue, extract::TryIntoJs},
 };
 
 #[cfg(feature = "serde")]

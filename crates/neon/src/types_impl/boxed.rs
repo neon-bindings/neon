@@ -5,13 +5,13 @@ use std::{
 
 use crate::{
     context::{
-        internal::{ContextInternal, Env},
         Context, Cx,
+        internal::{ContextInternal, Env},
     },
-    handle::{internal::TransparentNoCopyWrapper, Handle},
+    handle::{Handle, internal::TransparentNoCopyWrapper},
     object::Object,
     sys::{external, raw},
-    types::{boxed::private::JsBoxInner, private::ValueInternal, Value},
+    types::{Value, boxed::private::JsBoxInner, private::ValueInternal},
 };
 
 type BoxAny = Box<dyn Any + 'static>;

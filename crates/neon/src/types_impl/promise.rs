@@ -2,14 +2,14 @@ use std::ptr;
 
 use crate::{
     context::{
-        internal::{ContextInternal, Env},
         Context,
+        internal::{ContextInternal, Env},
     },
-    handle::{internal::TransparentNoCopyWrapper, Handle},
+    handle::{Handle, internal::TransparentNoCopyWrapper},
     object::Object,
     result::JsResult,
     sys::{self, no_panic::FailureBoundary, raw},
-    types::{private::ValueInternal, Value},
+    types::{Value, private::ValueInternal},
 };
 
 #[cfg(feature = "napi-4")]
