@@ -76,7 +76,7 @@ impl PropertyKey for u32 {
         out: &mut raw::Local,
         obj: raw::Local,
     ) -> bool {
-        sys::object::get_index(out, cx.env().to_raw(), obj, self)
+        unsafe { sys::object::get_index(out, cx.env().to_raw(), obj, self) }
     }
 
     unsafe fn set_from<'c, C: Context<'c>>(
@@ -86,7 +86,7 @@ impl PropertyKey for u32 {
         obj: raw::Local,
         val: raw::Local,
     ) -> bool {
-        sys::object::set_index(out, cx.env().to_raw(), obj, self, val)
+        unsafe { sys::object::set_index(out, cx.env().to_raw(), obj, self, val) }
     }
 }
 
@@ -99,7 +99,7 @@ impl<'a, K: Value> PropertyKey for Handle<'a, K> {
     ) -> bool {
         let env = cx.env().to_raw();
 
-        sys::object::get(out, env, obj, self.to_local())
+        unsafe { sys::object::get(out, env, obj, self.to_local()) }
     }
 
     unsafe fn set_from<'c, C: Context<'c>>(
@@ -111,7 +111,7 @@ impl<'a, K: Value> PropertyKey for Handle<'a, K> {
     ) -> bool {
         let env = cx.env().to_raw();
 
-        sys::object::set(out, env, obj, self.to_local(), val)
+        unsafe { sys::object::set(out, env, obj, self.to_local(), val) }
     }
 }
 
@@ -125,7 +125,7 @@ impl<'a> PropertyKey for &'a str {
         let (ptr, len) = Utf8::from(self).into_small_unwrap().lower();
         let env = cx.env().to_raw();
 
-        sys::object::get_string(env, out, obj, ptr, len)
+        unsafe { sys::object::get_string(env, out, obj, ptr, len) }
     }
 
     unsafe fn set_from<'c, C: Context<'c>>(
@@ -138,7 +138,7 @@ impl<'a> PropertyKey for &'a str {
         let (ptr, len) = Utf8::from(self).into_small_unwrap().lower();
         let env = cx.env().to_raw();
 
-        sys::object::set_string(env, out, obj, ptr, len, val)
+        unsafe { sys::object::set_string(env, out, obj, ptr, len, val) }
     }
 }
 

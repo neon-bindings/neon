@@ -31,7 +31,7 @@ impl NapiRef {
     /// # Safety
     /// Must only be used from the same module context that created the reference
     pub(crate) unsafe fn unref(self, env: raw::Env) {
-        reference::unreference(env, self.0.cast());
+        unsafe { reference::unreference(env, self.0.cast()) }
     }
 }
 

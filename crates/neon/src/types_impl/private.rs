@@ -71,21 +71,23 @@ pub trait ValueInternal: TransparentNoCopyWrapper + 'static {
         let env = cx.env();
         let mut result: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
 
-        let status = napi::call_function(
-            env.to_raw(),
-            this.to_local(),
-            callee,
-            argc,
-            argv.cast(),
-            result.as_mut_ptr(),
-        );
+        unsafe {
+            let status = napi::call_function(
+                env.to_raw(),
+                this.to_local(),
+                callee,
+                argc,
+                argv.cast(),
+                result.as_mut_ptr(),
+            );
 
-        check_call_status(cx, callee, status)?;
+            check_call_status(cx, callee, status)?;
 
-        Ok(Handle::new_internal(JsValue::from_local(
-            env,
-            result.assume_init(),
-        )))
+            Ok(Handle::new_internal(JsValue::from_local(
+                env,
+                result.assume_init(),
+            )))
+        }
     }
 
     unsafe fn try_construct<'a, 'b, C: Context<'a>, AS>(
@@ -100,15 +102,18 @@ pub trait ValueInternal: TransparentNoCopyWrapper + 'static {
         let (argc, argv) = unsafe { prepare_call(cx, args.as_ref()) }?;
         let env = cx.env();
         let mut result: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
-        let status =
-            napi::new_instance(env.to_raw(), callee, argc, argv.cast(), result.as_mut_ptr());
 
-        check_call_status(cx, callee, status)?;
+        unsafe {
+            let status =
+                napi::new_instance(env.to_raw(), callee, argc, argv.cast(), result.as_mut_ptr());
 
-        Ok(Handle::new_internal(JsValue::from_local(
-            env,
-            result.assume_init(),
-        )))
+            check_call_status(cx, callee, status)?;
+
+            Ok(Handle::new_internal(JsValue::from_local(
+                env,
+                result.assume_init(),
+            )))
+        }
     }
 }
 
@@ -118,11 +123,11 @@ unsafe fn check_call_status<'a, C: Context<'a>>(
     status: Result<(), sys::Status>,
 ) -> NeonResult<()> {
     match status {
-        Err(sys::Status::InvalidArg) if !sys::tag::is_function(cx.env().to_raw(), callee) => {
+        Err(sys::Status::InvalidArg) if !unsafe { sys::tag::is_function(cx.env().to_raw(), callee) } => {
             return cx.throw_error("not a function");
         }
         Err(sys::Status::PendingException) => {
-            return Err(Throw::new());
+            return Err(unsafe { Throw::new() });
         }
         status => status.unwrap(),
     }

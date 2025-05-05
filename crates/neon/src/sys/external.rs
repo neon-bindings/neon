@@ -29,57 +29,61 @@ extern "C" fn finalize_external<T: 'static>(
 /// even another neon module, is undefined behavior.
 /// <https://github.com/neon-bindings/neon/issues/591>
 pub unsafe fn deref<T: 'static>(env: Env, local: Local) -> Option<*const T> {
-    let mut result = MaybeUninit::uninit();
-    napi::typeof_value(env, local, result.as_mut_ptr()).unwrap();
+    unsafe {
+        let mut result = MaybeUninit::uninit();
+        napi::typeof_value(env, local, result.as_mut_ptr()).unwrap();
 
-    let result = result.assume_init();
+        let result = result.assume_init();
 
-    // Ensure we have an external
-    if result != napi::ValueType::External {
-        return None;
+        // Ensure we have an external
+        if result != napi::ValueType::External {
+            return None;
+        }
+
+        // As a future improvement, this could be done with a dynamic symbol check instead of
+        // relying on the Node-API version compatibility at compile time.
+        #[cfg(feature = "napi-8")]
+        // Check the external came from this module
+        if !super::tag::check_object_type_tag(env, local, &crate::MODULE_TAG) {
+            return None;
+        }
+
+        let mut result = MaybeUninit::uninit();
+        napi::get_value_external(env, local, result.as_mut_ptr()).unwrap();
+
+        let v = result.assume_init();
+        let v = &**v.cast_const().cast::<DebugSendWrapper<T>>() as *const T;
+
+        Some(v)
     }
-
-    // As a future improvement, this could be done with a dynamic symbol check instead of
-    // relying on the Node-API version compatibility at compile time.
-    #[cfg(feature = "napi-8")]
-    // Check the external came from this module
-    if !super::tag::check_object_type_tag(env, local, &crate::MODULE_TAG) {
-        return None;
-    }
-
-    let mut result = MaybeUninit::uninit();
-    napi::get_value_external(env, local, result.as_mut_ptr()).unwrap();
-
-    let v = result.assume_init();
-    let v = &**v.cast_const().cast::<DebugSendWrapper<T>>() as *const T;
-
-    Some(v)
 }
 
 /// Creates a `napi_external` from a Rust type
 pub unsafe fn create<T: 'static>(env: Env, v: T, finalizer: fn(Env, T)) -> Local {
-    let v = Box::new(DebugSendWrapper::new(v));
-    let mut result = MaybeUninit::uninit();
+    unsafe {
+        let v = Box::new(DebugSendWrapper::new(v));
+        let mut result = MaybeUninit::uninit();
 
-    let status = napi::create_external(
-        env,
-        Box::into_raw(v) as *mut _,
-        Some(finalize_external::<T>),
-        // Casting to `*const ()` is required to ensure the correct layout
-        // https://rust-lang.github.io/unsafe-code-guidelines/layout/function-pointers.html
-        finalizer as *const () as *mut _,
-        result.as_mut_ptr(),
-    );
+        let status = napi::create_external(
+            env,
+            Box::into_raw(v) as *mut _,
+            Some(finalize_external::<T>),
+            // Casting to `*const ()` is required to ensure the correct layout
+            // https://rust-lang.github.io/unsafe-code-guidelines/layout/function-pointers.html
+            finalizer as *const () as *mut _,
+            result.as_mut_ptr(),
+        );
 
-    // `napi_create_external` will only fail if the VM is in a throwing state
-    // or shutting down.
-    status.unwrap();
+        // `napi_create_external` will only fail if the VM is in a throwing state
+        // or shutting down.
+        status.unwrap();
 
-    let external = result.assume_init();
+        let external = result.assume_init();
 
-    #[cfg(feature = "napi-8")]
-    // Tag the object as coming from this module
-    super::tag::type_tag_object(env, external, &crate::MODULE_TAG);
+        #[cfg(feature = "napi-8")]
+        // Tag the object as coming from this module
+        super::tag::type_tag_object(env, external, &crate::MODULE_TAG);
 
-    external
+        external
+    }
 }

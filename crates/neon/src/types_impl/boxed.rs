@@ -161,7 +161,7 @@ impl<T: 'static> std::fmt::Debug for JsBox<T> {
 // Attempt to use a `napi_value` as a `napi_external` to unwrap a `BoxAny>
 /// Safety: `local` must be a `napi_value` that is valid for the lifetime `'a`.
 unsafe fn maybe_external_deref<'a>(env: Env, local: raw::Local) -> Option<&'a BoxAny> {
-    external::deref::<BoxAny>(env.to_raw(), local).map(|v| &*v)
+    unsafe { external::deref::<BoxAny>(env.to_raw(), local).map(|v| &*v) }
 }
 
 // Custom `Clone` implementation since `T` might not be `Clone`

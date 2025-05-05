@@ -421,7 +421,7 @@ use super::{Env, Status};
 
 // This symbol is loaded separately because it is a prerequisite
 unsafe fn get_version(host: &libloading::Library, env: Env) -> Result<u32, libloading::Error> {
-    let get_version = host.get::<fn(Env, *mut u32) -> Status>(b"napi_get_version")?;
+    let get_version = unsafe { host.get::<fn(Env, *mut u32) -> Status>(b"napi_get_version")? };
     let mut version = 0;
 
     assert_eq!(get_version(env, &mut version as *mut _), Status::Ok,);
@@ -437,7 +437,7 @@ pub(crate) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
 
     // This never fail since `get_version` is in N-API Version 1 and the module will fail
     // with `Error: Module did not self-register` if N-API does not exist.
-    let actual_version = get_version(&host, env).expect("Failed to find N-API version");
+    let actual_version = unsafe { get_version(&host, env) }.expect("Failed to find N-API version");
 
     let expected_version = match () {
         _ if cfg!(feature = "napi-8") => 8,
@@ -454,19 +454,21 @@ pub(crate) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
         eprintln!("Minimum required Node-API version {expected_version}, found {actual_version}.\n\nSee the Node-API support matrix for more details: https://nodejs.org/api/n-api.html#node-api-version-matrix");
     }
 
-    napi1::load(&host);
+    unsafe {
+        napi1::load(&host);
 
-    #[cfg(feature = "napi-4")]
-    napi4::load(&host);
+        #[cfg(feature = "napi-4")]
+        napi4::load(&host);
 
-    #[cfg(feature = "napi-5")]
-    napi5::load(&host);
+        #[cfg(feature = "napi-5")]
+        napi5::load(&host);
 
-    #[cfg(feature = "napi-6")]
-    napi6::load(&host);
+        #[cfg(feature = "napi-6")]
+        napi6::load(&host);
 
-    #[cfg(feature = "napi-8")]
-    napi8::load(&host);
+        #[cfg(feature = "napi-8")]
+        napi8::load(&host);
+    }
 
     Ok(())
 }

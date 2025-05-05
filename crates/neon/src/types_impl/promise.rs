@@ -394,11 +394,13 @@ unsafe impl Send for NodeApiDeferred {}
 #[cfg(feature = "napi-6")]
 impl NodeApiDeferred {
     pub(crate) unsafe fn leaked(self, env: raw::Env) {
-        sys::promise::reject_err_message(
-            env,
-            self.0,
-            "`neon::types::Deferred` was dropped without being settled",
-        );
+        unsafe {
+            sys::promise::reject_err_message(
+                env,
+                self.0,
+                "`neon::types::Deferred` was dropped without being settled",
+            );
+        }
     }
 }
 

@@ -108,7 +108,7 @@ impl LocalCell {
     {
         let cell = InstanceData::locals(cx).get(id);
         match cell {
-            LocalCell::Init(ref mut b) => Some(b),
+            LocalCell::Init(b) => Some(b),
             _ => None,
         }
     }
