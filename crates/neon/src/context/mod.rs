@@ -116,7 +116,9 @@
 //!                 .bind(&mut cx)
 //!                 .this(iterator)?
 //!                 .call()?;
-//!             numbers.push(obj.prop(&mut cx, "value").get()?);  // temporary number
+//!             let num: Handle<JsNumber> =                       // temporary number
+//!                 obj.prop(&mut cx, "value").get()?;
+//!             numbers.push(num);
 //!             obj.prop(&mut cx, "done").get()                   // temporary boolean
 //!         })?;
 //!     }
