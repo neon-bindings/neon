@@ -113,15 +113,17 @@ unsafe fn string(env: Env, s: impl AsRef<str>) -> raw::Local {
     let s = s.as_ref();
     let mut result = MaybeUninit::uninit();
 
-    create_string_utf8(
-        env,
-        s.as_bytes().as_ptr() as *const _,
-        s.len(),
-        result.as_mut_ptr(),
-    )
-    .unwrap();
+    unsafe {
+        create_string_utf8(
+            env,
+            s.as_bytes().as_ptr() as *const _,
+            s.len(),
+            result.as_mut_ptr(),
+        )
+        .unwrap();
 
-    result.assume_init()
+        result.assume_init()
+    }
 }
 
 static SETUP: Once = Once::new();
@@ -134,5 +136,5 @@ static SETUP: Once = Once::new();
 /// # Safety
 /// `env` must be a valid `napi_env` for the current thread
 pub unsafe fn setup(env: Env) {
-    SETUP.call_once(|| load(env).expect("Failed to load N-API symbols"));
+    SETUP.call_once(|| unsafe { load(env) }.expect("Failed to load N-API symbols"));
 }

@@ -44,7 +44,7 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     /// Creates a new unbounded N-API Threadsafe Function
     /// Safety: `Env` must be valid for the current thread
     pub unsafe fn new(env: Env, callback: fn(Option<Env>, T)) -> Self {
-        Self::with_capacity(env, 0, callback)
+        unsafe { Self::with_capacity(env, 0, callback) }
     }
 
     /// Creates a bounded N-API Threadsafe Function
@@ -57,29 +57,31 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
         let mut result = MaybeUninit::uninit();
         let is_finalized = Arc::new(Mutex::new(false));
 
-        assert_eq!(
-            napi::create_threadsafe_function(
-                env,
-                std::ptr::null_mut(),
-                std::ptr::null_mut(),
-                super::string(env, "neon threadsafe function"),
-                max_queue_size,
-                // Always set the reference count to 1. Prefer using
-                // Rust `Arc` to maintain the struct.
-                1,
-                Arc::into_raw(is_finalized.clone()) as *mut _,
-                Some(Self::finalize),
-                std::ptr::null_mut(),
-                Some(Self::callback),
-                result.as_mut_ptr(),
-            ),
-            Ok(()),
-        );
+        unsafe {
+            assert_eq!(
+                napi::create_threadsafe_function(
+                    env,
+                    std::ptr::null_mut(),
+                    std::ptr::null_mut(),
+                    super::string(env, "neon threadsafe function"),
+                    max_queue_size,
+                    // Always set the reference count to 1. Prefer using
+                    // Rust `Arc` to maintain the struct.
+                    1,
+                    Arc::into_raw(is_finalized.clone()) as *mut _,
+                    Some(Self::finalize),
+                    std::ptr::null_mut(),
+                    Some(Self::callback),
+                    result.as_mut_ptr(),
+                ),
+                Ok(()),
+            );
 
-        Self {
-            tsfn: Tsfn(result.assume_init()),
-            is_finalized,
-            callback,
+            Self {
+                tsfn: Tsfn(result.assume_init()),
+                is_finalized,
+                callback,
+            }
         }
     }
 
@@ -129,19 +131,19 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
     /// References a threadsafe function to prevent exiting the event loop until it has been dropped. (Default)
     /// Safety: `Env` must be valid for the current thread
     pub unsafe fn reference(&self, env: Env) {
-        napi::ref_threadsafe_function(env, self.tsfn.0).unwrap();
+        unsafe { napi::ref_threadsafe_function(env, self.tsfn.0).unwrap() }
     }
 
     /// Unreferences a threadsafe function to allow exiting the event loop before it has been dropped.
     /// Safety: `Env` must be valid for the current thread
     pub unsafe fn unref(&self, env: Env) {
-        napi::unref_threadsafe_function(env, self.tsfn.0).unwrap();
+        unsafe { napi::unref_threadsafe_function(env, self.tsfn.0).unwrap() }
     }
 
     // Provides a C ABI wrapper for a napi callback notifying us about tsfn
     // being finalized.
     unsafe extern "C" fn finalize(_env: Env, data: *mut c_void, _hint: *mut c_void) {
-        let is_finalized = Arc::from_raw(data as *mut Mutex<bool>);
+        let is_finalized = unsafe { Arc::from_raw(data as *mut Mutex<bool>) };
 
         *is_finalized.lock().unwrap() = true;
     }
@@ -163,12 +165,14 @@ impl<T: Send + 'static> ThreadsafeFunction<T> {
         _context: *mut c_void,
         data: *mut c_void,
     ) {
-        let Callback { callback, data } = *Box::from_raw(data as *mut Callback<T>);
+        unsafe {
+            let Callback { callback, data } = *Box::from_raw(data as *mut Callback<T>);
 
-        BOUNDARY.catch_failure(env, None, move |env| {
-            callback(env, data);
-            ptr::null_mut()
-        });
+            BOUNDARY.catch_failure(env, None, move |env| {
+                callback(env, data);
+                ptr::null_mut()
+            });
+        }
     }
 }
 

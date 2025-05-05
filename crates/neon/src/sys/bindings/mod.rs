@@ -114,7 +114,7 @@ macro_rules! generate {
             $(
                 $name: unsafe extern "C" fn(
                     $($param: $ptype,)*
-                )$( -> $rtype)*,
+                )$( -> $rtype)?,
             )*
         }
 
@@ -125,7 +125,7 @@ macro_rules! generate {
 
         static mut NAPI: Napi = {
             $(
-                unsafe extern "C" fn $name($(_: $ptype,)*)$( -> $rtype)* {
+                unsafe extern "C" fn $name($(_: $ptype,)*) $(-> $rtype)? {
                     panic_load()
                 }
             )*
@@ -140,41 +140,72 @@ macro_rules! generate {
         pub(super) unsafe fn load(host: &libloading::Library) {
             let print_warn = |err| eprintln!("WARN: {}", err);
 
-            NAPI = Napi {
-                $(
-                    $name: match host.get(napi_name!($name).as_bytes()) {
-                        Ok(f) => *f,
-                        // Node compatible runtimes may not have full coverage of Node-API
-                        // (e.g., bun). Instead of failing to start, warn on start and
-                        // panic when the API is called.
-                        // https://github.com/Jarred-Sumner/bun/issues/158
-                        Err(err) => {
-                            print_warn(err);
-                            NAPI.$name
+            unsafe {
+                NAPI = Napi {
+                    $(
+                        $name: match host.get(napi_name!($name).as_bytes()) {
+                            Ok(f) => *f,
+                            // Node compatible runtimes may not have full coverage of Node-API
+                            // (e.g., bun). Instead of failing to start, warn on start and
+                            // panic when the API is called.
+                            // https://github.com/Jarred-Sumner/bun/issues/158
+                            Err(err) => {
+                                print_warn(err);
+                                NAPI.$name
+                            },
                         },
-                    },
-                )*
-            };
+                    )*
+                };
+            }
         }
 
         $(
-            #[$extern_attr] $(#[$attr])? #[inline]
-            #[doc = concat!(
-                "[`",
-                napi_name!($name),
-                "`](https://nodejs.org/api/n-api.html#",
-                napi_name!($name),
-                ")",
-            )]
-            pub unsafe fn $name($($param: $ptype,)*)$( -> ::core::result::Result<(), $rtype>)* {
-                #[allow(unused)]
-                let r = (NAPI.$name)($($param,)*);
-                $(match r {
-                    <$rtype>::Ok => Ok(()),
-                    status => Err(status)
-                })*
+            impl_napi_wrapper! {
+                attributes:
+                    #[$extern_attr]
+                    $(#[$attr])?
+                    #[inline]
+                    #[doc = concat!(
+                        "[`",
+                        napi_name!($name),
+                        "`](https://nodejs.org/api/n-api.html#",
+                        napi_name!($name),
+                        ")",
+                    )],
+                name: $name,
+                parameters: ($($param: $ptype,)*)
+                $(, return_type: $rtype)?
             }
         )*
+    };
+}
+
+macro_rules! impl_napi_wrapper {
+    {
+        attributes: $(#[$attr:meta])*,
+        name: $name:ident,
+        parameters: ($($param:ident: $ptype:ty,)*)
+    } => {
+        $(#[$attr])*
+        pub unsafe fn $name($($param: $ptype,)*) {
+            unsafe { (NAPI.$name)($($param,)*); }
+        }
+    };
+
+    {
+        attributes: $(#[$attr:meta])*,
+        name: $name:ident,
+        parameters: ($($param:ident: $ptype:ty,)*),
+        return_type:$rtype:ty
+    } => {
+        $(#[$attr])*
+        pub unsafe fn $name($($param: $ptype,)*) -> ::core::result::Result<(), $rtype> {
+            let r: $rtype = unsafe { (NAPI.$name)($($param,)*) };
+            match r {
+                <$rtype>::Ok => Ok(()),
+                status => Err(status)
+            }
+        }
     };
 }
 

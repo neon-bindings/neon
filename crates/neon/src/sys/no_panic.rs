@@ -12,7 +12,7 @@ use std::{
     any::Any,
     ffi::c_void,
     mem::MaybeUninit,
-    panic::{catch_unwind, AssertUnwindSafe},
+    panic::{AssertUnwindSafe, catch_unwind},
     ptr,
 };
 
@@ -65,9 +65,9 @@ impl FailureBoundary {
         } else {
             // If there was a panic and we don't have an `Env`, crash the process
             if let Err(panic) = panic {
-                let msg = panic_msg(&panic).unwrap_or(UNKNOWN_PANIC_MESSAGE);
+                let msg = unsafe { panic_msg(&panic) }.unwrap_or(UNKNOWN_PANIC_MESSAGE);
 
-                fatal_error(msg);
+                unsafe { fatal_error(msg) };
             }
 
             // If we don't have an `Env`, we can't catch an exception, nothing more to try
@@ -75,7 +75,7 @@ impl FailureBoundary {
         };
 
         // Check and catch a thrown exception
-        let exception = catch_exception(env);
+        let exception = unsafe { catch_exception(env) };
 
         // Create an error message or return if there wasn't a panic or exception
         let msg = match (exception, panic.as_ref()) {
@@ -86,7 +86,7 @@ impl FailureBoundary {
             (Some(err), Ok(_)) => {
                 // Reject the promise without wrapping
                 if let Some(deferred) = deferred {
-                    reject_deferred(env, deferred, err);
+                    unsafe { reject_deferred(env, deferred, err) };
 
                     return;
                 }
@@ -100,7 +100,7 @@ impl FailureBoundary {
             // No errors occurred! We're done!
             (None, Ok(value)) => {
                 if let Some(deferred) = deferred {
-                    resolve_deferred(env, deferred, *value);
+                    unsafe { resolve_deferred(env, deferred, *value) };
                 }
 
                 return;
@@ -109,17 +109,17 @@ impl FailureBoundary {
 
         // Reject the promise
         if let Some(deferred) = deferred {
-            let error = create_error(env, msg, exception, panic.err());
+            let error = unsafe { create_error(env, msg, exception, panic.err()) };
 
-            reject_deferred(env, deferred, error);
+            unsafe { reject_deferred(env, deferred, error) };
 
             return;
         }
 
-        let error = create_error(env, msg, exception, panic.err());
+        let error = unsafe { create_error(env, msg, exception, panic.err()) };
 
         // Trigger a fatal exception
-        fatal_exception(env, error);
+        unsafe { fatal_exception(env, error) };
     }
 }
 
@@ -143,13 +143,16 @@ unsafe fn fatal_exception(env: Env, error: Local) {
     let mut deferred = MaybeUninit::uninit();
     let mut promise = MaybeUninit::uninit();
 
-    let deferred = match napi::create_promise(env, deferred.as_mut_ptr(), promise.as_mut_ptr()) {
-        Ok(()) => deferred.assume_init(),
-        _ => fatal_error("Failed to create a promise"),
-    };
+    unsafe {
+        let deferred = match napi::create_promise(env, deferred.as_mut_ptr(), promise.as_mut_ptr())
+        {
+            Ok(()) => deferred.assume_init(),
+            _ => fatal_error("Failed to create a promise"),
+        };
 
-    if napi::reject_deferred(env, deferred, error) != Ok(()) {
-        fatal_error("Failed to reject a promise");
+        if napi::reject_deferred(env, deferred, error) != Ok(()) {
+            fatal_error("Failed to reject a promise");
+        }
     }
 }
 
@@ -161,16 +164,16 @@ unsafe fn create_error(
     panic: Option<Panic>,
 ) -> Local {
     // Construct the `uncaughtException` Error object
-    let error = error_from_message(env, msg);
+    let error = unsafe { error_from_message(env, msg) };
 
     // Add the exception to the error
     if let Some(exception) = exception {
-        set_property(env, error, "cause", exception);
+        unsafe { set_property(env, error, "cause", exception) };
     };
 
     // Add the panic to the error
     if let Some(panic) = panic {
-        set_property(env, error, "panic", error_from_panic(env, panic));
+        unsafe { set_property(env, error, "panic", error_from_panic(env, panic)) };
     }
 
     error
@@ -178,65 +181,77 @@ unsafe fn create_error(
 
 #[track_caller]
 unsafe fn resolve_deferred(env: Env, deferred: napi::Deferred, value: Local) {
-    if napi::resolve_deferred(env, deferred, value) != Ok(()) {
-        fatal_error("Failed to resolve promise");
+    unsafe {
+        if napi::resolve_deferred(env, deferred, value) != Ok(()) {
+            fatal_error("Failed to resolve promise");
+        }
     }
 }
 
 #[track_caller]
 unsafe fn reject_deferred(env: Env, deferred: napi::Deferred, value: Local) {
-    if napi::reject_deferred(env, deferred, value) != Ok(()) {
-        fatal_error("Failed to reject promise");
+    unsafe {
+        if napi::reject_deferred(env, deferred, value) != Ok(()) {
+            fatal_error("Failed to reject promise");
+        }
     }
 }
 
 #[track_caller]
 unsafe fn catch_exception(env: Env) -> Option<Local> {
-    if !is_exception_pending(env) {
+    if !unsafe { is_exception_pending(env) } {
         return None;
     }
 
     let mut error = MaybeUninit::uninit();
 
-    if napi::get_and_clear_last_exception(env, error.as_mut_ptr()) != Ok(()) {
-        fatal_error("Failed to get and clear the last exception");
-    }
+    unsafe {
+        if napi::get_and_clear_last_exception(env, error.as_mut_ptr()) != Ok(()) {
+            fatal_error("Failed to get and clear the last exception");
+        }
 
-    Some(error.assume_init())
+        Some(error.assume_init())
+    }
 }
 
 #[track_caller]
 unsafe fn error_from_message(env: Env, msg: &str) -> Local {
-    let msg = create_string(env, msg);
+    let msg = unsafe { create_string(env, msg) };
     let mut err = MaybeUninit::uninit();
 
-    let status = napi::create_error(env, ptr::null_mut(), msg, err.as_mut_ptr());
+    unsafe {
+        let status = napi::create_error(env, ptr::null_mut(), msg, err.as_mut_ptr());
 
-    match status {
-        Ok(()) => err.assume_init(),
-        Err(_) => fatal_error("Failed to create an Error"),
+        match status {
+            Ok(()) => err.assume_init(),
+            Err(_) => fatal_error("Failed to create an Error"),
+        }
     }
 }
 
 #[track_caller]
 unsafe fn error_from_panic(env: Env, panic: Panic) -> Local {
-    if let Some(msg) = panic_msg(&panic) {
-        error_from_message(env, msg)
-    } else {
-        let error = error_from_message(env, UNKNOWN_PANIC_MESSAGE);
-        let panic = external_from_panic(env, panic);
+    unsafe {
+        if let Some(msg) = panic_msg(&panic) {
+            error_from_message(env, msg)
+        } else {
+            let error = error_from_message(env, UNKNOWN_PANIC_MESSAGE);
+            let panic = external_from_panic(env, panic);
 
-        set_property(env, error, "cause", panic);
-        error
+            set_property(env, error, "cause", panic);
+            error
+        }
     }
 }
 
 #[track_caller]
 unsafe fn set_property(env: Env, object: Local, key: &str, value: Local) {
-    let key = create_string(env, key);
+    unsafe {
+        let key = create_string(env, key);
 
-    if napi::set_property(env, object, key, value).is_err() {
-        fatal_error("Failed to set an object property");
+        if napi::set_property(env, object, key, value).is_err() {
+            fatal_error("Failed to set an object property");
+        }
     }
 }
 
@@ -252,25 +267,27 @@ unsafe fn panic_msg(panic: &Panic) -> Option<&str> {
 }
 
 unsafe fn external_from_panic(env: Env, panic: Panic) -> Local {
-    let fail = || fatal_error("Failed to create a neon::types::JsBox from a panic");
+    let fail = || unsafe { fatal_error("Failed to create a neon::types::JsBox from a panic") };
     let mut result = MaybeUninit::uninit();
 
-    if napi::create_external(
-        env,
-        Box::into_raw(Box::new(DebugSendWrapper::new(panic))).cast(),
-        Some(finalize_panic),
-        ptr::null_mut(),
-        result.as_mut_ptr(),
-    )
+    if unsafe {
+        napi::create_external(
+            env,
+            Box::into_raw(Box::new(DebugSendWrapper::new(panic))).cast(),
+            Some(finalize_panic),
+            ptr::null_mut(),
+            result.as_mut_ptr(),
+        )
+    }
     .is_err()
     {
         fail();
     }
 
-    let external = result.assume_init();
+    let external = unsafe { result.assume_init() };
 
     #[cfg(feature = "napi-8")]
-    if napi::type_tag_object(env, external, &*crate::MODULE_TAG).is_err() {
+    if unsafe { napi::type_tag_object(env, external, &*crate::MODULE_TAG).is_err() } {
         fail();
     }
 
@@ -287,18 +304,24 @@ extern "C" fn finalize_panic(_env: Env, data: *mut c_void, _hint: *mut c_void) {
 unsafe fn create_string(env: Env, msg: &str) -> Local {
     let mut string = MaybeUninit::uninit();
 
-    if napi::create_string_utf8(env, msg.as_ptr().cast(), msg.len(), string.as_mut_ptr()).is_err() {
-        fatal_error("Failed to create a String");
-    }
+    unsafe {
+        if napi::create_string_utf8(env, msg.as_ptr().cast(), msg.len(), string.as_mut_ptr())
+            .is_err()
+        {
+            fatal_error("Failed to create a String");
+        }
 
-    string.assume_init()
+        string.assume_init()
+    }
 }
 
 unsafe fn is_exception_pending(env: Env) -> bool {
     let mut throwing = false;
 
-    if napi::is_exception_pending(env, &mut throwing).is_err() {
-        fatal_error("Failed to check if an exception is pending");
+    unsafe {
+        if napi::is_exception_pending(env, &mut throwing).is_err() {
+            fatal_error("Failed to check if an exception is pending");
+        }
     }
 
     throwing

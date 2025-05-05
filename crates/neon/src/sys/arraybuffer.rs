@@ -9,14 +9,14 @@ use super::{
 
 pub unsafe fn new(env: Env, len: usize) -> Result<Local, napi::Status> {
     let mut buf = MaybeUninit::uninit();
-    let status = napi::create_arraybuffer(env, len, null_mut(), buf.as_mut_ptr());
+    let status = unsafe { napi::create_arraybuffer(env, len, null_mut(), buf.as_mut_ptr()) };
 
     match status {
         Err(err @ napi::Status::PendingException) => return Err(err),
         status => status.unwrap(),
     };
 
-    Ok(buf.assume_init())
+    Ok(unsafe { buf.assume_init() })
 }
 
 #[cfg(feature = "external-buffers")]
@@ -30,22 +30,24 @@ where
     let length = buf.len();
     let mut result = MaybeUninit::uninit();
 
-    napi::create_external_arraybuffer(
-        env,
-        buf.as_mut_ptr() as *mut _,
-        length,
-        Some(drop_external::<T>),
-        Box::into_raw(data) as *mut _,
-        result.as_mut_ptr(),
-    )
-    .unwrap();
+    unsafe {
+        napi::create_external_arraybuffer(
+            env,
+            buf.as_mut_ptr() as *mut _,
+            length,
+            Some(drop_external::<T>),
+            Box::into_raw(data) as *mut _,
+            result.as_mut_ptr(),
+        )
+        .unwrap();
 
-    result.assume_init()
+        result.assume_init()
+    }
 }
 
 #[cfg(feature = "external-buffers")]
 unsafe extern "C" fn drop_external<T>(_env: Env, _data: *mut c_void, hint: *mut c_void) {
-    drop(Box::<T>::from_raw(hint as *mut _));
+    drop(unsafe { Box::<T>::from_raw(hint as *mut _) });
 }
 
 /// # Safety
@@ -55,13 +57,15 @@ pub unsafe fn as_mut_slice<'a>(env: Env, buf: Local) -> &'a mut [u8] {
     let mut data = MaybeUninit::uninit();
     let mut size = 0usize;
 
-    napi::get_arraybuffer_info(env, buf, data.as_mut_ptr(), &mut size as *mut _).unwrap();
+    unsafe {
+        napi::get_arraybuffer_info(env, buf, data.as_mut_ptr(), &mut size as *mut _).unwrap();
+    }
 
     if size == 0 {
         return &mut [];
     }
 
-    slice::from_raw_parts_mut(data.assume_init().cast(), size)
+    unsafe { slice::from_raw_parts_mut(data.assume_init().cast(), size) }
 }
 
 /// # Safety
@@ -70,7 +74,9 @@ pub unsafe fn size(env: Env, buf: Local) -> usize {
     let mut data = MaybeUninit::uninit();
     let mut size = 0usize;
 
-    napi::get_arraybuffer_info(env, buf, data.as_mut_ptr(), &mut size as *mut _).unwrap();
+    unsafe {
+        napi::get_arraybuffer_info(env, buf, data.as_mut_ptr(), &mut size as *mut _).unwrap();
+    }
 
     size
 }

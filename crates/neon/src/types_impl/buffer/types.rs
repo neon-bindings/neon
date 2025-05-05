@@ -2,21 +2,21 @@ use std::{marker::PhantomData, slice};
 
 use crate::{
     context::{
-        internal::{ContextInternal, Env},
         Context, Cx,
+        internal::{ContextInternal, Env},
     },
-    handle::{internal::TransparentNoCopyWrapper, Handle},
+    handle::{Handle, internal::TransparentNoCopyWrapper},
     object::Object,
     result::{JsResult, Throw},
-    sys::{self, raw, typedarray::TypedArrayInfo, TypedArrayType},
+    sys::{self, TypedArrayType, raw, typedarray::TypedArrayInfo},
     types_impl::{
+        Value,
         buffer::{
+            BorrowError, Ref, RefMut, Region, TypedArray,
             lock::{Ledger, Lock},
             private::{self, JsTypedArrayInner},
-            BorrowError, Ref, RefMut, Region, TypedArray,
         },
         private::ValueInternal,
-        Value,
     },
 };
 
@@ -82,12 +82,12 @@ impl JsBuffer {
 
     /// Constructs a new `Buffer` object with uninitialized memory
     pub unsafe fn uninitialized<'a, C: Context<'a>>(cx: &mut C, len: usize) -> JsResult<'a, Self> {
-        let result = sys::buffer::uninitialized(cx.env().to_raw(), len);
+        let result = unsafe { sys::buffer::uninitialized(cx.env().to_raw(), len) };
 
         if let Ok((buf, _)) = result {
             Ok(Handle::new_internal(Self(buf)))
         } else {
-            Err(Throw::new())
+            Err(unsafe { Throw::new() })
         }
     }
 
@@ -778,7 +778,7 @@ unsafe fn slice_from_info<'a, T>(info: TypedArrayInfo) -> &'a [T] {
     if info.length == 0 {
         &[]
     } else {
-        slice::from_raw_parts(info.data.cast(), info.length)
+        unsafe { slice::from_raw_parts(info.data.cast(), info.length) }
     }
 }
 
@@ -786,7 +786,7 @@ unsafe fn slice_from_info_mut<'a, T>(info: TypedArrayInfo) -> &'a mut [T] {
     if info.length == 0 {
         &mut []
     } else {
-        slice::from_raw_parts_mut(info.data.cast(), info.length)
+        unsafe { slice::from_raw_parts_mut(info.data.cast(), info.length) }
     }
 }
 

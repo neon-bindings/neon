@@ -4,8 +4,8 @@ use crate::{
     object::Object,
     result::{JsResult, ResultExt, Throw},
     types::{
-        extract::{Date, TryIntoJs},
         JsBoolean, JsDate, JsNumber, JsString, JsUndefined, JsValue, Value,
+        extract::{Date, TryIntoJs},
     },
 };
 

@@ -4,13 +4,13 @@ use std::{error, fmt, mem::MaybeUninit};
 
 use crate::{
     context::{
-        internal::{ContextInternal, Env},
         Context, Cx,
+        internal::{ContextInternal, Env},
     },
-    handle::{internal::TransparentNoCopyWrapper, Handle},
+    handle::{Handle, internal::TransparentNoCopyWrapper},
     result::{NeonResult, ResultExt},
     sys::{self, raw},
-    types::{private, JsBigInt, Value},
+    types::{JsBigInt, Value, private},
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -232,11 +232,7 @@ impl JsBigInt {
             sys::get_value_bigint_int64(cx.env().to_raw(), self.0, &mut n, &mut lossless).unwrap();
         }
 
-        if lossless {
-            Ok(n)
-        } else {
-            Err(RangeError(n))
-        }
+        if lossless { Ok(n) } else { Err(RangeError(n)) }
     }
 
     /// Reads a `u64` from a `BigInt`.
@@ -253,11 +249,7 @@ impl JsBigInt {
             sys::get_value_bigint_uint64(cx.env().to_raw(), self.0, &mut n, &mut lossless).unwrap();
         }
 
-        if lossless {
-            Ok(n)
-        } else {
-            Err(RangeError(n))
-        }
+        if lossless { Ok(n) } else { Err(RangeError(n)) }
     }
 
     /// Reads an `i128` from a `BigInt`.

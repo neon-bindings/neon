@@ -24,20 +24,22 @@ pub unsafe fn info(env: Env, value: Local) -> TypedArrayInfo {
     let mut info = MaybeUninit::<TypedArrayInfo>::zeroed();
     let ptr = info.as_mut_ptr();
 
-    assert_eq!(
-        napi::get_typedarray_info(
-            env,
-            value,
-            &mut (*ptr).typ,
-            &mut (*ptr).length,
-            &mut (*ptr).data,
-            &mut (*ptr).buf,
-            &mut (*ptr).offset,
-        ),
-        Ok(()),
-    );
+    unsafe {
+        assert_eq!(
+            napi::get_typedarray_info(
+                env,
+                value,
+                &mut (*ptr).typ,
+                &mut (*ptr).length,
+                &mut (*ptr).data,
+                &mut (*ptr).buf,
+                &mut (*ptr).offset,
+            ),
+            Ok(()),
+        );
 
-    info.assume_init()
+        info.assume_init()
+    }
 }
 
 pub unsafe fn new(
@@ -48,12 +50,15 @@ pub unsafe fn new(
     len: usize,
 ) -> Result<Local, napi::Status> {
     let mut array = MaybeUninit::uninit();
-    let status = napi::create_typedarray(env, typ, len, buffer, offset, array.as_mut_ptr());
 
-    match status {
-        Err(err @ napi::Status::PendingException) => return Err(err),
-        status => status.unwrap(),
-    };
+    unsafe {
+        let status = napi::create_typedarray(env, typ, len, buffer, offset, array.as_mut_ptr());
 
-    Ok(array.assume_init())
+        match status {
+            Err(err @ napi::Status::PendingException) => return Err(err),
+            status => status.unwrap(),
+        };
+
+        Ok(array.assume_init())
+    }
 }

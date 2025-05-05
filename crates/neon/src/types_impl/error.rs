@@ -1,17 +1,17 @@
 //! Types and traits representing JavaScript error values.
 
-use std::panic::{catch_unwind, UnwindSafe};
+use std::panic::{UnwindSafe, catch_unwind};
 
 use crate::{
     context::{
-        internal::{ContextInternal, Env},
         Context, Cx,
+        internal::{ContextInternal, Env},
     },
-    handle::{internal::TransparentNoCopyWrapper, Handle},
+    handle::{Handle, internal::TransparentNoCopyWrapper},
     object::Object,
     result::{NeonResult, Throw},
     sys::{self, raw},
-    types::{build, private::ValueInternal, utf8::Utf8, Value},
+    types::{Value, build, private::ValueInternal, utf8::Utf8},
 };
 
 /// The type of JavaScript

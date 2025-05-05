@@ -3,14 +3,14 @@ use std::{
     fmt::{self, Debug},
 };
 
-use super::{private::ValueInternal, Value};
+use super::{Value, private::ValueInternal};
 
 use crate::{
     context::{
-        internal::{ContextInternal, Env},
         Context, Cx,
+        internal::{ContextInternal, Env},
     },
-    handle::{internal::TransparentNoCopyWrapper, Handle},
+    handle::{Handle, internal::TransparentNoCopyWrapper},
     object::Object,
     result::{JsResult, ResultExt},
     sys::{self, raw},

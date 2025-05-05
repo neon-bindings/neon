@@ -10,7 +10,7 @@
 use std::{
     ffi::c_void,
     mem,
-    panic::{catch_unwind, resume_unwind, AssertUnwindSafe},
+    panic::{AssertUnwindSafe, catch_unwind, resume_unwind},
     ptr, thread,
 };
 
@@ -58,24 +58,26 @@ pub unsafe fn schedule<I, O, D>(
     let work = &mut data.work as *mut _;
 
     // Create the `async_work`
-    napi::create_async_work(
-        env,
-        ptr::null_mut(),
-        super::string(env, "neon_async_work"),
-        Some(call_execute::<I, O, D>),
-        Some(call_complete::<I, O, D>),
-        Box::into_raw(data).cast(),
-        work,
-    )
-    .unwrap();
+    unsafe {
+        napi::create_async_work(
+            env,
+            ptr::null_mut(),
+            super::string(env, "neon_async_work"),
+            Some(call_execute::<I, O, D>),
+            Some(call_complete::<I, O, D>),
+            Box::into_raw(data).cast(),
+            work,
+        )
+        .unwrap();
 
-    // Queue the work
-    match napi::queue_async_work(env, *work) {
-        Ok(()) => {}
-        status => {
-            // If queueing failed, delete the work to prevent a leak
-            let _ = napi::delete_async_work(env, *work);
-            status.unwrap()
+        // Queue the work
+        match napi::queue_async_work(env, *work) {
+            Ok(()) => {}
+            status => {
+                // If queueing failed, delete the work to prevent a leak
+                let _ = napi::delete_async_work(env, *work);
+                status.unwrap()
+            }
         }
     }
 }
@@ -123,18 +125,20 @@ impl<I, O> State<I, O> {
 /// * `Env` should not be used because it could attempt to call JavaScript
 /// * `data` is expected to be a pointer to `Data<I, O, D>`
 unsafe extern "C" fn call_execute<I, O, D>(_: Env, data: *mut c_void) {
-    let data = &mut *data.cast::<Data<I, O, D>>();
+    unsafe {
+        let data = &mut *data.cast::<Data<I, O, D>>();
 
-    // This is unwind safe because unwinding will resume on the other side
-    let output = catch_unwind(AssertUnwindSafe(|| {
-        // `unwrap` is ok because `call_execute` should be called exactly once
-        // after initialization
-        let input = data.state.take_execute_input().unwrap();
+        // This is unwind safe because unwinding will resume on the other side
+        let output = catch_unwind(AssertUnwindSafe(|| {
+            // `unwrap` is ok because `call_execute` should be called exactly once
+            // after initialization
+            let input = data.state.take_execute_input().unwrap();
 
-        (data.execute)(input)
-    }));
+            (data.execute)(input)
+        }));
 
-    data.state = State::Output(output);
+        data.state = State::Output(output);
+    }
 }
 
 /// Callback executed on the JavaScript main thread
@@ -142,39 +146,41 @@ unsafe extern "C" fn call_execute<I, O, D>(_: Env, data: *mut c_void) {
 /// # Safety
 /// * `data` is expected to be a pointer to `Data<I, O, D>`
 unsafe extern "C" fn call_complete<I, O, D>(env: Env, status: napi::Status, data: *mut c_void) {
-    let Data {
-        state,
-        complete,
-        data,
-        work,
-        ..
-    } = *Box::<Data<I, O, D>>::from_raw(data.cast());
+    unsafe {
+        let Data {
+            state,
+            complete,
+            data,
+            work,
+            ..
+        } = *Box::<Data<I, O, D>>::from_raw(data.cast());
 
-    debug_assert_eq!(napi::delete_async_work(env, work), Ok(()));
+        debug_assert_eq!(napi::delete_async_work(env, work), Ok(()));
 
-    BOUNDARY.catch_failure(env, None, move |env| {
-        // `unwrap` is okay because `call_complete` should be called exactly once
-        // if and only if `call_execute` has completed successfully
-        let output = state.into_output().unwrap();
+        BOUNDARY.catch_failure(env, None, move |env| {
+            // `unwrap` is okay because `call_complete` should be called exactly once
+            // if and only if `call_execute` has completed successfully
+            let output = state.into_output().unwrap();
 
-        // The event looped has stopped if we do not have an Env
-        let env = if let Some(env) = env {
-            env
-        } else {
-            // Resume panicking if necessary
-            if let Err(panic) = output {
-                resume_unwind(panic);
+            // The event looped has stopped if we do not have an Env
+            let env = if let Some(env) = env {
+                env
+            } else {
+                // Resume panicking if necessary
+                if let Err(panic) = output {
+                    resume_unwind(panic);
+                }
+
+                return ptr::null_mut();
+            };
+
+            match status {
+                napi::Status::Ok => complete(env, output, data.take()),
+                napi::Status::Cancelled => {}
+                _ => assert_eq!(status, napi::Status::Ok),
             }
 
-            return ptr::null_mut();
-        };
-
-        match status {
-            napi::Status::Ok => complete(env, output, data.take()),
-            napi::Status::Cancelled => {}
-            _ => assert_eq!(status, napi::Status::Ok),
-        }
-
-        ptr::null_mut()
-    });
+            ptr::null_mut()
+        })
+    }
 }

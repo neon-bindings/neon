@@ -3,11 +3,11 @@ use crate::{
     handle::Handle,
     result::{JsResult, NeonResult},
     types::{
-        buffer::{Binary, TypedArray},
-        extract::{private, TryFromJs, TryIntoJs, TypeExpected},
         JsArrayBuffer, JsBigInt64Array, JsBigUint64Array, JsBuffer, JsFloat32Array, JsFloat64Array,
-        JsInt16Array, JsInt32Array, JsInt8Array, JsTypedArray, JsUint16Array, JsUint32Array,
-        JsUint8Array, JsValue, Value,
+        JsInt8Array, JsInt16Array, JsInt32Array, JsTypedArray, JsUint8Array, JsUint16Array,
+        JsUint32Array, JsValue, Value,
+        buffer::{Binary, TypedArray},
+        extract::{TryFromJs, TryIntoJs, TypeExpected, private},
     },
 };
 

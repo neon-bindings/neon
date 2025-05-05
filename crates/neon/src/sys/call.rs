@@ -33,34 +33,40 @@ impl Arguments {
 pub unsafe fn is_construct(env: Env, info: FunctionCallbackInfo) -> bool {
     let mut target: MaybeUninit<Local> = MaybeUninit::zeroed();
 
-    napi::get_new_target(env, info, target.as_mut_ptr()).unwrap();
+    unsafe {
+        napi::get_new_target(env, info, target.as_mut_ptr()).unwrap();
 
-    // get_new_target is guaranteed to assign to target, so it's initialized.
-    let target: Local = target.assume_init();
+        // get_new_target is guaranteed to assign to target, so it's initialized.
+        let target: Local = target.assume_init();
 
-    // By the get_new_target contract, target will either be NULL if the current
-    // function was called without `new`, or a valid napi_value handle if the current
-    // function was called with `new`.
-    !target.is_null()
+        // By the get_new_target contract, target will either be NULL if the current
+        // function was called without `new`, or a valid napi_value handle if the current
+        // function was called with `new`.
+        !target.is_null()
+    }
 }
 
 pub unsafe fn this(env: Env, info: FunctionCallbackInfo, out: &mut Local) {
-    napi::get_cb_info(env, info, null_mut(), null_mut(), out as *mut _, null_mut()).unwrap();
+    unsafe {
+        napi::get_cb_info(env, info, null_mut(), null_mut(), out as *mut _, null_mut()).unwrap();
+    }
 }
 
 /// Gets the number of arguments passed to the function.
 // TODO: Remove this when `FunctionContext` is refactored to get call info upfront.
 pub unsafe fn len(env: Env, info: FunctionCallbackInfo) -> usize {
     let mut argc = 0usize;
-    napi::get_cb_info(
-        env,
-        info,
-        &mut argc as *mut _,
-        null_mut(),
-        null_mut(),
-        null_mut(),
-    )
-    .unwrap();
+    unsafe {
+        napi::get_cb_info(
+            env,
+            info,
+            &mut argc as *mut _,
+            null_mut(),
+            null_mut(),
+            null_mut(),
+        )
+        .unwrap();
+    }
     argc
 }
 
@@ -72,38 +78,42 @@ pub unsafe fn argv(env: Env, info: FunctionCallbackInfo) -> Arguments {
     // Starts as the size allocated; after `get_cb_info` it is the number of arguments
     let mut argc = ARGV_SIZE;
 
-    napi::get_cb_info(
-        env,
-        info,
-        &mut argc as *mut _,
-        argv.as_mut_ptr().cast(),
-        null_mut(),
-        null_mut(),
-    )
-    .unwrap();
+    unsafe {
+        napi::get_cb_info(
+            env,
+            info,
+            &mut argc as *mut _,
+            argv.as_mut_ptr().cast(),
+            null_mut(),
+            null_mut(),
+        )
+        .unwrap();
+    }
 
     // We did not allocate enough space; allocate on the heap and try again
     let argv = if argc > ARGV_SIZE {
         // We know exactly how much space to reserve
         let mut argv = Vec::with_capacity(argc);
 
-        napi::get_cb_info(
-            env,
-            info,
-            &mut argc as *mut _,
-            argv.as_mut_ptr(),
-            null_mut(),
-            null_mut(),
-        )
-        .unwrap();
+        unsafe {
+            napi::get_cb_info(
+                env,
+                info,
+                &mut argc as *mut _,
+                argv.as_mut_ptr(),
+                null_mut(),
+                null_mut(),
+            )
+            .unwrap();
 
-        // Set the size of `argv` to the number of initialized elements
-        argv.set_len(argc);
+            // Set the size of `argv` to the number of initialized elements
+            argv.set_len(argc);
+        }
         SmallVec::from_vec(argv)
 
         // There were `ARGV_SIZE` or fewer arguments, use the stack allocated space
     } else {
-        SmallVec::from_buf_and_len(argv.assume_init(), argc)
+        unsafe { SmallVec::from_buf_and_len(argv.assume_init(), argc) }
     };
 
     Arguments(argv)

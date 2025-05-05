@@ -25,12 +25,12 @@ use smallvec::smallvec;
 
 use crate::{
     context::{
-        internal::{ContextInternal, Env},
         Context, Cx, FunctionContext,
+        internal::{ContextInternal, Env},
     },
     handle::{
-        internal::{SuperType, TransparentNoCopyWrapper},
         Handle,
+        internal::{SuperType, TransparentNoCopyWrapper},
     },
     object::Object,
     result::{JsResult, NeonResult, ResultExt, Throw},
@@ -46,8 +46,8 @@ pub use self::{
     boxed::{Finalize, JsBox},
     buffer::types::{
         JsArrayBuffer, JsBigInt64Array, JsBigUint64Array, JsBuffer, JsFloat32Array, JsFloat64Array,
-        JsInt16Array, JsInt32Array, JsInt8Array, JsTypedArray, JsUint16Array, JsUint32Array,
-        JsUint8Array,
+        JsInt8Array, JsInt16Array, JsInt32Array, JsTypedArray, JsUint8Array, JsUint16Array,
+        JsUint32Array,
     },
     error::JsError,
     promise::{Deferred, JsPromise},

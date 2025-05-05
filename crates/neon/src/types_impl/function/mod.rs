@@ -8,9 +8,9 @@ use crate::{
     object::Object,
     result::{JsResult, NeonResult},
     types::{
+        JsFunction, JsObject, JsValue, Value,
         extract::{TryFromJs, TryIntoJs},
         private::ValueInternal,
-        JsFunction, JsObject, JsValue, Value,
     },
 };
 

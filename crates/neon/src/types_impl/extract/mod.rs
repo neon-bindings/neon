@@ -109,8 +109,8 @@ use crate::{
 pub use self::{
     boxed::Boxed,
     buffer::{
-        ArrayBuffer, BigInt64Array, BigUint64Array, Buffer, Float32Array, Float64Array, Int16Array,
-        Int32Array, Int8Array, Uint16Array, Uint32Array, Uint8Array,
+        ArrayBuffer, BigInt64Array, BigUint64Array, Buffer, Float32Array, Float64Array, Int8Array,
+        Int16Array, Int32Array, Uint8Array, Uint16Array, Uint32Array,
     },
     error::{Error, TypeExpected},
     with::with,

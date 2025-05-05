@@ -6,15 +6,15 @@
 use std::{convert::Infallible, ptr};
 
 use crate::{
-    context::{internal::ContextInternal, Cx},
+    context::{Cx, internal::ContextInternal},
     handle::{Handle, Root},
     object::Object,
     result::{NeonResult, Throw},
     sys,
     types::{
+        JsBoolean, JsNumber, JsString, JsValue, Value,
         extract::{Date, TryFromJs, TypeExpected},
         private::ValueInternal,
-        JsBoolean, JsNumber, JsString, JsValue, Value,
     },
 };
 

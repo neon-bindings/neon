@@ -116,7 +116,9 @@
 //!                 .bind(&mut cx)
 //!                 .this(iterator)?
 //!                 .call()?;
-//!             numbers.push(obj.prop(&mut cx, "value").get()?);  // temporary number
+//!             let num: Handle<JsNumber> =                       // temporary number
+//!                 obj.prop(&mut cx, "value").get()?;
+//!             numbers.push(num);
 //!             obj.prop(&mut cx, "done").get()                   // temporary boolean
 //!         })?;
 //!     }
@@ -180,12 +182,12 @@ use crate::{
         scope::{EscapableHandleScope, HandleScope},
     },
     types::{
+        Deferred, JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber,
+        JsObject, JsPromise, JsString, JsUndefined, JsValue, StringResult, Value,
         boxed::{Finalize, JsBox},
         error::JsError,
         extract::{FromArgs, TryFromJs},
         private::ValueInternal,
-        Deferred, JsArray, JsArrayBuffer, JsBoolean, JsBuffer, JsFunction, JsNull, JsNumber,
-        JsObject, JsPromise, JsString, JsUndefined, JsValue, StringResult, Value,
     },
 };
 
@@ -239,9 +241,11 @@ impl<'cx> Cx<'cx> {
     #[cfg(feature = "sys")]
     #[cfg_attr(docsrs, doc(cfg(feature = "sys")))]
     pub unsafe fn from_raw(env: sys::Env) -> Self {
-        Self {
-            env: env.into(),
-            _phantom_inner: PhantomData,
+        unsafe {
+            Self {
+                env: env.into(),
+                _phantom_inner: PhantomData,
+            }
         }
     }
 
@@ -411,9 +415,7 @@ pub trait Context<'a>: ContextInternal<'a> {
 
         let escapee = unsafe { scope.escape(f(cx)?.to_local()) };
 
-        Ok(Handle::new_internal(unsafe {
-            V::from_local(self.env(), escapee)
-        }))
+        Ok(unsafe { Handle::new_internal(V::from_local(self.env(), escapee)) })
     }
 
     fn try_catch<T, F>(&mut self, f: F) -> Result<T, Handle<'a, JsValue>>
@@ -799,7 +801,7 @@ impl<'cx> FunctionContext<'cx> {
         };
 
         argv.get(i)
-            .map(|v| Handle::new_internal(unsafe { JsValue::from_local(self.env(), v) }))
+            .map(|v| unsafe { Handle::new_internal(JsValue::from_local(self.env(), v)) })
     }
 
     /// Produces the `i`th argument and casts it to the type `V`, or throws an exception if `i` is greater than or equal to `self.len()` or cannot be cast to `V`.

@@ -5,7 +5,7 @@ use crate::{
     handle::Handle,
     result::NeonResult,
     sys::{self, raw},
-    types::{private::ValueInternal, JsObject},
+    types::{JsObject, private::ValueInternal},
 };
 
 #[repr(C)]
@@ -36,12 +36,16 @@ impl Env {
         let result = f();
         let mut local: MaybeUninit<raw::Local> = MaybeUninit::zeroed();
 
-        if sys::error::catch_error(self.to_raw(), local.as_mut_ptr()) {
-            Err(local.assume_init())
-        } else if let Ok(result) = result {
-            Ok(result)
-        } else {
-            panic!("try_catch: unexpected Err(Throw) when VM is not in a throwing state");
+        unsafe {
+            if sys::error::catch_error(self.to_raw(), local.as_mut_ptr()) {
+                Err(local.assume_init())
+            } else {
+                if let Ok(result) = result {
+                    Ok(result)
+                } else {
+                    panic!("try_catch: unexpected Err(Throw) when VM is not in a throwing state");
+                }
+            }
         }
     }
 }
@@ -72,19 +76,21 @@ fn init(cx: ModuleContext) -> NeonResult<()> {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 unsafe extern "C" fn napi_register_module_v1(env: *mut c_void, m: *mut c_void) -> *mut c_void {
-    let env = env.cast();
+    unsafe {
+        let env = env.cast();
 
-    sys::setup(env);
+        sys::setup(env);
 
-    IS_RUNNING.with(|v| {
-        *v.borrow_mut() = true;
-    });
+        IS_RUNNING.with(|v| {
+            *v.borrow_mut() = true;
+        });
 
-    let env = Env(env);
-    let exports = Handle::new_internal(JsObject::from_local(env, m.cast()));
-    let _ = ModuleContext::with(env, exports, init);
+        let env = Env(env);
+        let exports = Handle::new_internal(JsObject::from_local(env, m.cast()));
+        let _ = ModuleContext::with(env, exports, init);
 
-    m
+        m
+    }
 }
