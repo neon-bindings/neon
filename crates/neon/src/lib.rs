@@ -221,7 +221,7 @@ fn feature_matrix() {
         for version in NODE_API_VERSIONS.iter().map(|f| f.to_string()) {
             let features = features.iter().fold(version, |f, s| f + "," + s);
             let status = Command::new(&cargo)
-                .args(["check", "-p", "neon", "--features"])
+                .args(["check", "-p", "neon", "--no-default-features", "--features"])
                 .arg(features)
                 .spawn()
                 .unwrap()

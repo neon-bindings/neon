@@ -3,7 +3,7 @@ use std::ptr;
 use crate::{
     context::{
         internal::{ContextInternal, Env},
-        Context,
+        Context, Cx,
     },
     handle::{internal::TransparentNoCopyWrapper, Handle},
     object::Object,
@@ -13,10 +13,7 @@ use crate::{
 };
 
 #[cfg(feature = "napi-4")]
-use crate::{
-    context::Cx,
-    event::{Channel, JoinHandle, SendError},
-};
+use crate::event::{Channel, JoinHandle, SendError};
 
 #[cfg(feature = "napi-6")]
 use crate::{

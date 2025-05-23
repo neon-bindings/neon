@@ -39,7 +39,7 @@ fn global_json_stringify<'cx>(cx: &mut Cx<'cx>) -> JsResult<'cx, JsFunction> {
 // method could cause differences between calls. However, threading a `Root` through
 // would require a significant refactor and "don't do this or things will break" is
 // fairly common in JS.
-fn json_stringify<'cx, C>(cx: &mut Cx<'cx>) -> JsResult<'cx, JsFunction> {
+fn json_stringify<'cx>(cx: &mut Cx<'cx>) -> JsResult<'cx, JsFunction> {
     global_json_stringify(cx)
 }
 

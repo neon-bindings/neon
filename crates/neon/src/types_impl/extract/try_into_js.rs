@@ -2,11 +2,14 @@ use crate::{
     context::{Context, Cx},
     handle::{Handle, Root},
     object::Object,
-    result::{JsResult, ResultExt, Throw},
-    types::{
-        extract::{Date, TryIntoJs},
-        JsBoolean, JsDate, JsNumber, JsString, JsUndefined, JsValue, Value,
-    },
+    result::{JsResult, Throw},
+    types::{extract::TryIntoJs, JsBoolean, JsNumber, JsString, JsUndefined, JsValue, Value},
+};
+
+#[cfg(feature = "napi-5")]
+use crate::{
+    result::ResultExt,
+    types::{extract::Date, JsDate},
 };
 
 impl<'cx, T> TryIntoJs<'cx> for Handle<'cx, T>
@@ -144,6 +147,7 @@ impl<'cx> TryIntoJs<'cx> for () {
     }
 }
 
+#[cfg(feature = "napi-5")]
 impl<'cx> TryIntoJs<'cx> for Date {
     type Value = JsDate;
 

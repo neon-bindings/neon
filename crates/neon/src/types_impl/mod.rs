@@ -1038,7 +1038,7 @@ impl JsFunction {
         C: Context<'a>,
         U: Value,
     {
-        let name = any::type_name::<F>();
+        let name = any::type_name_of_val(&f);
 
         Self::new_internal(cx, f, name)
     }

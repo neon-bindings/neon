@@ -10,7 +10,7 @@ use crate::{
     object::Object,
     result::{NeonResult, Throw},
     types::{
-        extract::{Date, Error, TryIntoJs},
+        extract::{Error, TryIntoJs},
         Value,
     },
 };
@@ -63,4 +63,7 @@ impl<T> Sealed for Ref<'_, T> {}
 
 impl<T> Sealed for RefMut<'_, T> {}
 
-impl_sealed!(u8, u16, u32, i8, i16, i32, f32, f64, bool, String, Date, Throw, Error,);
+#[cfg(feature = "napi-5")]
+impl Sealed for super::Date {}
+
+impl_sealed!(u8, u16, u32, i8, i16, i32, f32, f64, bool, String, Throw, Error,);

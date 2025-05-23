@@ -55,7 +55,7 @@ pub trait ContextInternal<'cx>: Sized {
 }
 
 fn default_main(mut cx: ModuleContext) -> NeonResult<()> {
-    #[cfg(feature = "tokio-rt-multi-thread")]
+    #[cfg(all(feature = "napi-6", feature = "tokio-rt-multi-thread"))]
     crate::executor::tokio::init(&mut cx)?;
     crate::registered().export(&mut cx)
 }
