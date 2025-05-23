@@ -1,11 +1,16 @@
-use neon::prelude::*;
+// Use #[neon::export] to export Rust functions as JavaScript functions.
+// See more at: https://docs.rs/neon/latest/neon/attr.export.html
 
-fn hello(mut cx: FunctionContext) -> JsResult<JsString> {
-    Ok(cx.string("hello node"))
+#[neon::export]
+fn hello(name: String) -> String {
+    format!("hello {name}")
 }
 
-#[neon::main]
-fn main(mut cx: ModuleContext) -> NeonResult<()> {
-    cx.export_function("hello", hello)?;
-    Ok(())
-}
+// Use #[neon::main] to add additional behavior at module loading time.
+// See more at: https://docs.rs/neon/latest/neon/attr.main.html
+
+// #[neon::main]
+// fn main(_cx: ModuleContext) -> NeonResult<()> {
+//     println!("module is loaded!");
+//     Ok(())
+// }
