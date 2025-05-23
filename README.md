@@ -12,7 +12,7 @@ Once you have the [platform dependencies](https://neon-bindings.com/docs/quick-s
 simple as:
 
 ```
-$ npm init neon my-project
+$ npm init neon@latest my-project
 ```
 
 Then see the [Hello World guide](https://neon-bindings.com/docs/hello-world/) for writing your first Hello World in
