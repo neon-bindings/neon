@@ -10,6 +10,10 @@ Our strong commitment to compatibility since the 1.0 release remains unchanged. 
 that has not yet stabilized is published under feature flags, so the only breaking changes that we
 expect to publish are those that affect the unstable features, or, as always, safety bugfixes.
 
+## Version 1.1.1
+
+Hotfix for Node-API versions lower than 5 (https://github.com/neon-bindings/neon/pull/1106).
+
 ## Version 1.1.0
 
 ### New Features
