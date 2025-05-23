@@ -14,11 +14,11 @@ expect to publish are those that affect the unstable features, or, as always, sa
 
 ### New Features
 
-* Extractors API (https://docs.rs/neon/1.1.0/neon/types/extract/index.html)
-* `#[export]` macro (https://docs.rs/neon/1.1.0/neon/attr.export.html)
-* `npm init neon -- --lib` (https://www.npmjs.com/package/create-neon)
-* `JsBox::deref()` (https://docs.rs/neon/1.1.0/neon/types/struct.JsBox.html#method.deref)
-* `Handle<'_, JsBox>::as_inner()` (https://docs.rs/neon/1.1.0/neon/handle/struct.Handle.html#method.as_inner)
+* [Extractors API](https://docs.rs/neon/1/neon/types/extract/index.html)
+* [`#[export]` macro](https://docs.rs/neon/1/neon/attr.export.html)
+* [`npm init neon -- --lib`](https://www.npmjs.com/package/create-neon)
+* [`JsBox::deref()`](https://docs.rs/neon/1/neon/types/struct.JsBox.html#method.deref)
+* [`Handle<'_, JsBox>::as_inner()`](https://docs.rs/neon/1/neon/handle/struct.Handle.html#method.as_inner)
 
 ### Bugfixes
 
