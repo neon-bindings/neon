@@ -27,7 +27,7 @@ After building {{package.name}}, you can explore its exports at the Node console
 $ npm i
 $ npm run build
 $ node
-> require('.').greeting()
+> require('.').greeting('node')
 { message: 'hello node' }
 ```
 {{else}}
@@ -35,7 +35,7 @@ $ node
 $ npm i
 $ npm run build
 $ node
-> require('.').hello()
+> require('.').hello('node')
 'hello node'
 ```
 {{/if}}

@@ -1,6 +1,6 @@
 {
   "name": "create-neon",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Create Neon projects with no build configuration.",
   "type": "module",
   "exports": "./dist/src/bin/create-neon.js",
