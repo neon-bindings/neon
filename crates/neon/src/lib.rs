@@ -209,9 +209,9 @@ pub fn registered() -> Exports {
 fn feature_matrix() {
     use std::{env, process::Command};
 
-    const NODE_API_VERSIONS: &[&str] = &[
-        "napi-1", "napi-2", "napi-3", "napi-4", "napi-5", "napi-6", "napi-7", "napi-8",
-    ];
+    // N.B.: Only versions that are used are included in order to keep the set
+    // of permutations as small as possible.
+    const NODE_API_VERSIONS: &[&str] = &["napi-1", "napi-4", "napi-5", "napi-6", "napi-8"];
 
     const FEATURES: &[&str] = &["external-buffers", "futures", "serde", "tokio", "tokio-rt"];
 
