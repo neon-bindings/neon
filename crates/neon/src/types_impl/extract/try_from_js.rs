@@ -12,14 +12,14 @@ use crate::{
     result::{NeonResult, Throw},
     sys,
     types::{
-        extract::{Date, TryFromJs, TypeExpected},
+        extract::{TryFromJs, TypeExpected},
         private::ValueInternal,
         JsBoolean, JsNumber, JsString, JsValue, Value,
     },
 };
 
 #[cfg(feature = "napi-5")]
-use crate::types::JsDate;
+use crate::types::{extract::Date, JsDate};
 
 impl<'cx, V> TryFromJs<'cx> for Handle<'cx, V>
 where

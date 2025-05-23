@@ -1,3 +1,7 @@
 ignore:
   - "bench"
   - "test"
+coverage:
+  status:
+    project: off
+    patch: off

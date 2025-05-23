@@ -209,9 +209,9 @@ pub fn registered() -> Exports {
 fn feature_matrix() {
     use std::{env, process::Command};
 
-    const NODE_API_VERSIONS: &[&str] = &[
-        "napi-1", "napi-2", "napi-3", "napi-4", "napi-5", "napi-6", "napi-7", "napi-8",
-    ];
+    // N.B.: Only versions that are used are included in order to keep the set
+    // of permutations as small as possible.
+    const NODE_API_VERSIONS: &[&str] = &["napi-1", "napi-4", "napi-5", "napi-6", "napi-8"];
 
     const FEATURES: &[&str] = &["external-buffers", "futures", "serde", "tokio", "tokio-rt"];
 
@@ -221,7 +221,7 @@ fn feature_matrix() {
         for version in NODE_API_VERSIONS.iter().map(|f| f.to_string()) {
             let features = features.iter().fold(version, |f, s| f + "," + s);
             let status = Command::new(&cargo)
-                .args(["check", "-p", "neon", "--features"])
+                .args(["check", "-p", "neon", "--no-default-features", "--features"])
                 .arg(features)
                 .spawn()
                 .unwrap()
