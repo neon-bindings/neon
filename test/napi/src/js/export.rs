@@ -121,3 +121,13 @@ fn add_i32(a: i32, b: i32) -> i32 {
 fn add_u32(a: u32, b: u32) -> u32 {
     a + b
 }
+
+#[neon::export]
+fn to_i32(n: i32) -> i32 {
+    n
+}
+
+#[neon::export]
+fn to_u32(n: u32) -> u32 {
+    n
+}

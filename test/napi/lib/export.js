@@ -102,11 +102,15 @@ function functions() {
     assert.strictEqual(addon.addI32(5, 3), 8);
     assert.strictEqual(addon.addI32(-10, 20), 10);
     assert.strictEqual(addon.addI32(-5, -3), -8);
+    assert.strictEqual(addon.toI32(Infinity), 0);
+    assert.strictEqual(addon.toI32(-Infinity), 0);
   });
 
   it("u32 parameters", () => {
     assert.strictEqual(addon.addU32(5, 3), 8);
     assert.strictEqual(addon.addU32(100, 200), 300);
     assert.strictEqual(addon.addU32(0, 42), 42);
+    assert.strictEqual(addon.toU32(Infinity), 0);
+    assert.strictEqual(addon.toU32(-Infinity), 0);
   });
 }
