@@ -97,4 +97,16 @@ function functions() {
   it("can use generic Cx in exported functions", () => {
     assert.strictEqual(addon.numberWithCx(42), 42);
   });
+
+  it("i32 parameters", () => {
+    assert.strictEqual(addon.addI32(5, 3), 8);
+    assert.strictEqual(addon.addI32(-10, 20), 10);
+    assert.strictEqual(addon.addI32(-5, -3), -8);
+  });
+
+  it("u32 parameters", () => {
+    assert.strictEqual(addon.addU32(5, 3), 8);
+    assert.strictEqual(addon.addU32(100, 200), 300);
+    assert.strictEqual(addon.addU32(0, 42), 42);
+  });
 }
