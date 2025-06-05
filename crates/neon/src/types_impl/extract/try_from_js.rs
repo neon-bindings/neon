@@ -91,6 +91,48 @@ impl<'cx> TryFromJs<'cx> for f64 {
     }
 }
 
+impl<'cx> TryFromJs<'cx> for u32 {
+    type Error = TypeExpected<JsNumber>;
+
+    fn try_from_js(
+        cx: &mut Cx<'cx>,
+        v: Handle<'cx, JsValue>,
+    ) -> NeonResult<Result<Self, Self::Error>> {
+        let mut n = 0u32;
+
+        unsafe {
+            match sys::get_value_uint32(cx.env().to_raw(), v.to_local(), &mut n) {
+                Err(sys::Status::NumberExpected) => return Ok(Err(TypeExpected::new())),
+                Err(sys::Status::PendingException) => return Err(Throw::new()),
+                status => status.unwrap(),
+            };
+        }
+
+        Ok(Ok(n))
+    }
+}
+
+impl<'cx> TryFromJs<'cx> for i32 {
+    type Error = TypeExpected<JsNumber>;
+
+    fn try_from_js(
+        cx: &mut Cx<'cx>,
+        v: Handle<'cx, JsValue>,
+    ) -> NeonResult<Result<Self, Self::Error>> {
+        let mut n = 0i32;
+
+        unsafe {
+            match sys::get_value_int32(cx.env().to_raw(), v.to_local(), &mut n) {
+                Err(sys::Status::NumberExpected) => return Ok(Err(TypeExpected::new())),
+                Err(sys::Status::PendingException) => return Err(Throw::new()),
+                status => status.unwrap(),
+            };
+        }
+
+        Ok(Ok(n))
+    }
+}
+
 impl<'cx> TryFromJs<'cx> for bool {
     type Error = TypeExpected<JsBoolean>;
 

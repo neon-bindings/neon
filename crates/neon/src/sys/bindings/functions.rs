@@ -23,6 +23,10 @@ mod napi1 {
 
             fn get_value_double(env: Env, value: Value, result: *mut f64) -> Status;
 
+            fn get_value_uint32(env: Env, value: Value, result: *mut u32) -> Status;
+
+            fn get_value_int32(env: Env, value: Value, result: *mut i32) -> Status;
+
             fn create_array_with_length(env: Env, length: usize, result: *mut Value) -> Status;
 
             fn get_array_length(env: Env, value: Value, result: *mut u32) -> Status;

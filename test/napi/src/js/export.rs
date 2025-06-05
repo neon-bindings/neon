@@ -111,3 +111,23 @@ fn boxed_self(Boxed(this): Boxed<String>) -> String {
 fn boxed_string(s: String) -> Boxed<String> {
     Boxed(s)
 }
+
+#[neon::export]
+fn add_i32(a: i32, b: i32) -> i32 {
+    a + b
+}
+
+#[neon::export]
+fn add_u32(a: u32, b: u32) -> u32 {
+    a + b
+}
+
+#[neon::export]
+fn to_i32(n: i32) -> i32 {
+    n
+}
+
+#[neon::export]
+fn to_u32(n: u32) -> u32 {
+    n
+}
