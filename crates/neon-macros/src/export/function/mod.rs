@@ -189,6 +189,8 @@ fn context_parse(
 // * Context argument must be a `&mut` reference
 // * First argument must not be `Channel`
 // * Must not be a `self` receiver
+use crate::error::{self, ErrorCode};
+
 fn check_context(opts: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool> {
     // Extract the first argument
     let ty = match first_arg(opts, sig)? {
@@ -200,28 +202,19 @@ fn check_context(opts: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool> {
     let ty = match &*ty.ty {
         // Tried to use a borrowed Channel
         syn::Type::Reference(ty) if !opts.context && is_channel_type(&ty.elem) => {
-            return Err(syn::Error::new(
-                ty.elem.span(),
-                "Expected `&mut Cx` instead of a `Channel` reference.",
-            ))
+            return Err(error::error(ty.elem.span(), ErrorCode::WrongContextChannelRef))
         }
 
         syn::Type::Reference(ty) => ty,
 
         // Context needs to be a reference
         _ if opts.context || is_context_type(&ty.ty) => {
-            return Err(syn::Error::new(
-                ty.ty.span(),
-                "Context must be a `&mut` reference.",
-            ))
+            return Err(error::error(ty.ty.span(), ErrorCode::ContextMustBeMut))
         }
 
         // Hint that `Channel` should be swapped for `&mut Cx`
         _ if is_channel_type(&ty.ty) => {
-            return Err(syn::Error::new(
-                ty.ty.span(),
-                "Expected `&mut Cx` instead of `Channel`.",
-            ))
+            return Err(error::error(ty.ty.span(), ErrorCode::WrongContextChannel))
         }
 
         _ => return Ok(false),
@@ -234,7 +227,7 @@ fn check_context(opts: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool> {
 
     // Context argument must be mutable
     if ty.mutability.is_none() {
-        return Err(syn::Error::new(ty.span(), "Must be a `&mut` reference."));
+        return Err(error::error(ty.span(), ErrorCode::MustBeMutRef));
     }
 
     // All tests passed!
@@ -258,25 +251,22 @@ fn check_channel(opts: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool> {
     match &*ty.ty {
         // Provided `&mut Channel` instead of `Channel`
         syn::Type::Reference(ty) if opts.context || is_channel_type(&ty.elem) => {
-            Err(syn::Error::new(
-                ty.span(),
-                "Expected an owned `Channel` instead of a reference.",
-            ))
+            Err(error::error(ty.span(), ErrorCode::ChannelByRef))
         }
 
         // Provided a `&mut Cx` instead of a `Channel`
-        syn::Type::Reference(ty) if is_context_type(&ty.elem) => Err(syn::Error::new(
+        syn::Type::Reference(ty) if is_context_type(&ty.elem) => Err(error::error(
             ty.elem.span(),
-            "Expected an owned `Channel` instead of a context reference.",
+            ErrorCode::ChannelContextRef,
         )),
 
         // Found a `Channel`
         _ if opts.context || is_channel_type(&ty.ty) => Ok(true),
 
         // Tried to use an owned `Cx`
-        _ if is_context_type(&ty.ty) => Err(syn::Error::new(
+        _ if is_context_type(&ty.ty) => Err(error::error(
             ty.ty.span(),
-            "Context is not available in async functions. Try a `Channel` instead.",
+            ErrorCode::ContextNotAvailable,
         )),
 
         _ => Ok(false),
@@ -294,9 +284,9 @@ fn first_arg<'a>(
 
         // If context was forced, error to let the user know the mistake
         None if opts.context => {
-            return Err(syn::Error::new(
+            return Err(error::error(
                 sig.inputs.span(),
-                "Expected a context argument. Try removing the `context` attribute.",
+                ErrorCode::MissingContext,
             ))
         }
 
@@ -306,9 +296,9 @@ fn first_arg<'a>(
     // Expect a typed pattern; self receivers are not supported
     match arg {
         syn::FnArg::Typed(ty) => Ok(Some(ty)),
-        syn::FnArg::Receiver(arg) => Err(syn::Error::new(
+        syn::FnArg::Receiver(arg) => Err(error::error(
             arg.span(),
-            "Exported functions cannot receive `self`.",
+            ErrorCode::SelfReceiver,
         )),
     }
 }

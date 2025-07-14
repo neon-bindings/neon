@@ -16,6 +16,8 @@ pub(super) enum Kind {
     Task,
 }
 
+use crate::error::ErrorCode;
+
 impl Meta {
     fn set_name(&mut self, meta: syn::meta::ParseNestedMeta) -> syn::Result<()> {
         self.name = Some(meta.value()?.parse::<syn::LitStr>()?);
@@ -43,7 +45,13 @@ impl Meta {
 
     fn make_async(&mut self, meta: syn::meta::ParseNestedMeta) -> syn::Result<()> {
         if matches!(self.kind, Kind::AsyncFn) {
-            return Err(meta.error("`async` attribute should not be used with an `async fn`"));
+            return Err(meta.error(
+                format!(
+                    "{} [{}]",
+                    ErrorCode::AsyncAttrAsyncFn.message(),
+                    ErrorCode::AsyncAttrAsyncFn.code()
+                ),
+            ));
         }
 
         self.kind = Kind::Async;
@@ -102,7 +110,13 @@ impl syn::parse::Parser for Parser {
                 return attr.make_task(meta);
             }
 
-            Err(meta.error("unsupported property"))
+            Err(meta.error(
+                format!(
+                    "{} [{}]",
+                    ErrorCode::UnsupportedProperty.message(),
+                    ErrorCode::UnsupportedProperty.code()
+                ),
+            ))
         });
 
         parser.parse2(tokens)?;

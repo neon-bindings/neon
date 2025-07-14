@@ -1,4 +1,4 @@
-error: `async` attribute should not be used with an `async fn`
+error: `async` attribute should not be used with an `async fn` [N0012]
  --> tests/fail/unnecessary-attribute.rs:1:16
   |
 1 | #[neon::export(async)]
