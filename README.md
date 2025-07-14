@@ -23,6 +23,9 @@ Neon!
 See our [Neon fundamentals docs](https://neon-bindings.com/docs/intro) and
 our [API docs](https://docs.rs/neon/latest/neon).
 
+Compiler diagnostics may include error codes like `N0001`. Refer to
+[the error code reference](doc/error-codes.md) for details.
+
 ## Neon 1.0.0 Migration Guide
 
 The latest version of Neon, 1.0.0, includes several breaking changes in order to fix unsoundness, improve consistency, and add features.

@@ -1,6 +1,7 @@
 //! Procedural macros supporting [Neon](https://docs.rs/neon/latest/neon/)
 
 mod export;
+mod error;
 
 #[proc_macro_attribute]
 pub fn main(

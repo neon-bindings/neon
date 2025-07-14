@@ -1,34 +1,34 @@
-error: Context must be a `&mut` reference.
+error: Context must be a `&mut` reference. [N0003]
  --> tests/fail/need-borrowed-context.rs:2:18
   |
 2 | fn owned_cx(_cx: Cx) {}
   |                  ^^
 
-error: Context must be a `&mut` reference.
+error: Context must be a `&mut` reference. [N0003]
  --> tests/fail/need-borrowed-context.rs:5:27
   |
 5 | fn owned_function_cx(_cx: FunctionContext) {}
   |                           ^^^^^^^^^^^^^^^
 
-error: Must be a `&mut` reference.
+error: Must be a `&mut` reference. [N0005]
  --> tests/fail/need-borrowed-context.rs:8:16
   |
 8 | fn ref_cx(_cx: &Cx) {}
   |                ^
 
-error: Must be a `&mut` reference.
+error: Must be a `&mut` reference. [N0005]
   --> tests/fail/need-borrowed-context.rs:11:25
    |
 11 | fn ref_function_cx(_cx: &FunctionContext) {}
    |                         ^
 
-error: Context must be a `&mut` reference.
+error: Context must be a `&mut` reference. [N0003]
   --> tests/fail/need-borrowed-context.rs:14:19
    |
 14 | fn forced_cx(_cx: String) {}
    |                   ^^^^^^
 
-error: Must be a `&mut` reference.
+error: Must be a `&mut` reference. [N0005]
   --> tests/fail/need-borrowed-context.rs:17:23
    |
 17 | fn forced_ref_cx(_cx: &String) {}

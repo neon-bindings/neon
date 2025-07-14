@@ -1,4 +1,4 @@
-error: Expected a context argument. Try removing the `context` attribute.
+error: Expected a context argument. Try removing the `context` attribute. [N0009]
  --> tests/fail/missing-context.rs:1:1
   |
 1 | #[neon::export(context)]

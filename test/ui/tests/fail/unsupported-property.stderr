@@ -1,10 +1,10 @@
-error: unsupported property
+error: unsupported property [N0011]
  --> tests/fail/unsupported-property.rs:1:16
   |
 1 | #[neon::export(foo)]
   |                ^^^
 
-error: unsupported property
+error: unsupported property [N0011]
  --> tests/fail/unsupported-property.rs:4:16
   |
 4 | #[neon::export(foo)]
