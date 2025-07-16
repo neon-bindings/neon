@@ -110,6 +110,17 @@ where
     type Value = JsValue;
 
     fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
+        TryIntoJs::try_into_js(&self, cx)
+    }
+}
+
+impl<'cx, T> TryIntoJs<'cx> for &Json<T>
+where
+    T: serde::Serialize,
+{
+    type Value = JsValue;
+
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         let s = serde_json::to_string(&self.0).or_else(|err| cx.throw_error(err.to_string()))?;
 
         parse(cx, &s)
@@ -117,6 +128,8 @@ where
 }
 
 impl<T> private::Sealed for Json<T> {}
+
+impl<T> private::Sealed for &Json<T> {}
 
 /// Error returned when a value is invalid JSON
 pub struct Error(serde_json::Error);

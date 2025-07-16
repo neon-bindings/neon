@@ -18,6 +18,10 @@ function globals() {
     assert.deepStrictEqual(addon.MESSAGES, ["hello", "neon"]);
     assert.deepStrictEqual(addon.renamedMessages, ["hello", "neon"]);
   });
+
+  it("LazyLock", () => {
+    assert.strictEqual(addon.LAZY_LOCK_HELLO, "Hello, Neon!");
+  });
 }
 
 function functions() {
