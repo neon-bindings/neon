@@ -31,10 +31,13 @@ pub(super) fn export(meta: meta::Meta, name: &syn::Ident, expr: Box<syn::Expr>) 
         fn #create_name<'cx>(
             cx: &mut neon::context::ModuleContext<'cx>,
         ) -> neon::result::NeonResult<(&'static str, neon::handle::Handle<'cx, neon::types::JsValue>)> {
-            neon::types::extract::TryIntoJs::try_into_js(#value, cx).map(|v| (
-                #export_name,
-                neon::handle::Handle::upcast(&v),
-            ))
+            use neon::types::extract::TryIntoJs;
+
+            // This leverages autoderef to support several different types:
+            // * If value is `&T` and `&T: TryIntoJs`, it will deref `&&T` to `&T`
+            // * If value is `T` and `&T: TryIntoJs`, it will call as is
+            // * If value is `&T` and `T: TryIntoJs` and `Copy`, it will copy and call
+            (&#value).try_into_js(cx).map(|v| (#export_name, neon::handle::Handle::upcast(&v)))
         }
     });
 

@@ -1,7 +1,7 @@
 use std::{
     cell::{Ref, RefCell, RefMut},
     rc::Rc,
-    sync::Arc,
+    sync::{Arc, LazyLock},
 };
 
 use crate::{
@@ -10,7 +10,7 @@ use crate::{
     result::{JsResult, NeonResult},
     types::{
         extract::{TryFromJs, TryIntoJs},
-        JsBox, JsValue,
+        JsBox, JsValue, Value,
     },
 };
 
@@ -124,3 +124,18 @@ where
         Ok(JsBox::manually_finalize(cx, self))
     }
 }
+
+impl<'cx, T, V> TryIntoJs<'cx> for &LazyLock<T>
+where
+    T: 'static,
+    V: Value,
+    for<'a> &'a T: TryIntoJs<'cx, Value = V>,
+{
+    type Value = V;
+
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
+        LazyLock::force(&self).try_into_js(cx)
+    }
+}
+
+impl<T> super::private::Sealed for &LazyLock<T> {}

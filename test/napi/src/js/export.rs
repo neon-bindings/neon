@@ -1,3 +1,5 @@
+use std::sync::LazyLock;
+
 use neon::{
     prelude::*,
     types::extract::{Boxed, Error},
@@ -8,6 +10,9 @@ const NUMBER: u8 = 42;
 
 #[neon::export]
 static STRING: &str = "Hello, World!";
+
+#[neon::export]
+static LAZY_LOCK_HELLO: LazyLock<String> = LazyLock::new(|| String::from("Hello, Neon!"));
 
 #[neon::export(name = "renamedString")]
 static RENAMED_STRING: &str = STRING;
