@@ -28,6 +28,8 @@
 /// ```
 pub use neon_macros::main;
 
+#[cfg_attr(docsrs, doc(cfg(feature = "export")))]
+#[cfg(feature = "export")]
 /// Register an item to be exported by the Neon addon
 ///
 /// ## Exporting constants and statics
