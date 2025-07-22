@@ -55,7 +55,7 @@ describe("boxed", function () {
   });
 
   it("should dynamically check borrowing rules", function () {
-    assert.throws(() => new RefPerson("World").fail(), /BorrowMutError/);
+    assert.throws(() => new RefPerson("World").fail(), /already borrowed/);
   });
 
   it("should type check externals", function () {
