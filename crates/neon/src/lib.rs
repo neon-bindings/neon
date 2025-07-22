@@ -195,8 +195,14 @@ impl IntoIterator for Exports {
         for<'cx> fn(&mut ModuleContext<'cx>) -> NeonResult<(&'static str, Handle<'cx, JsValue>)>,
     >;
 
+    #[cfg(feature = "export")]
     fn into_iter(self) -> Self::IntoIter {
         crate::macro_internal::EXPORTS.into_iter()
+    }
+
+    #[cfg(not(feature = "export"))]
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIterator::into_iter(&[])
     }
 }
 
