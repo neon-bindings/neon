@@ -1,76 +1,76 @@
-error: Expected `&mut Cx` instead of `Channel`.
+error: Expected `&mut Cx` instead of `Channel`. [N0004]
  --> tests/fail/wrong-context.rs:2:22
   |
 2 | fn sync_channel(_ch: Channel) {}
   |                      ^^^^^^^
 
-error: Expected `&mut Cx` instead of a `Channel` reference.
+error: Expected `&mut Cx` instead of a `Channel` reference. [N0002]
  --> tests/fail/wrong-context.rs:5:34
   |
 5 | fn sync_borrow_channel(_ch: &mut Channel) {}
   |                                  ^^^^^^^
 
-error: Expected `&mut Cx` instead of `Channel`.
+error: Expected `&mut Cx` instead of `Channel`. [N0004]
  --> tests/fail/wrong-context.rs:8:23
   |
 8 | fn async_channel(_ch: Channel) {}
   |                       ^^^^^^^
 
-error: Expected `&mut Cx` instead of a `Channel` reference.
+error: Expected `&mut Cx` instead of a `Channel` reference. [N0002]
   --> tests/fail/wrong-context.rs:11:35
    |
 11 | fn async_borrow_channel(_ch: &mut Channel) {}
    |                                   ^^^^^^^
 
-error: Context is not available in async functions. Try a `Channel` instead.
+error: Context is not available in async functions. Try a `Channel` instead. [N0008]
   --> tests/fail/wrong-context.rs:14:24
    |
 14 | async fn async_cx(_cx: Cx) {}
    |                        ^^
 
-error: Context is not available in async functions. Try a `Channel` instead.
+error: Context is not available in async functions. Try a `Channel` instead. [N0008]
   --> tests/fail/wrong-context.rs:17:38
    |
 17 | async fn async_function_context(_cx: FunctionContext) {}
    |                                      ^^^^^^^^^^^^^^^
 
-error: Expected an owned `Channel` instead of a context reference.
+error: Expected an owned `Channel` instead of a context reference. [N0007]
   --> tests/fail/wrong-context.rs:20:29
    |
 20 | async fn async_cx_ref(_cx: &Cx) {}
    |                             ^^
 
-error: Expected an owned `Channel` instead of a reference.
+error: Expected an owned `Channel` instead of a reference. [N0006]
   --> tests/fail/wrong-context.rs:23:36
    |
 23 | async fn async_borrow_channel(_cx: &Channel) {}
    |                                    ^
 
-error: Expected an owned `Channel` instead of a reference.
+error: Expected an owned `Channel` instead of a reference. [N0006]
   --> tests/fail/wrong-context.rs:26:43
    |
 26 | async fn async_borrow_forced_channel(_cx: &String) {}
    |                                           ^
 
-error: Expected an owned `Channel` instead of a context reference.
+error: Expected an owned `Channel` instead of a context reference. [N0007]
   --> tests/fail/wrong-context.rs:29:43
    |
 29 | async fn async_function_context_ref(_cx: &FunctionContext) {}
    |                                           ^^^^^^^^^^^^^^^
 
-error: Context is not available in async functions. Try a `Channel` instead.
+error: Context is not available in async functions. Try a `Channel` instead. [N0008]
   --> tests/fail/wrong-context.rs:32:31
    |
 32 | fn task_function_context(_cx: FunctionContext) {}
    |                               ^^^^^^^^^^^^^^^
 
-error: Expected an owned `Channel` instead of a context reference.
+error: Expected an owned `Channel` instead of a context reference. [N0007]
   --> tests/fail/wrong-context.rs:35:22
    |
 35 | fn task_cx_ref(_cx: &Cx) {}
    |                      ^^
 
-error: Expected an owned `Channel` instead of a context reference.
+error: Expected an owned `Channel` instead of a context reference. [N0007]
   --> tests/fail/wrong-context.rs:38:36
    |
 38 | fn task_function_context_ref(_cx: &FunctionContext) {}

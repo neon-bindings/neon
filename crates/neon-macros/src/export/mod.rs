@@ -1,5 +1,6 @@
 mod function;
 mod global;
+use crate::error::{self, ErrorCode};
 
 // N.B.: Meta attribute parsing happens in this function because `syn::parse_macro_input!`
 // must be called from a function that returns `proc_macro::TokenStream`.
@@ -45,8 +46,7 @@ pub(crate) fn export(
 // Generate an error for unsupported item types
 fn unsupported(item: syn::Item) -> proc_macro::TokenStream {
     let span = syn::spanned::Spanned::span(&item);
-    let msg = "`neon::export` can only be applied to functions, consts, and statics.";
-    let err = syn::Error::new(span, msg);
+    let err = error::error(span, ErrorCode::UnsupportedExportItem);
 
     err.into_compile_error().into()
 }
