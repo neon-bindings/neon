@@ -258,6 +258,19 @@ mod napi1 {
                 message: *const c_char,
                 message_len: usize,
             );
+
+            fn wrap(
+                env: Env,
+                js_object: Value,
+                native_object: *mut c_void,
+                finalize_cb: Finalize,
+                finalize_hint: *mut c_void,
+                result: *mut Ref,
+            ) -> Status;
+
+            fn unwrap(env: Env, js_object: Value, result: *mut *mut c_void) -> Status;
+
+            fn remove_wrap(env: Env, js_object: Value, result: *mut *mut c_void) -> Status;
         }
     );
 }

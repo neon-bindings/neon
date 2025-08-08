@@ -17,6 +17,10 @@ use crate::types::extract::Json;
 #[cfg(all(feature = "napi-6", feature = "futures"))]
 pub use self::futures::*;
 
+pub mod object {
+    pub use crate::object::wrap::{unwrap, wrap};
+}
+
 #[cfg(all(feature = "napi-6", feature = "futures"))]
 mod futures;
 
