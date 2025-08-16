@@ -27,7 +27,7 @@ nodejs-sys = "0.15.0"
 either = "1.13.0"
 getrandom = { version = "0.2.11", optional = true }
 libloading = "0.8.1"
-linkme = "0.3.33"
+linkme = { version = "0.3.33", optional = true }
 semver = "1.0.20"
 smallvec = "1.11.2"
 once_cell = "1.18.0"
@@ -46,10 +46,13 @@ features = ["sync"]
 optional = true
 
 [features]
-default = ["napi-8"]
+default = ["export", "napi-8"]
 
 # Enable extracting values by serializing to JSON
 serde = ["dep:serde", "dep:serde_json"]
+
+# Enable `#[neon::export]`
+export = ["dep:linkme", "neon-macros/export"]
 
 # Enable the creation of external binary buffers. This is disabled by default
 # since these APIs fail at runtime in environments that enable the V8 memory

@@ -54,26 +54,11 @@ pub trait ContextInternal<'cx>: Sized {
     }
 }
 
-fn default_main(mut cx: ModuleContext) -> NeonResult<()> {
-    #[cfg(all(feature = "napi-6", feature = "tokio-rt-multi-thread"))]
-    crate::executor::tokio::init(&mut cx)?;
-    crate::registered().export(&mut cx)
-}
-
-fn init(cx: ModuleContext) -> NeonResult<()> {
-    if crate::macro_internal::MAIN.len() > 1 {
-        panic!("The `neon::main` macro must only be used once");
-    }
-
-    if let Some(main) = crate::macro_internal::MAIN.first() {
-        main(cx)
-    } else {
-        default_main(cx)
-    }
-}
-
-#[no_mangle]
-unsafe extern "C" fn napi_register_module_v1(env: *mut c_void, m: *mut c_void) -> *mut c_void {
+pub unsafe fn initialize_module(
+    env: *mut c_void,
+    m: *mut c_void,
+    init: fn(ModuleContext) -> NeonResult<()>,
+) -> *mut c_void {
     let env = env.cast();
 
     sys::setup(env);
@@ -87,4 +72,29 @@ unsafe extern "C" fn napi_register_module_v1(env: *mut c_void, m: *mut c_void) -
     let _ = ModuleContext::with(env, exports, init);
 
     m
+}
+
+#[cfg(feature = "export")]
+fn default_main(mut cx: ModuleContext) -> NeonResult<()> {
+    #[cfg(all(feature = "napi-6", feature = "tokio-rt-multi-thread"))]
+    crate::executor::tokio::init(&mut cx)?;
+    crate::registered().export(&mut cx)
+}
+
+#[cfg(feature = "export")]
+#[no_mangle]
+unsafe extern "C" fn napi_register_module_v1(env: *mut c_void, m: *mut c_void) -> *mut c_void {
+    fn init(cx: ModuleContext) -> NeonResult<()> {
+        if crate::macro_internal::MAIN.len() > 1 {
+            panic!("The `neon::main` macro must only be used once");
+        }
+
+        if let Some(main) = crate::macro_internal::MAIN.first() {
+            main(cx)
+        } else {
+            default_main(cx)
+        }
+    }
+
+    initialize_module(env, m, init)
 }
