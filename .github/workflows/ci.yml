@@ -59,12 +59,6 @@ jobs:
           toolchain: ${{ matrix.rust-toolchain }}
           components: clippy,rustfmt
 
-      - name: Linkme nightly workaround
-        if: matrix.rust-toolchain == 'nightly' && matrix.os == 'ubuntu-latest'
-        # Workaround for linkme with `rust-lld`
-        # https://blog.rust-lang.org/2024/05/17/enabling-rust-lld-on-linux.html#possible-drawbacks
-        run: echo RUSTFLAGS=${RUSTFLAGS}\ -Clink-arg=-Wl,-z,nostart-stop-gc >> $GITHUB_ENV
-
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
 
