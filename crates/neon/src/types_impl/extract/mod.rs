@@ -112,7 +112,8 @@ pub use self::{
         ArrayBuffer, BigInt64Array, BigUint64Array, Buffer, Float32Array, Float64Array, Int16Array,
         Int32Array, Int8Array, Uint16Array, Uint32Array, Uint8Array,
     },
-    error::{Error, TypeExpected},
+    instance::Instance,
+    error::{Error, ObjectExpected, TypeExpected},
     with::with,
 };
 
@@ -129,7 +130,8 @@ mod buffer;
 mod container;
 mod either;
 mod error;
-mod private;
+mod instance;
+pub(crate) mod private;
 mod try_from_js;
 mod try_into_js;
 mod with;

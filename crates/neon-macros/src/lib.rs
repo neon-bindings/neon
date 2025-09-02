@@ -1,5 +1,6 @@
 //! Procedural macros supporting [Neon](https://docs.rs/neon/latest/neon/)
 
+mod class;
 mod export;
 
 #[proc_macro_attribute]
@@ -40,4 +41,12 @@ pub fn export(
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
     export::export(attr, item)
+}
+
+#[proc_macro_attribute]
+pub fn class(
+    attr: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+) -> proc_macro::TokenStream {
+    class::class(attr, item)
 }

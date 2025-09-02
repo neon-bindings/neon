@@ -400,3 +400,34 @@ pub trait Object: Value {
         Ok(options)
     }
 }
+
+#[cfg(feature = "napi-6")]
+pub trait Class {
+    fn name() -> String;
+    fn constructor<'cx>(cx: &mut Cx<'cx>) -> JsResult<'cx, JsFunction>;
+
+    fn current_instance<'cx>(cx: &mut Cx<'cx>) -> NeonResult<ClassInstance<'cx>>;
+    fn generate_instance<'cx>(cx: &mut Cx<'cx>) -> NeonResult<ClassInstance<'cx>>;
+}
+
+pub struct ClassInstance<'cx> {
+    pub external_constructor: Handle<'cx, JsFunction>,
+    pub internal_constructor: Handle<'cx, JsFunction>,
+}
+
+pub struct RootClassInstance {
+    pub external_constructor: Root<JsFunction>,
+    pub internal_constructor: Root<JsFunction>,
+}
+
+// Since it's just a pair of Root which are both Send, we can mark it as such.
+unsafe impl Send for RootClassInstance {}
+
+impl RootClassInstance {
+    pub fn to_inner<'a, 'cx: 'a>(&'a self, cx: &'a mut Cx<'cx>) -> ClassInstance<'cx> {
+        ClassInstance {
+            external_constructor: self.external_constructor.to_inner(cx),
+            internal_constructor: self.internal_constructor.to_inner(cx),
+        }
+    }
+}

@@ -1,4 +1,4 @@
-use neon::prelude::*;
+use neon::{object::Class, prelude::*};
 use once_cell::sync::OnceCell;
 use tokio::runtime::Runtime;
 
@@ -11,6 +11,7 @@ mod js {
     pub mod arrays;
     pub mod bigint;
     pub mod boxed;
+    pub mod class;
     pub mod coercions;
     pub mod container;
     pub mod date;
@@ -444,6 +445,12 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         "extract_single_add_one",
         js::extract::extract_single_add_one,
     )?;
+
+    // Classes
+    let class_constructor = js::class::Message::constructor(&mut cx)?;
+    cx.export_value("Message", class_constructor)?;
+    let point_constructor = js::class::Point::constructor(&mut cx)?;
+    cx.export_value("Point", point_constructor)?;
 
     Ok(())
 }

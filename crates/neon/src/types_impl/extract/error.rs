@@ -11,6 +11,39 @@ use crate::{
 
 type BoxError = Box<dyn error::Error + Send + Sync + 'static>;
 
+pub struct ObjectExpected {
+    expected: String
+}
+
+impl ObjectExpected {
+    pub(crate) fn new(expected: String) -> Self {
+        Self { expected }
+    }
+}
+
+impl fmt::Display for ObjectExpected {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "expected {}", self.expected)
+    }
+}
+
+impl fmt::Debug for ObjectExpected {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_tuple("ObjectExpected").field(&self.expected).finish()
+    }
+}
+
+impl<'cx> TryIntoJs<'cx> for ObjectExpected {
+    type Value = JsError;
+
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
+        JsError::type_error(cx, self.to_string())
+    }
+}
+
+impl private::Sealed for ObjectExpected {}
+
+
 /// Error returned when a JavaScript value is not the type expected
 pub struct TypeExpected<T: Value>(PhantomData<T>);
 

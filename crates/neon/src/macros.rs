@@ -1,5 +1,7 @@
 //! Helper module to add documentation to macros prior to re-exporting.
 
+pub use neon_macros::class;
+
 /// Marks a function as the main entry point for initialization in
 /// a Neon module.
 ///
