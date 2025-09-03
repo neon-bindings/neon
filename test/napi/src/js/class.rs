@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 use neon::{prelude::*, types::extract::Instance};
 
 #[derive(Debug, Clone)]
@@ -54,6 +56,28 @@ impl Point {
 impl Finalize for Point {
     fn finalize<'cx, C: Context<'cx>>(self, _cx: &mut C) { }
 }
+
+#[derive(Debug, Clone, Default)]
+pub struct StringBuffer {
+    buffer: Rc<RefCell<String>>,
+}
+
+#[neon::class]
+impl StringBuffer {
+    pub fn push(&self, s: String) {
+        self.buffer.borrow_mut().push_str(&s);
+    }
+
+    // TODO: auto-JSify names, with attribute for optionally controlling
+    pub fn to_string(&self) -> String {
+        self.buffer.borrow().clone()
+    }
+}
+
+impl Finalize for StringBuffer {
+    fn finalize<'cx, C: Context<'cx>>(self, _cx: &mut C) { }
+}
+
 
 /*
 impl Class for Message {

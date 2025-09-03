@@ -1,8 +1,6 @@
 use proc_macro2::TokenStream;
 use syn::{spanned::Spanned, Ident, ImplItemFn, Type};
 
-mod method;
-
 struct ClassItems {
     consts: Vec<syn::ImplItemConst>,
     fns: Vec<syn::ImplItemFn>,
@@ -52,7 +50,6 @@ pub(crate) fn class(
 
     // Parse the item as an implementation block
     let syn::ItemImpl {
-        //impl_token,
         self_ty,
         items,
         ..
@@ -67,7 +64,8 @@ pub(crate) fn class(
     };
     let class_name = class_ident.to_string();
 
-    // Sort the items into `const` and `fn` categories
+    // Sort the items into `const` and `fn` categories\
+    // TODO: turn consts into static class properties
     let ClassItems { consts: _consts, fns, constructor } = match sort_class_items(items.clone()) {
         Ok(items) => items,
         Err(err) => {
@@ -78,20 +76,25 @@ pub(crate) fn class(
 
     let ctor_params = match &constructor {
         Some(ImplItemFn { sig, .. }) => {
-            sig.inputs.iter().enumerate().map(|(i, arg)| {
+            let mut params = Vec::new();
+            for (i, arg) in sig.inputs.iter().enumerate() {
                 match arg {
                     syn::FnArg::Typed(pat_type) => {
-                        match pat_type.pat.as_ref() {
+                        params.push(match pat_type.pat.as_ref() {
                             syn::Pat::Ident(ident) => ident.ident.to_string(),
                             // Rust identifiers can't begin with '$' so this can't conflict
                             // with any user-provided identifiers.
                             _ => format!("$arg{}", i),
-                        }
+                        });
                     }
-                    // TODO: this should probably eagerly fail with a syntax error
-                    syn::FnArg::Receiver(_) => "self".to_string(),
+                    syn::FnArg::Receiver(_) => {
+                        return syn::Error::new_spanned(arg, "constructor cannot have a self receiver")
+                            .to_compile_error()
+                            .into();
+                    }
                 }
-            }).collect::<Vec<_>>()
+            }
+            params
         }
         None => {
             vec![]
@@ -129,7 +132,7 @@ pub(crate) fn class(
 
     let method_locals_lists = fns.iter().map(|f| {
         if !starts_with_self_arg(&f.sig) {
-            panic!("class methods must have a &self, &mut self, or self receiver");
+            panic!("class methods must have a &self receiver");
         }
 
         f.sig.inputs.iter().skip(1).enumerate().map(|(i, arg)| {
@@ -143,8 +146,9 @@ pub(crate) fn class(
 
     for f in fns {
         let fn_name = f.sig.ident.to_string();
-        method_names.push_str(&format!(", {}Method", fn_name));
-        prototype_patches.push_str(&format!("\n    prototype.{} = {}Method;", fn_name, fn_name));
+        method_names.push_str(&format!(", {fn_name}Method"));
+        // TODO: auto-JSify names, with attribute for optionally controlling
+        prototype_patches.push_str(&format!("\n    prototype.{fn_name} = {fn_name}Method;"));
     }
 
     let script = format!(r#"
@@ -189,42 +193,11 @@ pub(crate) fn class(
 }})
 "#);
 
-    // // TODO: impl TryIntoJs and TryFromJs
-    // let impl_sealed: TokenStream = quote::quote! {
-    //     impl neon::macro_internal::Sealed for #class_ident {}
-    // };
-
-    // let impl_into_js: TokenStream = quote::quote! {
-    //     impl<'cx> neon::types::extract::TryIntoJs<'cx> for #class_ident {
-    //         type Value = neon::types::JsObject;
-
-    //         fn try_into_js(self, cx: &mut neon::context::Cx<'cx>) -> neon::result::JsResult<'cx, Self::Value> {
-    //             use neon::object::Class;
-    //             let class_instance = Self::current_instance(cx)?;
-    //             let object: Handle<JsObject> = class_instance.internal_constructor
-    //                 .bind(cx)
-    //                 .construct()?;
-    //             neon::object::wrap(cx, object, self)?.or_throw(cx)?;
-    //             Ok(object)
-    //         }
-    //     }
-    // };
-
-    // let impl_from_js: TokenStream = quote::quote! {
-    //     impl<'cx> neon::types::extract::TryFromJs<'cx> for #class_ident {
-    //         type Error = neon::types::extract::ObjectExpected;
-
-    //         fn try_from_js(cx: &mut neon::context::Cx<'cx>, v: Handle<'cx, JsValue>) -> NeonResult<Self> {
-    //             let object = v.downcast::<JsObject>().or_throw(cx)?;
-    //             let instance: &Self = neon::object::unwrap(cx, object)?.ok_or_else(|| {
-    //                 neon::types::extract::ObjectExpected {
-    //                     expected: format!("an instance of {}", #class_name)
-    //                 }
-    //             })?;
-
-    //         }
-    //     }
-    // };
+    let make_new: TokenStream = if constructor.is_some() {
+        quote::quote! { #class_ident::new }
+    } else {
+        quote::quote! { <Self as ::std::default::Default>::default }
+    };
 
     // Generate the impl of `neon::object::Class` for the struct
     let impl_class: TokenStream = quote::quote! {
@@ -261,8 +234,7 @@ pub(crate) fn class(
 
                 let wrap = JsFunction::new(cx, |mut cx| {
                     let (this, #(#ctor_locals,)*): (Handle<JsObject>, #(#ctor_infers),*) = cx.args()?;
-                    // TODO: allow the constructor to be optional and use Default::default() when absent
-                    neon::object::wrap(&mut cx, this, #class_ident::new(#(#ctor_locals),*))?.or_throw(&mut cx)?;
+                    neon::object::wrap(&mut cx, this, #make_new(#(#ctor_locals),*))?.or_throw(&mut cx)?;
                     Ok(cx.undefined())
                 });
 
@@ -295,15 +267,8 @@ pub(crate) fn class(
         }
     };
 
-    // // Handle `impl` items by generating an error span
-    // let span = syn::spanned::Spanned::span(&impl_token);
-    // let msg = "`neon::class` is not yet implemented.";
-    // let err = syn::Error::new(span, msg);
-
     quote::quote! {
         #impl_block_clone
-        //#impl_sealed
-        //#impl_into_js
         #impl_class
     }.into()
 }

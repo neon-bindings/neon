@@ -11,6 +11,7 @@ use crate::{
 
 type BoxError = Box<dyn error::Error + Send + Sync + 'static>;
 
+/// Error returned when a JavaScript value is not an instance of the expected class.
 pub struct ObjectExpected {
     expected: String
 }
@@ -44,7 +45,7 @@ impl<'cx> TryIntoJs<'cx> for ObjectExpected {
 impl private::Sealed for ObjectExpected {}
 
 
-/// Error returned when a JavaScript value is not the type expected
+/// Error returned when a JavaScript value is not the type expected.
 pub struct TypeExpected<T: Value>(PhantomData<T>);
 
 impl<T: Value> TypeExpected<T> {

@@ -3,7 +3,7 @@ const { expect } = require("chai");
 const assert = require("chai").assert;
 
 describe("classes", function () {
-  it("can create a native class", function () {
+  it("can create a Message class", function () {
     const Message = addon.Message;
 
     const message = new Message("Hello, Neon, this is your test speaking.");
@@ -26,5 +26,15 @@ describe("classes", function () {
     assert.strictEqual(point2.x(), 3);
     assert.strictEqual(point2.y(), 4);
     assert.strictEqual(point.distance(point2), Math.sqrt(8));
+  });
+
+  it("can create a StringBuffer class with Default constructor", function () {
+    const StringBuffer = addon.StringBuffer;
+
+    const buffer = new StringBuffer();
+    buffer.push("Hello");
+    buffer.push(" ");
+    buffer.push("World");
+    assert.strictEqual(buffer.to_string(), "Hello World");
   });
 });
