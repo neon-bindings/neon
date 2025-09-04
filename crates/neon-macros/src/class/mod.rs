@@ -100,6 +100,7 @@ pub(crate) fn class(
             vec![]
         }
     };
+
     let ctor_locals: Vec<Ident> = match &constructor {
         Some(ImplItemFn { sig, .. }) => {
             sig.inputs.iter().enumerate().map(|(i, arg)| {
@@ -110,6 +111,7 @@ pub(crate) fn class(
             vec![]
         }
     };
+
     let ctor_infers: Vec<Type> = match &constructor {
         Some(ImplItemFn { sig, .. }) => {
             sig.inputs.iter().map(|_| Type::Infer(syn::TypeInfer { underscore_token: Default::default() })).collect::<Vec<_>>()
@@ -206,30 +208,25 @@ pub(crate) fn class(
                 stringify!(#class_ident).into()
             }
 
-            fn current_instance<'cx>(cx: &mut neon::context::Cx<'cx>) -> neon::result::NeonResult<neon::object::ClassInstance<'cx>> {
+            fn local<'cx>(cx: &mut neon::context::Cx<'cx>) -> neon::result::NeonResult<neon::object::ClassMetadata<'cx>> {
                 use neon::handle::{Handle, Root};
-                use neon::object::{ClassInstance, RootClassInstance};
+                use neon::object::{ClassMetadata, RootClassMetadata};
                 use neon::thread::LocalKey;
                 use neon::types::{JsFunction, JsObject};
 
-                static CLASS_INSTANCE: LocalKey<RootClassInstance> = LocalKey::new();
+                static CLASS_METADATA: LocalKey<RootClassMetadata> = LocalKey::new();
 
-                CLASS_INSTANCE
-                    .get_or_try_init(cx, |cx| Self::generate_instance(cx).map(|v| RootClassInstance {
-                        external_constructor: v.external_constructor.root(cx),
-                        internal_constructor: v.internal_constructor.root(cx),
-                    }))
+                CLASS_METADATA
+                    .get_or_try_init(cx, |cx| Self::create(cx).map(|v| v.root(cx)))
                     .map(|v| v.to_inner(cx))
             }
 
             fn constructor<'cx>(cx: &mut neon::context::Cx<'cx>) -> neon::result::JsResult<'cx, neon::types::JsFunction> {
-                let instance = Self::current_instance(cx)?;
-                Ok(instance.external_constructor)
+                Ok(Self::local(cx)?.constructor())
             }
 
-            fn generate_instance<'cx>(cx: &mut neon::context::Cx<'cx>) -> neon::result::NeonResult<neon::object::ClassInstance<'cx>> {
+            fn create<'cx>(cx: &mut neon::context::Cx<'cx>) -> neon::result::NeonResult<neon::object::ClassMetadata<'cx>> {
                 use neon::handle::Handle;
-                use neon::object::ClassInstance;
                 use neon::types::{JsFunction, JsObject};
 
                 let wrap = JsFunction::new(cx, |mut cx| {
@@ -259,10 +256,7 @@ pub(crate) fn class(
                     .call()?;
                 let external: Handle<JsFunction> = pair.prop(cx, "external").get()?;
                 let internal: Handle<JsFunction> = pair.prop(cx, "internal").get()?;
-                Ok(ClassInstance {
-                    external_constructor: external,
-                    internal_constructor: internal,
-                })
+                Ok(neon::macro_internal::new_class_metadata(external, internal))
             }
         }
     };

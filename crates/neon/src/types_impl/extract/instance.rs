@@ -43,8 +43,8 @@ where
     type Value = JsObject;
 
     fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
-        let class_instance = T::current_instance(cx)?;
-        let object: Handle<JsObject> = class_instance.internal_constructor
+        let class_instance = T::local(cx)?;
+        let object: Handle<JsObject> = class_instance.internal_constructor()
             .bind(cx)
             .construct()?;
         crate::object::wrap(cx, object, self.0)?.or_throw(cx)?;

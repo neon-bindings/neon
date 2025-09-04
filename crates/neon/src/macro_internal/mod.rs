@@ -115,3 +115,6 @@ impl<Tag> NeonMarker<Tag, NeonResultTag> {
         }
     }
 }
+
+#[cfg(feature = "napi-6")]
+pub use crate::object::class::new_class_metadata;
