@@ -35,6 +35,18 @@ describe("classes", function () {
     buffer.push("Hello");
     buffer.push(" ");
     buffer.push("World");
-    assert.strictEqual(buffer.to_string(), "Hello World");
+    assert.strictEqual(buffer.toString(), "Hello World");
+  });
+
+  it("can use a renamed method in StringBuffer", function () {
+    const StringBuffer = addon.StringBuffer;
+
+    const buffer = new StringBuffer();
+    buffer.push("  Hello  ");
+    assert.strictEqual(buffer.trimStart(), "Hello  ");
+    assert.strictEqual(buffer.trimEnd(), "  Hello");
+
+    assert.isTrue(buffer.includes("Hello"));
+    assert.isFalse(buffer.includes("World"));
   });
 });

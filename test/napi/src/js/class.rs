@@ -68,9 +68,22 @@ impl StringBuffer {
         self.buffer.borrow_mut().push_str(&s);
     }
 
-    // TODO: auto-JSify names, with attribute for optionally controlling
     pub fn to_string(&self) -> String {
         self.buffer.borrow().clone()
+    }
+
+    #[neon(name = "includes")]
+    pub fn contains(&self, s: String) -> bool {
+        self.buffer.borrow().contains(&s)
+    }
+
+    #[neon(name = "trimStart")]
+    pub fn trim_start(&self) -> String {
+        self.buffer.borrow_mut().trim_start().to_string()
+    }
+
+    pub fn trim_end(&self) -> String {
+        self.buffer.borrow_mut().trim_end().to_string()
     }
 }
 

@@ -1,3 +1,5 @@
+mod meta;
+
 use proc_macro2::TokenStream;
 use syn::{spanned::Spanned, Ident, ImplItemFn, Type};
 
@@ -45,15 +47,14 @@ pub(crate) fn class(
     _attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-    let impl_block = syn::parse_macro_input!(item as syn::ItemImpl);
-    let impl_block_clone = impl_block.clone();
+    let mut impl_block = syn::parse_macro_input!(item as syn::ItemImpl);
 
     // Parse the item as an implementation block
     let syn::ItemImpl {
         self_ty,
         items,
         ..
-    } = impl_block;
+    } = impl_block.clone();
 
     let class_ident = match *self_ty {
         syn::Type::Path(syn::TypePath { path: syn::Path { segments, .. }, .. }) => {
@@ -149,8 +150,40 @@ pub(crate) fn class(
     for f in fns {
         let fn_name = f.sig.ident.to_string();
         method_names.push_str(&format!(", {fn_name}Method"));
-        // TODO: auto-JSify names, with attribute for optionally controlling
-        prototype_patches.push_str(&format!("\n    prototype.{fn_name} = {fn_name}Method;"));
+        // syn::parse_macro_input!(attr with parser);
+        let mut parsed = meta::Meta { name: None };
+        for syn::Attribute { meta, .. } in f.attrs {
+            match meta {
+                syn::Meta::List(syn::MetaList {
+                    path,
+                    tokens,
+                    ..
+                }) if path.is_ident("neon") => {
+                    // TODO: if parsed.is_some() error
+                    let parser = meta::Parser;
+                    let tokens = tokens.into();
+                    parsed = syn::parse_macro_input!(tokens with parser);
+                }
+                // syn::Meta::NameValue(syn::MetaNameValue {
+                //     path,
+                //     value: syn::Expr::Lit(syn::ExprLit {
+                //         lit: syn::Lit::Str(value), ..
+                //     }),
+                //     ..
+                // }) if path.is_ident("name") => {
+                //     // TODO: if meta.is_some() error
+                //     parsed.name = Some(value);
+                // }
+                _ => {
+                    // TODO: error: unrecognized attribute
+                }
+            }
+        }
+        let js_name = match parsed.name {
+            Some(name) => name.value(),
+            None => crate::name::to_camel_case(&fn_name),
+        };
+        prototype_patches.push_str(&format!("\n    prototype.{js_name} = {fn_name}Method;"));
     }
 
     let script = format!(r#"
@@ -261,8 +294,17 @@ pub(crate) fn class(
         }
     };
 
+    // Remove #[neon(...)] attributes from methods in the impl block
+    for item in &mut impl_block.items {
+        if let syn::ImplItem::Fn(f) = item {
+            f.attrs.retain(|attr| {
+                !matches!(&attr.meta, syn::Meta::List(list) if list.path.is_ident("neon"))
+            });
+        }
+    }
+
     quote::quote! {
-        #impl_block_clone
+        #impl_block
         #impl_class
     }.into()
 }

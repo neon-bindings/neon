@@ -2,6 +2,7 @@
 
 mod class;
 mod export;
+pub(crate) mod name;
 
 #[proc_macro_attribute]
 pub fn main(
