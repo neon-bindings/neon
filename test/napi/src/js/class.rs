@@ -91,6 +91,50 @@ impl Finalize for StringBuffer {
     fn finalize<'cx, C: Context<'cx>>(self, _cx: &mut C) { }
 }
 
+// Test class with async methods
+#[derive(Debug, Clone)]
+pub struct AsyncClass {
+    value: String,
+}
+
+#[neon::class]
+impl AsyncClass {
+    pub fn new(value: String) -> Self {
+        Self { value }
+    }
+
+    // This would fail to compile if we tried to use &self:
+    // pub async fn async_method(&self, suffix: String) -> String {
+    //     format!("{}{}", self.value, suffix)
+    // }
+
+    // Async method that takes ownership (required for 'static Future)
+    pub async fn async_method(self, suffix: String) -> String {
+        // Simulate async work
+        format!("{}{}", self.value, suffix)
+    }
+
+    // Task method for CPU-intensive work
+    #[neon(task)]
+    pub fn heavy_computation(&self) -> u32 {
+        // Simulate CPU-intensive work
+        let mut result = 0;
+        for i in 0..100 {
+            result += i;
+        }
+        result
+    }
+
+    // Normal synchronous method for comparison
+    pub fn sync_method(&self) -> String {
+        self.value.clone()
+    }
+}
+
+impl Finalize for AsyncClass {
+    fn finalize<'cx, C: Context<'cx>>(self, _cx: &mut C) { }
+}
+
 
 /*
 impl Class for Message {

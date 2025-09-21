@@ -453,6 +453,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_value("Point", point_constructor)?;
     let string_buffer_constructor = js::class::StringBuffer::constructor(&mut cx)?;
     cx.export_value("StringBuffer", string_buffer_constructor)?;
+    let async_class_constructor = js::class::AsyncClass::constructor(&mut cx)?;
+    cx.export_value("AsyncClass", async_class_constructor)?;
 
     Ok(())
 }

@@ -9,6 +9,99 @@ struct ClassItems {
     constructor: Option<syn::ImplItemFn>,
 }
 
+fn generate_method_wrapper(
+    method_id: &syn::Ident,
+    method_locals: &[syn::Ident],
+    method_meta: &meta::Meta,
+    class_ident: &syn::Ident,
+) -> TokenStream {
+    match method_meta.kind {
+        meta::Kind::Async => {
+            quote::quote! {
+                JsFunction::new(cx, |mut cx| {
+                    let this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
+                    let instance: &#class_ident = neon::object::unwrap(&mut cx, this)?.or_throw(&mut cx)?;
+
+                    // Extract arguments first
+                    let (#(#method_locals,)*) = cx.args()?;
+
+                    // Clone the instance to move into async
+                    let instance_clone = instance.clone();
+
+                    // Call the method which should return a Future
+                    let fut = instance_clone.#method_id(#(#method_locals),*);
+                    let fut = {
+                        use neon::macro_internal::{ToNeonMarker, NeonValueTag};
+                        (&fut).to_neon_marker::<NeonValueTag>().into_neon_result(&mut cx, fut)?
+                    };
+                    neon::macro_internal::spawn(&mut cx, fut, |mut cx, res| {
+                        use neon::macro_internal::{ToNeonMarker, NeonValueTag as NeonReturnTag};
+                        (&res).to_neon_marker::<NeonReturnTag>().neon_into_js(&mut cx, res)
+                    })
+                })
+            }
+        }
+        meta::Kind::AsyncFn => {
+            quote::quote! {
+                JsFunction::new(cx, |mut cx| {
+                    let this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
+                    let instance: &#class_ident = neon::object::unwrap(&mut cx, this)?.or_throw(&mut cx)?;
+
+                    // Extract arguments first
+                    let (#(#method_locals,)*) = cx.args()?;
+
+                    // Clone the instance to move into async fn (takes self by value)
+                    let instance_clone = instance.clone();
+
+                    // Call the async fn method - it takes self by value to produce 'static Future
+                    let fut = instance_clone.#method_id(#(#method_locals),*);
+
+                    neon::macro_internal::spawn(&mut cx, fut, |mut cx, res| {
+                        use neon::macro_internal::{ToNeonMarker, NeonValueTag as NeonReturnTag};
+                        (&res).to_neon_marker::<NeonReturnTag>().neon_into_js(&mut cx, res)
+                    })
+                })
+            }
+        }
+        meta::Kind::Task => {
+            // For task methods, we need to move a clone into the closure
+            // since tasks run on a different thread
+            quote::quote! {
+                JsFunction::new(cx, |mut cx| {
+                    let this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
+                    let instance: &#class_ident = neon::object::unwrap(&mut cx, this)?.or_throw(&mut cx)?;
+
+                    // Clone the instance since we need to move it into the task
+                    let instance_clone = instance.clone();
+
+                    // Extract arguments - they're already owned after cx.args()
+                    let (#(#method_locals,)*) = cx.args()?;
+
+                    let promise = neon::context::Context::task(&mut cx, move || {
+                        instance_clone.#method_id(#(#method_locals),*)
+                    })
+                    .promise(|mut cx, res| {
+                        use neon::macro_internal::{ToNeonMarker, NeonValueTag as NeonReturnTag};
+                        (&res).to_neon_marker::<NeonReturnTag>().neon_into_js(&mut cx, res)
+                    });
+                    Ok(promise.upcast::<neon::types::JsValue>())
+                })
+            }
+        }
+        meta::Kind::Normal => {
+            quote::quote! {
+                JsFunction::new(cx, |mut cx| {
+                    use neon::types::extract::TryIntoJs;
+                    let this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
+                    let instance: &#class_ident = neon::object::unwrap(&mut cx, this)?.or_throw(&mut cx)?;
+                    let (#(#method_locals,)*) = cx.args()?;
+                    instance.#method_id(#(#method_locals),*).try_into_js(&mut cx)
+                })
+            }
+        }
+    }
+}
+
 fn sort_class_items(
     items: Vec<syn::ImplItem>,
 ) -> Result<ClassItems, syn::Error> {
@@ -146,13 +239,20 @@ pub(crate) fn class(
     let mut method_names = String::new();
     let mut prototype_patches = String::new();
     let method_ids = fns.iter().map(|f| f.sig.ident.clone()).collect::<Vec<_>>();
+    let mut method_metas = Vec::new();
 
-    for f in fns {
+    for f in &fns {
         let fn_name = f.sig.ident.to_string();
         method_names.push_str(&format!(", {fn_name}Method"));
         // syn::parse_macro_input!(attr with parser);
-        let mut parsed = meta::Meta { name: None };
-        for syn::Attribute { meta, .. } in f.attrs {
+        let mut parsed = meta::Meta::default();
+
+        // Check if the function itself is async
+        if f.sig.asyncness.is_some() {
+            parsed.kind = meta::Kind::AsyncFn;
+        }
+
+        for syn::Attribute { meta, .. } in &f.attrs {
             match meta {
                 syn::Meta::List(syn::MetaList {
                     path,
@@ -161,7 +261,7 @@ pub(crate) fn class(
                 }) if path.is_ident("neon") => {
                     // TODO: if parsed.is_some() error
                     let parser = meta::Parser;
-                    let tokens = tokens.into();
+                    let tokens = tokens.clone().into();
                     parsed = syn::parse_macro_input!(tokens with parser);
                 }
                 // syn::Meta::NameValue(syn::MetaNameValue {
@@ -179,11 +279,12 @@ pub(crate) fn class(
                 }
             }
         }
-        let js_name = match parsed.name {
+        let js_name = match parsed.name.clone() {
             Some(name) => name.value(),
             None => crate::name::to_camel_case(&fn_name),
         };
         prototype_patches.push_str(&format!("\n    prototype.{js_name} = {fn_name}Method;"));
+        method_metas.push(parsed);
     }
 
     let script = format!(r#"
@@ -234,6 +335,15 @@ pub(crate) fn class(
         quote::quote! { <Self as ::std::default::Default>::default }
     };
 
+    // Generate method wrappers based on their metadata
+    let method_wrappers: Vec<TokenStream> = method_ids.iter()
+        .zip(&method_locals_lists)
+        .zip(&method_metas)
+        .map(|((id, locals), meta)| {
+            generate_method_wrapper(id, locals, meta, &class_ident)
+        })
+        .collect();
+
     // Generate the impl of `neon::object::Class` for the struct
     let impl_class: TokenStream = quote::quote! {
         impl neon::object::Class for #class_ident {
@@ -268,14 +378,8 @@ pub(crate) fn class(
                     Ok(cx.undefined())
                 });
 
-                // Create method functions
-                #(let #method_ids = JsFunction::new(cx, |mut cx| {{
-                    use neon::types::extract::TryIntoJs;
-                    let this: Handle<JsObject> = cx.this()?;
-                    let instance: &#class_ident = neon::object::unwrap(&mut cx, this)?.or_throw(&mut cx)?;
-                    let (#(#method_locals_lists,)*) = cx.args()?;
-                    instance.#method_ids(#(#method_locals_lists),*).try_into_js(&mut cx)
-                }});)*
+                // Create method functions using the appropriate wrapper based on metadata
+                #(let #method_ids = #method_wrappers;)*
 
                 const CLASS_MAKER_SCRIPT: &str = #script;
                 let src = cx.string(CLASS_MAKER_SCRIPT);
