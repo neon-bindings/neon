@@ -189,6 +189,7 @@ impl AsyncClass {
         format!("AsyncFn with channel: {}{}", self.value, suffix)
     }
 
+    #[allow(unused_variables)]
     // Method with this parameter (should auto-detect)
     pub fn method_with_this(&self, this: neon::handle::Handle<neon::types::JsObject>, data: String) -> String {
         // Access to both Rust instance and JavaScript object

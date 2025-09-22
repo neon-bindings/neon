@@ -13,6 +13,25 @@ describe("classes", function () {
     assert.strictEqual(message2.read(), "Hello, Neon, this is your test speaking.  <<FNORD>>");
   });
 
+  it("can subclass a Neon class", function () {
+    const Message = addon.Message;
+
+    class LoudMessage extends Message {
+      shout() {
+        return this.read().toUpperCase();
+      }
+    }
+
+    const message = new LoudMessage("Hello, Neon, this is your test speaking.");
+    assert.instanceOf(message, Message);
+    assert.instanceOf(message, LoudMessage);
+    assert.strictEqual(message.read(), "Hello, Neon, this is your test speaking.");
+    assert.strictEqual(message.shout(), "HELLO, NEON, THIS IS YOUR TEST SPEAKING.");
+    const message2 = message.concat(new Message("  <<FNORD>>"));
+    assert.strictEqual(message2.read(), "Hello, Neon, this is your test speaking.  <<FNORD>>");
+    assert.throws(() => message2.shout());
+  });
+
   it("can create a Point class", function () {
     const Point = addon.Point;
 
