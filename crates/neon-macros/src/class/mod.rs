@@ -14,9 +14,28 @@ fn generate_method_wrapper(
     method_locals: &[syn::Ident],
     method_meta: &meta::Meta,
     class_ident: &syn::Ident,
+    method_sig: &syn::Signature,
 ) -> TokenStream {
+    // Check for context parameter and generate context extraction/argument
+    let (context_extract, context_arg) = match context_parse(method_meta, method_sig) {
+        Ok((extract, arg)) => (extract, arg),
+        Err(_) => (None, None), // For now, ignore context errors and continue without context
+    };
+
+    // Generate the context argument for the method call
+    let context_method_arg = context_arg.clone();
+    // Determine if method has context parameter
+    let has_context = context_arg.is_some();
+
+    // Skip context parameter when extracting args from JavaScript
+    let non_context_locals = if has_context {
+        &method_locals[1..] // Skip the first parameter (context)
+    } else {
+        method_locals
+    };
+
     // Generate the tuple fields used to destructure `cx.args()`. Wrap in `Json` if necessary.
-    let tuple_fields = method_locals.iter().map(|name| {
+    let tuple_fields = non_context_locals.iter().map(|name| {
         if method_meta.json {
             quote::quote!(neon::types::extract::Json(#name))
         } else {
@@ -44,11 +63,14 @@ fn generate_method_wrapper(
                     let this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
                     let instance: &#class_ident = neon::object::unwrap(&mut cx, this)?.or_throw(&mut cx)?;
 
-                    // Extract arguments with JSON wrapping if needed
+                    // Context extraction if needed
+                    #context_extract
+
+                    // Extract non-context arguments with JSON wrapping if needed
                     let (#(#tuple_fields,)*) = cx.args()?;
 
                     // Call the method with &self - developer controls cloning in their impl
-                    let fut = instance.#method_id(#(#method_locals),*);
+                    let fut = instance.#method_id(#context_method_arg #(#non_context_locals),*);
                     // Always use NeonValueTag for Future conversion, JSON only applies to final result
                     let fut = {
                         use neon::macro_internal::{ToNeonMarker, NeonValueTag};
@@ -64,14 +86,17 @@ fn generate_method_wrapper(
                     let this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
                     let instance: &#class_ident = neon::object::unwrap(&mut cx, this)?.or_throw(&mut cx)?;
 
-                    // Extract arguments with JSON wrapping if needed
+                    // Context extraction if needed
+                    #context_extract
+
+                    // Extract non-context arguments with JSON wrapping if needed
                     let (#(#tuple_fields,)*) = cx.args()?;
 
                     // Clone the instance to move into async fn (takes self by value)
                     let instance_clone = instance.clone();
 
                     // Call the async fn method - it takes self by value to produce 'static Future
-                    let fut = instance_clone.#method_id(#(#method_locals),*);
+                    let fut = instance_clone.#method_id(#context_method_arg #(#non_context_locals),*);
 
                     neon::macro_internal::spawn(&mut cx, fut, |mut cx, res| #result_extract)
                 })
@@ -85,14 +110,17 @@ fn generate_method_wrapper(
                     let this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
                     let instance: &#class_ident = neon::object::unwrap(&mut cx, this)?.or_throw(&mut cx)?;
 
+                    // Context extraction if needed
+                    #context_extract
+
                     // Clone the instance since we need to move it into the task
                     let instance_clone = instance.clone();
 
-                    // Extract arguments with JSON wrapping if needed
+                    // Extract non-context arguments with JSON wrapping if needed
                     let (#(#tuple_fields,)*) = cx.args()?;
 
                     let promise = neon::context::Context::task(&mut cx, move || {
-                        instance_clone.#method_id(#(#method_locals),*)
+                        instance_clone.#method_id(#context_method_arg #(#non_context_locals),*)
                     })
                     .promise(|mut cx, res| #result_extract);
                     Ok(promise.upcast::<neon::types::JsValue>())
@@ -104,14 +132,191 @@ fn generate_method_wrapper(
                 JsFunction::new(cx, |mut cx| {
                     let this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
                     let instance: &#class_ident = neon::object::unwrap(&mut cx, this)?.or_throw(&mut cx)?;
-                    // Extract arguments with JSON wrapping if needed
+
+                    // Context extraction if needed
+                    #context_extract
+
+                    // Extract non-context arguments with JSON wrapping if needed
                     let (#(#tuple_fields,)*) = cx.args()?;
-                    let res = instance.#method_id(#(#method_locals),*);
+                    let res = instance.#method_id(#context_method_arg #(#non_context_locals),*);
                     #result_extract
                 })
             }
         }
     }
+}
+
+// Generate context extraction and argument for class methods
+fn context_parse(
+    opts: &meta::Meta,
+    sig: &syn::Signature,
+) -> syn::Result<(
+    Option<proc_macro2::TokenStream>,
+    Option<proc_macro2::TokenStream>,
+)> {
+    match opts.kind {
+        // Allow borrowing from context
+        meta::Kind::Async | meta::Kind::Normal if check_method_context(opts, sig)? => {
+            Ok((None, Some(quote::quote!(&mut cx,))))
+        }
+
+        // Require `'static` arguments
+        meta::Kind::AsyncFn | meta::Kind::Task if check_method_channel(opts, sig)? => Ok((
+            Some(quote::quote!(let ch = neon::context::Context::channel(&mut cx);)),
+            Some(quote::quote!(ch,)),
+        )),
+
+        _ => Ok((None, None)),
+    }
+}
+
+// Check if a sync method has a context argument (adapted from export function)
+// Key difference: methods have &self as first param, so context is second param
+fn check_method_context(opts: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool> {
+    // Extract the second argument (after &self)
+    let ty = match method_second_arg(opts, sig)? {
+        Some(arg) => arg,
+        None => return Ok(false),
+    };
+
+    // Extract the reference type
+    let ty = match &*ty.ty {
+        // Tried to use a borrowed Channel
+        syn::Type::Reference(ty) if !opts.context && is_channel_type(&ty.elem) => {
+            return Err(syn::Error::new(
+                ty.elem.span(),
+                "Expected `&mut Cx` instead of a `Channel` reference.",
+            ))
+        }
+
+        syn::Type::Reference(ty) => ty,
+
+        // Context needs to be a reference
+        _ if opts.context || is_context_type(&ty.ty) => {
+            return Err(syn::Error::new(
+                ty.ty.span(),
+                "Context must be a `&mut` reference.",
+            ))
+        }
+
+        // Hint that `Channel` should be swapped for `&mut Cx`
+        _ if is_channel_type(&ty.ty) => {
+            return Err(syn::Error::new(
+                ty.ty.span(),
+                "Expected `&mut Cx` instead of `Channel`.",
+            ))
+        }
+
+        _ => return Ok(false),
+    };
+
+    // Not a forced or inferred context
+    if !opts.context && !is_context_type(&ty.elem) {
+        return Ok(false);
+    }
+
+    // Context argument must be mutable
+    if ty.mutability.is_none() {
+        return Err(syn::Error::new(ty.span(), "Must be a `&mut` reference."));
+    }
+
+    // All tests passed!
+    Ok(true)
+}
+
+// Check if an async method has a Channel argument (adapted from export function)
+fn check_method_channel(opts: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool> {
+    // Extract the second argument (after &self)
+    let ty = match method_second_arg(opts, sig)? {
+        Some(arg) => arg,
+        None => return Ok(false),
+    };
+
+    // Check the type
+    match &*ty.ty {
+        // Provided `&mut Channel` instead of `Channel`
+        syn::Type::Reference(ty) if opts.context || is_channel_type(&ty.elem) => {
+            Err(syn::Error::new(
+                ty.span(),
+                "Expected an owned `Channel` instead of a reference.",
+            ))
+        }
+
+        // Provided a `&mut Cx` instead of a `Channel`
+        syn::Type::Reference(ty) if is_context_type(&ty.elem) => Err(syn::Error::new(
+            ty.elem.span(),
+            "Expected an owned `Channel` instead of a context reference.",
+        )),
+
+        // Found a `Channel`
+        _ if opts.context || is_channel_type(&ty.ty) => Ok(true),
+
+        // Tried to use an owned `Cx`
+        _ if is_context_type(&ty.ty) => Err(syn::Error::new(
+            ty.ty.span(),
+            "Context is not available in async functions. Try a `Channel` instead.",
+        )),
+
+        _ => Ok(false),
+    }
+}
+
+// Extract the second argument (after &self) from a method signature
+fn method_second_arg<'a>(
+    opts: &meta::Meta,
+    sig: &'a syn::Signature,
+) -> syn::Result<Option<&'a syn::PatType>> {
+    // Extract the second argument (skip &self)
+    let arg = match sig.inputs.iter().nth(1) {
+        Some(arg) => arg,
+
+        // If context was forced, error to let the user know the mistake
+        None if opts.context => {
+            return Err(syn::Error::new(
+                sig.inputs.span(),
+                "Expected a context argument after &self. Try removing the `context` attribute.",
+            ))
+        }
+
+        None => return Ok(None),
+    };
+
+    // Expect a typed pattern; self receivers are not supported (but shouldn't appear here)
+    match arg {
+        syn::FnArg::Typed(ty) => Ok(Some(ty)),
+        syn::FnArg::Receiver(arg) => Err(syn::Error::new(
+            arg.span(),
+            "Unexpected second receiver argument.",
+        )),
+    }
+}
+
+fn is_context_type(ty: &syn::Type) -> bool {
+    let ident = match type_path_ident(ty) {
+        Some(ident) => ident,
+        None => return false,
+    };
+
+    ident == "FunctionContext" || ident == "Cx"
+}
+
+fn is_channel_type(ty: &syn::Type) -> bool {
+    let ident = match type_path_ident(ty) {
+        Some(ident) => ident,
+        None => return false,
+    };
+
+    ident == "Channel"
+}
+
+// Extract the identifier from the last segment of a type's path
+fn type_path_ident(ty: &syn::Type) -> Option<&syn::Ident> {
+    let segment = match ty {
+        syn::Type::Path(ty) => ty.path.segments.last()?,
+        _ => return None,
+    };
+
+    Some(&segment.ident)
 }
 
 fn sort_class_items(
@@ -351,8 +556,9 @@ pub(crate) fn class(
     let method_wrappers: Vec<TokenStream> = method_ids.iter()
         .zip(&method_locals_lists)
         .zip(&method_metas)
-        .map(|((id, locals), meta)| {
-            generate_method_wrapper(id, locals, meta, &class_ident)
+        .zip(&fns)
+        .map(|(((id, locals), meta), method_fn)| {
+            generate_method_wrapper(id, locals, meta, &class_ident, &method_fn.sig)
         })
         .collect();
 

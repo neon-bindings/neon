@@ -163,6 +163,28 @@ impl AsyncClass {
             format!("{}{}", value_clone, suffix)
         }
     }
+
+    // Method with context parameter (sync)
+    pub fn method_with_context<'a>(&self, cx: &mut neon::context::FunctionContext<'a>, multiplier: i32) -> neon::result::JsResult<'a, neon::types::JsNumber> {
+        let result = self.value.len() as f64 * multiplier as f64;
+        Ok(cx.number(result))
+    }
+
+    // Method with explicit context attribute
+    #[neon(context)]
+    pub fn method_with_explicit_context(&self, _ctx: &mut neon::context::Cx, suffix: String) -> String {
+        format!("{}:{}", self.value, suffix)
+    }
+
+    // TODO: Async method with Channel parameter needs fixing
+    // The issue is that Channel should be provided by context, not extracted from args
+    // #[neon(async)]
+    // pub fn async_with_channel(&self, ch: neon::event::Channel, multiplier: i32) -> impl std::future::Future<Output = String> + 'static {
+    //     let value_clone = self.value.clone();
+    //     async move {
+    //         format!("Channel async: {} * {}", value_clone, multiplier)
+    //     }
+    // }
 }
 
 impl Finalize for AsyncClass {
