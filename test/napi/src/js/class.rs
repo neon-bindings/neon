@@ -176,15 +176,18 @@ impl AsyncClass {
         format!("{}:{}", self.value, suffix)
     }
 
-    // TODO: Async method with Channel parameter needs fixing
-    // The issue is that Channel should be provided by context, not extracted from args
-    // #[neon(async)]
-    // pub fn async_with_channel(&self, ch: neon::event::Channel, multiplier: i32) -> impl std::future::Future<Output = String> + 'static {
-    //     let value_clone = self.value.clone();
-    //     async move {
-    //         format!("Channel async: {} * {}", value_clone, multiplier)
-    //     }
-    // }
+    // Task method with Channel parameter
+    #[neon(task)]
+    pub fn task_with_channel(&self, ch: neon::event::Channel, multiplier: i32) -> String {
+        // Channel is available for background tasks
+        format!("Task with channel: {} * {}", self.value, multiplier)
+    }
+
+    // AsyncFn method with Channel parameter
+    pub async fn async_fn_with_channel(self, ch: neon::event::Channel, suffix: String) -> String {
+        // Channel is available for async functions
+        format!("AsyncFn with channel: {}{}", self.value, suffix)
+    }
 }
 
 impl Finalize for AsyncClass {
