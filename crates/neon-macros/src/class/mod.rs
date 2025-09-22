@@ -16,10 +16,15 @@ fn generate_method_wrapper(
     class_ident: &syn::Ident,
     method_sig: &syn::Signature,
 ) -> TokenStream {
+    // Validate method attributes
+    if let Err(err) = validate_method_attributes(method_meta, method_sig) {
+        return err.into_compile_error().into();
+    }
+
     // Check for context parameter and generate context extraction/argument
     let (context_extract, context_arg) = match context_parse(method_meta, method_sig) {
         Ok((extract, arg)) => (extract, arg),
-        Err(_) => (None, None), // For now, ignore context errors and continue without context
+        Err(err) => return err.into_compile_error().into(),
     };
 
     // Generate the context argument for the method call
@@ -234,7 +239,7 @@ fn check_method_context(opts: &meta::Meta, sig: &syn::Signature) -> syn::Result<
         _ if opts.context || is_context_type(&ty.ty) => {
             return Err(syn::Error::new(
                 ty.ty.span(),
-                "Context must be a `&mut` reference.",
+                "Context parameters must be a `&mut` reference. Try `&mut FunctionContext` or `&mut Cx`.",
             ))
         }
 
@@ -242,7 +247,7 @@ fn check_method_context(opts: &meta::Meta, sig: &syn::Signature) -> syn::Result<
         _ if is_channel_type(&ty.ty) => {
             return Err(syn::Error::new(
                 ty.ty.span(),
-                "Expected `&mut Cx` instead of `Channel`.",
+                "Unexpected `Channel` in sync method. Use `&mut FunctionContext` for sync methods, or `Channel` in async/task methods.",
             ))
         }
 
@@ -313,7 +318,7 @@ fn method_second_arg<'a>(
         None if opts.context => {
             return Err(syn::Error::new(
                 sig.inputs.span(),
-                "Expected a context argument after &self. Try removing the `context` attribute.",
+                "Expected a context argument after `&self` when using `#[neon(context)]`. Add a parameter like `cx: &mut FunctionContext` or remove the `context` attribute.",
             ))
         }
 
@@ -356,6 +361,52 @@ fn type_path_ident(ty: &syn::Type) -> Option<&syn::Ident> {
     };
 
     Some(&segment.ident)
+}
+
+// Validate method attributes for common errors and conflicts
+fn validate_method_attributes(method_meta: &meta::Meta, method_sig: &syn::Signature) -> syn::Result<()> {
+    // Check for conflicting async attributes
+    if matches!(method_meta.kind, meta::Kind::AsyncFn) && matches!(method_meta.kind, meta::Kind::Async) {
+        return Err(syn::Error::new(
+            method_sig.span(),
+            "Cannot combine `async fn` with `#[neon(async)]` attribute"
+        ));
+    }
+
+    // Check for async + task conflict
+    if matches!(method_meta.kind, meta::Kind::AsyncFn | meta::Kind::Async) && matches!(method_meta.kind, meta::Kind::Task) {
+        return Err(syn::Error::new(
+            method_sig.span(),
+            "Cannot combine async method with `#[neon(task)]` attribute"
+        ));
+    }
+
+    // Validate that async fn methods take self by value if they're detected as AsyncFn
+    if matches!(method_meta.kind, meta::Kind::AsyncFn) {
+        if let Some(syn::FnArg::Receiver(receiver)) = method_sig.inputs.first() {
+            if receiver.reference.is_some() && receiver.mutability.is_none() {
+                // This is &self, but for AsyncFn we need self by value
+                if method_sig.asyncness.is_some() {
+                    return Err(syn::Error::new(
+                        receiver.span(),
+                        "Async functions in classes must take `self` by value, not `&self`. This is required because async functions capture `self` in the Future, which must be `'static` for spawning."
+                    ));
+                }
+            }
+        }
+    }
+
+    // Check for self parameter in constructor
+    if method_sig.ident == "new" {
+        if let Some(syn::FnArg::Receiver(_)) = method_sig.inputs.first() {
+            return Err(syn::Error::new(
+                method_sig.ident.span(),
+                "Constructor methods cannot have a `self` parameter"
+            ));
+        }
+    }
+
+    Ok(())
 }
 
 // Check if a method has a `this` parameter (adapted from export function)

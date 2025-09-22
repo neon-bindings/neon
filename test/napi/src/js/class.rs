@@ -207,6 +207,20 @@ impl AsyncClass {
         let result = self.value.len() as f64 * multiplier as f64;
         Ok(cx.number(result))
     }
+
+    // Performance test methods
+    pub fn simple_method(&self, x: i32) -> i32 {
+        x * 2
+    }
+
+    #[neon(json)]
+    pub fn json_method_perf(&self, data: Vec<i32>) -> Vec<i32> {
+        data.into_iter().map(|x| x * 2).collect()
+    }
+
+    pub fn context_method_perf(&self, _cx: &mut neon::context::FunctionContext, x: i32) -> i32 {
+        x * 3
+    }
 }
 
 impl Finalize for AsyncClass {
