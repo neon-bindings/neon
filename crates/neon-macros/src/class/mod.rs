@@ -47,11 +47,8 @@ fn generate_method_wrapper(
                     // Extract arguments with JSON wrapping if needed
                     let (#(#tuple_fields,)*) = cx.args()?;
 
-                    // Clone the instance to move into async
-                    let instance_clone = instance.clone();
-
-                    // Call the method which should return a Future
-                    let fut = instance_clone.#method_id(#(#method_locals),*);
+                    // Call the method with &self - developer controls cloning in their impl
+                    let fut = instance.#method_id(#(#method_locals),*);
                     // Always use NeonValueTag for Future conversion, JSON only applies to final result
                     let fut = {
                         use neon::macro_internal::{ToNeonMarker, NeonValueTag};

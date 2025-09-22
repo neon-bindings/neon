@@ -140,12 +140,29 @@ impl AsyncClass {
         result
     }
 
-    // Note: async + JSON with auto-detected async fn has issues
-    // We can use explicit #[neon(async, json)] as a workaround:
-    // #[neon(async, json)]
-    // pub fn simple_async_json(self) -> impl std::future::Future<Output = String> {
-    //     async move { "hello".to_string() }
-    // }
+    // Explicit async method - developer controls cloning
+    #[neon(async)]
+    pub fn explicit_async_method(&self, multiplier: i32) -> impl std::future::Future<Output = String> + 'static {
+        // Can do sync work here on main thread
+        let base_value = format!("Processing: {}", self.value);
+
+        // Must return 'static Future, so can't borrow &self
+        async move {
+            // Simulate async work
+            format!("{} * {}", base_value, multiplier)
+        }
+    }
+
+    // Explicit async method that clones by choice
+    #[neon(async)]
+    pub fn explicit_async_clone(&self, suffix: String) -> impl std::future::Future<Output = String> + 'static {
+        // Developer explicitly chooses to clone for 'static Future
+        let value_clone = self.value.clone();
+
+        async move {
+            format!("{}{}", value_clone, suffix)
+        }
+    }
 }
 
 impl Finalize for AsyncClass {
