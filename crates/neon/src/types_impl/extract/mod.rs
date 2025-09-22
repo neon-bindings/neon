@@ -112,8 +112,8 @@ pub use self::{
         ArrayBuffer, BigInt64Array, BigUint64Array, Buffer, Float32Array, Float64Array, Int16Array,
         Int32Array, Int8Array, Uint16Array, Uint32Array, Uint8Array,
     },
-    instance::Instance,
     error::{Error, ObjectExpected, TypeExpected},
+    instance::Instance,
     with::with,
 };
 

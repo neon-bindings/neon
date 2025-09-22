@@ -46,7 +46,9 @@ impl syn::parse::Parser for Parser {
 
             if meta.path.is_ident("async") {
                 if matches!(attr.kind, Kind::AsyncFn) {
-                    return Err(meta.error("`async` attribute should not be used with an `async fn`"));
+                    return Err(
+                        meta.error("`async` attribute should not be used with an `async fn`")
+                    );
                 }
                 attr.kind = Kind::Async;
                 return Ok(());

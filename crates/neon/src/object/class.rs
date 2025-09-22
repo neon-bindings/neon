@@ -1,5 +1,10 @@
-use crate::{context::Cx, handle::{Handle, Root}, object::Object, result::{JsResult, NeonResult}, types::JsFunction};
-
+use crate::{
+    context::Cx,
+    handle::{Handle, Root},
+    object::Object,
+    result::{JsResult, NeonResult},
+    types::JsFunction,
+};
 
 pub trait Class {
     fn name() -> String;
@@ -14,7 +19,10 @@ pub struct ClassMetadata<'cx> {
     internal_constructor: Handle<'cx, JsFunction>,
 }
 
-pub fn new_class_metadata<'cx>(external: Handle<'cx, JsFunction>, internal: Handle<'cx, JsFunction>) -> ClassMetadata<'cx> {
+pub fn new_class_metadata<'cx>(
+    external: Handle<'cx, JsFunction>,
+    internal: Handle<'cx, JsFunction>,
+) -> ClassMetadata<'cx> {
     ClassMetadata {
         external_constructor: external,
         internal_constructor: internal,

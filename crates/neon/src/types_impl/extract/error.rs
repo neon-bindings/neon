@@ -13,7 +13,7 @@ type BoxError = Box<dyn error::Error + Send + Sync + 'static>;
 
 /// Error returned when a JavaScript value is not an instance of the expected class.
 pub struct ObjectExpected {
-    expected: String
+    expected: String,
 }
 
 impl ObjectExpected {
@@ -30,7 +30,9 @@ impl fmt::Display for ObjectExpected {
 
 impl fmt::Debug for ObjectExpected {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.debug_tuple("ObjectExpected").field(&self.expected).finish()
+        f.debug_tuple("ObjectExpected")
+            .field(&self.expected)
+            .finish()
     }
 }
 
@@ -43,7 +45,6 @@ impl<'cx> TryIntoJs<'cx> for ObjectExpected {
 }
 
 impl private::Sealed for ObjectExpected {}
-
 
 /// Error returned when a JavaScript value is not the type expected.
 pub struct TypeExpected<T: Value>(PhantomData<T>);

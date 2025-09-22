@@ -18,13 +18,13 @@ fn generate_method_wrapper(
 ) -> TokenStream {
     // Validate method attributes
     if let Err(err) = validate_method_attributes(method_meta, method_sig) {
-        return err.into_compile_error().into();
+        return err.into_compile_error();
     }
 
     // Check for context parameter and generate context extraction/argument
     let (context_extract, context_arg) = match context_parse(method_meta, method_sig) {
         Ok((extract, arg)) => (extract, arg),
-        Err(err) => return err.into_compile_error().into(),
+        Err(err) => return err.into_compile_error(),
     };
 
     // Generate the context argument for the method call
@@ -364,20 +364,27 @@ fn type_path_ident(ty: &syn::Type) -> Option<&syn::Ident> {
 }
 
 // Validate method attributes for common errors and conflicts
-fn validate_method_attributes(method_meta: &meta::Meta, method_sig: &syn::Signature) -> syn::Result<()> {
+fn validate_method_attributes(
+    method_meta: &meta::Meta,
+    method_sig: &syn::Signature,
+) -> syn::Result<()> {
     // Check for conflicting async attributes
-    if matches!(method_meta.kind, meta::Kind::AsyncFn) && matches!(method_meta.kind, meta::Kind::Async) {
+    if matches!(method_meta.kind, meta::Kind::AsyncFn)
+        && matches!(method_meta.kind, meta::Kind::Async)
+    {
         return Err(syn::Error::new(
             method_sig.span(),
-            "Cannot combine `async fn` with `#[neon(async)]` attribute"
+            "Cannot combine `async fn` with `#[neon(async)]` attribute",
         ));
     }
 
     // Check for async + task conflict
-    if matches!(method_meta.kind, meta::Kind::AsyncFn | meta::Kind::Async) && matches!(method_meta.kind, meta::Kind::Task) {
+    if matches!(method_meta.kind, meta::Kind::AsyncFn | meta::Kind::Async)
+        && matches!(method_meta.kind, meta::Kind::Task)
+    {
         return Err(syn::Error::new(
             method_sig.span(),
-            "Cannot combine async method with `#[neon(task)]` attribute"
+            "Cannot combine async method with `#[neon(task)]` attribute",
         ));
     }
 
@@ -401,7 +408,7 @@ fn validate_method_attributes(method_meta: &meta::Meta, method_sig: &syn::Signat
         if let Some(syn::FnArg::Receiver(_)) = method_sig.inputs.first() {
             return Err(syn::Error::new(
                 method_sig.ident.span(),
-                "Constructor methods cannot have a `self` parameter"
+                "Constructor methods cannot have a `self` parameter",
             ));
         }
     }
@@ -452,9 +459,7 @@ fn check_method_this(opts: &meta::Meta, sig: &syn::Signature, has_context: bool)
     }
 }
 
-fn sort_class_items(
-    items: Vec<syn::ImplItem>,
-) -> Result<ClassItems, syn::Error> {
+fn sort_class_items(items: Vec<syn::ImplItem>) -> Result<ClassItems, syn::Error> {
     let mut consts = Vec::new();
     let mut fns = Vec::new();
     let mut constructor = None;
@@ -483,7 +488,11 @@ fn sort_class_items(
         }
     }
 
-    Ok(ClassItems { consts, fns, constructor })
+    Ok(ClassItems {
+        consts,
+        fns,
+        constructor,
+    })
 }
 
 pub(crate) fn class(
@@ -493,24 +502,29 @@ pub(crate) fn class(
     let mut impl_block = syn::parse_macro_input!(item as syn::ItemImpl);
 
     // Parse the item as an implementation block
-    let syn::ItemImpl {
-        self_ty,
-        items,
-        ..
-    } = impl_block.clone();
+    let syn::ItemImpl { self_ty, items, .. } = impl_block.clone();
 
     let class_ident = match *self_ty {
-        syn::Type::Path(syn::TypePath { path: syn::Path { segments, .. }, .. }) => {
+        syn::Type::Path(syn::TypePath {
+            path: syn::Path { segments, .. },
+            ..
+        }) => {
             let syn::PathSegment { ident, .. } = segments.last().unwrap();
             ident.clone()
         }
-        _ => { panic!("class must be implemented for a type name"); }
+        _ => {
+            panic!("class must be implemented for a type name");
+        }
     };
     let class_name = class_ident.to_string();
 
     // Sort the items into `const` and `fn` categories\
     // TODO: turn consts into static class properties
-    let ClassItems { consts: _consts, fns, constructor } = match sort_class_items(items.clone()) {
+    let ClassItems {
+        consts: _consts,
+        fns,
+        constructor,
+    } = match sort_class_items(items.clone()) {
         Ok(items) => items,
         Err(err) => {
             // If sorting fails, return the error as a compile error
@@ -532,9 +546,12 @@ pub(crate) fn class(
                         });
                     }
                     syn::FnArg::Receiver(_) => {
-                        return syn::Error::new_spanned(arg, "constructor cannot have a self receiver")
-                            .to_compile_error()
-                            .into();
+                        return syn::Error::new_spanned(
+                            arg,
+                            "constructor cannot have a self receiver",
+                        )
+                        .to_compile_error()
+                        .into();
                     }
                 }
             }
@@ -546,27 +563,38 @@ pub(crate) fn class(
     };
 
     let ctor_locals: Vec<Ident> = match &constructor {
-        Some(ImplItemFn { sig, .. }) => {
-            sig.inputs.iter().enumerate().map(|(i, arg)| {
-                Ident::new(&format!("neon_tmp_{i}"), arg.span().clone())
-            }).collect::<Vec<_>>()
-        }
+        Some(ImplItemFn { sig, .. }) => sig
+            .inputs
+            .iter()
+            .enumerate()
+            .map(|(i, arg)| Ident::new(&format!("neon_tmp_{i}"), arg.span()))
+            .collect::<Vec<_>>(),
         None => {
             vec![]
         }
     };
 
     let ctor_infers: Vec<Type> = match &constructor {
-        Some(ImplItemFn { sig, .. }) => {
-            sig.inputs.iter().map(|_| Type::Infer(syn::TypeInfer { underscore_token: Default::default() })).collect::<Vec<_>>()
-        }
+        Some(ImplItemFn { sig, .. }) => sig
+            .inputs
+            .iter()
+            .map(|_| {
+                Type::Infer(syn::TypeInfer {
+                    underscore_token: Default::default(),
+                })
+            })
+            .collect::<Vec<_>>(),
         None => {
             vec![]
         }
     };
 
     let ctor_param_list = ctor_params.join(", ");
-    let ctor_arg_list = format!("{}{}", if ctor_params.is_empty() { "" } else { ", " }, ctor_param_list);
+    let ctor_arg_list = format!(
+        "{}{}",
+        if ctor_params.is_empty() { "" } else { ", " },
+        ctor_param_list
+    );
 
     fn starts_with_self_arg(sig: &syn::Signature) -> bool {
         if let Some(first_arg) = sig.inputs.first() {
@@ -576,15 +604,22 @@ pub(crate) fn class(
         }
     }
 
-    let method_locals_lists = fns.iter().map(|f| {
-        if !starts_with_self_arg(&f.sig) {
-            panic!("class methods must have a &self receiver");
-        }
+    let method_locals_lists = fns
+        .iter()
+        .map(|f| {
+            if !starts_with_self_arg(&f.sig) {
+                panic!("class methods must have a &self receiver");
+            }
 
-        f.sig.inputs.iter().skip(1).enumerate().map(|(i, arg)| {
-            Ident::new(&format!("neon_tmp_{i}"), arg.span().clone())
-        }).collect::<Vec<_>>()
-    }).collect::<Vec<_>>();
+            f.sig
+                .inputs
+                .iter()
+                .skip(1)
+                .enumerate()
+                .map(|(i, arg)| Ident::new(&format!("neon_tmp_{i}"), arg.span()))
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
 
     let mut method_names = String::new();
     let mut prototype_patches = String::new();
@@ -604,11 +639,7 @@ pub(crate) fn class(
 
         for syn::Attribute { meta, .. } in &f.attrs {
             match meta {
-                syn::Meta::List(syn::MetaList {
-                    path,
-                    tokens,
-                    ..
-                }) if path.is_ident("neon") => {
+                syn::Meta::List(syn::MetaList { path, tokens, .. }) if path.is_ident("neon") => {
                     // TODO: if parsed.is_some() error
                     let parser = meta::Parser;
                     let tokens = tokens.clone().into();
@@ -637,7 +668,8 @@ pub(crate) fn class(
         method_metas.push(parsed);
     }
 
-    let script = format!(r#"
+    let script = format!(
+        r#"
 (function makeClass(wrap{method_names}) {{
   // Create the class exposed directly to JavaScript.
   //
@@ -677,7 +709,8 @@ pub(crate) fn class(
     internal: $internal
   }};
 }})
-"#);
+"#
+    );
 
     let make_new: TokenStream = if constructor.is_some() {
         quote::quote! { #class_ident::new }
@@ -686,7 +719,8 @@ pub(crate) fn class(
     };
 
     // Generate method wrappers based on their metadata
-    let method_wrappers: Vec<TokenStream> = method_ids.iter()
+    let method_wrappers: Vec<TokenStream> = method_ids
+        .iter()
         .zip(&method_locals_lists)
         .zip(&method_metas)
         .zip(&fns)
@@ -752,14 +786,15 @@ pub(crate) fn class(
     // Remove #[neon(...)] attributes from methods in the impl block
     for item in &mut impl_block.items {
         if let syn::ImplItem::Fn(f) = item {
-            f.attrs.retain(|attr| {
-                !matches!(&attr.meta, syn::Meta::List(list) if list.path.is_ident("neon"))
-            });
+            f.attrs.retain(
+                |attr| !matches!(&attr.meta, syn::Meta::List(list) if list.path.is_ident("neon")),
+            );
         }
     }
 
     quote::quote! {
         #impl_block
         #impl_class
-    }.into()
+    }
+    .into()
 }

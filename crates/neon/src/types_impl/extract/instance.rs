@@ -4,7 +4,8 @@ use crate::{
     object::Class,
     result::{JsResult, NeonResult, ResultExt},
     types::{
-        extract::{private, ObjectExpected, TryFromJs, TryIntoJs}, Finalize, JsObject, JsValue
+        extract::{private, ObjectExpected, TryFromJs, TryIntoJs},
+        Finalize, JsObject, JsValue,
     },
 };
 
@@ -44,9 +45,8 @@ where
 
     fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         let class_instance = T::local(cx)?;
-        let object: Handle<JsObject> = class_instance.internal_constructor()
-            .bind(cx)
-            .construct()?;
+        let object: Handle<JsObject> =
+            class_instance.internal_constructor().bind(cx).construct()?;
         crate::object::wrap(cx, object, self.0)?.or_throw(cx)?;
         Ok(object)
     }

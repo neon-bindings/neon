@@ -8,9 +8,15 @@ describe("classes", function () {
 
     const message = new Message("Hello, Neon, this is your test speaking.");
     assert.instanceOf(message, Message);
-    assert.strictEqual(message.read(), "Hello, Neon, this is your test speaking.");
+    assert.strictEqual(
+      message.read(),
+      "Hello, Neon, this is your test speaking."
+    );
     const message2 = message.concat(new Message("  <<FNORD>>"));
-    assert.strictEqual(message2.read(), "Hello, Neon, this is your test speaking.  <<FNORD>>");
+    assert.strictEqual(
+      message2.read(),
+      "Hello, Neon, this is your test speaking.  <<FNORD>>"
+    );
   });
 
   it("can subclass a Neon class", function () {
@@ -25,10 +31,19 @@ describe("classes", function () {
     const message = new LoudMessage("Hello, Neon, this is your test speaking.");
     assert.instanceOf(message, Message);
     assert.instanceOf(message, LoudMessage);
-    assert.strictEqual(message.read(), "Hello, Neon, this is your test speaking.");
-    assert.strictEqual(message.shout(), "HELLO, NEON, THIS IS YOUR TEST SPEAKING.");
+    assert.strictEqual(
+      message.read(),
+      "Hello, Neon, this is your test speaking."
+    );
+    assert.strictEqual(
+      message.shout(),
+      "HELLO, NEON, THIS IS YOUR TEST SPEAKING."
+    );
     const message2 = message.concat(new Message("  <<FNORD>>"));
-    assert.strictEqual(message2.read(), "Hello, Neon, this is your test speaking.  <<FNORD>>");
+    assert.strictEqual(
+      message2.read(),
+      "Hello, Neon, this is your test speaking.  <<FNORD>>"
+    );
     assert.throws(() => message2.shout());
   });
 
