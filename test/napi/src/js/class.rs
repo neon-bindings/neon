@@ -129,6 +129,23 @@ impl AsyncClass {
     pub fn sync_method(&self) -> String {
         self.value.clone()
     }
+
+    // JSON method for testing serde serialization
+    #[neon(json)]
+    pub fn json_method(&self, data: Vec<String>) -> std::collections::HashMap<String, String> {
+        let mut result = std::collections::HashMap::new();
+        result.insert("class_value".to_string(), self.value.clone());
+        result.insert("input_count".to_string(), data.len().to_string());
+        result.insert("first_item".to_string(), data.first().unwrap_or(&"none".to_string()).clone());
+        result
+    }
+
+    // Note: async + JSON with auto-detected async fn has issues
+    // We can use explicit #[neon(async, json)] as a workaround:
+    // #[neon(async, json)]
+    // pub fn simple_async_json(self) -> impl std::future::Future<Output = String> {
+    //     async move { "hello".to_string() }
+    // }
 }
 
 impl Finalize for AsyncClass {

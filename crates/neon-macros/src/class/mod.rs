@@ -15,6 +15,28 @@ fn generate_method_wrapper(
     method_meta: &meta::Meta,
     class_ident: &syn::Ident,
 ) -> TokenStream {
+    // Generate the tuple fields used to destructure `cx.args()`. Wrap in `Json` if necessary.
+    let tuple_fields = method_locals.iter().map(|name| {
+        if method_meta.json {
+            quote::quote!(neon::types::extract::Json(#name))
+        } else {
+            quote::quote!(#name)
+        }
+    });
+
+    // Tag whether we should JSON wrap results
+    let return_tag = if method_meta.json {
+        quote::format_ident!("NeonJsonTag")
+    } else {
+        quote::format_ident!("NeonValueTag")
+    };
+
+    // Generate result conversion based on JSON setting
+    let result_extract = quote::quote!({
+        use neon::macro_internal::{ToNeonMarker, #return_tag as NeonReturnTag};
+        (&res).to_neon_marker::<NeonReturnTag>().neon_into_js(&mut cx, res)
+    });
+
     match method_meta.kind {
         meta::Kind::Async => {
             quote::quote! {
@@ -22,22 +44,20 @@ fn generate_method_wrapper(
                     let this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
                     let instance: &#class_ident = neon::object::unwrap(&mut cx, this)?.or_throw(&mut cx)?;
 
-                    // Extract arguments first
-                    let (#(#method_locals,)*) = cx.args()?;
+                    // Extract arguments with JSON wrapping if needed
+                    let (#(#tuple_fields,)*) = cx.args()?;
 
                     // Clone the instance to move into async
                     let instance_clone = instance.clone();
 
                     // Call the method which should return a Future
                     let fut = instance_clone.#method_id(#(#method_locals),*);
+                    // Always use NeonValueTag for Future conversion, JSON only applies to final result
                     let fut = {
                         use neon::macro_internal::{ToNeonMarker, NeonValueTag};
                         (&fut).to_neon_marker::<NeonValueTag>().into_neon_result(&mut cx, fut)?
                     };
-                    neon::macro_internal::spawn(&mut cx, fut, |mut cx, res| {
-                        use neon::macro_internal::{ToNeonMarker, NeonValueTag as NeonReturnTag};
-                        (&res).to_neon_marker::<NeonReturnTag>().neon_into_js(&mut cx, res)
-                    })
+                    neon::macro_internal::spawn(&mut cx, fut, |mut cx, res| #result_extract)
                 })
             }
         }
@@ -47,8 +67,8 @@ fn generate_method_wrapper(
                     let this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
                     let instance: &#class_ident = neon::object::unwrap(&mut cx, this)?.or_throw(&mut cx)?;
 
-                    // Extract arguments first
-                    let (#(#method_locals,)*) = cx.args()?;
+                    // Extract arguments with JSON wrapping if needed
+                    let (#(#tuple_fields,)*) = cx.args()?;
 
                     // Clone the instance to move into async fn (takes self by value)
                     let instance_clone = instance.clone();
@@ -56,10 +76,7 @@ fn generate_method_wrapper(
                     // Call the async fn method - it takes self by value to produce 'static Future
                     let fut = instance_clone.#method_id(#(#method_locals),*);
 
-                    neon::macro_internal::spawn(&mut cx, fut, |mut cx, res| {
-                        use neon::macro_internal::{ToNeonMarker, NeonValueTag as NeonReturnTag};
-                        (&res).to_neon_marker::<NeonReturnTag>().neon_into_js(&mut cx, res)
-                    })
+                    neon::macro_internal::spawn(&mut cx, fut, |mut cx, res| #result_extract)
                 })
             }
         }
@@ -74,16 +91,13 @@ fn generate_method_wrapper(
                     // Clone the instance since we need to move it into the task
                     let instance_clone = instance.clone();
 
-                    // Extract arguments - they're already owned after cx.args()
-                    let (#(#method_locals,)*) = cx.args()?;
+                    // Extract arguments with JSON wrapping if needed
+                    let (#(#tuple_fields,)*) = cx.args()?;
 
                     let promise = neon::context::Context::task(&mut cx, move || {
                         instance_clone.#method_id(#(#method_locals),*)
                     })
-                    .promise(|mut cx, res| {
-                        use neon::macro_internal::{ToNeonMarker, NeonValueTag as NeonReturnTag};
-                        (&res).to_neon_marker::<NeonReturnTag>().neon_into_js(&mut cx, res)
-                    });
+                    .promise(|mut cx, res| #result_extract);
                     Ok(promise.upcast::<neon::types::JsValue>())
                 })
             }
@@ -91,11 +105,12 @@ fn generate_method_wrapper(
         meta::Kind::Normal => {
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
-                    use neon::types::extract::TryIntoJs;
                     let this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
                     let instance: &#class_ident = neon::object::unwrap(&mut cx, this)?.or_throw(&mut cx)?;
-                    let (#(#method_locals,)*) = cx.args()?;
-                    instance.#method_id(#(#method_locals),*).try_into_js(&mut cx)
+                    // Extract arguments with JSON wrapping if needed
+                    let (#(#tuple_fields,)*) = cx.args()?;
+                    let res = instance.#method_id(#(#method_locals),*);
+                    #result_extract
                 })
             }
         }
