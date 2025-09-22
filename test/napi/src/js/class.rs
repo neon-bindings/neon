@@ -178,15 +178,34 @@ impl AsyncClass {
 
     // Task method with Channel parameter
     #[neon(task)]
-    pub fn task_with_channel(&self, ch: neon::event::Channel, multiplier: i32) -> String {
+    pub fn task_with_channel(&self, _ch: neon::event::Channel, multiplier: i32) -> String {
         // Channel is available for background tasks
         format!("Task with channel: {} * {}", self.value, multiplier)
     }
 
     // AsyncFn method with Channel parameter
-    pub async fn async_fn_with_channel(self, ch: neon::event::Channel, suffix: String) -> String {
+    pub async fn async_fn_with_channel(self, _ch: neon::event::Channel, suffix: String) -> String {
         // Channel is available for async functions
         format!("AsyncFn with channel: {}{}", self.value, suffix)
+    }
+
+    // Method with this parameter (should auto-detect)
+    pub fn method_with_this(&self, this: neon::handle::Handle<neon::types::JsObject>, data: String) -> String {
+        // Access to both Rust instance and JavaScript object
+        format!("Instance: {}, JS object available, data: {}", self.value, data)
+    }
+
+    // Method with explicit this attribute
+    #[neon(this)]
+    pub fn method_with_explicit_this(&self, _js_obj: neon::handle::Handle<neon::types::JsObject>, suffix: String) -> String {
+        format!("Explicit this: {}{}", self.value, suffix)
+    }
+
+    // Method with context and this
+    #[neon(this)]
+    pub fn method_with_context_and_this<'a>(&self, cx: &mut neon::context::FunctionContext<'a>, _this: neon::handle::Handle<neon::types::JsObject>, multiplier: i32) -> neon::result::JsResult<'a, neon::types::JsNumber> {
+        let result = self.value.len() as f64 * multiplier as f64;
+        Ok(cx.number(result))
     }
 }
 

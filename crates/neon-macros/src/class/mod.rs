@@ -27,15 +27,42 @@ fn generate_method_wrapper(
     // Determine if method has context parameter
     let has_context = context_arg.is_some();
 
-    // Skip context parameter when extracting args from JavaScript
-    let non_context_locals = if has_context {
-        &method_locals[1..] // Skip the first parameter (context)
+    // Check for this parameter
+    let has_this = check_method_this(method_meta, method_sig, has_context);
+
+    // Generate this extraction if needed
+    let this_extract = if has_this {
+        quote::quote!(
+            let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
+            let this = neon::types::extract::TryFromJs::from_js(&mut cx, neon::handle::Handle::upcast(&js_this))?;
+        )
+    } else {
+        quote::quote!()
+    };
+
+    // Generate this argument for method call
+    let this_arg = if has_this {
+        quote::quote!(this,)
+    } else {
+        quote::quote!()
+    };
+
+    // Skip context and this parameters when extracting args from JavaScript
+    let skip_count = match (has_context, has_this) {
+        (true, true) => 2,   // Skip both context and this
+        (true, false) => 1,  // Skip context only
+        (false, true) => 1,  // Skip this only
+        (false, false) => 0, // Skip nothing
+    };
+
+    let non_context_this_locals = if skip_count > 0 {
+        &method_locals[skip_count..]
     } else {
         method_locals
     };
 
     // Generate the tuple fields used to destructure `cx.args()`. Wrap in `Json` if necessary.
-    let tuple_fields = non_context_locals.iter().map(|name| {
+    let tuple_fields = non_context_this_locals.iter().map(|name| {
         if method_meta.json {
             quote::quote!(neon::types::extract::Json(#name))
         } else {
@@ -60,17 +87,20 @@ fn generate_method_wrapper(
         meta::Kind::Async => {
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
-                    let this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
-                    let instance: &#class_ident = neon::object::unwrap(&mut cx, this)?.or_throw(&mut cx)?;
+                    let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
+                    let instance: &#class_ident = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
 
                     // Context extraction if needed
                     #context_extract
 
-                    // Extract non-context arguments with JSON wrapping if needed
+                    // This extraction if needed
+                    #this_extract
+
+                    // Extract non-context/this arguments with JSON wrapping if needed
                     let (#(#tuple_fields,)*) = cx.args()?;
 
                     // Call the method with &self - developer controls cloning in their impl
-                    let fut = instance.#method_id(#context_method_arg #(#non_context_locals),*);
+                    let fut = instance.#method_id(#context_method_arg #this_arg #(#non_context_this_locals),*);
                     // Always use NeonValueTag for Future conversion, JSON only applies to final result
                     let fut = {
                         use neon::macro_internal::{ToNeonMarker, NeonValueTag};
@@ -83,20 +113,23 @@ fn generate_method_wrapper(
         meta::Kind::AsyncFn => {
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
-                    let this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
-                    let instance: &#class_ident = neon::object::unwrap(&mut cx, this)?.or_throw(&mut cx)?;
+                    let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
+                    let instance: &#class_ident = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
 
                     // Context extraction if needed
                     #context_extract
 
-                    // Extract non-context arguments with JSON wrapping if needed
+                    // This extraction if needed
+                    #this_extract
+
+                    // Extract non-context/this arguments with JSON wrapping if needed
                     let (#(#tuple_fields,)*) = cx.args()?;
 
                     // Clone the instance to move into async fn (takes self by value)
                     let instance_clone = instance.clone();
 
                     // Call the async fn method - it takes self by value to produce 'static Future
-                    let fut = instance_clone.#method_id(#context_method_arg #(#non_context_locals),*);
+                    let fut = instance_clone.#method_id(#context_method_arg #this_arg #(#non_context_this_locals),*);
 
                     neon::macro_internal::spawn(&mut cx, fut, |mut cx, res| #result_extract)
                 })
@@ -107,20 +140,23 @@ fn generate_method_wrapper(
             // since tasks run on a different thread
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
-                    let this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
-                    let instance: &#class_ident = neon::object::unwrap(&mut cx, this)?.or_throw(&mut cx)?;
+                    let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
+                    let instance: &#class_ident = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
 
                     // Context extraction if needed
                     #context_extract
 
+                    // This extraction if needed
+                    #this_extract
+
                     // Clone the instance since we need to move it into the task
                     let instance_clone = instance.clone();
 
-                    // Extract non-context arguments with JSON wrapping if needed
+                    // Extract non-context/this arguments with JSON wrapping if needed
                     let (#(#tuple_fields,)*) = cx.args()?;
 
                     let promise = neon::context::Context::task(&mut cx, move || {
-                        instance_clone.#method_id(#context_method_arg #(#non_context_locals),*)
+                        instance_clone.#method_id(#context_method_arg #this_arg #(#non_context_this_locals),*)
                     })
                     .promise(|mut cx, res| #result_extract);
                     Ok(promise.upcast::<neon::types::JsValue>())
@@ -130,15 +166,18 @@ fn generate_method_wrapper(
         meta::Kind::Normal => {
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
-                    let this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
-                    let instance: &#class_ident = neon::object::unwrap(&mut cx, this)?.or_throw(&mut cx)?;
+                    let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
+                    let instance: &#class_ident = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
 
                     // Context extraction if needed
                     #context_extract
 
-                    // Extract non-context arguments with JSON wrapping if needed
+                    // This extraction if needed
+                    #this_extract
+
+                    // Extract non-context/this arguments with JSON wrapping if needed
                     let (#(#tuple_fields,)*) = cx.args()?;
-                    let res = instance.#method_id(#context_method_arg #(#non_context_locals),*);
+                    let res = instance.#method_id(#context_method_arg #this_arg #(#non_context_this_locals),*);
                     #result_extract
                 })
             }
@@ -317,6 +356,49 @@ fn type_path_ident(ty: &syn::Type) -> Option<&syn::Ident> {
     };
 
     Some(&segment.ident)
+}
+
+// Check if a method has a `this` parameter (adapted from export function)
+// For methods: &self is 1st, context is 2nd (optional), this is 3rd (or 2nd if no context)
+fn check_method_this(opts: &meta::Meta, sig: &syn::Signature, has_context: bool) -> bool {
+    static THIS: &str = "this";
+
+    // Forced `this` argument
+    if opts.this {
+        return true;
+    }
+
+    // Get the parameter after &self and optional context
+    let param_index = if has_context { 2 } else { 1 }; // Skip &self and optional context
+    let param = match sig.inputs.iter().nth(param_index) {
+        Some(param) => param,
+        None => return false,
+    };
+
+    // Ignore `self` type receivers (shouldn't happen at this index, but be safe)
+    let ty = match param {
+        syn::FnArg::Receiver(_) => return false,
+        syn::FnArg::Typed(ty) => ty,
+    };
+
+    // Check for `this` ident or a tuple struct
+    let pat = match &*ty.pat {
+        syn::Pat::Ident(ident) if ident.ident == THIS => return true,
+        syn::Pat::TupleStruct(pat) => pat,
+        _ => return false,
+    };
+
+    // Expect exactly one element in the tuple struct
+    let elem = match pat.elems.first() {
+        Some(elem) if pat.elems.len() == 1 => elem,
+        _ => return false,
+    };
+
+    // Must be an identifier named `this`
+    match elem {
+        syn::Pat::Ident(ident) => ident.ident == THIS,
+        _ => false,
+    }
 }
 
 fn sort_class_items(
