@@ -62,6 +62,20 @@ describe("classes", function () {
     assert.strictEqual(point.distance(point2), Math.sqrt(8));
   });
 
+  it("Point class has const properties", function () {
+    const Point = addon.Point;
+
+    // Test basic const properties
+    assert.strictEqual(Point.ORIGIN_X, 0);
+    assert.strictEqual(Point.ORIGIN_Y, 0);
+
+    // Test const property with custom name
+    assert.strictEqual(Point.maxCoordinate, 1000);
+
+    // Test const property with JSON serialization
+    assert.deepEqual(Point.DEFAULT_MESSAGE, ["hello", "point"]);
+  });
+
   it("can create a StringBuffer class with Default constructor", function () {
     const StringBuffer = addon.StringBuffer;
 

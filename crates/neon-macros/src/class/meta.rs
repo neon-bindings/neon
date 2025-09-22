@@ -16,6 +16,46 @@ pub(super) enum Kind {
     Task,
 }
 
+// Property metadata structure (simpler than method metadata)
+#[derive(Default)]
+pub(crate) struct PropertyMeta {
+    pub(super) name: Option<syn::LitStr>,
+    pub(super) json: bool,
+}
+
+pub(crate) struct PropertyParser;
+
+impl syn::parse::Parser for PropertyParser {
+    type Output = PropertyMeta;
+
+    fn parse2(self, tokens: proc_macro2::TokenStream) -> syn::Result<Self::Output> {
+        let mut attr = PropertyMeta::default();
+        let parser = syn::meta::parser(|meta: syn::meta::ParseNestedMeta<'_>| {
+            if meta.path.is_ident("name") {
+                attr.name = Some(meta.value()?.parse::<syn::LitStr>()?);
+                return Ok(());
+            }
+
+            if meta.path.is_ident("json") {
+                attr.json = true;
+                return Ok(());
+            }
+
+            // Properties don't support method-specific attributes
+            if meta.path.is_ident("async") || meta.path.is_ident("task") ||
+               meta.path.is_ident("context") || meta.path.is_ident("this") {
+                return Err(meta.error("attribute not supported on const properties"));
+            }
+
+            Err(meta.error("unsupported property attribute"))
+        });
+
+        parser.parse2(tokens)?;
+
+        Ok(attr)
+    }
+}
+
 pub(crate) struct Parser;
 
 impl syn::parse::Parser for Parser {

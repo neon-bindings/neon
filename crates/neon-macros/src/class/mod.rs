@@ -518,10 +518,9 @@ pub(crate) fn class(
     };
     let class_name = class_ident.to_string();
 
-    // Sort the items into `const` and `fn` categories\
-    // TODO: turn consts into static class properties
+    // Sort the items into `const` and `fn` categories
     let ClassItems {
-        consts: _consts,
+        consts,
         fns,
         constructor,
     } = match sort_class_items(items.clone()) {
@@ -668,9 +667,80 @@ pub(crate) fn class(
         method_metas.push(parsed);
     }
 
+    // Process const items into static class properties
+    let mut property_names = String::new();
+    let mut property_assignments = String::new();
+    let mut property_ids = Vec::new();
+    let mut property_wrappers = Vec::new();
+
+    for const_item in &consts {
+        let const_name = &const_item.ident;
+        let property_id = quote::format_ident!("__{const_name}Property");
+
+        // Parse property attributes
+        let mut property_meta = meta::PropertyMeta::default();
+        for attr in &const_item.attrs {
+            if let syn::Meta::List(syn::MetaList { path, tokens, .. }) = &attr.meta {
+                if path.is_ident("neon") {
+                    let parser = meta::PropertyParser;
+                    let tokens = tokens.clone().into();
+                    property_meta = syn::parse_macro_input!(tokens with parser);
+                    break; // Only process first neon attribute
+                }
+            }
+        }
+
+        // Determine JavaScript property name (use custom name or default)
+        let js_property_name = match &property_meta.name {
+            Some(name) => name.value(),
+            None => const_name.to_string(),
+        };
+
+        // Add to parameter list for JavaScript function
+        if !property_names.is_empty() {
+            property_names.push_str(", ");
+        }
+        property_names.push_str(&property_id.to_string());
+
+        // Add property assignment in JavaScript
+        property_assignments.push_str(&format!(
+            "\n    {class_name}.{js_property_name} = {property_id}();"
+        ));
+
+        // Create property getter function with JSON support
+        let value_expr = if property_meta.json {
+            quote::quote! {
+                use neon::types::extract::{TryIntoJs, Json};
+                let value = Json(#class_ident::#const_name);
+                value.try_into_js(&mut cx).map(|v| v.upcast())
+            }
+        } else {
+            quote::quote! {
+                use neon::types::extract::TryIntoJs;
+                let value = #class_ident::#const_name;
+                value.try_into_js(&mut cx).map(|v| v.upcast())
+            }
+        };
+
+        let property_wrapper = quote::quote! {
+            neon::types::JsFunction::new(cx, |mut cx| -> neon::result::JsResult<neon::types::JsValue> {
+                #value_expr
+            })
+        };
+
+        property_ids.push(property_id);
+        property_wrappers.push(property_wrapper);
+    }
+
+    let property_params = if property_names.is_empty() {
+        String::new()
+    } else {
+        format!(", {}", property_names)
+    };
+
     let script = format!(
         r#"
-(function makeClass(wrap{method_names}) {{
+(function makeClass(wrap{method_names}{property_params}) {{
   // Create the class exposed directly to JavaScript.
   //
   // The variables listed in method_names all come from
@@ -682,6 +752,9 @@ pub(crate) fn class(
       }}
     }}
     const prototype = {class_name}.prototype;{prototype_patches}
+
+    // Add static class properties{property_assignments}
+
     return {class_name};
   }}
 
@@ -766,6 +839,9 @@ pub(crate) fn class(
                 // Create method functions using the appropriate wrapper based on metadata
                 #(let #method_ids = #method_wrappers;)*
 
+                // Create property getter functions
+                #(let #property_ids = #property_wrappers;)*
+
                 const CLASS_MAKER_SCRIPT: &str = #script;
                 let src = cx.string(CLASS_MAKER_SCRIPT);
                 let factory: Handle<JsFunction> = neon::reflect::eval(cx, src)?
@@ -775,6 +851,7 @@ pub(crate) fn class(
                     .bind(cx)
                     .arg(wrap)?
                     #( .arg(#method_ids)? )*
+                    #( .arg(#property_ids)? )*
                     .call()?;
                 let external: Handle<JsFunction> = pair.prop(cx, "external").get()?;
                 let internal: Handle<JsFunction> = pair.prop(cx, "internal").get()?;
@@ -783,12 +860,20 @@ pub(crate) fn class(
         }
     };
 
-    // Remove #[neon(...)] attributes from methods in the impl block
+    // Remove #[neon(...)] attributes from methods and const items in the impl block
     for item in &mut impl_block.items {
-        if let syn::ImplItem::Fn(f) = item {
-            f.attrs.retain(
-                |attr| !matches!(&attr.meta, syn::Meta::List(list) if list.path.is_ident("neon")),
-            );
+        match item {
+            syn::ImplItem::Fn(f) => {
+                f.attrs.retain(
+                    |attr| !matches!(&attr.meta, syn::Meta::List(list) if list.path.is_ident("neon")),
+                );
+            }
+            syn::ImplItem::Const(c) => {
+                c.attrs.retain(
+                    |attr| !matches!(&attr.meta, syn::Meta::List(list) if list.path.is_ident("neon")),
+                );
+            }
+            _ => {}
         }
     }
 

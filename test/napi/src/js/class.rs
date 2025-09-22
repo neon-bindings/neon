@@ -36,6 +36,18 @@ pub struct Point {
 
 #[neon::class]
 impl Point {
+    // Basic const properties
+    const ORIGIN_X: u32 = 0;
+    const ORIGIN_Y: u32 = 0;
+
+    // Const property with custom name
+    #[neon(name = "maxCoordinate")]
+    const MAX_COORD: u32 = 1000;
+
+    // Const property with simple JSON (string slice)
+    #[neon(json)]
+    const DEFAULT_MESSAGE: &'static [&'static str] = &["hello", "point"];
+
     pub fn new(x: u32, y: u32) -> Self {
         Self { x, y }
     }
@@ -101,6 +113,13 @@ pub struct AsyncClass {
 
 #[neon::class]
 impl AsyncClass {
+    // Simple const property
+    const DEFAULT_TIMEOUT: u32 = 5000;
+
+    // Const property with custom name and simple JSON
+    #[neon(name = "version", json)]
+    const VERSION_NUMBERS: &'static [u32] = &[1, 0, 0];
+
     pub fn new(value: String) -> Self {
         Self { value }
     }
