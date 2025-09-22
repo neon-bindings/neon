@@ -76,6 +76,50 @@ describe("classes", function () {
     assert.deepEqual(Point.DEFAULT_MESSAGE, ["hello", "point"]);
   });
 
+  it("Point const properties are immutable", function () {
+    const Point = addon.Point;
+
+    // Store original values
+    const originalX = Point.ORIGIN_X;
+    const originalMaxCoord = Point.maxCoordinate;
+
+    // Attempt to modify properties (should silently fail in non-strict mode)
+    Point.ORIGIN_X = 999;
+    Point.maxCoordinate = 5000;
+
+    // Values should be unchanged
+    assert.strictEqual(Point.ORIGIN_X, originalX);
+    assert.strictEqual(Point.maxCoordinate, originalMaxCoord);
+
+    // Check property descriptors
+    const descX = Object.getOwnPropertyDescriptor(Point, "ORIGIN_X");
+    assert.strictEqual(descX.writable, false);
+    assert.strictEqual(descX.configurable, false);
+    assert.strictEqual(descX.enumerable, true);
+
+    const descMaxCoord = Object.getOwnPropertyDescriptor(
+      Point,
+      "maxCoordinate"
+    );
+    assert.strictEqual(descMaxCoord.writable, false);
+    assert.strictEqual(descMaxCoord.configurable, false);
+    assert.strictEqual(descMaxCoord.enumerable, true);
+  });
+
+  it("Point supports complex const expressions", function () {
+    const Point = addon.Point;
+
+    // Test computed const expressions
+    assert.strictEqual(Point.COMPUTED_VALUE, 42); // 10 + 20 + 12
+    assert.strictEqual(Point.SIZE_OF_F64, 8); // std::mem::size_of::<f64>()
+    assert.strictEqual(Point.STRING_LENGTH, 7); // "complex".len()
+
+    // Verify they're immutable
+    const original = Point.COMPUTED_VALUE;
+    Point.COMPUTED_VALUE = 999;
+    assert.strictEqual(Point.COMPUTED_VALUE, original);
+  });
+
   it("can create a StringBuffer class with Default constructor", function () {
     const StringBuffer = addon.StringBuffer;
 

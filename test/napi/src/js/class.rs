@@ -48,6 +48,15 @@ impl Point {
     #[neon(json)]
     const DEFAULT_MESSAGE: &'static [&'static str] = &["hello", "point"];
 
+    // Test complex const expressions
+    const COMPUTED_VALUE: u32 = 10 + 20 + 12;
+    const SIZE_OF_F64: u32 = std::mem::size_of::<f64>() as u32;
+    const STRING_LENGTH: u32 = "complex".len() as u32;
+
+    // Test const expressions that use type information
+    const SELF_SIZE: u32 = std::mem::size_of::<Self>() as u32;
+    const POINT_ALIGNMENT: u32 = std::mem::align_of::<Point>() as u32;
+
     pub fn new(x: u32, y: u32) -> Self {
         Self { x, y }
     }
