@@ -178,6 +178,8 @@ pub use neon_macros::main;
 /// # }
 /// ```
 ///
+/// #### Async Functions with Synchronous Setup
+///
 /// A `fn` that returns a [`Future`](std::future::Future) can be annotated with `#[neon::export(async)]`
 /// if it needs to perform some setup on the JavaScript main thread before running asynchronously.
 ///
