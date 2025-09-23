@@ -757,7 +757,7 @@ pub(crate) fn class(
 
         // Add property assignment in JavaScript (immutable const properties)
         property_assignments.push(format!(
-            "\n    Object.defineProperty({class_name}, '{js_property_name}', {{\n      value: {property_id}(),\n      writable: false,\n      enumerable: true,\n      configurable: false\n    }});"
+            "\n    Object.defineProperty({class_name}, '{js_property_name}', {{ value: {property_id}(), enumerable: true }});"
         ));
 
         // Create property getter function with JSON support
