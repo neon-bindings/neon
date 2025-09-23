@@ -3,6 +3,36 @@ mod meta;
 use proc_macro2::TokenStream;
 use syn::{spanned::Spanned, Ident, ImplItemFn, Type};
 
+// Validate JavaScript identifier names
+fn is_valid_js_identifier(name: &str) -> bool {
+    if name.is_empty() {
+        return false;
+    }
+
+    // Check first character (must be letter, $, or _)
+    let first_char = name.chars().next().unwrap();
+    if !first_char.is_ascii_alphabetic() && first_char != '$' && first_char != '_' {
+        return false;
+    }
+
+    // Check remaining characters (must be alphanumeric, $, or _)
+    for ch in name.chars().skip(1) {
+        if !ch.is_ascii_alphanumeric() && ch != '$' && ch != '_' {
+            return false;
+        }
+    }
+
+    // Check against JavaScript reserved words
+    !matches!(name,
+        "await" | "break" | "case" | "catch" | "class" | "const" | "continue" | "debugger" |
+        "default" | "delete" | "do" | "else" | "enum" | "export" | "extends" | "false" |
+        "finally" | "for" | "function" | "if" | "import" | "in" | "instanceof" | "new" | "null" |
+        "return" | "super" | "switch" | "this" | "throw" | "true" | "try" | "typeof" |
+        "var" | "void" | "while" | "with" | "yield" | "let" | "static" | "implements" |
+        "interface" | "package" | "private" | "protected" | "public"
+    )
+}
+
 struct ClassItems {
     consts: Vec<syn::ImplItemConst>,
     fns: Vec<syn::ImplItemFn>,
@@ -668,10 +698,11 @@ pub(crate) fn class(
     }
 
     // Process const items into static class properties
-    let mut property_names = String::new();
-    let mut property_assignments = String::new();
+    let mut property_names = Vec::new();
+    let mut property_assignments = Vec::new();
     let mut property_ids = Vec::new();
     let mut property_wrappers = Vec::new();
+    let mut used_js_names = std::collections::HashSet::with_capacity(consts.len()); // Pre-allocate
 
     for const_item in &consts {
         let const_name = &const_item.ident;
@@ -679,31 +710,53 @@ pub(crate) fn class(
 
         // Parse property attributes
         let mut property_meta = meta::PropertyMeta::default();
+        let mut found_neon_attr = false;
         for attr in &const_item.attrs {
             if let syn::Meta::List(syn::MetaList { path, tokens, .. }) = &attr.meta {
                 if path.is_ident("neon") {
+                    if found_neon_attr {
+                        return syn::Error::new_spanned(
+                            attr,
+                            "multiple #[neon(...)] attributes on const property are not allowed"
+                        ).to_compile_error().into();
+                    }
+                    found_neon_attr = true;
                     let parser = meta::PropertyParser;
                     let tokens = tokens.clone().into();
                     property_meta = syn::parse_macro_input!(tokens with parser);
-                    break; // Only process first neon attribute
                 }
             }
         }
 
         // Determine JavaScript property name (use custom name or default)
         let js_property_name = match &property_meta.name {
-            Some(name) => name.value(),
+            Some(name) => {
+                let name_value = name.value();
+                // Validate JavaScript identifier
+                if !is_valid_js_identifier(&name_value) {
+                    return syn::Error::new_spanned(
+                        name,
+                        format!("'{}' is not a valid JavaScript identifier", name_value)
+                    ).to_compile_error().into();
+                }
+                name_value
+            }
             None => const_name.to_string(),
         };
 
-        // Add to parameter list for JavaScript function
-        if !property_names.is_empty() {
-            property_names.push_str(", ");
+        // Check for name collisions
+        if !used_js_names.insert(js_property_name.clone()) {
+            return syn::Error::new_spanned(
+                const_item,
+                format!("duplicate property name '{}' - const property names must be unique in JavaScript", js_property_name)
+            ).to_compile_error().into();
         }
-        property_names.push_str(&property_id.to_string());
+
+        // Add to parameter list for JavaScript function
+        property_names.push(property_id.to_string());
 
         // Add property assignment in JavaScript (immutable const properties)
-        property_assignments.push_str(&format!(
+        property_assignments.push(format!(
             "\n    Object.defineProperty({class_name}, '{js_property_name}', {{\n      value: {property_id}(),\n      writable: false,\n      enumerable: true,\n      configurable: false\n    }});"
         ));
 
@@ -735,8 +788,10 @@ pub(crate) fn class(
     let property_params = if property_names.is_empty() {
         String::new()
     } else {
-        format!(", {}", property_names)
+        format!(", {}", property_names.join(", "))
     };
+
+    let property_assignments = property_assignments.join("");
 
     let script = format!(
         r#"

@@ -120,6 +120,66 @@ describe("classes", function () {
     assert.strictEqual(Point.COMPUTED_VALUE, original);
   });
 
+  it("Point supports edge case const expressions", function () {
+    const Point = addon.Point;
+
+    // Test boolean const
+    assert.strictEqual(Point.IS_2D, true);
+    assert.strictEqual(typeof Point.IS_2D, "boolean");
+
+    // Test conditional const expression
+    assert.strictEqual(Point.MAX_DIMENSION, 2147483647);
+
+    // Test match expression const
+    assert.strictEqual(Point.COORDINATE_BYTES, 4);
+
+    // Test const with arithmetic
+    assert.strictEqual(Point.DOUBLE_100_SQUARED, 20000); // 100^2 * 2
+
+    // Test string with special characters (renamed property)
+    assert.strictEqual(Point.specialString, 'Hello\nWorld\t"quoted"\r\n');
+
+    // Test negative number
+    assert.strictEqual(Point.NEGATIVE_OFFSET, -42);
+
+    // Test large integer (approximate)
+    assert.strictEqual(Point.MAX_SAFE_INTEGER_APPROX, 2147483647);
+
+    // Test const starting with underscore
+    assert.strictEqual(Point._PRIVATE_CONST, 999);
+
+    // Verify all edge case properties are immutable
+    const props = [
+      "IS_2D",
+      "MAX_DIMENSION",
+      "COORDINATE_BYTES",
+      "DOUBLE_100_SQUARED",
+      "specialString",
+      "NEGATIVE_OFFSET",
+      "MAX_SAFE_INTEGER_APPROX",
+      "_PRIVATE_CONST",
+    ];
+
+    props.forEach((prop) => {
+      const descriptor = Object.getOwnPropertyDescriptor(Point, prop);
+      assert.strictEqual(
+        descriptor.writable,
+        false,
+        `${prop} should not be writable`
+      );
+      assert.strictEqual(
+        descriptor.configurable,
+        false,
+        `${prop} should not be configurable`
+      );
+      assert.strictEqual(
+        descriptor.enumerable,
+        true,
+        `${prop} should be enumerable`
+      );
+    });
+  });
+
   it("can create a StringBuffer class with Default constructor", function () {
     const StringBuffer = addon.StringBuffer;
 

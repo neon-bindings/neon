@@ -57,6 +57,35 @@ impl Point {
     const SELF_SIZE: u32 = std::mem::size_of::<Self>() as u32;
     const POINT_ALIGNMENT: u32 = std::mem::align_of::<Point>() as u32;
 
+    // Edge case: boolean const
+    const IS_2D: bool = true;
+
+    // Edge case: const expression with conditionals
+    const MAX_DIMENSION: u32 = if std::mem::size_of::<u32>() == 4 { 2147483647 } else { 65535 };
+
+    // Edge case: const expression with match
+    const COORDINATE_BYTES: u32 = match std::mem::size_of::<u32>() {
+        4 => 4,
+        8 => 8,
+        _ => 0,
+    };
+
+    // Edge case: const expression with arithmetic (can't use sqrt in const)
+    const DOUBLE_100_SQUARED: u32 = 100_u32.pow(2) * 2;
+
+    // Edge case: string with special characters
+    #[neon(name = "specialString")]
+    const SPECIAL_CHARS: &'static str = "Hello\nWorld\t\"quoted\"\r\n";
+
+    // Edge case: negative number
+    const NEGATIVE_OFFSET: i32 = -42;
+
+    // Edge case: const with underscores (use u32 instead of u64 for now)
+    const MAX_SAFE_INTEGER_APPROX: u32 = 2147483647;
+
+    // Edge case: const starting with underscore (valid in JS)
+    const _PRIVATE_CONST: u32 = 999;
+
     pub fn new(x: u32, y: u32) -> Self {
         Self { x, y }
     }
