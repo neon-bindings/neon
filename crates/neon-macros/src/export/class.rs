@@ -29,6 +29,7 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemImpl) -> proc_macro::Toke
     let create_name = quote::format_ident!("__NEON_EXPORT_CREATE__{}", class_ident);
     let create_fn = quote!(
         #[doc(hidden)]
+        #[allow(non_snake_case)]
         #[neon::macro_internal::linkme::distributed_slice(neon::macro_internal::EXPORTS)]
         #[linkme(crate = neon::macro_internal::linkme)]
         fn #create_name<'cx>(

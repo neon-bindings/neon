@@ -1,5 +1,466 @@
 //! Helper module to add documentation to macros prior to re-exporting.
 
+/// Create a Neon class from a Rust datatype
+///
+/// The `#[neon::class]` attribute can be applied to an `impl` block to create a JavaScript
+/// class that wraps a Rust struct. The struct must implement [`Clone`] and
+/// [`Finalize`](crate::types::Finalize) and have a constructor method named `new`.
+///
+/// ## Example
+///
+/// ```
+/// # use neon::prelude::*;
+/// # use neon::{context::Context, types::Finalize};
+/// #[derive(Clone)]
+/// pub struct User {
+///     username: String,
+///     first_name: String,
+///     last_name: String,
+/// }
+///
+/// #[neon::class]
+/// impl User {
+///     pub fn new(username: String, first_name: String, last_name: String) -> Self {
+///         Self { username, first_name, last_name }
+///     }
+///
+///     pub fn to_string(&self) -> String {
+///         format!("[object User:{}]", self.username)
+///     }
+/// }
+///
+/// impl Finalize for User {
+///     fn finalize<'cx, C: Context<'cx>>(self, _cx: &mut C) {}
+/// }
+/// ```
+///
+/// ## Constructor
+///
+/// Classes must have exactly one constructor method named `new`. The constructor takes
+/// the class parameters and returns `Self`. Constructor arguments can be any type that
+/// implements [`TryFromJs`](crate::types::extract::TryFromJs).
+///
+/// ```
+/// # use neon::prelude::*;
+/// # use neon::types::Finalize;
+/// #[derive(Clone)]
+/// pub struct Person {
+///     name: String,
+///     age: u32,
+/// }
+///
+/// #[neon::class]
+/// impl Person {
+///     pub fn new(name: String, age: u32) -> Self {
+///         Self { name, age }
+///     }
+/// }
+/// # impl Finalize for Person {
+/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
+/// # }
+/// ```
+///
+/// ## Methods
+///
+/// Class methods must have a receiver (`&self`) as their first parameter.
+/// Methods can take any type that implements [`TryFromJs`](crate::types::extract::TryFromJs)
+/// and return any type that implements [`TryIntoJs`](crate::types::extract::TryIntoJs).
+///
+/// ```
+/// # use neon::prelude::*;
+/// # use neon::types::Finalize;
+/// # #[derive(Clone)]
+/// # pub struct Calculator { value: f64 }
+/// #[neon::class]
+/// impl Calculator {
+///     pub fn new(initial: f64) -> Self {
+///         Self { value: initial }
+///     }
+///
+///     pub fn get_value(&self) -> f64 {
+///         self.value
+///     }
+///
+///     pub fn multiply(&self, x: f64) -> f64 {
+///         self.value * x
+///     }
+/// }
+/// # impl Finalize for Calculator {
+/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
+/// # }
+/// ```
+///
+/// ## Interior Mutability
+///
+/// Like [`JsBox`](crate::types::JsBox), classes provides shared ownership of a Rust value,
+/// allocated in the heap. The data is owned by the JavaScript engine and the lifetime is
+/// managed by the JavaScript garbage collector. Because an instance of a JavaScript class
+/// represents a shared reference, and shared references in Rust disallow mutation by default,
+/// mutable references to a class instance's Rust data cannot be obtained directly.
+///
+/// For this reason, Neon class methods use `&self` for method receivers, and direct mutation
+/// is not possible. To implement mutable operations, use types that provide
+/// [interior mutability](https://doc.rust-lang.org/book/ch15-05-interior-mutability.html), such as
+/// [`RefCell`](std::cell::RefCell), [`Cell`](std::cell::Cell), or thread-safe alternatives
+/// like [`Arc<Mutex<T>>`](std::sync::Arc).
+///
+/// ```
+/// # use neon::prelude::*;
+/// # use neon::types::Finalize;
+/// # use std::cell::RefCell;
+/// #[derive(Clone)]
+/// pub struct Counter {
+///     value: RefCell<i32>,
+/// }
+///
+/// #[neon::class]
+/// impl Counter {
+///     pub fn new(initial: i32) -> Self {
+///         Self {
+///             value: RefCell::new(initial),
+///         }
+///     }
+///
+///     pub fn increment(&self) -> i32 {
+///         let mut value = self.value.borrow_mut();
+///         *value += 1;
+///         *value
+///     }
+///
+///     pub fn get(&self) -> i32 {
+///         *self.value.borrow()
+///     }
+/// }
+///
+/// impl Finalize for Counter {
+///     fn finalize<'cx, C: Context<'cx>>(self, _cx: &mut C) {}
+/// }
+/// ```
+///
+/// ### Method Attributes
+///
+/// Methods support the same attributes as [`export`] functions, including `json`, `task`,
+/// `async`, `context`, `this`, and `name`.
+///
+/// #### JSON Methods
+///
+/// ```
+/// # use neon::prelude::*;
+/// # use neon::types::Finalize;
+/// # #[derive(Clone)]
+/// # pub struct DataProcessor;
+/// #[neon::class]
+/// impl DataProcessor {
+/// #   pub fn new() -> Self { Self }
+///     #[neon(json)]
+///     pub fn process_data(&self, items: Vec<String>) -> Vec<String> {
+///         items.into_iter().map(|s| s.to_uppercase()).collect()
+///     }
+/// }
+/// # impl Finalize for DataProcessor {
+/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
+/// # }
+/// ```
+///
+/// #### Async Methods
+///
+/// Methods declared with `async fn` are automatically detected and exported as async. Because the
+/// data is shared across threads, it is automatically cloned before the method is called, so the
+/// receiver must be `self` instead of `&self`. Any shared mutable state should use types like
+/// [`Arc<Mutex<T>>`](std::sync::Arc) for thread-safe interior mutability.
+///
+/// ```
+/// # #[cfg(all(feature = "napi-6", feature = "futures"))]
+/// # {
+/// # use neon::prelude::*;
+/// # use neon::types::Finalize;
+/// # use std::sync::{Arc, Mutex};
+/// # #[derive(Clone)]
+/// # pub struct AsyncWorker {
+/// #     counter: Arc<Mutex<i32>>,
+/// # }
+/// #[neon::class]
+/// impl AsyncWorker {
+///     pub fn new() -> Self {
+///         Self {
+///             counter: Arc::new(Mutex::new(0)),
+///         }
+///     }
+///
+///     // Takes `self` - the struct is cloned before calling
+///     pub async fn fetch_data(self, url: String) -> String {
+///         // Simulate async work
+///         let mut count = self.counter.lock().unwrap();
+///         *count += 1;
+///         format!("Data from {} (request #{})", url, count)
+///     }
+/// }
+/// # impl Finalize for AsyncWorker {
+/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
+/// # }
+/// # }
+/// ```
+///
+/// ##### Synchronous Setup
+///
+/// For more control over async behavior, use `#[neon(async)]` with a method that
+/// returns a [`Future`](std::future::Future). This allows synchronous setup on
+/// the JavaScript main thread.
+///
+/// ```
+/// # #[cfg(all(feature = "napi-6", feature = "futures"))]
+/// # {
+/// # use neon::prelude::*;
+/// # use neon::types::Finalize;
+/// # use std::future::Future;
+/// # #[derive(Clone)]
+/// # pub struct AsyncWorker;
+/// #[neon::class]
+/// impl AsyncWorker {
+/// #   pub fn new() -> Self { Self }
+///     #[neon(async)]
+///     pub fn process_data(&self, data: String) -> impl Future<Output = String> + 'static {
+///         println!("Setup on main thread");
+///         let data_clone = data;
+///         async move {
+///             data_clone.to_uppercase()
+///         }
+///     }
+/// }
+/// # impl Finalize for AsyncWorker {
+/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
+/// # }
+/// # }
+/// ```
+///
+/// #### Task Methods
+///
+/// Methods can be executed on Node's worker pool using the `task` attribute:
+///
+/// ```
+/// # use neon::prelude::*;
+/// # use neon::types::Finalize;
+/// # #[derive(Clone)]
+/// # pub struct CpuWorker;
+/// #[neon::class]
+/// impl CpuWorker {
+/// #   pub fn new() -> Self { Self }
+///     #[neon(task)]
+///     pub fn heavy_computation(&self, iterations: u32) -> u64 {
+///         (0..iterations).map(|i| i as u64).sum()
+///     }
+/// }
+/// # impl Finalize for CpuWorker {
+/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
+/// # }
+/// ```
+///
+/// #### Method Naming
+///
+/// Like [`export`] functions, method names are converted from `snake_case` to `camelCase`.
+/// Custom names can be specified with the `name` attribute:
+///
+/// ```
+/// # use neon::prelude::*;
+/// # use neon::types::Finalize;
+/// # #[derive(Clone)]
+/// # pub struct StringBuffer { data: String }
+/// #[neon::class]
+/// impl StringBuffer {
+/// #   pub fn new() -> Self { Self { data: String::new() } }
+///     #[neon(name = "trimStart")]
+///     pub fn trim_leading(&self) -> String {
+///         self.data.trim_start().to_string()
+///     }
+/// }
+/// # impl Finalize for StringBuffer {
+/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
+/// # }
+/// ```
+///
+/// ## Const Properties
+///
+/// Classes can expose Rust constants as static, immutable properties on the JavaScript class:
+///
+/// ```
+/// # use neon::prelude::*;
+/// # use neon::types::Finalize;
+/// # #[derive(Clone)]
+/// # pub struct MathConstants;
+/// #[neon::class]
+/// impl MathConstants {
+///     const PI: f64 = 3.14159;
+///     const VERSION: u32 = 1;
+///
+///     #[neon(name = "maxValue")]
+///     const MAX_VALUE: f64 = f64::MAX;
+///
+///     #[neon(json)]
+///     const DEFAULT_SETTINGS: &'static [&'static str] = &["feature1", "feature2"];
+///
+/// #   pub fn new() -> Self { Self }
+/// }
+/// # impl Finalize for MathConstants {
+/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
+/// # }
+/// ```
+///
+/// From JavaScript:
+/// ```js
+/// console.log(MathConstants.PI);               // 3.14159
+/// console.log(MathConstants.maxValue);         // 1.7976931348623157e+308
+/// console.log(MathConstants.DEFAULT_SETTINGS); // ["feature1", "feature2"]
+/// ```
+///
+/// Const properties support the same attributes as globals: `name` for custom naming
+/// and `json` for automatic JSON serialization. Properties are immutable from JavaScript.
+///
+/// ## Context and This Parameters
+///
+/// Methods can access the JavaScript runtime context and the JavaScript object wrapper:
+///
+/// ```
+/// # use neon::prelude::*;
+/// # use neon::types::Finalize;
+/// # #[derive(Clone)]
+/// # pub struct Interactive { data: String }
+/// #[neon::class]
+/// impl Interactive {
+/// #   pub fn new(data: String) -> Self { Self { data } }
+///     // Method with context parameter
+///     pub fn create_object<'cx>(
+///         &self,
+///         cx: &mut FunctionContext<'cx>,
+///     ) -> JsResult<'cx, JsObject> {
+///         let obj = cx.empty_object();
+///         let value = cx.string(&self.data);
+///         obj.set(cx, "data", value)?;
+///         Ok(obj)
+///     }
+///
+///     // Method with this parameter (access to JS object)
+///     pub fn inspect_this(&self, this: Handle<JsObject>) -> String {
+///         format!("JS object available: {}", self.data)
+///     }
+/// }
+/// # impl Finalize for Interactive {
+/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
+/// # }
+/// ```
+///
+/// ## Instance Extractor
+///
+/// Methods can take arguments of the same class type using the [`Instance`](crate::types::extract::Instance)
+/// extractor. This allows methods to operate on multiple instances of the same class.
+///
+/// ```
+/// # use neon::prelude::*;
+/// # use neon::types::{Finalize, extract::Instance};
+/// #[derive(Clone)]
+/// pub struct Point {
+///     x: f64,
+///     y: f64,
+/// }
+///
+/// #[neon::class]
+/// impl Point {
+///     pub fn new(x: f64, y: f64) -> Self {
+///         Self { x, y }
+///     }
+///
+///     pub fn distance(&self, other: Instance<Self>) -> f64 {
+///         let dx = self.x - other.x;
+///         let dy = self.y - other.y;
+///         (dx * dx + dy * dy).sqrt()
+///     }
+///
+///     pub fn midpoint(&self, other: Instance<Self>) -> Self {
+///         Self {
+///             x: (self.x + other.x) / 2.0,
+///             y: (self.y + other.y) / 2.0,
+///         }
+///     }
+/// }
+///
+/// impl Finalize for Point {
+///     fn finalize<'cx, C: Context<'cx>>(self, _cx: &mut C) {}
+/// }
+/// ```
+///
+/// From JavaScript, you can call these methods with other instances of the same class:
+/// ```js
+/// const p1 = new Point(0, 0);
+/// const p2 = new Point(3, 4);
+/// console.log(p1.distance(p2)); // 5
+/// const midpoint = p1.midpoint(p2); // Point { x: 1.5, y: 2 }
+/// ```
+///
+/// ## Export Shorthand
+///
+/// Use [`export(class)`] to combine class definition with automatic module export:
+///
+/// ```
+/// # use neon::prelude::*;
+/// # use neon::types::Finalize;
+/// # #[derive(Clone)]
+/// # pub struct AutoExported { value: u32 }
+/// // Combines #[neon::class] with automatic export
+/// #[neon::export(class)]
+/// impl AutoExported {
+///     pub fn new(value: u32) -> Self {
+///         Self { value }
+///     }
+/// }
+/// # impl Finalize for AutoExported {
+/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
+/// # }
+/// ```
+///
+/// Like other exports, classes can be exported with custom names:
+///
+/// ```
+/// # use neon::prelude::*;
+/// # use neon::types::Finalize;
+/// # #[derive(Clone)]
+/// # pub struct InternalPoint { x: f64, y: f64 }
+/// // Export as "Point" instead of "InternalPoint"
+/// #[neon::export(class, name = "Point")]
+/// impl InternalPoint {
+///     pub fn new(x: f64, y: f64) -> Self {
+///         Self { x, y }
+///     }
+///
+///     pub fn distance_from_origin(&self) -> f64 {
+///         (self.x * self.x + self.y * self.y).sqrt()
+///     }
+/// }
+/// # impl Finalize for InternalPoint {
+/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
+/// # }
+/// ```
+///
+/// ## Error Handling
+///
+/// Methods can return [`Result`] types to throw JavaScript exceptions, just like [`export`] functions:
+///
+/// ```
+/// # use neon::prelude::*;
+/// # use neon::types::{Finalize, extract::Error};
+/// # #[derive(Clone)]
+/// # pub struct FileReader;
+/// #[neon::class]
+/// impl FileReader {
+/// #   pub fn new() -> Self { Self }
+///     pub fn read_file(&self, path: String) -> Result<String, Error> {
+///         std::fs::read_to_string(path).map_err(Error::from)
+///     }
+/// }
+/// # impl Finalize for FileReader {
+/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
+/// # }
+/// ```
+///
+/// [`export(class)`]: crate::export
 pub use neon_macros::class;
 
 /// Marks a function as the main entry point for initialization in
