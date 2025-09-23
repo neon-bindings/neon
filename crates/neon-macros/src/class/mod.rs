@@ -670,7 +670,7 @@ pub(crate) fn class(
             match meta {
                 syn::Meta::List(syn::MetaList { path, tokens, .. }) if path.is_ident("neon") => {
                     // TODO: if parsed.is_some() error
-                    let parser = meta::Parser;
+                    let parser = meta::Parser(parsed);
                     let tokens = tokens.clone().into();
                     parsed = syn::parse_macro_input!(tokens with parser);
                 }

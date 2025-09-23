@@ -56,13 +56,14 @@ impl syn::parse::Parser for PropertyParser {
     }
 }
 
-pub(crate) struct Parser;
+// Parser that preserves existing metadata (like async detection)
+pub(crate) struct Parser(pub(crate) Meta);
 
 impl syn::parse::Parser for Parser {
     type Output = Meta;
 
     fn parse2(self, tokens: proc_macro2::TokenStream) -> syn::Result<Self::Output> {
-        let mut attr = Meta::default();
+        let Parser(mut attr) = self;
         let parser = syn::meta::parser(|meta: syn::meta::ParseNestedMeta<'_>| {
             if meta.path.is_ident("name") {
                 attr.name = Some(meta.value()?.parse::<syn::LitStr>()?);

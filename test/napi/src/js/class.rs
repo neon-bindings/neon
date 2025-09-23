@@ -294,6 +294,21 @@ impl AsyncClass {
     pub fn context_method_perf(&self, _cx: &mut FunctionContext, x: i32) -> i32 {
         x * 3
     }
+
+    // Test explicit async + JSON combination
+    #[neon(async, json)]
+    pub fn explicit_async_json_method(&self, data: Vec<i32>) -> impl Future<Output = Vec<i32>> + 'static {
+        let data_clone = data;
+        async move {
+            // Simulate async work with JSON serialization
+            data_clone.into_iter().map(|x| x * 2).collect()
+        }
+    }
+
+    #[neon(json)]
+    pub async fn async_json_method(self, data: Vec<i32>) -> Vec<i32> {
+        data.into_iter().map(|x| x * 2).collect()
+    }
 }
 
 impl Finalize for AsyncClass {

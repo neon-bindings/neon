@@ -2,7 +2,7 @@ use std::sync::LazyLock;
 
 use neon::{
     prelude::*,
-    types::extract::{Boxed, Error},
+    types::{extract::{Boxed, Error}, Finalize},
 };
 
 #[neon::export]
@@ -135,4 +135,67 @@ fn to_i32(n: i32) -> i32 {
 #[neon::export]
 fn to_u32(n: u32) -> u32 {
     n
+}
+
+// Test the new #[neon::export(class)] shorthand syntax
+#[derive(Clone)]
+pub struct ExportedPoint {
+    x: f64,
+    y: f64,
+}
+
+#[neon::export(class)]
+impl ExportedPoint {
+    const ORIGIN_X: f64 = 0.0;
+    const ORIGIN_Y: f64 = 0.0;
+
+    pub fn new(x: f64, y: f64) -> Self {
+        Self { x, y }
+    }
+
+    pub fn x(&self) -> f64 {
+        self.x
+    }
+
+    pub fn y(&self) -> f64 {
+        self.y
+    }
+
+    pub fn distance(&self, other: neon::types::extract::Instance<Self>) -> f64 {
+        let dx = self.x - other.x();
+        let dy = self.y - other.y();
+        (dx * dx + dy * dy).sqrt()
+    }
+}
+
+impl Finalize for ExportedPoint {
+    fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
+}
+
+// Test the shorthand syntax with custom name
+#[derive(Clone)]
+pub struct CustomNamedClass {
+    value: String,
+}
+
+#[neon::export(class, name = "RenamedClass")]
+impl CustomNamedClass {
+    pub fn new(value: String) -> Self {
+        Self { value }
+    }
+
+    pub fn get_value(&self) -> String {
+        self.value.clone()
+    }
+}
+
+impl Finalize for CustomNamedClass {
+    fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
+}
+
+// Test async fn + JSON with export macro (compare to class limitation)
+#[neon::export(json)]
+pub async fn export_async_json_test(data: Vec<i32>) -> Vec<i32> {
+    // Simulate async work with JSON serialization
+    data.into_iter().map(|x| x * 3).collect()
 }

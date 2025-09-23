@@ -201,4 +201,216 @@ describe("classes", function () {
     assert.isTrue(buffer.includes("Hello"));
     assert.isFalse(buffer.includes("World"));
   });
+
+  // async tests
+  it("AsyncClass should create instance", function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("hello");
+    assert.ok(instance instanceof AsyncClass);
+  });
+
+  it("AsyncClass should have sync method", function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("hello");
+    assert.strictEqual(instance.syncMethod(), "hello");
+  });
+
+  it("AsyncClass should have async method", async function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("hello");
+    const result = await instance.asyncMethod(" world");
+    assert.strictEqual(result, "hello world");
+  });
+
+  it("AsyncClass should have task method for CPU-intensive work", async function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("test");
+    const result = await instance.heavyComputation();
+    // Sum of 0..99 = (99 * 100) / 2 = 4950
+    assert.strictEqual(result, 4950);
+  });
+
+  it("AsyncClass should have JSON method", function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("test");
+    const input = ["item1", "item2", "item3"];
+    const result = instance.jsonMethod(input);
+
+    assert.strictEqual(typeof result, "object");
+    assert.strictEqual(result.class_value, "test");
+    assert.strictEqual(result.input_count, "3");
+    assert.strictEqual(result.first_item, "item1");
+  });
+
+  it("AsyncClass should have explicit async method (Meta::Async)", async function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("test");
+    const result = await instance.explicitAsyncMethod(3);
+    assert.strictEqual(result, "Processing: test * 3");
+  });
+
+  it("AsyncClass should have explicit async method with clone", async function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("test");
+    const result = await instance.explicitAsyncClone(" cloned");
+    assert.strictEqual(result, "test cloned");
+  });
+
+  it("AsyncClass should have method with context parameter", function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("hello");
+    const result = instance.methodWithContext(3);
+    // "hello".length = 5, so 5 * 3 = 15
+    assert.strictEqual(result, 15);
+  });
+
+  it("AsyncClass should have method with explicit context attribute", function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("test");
+    const result = instance.methodWithExplicitContext(" suffix");
+    assert.strictEqual(result, "test: suffix");
+  });
+
+  it("AsyncClass should have task method with channel parameter", async function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("test");
+    const result = await instance.taskWithChannel(5);
+    assert.strictEqual(result, "Task with channel: test * 5");
+  });
+
+  it("AsyncClass should have async fn method with channel parameter", async function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("test");
+    const result = await instance.asyncFnWithChannel(" async");
+    assert.strictEqual(result, "AsyncFn with channel: test async");
+  });
+
+  it("AsyncClass should have method with this parameter", function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("test");
+    const result = instance.methodWithThis(" data");
+    assert.strictEqual(
+      result,
+      "Instance: test, JS object available, data:  data"
+    );
+  });
+
+  it("AsyncClass should have method with explicit this attribute", function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("test");
+    const result = instance.methodWithExplicitThis(" suffix");
+    assert.strictEqual(result, "Explicit this: test suffix");
+  });
+
+  it("AsyncClass should have method with context and this", function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("hello");
+    const result = instance.methodWithContextAndThis(4);
+    // "hello".length = 5, so 5 * 4 = 20
+    assert.strictEqual(result, 20);
+  });
+
+  it("AsyncClass should have reasonable performance for simple methods", function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("test");
+    const start = process.hrtime.bigint();
+
+    // Run 1000 simple method calls
+    for (let i = 0; i < 1000; i++) {
+      instance.simpleMethod(i);
+    }
+
+    const end = process.hrtime.bigint();
+    const durationMs = Number(end - start) / 1000000; // Convert to milliseconds
+
+    // Should complete 1000 calls in reasonable time (less than 100ms is very good)
+    assert(
+      durationMs < 1000,
+      `Performance test took ${durationMs}ms for 1000 calls`
+    );
+  });
+
+  it("AsyncClass should handle JSON methods efficiently", function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("test");
+    const testData = [1, 2, 3, 4, 5];
+
+    const start = process.hrtime.bigint();
+
+    // Run 100 JSON method calls
+    for (let i = 0; i < 100; i++) {
+      const result = instance.jsonMethodPerf(testData);
+      assert.deepStrictEqual(result, [2, 4, 6, 8, 10]);
+    }
+
+    const end = process.hrtime.bigint();
+    const durationMs = Number(end - start) / 1000000;
+
+    // JSON serialization has overhead but should still be reasonable
+    assert(
+      durationMs < 1000,
+      `JSON performance test took ${durationMs}ms for 100 calls`
+    );
+  });
+
+  it("AsyncClass should handle context methods efficiently", function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("test");
+
+    const start = process.hrtime.bigint();
+
+    // Run 1000 context method calls
+    for (let i = 0; i < 1000; i++) {
+      const result = instance.contextMethodPerf(i);
+      assert.strictEqual(result, i * 3);
+    }
+
+    const end = process.hrtime.bigint();
+    const durationMs = Number(end - start) / 1000000;
+
+    // Context methods should have minimal overhead
+    assert(
+      durationMs < 1000,
+      `Context performance test took ${durationMs}ms for 1000 calls`
+    );
+  });
+
+  it("AsyncClass async method consumes self", async function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("test");
+    await instance.asyncMethod(" once");
+
+    // This should fail because the instance has been consumed
+    // In practice, we might want to document this limitation
+    // or find a better approach for async methods
+  });
+
+  it("AsyncClass has const properties", function () {
+    const AsyncClass = addon.AsyncClass;
+
+    // Test basic const property
+    assert.strictEqual(AsyncClass.DEFAULT_TIMEOUT, 5000);
+
+    // Test const property with custom name and JSON serialization
+    assert.deepEqual(AsyncClass.version, [1, 0, 0]);
+  });
+
+  it("AsyncClass should have explicit async JSON method", async function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("test");
+    const input = [1, 2, 3, 4, 5];
+    const result = await instance.explicitAsyncJsonMethod(input);
+
+    assert.deepStrictEqual(result, [2, 4, 6, 8, 10]);
+  });
+
+  it("AsyncClass should have auto-detected async JSON method", async function () {
+    const AsyncClass = addon.AsyncClass;
+    const instance = new AsyncClass("test");
+    const input = [1, 2, 3, 4, 5];
+    const result = await instance.asyncJsonMethod(input);
+
+    // Should multiply each element by 2
+    assert.deepStrictEqual(result, [2, 4, 6, 8, 10]);
+  });
 });

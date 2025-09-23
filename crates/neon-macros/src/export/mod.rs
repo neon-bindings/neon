@@ -1,3 +1,4 @@
+mod class;
 mod function;
 mod global;
 
@@ -37,6 +38,13 @@ pub(crate) fn export(
             quote::quote!(#item).into()
         }
 
+        // Export a class (impl block)
+        syn::Item::Impl(item) => {
+            let meta = syn::parse_macro_input!(attr with class::meta::Parser);
+
+            class::export(meta, item)
+        }
+
         // Return an error span for all other types
         _ => unsupported(item),
     }
@@ -45,7 +53,7 @@ pub(crate) fn export(
 // Generate an error for unsupported item types
 fn unsupported(item: syn::Item) -> proc_macro::TokenStream {
     let span = syn::spanned::Spanned::span(&item);
-    let msg = "`neon::export` can only be applied to functions, consts, and statics.";
+    let msg = "`neon::export` can only be applied to functions, consts, statics, and classes (impl blocks).";
     let err = syn::Error::new(span, msg);
 
     err.into_compile_error().into()
