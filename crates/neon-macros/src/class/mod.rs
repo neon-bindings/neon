@@ -666,27 +666,22 @@ pub(crate) fn class(
             parsed.kind = meta::Kind::AsyncFn;
         }
 
+        let mut found_neon_attr = false;
         for syn::Attribute { meta, .. } in &f.attrs {
             match meta {
                 syn::Meta::List(syn::MetaList { path, tokens, .. }) if path.is_ident("neon") => {
-                    // TODO: if parsed.is_some() error
+                    if found_neon_attr {
+                        return syn::Error::new_spanned(
+                            meta,
+                            "multiple #[neon(...)] attributes on class method are not allowed"
+                        ).to_compile_error().into();
+                    }
+                    found_neon_attr = true;
                     let parser = meta::Parser(parsed);
                     let tokens = tokens.clone().into();
                     parsed = syn::parse_macro_input!(tokens with parser);
                 }
-                // syn::Meta::NameValue(syn::MetaNameValue {
-                //     path,
-                //     value: syn::Expr::Lit(syn::ExprLit {
-                //         lit: syn::Lit::Str(value), ..
-                //     }),
-                //     ..
-                // }) if path.is_ident("name") => {
-                //     // TODO: if meta.is_some() error
-                //     parsed.name = Some(value);
-                // }
-                _ => {
-                    // TODO: error: unrecognized attribute
-                }
+                _ => { }
             }
         }
         let js_name = match parsed.name.clone() {
