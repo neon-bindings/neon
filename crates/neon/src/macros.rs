@@ -733,6 +733,12 @@ pub use neon_macros::main;
 /// }
 /// ```
 ///
+/// ### Classes
+///
+/// The `#[neon::export(class)]` attribute may be used on an `impl` block to
+/// combine class definition with automatic export. See the documentation for
+/// [`class`] for more details.
+///
 /// ### Advanced
 ///
 /// The following attributes are for advanced configuration and may not be
