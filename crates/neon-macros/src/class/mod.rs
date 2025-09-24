@@ -216,7 +216,7 @@ fn context_parse(
 }
 
 // Check if a sync method has a context argument (adapted from export function)
-// Key difference: methods have &self as first param, so context is second param
+// Key difference from #[export]: methods have &self as first param, so context is second param
 fn check_method_context(opts: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool> {
     // Extract the second argument (after &self)
     let ty = match method_second_arg(opts, sig)? {
