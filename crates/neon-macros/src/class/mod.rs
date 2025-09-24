@@ -2,36 +2,7 @@ mod meta;
 
 use proc_macro2::TokenStream;
 use syn::{spanned::Spanned, Ident, ImplItemFn, Type};
-
-// Validate JavaScript identifier names
-fn is_valid_js_identifier(name: &str) -> bool {
-    if name.is_empty() {
-        return false;
-    }
-
-    // Check first character (must be letter, $, or _)
-    let first_char = name.chars().next().unwrap();
-    if !first_char.is_ascii_alphabetic() && first_char != '$' && first_char != '_' {
-        return false;
-    }
-
-    // Check remaining characters (must be alphanumeric, $, or _)
-    for ch in name.chars().skip(1) {
-        if !ch.is_ascii_alphanumeric() && ch != '$' && ch != '_' {
-            return false;
-        }
-    }
-
-    // Check against JavaScript reserved words
-    !matches!(name,
-        "await" | "break" | "case" | "catch" | "class" | "const" | "continue" | "debugger" |
-        "default" | "delete" | "do" | "else" | "enum" | "export" | "extends" | "false" |
-        "finally" | "for" | "function" | "if" | "import" | "in" | "instanceof" | "new" | "null" |
-        "return" | "super" | "switch" | "this" | "throw" | "true" | "try" | "typeof" |
-        "var" | "void" | "while" | "with" | "yield" | "let" | "static" | "implements" |
-        "interface" | "package" | "private" | "protected" | "public"
-    )
-}
+use super::name::is_valid_js_identifier;
 
 struct ClassItems {
     consts: Vec<syn::ImplItemConst>,
