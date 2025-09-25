@@ -134,7 +134,7 @@ where
     type Value = V;
 
     fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
-        LazyLock::force(&self).try_into_js(cx)
+        LazyLock::force(self).try_into_js(cx)
     }
 }
 

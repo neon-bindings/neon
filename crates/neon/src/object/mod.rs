@@ -129,7 +129,7 @@ impl<'a, K: Value> PropertyKey for Handle<'a, K> {
     }
 }
 
-impl<'a> PropertyKey for &'a str {
+impl PropertyKey for &str {
     unsafe fn get_from<'c, C: Context<'c>>(
         self,
         cx: &mut C,

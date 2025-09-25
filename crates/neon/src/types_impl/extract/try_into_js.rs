@@ -115,7 +115,7 @@ impl<'cx> TryIntoJs<'cx> for String {
     }
 }
 
-impl<'a, 'cx> TryIntoJs<'cx> for &'a str {
+impl<'cx> TryIntoJs<'cx> for &str {
     type Value = JsString;
 
     fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
@@ -123,7 +123,7 @@ impl<'a, 'cx> TryIntoJs<'cx> for &'a str {
     }
 }
 
-impl<'a, 'cx> TryIntoJs<'cx> for &'a String {
+impl<'cx> TryIntoJs<'cx> for &String {
     type Value = JsString;
 
     fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {

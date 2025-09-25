@@ -17,13 +17,10 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemImpl) -> proc_macro::Toke
     let class_tokens: TokenStream = class_output.into();
 
     // Determine the export name
-    let export_name = meta
-        .name
-        .map(|name| quote!(#name))
-        .unwrap_or_else(|| {
-            let class_name = class_ident.to_string();
-            quote!(#class_name)
-        });
+    let export_name = meta.name.map(|name| quote!(#name)).unwrap_or_else(|| {
+        let class_name = class_ident.to_string();
+        quote!(#class_name)
+    });
 
     // Create the export registration function
     let create_name = quote::format_ident!("__NEON_EXPORT_CREATE__{}", class_ident);

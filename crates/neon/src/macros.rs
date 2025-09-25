@@ -750,8 +750,8 @@ pub use neon_macros::main;
 /// to a function is a _context_ argument.
 ///
 /// * In a function executed on the JavaScript main thread, it looks for `&mut Cx`
-///     or `&mut FunctionContext` to determine if the [`Context`](crate::context::Context)
-///     should be passed.
+///   or `&mut FunctionContext` to determine if the [`Context`](crate::context::Context)
+///   should be passed.
 /// * In a function executed on another thread, it looks for [`Channel`](crate::event::Channel).
 ///
 /// If the type has been renamed when importing, the `context` attribute can be

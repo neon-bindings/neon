@@ -1,8 +1,8 @@
 mod meta;
 
+use super::name::is_valid_js_identifier;
 use proc_macro2::TokenStream;
 use syn::{spanned::Spanned, Ident, ImplItemFn, Type};
-use super::name::is_valid_js_identifier;
 
 struct ClassItems {
     consts: Vec<syn::ImplItemConst>,
@@ -361,14 +361,9 @@ fn type_path_ident(ty: &syn::Type) -> Option<&syn::Ident> {
 }
 
 // Validate method attributes for common errors and conflicts
-fn validate_method_attributes(
-    meta: &meta::Meta,
-    sig: &syn::Signature,
-) -> syn::Result<()> {
+fn validate_method_attributes(meta: &meta::Meta, sig: &syn::Signature) -> syn::Result<()> {
     // Check for conflicting async attributes
-    if matches!(meta.kind, meta::Kind::AsyncFn)
-        && matches!(meta.kind, meta::Kind::Async)
-    {
+    if matches!(meta.kind, meta::Kind::AsyncFn) && matches!(meta.kind, meta::Kind::Async) {
         return Err(syn::Error::new(
             sig.span(),
             "Cannot combine `async fn` with `#[neon(async)]` attribute",
@@ -400,7 +395,7 @@ fn validate_method_attributes(
         } else {
             return Err(syn::Error::new(
                 sig.span(),
-                "Async functions in classes must take `self` as their first parameter."
+                "Async functions in classes must take `self` as their first parameter.",
             ));
         }
     }
@@ -636,15 +631,17 @@ pub(crate) fn class(
                     if found_neon_attr {
                         return syn::Error::new_spanned(
                             meta,
-                            "multiple #[neon(...)] attributes on class method are not allowed"
-                        ).to_compile_error().into();
+                            "multiple #[neon(...)] attributes on class method are not allowed",
+                        )
+                        .to_compile_error()
+                        .into();
                     }
                     found_neon_attr = true;
                     let parser = meta::Parser(parsed);
                     let tokens = tokens.clone().into();
                     parsed = syn::parse_macro_input!(tokens with parser);
                 }
-                _ => { }
+                _ => {}
             }
         }
         let js_name = match parsed.name.clone() {
@@ -675,8 +672,10 @@ pub(crate) fn class(
                     if found_neon_attr {
                         return syn::Error::new_spanned(
                             attr,
-                            "multiple #[neon(...)] attributes on const property are not allowed"
-                        ).to_compile_error().into();
+                            "multiple #[neon(...)] attributes on const property are not allowed",
+                        )
+                        .to_compile_error()
+                        .into();
                     }
                     found_neon_attr = true;
                     let parser = meta::PropertyParser;
@@ -694,8 +693,10 @@ pub(crate) fn class(
                 if !is_valid_js_identifier(&name_value) {
                     return syn::Error::new_spanned(
                         name,
-                        format!("'{}' is not a valid JavaScript identifier", name_value)
-                    ).to_compile_error().into();
+                        format!("'{}' is not a valid JavaScript identifier", name_value),
+                    )
+                    .to_compile_error()
+                    .into();
                 }
                 name_value
             }
@@ -809,9 +810,7 @@ pub(crate) fn class(
         .iter()
         .zip(&method_metas)
         .zip(&fns)
-        .map(|((id, meta), f)| {
-            generate_method_wrapper(id, meta, &class_ident, &f.sig)
-        })
+        .map(|((id, meta), f)| generate_method_wrapper(id, meta, &class_ident, &f.sig))
         .collect();
 
     // Generate the impl of `neon::object::Class` for the struct

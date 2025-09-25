@@ -24,7 +24,7 @@ impl Parse for Meta {
             // Parse additional attributes like name = "..."
             while !input.is_empty() {
                 let name_token: syn::Ident = input.parse()?;
-                
+
                 match name_token.to_string().as_str() {
                     "name" => {
                         input.parse::<syn::Token![=]>()?;

@@ -61,7 +61,11 @@ impl Point {
     const IS_2D: bool = true;
 
     // Edge case: const expression with conditionals
-    const MAX_DIMENSION: u32 = if std::mem::size_of::<u32>() == 4 { 2147483647 } else { 65535 };
+    const MAX_DIMENSION: u32 = if std::mem::size_of::<u32>() == 4 {
+        2147483647
+    } else {
+        65535
+    };
 
     // Edge case: const expression with match
     const COORDINATE_BYTES: u32 = match std::mem::size_of::<u32>() {
@@ -297,7 +301,10 @@ impl AsyncClass {
 
     // Test explicit async + JSON combination
     #[neon(async, json)]
-    pub fn explicit_async_json_method(&self, data: Vec<i32>) -> impl Future<Output = Vec<i32>> + 'static {
+    pub fn explicit_async_json_method(
+        &self,
+        data: Vec<i32>,
+    ) -> impl Future<Output = Vec<i32>> + 'static {
         let data_clone = data;
         async move {
             // Simulate async work with JSON serialization

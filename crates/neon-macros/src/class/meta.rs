@@ -42,8 +42,11 @@ impl syn::parse::Parser for PropertyParser {
             }
 
             // Properties don't support method-specific attributes
-            if meta.path.is_ident("async") || meta.path.is_ident("task") ||
-               meta.path.is_ident("context") || meta.path.is_ident("this") {
+            if meta.path.is_ident("async")
+                || meta.path.is_ident("task")
+                || meta.path.is_ident("context")
+                || meta.path.is_ident("this")
+            {
                 return Err(meta.error("attribute not supported on const properties"));
             }
 
