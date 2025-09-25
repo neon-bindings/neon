@@ -473,7 +473,7 @@ fn check_this(opts: &meta::Meta, sig: &syn::Signature, has_context: bool) -> boo
     }
 }
 
-fn sort_class_items(items: Vec<syn::ImplItem>) -> Result<ClassItems, syn::Error> {
+fn group_class_items(items: Vec<syn::ImplItem>) -> Result<ClassItems, syn::Error> {
     let mut consts = Vec::new();
     let mut fns = Vec::new();
     let mut constructor = None;
@@ -532,12 +532,12 @@ pub(crate) fn class(
     };
     let class_name = class_ident.to_string();
 
-    // Sort the items into `const` and `fn` categories
+    // Group the items into `const` and `fn` categories
     let ClassItems {
         consts,
         fns,
         constructor,
-    } = match sort_class_items(items.clone()) {
+    } = match group_class_items(items.clone()) {
         Ok(items) => items,
         Err(err) => {
             // If sorting fails, return the error as a compile error
