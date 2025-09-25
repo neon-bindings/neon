@@ -11,30 +11,27 @@ struct ClassItems {
 }
 
 fn generate_method_wrapper(
-    method_id: &syn::Ident,
-    method_locals: &[syn::Ident],
-    method_meta: &meta::Meta,
-    class_ident: &syn::Ident,
-    method_sig: &syn::Signature,
+    name: &syn::Ident,
+    meta: &meta::Meta,
+    class_id: &syn::Ident,
+    sig: &syn::Signature,
 ) -> TokenStream {
     // Validate method attributes
-    if let Err(err) = validate_method_attributes(method_meta, method_sig) {
+    if let Err(err) = validate_method_attributes(meta, sig) {
         return err.into_compile_error();
     }
 
     // Check for context parameter and generate context extraction/argument
-    let (context_extract, context_arg) = match context_parse(method_meta, method_sig) {
+    let (context_extract, context_arg) = match context_parse(meta, sig) {
         Ok((extract, arg)) => (extract, arg),
         Err(err) => return err.into_compile_error(),
     };
 
-    // Generate the context argument for the method call
-    let context_method_arg = context_arg.clone();
     // Determine if method has context parameter
     let has_context = context_arg.is_some();
 
     // Check for this parameter
-    let has_this = check_method_this(method_meta, method_sig, has_context);
+    let has_this = check_this(meta, sig, has_context);
 
     // Generate this extraction if needed
     let this_extract = if has_this {
@@ -53,31 +50,19 @@ fn generate_method_wrapper(
         quote::quote!()
     };
 
-    // Skip context and this parameters when extracting args from JavaScript
-    let skip_count = match (has_context, has_this) {
-        (true, true) => 2,   // Skip both context and this
-        (true, false) => 1,  // Skip context only
-        (false, true) => 1,  // Skip this only
-        (false, false) => 0, // Skip nothing
-    };
-
-    let non_context_this_locals = if skip_count > 0 {
-        &method_locals[skip_count..]
-    } else {
-        method_locals
-    };
+    // Generate an argument list used when calling the original function
+    let num_args = count_args(sig, context_arg.is_some(), has_this);
+    let args = (0..num_args).map(|i| quote::format_ident!("a{i}"));
 
     // Generate the tuple fields used to destructure `cx.args()`. Wrap in `Json` if necessary.
-    let tuple_fields = non_context_this_locals.iter().map(|name| {
-        if method_meta.json {
-            quote::quote!(neon::types::extract::Json(#name))
-        } else {
-            quote::quote!(#name)
-        }
+    let tuple_fields = args.clone().map(|name| {
+        meta.json
+            .then(|| quote::quote!(neon::types::extract::Json(#name)))
+            .unwrap_or_else(|| quote::quote!(#name))
     });
 
     // Tag whether we should JSON wrap results
-    let return_tag = if method_meta.json {
+    let return_tag = if meta.json {
         quote::format_ident!("NeonJsonTag")
     } else {
         quote::format_ident!("NeonValueTag")
@@ -89,12 +74,12 @@ fn generate_method_wrapper(
         (&res).to_neon_marker::<NeonReturnTag>().neon_into_js(&mut cx, res)
     });
 
-    match method_meta.kind {
+    match meta.kind {
         meta::Kind::Async => {
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
-                    let instance: &#class_ident = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
+                    let instance: &#class_id = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
 
                     // Context extraction if needed
                     #context_extract
@@ -106,7 +91,7 @@ fn generate_method_wrapper(
                     let (#(#tuple_fields,)*) = cx.args()?;
 
                     // Call the method with &self - developer controls cloning in their impl
-                    let fut = instance.#method_id(#context_method_arg #this_arg #(#non_context_this_locals),*);
+                    let fut = instance.#name(#context_arg #this_arg #(#args),*);
                     // Always use NeonValueTag for Future conversion, JSON only applies to final result
                     let fut = {
                         use neon::macro_internal::{ToNeonMarker, NeonValueTag};
@@ -120,7 +105,7 @@ fn generate_method_wrapper(
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
-                    let instance: &#class_ident = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
+                    let instance: &#class_id = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
 
                     // Context extraction if needed
                     #context_extract
@@ -135,7 +120,7 @@ fn generate_method_wrapper(
                     let instance_clone = instance.clone();
 
                     // Call the async fn method - it takes self by value to produce 'static Future
-                    let fut = instance_clone.#method_id(#context_method_arg #this_arg #(#non_context_this_locals),*);
+                    let fut = instance_clone.#name(#context_arg #this_arg #(#args),*);
 
                     neon::macro_internal::spawn(&mut cx, fut, |mut cx, res| #result_extract)
                 })
@@ -147,7 +132,7 @@ fn generate_method_wrapper(
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
-                    let instance: &#class_ident = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
+                    let instance: &#class_id = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
 
                     // Context extraction if needed
                     #context_extract
@@ -162,7 +147,7 @@ fn generate_method_wrapper(
                     let (#(#tuple_fields,)*) = cx.args()?;
 
                     let promise = neon::context::Context::task(&mut cx, move || {
-                        instance_clone.#method_id(#context_method_arg #this_arg #(#non_context_this_locals),*)
+                        instance_clone.#name(#context_arg #this_arg #(#args),*)
                     })
                     .promise(|mut cx, res| #result_extract);
                     Ok(promise.upcast::<neon::types::JsValue>())
@@ -173,7 +158,7 @@ fn generate_method_wrapper(
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
-                    let instance: &#class_ident = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
+                    let instance: &#class_id = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
 
                     // Context extraction if needed
                     #context_extract
@@ -183,11 +168,22 @@ fn generate_method_wrapper(
 
                     // Extract non-context/this arguments with JSON wrapping if needed
                     let (#(#tuple_fields,)*) = cx.args()?;
-                    let res = instance.#method_id(#context_method_arg #this_arg #(#non_context_this_locals),*);
+                    let res = instance.#name(#context_arg #this_arg #(#args),*);
                     #result_extract
                 })
             }
         }
+    }
+}
+
+// Determine the number of arguments to the function
+fn count_args(sig: &syn::Signature, has_context: bool, has_this: bool) -> usize {
+    let n = sig.inputs.len() - 1; // subtract 1 for self
+
+    match (has_context, has_this) {
+        (true, true) => n - 2,
+        (false, false) => n,
+        _ => n - 1,
     }
 }
 
@@ -201,12 +197,12 @@ fn context_parse(
 )> {
     match opts.kind {
         // Allow borrowing from context
-        meta::Kind::Async | meta::Kind::Normal if check_method_context(opts, sig)? => {
+        meta::Kind::Async | meta::Kind::Normal if check_context(opts, sig)? => {
             Ok((None, Some(quote::quote!(&mut cx,))))
         }
 
         // Require `'static` arguments
-        meta::Kind::AsyncFn | meta::Kind::Task if check_method_channel(opts, sig)? => Ok((
+        meta::Kind::AsyncFn | meta::Kind::Task if check_channel(opts, sig)? => Ok((
             Some(quote::quote!(let ch = neon::context::Context::channel(&mut cx);)),
             Some(quote::quote!(ch,)),
         )),
@@ -217,9 +213,9 @@ fn context_parse(
 
 // Check if a sync method has a context argument (adapted from export function)
 // Key difference from #[export]: methods have &self as first param, so context is second param
-fn check_method_context(opts: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool> {
-    // Extract the second argument (after &self)
-    let ty = match method_second_arg(opts, sig)? {
+fn check_context(opts: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool> {
+    // Extract the first argument (after &self)
+    let ty = match first_arg(opts, sig)? {
         Some(arg) => arg,
         None => return Ok(false),
     };
@@ -270,9 +266,9 @@ fn check_method_context(opts: &meta::Meta, sig: &syn::Signature) -> syn::Result<
 }
 
 // Check if an async method has a Channel argument (adapted from export function)
-fn check_method_channel(opts: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool> {
-    // Extract the second argument (after &self)
-    let ty = match method_second_arg(opts, sig)? {
+fn check_channel(opts: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool> {
+    // Extract the first argument (after &self)
+    let ty = match first_arg(opts, sig)? {
         Some(arg) => arg,
         None => return Ok(false),
     };
@@ -306,8 +302,8 @@ fn check_method_channel(opts: &meta::Meta, sig: &syn::Signature) -> syn::Result<
     }
 }
 
-// Extract the second argument (after &self) from a method signature
-fn method_second_arg<'a>(
+// Extract the first argument (after &self) from a method signature
+fn first_arg<'a>(
     opts: &meta::Meta,
     sig: &'a syn::Signature,
 ) -> syn::Result<Option<&'a syn::PatType>> {
@@ -366,50 +362,71 @@ fn type_path_ident(ty: &syn::Type) -> Option<&syn::Ident> {
 
 // Validate method attributes for common errors and conflicts
 fn validate_method_attributes(
-    method_meta: &meta::Meta,
-    method_sig: &syn::Signature,
+    meta: &meta::Meta,
+    sig: &syn::Signature,
 ) -> syn::Result<()> {
     // Check for conflicting async attributes
-    if matches!(method_meta.kind, meta::Kind::AsyncFn)
-        && matches!(method_meta.kind, meta::Kind::Async)
+    if matches!(meta.kind, meta::Kind::AsyncFn)
+        && matches!(meta.kind, meta::Kind::Async)
     {
         return Err(syn::Error::new(
-            method_sig.span(),
+            sig.span(),
             "Cannot combine `async fn` with `#[neon(async)]` attribute",
         ));
     }
 
     // Check for async + task conflict
-    if matches!(method_meta.kind, meta::Kind::AsyncFn | meta::Kind::Async)
-        && matches!(method_meta.kind, meta::Kind::Task)
+    if matches!(meta.kind, meta::Kind::AsyncFn | meta::Kind::Async)
+        && matches!(meta.kind, meta::Kind::Task)
     {
         return Err(syn::Error::new(
-            method_sig.span(),
+            sig.span(),
             "Cannot combine async method with `#[neon(task)]` attribute",
         ));
     }
 
     // Validate that async fn methods take self by value if they're detected as AsyncFn
-    if matches!(method_meta.kind, meta::Kind::AsyncFn) {
-        if let Some(syn::FnArg::Receiver(receiver)) = method_sig.inputs.first() {
+    if matches!(meta.kind, meta::Kind::AsyncFn) {
+        if let Some(syn::FnArg::Receiver(receiver)) = sig.inputs.first() {
             if receiver.reference.is_some() && receiver.mutability.is_none() {
                 // This is &self, but for AsyncFn we need self by value
-                if method_sig.asyncness.is_some() {
+                if sig.asyncness.is_some() {
                     return Err(syn::Error::new(
                         receiver.span(),
                         "Async functions in classes must take `self` by value, not `&self`. This is required because async functions capture `self` in the Future, which must be `'static` for spawning."
                     ));
                 }
             }
+        } else {
+            return Err(syn::Error::new(
+                sig.span(),
+                "Async functions in classes must take `self` as their first parameter."
+            ));
         }
     }
 
     // Check for self parameter in constructor
-    if method_sig.ident == "new" {
-        if let Some(syn::FnArg::Receiver(_)) = method_sig.inputs.first() {
+    if sig.ident == "new" {
+        if let Some(syn::FnArg::Receiver(_)) = sig.inputs.first() {
             return Err(syn::Error::new(
-                method_sig.ident.span(),
+                sig.ident.span(),
                 "Constructor methods cannot have a `self` parameter",
+            ));
+        }
+    } else {
+        fn starts_with_self_arg(sig: &syn::Signature) -> bool {
+            if let Some(first_arg) = sig.inputs.first() {
+                matches!(first_arg, syn::FnArg::Receiver(_))
+            } else {
+                false
+            }
+        }
+
+        // Check for self parameter in non-constructor methods
+        if !starts_with_self_arg(sig) {
+            return Err(syn::Error::new(
+                sig.ident.span(),
+                "Class methods must have a `&self` receiver as their first parameter",
             ));
         }
     }
@@ -419,7 +436,7 @@ fn validate_method_attributes(
 
 // Check if a method has a `this` parameter (adapted from export function)
 // For methods: &self is 1st, context is 2nd (optional), this is 3rd (or 2nd if no context)
-fn check_method_this(opts: &meta::Meta, sig: &syn::Signature, has_context: bool) -> bool {
+fn check_this(opts: &meta::Meta, sig: &syn::Signature, has_context: bool) -> bool {
     static THIS: &str = "this";
 
     // Forced `this` argument
@@ -567,7 +584,7 @@ pub(crate) fn class(
             .inputs
             .iter()
             .enumerate()
-            .map(|(i, arg)| Ident::new(&format!("neon_tmp_{i}"), arg.span()))
+            .map(|(i, arg)| Ident::new(&format!("a{i}"), arg.span()))
             .collect::<Vec<_>>(),
         None => {
             vec![]
@@ -595,31 +612,6 @@ pub(crate) fn class(
         if ctor_params.is_empty() { "" } else { ", " },
         ctor_param_list
     );
-
-    fn starts_with_self_arg(sig: &syn::Signature) -> bool {
-        if let Some(first_arg) = sig.inputs.first() {
-            matches!(first_arg, syn::FnArg::Receiver(_))
-        } else {
-            false
-        }
-    }
-
-    let method_locals_lists = fns
-        .iter()
-        .map(|f| {
-            if !starts_with_self_arg(&f.sig) {
-                panic!("class methods must have a &self receiver");
-            }
-
-            f.sig
-                .inputs
-                .iter()
-                .skip(1)
-                .enumerate()
-                .map(|(i, arg)| Ident::new(&format!("neon_tmp_{i}"), arg.span()))
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>();
 
     let mut method_names = String::new();
     let mut prototype_patches = String::new();
@@ -815,11 +807,10 @@ pub(crate) fn class(
     // Generate method wrappers based on their metadata
     let method_wrappers: Vec<TokenStream> = method_ids
         .iter()
-        .zip(&method_locals_lists)
         .zip(&method_metas)
         .zip(&fns)
-        .map(|(((id, locals), meta), method_fn)| {
-            generate_method_wrapper(id, locals, meta, &class_ident, &method_fn.sig)
+        .map(|((id, meta), f)| {
+            generate_method_wrapper(id, meta, &class_ident, &f.sig)
         })
         .collect();
 
