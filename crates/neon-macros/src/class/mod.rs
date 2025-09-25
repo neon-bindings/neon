@@ -11,7 +11,6 @@ struct ClassItems {
 }
 
 fn generate_method_wrapper(
-    name: &syn::Ident,
     meta: &meta::Meta,
     class_id: &syn::Ident,
     sig: &syn::Signature,
@@ -20,6 +19,8 @@ fn generate_method_wrapper(
     if let Err(err) = validate_method_attributes(meta, sig) {
         return err.into_compile_error();
     }
+
+    let name = &sig.ident;
 
     // Check for context parameter and generate context extraction/argument
     let (context_extract, context_arg) = match context_parse(meta, sig) {
@@ -806,11 +807,10 @@ pub(crate) fn class(
     };
 
     // Generate method wrappers based on their metadata
-    let method_wrappers: Vec<TokenStream> = method_ids
+    let method_wrappers: Vec<TokenStream> = fns
         .iter()
         .zip(&method_metas)
-        .zip(&fns)
-        .map(|((id, meta), f)| generate_method_wrapper(id, meta, &class_ident, &f.sig))
+        .map(|(f, meta)| generate_method_wrapper(meta, &class_ident, &f.sig))
         .collect();
 
     // Generate the impl of `neon::object::Class` for the struct
