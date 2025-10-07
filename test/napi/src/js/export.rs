@@ -2,9 +2,7 @@ use std::sync::LazyLock;
 
 use neon::{
     prelude::*,
-    types::{
-        extract::{Boxed, Error},
-    },
+    types::extract::{Boxed, Error},
 };
 
 #[neon::export]
