@@ -22,10 +22,10 @@ impl Message {
             value: format!("{}{}", self.value, other.0.value),
         })
     }
-}
 
-impl Finalize for Message {
-    fn finalize<'cx, C: Context<'cx>>(self, _cx: &mut C) {}
+    pub fn finalize<'a, C: Context<'a>>(self, _cx: &mut C) {
+        println!("Finalizing Message with value: {}", self.value);
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -109,10 +109,6 @@ impl Point {
     }
 }
 
-impl Finalize for Point {
-    fn finalize<'cx, C: Context<'cx>>(self, _cx: &mut C) {}
-}
-
 #[derive(Debug, Clone, Default)]
 pub struct StringBuffer {
     buffer: Rc<RefCell<String>>,
@@ -141,10 +137,6 @@ impl StringBuffer {
     pub fn trim_end(&self) -> String {
         self.buffer.borrow_mut().trim_end().to_string()
     }
-}
-
-impl Finalize for StringBuffer {
-    fn finalize<'cx, C: Context<'cx>>(self, _cx: &mut C) {}
 }
 
 // Test class with async methods
@@ -316,8 +308,4 @@ impl AsyncClass {
     pub async fn async_json_method(self, data: Vec<i32>) -> Vec<i32> {
         data.into_iter().map(|x| x * 2).collect()
     }
-}
-
-impl Finalize for AsyncClass {
-    fn finalize<'cx, C: Context<'cx>>(self, _cx: &mut C) {}
 }

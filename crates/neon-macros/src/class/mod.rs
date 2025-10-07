@@ -8,6 +8,7 @@ struct ClassItems {
     consts: Vec<syn::ImplItemConst>,
     fns: Vec<syn::ImplItemFn>,
     constructor: Option<syn::ImplItemFn>,
+    has_finalizer: bool,
 }
 
 fn generate_method_wrapper(
@@ -477,6 +478,7 @@ fn group_class_items(items: Vec<syn::ImplItem>) -> Result<ClassItems, syn::Error
     let mut consts = Vec::new();
     let mut fns = Vec::new();
     let mut constructor = None;
+    let mut has_finalizer = false;
 
     for item in items {
         match item {
@@ -490,6 +492,14 @@ fn group_class_items(items: Vec<syn::ImplItem>) -> Result<ClassItems, syn::Error
                         return Err(syn::Error::new(span, msg));
                     }
                     constructor = Some(f);
+                    continue; // Skip adding to fns
+                } else if f.sig.ident == "finalize" {
+                    if has_finalizer {
+                        let span = syn::spanned::Spanned::span(&f);
+                        let msg = "Only one `finalize` method is allowed in a class.";
+                        return Err(syn::Error::new(span, msg));
+                    }
+                    has_finalizer = true;
                     continue; // Skip adding to fns
                 }
                 fns.push(f)
@@ -506,6 +516,7 @@ fn group_class_items(items: Vec<syn::ImplItem>) -> Result<ClassItems, syn::Error
         consts,
         fns,
         constructor,
+        has_finalizer,
     })
 }
 
@@ -537,6 +548,7 @@ pub(crate) fn class(
         consts,
         fns,
         constructor,
+        has_finalizer,
     } = match group_class_items(items.clone()) {
         Ok(items) => items,
         Err(err) => {
@@ -871,6 +883,22 @@ pub(crate) fn class(
         }
     };
 
+    let impl_finalize: TokenStream = if has_finalizer {
+        quote::quote! {
+            impl neon::types::Finalize for #class_ident {
+                fn finalize<'a, C: neon::context::Context<'a>>(self, cx: &mut C) {
+                    Self::finalize(self, cx)
+                }
+            }
+        }
+    } else {
+        quote::quote! {
+            impl neon::types::Finalize for #class_ident {
+                fn finalize<'a, C: neon::context::Context<'a>>(self, _cx: &mut C) {}
+            }
+        }
+    };
+
     // Remove #[neon(...)] attributes from methods and const items in the impl block
     for item in &mut impl_block.items {
         match item {
@@ -891,6 +919,7 @@ pub(crate) fn class(
     quote::quote! {
         #impl_block
         #impl_class
+        #impl_finalize
     }
     .into()
 }

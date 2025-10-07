@@ -4,7 +4,6 @@ use neon::{
     prelude::*,
     types::{
         extract::{Boxed, Error},
-        Finalize,
     },
 };
 
@@ -171,10 +170,6 @@ impl ExportedPoint {
     }
 }
 
-impl Finalize for ExportedPoint {
-    fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
-}
-
 // Test the shorthand syntax with custom name
 #[derive(Clone)]
 pub struct CustomNamedClass {
@@ -190,10 +185,6 @@ impl CustomNamedClass {
     pub fn get_value(&self) -> String {
         self.value.clone()
     }
-}
-
-impl Finalize for CustomNamedClass {
-    fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
 }
 
 // Test async fn + JSON with export macro (compare to class limitation)
