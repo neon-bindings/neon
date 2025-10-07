@@ -28,10 +28,6 @@
 ///         format!("[object User:{}]", self.username)
 ///     }
 /// }
-///
-/// impl Finalize for User {
-///     fn finalize<'cx, C: Context<'cx>>(self, _cx: &mut C) {}
-/// }
 /// ```
 ///
 /// ## Constructor
@@ -55,9 +51,6 @@
 ///         Self { name, age }
 ///     }
 /// }
-/// # impl Finalize for Person {
-/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
-/// # }
 /// ```
 ///
 /// ## Methods
@@ -85,9 +78,6 @@
 ///         self.value * x
 ///     }
 /// }
-/// # impl Finalize for Calculator {
-/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
-/// # }
 /// ```
 ///
 /// ## Finalizer
@@ -154,10 +144,6 @@
 ///         *self.value.borrow()
 ///     }
 /// }
-///
-/// impl Finalize for Counter {
-///     fn finalize<'cx, C: Context<'cx>>(self, _cx: &mut C) {}
-/// }
 /// ```
 ///
 /// ### Method Attributes
@@ -180,9 +166,6 @@
 ///         items.into_iter().map(|s| s.to_uppercase()).collect()
 ///     }
 /// }
-/// # impl Finalize for DataProcessor {
-/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
-/// # }
 /// ```
 ///
 /// #### Async Methods
@@ -218,9 +201,6 @@
 ///         format!("Data from {} (request #{})", url, count)
 ///     }
 /// }
-/// # impl Finalize for AsyncWorker {
-/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
-/// # }
 /// # }
 /// ```
 ///
@@ -250,9 +230,6 @@
 ///         }
 ///     }
 /// }
-/// # impl Finalize for AsyncWorker {
-/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
-/// # }
 /// # }
 /// ```
 ///
@@ -273,9 +250,6 @@
 ///         (0..iterations).map(|i| i as u64).sum()
 ///     }
 /// }
-/// # impl Finalize for CpuWorker {
-/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
-/// # }
 /// ```
 ///
 /// #### Method Naming
@@ -296,9 +270,6 @@
 ///         self.data.trim_start().to_string()
 ///     }
 /// }
-/// # impl Finalize for StringBuffer {
-/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
-/// # }
 /// ```
 ///
 /// ## Const Properties
@@ -323,9 +294,6 @@
 ///
 /// #   pub fn new() -> Self { Self }
 /// }
-/// # impl Finalize for MathConstants {
-/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
-/// # }
 /// ```
 ///
 /// From JavaScript:
@@ -366,9 +334,6 @@
 ///         format!("JS object available: {}", self.data)
 ///     }
 /// }
-/// # impl Finalize for Interactive {
-/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
-/// # }
 /// ```
 ///
 /// ## Instance Extractor
@@ -404,10 +369,6 @@
 ///         }
 ///     }
 /// }
-///
-/// impl Finalize for Point {
-///     fn finalize<'cx, C: Context<'cx>>(self, _cx: &mut C) {}
-/// }
 /// ```
 ///
 /// From JavaScript, you can call these methods with other instances of the same class:
@@ -434,9 +395,6 @@
 ///         Self { value }
 ///     }
 /// }
-/// # impl Finalize for AutoExported {
-/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
-/// # }
 /// ```
 ///
 /// Like other exports, classes can be exported with custom names:
@@ -457,9 +415,6 @@
 ///         (self.x * self.x + self.y * self.y).sqrt()
 ///     }
 /// }
-/// # impl Finalize for InternalPoint {
-/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
-/// # }
 /// ```
 ///
 /// ## Error Handling
@@ -478,9 +433,6 @@
 ///         std::fs::read_to_string(path).map_err(Error::from)
 ///     }
 /// }
-/// # impl Finalize for FileReader {
-/// #     fn finalize<'cx, C: neon::context::Context<'cx>>(self, _cx: &mut C) {}
-/// # }
 /// ```
 ///
 /// [`export(class)`]: crate::export
