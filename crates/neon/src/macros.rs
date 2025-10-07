@@ -1,5 +1,6 @@
 //! Helper module to add documentation to macros prior to re-exporting.
 
+#[cfg(feature = "napi-6")]
 /// Create a Neon class from a Rust datatype
 ///
 /// The `#[neon::class]` attribute can be applied to an `impl` block to create a JavaScript
