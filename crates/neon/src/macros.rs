@@ -247,8 +247,8 @@
 /// impl CpuWorker {
 /// #   pub fn new() -> Self { Self }
 ///     #[neon(task)]
-///     pub fn heavy_computation(&self, iterations: u32) -> u64 {
-///         (0..iterations).map(|i| i as u64).sum()
+///     pub fn heavy_computation(&self, iterations: u32) -> u32 {
+///         (0..iterations).map(|i| i as u32).sum()
 ///     }
 /// }
 /// ```
