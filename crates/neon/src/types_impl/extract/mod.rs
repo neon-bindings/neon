@@ -113,9 +113,11 @@ pub use self::{
         Int32Array, Int8Array, Uint16Array, Uint32Array, Uint8Array,
     },
     error::{Error, ObjectExpected, TypeExpected},
-    instance::Instance,
     with::with,
 };
+
+#[cfg(feature = "napi-6")]
+pub use self::instance::Instance;
 
 #[cfg(feature = "serde")]
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
@@ -130,6 +132,7 @@ mod buffer;
 mod container;
 mod either;
 mod error;
+#[cfg(feature = "napi-6")]
 mod instance;
 pub(crate) mod private;
 mod try_from_js;
