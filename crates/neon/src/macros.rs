@@ -90,6 +90,29 @@
 /// # }
 /// ```
 ///
+/// ## Finalizer
+///
+/// Classes can implement a `finalize` method to perform cleanup when the
+/// JavaScript object is garbage collected. The `finalize` method takes
+/// ownership of the class instance and is called when the object is no longer
+/// reachable from JavaScript.
+///
+/// ```
+/// # use neon::prelude::*;
+/// # #[derive(Clone)]
+/// # pub struct Logger { name: String }
+/// #[neon::class]
+/// impl Logger {
+///     pub fn new(name: String) -> Self {
+///         Self { name }
+///     }
+///
+///     pub fn finalize<'cx, C: Context<'cx>>(self, _cx: &mut C) {
+///         println!("Logger {} is being finalized", self.name);
+///     }
+/// }
+/// ```
+///
 /// ## Interior Mutability
 ///
 /// Like [`JsBox`](crate::types::JsBox), classes provides shared ownership of a Rust value,
