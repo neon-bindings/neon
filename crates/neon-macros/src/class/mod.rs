@@ -11,6 +11,15 @@ struct ClassItems {
     has_finalizer: bool,
 }
 
+// Check if a method receiver is mutable (&mut self)
+fn is_receiver_mutable(sig: &syn::Signature) -> bool {
+    if let Some(syn::FnArg::Receiver(receiver)) = sig.inputs.first() {
+        receiver.mutability.is_some()
+    } else {
+        false
+    }
+}
+
 fn generate_method_wrapper(
     meta: &meta::Meta,
     class_id: &syn::Ident,
@@ -22,6 +31,7 @@ fn generate_method_wrapper(
     }
 
     let name = &sig.ident;
+    let is_mut = is_receiver_mutable(sig);
 
     // Check for context parameter and generate context extraction/argument
     let (context_extract, context_arg) = match context_parse(meta, sig) {
@@ -78,10 +88,22 @@ fn generate_method_wrapper(
 
     match meta.kind {
         meta::Kind::Async => {
+            let borrow_call = if is_mut {
+                quote::quote! {
+                    let mut instance = instance_cell.borrow_mut();
+                    let instance = &mut *instance;
+                }
+            } else {
+                quote::quote! {
+                    let instance = instance_cell.borrow();
+                    let instance = &*instance;
+                }
+            };
+
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
-                    let instance: &#class_id = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
+                    let instance_cell: &std::cell::RefCell<#class_id> = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
 
                     // Context extraction if needed
                     #context_extract
@@ -92,7 +114,10 @@ fn generate_method_wrapper(
                     // Extract non-context/this arguments with JSON wrapping if needed
                     let (#(#tuple_fields,)*) = cx.args()?;
 
-                    // Call the method with &self - developer controls cloning in their impl
+                    // Borrow from RefCell
+                    #borrow_call
+
+                    // Call the method with &self or &mut self - developer controls cloning in their impl
                     let fut = instance.#name(#context_arg #this_arg #(#args),*);
                     // Always use NeonValueTag for Future conversion, JSON only applies to final result
                     let fut = {
@@ -107,7 +132,7 @@ fn generate_method_wrapper(
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
-                    let instance: &#class_id = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
+                    let instance_cell: &std::cell::RefCell<#class_id> = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
 
                     // Context extraction if needed
                     #context_extract
@@ -119,7 +144,7 @@ fn generate_method_wrapper(
                     let (#(#tuple_fields,)*) = cx.args()?;
 
                     // Clone the instance to move into async fn (takes self by value)
-                    let instance_clone = instance.clone();
+                    let instance_clone = instance_cell.borrow().clone();
 
                     // Call the async fn method - it takes self by value to produce 'static Future
                     let fut = instance_clone.#name(#context_arg #this_arg #(#args),*);
@@ -131,10 +156,21 @@ fn generate_method_wrapper(
         meta::Kind::Task => {
             // For task methods, we need to move a clone into the closure
             // since tasks run on a different thread
+            let borrow_call = if is_mut {
+                quote::quote! {
+                    let mut instance = instance_clone;
+                    let instance = &mut instance;
+                }
+            } else {
+                quote::quote! {
+                    let instance = &instance_clone;
+                }
+            };
+
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
-                    let instance: &#class_id = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
+                    let instance_cell: &std::cell::RefCell<#class_id> = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
 
                     // Context extraction if needed
                     #context_extract
@@ -143,13 +179,14 @@ fn generate_method_wrapper(
                     #this_extract
 
                     // Clone the instance since we need to move it into the task
-                    let instance_clone = instance.clone();
+                    let instance_clone = instance_cell.borrow().clone();
 
                     // Extract non-context/this arguments with JSON wrapping if needed
                     let (#(#tuple_fields,)*) = cx.args()?;
 
                     let promise = neon::context::Context::task(&mut cx, move || {
-                        instance_clone.#name(#context_arg #this_arg #(#args),*)
+                        #borrow_call
+                        instance.#name(#context_arg #this_arg #(#args),*)
                     })
                     .promise(|mut cx, res| #result_extract);
                     Ok(promise.upcast::<neon::types::JsValue>())
@@ -157,10 +194,22 @@ fn generate_method_wrapper(
             }
         }
         meta::Kind::Normal => {
+            let borrow_call = if is_mut {
+                quote::quote! {
+                    let mut instance = instance_cell.borrow_mut();
+                    let instance = &mut *instance;
+                }
+            } else {
+                quote::quote! {
+                    let instance = instance_cell.borrow();
+                    let instance = &*instance;
+                }
+            };
+
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
-                    let instance: &#class_id = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
+                    let instance_cell: &std::cell::RefCell<#class_id> = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
 
                     // Context extraction if needed
                     #context_extract
@@ -170,6 +219,10 @@ fn generate_method_wrapper(
 
                     // Extract non-context/this arguments with JSON wrapping if needed
                     let (#(#tuple_fields,)*) = cx.args()?;
+
+                    // Borrow from RefCell
+                    #borrow_call
+
                     let res = instance.#name(#context_arg #this_arg #(#args),*);
                     #result_extract
                 })
@@ -385,12 +438,12 @@ fn validate_method_attributes(meta: &meta::Meta, sig: &syn::Signature) -> syn::R
     // Validate that async fn methods take self by value if they're detected as AsyncFn
     if matches!(meta.kind, meta::Kind::AsyncFn) {
         if let Some(syn::FnArg::Receiver(receiver)) = sig.inputs.first() {
-            if receiver.reference.is_some() && receiver.mutability.is_none() {
-                // This is &self, but for AsyncFn we need self by value
+            if receiver.reference.is_some() {
+                // This is &self or &mut self, but for AsyncFn we need self by value
                 if sig.asyncness.is_some() {
                     return Err(syn::Error::new(
                         receiver.span(),
-                        "Async functions in classes must take `self` by value, not `&self`. This is required because async functions capture `self` in the Future, which must be `'static` for spawning."
+                        "Async functions in classes must take `self` by value, not `&self` or `&mut self`. This is required because async functions capture `self` in the Future, which must be `'static` for spawning."
                     ));
                 }
             }
@@ -423,7 +476,7 @@ fn validate_method_attributes(meta: &meta::Meta, sig: &syn::Signature) -> syn::R
         if !starts_with_self_arg(sig) {
             return Err(syn::Error::new(
                 sig.ident.span(),
-                "Class methods must have a `&self` receiver as their first parameter",
+                "Class methods must have a `self` receiver (`&self` or `&mut self`) as their first parameter",
             ));
         }
     }
@@ -855,7 +908,8 @@ pub(crate) fn class(
 
                 let wrap = JsFunction::new(cx, |mut cx| {
                     let (this, #(#ctor_locals,)*): (Handle<JsObject>, #(#ctor_infers),*) = cx.args()?;
-                    neon::object::wrap(&mut cx, this, #make_new(#(#ctor_locals),*))?.or_throw(&mut cx)?;
+                    let instance = #make_new(#(#ctor_locals),*);
+                    neon::object::wrap(&mut cx, this, std::cell::RefCell::new(instance))?.or_throw(&mut cx)?;
                     Ok(cx.undefined())
                 });
 

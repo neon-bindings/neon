@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, future::Future, rc::Rc};
+use std::{collections::HashMap, future::Future};
 
 use neon::{event::Channel, prelude::*, types::extract::Instance};
 
@@ -21,6 +21,10 @@ impl Message {
         Instance(Self {
             value: format!("{}{}", self.value, other.0.value),
         })
+    }
+
+    pub fn append(&mut self, suffix: String) {
+        self.value.push_str(&suffix);
     }
 
     pub fn finalize<'a, C: Context<'a>>(self, _cx: &mut C) {
@@ -114,35 +118,48 @@ impl Point {
             y: (self.y + other.y()) / 2,
         })
     }
+
+    pub fn move_by(&mut self, dx: u32, dy: u32) {
+        self.x += dx;
+        self.y += dy;
+    }
+
+    pub fn set_x(&mut self, x: u32) {
+        self.x = x;
+    }
+
+    pub fn set_y(&mut self, y: u32) {
+        self.y = y;
+    }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub struct StringBuffer {
-    buffer: Rc<RefCell<String>>,
+    buffer: String,
 }
 
 #[neon::class]
 impl StringBuffer {
-    pub fn push(&self, s: String) {
-        self.buffer.borrow_mut().push_str(&s);
+    pub fn push(&mut self, s: String) {
+        self.buffer.push_str(&s);
     }
 
     pub fn to_string(&self) -> String {
-        self.buffer.borrow().clone()
+        self.buffer.clone()
     }
 
     #[neon(name = "includes")]
     pub fn contains(&self, s: String) -> bool {
-        self.buffer.borrow().contains(&s)
+        self.buffer.contains(&s)
     }
 
     #[neon(name = "trimStart")]
     pub fn trim_start(&self) -> String {
-        self.buffer.borrow_mut().trim_start().to_string()
+        self.buffer.trim_start().to_string()
     }
 
     pub fn trim_end(&self) -> String {
-        self.buffer.borrow_mut().trim_end().to_string()
+        self.buffer.trim_end().to_string()
     }
 }
 

@@ -19,6 +19,17 @@ describe("classes", function () {
     );
   });
 
+  it("can mutate a Message with &mut self", function () {
+    const Message = addon.Message;
+
+    const message = new Message("Hello");
+    assert.strictEqual(message.read(), "Hello");
+    message.append(", World");
+    assert.strictEqual(message.read(), "Hello, World");
+    message.append("!");
+    assert.strictEqual(message.read(), "Hello, World!");
+  });
+
   it("can subclass a Neon class", function () {
     const Message = addon.Message;
 
@@ -60,6 +71,26 @@ describe("classes", function () {
     assert.strictEqual(point2.x(), 3);
     assert.strictEqual(point2.y(), 4);
     assert.strictEqual(point.distance(point2), Math.sqrt(8));
+  });
+
+  it("can mutate a Point with &mut self", function () {
+    const Point = addon.Point;
+
+    const point = new Point(10, 20);
+    assert.strictEqual(point.x(), 10);
+    assert.strictEqual(point.y(), 20);
+
+    point.moveBy(5, 3);
+    assert.strictEqual(point.x(), 15);
+    assert.strictEqual(point.y(), 23);
+
+    point.setX(100);
+    assert.strictEqual(point.x(), 100);
+    assert.strictEqual(point.y(), 23);
+
+    point.setY(200);
+    assert.strictEqual(point.x(), 100);
+    assert.strictEqual(point.y(), 200);
   });
 
   it("Point class has const properties", function () {

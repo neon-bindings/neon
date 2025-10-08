@@ -30,8 +30,8 @@ where
         v: Handle<'cx, JsValue>,
     ) -> NeonResult<Result<Self, Self::Error>> {
         let object = v.downcast::<JsObject, _>(cx).or_throw(cx)?;
-        match crate::object::unwrap(cx, object) {
-            Ok(Ok(instance)) => Ok(Ok(Self(T::clone(instance)))),
+        match crate::object::unwrap::<std::cell::RefCell<T>, _>(cx, object) {
+            Ok(Ok(instance_cell)) => Ok(Ok(Self(T::clone(&*instance_cell.borrow())))),
             _ => Ok(Err(ObjectExpected::new(T::name()))),
         }
     }
@@ -47,7 +47,7 @@ where
         let class_instance = T::local(cx)?;
         let object: Handle<JsObject> =
             class_instance.internal_constructor().bind(cx).construct()?;
-        crate::object::wrap(cx, object, self.0)?.or_throw(cx)?;
+        crate::object::wrap(cx, object, std::cell::RefCell::new(self.0))?.or_throw(cx)?;
         Ok(object)
     }
 }

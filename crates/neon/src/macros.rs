@@ -4,15 +4,17 @@
 /// Create a Neon class from a Rust datatype
 ///
 /// The `#[neon::class]` attribute can be applied to an `impl` block to create a JavaScript
-/// class that wraps a Rust struct. The struct must implement [`Clone`] and
-/// [`Finalize`](crate::types::Finalize) and have a constructor method named `new`.
+/// class that wraps a Rust struct. The struct must implement [`Finalize`](crate::types::Finalize)
+/// and have a constructor method named `new`.
+///
+/// If the class has async methods (`async fn`) or task methods (`#[neon(task)]`), the struct
+/// must also implement [`Clone`].
 ///
 /// ## Example
 ///
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::{context::Context, types::Finalize};
-/// #[derive(Clone)]
 /// pub struct User {
 ///     username: String,
 ///     first_name: String,
@@ -40,7 +42,6 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// #[derive(Clone)]
 /// pub struct Person {
 ///     name: String,
 ///     age: u32,
@@ -56,15 +57,17 @@
 ///
 /// ## Methods
 ///
-/// Class methods must have a receiver (`&self`) as their first parameter.
+/// Class methods can have either `&self` or `&mut self` as their first parameter.
 /// Methods can take any type that implements [`TryFromJs`](crate::types::extract::TryFromJs)
 /// and return any type that implements [`TryIntoJs`](crate::types::extract::TryIntoJs).
 ///
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// # #[derive(Clone)]
-/// # pub struct Calculator { value: f64 }
+/// pub struct Calculator {
+///     value: f64,
+/// }
+///
 /// #[neon::class]
 /// impl Calculator {
 ///     pub fn new(initial: f64) -> Self {
@@ -73,6 +76,10 @@
 ///
 ///     pub fn get_value(&self) -> f64 {
 ///         self.value
+///     }
+///
+///     pub fn add(&mut self, x: f64) {
+///         self.value += x;
 ///     }
 ///
 ///     pub fn multiply(&self, x: f64) -> f64 {
@@ -90,8 +97,10 @@
 ///
 /// ```
 /// # use neon::prelude::*;
-/// # #[derive(Clone)]
-/// # pub struct Logger { name: String }
+/// pub struct Logger {
+///     name: String,
+/// }
+///
 /// #[neon::class]
 /// impl Logger {
 ///     pub fn new(name: String) -> Self {
@@ -104,48 +113,45 @@
 /// }
 /// ```
 ///
-/// ## Interior Mutability
+/// ## Mutability and Borrow Checking
 ///
-/// Like [`JsBox`](crate::types::JsBox), classes provides shared ownership of a Rust value,
-/// allocated in the heap. The data is owned by the JavaScript engine and the lifetime is
-/// managed by the JavaScript garbage collector. Because an instance of a JavaScript class
-/// represents a shared reference, and shared references in Rust disallow mutation by default,
-/// mutable references to a class instance's Rust data cannot be obtained directly.
+/// Neon classes use [`RefCell`](std::cell::RefCell) internally to allow mutation through
+/// `&mut self` methods while maintaining JavaScript's shared ownership semantics. This means
+/// that borrow checking happens at runtime, not compile time, and violating Rust's borrowing
+/// rules will cause a panic.
 ///
-/// For this reason, Neon class methods use `&self` for method receivers, and direct mutation
-/// is not possible. To implement mutable operations, use types that provide
-/// [interior mutability](https://doc.rust-lang.org/book/ch15-05-interior-mutability.html), such as
-/// [`RefCell`](std::cell::RefCell), [`Cell`](std::cell::Cell), or thread-safe alternatives
-/// like [`Arc<Mutex<T>>`](std::sync::Arc).
+/// **Important:** You cannot call a method that requires `&mut self` while another method
+/// is borrowing the instance (even with `&self`). This includes:
+/// - Reentrancy from JavaScript callbacks
+/// - Nested method calls on the same instance
 ///
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// # use std::cell::RefCell;
-/// #[derive(Clone)]
 /// pub struct Counter {
-///     value: RefCell<i32>,
+///     value: i32,
 /// }
 ///
 /// #[neon::class]
 /// impl Counter {
 ///     pub fn new(initial: i32) -> Self {
-///         Self {
-///             value: RefCell::new(initial),
-///         }
+///         Self { value: initial }
 ///     }
 ///
-///     pub fn increment(&self) -> i32 {
-///         let mut value = self.value.borrow_mut();
-///         *value += 1;
-///         *value
+///     pub fn increment(&mut self) -> i32 {
+///         self.value += 1;
+///         self.value
 ///     }
 ///
 ///     pub fn get(&self) -> i32 {
-///         *self.value.borrow()
+///         self.value
 ///     }
 /// }
 /// ```
+///
+/// For complex scenarios involving callbacks or shared mutable state across threads,
+/// consider using additional interior mutability types like
+/// [`Arc<Mutex<T>>`](std::sync::Arc) for the specific fields that need it.
 ///
 /// ### Method Attributes
 ///
@@ -157,11 +163,14 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// # #[derive(Clone)]
-/// # pub struct DataProcessor;
+/// pub struct DataProcessor;
+///
 /// #[neon::class]
 /// impl DataProcessor {
-/// #   pub fn new() -> Self { Self }
+///     pub fn new() -> Self {
+///         Self
+///     }
+///
 ///     #[neon(json)]
 ///     pub fn process_data(&self, items: Vec<String>) -> Vec<String> {
 ///         items.into_iter().map(|s| s.to_uppercase()).collect()
@@ -171,9 +180,10 @@
 ///
 /// #### Async Methods
 ///
-/// Methods declared with `async fn` are automatically detected and exported as async. Because the
-/// data is shared across threads, it is automatically cloned before the method is called, so the
-/// receiver must be `self` instead of `&self`. Any shared mutable state should use types like
+/// Methods declared with `async fn` are automatically detected and exported as async. The struct
+/// must implement [`Clone`] to support async methods. Because the data is shared across threads,
+/// it is automatically cloned before the method is called, so the receiver must be `self` instead
+/// of `&self` or `&mut self`. Any shared mutable state should use types like
 /// [`Arc<Mutex<T>>`](std::sync::Arc) for thread-safe interior mutability.
 ///
 /// ```
@@ -236,16 +246,22 @@
 ///
 /// #### Task Methods
 ///
-/// Methods can be executed on Node's worker pool using the `task` attribute:
+/// Methods can be executed on Node's worker pool using the `task` attribute. The struct
+/// must implement [`Clone`] to support task methods, as the instance is cloned to move
+/// into the worker thread.
 ///
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// # #[derive(Clone)]
-/// # pub struct CpuWorker;
+/// #[derive(Clone)]
+/// pub struct CpuWorker;
+///
 /// #[neon::class]
 /// impl CpuWorker {
-/// #   pub fn new() -> Self { Self }
+///     pub fn new() -> Self {
+///         Self
+///     }
+///
 ///     #[neon(task)]
 ///     pub fn heavy_computation(&self, iterations: u32) -> u32 {
 ///         (0..iterations).map(|i| i as u32).sum()
@@ -261,11 +277,16 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// # #[derive(Clone)]
-/// # pub struct StringBuffer { data: String }
+/// pub struct StringBuffer {
+///     data: String,
+/// }
+///
 /// #[neon::class]
 /// impl StringBuffer {
-/// #   pub fn new() -> Self { Self { data: String::new() } }
+///     pub fn new() -> Self {
+///         Self { data: String::new() }
+///     }
+///
 ///     #[neon(name = "trimStart")]
 ///     pub fn trim_leading(&self) -> String {
 ///         self.data.trim_start().to_string()
@@ -280,8 +301,8 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// # #[derive(Clone)]
-/// # pub struct MathConstants;
+/// pub struct MathConstants;
+///
 /// #[neon::class]
 /// impl MathConstants {
 ///     const PI: f64 = 3.14159;
@@ -293,7 +314,9 @@
 ///     #[neon(json)]
 ///     const DEFAULT_SETTINGS: &'static [&'static str] = &["feature1", "feature2"];
 ///
-/// #   pub fn new() -> Self { Self }
+///     pub fn new() -> Self {
+///         Self
+///     }
 /// }
 /// ```
 ///
@@ -314,11 +337,16 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// # #[derive(Clone)]
-/// # pub struct Interactive { data: String }
+/// pub struct Interactive {
+///     data: String,
+/// }
+///
 /// #[neon::class]
 /// impl Interactive {
-/// #   pub fn new(data: String) -> Self { Self { data } }
+///     pub fn new(data: String) -> Self {
+///         Self { data }
+///     }
+///
 ///     // Method with context parameter
 ///     pub fn create_object<'cx>(
 ///         &self,
@@ -345,7 +373,6 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::{Finalize, extract::Instance};
-/// #[derive(Clone)]
 /// pub struct Point {
 ///     x: f64,
 ///     y: f64,
@@ -387,8 +414,10 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// # #[derive(Clone)]
-/// # pub struct AutoExported { value: u32 }
+/// pub struct AutoExported {
+///     value: u32,
+/// }
+///
 /// // Combines #[neon::class] with automatic export
 /// #[neon::export(class)]
 /// impl AutoExported {
@@ -403,8 +432,11 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// # #[derive(Clone)]
-/// # pub struct InternalPoint { x: f64, y: f64 }
+/// pub struct InternalPoint {
+///     x: f64,
+///     y: f64,
+/// }
+///
 /// // Export as "Point" instead of "InternalPoint"
 /// #[neon::export(class, name = "Point")]
 /// impl InternalPoint {
@@ -425,11 +457,14 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::{Finalize, extract::Error};
-/// # #[derive(Clone)]
-/// # pub struct FileReader;
+/// pub struct FileReader;
+///
 /// #[neon::class]
 /// impl FileReader {
-/// #   pub fn new() -> Self { Self }
+///     pub fn new() -> Self {
+///         Self
+///     }
+///
 ///     pub fn read_file(&self, path: String) -> Result<String, Error> {
 ///         std::fs::read_to_string(path).map_err(Error::from)
 ///     }
