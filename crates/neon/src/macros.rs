@@ -365,8 +365,8 @@
 ///
 ///     pub fn midpoint(&self, other: Instance<Self>) -> Instance<Self> {
 ///         Instance(Self {
-///             x: (self.x + other.x()) / 2,
-///             y: (self.y + other.y()) / 2,
+///             x: (self.x + other.x) / 2.0,
+///             y: (self.y + other.y) / 2.0,
 ///         })
 ///     }
 /// }
