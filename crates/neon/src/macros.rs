@@ -64,26 +64,23 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// pub struct Calculator {
-///     value: f64,
+/// pub struct Counter {
+///     value: i32,
 /// }
 ///
 /// #[neon::class]
-/// impl Calculator {
-///     pub fn new(initial: f64) -> Self {
+/// impl Counter {
+///     pub fn new(initial: i32) -> Self {
 ///         Self { value: initial }
 ///     }
 ///
-///     pub fn get_value(&self) -> f64 {
+///     pub fn increment(&mut self) -> i32 {
+///         self.value += 1;
 ///         self.value
 ///     }
 ///
-///     pub fn add(&mut self, x: f64) {
-///         self.value += x;
-///     }
-///
-///     pub fn multiply(&self, x: f64) -> f64 {
-///         self.value * x
+///     pub fn get(&self) -> i32 {
+///         self.value
 ///     }
 /// }
 /// ```
@@ -124,30 +121,6 @@
 /// is borrowing the instance (even with `&self`). This includes:
 /// - Reentrancy from JavaScript callbacks
 /// - Nested method calls on the same instance
-///
-/// ```
-/// # use neon::prelude::*;
-/// # use neon::types::Finalize;
-/// pub struct Counter {
-///     value: i32,
-/// }
-///
-/// #[neon::class]
-/// impl Counter {
-///     pub fn new(initial: i32) -> Self {
-///         Self { value: initial }
-///     }
-///
-///     pub fn increment(&mut self) -> i32 {
-///         self.value += 1;
-///         self.value
-///     }
-///
-///     pub fn get(&self) -> i32 {
-///         self.value
-///     }
-/// }
-/// ```
 ///
 /// For complex scenarios involving callbacks or shared mutable state across threads,
 /// consider using additional interior mutability types like
