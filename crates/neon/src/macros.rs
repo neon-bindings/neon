@@ -370,9 +370,13 @@
 /// Methods can take arguments of the same class type using the [`Instance`](crate::types::extract::Instance)
 /// extractor. This allows methods to operate on multiple instances of the same class.
 ///
+/// **Note:** Classes that use `Instance<Self>` must implement [`Clone`], as the instance is cloned
+/// when extracted from JavaScript. This is separate from the `Clone` requirement for async/task methods.
+///
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::{Finalize, extract::Instance};
+/// #[derive(Clone)]
 /// pub struct Point {
 ///     x: f64,
 ///     y: f64,
