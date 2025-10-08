@@ -4,11 +4,9 @@
 /// Create a Neon class from a Rust datatype
 ///
 /// The `#[neon::class]` attribute can be applied to an `impl` block to create a JavaScript
-/// class that wraps a Rust struct. The struct must implement [`Finalize`](crate::types::Finalize)
-/// and have a constructor method named `new`.
-///
-/// If the class has async methods (`async fn`) or task methods (`#[neon(task)]`), the struct
-/// must also implement [`Clone`].
+/// class that wraps a Rust struct. The `impl` block specifies a constructor method named `new`
+/// to create instances of the struct, which Neon automatically attaches to instances of the
+/// JavaScript class during object construction.
 ///
 /// ## Example
 ///
