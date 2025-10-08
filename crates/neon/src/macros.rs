@@ -363,11 +363,11 @@
 ///         (dx * dx + dy * dy).sqrt()
 ///     }
 ///
-///     pub fn midpoint(&self, other: Instance<Self>) -> Self {
-///         Self {
-///             x: (self.x + other.x) / 2.0,
-///             y: (self.y + other.y) / 2.0,
-///         }
+///     pub fn midpoint(&self, other: Instance<Self>) -> Instance<Self> {
+///         Instance(Self {
+///             x: (self.x + other.x()) / 2,
+///             y: (self.y + other.y()) / 2,
+///         })
 ///     }
 /// }
 /// ```

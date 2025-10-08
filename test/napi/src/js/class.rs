@@ -107,6 +107,13 @@ impl Point {
         let dy = (self.y as i32 - other.y() as i32).pow(2);
         ((dx + dy) as f64).sqrt()
     }
+
+    pub fn midpoint(&self, other: Instance<Self>) -> Instance<Self> {
+        Instance(Self {
+            x: (self.x + other.x()) / 2,
+            y: (self.y + other.y()) / 2,
+        })
+    }
 }
 
 #[derive(Debug, Clone, Default)]
