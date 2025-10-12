@@ -116,9 +116,6 @@ pub use self::{
     with::with,
 };
 
-#[cfg(feature = "napi-6")]
-pub use self::instance::Instance;
-
 #[cfg(feature = "serde")]
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub use self::json::Json;
@@ -132,8 +129,6 @@ mod buffer;
 mod container;
 mod either;
 mod error;
-#[cfg(feature = "napi-6")]
-mod instance;
 pub(crate) mod private;
 mod try_from_js;
 mod try_into_js;

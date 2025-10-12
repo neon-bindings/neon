@@ -953,6 +953,41 @@ pub(crate) fn class(
         }
     };
 
+    let impl_sealed: TokenStream = quote::quote! {
+        impl neon::macro_internal::Sealed for #class_ident {}
+    };
+
+    let impl_try_from_js: TokenStream = quote::quote! {
+        impl<'cx> neon::types::extract::TryFromJs<'cx> for #class_ident {
+            type Error = neon::types::extract::ObjectExpected;
+
+            fn try_from_js(cx: &mut neon::context::Cx<'cx>, value: neon::handle::Handle<'cx, neon::types::JsValue>) -> neon::result::NeonResult<Result<Self, Self::Error>> {
+                use neon::result::ResultExt;
+
+                let object: neon::handle::Handle<neon::types::JsObject> = value.downcast(cx).or_throw(cx)?;
+                match neon::object::unwrap::<std::cell::RefCell<Self>, _>(cx, object) {
+                    Ok(Ok(instance_cell)) => Ok(Ok(Self::clone(&*instance_cell.borrow()))),
+                    _ => Ok(Err(neon::macro_internal::object_expected(<Self as neon::object::Class>::name()))),
+                }
+            }
+        }
+    };
+
+    let impl_try_into_js: TokenStream = quote::quote! {
+        impl<'cx> neon::types::extract::TryIntoJs<'cx> for #class_ident {
+            type Value = neon::types::JsObject;
+
+            fn try_into_js(self, cx: &mut neon::context::Cx<'cx>) -> neon::result::JsResult<'cx, Self::Value> {
+                use neon::result::ResultExt;
+
+                let object: neon::handle::Handle<neon::types::JsObject> =
+                    neon::macro_internal::internal_constructor::<Self>(cx)?.bind(cx).construct()?;
+                neon::macro_internal::object::wrap(cx, object, std::cell::RefCell::new(self))?.or_throw(cx)?;
+                Ok(object)
+            }
+        }
+    };
+
     // Remove #[neon(...)] attributes from methods and const items in the impl block
     for item in &mut impl_block.items {
         match item {
@@ -974,6 +1009,9 @@ pub(crate) fn class(
         #impl_block
         #impl_class
         #impl_finalize
+        #impl_sealed
+        #impl_try_from_js
+        #impl_try_into_js
     }
     .into()
 }

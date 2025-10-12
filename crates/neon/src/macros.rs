@@ -4,8 +4,8 @@
 /// Create a Neon class from a Rust datatype
 ///
 /// The `#[neon::class]` attribute can be applied to an `impl` block to create a JavaScript
-/// class that wraps a Rust struct. The `impl` block specifies a constructor method named `new`
-/// to create instances of the struct, which Neon automatically attaches to instances of the
+/// class that wraps a Rust struct. The `impl` block specifies a constructor method named `new` to
+/// create instances of the struct, which Neon automatically attaches to instances of the
 /// JavaScript class during object construction.
 ///
 /// ## Example
@@ -13,6 +13,7 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::{context::Context, types::Finalize};
+/// #[derive(Clone)]
 /// pub struct User {
 ///     username: String,
 ///     first_name: String,
@@ -31,6 +32,9 @@
 /// }
 /// ```
 ///
+/// To use the `#[neon::class]` attribute, the struct must implement [`Clone`] and have a
+/// constructor method named `new`.
+
 /// ## Constructor
 ///
 /// Classes must have exactly one constructor method named `new`. The constructor takes
@@ -40,6 +44,7 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
+/// #[derive(Clone)]
 /// pub struct Person {
 ///     name: String,
 ///     age: u32,
@@ -62,6 +67,7 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
+/// #[derive(Clone)]
 /// pub struct Counter {
 ///     value: i32,
 /// }
@@ -92,6 +98,7 @@
 ///
 /// ```
 /// # use neon::prelude::*;
+/// #[derive(Clone)]
 /// pub struct Logger {
 ///     name: String,
 /// }
@@ -134,6 +141,7 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
+/// #[derive(Clone)]
 /// pub struct DataProcessor;
 ///
 /// #[neon::class]
@@ -151,11 +159,10 @@
 ///
 /// #### Async Methods
 ///
-/// Methods declared with `async fn` are automatically detected and exported as async. The struct
-/// must implement [`Clone`] to support async methods. Because the data is shared across threads,
-/// it is automatically cloned before the method is called, so the receiver must be `self` instead
-/// of `&self` or `&mut self`. Any shared mutable state should use types like
-/// [`Arc<Mutex<T>>`](std::sync::Arc) for thread-safe interior mutability.
+/// Methods declared with `async fn` are automatically detected and exported as async. Because the
+/// data is shared across threads, it is automatically cloned before the method is called, so the
+/// receiver must be `self` by value instead of `&self` or `&mut self`. Any shared mutable state
+/// should use types like [`Arc<Mutex<T>>`](std::sync::Arc) for thread-safe interior mutability.
 ///
 /// ```
 /// # #[cfg(all(feature = "napi-6", feature = "futures"))]
@@ -217,9 +224,8 @@
 ///
 /// #### Task Methods
 ///
-/// Methods can be executed on Node's worker pool using the `task` attribute. The struct
-/// must implement [`Clone`] to support task methods, as the instance is cloned to move
-/// into the worker thread.
+/// Methods can be executed on Node's worker pool using the `task` attribute. The instance
+/// is cloned to move into the worker thread.
 ///
 /// ```
 /// # use neon::prelude::*;
@@ -248,6 +254,7 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
+/// #[derive(Clone)]
 /// pub struct StringBuffer {
 ///     data: String,
 /// }
@@ -272,6 +279,7 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
+/// #[derive(Clone)]
 /// pub struct MathConstants;
 ///
 /// #[neon::class]
@@ -308,6 +316,7 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
+/// #[derive(Clone)]
 /// pub struct Interactive {
 ///     data: String,
 /// }
@@ -336,17 +345,15 @@
 /// }
 /// ```
 ///
-/// ## Instance Extractor
+/// ## Working with Class Instances
 ///
-/// Methods can take arguments of the same class type using the [`Instance`](crate::types::extract::Instance)
-/// extractor. This allows methods to operate on multiple instances of the same class.
-///
-/// **Note:** Classes that use `Instance<Self>` must implement [`Clone`], as the instance is cloned
-/// when extracted from JavaScript. This is separate from the `Clone` requirement for async/task methods.
+/// Methods can accept and return instances of the same class directly. When a class instance
+/// is passed as a parameter or returned from a method, it is automatically cloned from (or into)
+/// the internal [`RefCell`](std::cell::RefCell) storage.
 ///
 /// ```
 /// # use neon::prelude::*;
-/// # use neon::types::{Finalize, extract::Instance};
+/// # use neon::types::Finalize;
 /// #[derive(Clone)]
 /// pub struct Point {
 ///     x: f64,
@@ -359,17 +366,17 @@
 ///         Self { x, y }
 ///     }
 ///
-///     pub fn distance(&self, other: Instance<Self>) -> f64 {
+///     pub fn distance(&self, other: Self) -> f64 {
 ///         let dx = self.x - other.x;
 ///         let dy = self.y - other.y;
 ///         (dx * dx + dy * dy).sqrt()
 ///     }
 ///
-///     pub fn midpoint(&self, other: Instance<Self>) -> Instance<Self> {
-///         Instance(Self {
+///     pub fn midpoint(&self, other: Self) -> Self {
+///         Self {
 ///             x: (self.x + other.x) / 2.0,
 ///             y: (self.y + other.y) / 2.0,
-///         })
+///         }
 ///     }
 /// }
 /// ```
@@ -389,6 +396,7 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
+/// #[derive(Clone)]
 /// pub struct AutoExported {
 ///     value: u32,
 /// }
@@ -407,6 +415,7 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
+/// #[derive(Clone)]
 /// pub struct InternalPoint {
 ///     x: f64,
 ///     y: f64,
@@ -432,6 +441,7 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::{Finalize, extract::Error};
+/// #[derive(Clone)]
 /// pub struct FileReader;
 ///
 /// #[neon::class]

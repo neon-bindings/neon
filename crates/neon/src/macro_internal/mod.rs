@@ -118,3 +118,16 @@ impl<Tag> NeonMarker<Tag, NeonResultTag> {
 
 #[cfg(feature = "napi-6")]
 pub use crate::object::class::new_class_metadata;
+
+pub use crate::types_impl::extract::private::Sealed;
+
+pub fn object_expected(class_name: String) -> crate::types::extract::ObjectExpected {
+    crate::types::extract::ObjectExpected::new(class_name)
+}
+
+pub fn internal_constructor<'cx, T: crate::object::Class>(
+    cx: &mut Cx<'cx>,
+) -> NeonResult<Handle<'cx, crate::types::JsFunction>> {
+    let class_instance = T::local(cx)?;
+    Ok(class_instance.internal_constructor())
+}

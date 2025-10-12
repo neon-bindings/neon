@@ -161,7 +161,7 @@ impl ExportedPoint {
         self.y
     }
 
-    pub fn distance(&self, other: neon::types::extract::Instance<Self>) -> f64 {
+    pub fn distance(&self, other: Self) -> f64 {
         let dx = self.x - other.x();
         let dy = self.y - other.y();
         (dx * dx + dy * dy).sqrt()

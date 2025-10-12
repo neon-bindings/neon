@@ -1,6 +1,6 @@
 use std::{collections::HashMap, future::Future};
 
-use neon::{event::Channel, prelude::*, types::extract::Instance};
+use neon::{event::Channel, prelude::*};
 
 #[derive(Debug, Clone)]
 pub struct Message {
@@ -17,10 +17,10 @@ impl Message {
         &self.value
     }
 
-    pub fn concat(&self, other: Instance<Self>) -> Instance<Self> {
-        Instance(Self {
-            value: format!("{}{}", self.value, other.0.value),
-        })
+    pub fn concat(&self, other: Self) -> Self {
+        Self {
+            value: format!("{}{}", self.value, other.value),
+        }
     }
 
     pub fn append(&mut self, suffix: String) {
@@ -106,17 +106,17 @@ impl Point {
         self.y
     }
 
-    pub fn distance(&self, other: Instance<Self>) -> f64 {
+    pub fn distance(&self, other: Self) -> f64 {
         let dx = (self.x as i32 - other.x() as i32).pow(2);
         let dy = (self.y as i32 - other.y() as i32).pow(2);
         ((dx + dy) as f64).sqrt()
     }
 
-    pub fn midpoint(&self, other: Instance<Self>) -> Instance<Self> {
-        Instance(Self {
+    pub fn midpoint(&self, other: Self) -> Self {
+        Self {
             x: (self.x + other.x()) / 2,
             y: (self.y + other.y()) / 2,
-        })
+        }
     }
 
     pub fn move_by(&mut self, dx: u32, dy: u32) {
@@ -133,7 +133,7 @@ impl Point {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct StringBuffer {
     buffer: String,
 }
