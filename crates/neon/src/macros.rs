@@ -31,9 +31,6 @@
 ///     }
 /// }
 /// ```
-///
-/// To use the `#[neon::class]` attribute, the struct must implement [`Clone`] and have a
-/// constructor method named `new`.
 
 /// ## Constructor
 ///
@@ -44,7 +41,6 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// #[derive(Clone)]
 /// pub struct Person {
 ///     name: String,
 ///     age: u32,
@@ -67,7 +63,6 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// #[derive(Clone)]
 /// pub struct Counter {
 ///     value: i32,
 /// }
@@ -98,7 +93,6 @@
 ///
 /// ```
 /// # use neon::prelude::*;
-/// #[derive(Clone)]
 /// pub struct Logger {
 ///     name: String,
 /// }
@@ -141,7 +135,6 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// #[derive(Clone)]
 /// pub struct DataProcessor;
 ///
 /// #[neon::class]
@@ -161,8 +154,9 @@
 ///
 /// Methods declared with `async fn` are automatically detected and exported as async. Because the
 /// data is shared across threads, it is automatically cloned before the method is called, so the
-/// receiver must be `self` by value instead of `&self` or `&mut self`. Any shared mutable state
-/// should use types like [`Arc<Mutex<T>>`](std::sync::Arc) for thread-safe interior mutability.
+/// receiver must be `self` by value instead of `&self` or `&mut self` and the struct must
+/// implement `Clone`. Any shared mutable state should use types like
+/// [`Arc<Mutex<T>>`](std::sync::Arc) for thread-safe interior mutability.
 ///
 /// ```
 /// # #[cfg(all(feature = "napi-6", feature = "futures"))]
@@ -225,7 +219,7 @@
 /// #### Task Methods
 ///
 /// Methods can be executed on Node's worker pool using the `task` attribute. The instance
-/// is cloned to move into the worker thread.
+/// is cloned to move into the worker thread, so the struct must implement `Clone`.
 ///
 /// ```
 /// # use neon::prelude::*;
@@ -254,13 +248,12 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// #[derive(Clone)]
-/// pub struct StringBuffer {
+/// pub struct Label {
 ///     data: String,
 /// }
 ///
 /// #[neon::class]
-/// impl StringBuffer {
+/// impl Label {
 ///     pub fn new() -> Self {
 ///         Self { data: String::new() }
 ///     }
@@ -279,7 +272,6 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// #[derive(Clone)]
 /// pub struct MathConstants;
 ///
 /// #[neon::class]
@@ -316,7 +308,6 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// #[derive(Clone)]
 /// pub struct Interactive {
 ///     data: String,
 /// }
@@ -349,7 +340,7 @@
 ///
 /// Methods can accept and return instances of the same class directly. When a class instance
 /// is passed as a parameter or returned from a method, it is automatically cloned from (or into)
-/// the internal [`RefCell`](std::cell::RefCell) storage.
+/// the internal [`RefCell`](std::cell::RefCell) storage, so the struct must implement `Clone`.
 ///
 /// ```
 /// # use neon::prelude::*;
@@ -396,7 +387,6 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// #[derive(Clone)]
 /// pub struct AutoExported {
 ///     value: u32,
 /// }
@@ -415,7 +405,6 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
-/// #[derive(Clone)]
 /// pub struct InternalPoint {
 ///     x: f64,
 ///     y: f64,
@@ -441,7 +430,6 @@
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::{Finalize, extract::Error};
-/// #[derive(Clone)]
 /// pub struct FileReader;
 ///
 /// #[neon::class]

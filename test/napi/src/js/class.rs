@@ -133,7 +133,7 @@ impl Point {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default)]
 pub struct StringBuffer {
     buffer: String,
 }

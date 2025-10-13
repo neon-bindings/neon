@@ -957,8 +957,11 @@ pub(crate) fn class(
         impl neon::macro_internal::Sealed for #class_ident {}
     };
 
+    // This leverages the following hack: https://github.com/rust-lang/rust/issues/48214#issuecomment-2557829956
+    // Adding an artificial `for<'a>` generalization circumvents the need for the unstable `trivial_bounds` feature.
+    // This allows us to conditionally require `Clone` only for types that actually make use of `TryFromJs`.
     let impl_try_from_js: TokenStream = quote::quote! {
-        impl<'cx> neon::types::extract::TryFromJs<'cx> for #class_ident {
+        impl<'cx> neon::types::extract::TryFromJs<'cx> for #class_ident where for<'a> Self: Clone {
             type Error = neon::types::extract::ObjectExpected;
 
             fn try_from_js(cx: &mut neon::context::Cx<'cx>, value: neon::handle::Handle<'cx, neon::types::JsValue>) -> neon::result::NeonResult<Result<Self, Self::Error>> {
