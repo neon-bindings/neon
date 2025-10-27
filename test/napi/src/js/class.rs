@@ -17,7 +17,7 @@ impl Message {
         &self.value
     }
 
-    pub fn concat(&self, other: Self) -> Self {
+    pub fn concat(&self, other: &Self) -> Self {
         Self {
             value: format!("{}{}", self.value, other.value),
         }
@@ -106,16 +106,16 @@ impl Point {
         self.y
     }
 
-    pub fn distance(&self, other: Self) -> f64 {
-        let dx = (self.x as i32 - other.x() as i32).pow(2);
-        let dy = (self.y as i32 - other.y() as i32).pow(2);
+    pub fn distance(&self, other: &Self) -> f64 {
+        let dx = (self.x as i32 - other.x as i32).pow(2);
+        let dy = (self.y as i32 - other.y as i32).pow(2);
         ((dx + dy) as f64).sqrt()
     }
 
-    pub fn midpoint(&self, other: Self) -> Self {
+    pub fn midpoint(&self, other: &Self) -> Self {
         Self {
-            x: (self.x + other.x()) / 2,
-            y: (self.y + other.y()) / 2,
+            x: (self.x + other.x) / 2,
+            y: (self.y + other.y) / 2,
         }
     }
 

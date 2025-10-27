@@ -20,6 +20,41 @@ fn is_receiver_mutable(sig: &syn::Signature) -> bool {
     }
 }
 
+// Enum to track what kind of parameter we're dealing with
+enum ParamKind {
+    Value,
+    Reference(Box<syn::Type>), // The inner type of the reference (e.g., Point for &Point)
+}
+
+// Analyze a parameter type to determine if it's a reference to a class type
+fn analyze_parameter(ty: &syn::Type) -> ParamKind {
+    match ty {
+        syn::Type::Reference(type_ref) => {
+            // Any reference to a path type (e.g., &Point, &Message)
+            if let syn::Type::Path(_) = &*type_ref.elem {
+                ParamKind::Reference(type_ref.elem.clone())
+            } else {
+                ParamKind::Value
+            }
+        }
+        _ => ParamKind::Value,
+    }
+}
+
+// Extract parameter types from signature, skipping self, context, and this
+fn extract_param_types(sig: &syn::Signature, has_context: bool, has_this: bool) -> Vec<ParamKind> {
+    let skip_count = 1 + (has_context as usize) + (has_this as usize);
+
+    sig.inputs
+        .iter()
+        .skip(skip_count)
+        .filter_map(|arg| match arg {
+            syn::FnArg::Typed(pat_type) => Some(analyze_parameter(&pat_type.ty)),
+            syn::FnArg::Receiver(_) => None,
+        })
+        .collect()
+}
+
 fn generate_method_wrapper(
     meta: &meta::Meta,
     class_id: &syn::Ident,
@@ -62,16 +97,59 @@ fn generate_method_wrapper(
         quote::quote!()
     };
 
-    // Generate an argument list used when calling the original function
-    let num_args = count_args(sig, context_arg.is_some(), has_this);
-    let args = (0..num_args).map(|i| quote::format_ident!("a{i}"));
+    // Analyze parameter types to determine which are references
+    let param_types = extract_param_types(sig, has_context, has_this);
+    let num_args = param_types.len();
 
-    // Generate the tuple fields used to destructure `cx.args()`. Wrap in `Json` if necessary.
-    let tuple_fields = args.clone().map(|name| {
-        meta.json
-            .then(|| quote::quote!(neon::types::extract::Json(#name)))
-            .unwrap_or_else(|| quote::quote!(#name))
+    // Generate tuple fields for cx.args() extraction and type annotations
+    let (tuple_fields, ref_type_annotations): (Vec<_>, Vec<_>) = param_types
+        .iter()
+        .enumerate()
+        .map(|(i, param_kind)| {
+            let name = quote::format_ident!("a{i}");
+            match param_kind {
+                ParamKind::Reference(_) => {
+                    // For reference parameters, extract as a generic arg then type annotate
+                    let obj_name = quote::format_ident!("a{i}_obj");
+                    let annotation = quote::quote! {
+                        let #obj_name: neon::handle::Handle<neon::types::JsObject> = #obj_name;
+                    };
+                    (quote::quote!(#obj_name), Some(annotation))
+                }
+                ParamKind::Value => {
+                    // For value parameters, use existing logic with JSON wrapping if needed
+                    let field = meta
+                        .json
+                        .then(|| quote::quote!(neon::types::extract::Json(#name)))
+                        .unwrap_or_else(|| quote::quote!(#name));
+                    (field, None)
+                }
+            }
+        })
+        .unzip();
+
+    // Generate guard extraction code for reference parameters
+    let ref_guards = param_types.iter().enumerate().filter_map(|(i, param_kind)| {
+        match param_kind {
+            ParamKind::Reference(inner_type) => {
+                let obj_name = quote::format_ident!("a{i}_obj");
+                let guard_name = quote::format_ident!("_guard_a{i}");
+                let arg_name = quote::format_ident!("a{i}");
+
+                Some(quote::quote! {
+                    let #guard_name = <#inner_type as neon::types::extract::TryFromJsRef>::from_js_ref(
+                        &mut cx,
+                        neon::handle::Handle::upcast(&#obj_name)
+                    )?;
+                    let #arg_name: &#inner_type = &*#guard_name;
+                })
+            }
+            ParamKind::Value => None,
+        }
     });
+
+    // Generate argument list for method call
+    let args = (0..num_args).map(|i| quote::format_ident!("a{i}"));
 
     // Tag whether we should JSON wrap results
     let return_tag = if meta.json {
@@ -114,6 +192,12 @@ fn generate_method_wrapper(
                     // Extract non-context/this arguments with JSON wrapping if needed
                     let (#(#tuple_fields,)*) = cx.args()?;
 
+                    // Type annotations for reference parameters
+                    #(#ref_type_annotations)*
+
+                    // Unwrap reference parameters and create guards
+                    #(#ref_guards)*
+
                     // Borrow from RefCell
                     #borrow_call
 
@@ -142,6 +226,12 @@ fn generate_method_wrapper(
 
                     // Extract non-context/this arguments with JSON wrapping if needed
                     let (#(#tuple_fields,)*) = cx.args()?;
+
+                    // Type annotations for reference parameters
+                    #(#ref_type_annotations)*
+
+                    // Unwrap reference parameters and create guards
+                    #(#ref_guards)*
 
                     // Clone the instance to move into async fn (takes self by value)
                     let instance_clone = instance_cell.borrow().clone();
@@ -184,6 +274,12 @@ fn generate_method_wrapper(
                     // Extract non-context/this arguments with JSON wrapping if needed
                     let (#(#tuple_fields,)*) = cx.args()?;
 
+                    // Type annotations for reference parameters
+                    #(#ref_type_annotations)*
+
+                    // Unwrap reference parameters and create guards
+                    #(#ref_guards)*
+
                     let promise = neon::context::Context::task(&mut cx, move || {
                         #borrow_call
                         instance.#name(#context_arg #this_arg #(#args),*)
@@ -220,6 +316,12 @@ fn generate_method_wrapper(
                     // Extract non-context/this arguments with JSON wrapping if needed
                     let (#(#tuple_fields,)*) = cx.args()?;
 
+                    // Type annotations for reference parameters
+                    #(#ref_type_annotations)*
+
+                    // Unwrap reference parameters and create guards
+                    #(#ref_guards)*
+
                     // Borrow from RefCell
                     #borrow_call
 
@@ -231,16 +333,6 @@ fn generate_method_wrapper(
     }
 }
 
-// Determine the number of arguments to the function
-fn count_args(sig: &syn::Signature, has_context: bool, has_this: bool) -> usize {
-    let n = sig.inputs.len() - 1; // subtract 1 for self
-
-    match (has_context, has_this) {
-        (true, true) => n - 2,
-        (false, false) => n,
-        _ => n - 1,
-    }
-}
 
 // Generate context extraction and argument for class methods
 fn context_parse(
@@ -991,6 +1083,26 @@ pub(crate) fn class(
         }
     };
 
+    let impl_try_from_js_ref: TokenStream = quote::quote! {
+        impl<'cx> neon::types::extract::TryFromJsRef<'cx> for #class_ident {
+            type Guard = std::cell::Ref<'cx, Self>;
+            type Error = neon::types::extract::ObjectExpected;
+
+            fn try_from_js_ref(
+                cx: &mut neon::context::Cx<'cx>,
+                value: neon::handle::Handle<'cx, neon::types::JsValue>
+            ) -> neon::result::NeonResult<Result<Self::Guard, Self::Error>> {
+                use neon::result::ResultExt;
+
+                let object: neon::handle::Handle<neon::types::JsObject> = value.downcast(cx).or_throw(cx)?;
+                match neon::object::unwrap::<std::cell::RefCell<Self>, _>(cx, object) {
+                    Ok(Ok(instance_cell)) => Ok(Ok(instance_cell.borrow())),
+                    _ => Ok(Err(neon::macro_internal::object_expected(<Self as neon::object::Class>::name()))),
+                }
+            }
+        }
+    };
+
     // Remove #[neon(...)] attributes from methods and const items in the impl block
     for item in &mut impl_block.items {
         match item {
@@ -1015,6 +1127,7 @@ pub(crate) fn class(
         #impl_sealed
         #impl_try_from_js
         #impl_try_into_js
+        #impl_try_from_js_ref
     }
     .into()
 }
