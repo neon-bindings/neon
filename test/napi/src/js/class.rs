@@ -119,6 +119,11 @@ impl Point {
         }
     }
 
+    pub fn swap_coords(&mut self, other: &mut Self) {
+        std::mem::swap(&mut self.x, &mut other.x);
+        std::mem::swap(&mut self.y, &mut other.y);
+    }
+
     pub fn move_by(&mut self, dx: u32, dy: u32) {
         self.x += dx;
         self.y += dy;

@@ -24,15 +24,20 @@ fn is_receiver_mutable(sig: &syn::Signature) -> bool {
 enum ParamKind {
     Value,
     Reference(Box<syn::Type>), // The inner type of the reference (e.g., Point for &Point)
+    ReferenceMut(Box<syn::Type>), // The inner type of the mutable reference (e.g., Point for &mut Point)
 }
 
 // Analyze a parameter type to determine if it's a reference to a class type
 fn analyze_parameter(ty: &syn::Type) -> ParamKind {
     match ty {
         syn::Type::Reference(type_ref) => {
-            // Any reference to a path type (e.g., &Point, &Message)
+            // Any reference to a path type (e.g., &Point, &mut Point, &Message)
             if let syn::Type::Path(_) = &*type_ref.elem {
-                ParamKind::Reference(type_ref.elem.clone())
+                if type_ref.mutability.is_some() {
+                    ParamKind::ReferenceMut(type_ref.elem.clone())
+                } else {
+                    ParamKind::Reference(type_ref.elem.clone())
+                }
             } else {
                 ParamKind::Value
             }
@@ -108,7 +113,7 @@ fn generate_method_wrapper(
         .map(|(i, param_kind)| {
             let name = quote::format_ident!("a{i}");
             match param_kind {
-                ParamKind::Reference(_) => {
+                ParamKind::Reference(_) | ParamKind::ReferenceMut(_) => {
                     // For reference parameters, extract as a generic arg then type annotate
                     let obj_name = quote::format_ident!("a{i}_obj");
                     let annotation = quote::quote! {
@@ -142,6 +147,19 @@ fn generate_method_wrapper(
                         neon::handle::Handle::upcast(&#obj_name)
                     )?;
                     let #arg_name: &#inner_type = &*#guard_name;
+                })
+            }
+            ParamKind::ReferenceMut(inner_type) => {
+                let obj_name = quote::format_ident!("a{i}_obj");
+                let guard_name = quote::format_ident!("_guard_a{i}");
+                let arg_name = quote::format_ident!("a{i}");
+
+                Some(quote::quote! {
+                    let mut #guard_name = <#inner_type as neon::types::extract::TryFromJsRefMut>::from_js_ref_mut(
+                        &mut cx,
+                        neon::handle::Handle::upcast(&#obj_name)
+                    )?;
+                    let #arg_name: &mut #inner_type = &mut *#guard_name;
                 })
             }
             ParamKind::Value => None,
@@ -1103,6 +1121,26 @@ pub(crate) fn class(
         }
     };
 
+    let impl_try_from_js_ref_mut: TokenStream = quote::quote! {
+        impl<'cx> neon::types::extract::TryFromJsRefMut<'cx> for #class_ident {
+            type Guard = std::cell::RefMut<'cx, Self>;
+            type Error = neon::types::extract::ObjectExpected;
+
+            fn try_from_js_ref_mut(
+                cx: &mut neon::context::Cx<'cx>,
+                value: neon::handle::Handle<'cx, neon::types::JsValue>
+            ) -> neon::result::NeonResult<Result<Self::Guard, Self::Error>> {
+                use neon::result::ResultExt;
+
+                let object: neon::handle::Handle<neon::types::JsObject> = value.downcast(cx).or_throw(cx)?;
+                match neon::object::unwrap::<std::cell::RefCell<Self>, _>(cx, object) {
+                    Ok(Ok(instance_cell)) => Ok(Ok(instance_cell.borrow_mut())),
+                    _ => Ok(Err(neon::macro_internal::object_expected(<Self as neon::object::Class>::name()))),
+                }
+            }
+        }
+    };
+
     // Remove #[neon(...)] attributes from methods and const items in the impl block
     for item in &mut impl_block.items {
         match item {
@@ -1128,6 +1166,7 @@ pub(crate) fn class(
         #impl_try_from_js
         #impl_try_into_js
         #impl_try_from_js_ref
+        #impl_try_from_js_ref_mut
     }
     .into()
 }

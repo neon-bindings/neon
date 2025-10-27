@@ -216,6 +216,51 @@ where
     }
 }
 
+/// Extract a mutable borrowed reference to Rust data from a JavaScript value
+///
+/// This trait is similar to [`TryFromJsRef`], but returns a guard that allows
+/// mutable access. This is useful for passing class instances by mutable reference
+/// in method calls.
+///
+/// # Example
+///
+/// ```ignore
+/// // In a class method, accept another instance by mutable reference
+/// pub fn swap_coordinates(&mut self, other: &mut Point) {
+///     std::mem::swap(&mut self.x, &mut other.x);
+///     std::mem::swap(&mut self.y, &mut other.y);
+/// }
+/// ```
+///
+/// The macro will automatically use `TryFromJsRefMut` when it sees `&mut T` parameters.
+pub trait TryFromJsRefMut<'cx>
+where
+    Self: private::Sealed + Sized,
+{
+    /// A guard type that dereferences to `&mut Self` and keeps the mutable borrow alive
+    type Guard: std::ops::DerefMut<Target = Self>;
+
+    /// The error type returned when extraction fails
+    type Error: TryIntoJs<'cx>;
+
+    /// Extract a mutable borrowed reference from a JavaScript value
+    fn try_from_js_ref_mut(
+        cx: &mut Cx<'cx>,
+        v: Handle<'cx, JsValue>,
+    ) -> NeonResult<Result<Self::Guard, Self::Error>>;
+
+    /// Same as [`TryFromJsRefMut::try_from_js_ref_mut`], but all errors are converted to JavaScript exceptions
+    fn from_js_ref_mut(cx: &mut Cx<'cx>, v: Handle<'cx, JsValue>) -> NeonResult<Self::Guard> {
+        match Self::try_from_js_ref_mut(cx, v)? {
+            Ok(guard) => Ok(guard),
+            Err(err) => {
+                let err = err.try_into_js(cx)?;
+                cx.throw(err)
+            }
+        }
+    }
+}
+
 #[cfg_attr(docsrs, doc(cfg(feature = "napi-5")))]
 #[cfg(feature = "napi-5")]
 /// Wrapper for converting between [`f64`] and [`JsDate`](super::JsDate)

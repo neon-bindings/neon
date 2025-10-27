@@ -93,6 +93,25 @@ describe("classes", function () {
     assert.strictEqual(point.y(), 200);
   });
 
+  it("can swap coordinates between two Points using &mut references", function () {
+    const Point = addon.Point;
+
+    const p1 = new Point(10, 20);
+    const p2 = new Point(30, 40);
+
+    assert.strictEqual(p1.x(), 10);
+    assert.strictEqual(p1.y(), 20);
+    assert.strictEqual(p2.x(), 30);
+    assert.strictEqual(p2.y(), 40);
+
+    p1.swapCoords(p2);
+
+    assert.strictEqual(p1.x(), 30);
+    assert.strictEqual(p1.y(), 40);
+    assert.strictEqual(p2.x(), 10);
+    assert.strictEqual(p2.y(), 20);
+  });
+
   it("Point class has const properties", function () {
     const Point = addon.Point;
 
