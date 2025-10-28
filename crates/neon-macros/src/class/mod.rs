@@ -351,7 +351,6 @@ fn generate_method_wrapper(
     }
 }
 
-
 // Generate context extraction and argument for class methods
 fn context_parse(
     opts: &meta::Meta,
