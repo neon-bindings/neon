@@ -84,6 +84,75 @@
 /// }
 /// ```
 ///
+/// ### Reference Parameters
+///
+/// Methods can accept class instances by reference (`&T`) or mutable reference (`&mut T`)
+/// to avoid cloning when passing instances between methods. The type must implement
+/// [`TryFromJsRef`](crate::types::extract::TryFromJsRef) for immutable references or
+/// [`TryFromJsRefMut`](crate::types::extract::TryFromJsRefMut) for mutable references.
+/// The `#[neon::class]` macro automatically implements these traits for all class types.
+///
+/// ```
+/// # use neon::prelude::*;
+/// # use neon::types::Finalize;
+/// #[derive(Clone)]
+/// pub struct Point {
+///     x: f64,
+///     y: f64,
+/// }
+///
+/// #[neon::class]
+/// impl Point {
+///     pub fn new(x: f64, y: f64) -> Self {
+///         Self { x, y }
+///     }
+///
+///     // Accept another Point by immutable reference (no clone)
+///     pub fn distance(&self, other: &Self) -> f64 {
+///         let dx = self.x - other.x;
+///         let dy = self.y - other.y;
+///         (dx * dx + dy * dy).sqrt()
+///     }
+///
+///     // Accept another Point by mutable reference (no clone)
+///     pub fn swap_coordinates(&mut self, other: &mut Self) {
+///         std::mem::swap(&mut self.x, &mut other.x);
+///         std::mem::swap(&mut self.y, &mut other.y);
+///     }
+///
+///     // Accept another Point by value (clones the instance)
+///     pub fn midpoint(&self, other: Self) -> Self {
+///         Self {
+///             x: (self.x + other.x) / 2.0,
+///             y: (self.y + other.y) / 2.0,
+///         }
+///     }
+/// }
+/// ```
+///
+/// From JavaScript:
+/// ```js
+/// const p1 = new Point(0, 0);
+/// const p2 = new Point(3, 4);
+///
+/// console.log(p1.distance(p2));    // 5 (no cloning)
+///
+/// p1.swapCoordinates(p2);          // Mutates both points
+/// console.log(p1.x);               // 3
+/// console.log(p2.x);               // 0
+///
+/// const mid = p1.midpoint(p2);     // Clones p2
+/// ```
+///
+/// **When to use references:**
+/// - Use `&T` when you only need to read from the instance
+/// - Use `&mut T` when you need to mutate the instance
+/// - Use `T` (by value) when the semantics require taking ownership
+///
+/// Note that reference parameters still use [`RefCell`](std::cell::RefCell) internally,
+/// so runtime borrow checking applies. Attempting to borrow the same instance both mutably
+/// and immutably (or multiple times mutably) will panic.
+///
 /// ## Finalizer
 ///
 /// Classes can implement a `finalize` method to perform cleanup when the
