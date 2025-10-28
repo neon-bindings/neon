@@ -23,26 +23,27 @@ fn is_receiver_mutable(sig: &syn::Signature) -> bool {
 // Enum to track what kind of parameter we're dealing with
 enum ParamKind {
     Value,
-    Reference(Box<syn::Type>), // The inner type of the reference (e.g., Point for &Point)
-    ReferenceMut(Box<syn::Type>), // The inner type of the mutable reference (e.g., Point for &mut Point)
+    Ref(Box<syn::Type>), // The inner type of the reference (e.g., Point for &Point)
+    RefMut(Box<syn::Type>), // The inner type of the mutable reference (e.g., Point for &mut Point)
 }
 
-// Analyze a parameter type to determine if it's a reference to a class type
-fn analyze_parameter(ty: &syn::Type) -> ParamKind {
-    match ty {
-        syn::Type::Reference(type_ref) => {
-            // Any reference to a path type (e.g., &Point, &mut Point, &Message)
-            if let syn::Type::Path(_) = &*type_ref.elem {
-                if type_ref.mutability.is_some() {
-                    ParamKind::ReferenceMut(type_ref.elem.clone())
+impl ParamKind {
+    fn from_type(ty: &syn::Type) -> Self {
+        match ty {
+            syn::Type::Reference(type_ref) => {
+                // Any reference to a path type (e.g., &Point, &mut Point, &Message)
+                if let syn::Type::Path(_) = &*type_ref.elem {
+                    if type_ref.mutability.is_some() {
+                        ParamKind::RefMut(type_ref.elem.clone())
+                    } else {
+                        ParamKind::Ref(type_ref.elem.clone())
+                    }
                 } else {
-                    ParamKind::Reference(type_ref.elem.clone())
+                    ParamKind::Value
                 }
-            } else {
-                ParamKind::Value
             }
+            _ => ParamKind::Value,
         }
-        _ => ParamKind::Value,
     }
 }
 
@@ -54,7 +55,7 @@ fn extract_param_types(sig: &syn::Signature, has_context: bool, has_this: bool) 
         .iter()
         .skip(skip_count)
         .filter_map(|arg| match arg {
-            syn::FnArg::Typed(pat_type) => Some(analyze_parameter(&pat_type.ty)),
+            syn::FnArg::Typed(pat_type) => Some(ParamKind::from_type(&pat_type.ty)),
             syn::FnArg::Receiver(_) => None,
         })
         .collect()
@@ -113,7 +114,7 @@ fn generate_method_wrapper(
         .map(|(i, param_kind)| {
             let name = quote::format_ident!("a{i}");
             match param_kind {
-                ParamKind::Reference(_) | ParamKind::ReferenceMut(_) => {
+                ParamKind::Ref(_) | ParamKind::RefMut(_) => {
                     // For reference parameters, extract as a generic arg then type annotate
                     let obj_name = quote::format_ident!("a{i}_obj");
                     let annotation = quote::quote! {
@@ -136,7 +137,7 @@ fn generate_method_wrapper(
     // Generate guard extraction code for reference parameters
     let ref_guards = param_types.iter().enumerate().filter_map(|(i, param_kind)| {
         match param_kind {
-            ParamKind::Reference(inner_type) => {
+            ParamKind::Ref(inner_type) => {
                 let obj_name = quote::format_ident!("a{i}_obj");
                 let guard_name = quote::format_ident!("_guard_a{i}");
                 let arg_name = quote::format_ident!("a{i}");
@@ -149,7 +150,7 @@ fn generate_method_wrapper(
                     let #arg_name: &#inner_type = &*#guard_name;
                 })
             }
-            ParamKind::ReferenceMut(inner_type) => {
+            ParamKind::RefMut(inner_type) => {
                 let obj_name = quote::format_ident!("a{i}_obj");
                 let guard_name = quote::format_ident!("_guard_a{i}");
                 let arg_name = quote::format_ident!("a{i}");
