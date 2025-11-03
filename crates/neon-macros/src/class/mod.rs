@@ -1072,14 +1072,15 @@ pub(crate) fn class(
     // This allows us to conditionally require `Clone` only for types that actually make use of `TryFromJs`.
     let impl_try_from_js: TokenStream = quote::quote! {
         impl<'cx> neon::types::extract::TryFromJs<'cx> for #class_ident where for<'a> Self: Clone {
-            type Error = neon::types::extract::ObjectExpected;
+            type Error = neon::macro_internal::WrapError;
 
             fn try_from_js(cx: &mut neon::context::Cx<'cx>, value: neon::handle::Handle<'cx, neon::types::JsValue>) -> neon::result::NeonResult<Result<Self, Self::Error>> {
                 use neon::result::ResultExt;
 
                 match neon::object::unwrap::<std::cell::RefCell<Self>, _>(cx, value) {
                     Ok(Ok(instance_cell)) => Ok(Ok(Self::clone(&*instance_cell.borrow()))),
-                    _ => Ok(Err(neon::macro_internal::object_expected(<Self as neon::object::Class>::name()))),
+                    Ok(Err(err)) => Ok(Err(err)),
+                    Err(err) => Err(err),
                 }
             }
         }
@@ -1103,7 +1104,7 @@ pub(crate) fn class(
     let impl_try_from_js_ref: TokenStream = quote::quote! {
         impl<'cx> neon::types::extract::TryFromJsRef<'cx> for #class_ident {
             type Guard = std::cell::Ref<'cx, Self>;
-            type Error = neon::types::extract::ObjectExpected;
+            type Error = neon::macro_internal::WrapError;
 
             fn try_from_js_ref(
                 cx: &mut neon::context::Cx<'cx>,
@@ -1113,7 +1114,8 @@ pub(crate) fn class(
 
                 match neon::object::unwrap::<std::cell::RefCell<Self>, _>(cx, value) {
                     Ok(Ok(instance_cell)) => Ok(Ok(instance_cell.borrow())),
-                    _ => Ok(Err(neon::macro_internal::object_expected(<Self as neon::object::Class>::name()))),
+                    Ok(Err(err)) => Ok(Err(err)),
+                    Err(err) => Err(err),
                 }
             }
         }
@@ -1122,7 +1124,7 @@ pub(crate) fn class(
     let impl_try_from_js_ref_mut: TokenStream = quote::quote! {
         impl<'cx> neon::types::extract::TryFromJsRefMut<'cx> for #class_ident {
             type Guard = std::cell::RefMut<'cx, Self>;
-            type Error = neon::types::extract::ObjectExpected;
+            type Error = neon::macro_internal::WrapError;
 
             fn try_from_js_ref_mut(
                 cx: &mut neon::context::Cx<'cx>,
@@ -1132,7 +1134,8 @@ pub(crate) fn class(
 
                 match neon::object::unwrap::<std::cell::RefCell<Self>, _>(cx, value) {
                     Ok(Ok(instance_cell)) => Ok(Ok(instance_cell.borrow_mut())),
-                    _ => Ok(Err(neon::macro_internal::object_expected(<Self as neon::object::Class>::name()))),
+                    Ok(Err(err)) => Ok(Err(err)),
+                    Err(err) => Err(err),
                 }
             }
         }

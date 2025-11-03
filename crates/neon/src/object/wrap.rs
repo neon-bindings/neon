@@ -2,14 +2,13 @@ use std::{any::Any, error, ffi::c_void, fmt, mem::MaybeUninit, ptr};
 
 use crate::{
     context::{
-        internal::{ContextInternal, Env},
-        Context, Cx,
+        Context, Cx, internal::{ContextInternal, Env}
     },
     handle::Handle,
     object::Object,
-    result::{NeonResult, ResultExt, Throw},
+    result::{JsResult, NeonResult, ResultExt, Throw},
     sys,
-    types::{Finalize, Value},
+    types::{Finalize, Value, extract::TryIntoJs},
 };
 
 type BoxAny = Box<dyn Any + 'static>;
@@ -43,6 +42,19 @@ impl fmt::Display for WrapError {
 }
 
 impl error::Error for WrapError {}
+
+impl crate::types::extract::private::Sealed for WrapError {}
+
+impl<'cx> TryIntoJs<'cx> for WrapError {
+    type Value = crate::types::JsError;
+
+    fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
+        match self.0 {
+            WrapErrorType::ObjectExpected => cx.type_error("object expected"),
+            _ => cx.error(self.to_string()),
+        }
+    }
+}
 
 impl<T> ResultExt<T> for Result<T, WrapError> {
     fn or_throw<'cx, C>(self, cx: &mut C) -> NeonResult<T>
@@ -174,13 +186,13 @@ where
     }
 
     // # Safety
-    // The `env` value was obtained from a valid `Cx` and the `o` handle has
-    // already been verified to be an object.
+    // The `env` value was obtained from a valid `Cx`.
     let data = unsafe {
         let mut data = MaybeUninit::<*mut BoxAny>::uninit();
 
         match sys::unwrap(env, o, data.as_mut_ptr().cast()) {
             Err(sys::Status::PendingException) => return Err(Throw::new()),
+            Err(sys::Status::ObjectExpected) => return Ok(Err(WrapError::object_expected())),
             res => res.unwrap(),
         }
 
