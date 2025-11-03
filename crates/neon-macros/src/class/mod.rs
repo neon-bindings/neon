@@ -1077,8 +1077,7 @@ pub(crate) fn class(
             fn try_from_js(cx: &mut neon::context::Cx<'cx>, value: neon::handle::Handle<'cx, neon::types::JsValue>) -> neon::result::NeonResult<Result<Self, Self::Error>> {
                 use neon::result::ResultExt;
 
-                let object: neon::handle::Handle<neon::types::JsObject> = value.downcast(cx).or_throw(cx)?;
-                match neon::object::unwrap::<std::cell::RefCell<Self>, _>(cx, object) {
+                match neon::object::unwrap::<std::cell::RefCell<Self>, _>(cx, value) {
                     Ok(Ok(instance_cell)) => Ok(Ok(Self::clone(&*instance_cell.borrow()))),
                     _ => Ok(Err(neon::macro_internal::object_expected(<Self as neon::object::Class>::name()))),
                 }
@@ -1112,8 +1111,7 @@ pub(crate) fn class(
             ) -> neon::result::NeonResult<Result<Self::Guard, Self::Error>> {
                 use neon::result::ResultExt;
 
-                let object: neon::handle::Handle<neon::types::JsObject> = value.downcast(cx).or_throw(cx)?;
-                match neon::object::unwrap::<std::cell::RefCell<Self>, _>(cx, object) {
+                match neon::object::unwrap::<std::cell::RefCell<Self>, _>(cx, value) {
                     Ok(Ok(instance_cell)) => Ok(Ok(instance_cell.borrow())),
                     _ => Ok(Err(neon::macro_internal::object_expected(<Self as neon::object::Class>::name()))),
                 }
@@ -1132,8 +1130,7 @@ pub(crate) fn class(
             ) -> neon::result::NeonResult<Result<Self::Guard, Self::Error>> {
                 use neon::result::ResultExt;
 
-                let object: neon::handle::Handle<neon::types::JsObject> = value.downcast(cx).or_throw(cx)?;
-                match neon::object::unwrap::<std::cell::RefCell<Self>, _>(cx, object) {
+                match neon::object::unwrap::<std::cell::RefCell<Self>, _>(cx, value) {
                     Ok(Ok(instance_cell)) => Ok(Ok(instance_cell.borrow_mut())),
                     _ => Ok(Err(neon::macro_internal::object_expected(<Self as neon::object::Class>::name()))),
                 }

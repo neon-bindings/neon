@@ -9,7 +9,7 @@ use crate::{
     object::Object,
     result::{NeonResult, ResultExt, Throw},
     sys,
-    types::Finalize,
+    types::{Finalize, Value},
 };
 
 type BoxAny = Box<dyn Any + 'static>;
@@ -18,6 +18,10 @@ type BoxAny = Box<dyn Any + 'static>;
 pub struct WrapError(WrapErrorType);
 
 impl WrapError {
+    fn object_expected() -> Self {
+        Self(WrapErrorType::ObjectExpected)
+    }
+
     fn already_wrapped() -> Self {
         Self(WrapErrorType::AlreadyWrapped)
     }
@@ -47,6 +51,7 @@ impl<T> ResultExt<T> for Result<T, WrapError> {
     {
         match self {
             Ok(v) => Ok(v),
+            Err(WrapError(WrapErrorType::ObjectExpected)) => cx.throw_type_error("object expected"),
             Err(err) => cx.throw_error(err.to_string()),
         }
     }
@@ -54,6 +59,7 @@ impl<T> ResultExt<T> for Result<T, WrapError> {
 
 #[derive(Debug)]
 enum WrapErrorType {
+    ObjectExpected,
     AlreadyWrapped,
     NotWrapped,
     #[cfg(feature = "napi-8")]
@@ -63,6 +69,7 @@ enum WrapErrorType {
 impl fmt::Display for WrapErrorType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            Self::ObjectExpected => write!(f, "Expected an object"),
             Self::AlreadyWrapped => write!(f, "Object is already wrapped"),
             Self::NotWrapped => write!(f, "Object is not wrapped"),
             #[cfg(feature = "napi-8")]
@@ -144,20 +151,20 @@ where
 pub fn unwrap<'cx, T, V>(cx: &mut Cx, o: Handle<'cx, V>) -> NeonResult<Result<&'cx T, WrapError>>
 where
     T: Finalize + 'static,
-    V: Object,
+    V: Value,
 {
     let env = cx.env().to_raw();
     let o = o.to_local();
 
     #[cfg(feature = "napi-8")]
     // # Safety
-    // The `env` value was obtained from a valid `Cx` and the `o` handle has
-    // already been verified to be an object.
+    // The `env` value was obtained from a valid `Cx`.
     unsafe {
         let mut is_tagged = false;
 
         match sys::check_object_type_tag(env, o, &*crate::MODULE_TAG, &mut is_tagged) {
             Err(sys::Status::PendingException) => return Err(Throw::new()),
+            Err(sys::Status::ObjectExpected) => return Ok(Err(WrapError::object_expected())),
             res => res.unwrap(),
         }
 

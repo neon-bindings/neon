@@ -73,6 +73,19 @@ describe("classes", function () {
     assert.strictEqual(point.distance(point2), Math.sqrt(8));
   });
 
+  it("fails with a TypeError when passing a non-object as &Point argument", function () {
+    const Point = addon.Point;
+
+    const point = new Point(1, 2);
+    assert.instanceOf(point, Point);
+    assert.strictEqual(point.x(), 1);
+    assert.strictEqual(point.y(), 2);
+
+    assert.throws(() => {
+      point.distance(42);
+    }, TypeError);
+  });
+
   it("can mutate a Point with &mut self", function () {
     const Point = addon.Point;
 
@@ -110,6 +123,19 @@ describe("classes", function () {
     assert.strictEqual(p1.y(), 40);
     assert.strictEqual(p2.x(), 10);
     assert.strictEqual(p2.y(), 20);
+  });
+
+  it("fails with a TypeError when passing a non-object as &mut Point argument", function () {
+    const Point = addon.Point;
+
+    const point = new Point(1, 2);
+    assert.instanceOf(point, Point);
+    assert.strictEqual(point.x(), 1);
+    assert.strictEqual(point.y(), 2);
+
+    assert.throws(() => {
+      point.swapCoords(42);
+    }, TypeError);
   });
 
   it("Point class has const properties", function () {
