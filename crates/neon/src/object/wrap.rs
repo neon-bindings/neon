@@ -2,13 +2,14 @@ use std::{any::Any, error, ffi::c_void, fmt, mem::MaybeUninit, ptr};
 
 use crate::{
     context::{
-        Context, Cx, internal::{ContextInternal, Env}
+        internal::{ContextInternal, Env},
+        Context, Cx,
     },
     handle::Handle,
     object::Object,
     result::{JsResult, NeonResult, ResultExt, Throw},
     sys,
-    types::{Finalize, Value, extract::TryIntoJs},
+    types::{extract::TryIntoJs, Finalize, Value},
 };
 
 type BoxAny = Box<dyn Any + 'static>;
