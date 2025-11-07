@@ -199,6 +199,8 @@ fn generate_method_wrapper(
 
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
+                    use neon::result::ResultExt;
+
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
                     let instance_cell: &std::cell::RefCell<#class_id> = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
 
@@ -234,6 +236,8 @@ fn generate_method_wrapper(
         meta::Kind::AsyncFn => {
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
+                    use neon::result::ResultExt;
+
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
                     let instance_cell: &std::cell::RefCell<#class_id> = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
 
@@ -278,6 +282,8 @@ fn generate_method_wrapper(
 
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
+                    use neon::result::ResultExt;
+
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
                     let instance_cell: &std::cell::RefCell<#class_id> = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
 
@@ -323,6 +329,8 @@ fn generate_method_wrapper(
 
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
+                    use neon::result::ResultExt;
+
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
                     let instance_cell: &std::cell::RefCell<#class_id> = neon::object::unwrap(&mut cx, js_this)?.or_throw(&mut cx)?;
 
@@ -1015,6 +1023,9 @@ pub(crate) fn class(
             fn create<'cx>(cx: &mut neon::context::Cx<'cx>) -> neon::result::NeonResult<neon::object::ClassMetadata<'cx>> {
                 use neon::handle::Handle;
                 use neon::types::{JsFunction, JsObject};
+                use neon::result::ResultExt;
+                use neon::context::Context;
+                use neon::object::Object;
 
                 let wrap = JsFunction::new(cx, |mut cx| {
                     let (this, #(#ctor_locals,)*): (Handle<JsObject>, #(#ctor_infers),*) = cx.args()?;
