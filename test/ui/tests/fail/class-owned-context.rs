@@ -1,3 +1,5 @@
+use neon::prelude::*;
+
 struct Example;
 
 #[neon::class]

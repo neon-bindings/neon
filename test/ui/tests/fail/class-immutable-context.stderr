@@ -1,29 +1,18 @@
 error: Must be a `&mut` reference.
- --> tests/fail/class-immutable-context.rs:5:27
+ --> tests/fail/class-immutable-context.rs:7:27
   |
-5 |     fn method(&self, _cx: &FunctionContext) {}
+7 |     fn method(&self, _cx: &FunctionContext) {}
   |                           ^
 
-error[E0412]: cannot find type `FunctionContext` in this scope
- --> tests/fail/class-immutable-context.rs:5:28
-  |
-5 |     fn method(&self, _cx: &FunctionContext) {}
-  |                            ^^^^^^^^^^^^^^^ not found in this scope
-  |
-help: consider importing this struct
-  |
-1 + use neon::prelude::FunctionContext;
-  |
-
 error[E0277]: the trait bound `Example: Default` is not satisfied
- --> tests/fail/class-immutable-context.rs:3:1
+ --> tests/fail/class-immutable-context.rs:5:1
   |
-3 | #[neon::class]
+5 | #[neon::class]
   | ^^^^^^^^^^^^^^ the trait `Default` is not implemented for `Example`
   |
   = note: this error originates in the attribute macro `neon::class` (in Nightly builds, run with -Z macro-backtrace for more info)
 help: consider annotating `Example` with `#[derive(Default)]`
   |
-1 + #[derive(Default)]
-2 | struct Example;
+3 + #[derive(Default)]
+4 | struct Example;
   |
