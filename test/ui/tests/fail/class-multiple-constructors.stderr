@@ -1,0 +1,5 @@
+error: Only one `new` constructor is allowed in a class.
+ --> tests/fail/class-multiple-constructors.rs:9:5
+  |
+9 |     fn new() -> Self {
+  |     ^^

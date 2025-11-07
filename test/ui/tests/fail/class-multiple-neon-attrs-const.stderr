@@ -1,0 +1,5 @@
+error: multiple #[neon(...)] attributes on const property are not allowed
+ --> tests/fail/class-multiple-neon-attrs-const.rs:6:5
+  |
+6 |     #[neon(json)]
+  |     ^^^^^^^^^^^^^

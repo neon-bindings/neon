@@ -1,0 +1,18 @@
+error: Async functions in classes must take `self` by value, not `&self` or `&mut self`. This is required because async functions capture `self` in the Future, which must be `'static` for spawning.
+ --> tests/fail/class-async-fn-borrowed-self.rs:6:21
+  |
+6 |     async fn method(&self) {}
+  |                     ^
+
+error[E0277]: the trait bound `Example: Default` is not satisfied
+ --> tests/fail/class-async-fn-borrowed-self.rs:4:1
+  |
+4 | #[neon::class]
+  | ^^^^^^^^^^^^^^ the trait `Default` is not implemented for `Example`
+  |
+  = note: this error originates in the attribute macro `neon::class` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider annotating `Example` with `#[derive(Default)]`
+  |
+2 + #[derive(Default)]
+3 | struct Example;
+  |

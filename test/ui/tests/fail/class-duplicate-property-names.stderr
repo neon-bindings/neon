@@ -1,0 +1,6 @@
+error: duplicate property name 'value' - const property names must be unique in JavaScript
+ --> tests/fail/class-duplicate-property-names.rs:8:5
+  |
+8 | /     #[neon(name = "value")]
+9 | |     const VALUE2: i32 = 43;
+  | |___________________________^
