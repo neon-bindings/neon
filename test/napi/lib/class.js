@@ -612,4 +612,51 @@ describe("classes", function () {
     // Should multiply each element by 2
     assert.deepStrictEqual(result, [2, 4, 6, 8, 10]);
   });
+
+  it("can create Point instances from Rust code", function () {
+    const Point = addon.Point;
+
+    // Test creating instance via Rust function (Rust → JS path)
+    const rustPoint = addon.createPointFromRust(10, 20);
+
+    // Verify it's an instance of the class
+    assert.instanceOf(rustPoint, Point);
+    assert.strictEqual(rustPoint.x(), 10);
+    assert.strictEqual(rustPoint.y(), 20);
+
+    // Test that Rust-created and JS-created instances are compatible
+    const jsPoint = new Point(5, 10);
+    const distance = rustPoint.distance(jsPoint);
+
+    // Distance between (10, 20) and (5, 10) = sqrt((10-5)^2 + (20-10)^2) = sqrt(25 + 100) = sqrt(125)
+    assert.strictEqual(distance, Math.sqrt(125));
+  });
+
+  it("can create origin Point from Rust", function () {
+    const Point = addon.Point;
+
+    const origin = addon.createPointOrigin();
+    assert.instanceOf(origin, Point);
+    assert.strictEqual(origin.x(), 0);
+    assert.strictEqual(origin.y(), 0);
+  });
+
+  it("can transform Points in Rust and return new instances", function () {
+    const Point = addon.Point;
+
+    // Create point in JS
+    const original = new Point(3, 4);
+
+    // Pass to Rust, transform, and get back new instance
+    const doubled = addon.doublePointCoords(original);
+
+    // Verify the returned point
+    assert.instanceOf(doubled, Point);
+    assert.strictEqual(doubled.x(), 6);
+    assert.strictEqual(doubled.y(), 8);
+
+    // Verify original is unchanged
+    assert.strictEqual(original.x(), 3);
+    assert.strictEqual(original.y(), 4);
+  });
 });

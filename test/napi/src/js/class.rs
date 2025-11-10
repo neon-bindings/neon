@@ -350,3 +350,21 @@ impl AsyncClass {
         data.into_iter().map(|x| x * 2).collect()
     }
 }
+
+// Test Rust → JS path: Create class instance in Rust and return to JS
+#[neon::export]
+pub fn create_point_from_rust(x: u32, y: u32) -> Point {
+    Point::new(x, y)
+}
+
+// Test Rust → JS with transformation
+#[neon::export]
+pub fn create_point_origin() -> Point {
+    Point::new(Point::ORIGIN_X, Point::ORIGIN_Y)
+}
+
+// Test Rust → JS: Accept a point, transform it, and return a new point
+#[neon::export]
+pub fn double_point_coords(point: Point) -> Point {
+    Point::new(point.x() * 2, point.y() * 2)
+}
