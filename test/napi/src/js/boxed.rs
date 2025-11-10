@@ -88,15 +88,3 @@ fn boxed_string_concat(Boxed(this): Boxed<String>, rhs: String) -> String {
 fn boxed_string_repeat(_cx: &mut FunctionContext, this: Boxed<String>, n: f64) -> String {
     this.0.repeat(n as usize)
 }
-
-#[neon::export]
-fn wrap_string(cx: &mut Cx, o: Handle<JsObject>, s: String) -> NeonResult<()> {
-    neon::macro_internal::object::wrap(cx, o, s)?.or_throw(cx)
-}
-
-#[neon::export]
-fn unwrap_string(cx: &mut Cx, o: Handle<JsObject>) -> NeonResult<String> {
-    neon::macro_internal::object::unwrap(cx, o)?
-        .map(String::clone)
-        .or_throw(cx)
-}

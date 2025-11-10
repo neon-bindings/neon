@@ -30,6 +30,10 @@ impl WrapError {
         Self(WrapErrorType::NotWrapped)
     }
 
+    fn wrong_type(expected: &'static str) -> Self {
+        Self(WrapErrorType::WrongType(expected))
+    }
+
     #[cfg(feature = "napi-8")]
     fn foreign_type() -> Self {
         Self(WrapErrorType::ForeignType)
@@ -52,7 +56,7 @@ impl<'cx> TryIntoJs<'cx> for WrapError {
     fn try_into_js(self, cx: &mut Cx<'cx>) -> JsResult<'cx, Self::Value> {
         match self.0 {
             WrapErrorType::ObjectExpected => cx.type_error("object expected"),
-            _ => cx.error(self.to_string()),
+            _ => cx.type_error(self.to_string()),
         }
     }
 }
@@ -75,18 +79,33 @@ enum WrapErrorType {
     ObjectExpected,
     AlreadyWrapped,
     NotWrapped,
+    WrongType(&'static str),
     #[cfg(feature = "napi-8")]
     ForeignType,
+}
+
+fn ref_cell_target_type_name(s: &str) -> Option<String> {
+    if let Some(start) = s.find('<') {
+        let s = &s[start+1..];
+        if let Some(end) = s.find('>') {
+            return Some(s[0..end].to_string());
+        }
+    }
+    None
 }
 
 impl fmt::Display for WrapErrorType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::ObjectExpected => write!(f, "Expected an object"),
-            Self::AlreadyWrapped => write!(f, "Object is already wrapped"),
-            Self::NotWrapped => write!(f, "Object is not wrapped"),
+            Self::ObjectExpected => write!(f, "object expected"),
+            Self::AlreadyWrapped => write!(f, "non-class instance expected"),
+            Self::NotWrapped => write!(f, "class instance expected"),
+            Self::WrongType(expected) => {
+                let target_type_name = ref_cell_target_type_name(*expected).unwrap_or(expected.to_string());
+                write!(f, "expected instance of {}", target_type_name)
+            }
             #[cfg(feature = "napi-8")]
-            Self::ForeignType => write!(f, "Object is wrapped by another addon"),
+            Self::ForeignType => write!(f, "Neon object expected"),
         }
     }
 }
@@ -203,5 +222,8 @@ where
         &*data.assume_init()
     };
 
-    Ok(data.downcast_ref().ok_or_else(WrapError::not_wrapped))
+    match data.downcast_ref() {
+        Some(result) => Ok(Ok(result)),
+        None => Ok(Err(WrapError::wrong_type(std::any::type_name::<T>()))),
+    }
 }

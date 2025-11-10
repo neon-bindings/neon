@@ -72,25 +72,4 @@ describe("boxed", function () {
 
     assert.throws(() => addon.person_greet(unit), /failed to downcast/);
   });
-
-  it("should be able to wrap a Rust value in an object", () => {
-    const msg = "Hello, World!";
-    const o = {};
-
-    addon.wrapString(o, msg);
-    assert.strictEqual(addon.unwrapString(o), msg);
-  });
-
-  it("should not be able to wrap an object twice", () => {
-    const o = {};
-
-    addon.wrapString(o, "Hello, World!");
-    assert.throws(() => addon.wrapString(o, "nope"), /already wrapped/);
-  });
-
-  it("should not be able to unwrap an object that was not wrapped", () => {
-    const o = {};
-
-    assert.throws(() => addon.unwrapString(o), /not wrapped/);
-  });
 });

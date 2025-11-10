@@ -2,6 +2,29 @@ const addon = require("..");
 const { expect } = require("chai");
 const assert = require("chai").assert;
 
+describe("wrapping", function() {
+  it("should be able to wrap a Rust value in an object", () => {
+    const msg = "Hello, World!";
+    const o = {};
+
+    addon.wrapString(o, msg);
+    assert.strictEqual(addon.unwrapString(o), msg);
+  });
+
+  it("should not be able to wrap an object twice", () => {
+    const o = {};
+
+    addon.wrapString(o, "Hello, World!");
+    assert.throws(() => addon.wrapString(o, "nope"), /non-class instance expected/);
+  });
+
+  it("should not be able to unwrap an object that was not wrapped", () => {
+    const o = {};
+
+    assert.throws(() => addon.unwrapString(o), /class instance expected/);
+  });
+});
+
 describe("classes", function () {
   it("can create a Message class", function () {
     const Message = addon.Message;
@@ -136,6 +159,106 @@ describe("classes", function () {
     assert.throws(() => {
       point.swapCoords(42);
     }, TypeError);
+  });
+
+  it("fails with TypeError when passing wrong type to Message.concat", function () {
+    const Message = addon.Message;
+    const message = new Message("Hello");
+
+    // Test with various wrong types
+    assert.throws(() => message.concat(null), TypeError, /expected object/, "should reject null");
+    assert.throws(
+      () => message.concat(undefined),
+      TypeError,
+      /expected object/,
+      "should reject undefined"
+    );
+    assert.throws(
+      () => message.concat("string"),
+      TypeError,
+      /expected object/,
+      "should reject string"
+    );
+    assert.throws(
+      () => message.concat(42),
+      TypeError,
+      /expected object/,
+      "should reject number"
+    );
+    assert.throws(
+      () => message.concat({ value: "test" }),
+      TypeError,
+      /class instance expected/,
+      "should reject plain object"
+    );
+    assert.throws(
+      () => message.concat([]),
+      TypeError,
+      /class instance expected/,
+      "should reject array"
+    );
+  });
+
+  it("fails with TypeError when passing wrong type to Point.midpoint", function () {
+    const Point = addon.Point;
+    const point = new Point(5, 10);
+
+    // Test with various wrong types
+    assert.throws(() => point.midpoint(null), TypeError, /expected object/, "should reject null");
+    assert.throws(
+      () => point.midpoint(undefined),
+      TypeError,
+      /expected object/,
+      "should reject undefined"
+    );
+    assert.throws(
+      () => point.midpoint("string"),
+      TypeError,
+      /expected object/,
+      "should reject string"
+    );
+    assert.throws(
+      () => point.midpoint(123),
+      TypeError,
+      /expected object/,
+      "should reject number"
+    );
+    assert.throws(
+      () => point.midpoint({ x: 1, y: 2 }),
+      TypeError,
+      /class instance expected/,
+      "should reject plain object"
+    );
+  });
+
+  it("fails with TypeError when mixing different class types", function () {
+    const Point = addon.Point;
+    const Message = addon.Message;
+
+    const point = new Point(1, 2);
+    const message = new Message("test");
+
+    // Try to pass a Message where a Point is expected
+    try {
+      point.distance(message);
+      assert.fail("should have thrown an error");
+    } catch (e) {
+      assert.instanceOf(e, TypeError);
+      assert.match(e.message, /expected instance of.*Point/);
+      // Uncomment to see the actual error message:
+      // console.log("Point error:", e.message);
+    }
+
+    // Try to pass a Point where a Message is expected
+    try {
+      message.concat(point);
+      assert.fail("should have thrown an error");
+    } catch (e) {
+      assert.instanceOf(e, TypeError);
+      assert.match(e.message, /expected instance of.*Message/);
+      // Uncomment to see the actual error message:
+      // console.log("Message error:", e.message);
+    }
   });
 
   it("Point class has const properties", function () {
