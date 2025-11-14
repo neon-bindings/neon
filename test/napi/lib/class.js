@@ -2,7 +2,7 @@ const addon = require("..");
 const { expect } = require("chai");
 const assert = require("chai").assert;
 
-describe("wrapping", function() {
+describe("wrapping", function () {
   it("should be able to wrap a Rust value in an object", () => {
     const msg = "Hello, World!";
     const o = {};
@@ -15,7 +15,10 @@ describe("wrapping", function() {
     const o = {};
 
     addon.wrapString(o, "Hello, World!");
-    assert.throws(() => addon.wrapString(o, "nope"), /non-class instance expected/);
+    assert.throws(
+      () => addon.wrapString(o, "nope"),
+      /non-class instance expected/
+    );
   });
 
   it("should not be able to unwrap an object that was not wrapped", () => {
@@ -166,7 +169,12 @@ describe("classes", function () {
     const message = new Message("Hello");
 
     // Test with various wrong types
-    assert.throws(() => message.concat(null), TypeError, /expected object/, "should reject null");
+    assert.throws(
+      () => message.concat(null),
+      TypeError,
+      /expected object/,
+      "should reject null"
+    );
     assert.throws(
       () => message.concat(undefined),
       TypeError,
@@ -204,7 +212,12 @@ describe("classes", function () {
     const point = new Point(5, 10);
 
     // Test with various wrong types
-    assert.throws(() => point.midpoint(null), TypeError, /expected object/, "should reject null");
+    assert.throws(
+      () => point.midpoint(null),
+      TypeError,
+      /expected object/,
+      "should reject null"
+    );
     assert.throws(
       () => point.midpoint(undefined),
       TypeError,

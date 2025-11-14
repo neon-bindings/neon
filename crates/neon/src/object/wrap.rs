@@ -86,7 +86,7 @@ enum WrapErrorType {
 
 fn ref_cell_target_type_name(s: &str) -> Option<String> {
     if let Some(start) = s.find('<') {
-        let s = &s[start+1..];
+        let s = &s[start + 1..];
         if let Some(end) = s.find('>') {
             return Some(s[0..end].to_string());
         }
@@ -101,7 +101,8 @@ impl fmt::Display for WrapErrorType {
             Self::AlreadyWrapped => write!(f, "non-class instance expected"),
             Self::NotWrapped => write!(f, "class instance expected"),
             Self::WrongType(expected) => {
-                let target_type_name = ref_cell_target_type_name(*expected).unwrap_or(expected.to_string());
+                let target_type_name =
+                    ref_cell_target_type_name(*expected).unwrap_or(expected.to_string());
                 write!(f, "expected instance of {}", target_type_name)
             }
             #[cfg(feature = "napi-8")]
