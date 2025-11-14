@@ -998,9 +998,9 @@ pub(crate) fn class(
 
     let impl_class_internal: TokenStream = quote::quote! {
         impl neon::macro_internal::ClassInternal for #class_ident {
-            fn local<'cx>(cx: &mut neon::context::Cx<'cx>) -> neon::result::NeonResult<neon::object::ClassMetadata<'cx>> {
+            fn local<'cx>(cx: &mut neon::context::Cx<'cx>) -> neon::result::NeonResult<neon::macro_internal::ClassMetadata<'cx>> {
                 use neon::handle::{Handle, Root};
-                use neon::object::{ClassMetadata, RootClassMetadata};
+                use neon::macro_internal::{ClassMetadata, RootClassMetadata};
                 use neon::thread::LocalKey;
                 use neon::types::{JsFunction, JsObject};
 
@@ -1011,7 +1011,7 @@ pub(crate) fn class(
                     .map(|v| v.to_inner(cx))
             }
 
-            fn create<'cx>(cx: &mut neon::context::Cx<'cx>) -> neon::result::NeonResult<neon::object::ClassMetadata<'cx>> {
+            fn create<'cx>(cx: &mut neon::context::Cx<'cx>) -> neon::result::NeonResult<neon::macro_internal::ClassMetadata<'cx>> {
                 use neon::handle::Handle;
                 use neon::types::{JsFunction, JsObject};
                 use neon::result::ResultExt;

@@ -52,11 +52,7 @@ use crate::{
 use crate::{result::JsResult, types::JsArray};
 
 #[cfg(feature = "napi-6")]
-pub use self::class::{Class, ClassMetadata};
-
-#[cfg(feature = "napi-6")]
-#[doc(hidden)]
-pub use self::class::RootClassMetadata;
+pub use self::class::Class;
 
 #[doc(hidden)]
 pub use self::wrap::{unwrap, wrap};

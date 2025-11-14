@@ -17,6 +17,7 @@ pub trait Class: ClassInternal {
     fn constructor<'cx>(cx: &mut Cx<'cx>) -> JsResult<'cx, JsFunction>;
 }
 
+#[doc(hidden)]
 pub struct ClassMetadata<'cx> {
     external_constructor: Handle<'cx, JsFunction>,
     internal_constructor: Handle<'cx, JsFunction>,
@@ -50,6 +51,7 @@ impl<'cx> ClassMetadata<'cx> {
     }
 }
 
+#[doc(hidden)]
 pub struct RootClassMetadata {
     pub external_constructor: Root<JsFunction>,
     pub internal_constructor: Root<JsFunction>,
