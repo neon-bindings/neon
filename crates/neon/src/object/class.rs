@@ -6,12 +6,15 @@ use crate::{
     types::JsFunction,
 };
 
-pub trait Class {
-    fn name() -> String;
-    fn constructor<'cx>(cx: &mut Cx<'cx>) -> JsResult<'cx, JsFunction>;
-
+#[doc(hidden)]
+pub trait ClassInternal {
     fn local<'cx>(cx: &mut Cx<'cx>) -> NeonResult<ClassMetadata<'cx>>;
     fn create<'cx>(cx: &mut Cx<'cx>) -> NeonResult<ClassMetadata<'cx>>;
+}
+
+pub trait Class: ClassInternal {
+    fn name() -> String;
+    fn constructor<'cx>(cx: &mut Cx<'cx>) -> JsResult<'cx, JsFunction>;
 }
 
 pub struct ClassMetadata<'cx> {

@@ -996,13 +996,8 @@ pub(crate) fn class(
         .map(|(f, meta)| generate_method_wrapper(meta, &class_ident, &f.sig))
         .collect();
 
-    // Generate the impl of `neon::object::Class` for the struct
-    let impl_class: TokenStream = quote::quote! {
-        impl neon::object::Class for #class_ident {
-            fn name() -> String {
-                stringify!(#class_ident).into()
-            }
-
+    let impl_class_internal: TokenStream = quote::quote! {
+        impl neon::macro_internal::ClassInternal for #class_ident {
             fn local<'cx>(cx: &mut neon::context::Cx<'cx>) -> neon::result::NeonResult<neon::object::ClassMetadata<'cx>> {
                 use neon::handle::{Handle, Root};
                 use neon::object::{ClassMetadata, RootClassMetadata};
@@ -1014,10 +1009,6 @@ pub(crate) fn class(
                 CLASS_METADATA
                     .get_or_try_init(cx, |cx| Self::create(cx).map(|v| v.root(cx)))
                     .map(|v| v.to_inner(cx))
-            }
-
-            fn constructor<'cx>(cx: &mut neon::context::Cx<'cx>) -> neon::result::JsResult<'cx, neon::types::JsFunction> {
-                Ok(Self::local(cx)?.constructor())
             }
 
             fn create<'cx>(cx: &mut neon::context::Cx<'cx>) -> neon::result::NeonResult<neon::object::ClassMetadata<'cx>> {
@@ -1054,6 +1045,19 @@ pub(crate) fn class(
                 let external: Handle<JsFunction> = pair.prop(cx, "external").get()?;
                 let internal: Handle<JsFunction> = pair.prop(cx, "internal").get()?;
                 Ok(neon::macro_internal::new_class_metadata(external, internal))
+            }
+        }
+    };
+
+    // Generate the impl of `neon::object::Class` for the struct
+    let impl_class: TokenStream = quote::quote! {
+        impl neon::object::Class for #class_ident {
+            fn name() -> String {
+                stringify!(#class_ident).into()
+            }
+
+            fn constructor<'cx>(cx: &mut neon::context::Cx<'cx>) -> neon::result::JsResult<'cx, neon::types::JsFunction> {
+                Ok(<Self as neon::macro_internal::ClassInternal>::local(cx)?.constructor())
             }
         }
     };
@@ -1171,6 +1175,7 @@ pub(crate) fn class(
 
     quote::quote! {
         #impl_block
+        #impl_class_internal
         #impl_class
         #impl_finalize
         #impl_sealed
