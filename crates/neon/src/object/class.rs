@@ -12,8 +12,15 @@ pub trait ClassInternal {
     fn create<'cx>(cx: &mut Cx<'cx>) -> NeonResult<ClassMetadata<'cx>>;
 }
 
+/// A trait defining a Neon class.
+///
+/// **This should not be implemented directly.** Instead, use the `#[neon::class]`
+/// attribute macro to define a class, which will automatically implement this trait.
 pub trait Class: ClassInternal {
+    /// The class name.
     fn name() -> String;
+
+    /// The constructor function for the class.
     fn constructor<'cx>(cx: &mut Cx<'cx>) -> JsResult<'cx, JsFunction>;
 }
 
