@@ -69,7 +69,7 @@ impl<T> ResultExt<T> for Result<T, WrapError> {
         match self {
             Ok(v) => Ok(v),
             Err(WrapError(WrapErrorType::ObjectExpected)) => cx.throw_type_error("object expected"),
-            Err(err) => cx.throw_error(err.to_string()),
+            Err(err) => cx.throw_type_error(err.to_string()),
         }
     }
 }

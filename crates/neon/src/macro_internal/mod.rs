@@ -123,11 +123,6 @@ pub use crate::object::class::new_class_metadata;
 pub use crate::types_impl::extract::private::Sealed;
 
 #[cfg(feature = "napi-6")]
-pub fn object_expected(class_name: String) -> crate::types::extract::ObjectExpected {
-    crate::types::extract::ObjectExpected::new(class_name)
-}
-
-#[cfg(feature = "napi-6")]
 pub use crate::object::wrap::WrapError;
 
 #[cfg(feature = "napi-6")]

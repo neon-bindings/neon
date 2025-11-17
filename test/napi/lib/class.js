@@ -166,7 +166,9 @@ describe("classes", function () {
 
   it("fails with TypeError when passing wrong type to Message.concat", function () {
     const Message = addon.Message;
+    const Point = addon.Point;
     const message = new Message("Hello");
+    const point = new Point(1, 2);
 
     // Test with various wrong types
     assert.throws(
@@ -204,6 +206,12 @@ describe("classes", function () {
       TypeError,
       /class instance expected/,
       "should reject array"
+    );
+    assert.throws(
+      () => message.concat(point),
+      TypeError,
+      /expected instance of.*Message/,
+      "should reject instance of different class"
     );
   });
 
