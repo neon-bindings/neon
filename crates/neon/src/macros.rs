@@ -9,7 +9,7 @@
 /// JavaScript class during object construction.
 ///
 /// Typically, Neon classes are exported from their addon, which can be done with the
-/// [`#[neon::export(class)]`] attribute.
+/// `#[`[`neon::export(class)`]`]` attribute.
 ///
 /// ## Example
 ///
@@ -454,7 +454,7 @@
 ///
 /// ## Export Shorthand
 ///
-/// Use [`#[neon::export(class)]`] to combine class definition with automatic module export:
+/// Use `#[`[`neon::export(class)`]`]` to combine class definition with automatic module export:
 ///
 /// ```
 /// # use neon::prelude::*;
@@ -547,7 +547,7 @@
 /// # }
 /// ```
 ///
-/// [`#[neon::export(class)]`]: crate::export
+/// [`neon::export(class)`]: crate::export
 pub use neon_macros::class;
 
 /// Marks a function as the main entry point for initialization in
