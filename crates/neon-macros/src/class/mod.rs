@@ -578,7 +578,7 @@ fn validate_method_attributes(meta: &meta::Meta, sig: &syn::Signature) -> syn::R
         if let Some(syn::FnArg::Receiver(_)) = sig.inputs.first() {
             return Err(syn::Error::new(
                 sig.ident.span(),
-                "Constructor methods cannot have a `self` parameter",
+                "Constructor methods cannot have a `self` receiver",
             ));
         }
     } else {
@@ -744,7 +744,7 @@ pub(crate) fn class(
                     syn::FnArg::Receiver(_) => {
                         return syn::Error::new_spanned(
                             arg,
-                            "constructor cannot have a self receiver",
+                            "Constructor methods cannot have a `self` receiver",
                         )
                         .to_compile_error()
                         .into();

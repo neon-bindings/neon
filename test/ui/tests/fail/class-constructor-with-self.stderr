@@ -1,4 +1,4 @@
-error: constructor cannot have a self receiver
+error: Constructor methods cannot have a `self` receiver
  --> tests/fail/class-constructor-with-self.rs:5:12
   |
 5 |     fn new(self) -> Self {
