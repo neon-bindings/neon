@@ -1,5 +1,4 @@
 const addon = require("..");
-const { expect } = require("chai");
 const assert = require("chai").assert;
 
 describe("wrapping", function () {

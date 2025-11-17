@@ -8,6 +8,9 @@
 /// create instances of the struct, which Neon automatically attaches to instances of the
 /// JavaScript class during object construction.
 ///
+/// Typically, Neon classes are exported from their addon, which can be done with the
+/// [`#[neon::export(class)]`] attribute.
+///
 /// ## Example
 ///
 /// ```
@@ -20,7 +23,7 @@
 ///     last_name: String,
 /// }
 ///
-/// #[neon::class]
+/// #[neon::export(class)]
 /// impl User {
 ///     pub fn new(username: String, first_name: String, last_name: String) -> Self {
 ///         Self { username, first_name, last_name }
@@ -31,7 +34,7 @@
 ///     }
 /// }
 /// ```
-
+///
 /// ## Constructor
 ///
 /// Classes must have exactly one constructor method named `new`. The constructor takes
@@ -451,7 +454,7 @@
 ///
 /// ## Export Shorthand
 ///
-/// Use [`export(class)`] to combine class definition with automatic module export:
+/// Use [`#[neon::export(class)]`] to combine class definition with automatic module export:
 ///
 /// ```
 /// # use neon::prelude::*;
@@ -513,7 +516,38 @@
 /// }
 /// ```
 ///
-/// [`export(class)`]: crate::export
+/// ## `Class` Trait
+///
+/// The `#[neon::class]` macro automatically implements the [`Class`](crate::object::Class)
+/// trait for the struct. This trait can be used to access the constructor function at runtime.
+///
+/// ```
+/// # use neon::prelude::*;
+/// # use neon::types::Finalize;
+/// use neon::object::Class;
+/// # #[derive(Clone)]
+/// # pub struct Point {
+/// #     x: f64,
+/// #     y: f64,
+/// # }
+/// #
+/// # #[neon::class]
+/// # impl Point {
+/// #     pub fn new(x: f64, y: f64) -> Self {
+/// #         Self { x, y }
+/// #     }
+/// # }
+///
+/// # fn init_statics<'cx>(cx: &mut FunctionContext<'cx>) -> JsResult<'cx, JsUndefined> {
+/// let constructor = Point::constructor(cx)?;
+/// constructor
+///     .prop(cx, "ORIGIN")
+///     .set(Point::new(0.0, 0.0))?;
+/// # Ok(cx.undefined())
+/// # }
+/// ```
+///
+/// [`#[neon::export(class)]`]: crate::export
 pub use neon_macros::class;
 
 /// Marks a function as the main entry point for initialization in
