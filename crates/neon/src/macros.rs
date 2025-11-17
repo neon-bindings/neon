@@ -4,8 +4,8 @@
 /// Create a Neon class from a Rust datatype
 ///
 /// The `#[neon::class]` attribute can be applied to an `impl` block to create a JavaScript
-/// class that wraps a Rust struct. The `impl` block specifies a constructor method named `new` to
-/// create instances of the struct, which Neon automatically attaches to instances of the
+/// class that wraps a Rust struct (or enum). The `impl` block specifies a constructor method named
+/// `new` to create instances of the struct, which Neon automatically attaches to instances of the
 /// JavaScript class during object construction.
 ///
 /// Typically, Neon classes are exported from their addon, which can be done with the
