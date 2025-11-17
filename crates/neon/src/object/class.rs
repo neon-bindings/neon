@@ -14,9 +14,8 @@ pub trait ClassInternal {
 
 /// A trait defining a Neon class.
 ///
-/// **This should not be implemented directly.** Instead, use the
-/// [`#[neon::class]`](crate::macros::class) attribute macro to define a class, which will
-/// automatically implement this trait.
+/// **This should not be implemented directly.** Instead, use the [`class`](crate::macros::class)
+/// attribute macro to define a class, which will automatically implement this trait.
 pub trait Class: ClassInternal {
     /// The class name.
     fn name() -> String;
