@@ -199,8 +199,8 @@
 ///
 /// ### Method Attributes
 ///
-/// Methods support the same attributes as [`export`] functions, including `json`, `task`,
-/// `async`, `context`, `this`, and `name`.
+/// Methods support the same attributes as [`#[neon::export]`](crate::export) functions, including
+/// `json`, `task`, `async`, `context`, `this`, and `name`.
 ///
 /// #### JSON Methods
 ///
@@ -314,8 +314,8 @@
 ///
 /// #### Method Naming
 ///
-/// Like [`export`] functions, method names are converted from `snake_case` to `camelCase`.
-/// Custom names can be specified with the `name` attribute:
+/// Like [`#[neon::export]`](crate::export) functions, method names are converted from `snake_case`
+/// to `camelCase`. Custom names can be specified with the `name` attribute:
 ///
 /// ```
 /// # use neon::prelude::*;
@@ -498,7 +498,8 @@
 ///
 /// ## Error Handling
 ///
-/// Methods can return [`Result`] types to throw JavaScript exceptions, just like [`export`] functions:
+/// Methods can return [`Result`] types to throw JavaScript exceptions, just like
+/// [`#[neon::export]`](crate::export) functions:
 ///
 /// ```
 /// # use neon::prelude::*;
@@ -823,7 +824,7 @@ pub use neon_macros::main;
 ///
 /// The `#[neon::export(class)]` attribute may be used on an `impl` block to
 /// combine class definition with automatic export. See the documentation for
-/// [`class`] for more details.
+/// [`#[neon::class]`](crate::class) for more details.
 ///
 /// ### Advanced
 ///
