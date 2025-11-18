@@ -226,7 +226,7 @@
 ///
 /// Methods declared with `async fn` are automatically detected and exported as async. The
 /// macro automatically clones the instance before calling the method. Because Rust's `async fn`
-/// captures `self` into the Future (which must be `'static`), the receiver must be `self` by
+/// captures `self` into the Future (which must be `'static`), the method must take `self` by
 /// value (not `&self` or `&mut self`) and the struct must implement `Clone`. Any shared mutable
 /// state should use types like [`Arc<Mutex<T>>`](std::sync::Arc) for thread-safe interior
 /// mutability.
@@ -297,9 +297,8 @@
 ///
 /// Methods can be executed on Node's worker pool using the `task` attribute. The macro
 /// automatically clones the instance before moving it to the worker thread, so the struct
-/// must implement `Clone`. Unlike `async fn` methods, task methods can take `&self` or
-/// `&mut self` because the cloned instance is owned by the task closure, which can create
-/// references to it.
+/// must implement `Clone`. Like `async fn` methods, task methods must take `self` by value
+/// (not `&self` or `&mut self`) to make it clear that they operate on a clone.
 ///
 /// ```
 /// # use neon::prelude::*;
@@ -315,9 +314,9 @@
 ///         Self { multiplier }
 ///     }
 ///
-///     // Takes `&self` - the macro clones the instance automatically
+///     // Must take `self` by value - the macro clones the instance automatically
 ///     #[neon(task)]
-///     pub fn heavy_computation(&self, iterations: u32) -> u32 {
+///     pub fn heavy_computation(self, iterations: u32) -> u32 {
 ///         (0..iterations).map(|i| i * self.multiplier).sum()
 ///     }
 /// }

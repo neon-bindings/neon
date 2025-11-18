@@ -267,19 +267,6 @@ fn generate_method_wrapper(
             }
         }
         meta::Kind::Task => {
-            // For task methods, we need to move a clone into the closure
-            // since tasks run on a different thread
-            let borrow_call = if is_mut {
-                quote::quote! {
-                    let mut instance = instance_clone;
-                    let instance = &mut instance;
-                }
-            } else {
-                quote::quote! {
-                    let instance = &instance_clone;
-                }
-            };
-
             quote::quote! {
                 JsFunction::new(cx, |mut cx| {
                     use neon::result::ResultExt;
@@ -293,7 +280,7 @@ fn generate_method_wrapper(
                     // This extraction if needed
                     #this_extract
 
-                    // Clone the instance since we need to move it into the task
+                    // Clone the instance to move into the task (takes self by value)
                     let instance_clone = instance_cell.borrow().clone();
 
                     // Extract non-context/this arguments with JSON wrapping if needed
@@ -306,8 +293,7 @@ fn generate_method_wrapper(
                     #(#ref_guards)*
 
                     let promise = neon::context::Context::task(&mut cx, move || {
-                        #borrow_call
-                        instance.#name(#context_arg #this_arg #(#args),*)
+                        instance_clone.#name(#context_arg #this_arg #(#args),*)
                     })
                     .promise(|mut cx, res| #result_extract);
                     Ok(promise.upcast::<neon::types::JsValue>())
@@ -553,22 +539,35 @@ fn validate_method_attributes(meta: &meta::Meta, sig: &syn::Signature) -> syn::R
         ));
     }
 
-    // Validate that async fn methods take self by value if they're detected as AsyncFn
-    if matches!(meta.kind, meta::Kind::AsyncFn) {
+    // Validate that async fn and task methods take self by value
+    if matches!(meta.kind, meta::Kind::AsyncFn | meta::Kind::Task) {
         if let Some(syn::FnArg::Receiver(receiver)) = sig.inputs.first() {
             if receiver.reference.is_some() {
-                // This is &self or &mut self, but for AsyncFn we need self by value
-                if sig.asyncness.is_some() {
-                    return Err(syn::Error::new(
-                        receiver.span(),
-                        "Async functions in classes must take `self` by value, not `&self` or `&mut self`. This is required because async functions capture `self` in the Future, which must be `'static` for spawning."
-                    ));
-                }
+                // This is &self or &mut self, but we need self by value
+                let method_type = if matches!(meta.kind, meta::Kind::AsyncFn) {
+                    "Async functions"
+                } else {
+                    "Task methods"
+                };
+                let reason = if matches!(meta.kind, meta::Kind::AsyncFn) {
+                    "This is required because async functions capture `self` in the Future, which must be `'static` for spawning."
+                } else {
+                    "Since the instance is cloned before moving to the worker thread, taking `&self` would operate on a temporary reference to the clone, which is misleading."
+                };
+                return Err(syn::Error::new(
+                    receiver.span(),
+                    format!("{} in classes must take `self` by value, not `&self` or `&mut self`. {}", method_type, reason)
+                ));
             }
         } else {
+            let method_type = if matches!(meta.kind, meta::Kind::AsyncFn) {
+                "Async functions"
+            } else {
+                "Task methods"
+            };
             return Err(syn::Error::new(
                 sig.span(),
-                "Async functions in classes must take `self` as their first parameter.",
+                format!("{} in classes must take `self` as their first parameter.", method_type),
             ));
         }
     }
