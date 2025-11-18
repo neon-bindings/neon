@@ -224,11 +224,11 @@
 ///
 /// #### Async Methods
 ///
-/// Methods declared with `async fn` are automatically detected and exported as async. Because the
-/// data is shared across threads, it is automatically cloned before the method is called, so the
-/// receiver must be `self` by value instead of `&self` or `&mut self` and the struct must
-/// implement `Clone`. Any shared mutable state should use types like
-/// [`Arc<Mutex<T>>`](std::sync::Arc) for thread-safe interior mutability.
+/// Methods declared with `async fn` are automatically detected and exported as async. The
+/// macro automatically clones the instance before calling the method, so the receiver must
+/// be `self` by value (not `&self` or `&mut self`) and the struct must implement `Clone`.
+/// Any shared mutable state should use types like [`Arc<Mutex<T>>`](std::sync::Arc) for
+/// thread-safe interior mutability.
 ///
 /// ```
 /// # #[cfg(all(feature = "napi-6", feature = "futures"))]
@@ -248,7 +248,7 @@
 ///         }
 ///     }
 ///
-///     // Takes `self` - the struct is cloned before calling
+///     // Must take `self` by value; the macro clones the instance automatically
 ///     pub async fn fetch_data(self, url: String) -> String {
 ///         // Simulate async work
 ///         let mut count = self.counter.lock().unwrap();
@@ -263,7 +263,8 @@
 ///
 /// For more control over async behavior, use `#[neon(async)]` with a method that
 /// returns a [`Future`](std::future::Future). This allows synchronous setup on
-/// the JavaScript main thread.
+/// the JavaScript main thread. With this approach, the method takes `&self` and you
+/// are responsible for cloning any data needed to make the returned Future `'static`.
 ///
 /// ```
 /// # #[cfg(all(feature = "napi-6", feature = "futures"))]
@@ -272,16 +273,19 @@
 /// # use neon::types::Finalize;
 /// # use std::future::Future;
 /// # #[derive(Clone)]
-/// # pub struct AsyncWorker;
+/// # pub struct AsyncWorker {
+/// #     value: String,
+/// # }
 /// #[neon::class]
 /// impl AsyncWorker {
-/// #   pub fn new() -> Self { Self }
+/// #   pub fn new() -> Self { Self { value: String::new() } }
 ///     #[neon(async)]
 ///     pub fn process_data(&self, data: String) -> impl Future<Output = String> + 'static {
 ///         println!("Setup on main thread");
-///         let data_clone = data;
+///         // Clone any instance data you need for the Future
+///         let value = self.value.clone();
 ///         async move {
-///             data_clone.to_uppercase()
+///             format!("{}: {}", value, data.to_uppercase())
 ///         }
 ///     }
 /// }
@@ -290,24 +294,28 @@
 ///
 /// #### Task Methods
 ///
-/// Methods can be executed on Node's worker pool using the `task` attribute. The instance
-/// is cloned to move into the worker thread, so the struct must implement `Clone`.
+/// Methods can be executed on Node's worker pool using the `task` attribute. The macro
+/// automatically clones the instance before moving it to the worker thread, so the struct
+/// must implement `Clone`. The method itself can take `&self` or `&mut self` as usual.
 ///
 /// ```
 /// # use neon::prelude::*;
 /// # use neon::types::Finalize;
 /// #[derive(Clone)]
-/// pub struct CpuWorker;
+/// pub struct CpuWorker {
+///     multiplier: u32,
+/// }
 ///
 /// #[neon::class]
 /// impl CpuWorker {
-///     pub fn new() -> Self {
-///         Self
+///     pub fn new(multiplier: u32) -> Self {
+///         Self { multiplier }
 ///     }
 ///
+///     // Takes `&self` - the macro clones the instance automatically
 ///     #[neon(task)]
 ///     pub fn heavy_computation(&self, iterations: u32) -> u32 {
-///         (0..iterations).map(|i| i as u32).sum()
+///         (0..iterations).map(|i| i * self.multiplier).sum()
 ///     }
 /// }
 /// ```
