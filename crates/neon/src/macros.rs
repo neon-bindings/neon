@@ -314,7 +314,7 @@
 ///         Self { multiplier }
 ///     }
 ///
-///     // Must take `self` by value - the macro clones the instance automatically
+///     // Must take `self` by value; the macro clones the instance automatically
 ///     #[neon(task)]
 ///     pub fn heavy_computation(self, iterations: u32) -> u32 {
 ///         (0..iterations).map(|i| i * self.multiplier).sum()

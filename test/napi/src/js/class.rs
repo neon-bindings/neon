@@ -210,7 +210,7 @@ impl AsyncClass {
         format!("{}{}", self.value, suffix)
     }
 
-    // Task method for CPU-intensive work - takes self by value
+    // Task method for CPU-intensive work
     #[neon(task)]
     pub fn heavy_computation(self) -> u32 {
         // Simulate CPU-intensive work
@@ -277,7 +277,7 @@ impl AsyncClass {
         format!("{}:{}", self.value, suffix)
     }
 
-    // Task method with Channel parameter - takes self by value
+    // Task method with Channel parameter
     #[neon(task)]
     pub fn task_with_channel(self, _ch: Channel, multiplier: i32) -> String {
         // Channel is available for background tasks
