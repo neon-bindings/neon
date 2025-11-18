@@ -13,7 +13,10 @@ use crate::{
 };
 
 #[cfg(feature = "napi-4")]
-use crate::event::{Channel, JoinHandle, SendError};
+use crate::{
+    event::{Channel, JoinHandle, SendError},
+    types::extract::TryIntoJs,
+};
 
 #[cfg(feature = "napi-6")]
 use crate::{
@@ -358,6 +361,47 @@ impl Deferred {
         F: FnOnce(Cx) -> JsResult<V> + Send + 'static,
     {
         self.try_settle_with(channel, complete).unwrap()
+    }
+
+    #[cfg(feature = "napi-4")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "napi-4")))]
+    /// Settle the [`JsPromise`] by sending a type that implements [`TryIntoJs`] to the main JavaScript thread.
+    ///
+    /// Usage is identical to [`Deferred::settle`].
+    ///
+    /// Returns a [`SendError`][crate::event::SendError] if sending the closure to the main JavaScript thread fails.
+    /// See [`Channel::try_send`][crate::event::Channel::try_send] for more details.
+    pub fn try_settle<V, T>(self, channel: &Channel, v: T) -> Result<JoinHandle<()>, SendError>
+    where
+        for<'cx> T: TryIntoJs<'cx, Value = V> + Send + 'static,
+        V: Value,
+    {
+        self.try_settle_with::<V, _>(channel, move |mut cx| v.try_into_js(&mut cx))
+    }
+
+    #[cfg(feature = "napi-4")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "napi-4")))]
+    /// Settle the [`JsPromise`] by sending a type that implements [`TryIntoJs`] to the main JavaScript thread.
+    ///
+    /// Panics if there is a libuv error.
+    ///
+    /// ```
+    /// # use neon::prelude::*;
+    /// # fn example(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    /// let channel = cx.channel();
+    /// let (deferred, promise) = cx.promise();
+    ///
+    /// deferred.settle(&channel, 42f64);
+    ///
+    /// # Ok(promise)
+    /// # }
+    /// ```
+    pub fn settle<V, T>(self, channel: &Channel, v: T) -> JoinHandle<()>
+    where
+        for<'cx> T: TryIntoJs<'cx, Value = V> + Send + 'static,
+        V: Value,
+    {
+        self.try_settle(channel, v).unwrap()
     }
 
     pub(crate) fn try_catch_settle<'a, C, V, F>(self, cx: C, f: F)

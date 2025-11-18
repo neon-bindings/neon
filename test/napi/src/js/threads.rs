@@ -482,3 +482,15 @@ fn block_task_callback(ch: Channel, cb: Root<JsFunction>) -> Result<Root<JsObjec
 
     Ok(res)
 }
+
+#[neon::export]
+fn settle_hello_world<'cx>(cx: &mut Cx<'cx>) -> JsResult<'cx, JsPromise> {
+    let (d, promise) = cx.promise();
+    let ch = cx.channel();
+
+    std::thread::spawn(move || {
+        d.settle(&ch, "Hello, World!");
+    });
+
+    Ok(promise)
+}
