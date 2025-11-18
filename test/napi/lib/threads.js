@@ -501,4 +501,8 @@ const assert = require("chai").assert;
       assert.instanceOf(err.panic, Error);
     }
   });
+
+  it("should be able to settle a promise with a Rust value", async function () {
+    assert.strictEqual(await addon.settleHelloWorld(), "Hello, World!");
+  });
 });
