@@ -456,6 +456,18 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     let async_class_constructor = js::class::AsyncClass::constructor(&mut cx)?;
     cx.export_value("AsyncClass", async_class_constructor)?;
 
+    // Test constructor features
+    let fallible_counter_constructor = js::class::FallibleCounter::constructor(&mut cx)?;
+    cx.export_value("FallibleCounter", fallible_counter_constructor)?;
+    let context_counter_constructor = js::class::ContextCounter::constructor(&mut cx)?;
+    cx.export_value("ContextCounter", context_counter_constructor)?;
+    let json_config_constructor = js::class::JsonConfig::constructor(&mut cx)?;
+    cx.export_value("JsonConfig", json_config_constructor)?;
+    let validated_config_constructor = js::class::ValidatedConfig::constructor(&mut cx)?;
+    cx.export_value("ValidatedConfig", validated_config_constructor)?;
+    let argv_constructor = js::class::Argv::constructor(&mut cx)?;
+    cx.export_value("Argv", argv_constructor)?;
+
     Ok(())
 }
 

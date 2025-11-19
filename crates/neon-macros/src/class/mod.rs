@@ -644,6 +644,136 @@ fn check_this(opts: &meta::Meta, sig: &syn::Signature, has_context: bool) -> boo
     }
 }
 
+// Check if constructor has a context parameter using same heuristic as export functions
+// * If the `context` attribute is included, must have at least one argument
+// * Inferred to be context if first arg is `&mut FunctionContext` or `&mut Cx`
+// * Context argument must be a `&mut` reference
+fn check_constructor_context(opts: &meta::Meta, sig: &syn::Signature) -> syn::Result<bool> {
+    // Extract the first argument
+    let ty = match sig.inputs.first() {
+        Some(syn::FnArg::Typed(ty)) => ty,
+        Some(syn::FnArg::Receiver(_)) => {
+            return Err(syn::Error::new(
+                sig.inputs.span(),
+                "Constructor cannot have a `self` receiver",
+            ))
+        }
+        None if opts.context => {
+            return Err(syn::Error::new(
+                sig.inputs.span(),
+                "Expected a context argument. Try removing the `context` attribute.",
+            ))
+        }
+        None => return Ok(false),
+    };
+
+    // Extract the reference type
+    let ty = match &*ty.ty {
+        syn::Type::Reference(ty) => ty,
+
+        // Context needs to be a reference
+        _ if opts.context || is_context_type(&ty.ty) => {
+            return Err(syn::Error::new(
+                ty.ty.span(),
+                "Context must be a `&mut` reference.",
+            ))
+        }
+
+        _ => return Ok(false),
+    };
+
+    // Not a forced or inferred context
+    if !opts.context && !is_context_type(&ty.elem) {
+        return Ok(false);
+    }
+
+    // Context argument must be mutable
+    if ty.mutability.is_none() {
+        return Err(syn::Error::new(ty.span(), "Must be a `&mut` reference."));
+    }
+
+    // All tests passed!
+    Ok(true)
+}
+
+// Generate constructor wrapper with support for context, JSON, and Result types
+fn generate_constructor_wrapper(
+    meta: &meta::Meta,
+    class_id: &syn::Ident,
+    sig: &syn::Signature,
+    ctor_locals: &[Ident],
+) -> syn::Result<TokenStream> {
+    // Check for context parameter in constructor using same heuristic as export functions
+    let has_context = check_constructor_context(meta, sig)?;
+
+    // Generate context extraction if needed
+    let context_extract = if has_context {
+        quote::quote! {
+            // Context is part of FunctionContext, already available as `cx`
+        }
+    } else {
+        quote::quote!()
+    };
+
+    // Determine which parameters are actual constructor arguments (skip context if present)
+    let param_offset = if has_context { 1 } else { 0 };
+    let arg_locals = &ctor_locals[param_offset..];
+
+    // Generate the arguments tuple extraction
+    let args_extract = if arg_locals.is_empty() {
+        quote::quote! {
+            let this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
+        }
+    } else {
+        // Wrap arguments in Json() if needed for deserialization
+        let tuple_fields = arg_locals.iter().map(|name| {
+            if meta.json {
+                quote::quote!(neon::types::extract::Json(#name))
+            } else {
+                quote::quote!(#name)
+            }
+        });
+
+        // Generate type inference tokens for each argument
+        let type_infers = arg_locals.iter().map(|_| {
+            quote::quote! { _ }
+        });
+
+        quote::quote! {
+            let (this, #(#tuple_fields,)*): (neon::handle::Handle<neon::types::JsObject>, #(#type_infers),*) = cx.args()?;
+        }
+    };
+
+    // Build the argument list for calling the constructor
+    let ctor_args = if has_context {
+        if arg_locals.is_empty() {
+            quote::quote! { &mut cx }
+        } else {
+            quote::quote! { &mut cx, #(#arg_locals),* }
+        }
+    } else {
+        quote::quote! { #(#arg_locals),* }
+    };
+
+    // Generate the constructor call with Result handling
+    let ctor_call = quote::quote! {
+        let result = #class_id::new(#ctor_args);
+
+        // Use ToNeonMarker to detect if result is Result<T, E> or just T
+        use neon::macro_internal::{ToNeonMarker, NeonValueTag};
+        let instance = (&result).to_neon_marker::<NeonValueTag>().into_neon_result(&mut cx, result)?;
+    };
+
+    // Generate the full wrapper
+    Ok(quote::quote! {
+        #context_extract
+        #args_extract
+        #ctor_call
+        neon::object::wrap(&mut cx, this, std::cell::RefCell::new(instance))?.or_throw(&mut cx)?;
+        Ok(cx.undefined())
+    })
+}
+
 fn group_class_items(items: Vec<syn::ImplItem>) -> Result<ClassItems, syn::Error> {
     let mut consts = Vec::new();
     let mut fns = Vec::new();
@@ -725,6 +855,58 @@ pub(crate) fn class(
             // If sorting fails, return the error as a compile error
             return err.to_compile_error().into();
         }
+    };
+
+    // Parse constructor metadata
+    let ctor_meta = match &constructor {
+        Some(ctor) => {
+            let mut meta = meta::Meta::default();
+            let mut found_neon_attr = false;
+            for attr in &ctor.attrs {
+                if let syn::Meta::List(syn::MetaList { path, tokens, .. }) = &attr.meta {
+                    if path.is_ident("neon") {
+                        if found_neon_attr {
+                            return syn::Error::new_spanned(
+                                attr,
+                                "multiple #[neon(...)] attributes on constructor are not allowed",
+                            )
+                            .to_compile_error()
+                            .into();
+                        }
+                        found_neon_attr = true;
+                        let parser = meta::Parser(meta);
+                        let tokens = tokens.clone().into();
+                        match syn::parse::Parser::parse2(parser, tokens) {
+                            Ok(parsed_meta) => meta = parsed_meta,
+                            Err(err) => return err.to_compile_error().into(),
+                        }
+                    }
+                }
+            }
+
+            // Validate that constructors don't use async/task attributes
+            if !matches!(meta.kind, meta::Kind::Normal) {
+                return syn::Error::new_spanned(
+                    &ctor.sig,
+                    "Constructors cannot use #[neon(async)] or #[neon(task)] attributes",
+                )
+                .to_compile_error()
+                .into();
+            }
+
+            // Validate that constructors don't use 'this' attribute
+            if meta.this {
+                return syn::Error::new_spanned(
+                    &ctor.sig,
+                    "Constructors cannot use #[neon(this)] attribute",
+                )
+                .to_compile_error()
+                .into();
+            }
+
+            Some(meta)
+        }
+        None => None,
     };
 
     let ctor_params = match &constructor {
@@ -995,6 +1177,25 @@ pub(crate) fn class(
         .map(|(f, meta)| generate_method_wrapper(meta, &class_ident, &f.sig))
         .collect();
 
+    // Generate constructor wrapper implementation
+    let ctor_wrapper_impl = match (&constructor, &ctor_meta) {
+        (Some(ctor), Some(meta)) => {
+            match generate_constructor_wrapper(meta, &class_ident, &ctor.sig, &ctor_locals) {
+                Ok(wrapper) => wrapper,
+                Err(err) => return err.into_compile_error().into(),
+            }
+        }
+        _ => {
+            // Default constructor without metadata
+            quote::quote! {
+                let (this, #(#ctor_locals,)*): (Handle<JsObject>, #(#ctor_infers),*) = cx.args()?;
+                let instance = #make_new(#(#ctor_locals),*);
+                neon::object::wrap(&mut cx, this, std::cell::RefCell::new(instance))?.or_throw(&mut cx)?;
+                Ok(cx.undefined())
+            }
+        }
+    };
+
     let impl_class_internal: TokenStream = quote::quote! {
         impl neon::macro_internal::ClassInternal for #class_ident {
             fn local<'cx>(cx: &mut neon::context::Cx<'cx>) -> neon::result::NeonResult<neon::macro_internal::ClassMetadata<'cx>> {
@@ -1018,10 +1219,9 @@ pub(crate) fn class(
                 use neon::object::Object;
 
                 let wrap = JsFunction::new(cx, |mut cx| {
-                    let (this, #(#ctor_locals,)*): (Handle<JsObject>, #(#ctor_infers),*) = cx.args()?;
-                    let instance = #make_new(#(#ctor_locals),*);
-                    neon::object::wrap(&mut cx, this, std::cell::RefCell::new(instance))?.or_throw(&mut cx)?;
-                    Ok(cx.undefined())
+                    use neon::types::extract::TryFromJs;
+
+                    #ctor_wrapper_impl
                 });
 
                 // Create method functions using the appropriate wrapper based on metadata

@@ -200,7 +200,8 @@
 /// ### Method Attributes
 ///
 /// Methods support the same attributes as [`#[neon::export]`](crate::export) functions, including
-/// `json`, `task`, `async`, `context`, `this`, and `name`.
+/// `json`, `task`, `async`, `context`, `this`, and `name`, and may be fallible by returning
+/// `Result` types.
 ///
 /// #### JSON Methods
 ///
@@ -343,6 +344,84 @@
 ///     #[neon(name = "trimStart")]
 ///     pub fn trim_leading(&self) -> String {
 ///         self.data.trim_start().to_string()
+///     }
+/// }
+/// ```
+///
+/// #### Fallible Methods
+///
+/// Methods can return `Result` types to throw JavaScript exceptions, just like
+/// `#[neon::export]` functions.
+///
+/// ```
+/// # use neon::prelude::*;
+/// pub struct User {
+///     name: String,
+/// }
+///
+/// #[neon::class]
+/// impl User {
+///     pub fn new(name: String) -> Self {
+///         Self { name }
+///     }
+///
+///     pub fn get_name(&self) -> String {
+///         self.name.clone()
+///     }
+///
+///     pub fn set_name(&mut self, name: String) -> Result<(), &'static str> {
+///         if name.is_empty() {
+///             return Err("Name cannot be empty");
+///         }
+///
+///         self.name = name;
+///
+///         Ok(())
+///     }
+/// }
+/// ```
+///
+/// ### Constructor Attributes
+///
+/// Constructor methods support the `json` and `context` attributes and may be fallible as well.
+///
+/// ```
+/// # use neon::prelude::*;
+/// pub struct Argv {
+///     pub args: Vec<String>,
+/// }
+///
+/// #[neon::class]
+/// impl Argv {
+///     // context attribute is inferred automatically
+///     #[neon(json)]
+///     pub fn new(cx: &mut Cx, args: Option<Vec<String>>) -> NeonResult<Self> {
+///         let args = if let Some(args) = args { args } else {
+///             let Json(args): Json<Vec<String>> = cx
+///                 .global::<JsObject>("process")?
+///                 .prop(cx, "argv")
+///                 .get()?;
+///             args
+///         };
+///         Ok(Self { args } )
+///     }
+///
+///     pub fn len(&self) -> u32 {
+///         self.args.len() as u32
+///     }
+///
+///     pub fn get(&self, index: u32) -> Option<String> {
+///         self.args.get(index as usize).cloned()
+///         };
+///         Ok(Self { args } )
+///     }
+///
+///     pub fn len(&self) -> u32 {
+///         self.args.len() as u32
+///     }
+///
+///     pub fn get(&self, index: u32) -> Option<String> {
+///         self.args.get(index as usize).cloned()
 ///     }
 /// }
 /// ```

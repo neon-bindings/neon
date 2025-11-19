@@ -680,3 +680,140 @@ describe("classes", function () {
     assert.strictEqual(original.y(), 4);
   });
 });
+
+describe("constructor features", function () {
+  const { FallibleCounter, ContextCounter, JsonConfig, ValidatedConfig, Argv } =
+    addon;
+
+  describe("Result return types", function () {
+    it("should create instance when constructor succeeds", () => {
+      const counter = new FallibleCounter(50);
+      assert.strictEqual(counter.get(), 50);
+      counter.increment();
+      assert.strictEqual(counter.get(), 51);
+    });
+
+    it("should throw error when constructor fails", () => {
+      assert.throws(
+        () => new FallibleCounter(150),
+        /Value must be <= 100/
+      );
+    });
+
+    it("should work with edge case: maximum valid value", () => {
+      const counter = new FallibleCounter(100);
+      assert.strictEqual(counter.get(), 100);
+    });
+  });
+
+  describe("Context parameter support", function () {
+    it("should create instance with context parameter", () => {
+      const counter = new ContextCounter(42);
+      assert.strictEqual(counter.get(), 42);
+    });
+
+    it("should work with different values", () => {
+      const counter1 = new ContextCounter(10);
+      const counter2 = new ContextCounter(20);
+      assert.strictEqual(counter1.get(), 10);
+      assert.strictEqual(counter2.get(), 20);
+    });
+  });
+
+  describe("JSON support", function () {
+    it("should create instance from JSON object", () => {
+      const config = new JsonConfig({
+        name: "test",
+        count: 5,
+        enabled: true,
+      });
+      assert.strictEqual(config.name(), "test");
+      assert.strictEqual(config.count(), 5);
+      assert.strictEqual(config.enabled(), true);
+    });
+
+    it("should work with different JSON values", () => {
+      const config = new JsonConfig({
+        name: "another",
+        count: 100,
+        enabled: false,
+      });
+      assert.strictEqual(config.name(), "another");
+      assert.strictEqual(config.count(), 100);
+      assert.strictEqual(config.enabled(), false);
+    });
+  });
+
+  describe("Combined features: context + JSON + Result", function () {
+    it("should create an instance with JSON array", () => {
+      const argv = new Argv(["1", "2", "3", "4", "5"]);
+      assert.strictEqual(argv.len(), 5);
+      assert.strictEqual(argv.get(0), "1");
+      assert.strictEqual(argv.get(4), "5");
+    });
+
+    it("should create instance with empty JSON array", () => {
+      const argv = new Argv([]);
+      assert.strictEqual(argv.len(), 0);
+    });
+
+    it("should create instance with nullable JSON array", () => {
+      const argv = new Argv(null);
+      assert.strictEqual(argv.len(), process.argv.length);
+      for (let i = 0; i < process.argv.length; i++) {
+        assert.strictEqual(argv.get(i), process.argv[i]);
+      }
+    });
+
+    it("should propagate errors with nullable JSON array", () => {
+      const old = Object.getOwnPropertyDescriptor(global, 'process');
+      try {
+        // Temporarily override process to simulate error
+        Object.defineProperty(global, 'process', {
+          get: () => { throw new Error("Temporarily broken"); },
+          set: () => { throw new Error("Temporarily broken"); },
+          enumerable: false,
+          configurable: true,
+        });
+        assert.throws(
+          () => new Argv(null),
+          /Temporarily broken/
+        );
+      } finally {
+        // Restore original process object
+        Object.defineProperty(global, 'process', old);
+      }
+    });
+
+    it("should create instance when validation passes", () => {
+      const config = new ValidatedConfig({
+        name: "valid",
+        count: 500,
+      });
+      assert.strictEqual(config.name(), "valid");
+      assert.strictEqual(config.count(), 500);
+    });
+
+    it("should throw error when name is empty", () => {
+      assert.throws(
+        () => new ValidatedConfig({ name: "", count: 10 }),
+        /Name cannot be empty/
+      );
+    });
+
+    it("should throw error when count is too large", () => {
+      assert.throws(
+        () => new ValidatedConfig({ name: "test", count: 2000 }),
+        /Count must be <= 1000/
+      );
+    });
+
+    it("should work with edge case: maximum valid count", () => {
+      const config = new ValidatedConfig({
+        name: "edge",
+        count: 1000,
+      });
+      assert.strictEqual(config.count(), 1000);
+    });
+  });
+});

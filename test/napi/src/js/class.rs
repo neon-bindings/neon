@@ -1,6 +1,6 @@
 use std::{collections::HashMap, future::Future};
 
-use neon::{event::Channel, prelude::*};
+use neon::{event::Channel, prelude::*, types::extract::Json};
 
 #[neon::export]
 fn wrap_string(cx: &mut Cx, o: Handle<JsObject>, s: String) -> NeonResult<()> {
@@ -367,4 +367,136 @@ pub fn create_point_origin() -> Point {
 #[neon::export]
 pub fn double_point_coords(point: Point) -> Point {
     Point::new(point.x() * 2, point.y() * 2)
+}
+
+// Test class with Result return type in constructor
+#[derive(Debug, Clone)]
+pub struct FallibleCounter {
+    value: u32,
+}
+
+#[neon::class]
+impl FallibleCounter {
+    pub fn new(value: u32) -> Result<Self, String> {
+        if value > 100 {
+            Err("Value must be <= 100".to_string())
+        } else {
+            Ok(Self { value })
+        }
+    }
+
+    pub fn get(&self) -> u32 {
+        self.value
+    }
+
+    pub fn increment(&mut self) {
+        self.value += 1;
+    }
+}
+
+// Test class with context parameter in constructor (auto-inferred, no attribute needed)
+#[derive(Debug, Clone)]
+pub struct ContextCounter {
+    value: u32,
+}
+
+type AlsoCx<'cx> = Cx<'cx>;
+
+#[neon::class]
+impl ContextCounter {
+    #[neon(context)]
+    pub fn new(_cx: &mut AlsoCx, value: u32) -> Self {
+        // Could use context to access JavaScript values, call functions, etc.
+        // Context is auto-detected because first param is &mut Cx
+        Self { value }
+    }
+
+    pub fn get(&self) -> u32 {
+        self.value
+    }
+}
+
+// Test class with JSON in constructor
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct JsonConfig {
+    name: String,
+    count: u32,
+    enabled: bool,
+}
+
+#[neon::class]
+impl JsonConfig {
+    #[neon(json)]
+    pub fn new(config: JsonConfig) -> Self {
+        config
+    }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn count(&self) -> u32 {
+        self.count
+    }
+
+    pub fn enabled(&self) -> bool {
+        self.enabled
+    }
+}
+
+// Test class combining all features: context (auto-inferred), JSON, and Result
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct ValidatedConfig {
+    name: String,
+    count: u32,
+}
+
+#[neon::class]
+impl ValidatedConfig {
+    #[neon(json)]
+    pub fn new(_cx: &mut Cx, config: ValidatedConfig) -> Result<Self, String> {
+        // Validate the configuration
+        if config.name.is_empty() {
+            return Err("Name cannot be empty".to_string());
+        }
+        if config.count > 1000 {
+            return Err("Count must be <= 1000".to_string());
+        }
+        Ok(config)
+    }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn count(&self) -> u32 {
+        self.count
+    }
+}
+
+pub struct Argv {
+    pub args: Vec<String>,
+}
+
+#[neon::class]
+impl Argv {
+    #[neon(json)]
+    pub fn new(cx: &mut Cx, args: Option<Vec<String>>) -> NeonResult<Self> {
+        let args = if let Some(args) = args { args } else {
+            let Json(args): Json<Vec<String>> = cx
+                .global::<JsObject>("process")?
+                .prop(cx, "argv")
+                .get()?;
+            args
+        };
+        Ok(Self { args } )
+    }
+
+    pub fn len(&self) -> u32 {
+        self.args.len() as u32
+    }
+
+    pub fn get(&self, index: u32) -> Option<String> {
+        self.args.get(index as usize).cloned()
+    }
 }

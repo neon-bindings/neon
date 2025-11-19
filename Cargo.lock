@@ -371,6 +371,7 @@ dependencies = [
  "neon",
  "num-bigint-dig",
  "once_cell",
+ "serde",
  "tokio",
 ]
 
