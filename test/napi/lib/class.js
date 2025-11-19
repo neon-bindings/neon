@@ -694,10 +694,7 @@ describe("constructor features", function () {
     });
 
     it("should throw error when constructor fails", () => {
-      assert.throws(
-        () => new FallibleCounter(150),
-        /Value must be <= 100/
-      );
+      assert.throws(() => new FallibleCounter(150), /Value must be <= 100/);
     });
 
     it("should work with edge case: maximum valid value", () => {
@@ -766,22 +763,23 @@ describe("constructor features", function () {
     });
 
     it("should propagate errors with nullable JSON array", () => {
-      const old = Object.getOwnPropertyDescriptor(global, 'process');
+      const old = Object.getOwnPropertyDescriptor(global, "process");
       try {
         // Temporarily override process to simulate error
-        Object.defineProperty(global, 'process', {
-          get: () => { throw new Error("Temporarily broken"); },
-          set: () => { throw new Error("Temporarily broken"); },
+        Object.defineProperty(global, "process", {
+          get: () => {
+            throw new Error("Temporarily broken");
+          },
+          set: () => {
+            throw new Error("Temporarily broken");
+          },
           enumerable: false,
           configurable: true,
         });
-        assert.throws(
-          () => new Argv(null),
-          /Temporarily broken/
-        );
+        assert.throws(() => new Argv(null), /Temporarily broken/);
       } finally {
         // Restore original process object
-        Object.defineProperty(global, 'process', old);
+        Object.defineProperty(global, "process", old);
       }
     });
 

@@ -482,14 +482,14 @@ pub struct Argv {
 impl Argv {
     #[neon(json)]
     pub fn new(cx: &mut Cx, args: Option<Vec<String>>) -> NeonResult<Self> {
-        let args = if let Some(args) = args { args } else {
-            let Json(args): Json<Vec<String>> = cx
-                .global::<JsObject>("process")?
-                .prop(cx, "argv")
-                .get()?;
+        let args = if let Some(args) = args {
+            args
+        } else {
+            let Json(args): Json<Vec<String>> =
+                cx.global::<JsObject>("process")?.prop(cx, "argv").get()?;
             args
         };
-        Ok(Self { args } )
+        Ok(Self { args })
     }
 
     pub fn len(&self) -> u32 {

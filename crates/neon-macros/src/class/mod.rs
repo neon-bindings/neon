@@ -556,7 +556,10 @@ fn validate_method_attributes(meta: &meta::Meta, sig: &syn::Signature) -> syn::R
                 };
                 return Err(syn::Error::new(
                     receiver.span(),
-                    format!("{} in classes must take `self` by value, not `&self` or `&mut self`. {}", method_type, reason)
+                    format!(
+                        "{} in classes must take `self` by value, not `&self` or `&mut self`. {}",
+                        method_type, reason
+                    ),
                 ));
             }
         } else {
@@ -567,7 +570,10 @@ fn validate_method_attributes(meta: &meta::Meta, sig: &syn::Signature) -> syn::R
             };
             return Err(syn::Error::new(
                 sig.span(),
-                format!("{} in classes must take `self` as their first parameter.", method_type),
+                format!(
+                    "{} in classes must take `self` as their first parameter.",
+                    method_type
+                ),
             ));
         }
     }
