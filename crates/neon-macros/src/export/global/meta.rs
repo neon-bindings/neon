@@ -5,6 +5,7 @@ pub(crate) struct Meta {
 }
 
 pub(crate) struct Parser;
+use crate::error::ErrorCode;
 
 impl syn::parse::Parser for Parser {
     type Output = Meta;
@@ -24,7 +25,13 @@ impl syn::parse::Parser for Parser {
                 return Ok(());
             }
 
-            Err(meta.error("unsupported property"))
+            Err(meta.error(
+                format!(
+                    "{} [{}]",
+                    ErrorCode::UnsupportedProperty.message(),
+                    ErrorCode::UnsupportedProperty.code()
+                ),
+            ))
         });
 
         parser.parse2(tokens)?;
