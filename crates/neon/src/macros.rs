@@ -387,6 +387,7 @@
 ///
 /// ```
 /// # use neon::prelude::*;
+/// # use neon::types::extract::Json;
 /// pub struct Argv {
 ///     pub args: Vec<String>,
 /// }
@@ -404,14 +405,6 @@
 ///             args
 ///         };
 ///         Ok(Self { args } )
-///     }
-///
-///     pub fn len(&self) -> u32 {
-///         self.args.len() as u32
-///     }
-///
-///     pub fn get(&self, index: u32) -> Option<String> {
-///         self.args.get(index as usize).cloned()
 ///     }
 ///
 ///     pub fn len(&self) -> u32 {
