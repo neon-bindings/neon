@@ -778,6 +778,8 @@ describe("constructor features", function () {
         });
         assert.throws(() => {
           try {
+            const { isMainThread } = require("worker_threads");
+            console.error("[ARGV TEST] isMainThread:", isMainThread);
             return new Argv(null);
           } catch (e) {
             console.error("[ARGV TEST] Caught error: ", e.message);
