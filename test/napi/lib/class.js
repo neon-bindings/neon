@@ -776,7 +776,14 @@ describe("constructor features", function () {
           enumerable: false,
           configurable: true,
         });
-        assert.throws(() => new Argv(null), /Temporarily broken/);
+        assert.throws(() => {
+          try {
+            return new Argv(null);
+          } catch (e) {
+            console.error("[ARGV TEST] Caught error: ", e.message);
+            throw e;
+          }
+        }, /Temporarily broken/);
       } finally {
         // Restore original process object
         Object.defineProperty(global, "process", old);
