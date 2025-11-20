@@ -1,5 +1,7 @@
 use std::mem::MaybeUninit;
 
+use crate::sys::error::is_throwing;
+
 use super::{
     bindings as napi,
     raw::{Env, Local},
@@ -81,15 +83,19 @@ pub unsafe fn get_string(
 
     // Not using `crate::string::new()` because it requires a _reference_ to a Local,
     // while we only have uninitialized memory.
-    match napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()) {
-        Err(napi::Status::PendingException) => return false,
-        status => status.unwrap(),
+    if napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()).is_err() {
+        if is_throwing(env) {
+            return false;
+        }
+        panic!("Failed to create string for object key");
     }
 
     // Not using napi_get_named_property() because the `key` may not be null terminated.
-    match napi::get_property(env, object, key_val.assume_init(), out as *mut _) {
-        Err(napi::Status::PendingException) => return false,
-        status => status.unwrap(),
+    if napi::get_property(env, object, key_val.assume_init(), out as *mut _).is_err() {
+        if is_throwing(env) {
+            return false;
+        }
+        panic!("Failed to get object property");
     }
 
     true
