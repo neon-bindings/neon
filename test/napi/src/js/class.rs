@@ -485,10 +485,12 @@ impl Argv {
         let args = if let Some(args) = args {
             args
         } else {
-            let Json(args): Json<Vec<String>> = cx
-                .global::<JsObject>("process")?
-                .prop(cx, "argv")
-                .get()?;
+            // Use global_object() instead of global() to avoid swallowing exceptions
+            // from property getters. The global() method internally calls get() which
+            // catches PendingException and converts it to a generic error.
+            let global = cx.global_object();
+            let process: Handle<JsObject> = global.prop(cx, "process").get()?;
+            let Json(args): Json<Vec<String>> = process.prop(cx, "argv").get()?;
             args
         };
         Ok(Self { args })
