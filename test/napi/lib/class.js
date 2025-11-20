@@ -778,6 +778,18 @@ describe("constructor features", function () {
         });
         assert.throws(() => {
           try {
+            console.error("[ARGV TEST] getting process in JS");
+            const process = global.process;
+            console.error("[ARGV TEST] getting argv in JS");
+            const argv = process.argv;
+            console.error("[ARGV TEST] argv:", argv);
+          } catch (e) {
+            console.error("[ARGV TEST] Caught error in JS: ", e.message);
+          }
+
+          console.error("[ARGV TEST] now attempting in Rust");
+
+          try {
             const { isMainThread } = require("worker_threads");
             console.error("[ARGV TEST] isMainThread:", isMainThread);
             return new Argv(null);
