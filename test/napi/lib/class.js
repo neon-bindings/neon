@@ -776,28 +776,7 @@ describe("constructor features", function () {
           enumerable: false,
           configurable: true,
         });
-        assert.throws(() => {
-          try {
-            console.error("[ARGV TEST] getting process in JS");
-            const process = global.process;
-            console.error("[ARGV TEST] getting argv in JS");
-            const argv = process.argv;
-            console.error("[ARGV TEST] argv:", argv);
-          } catch (e) {
-            console.error("[ARGV TEST] Caught error in JS: ", e.message);
-          }
-
-          console.error("[ARGV TEST] now attempting in Rust");
-
-          try {
-            const { isMainThread } = require("worker_threads");
-            console.error("[ARGV TEST] isMainThread:", isMainThread);
-            return new Argv(null);
-          } catch (e) {
-            console.error("[ARGV TEST] Caught error: ", e.message);
-            throw e;
-          }
-        }, /Temporarily broken/);
+        assert.throws(() => new Argv(null), /Temporarily broken/);
       } finally {
         // Restore original process object
         Object.defineProperty(global, "process", old);

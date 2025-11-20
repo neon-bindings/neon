@@ -485,13 +485,10 @@ impl Argv {
         let args = if let Some(args) = args {
             args
         } else {
-            eprintln!("[ARGV TEST] Fetching process.argv from global object");
-            eprintln!("[ARGV TEST] Fetching process object from global");
-            let process: Handle<JsObject> = cx.global::<JsObject>("process")?;
-            eprintln!("[ARGV TEST] Fetching argv property");
-            let Json(args): Json<Vec<String>> =
-                process.prop(cx, "argv").get()?;
-            eprintln!("[ARGV TEST] Retrieved argv: {:?}", args);
+            let Json(args): Json<Vec<String>> = cx
+                .global::<JsObject>("process")?
+                .prop(cx, "argv")
+                .get()?;
             args
         };
         Ok(Self { args })
