@@ -412,8 +412,6 @@
 ///
 ///     pub fn get(&self, index: u32) -> Option<String> {
 ///         self.args.get(index as usize).cloned()
-///         };
-///         Ok(Self { args } )
 ///     }
 ///
 ///     pub fn len(&self) -> u32 {
