@@ -586,7 +586,7 @@
 /// }
 ///
 /// // Export as "Point" but with Point.name === "NeonPoint"
-/// #[neon::export(class(name = "NeonPoint"), name = "Point"))]
+/// #[neon::export(class(name = "NeonPoint"), name = "Point")]
 /// impl RustPoint {
 ///     pub fn new(x: f64, y: f64) -> Self {
 ///         Self { x, y }
