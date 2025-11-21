@@ -11,16 +11,40 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemImpl) -> proc_macro::Toke
         Err(err) => return err.into_compile_error().into(),
     };
 
+    let rust_class_name = class_ident.to_string();
+
+    // Determine the JavaScript class name and export name based on the parsed metadata
+    // CASE 1: #[export(class, name = "X")] -> both class and export use "X"
+    // CASE 2: #[export(class(name = "X"))] -> both class and export use "X"
+    // CASE 3: #[export(class(name = "X"), name = "Y")] -> class uses "X", export uses "Y"
+    let (js_class_name, export_name) = match (meta.class_name, meta.export_name) {
+        // CASE 3: Both specified - use each for its purpose
+        (Some(class_name), Some(export_name)) => (Some(class_name), export_name),
+
+        // CASE 2: Only class name specified - use for both
+        (Some(class_name), None) => {
+            let export_name = class_name.clone();
+            (Some(class_name), export_name)
+        }
+
+        // CASE 1: Only export name specified - use for both
+        (None, Some(export_name)) => {
+            let class_name = export_name.clone();
+            (Some(class_name), export_name)
+        }
+
+        // Default: No names specified - use Rust type name
+        (None, None) => (None, rust_class_name.clone()),
+    };
+
     // Generate the class using the existing class implementation
     let class_input: proc_macro::TokenStream = quote!(#input).into();
-    let class_output = crate::class::class(proc_macro::TokenStream::new(), class_input);
+    let class_output =
+        crate::class::class_with_name(proc_macro::TokenStream::new(), class_input, js_class_name);
     let class_tokens: TokenStream = class_output.into();
 
-    // Determine the export name
-    let export_name = meta.name.map(|name| quote!(#name)).unwrap_or_else(|| {
-        let class_name = class_ident.to_string();
-        quote!(#class_name)
-    });
+    // Use the determined export name
+    let export_name = quote!(#export_name);
 
     // Create the export registration function
     let create_name = quote::format_ident!("__NEON_EXPORT_CREATE__{}", class_ident);

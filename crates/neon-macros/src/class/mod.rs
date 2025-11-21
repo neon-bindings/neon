@@ -826,6 +826,14 @@ pub(crate) fn class(
     _attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
+    class_with_name(_attr, item, None)
+}
+
+pub(crate) fn class_with_name(
+    _attr: proc_macro::TokenStream,
+    item: proc_macro::TokenStream,
+    custom_class_name: Option<String>,
+) -> proc_macro::TokenStream {
     let mut impl_block = syn::parse_macro_input!(item as syn::ItemImpl);
 
     // Parse the item as an implementation block
@@ -843,7 +851,7 @@ pub(crate) fn class(
             panic!("class must be implemented for a type name");
         }
     };
-    let class_name = class_ident.to_string();
+    let class_name = custom_class_name.unwrap_or_else(|| class_ident.to_string());
 
     // Group the items into `const` and `fn` categories
     let ClassItems {

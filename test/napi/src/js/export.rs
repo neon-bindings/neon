@@ -168,7 +168,7 @@ impl ExportedPoint {
     }
 }
 
-// Test the shorthand syntax with custom name
+// Test the shorthand syntax with custom name (CASE 1: both names use outer name)
 #[derive(Clone)]
 pub struct CustomNamedClass {
     value: String,
@@ -182,6 +182,40 @@ impl CustomNamedClass {
 
     pub fn get_value(&self) -> String {
         self.value.clone()
+    }
+}
+
+// Test CASE 2: class(name = "...") syntax - both class and export use same name
+#[derive(Clone)]
+pub struct Case2Class {
+    message: String,
+}
+
+#[neon::export(class(name = "ParenRenamedClass"))]
+impl Case2Class {
+    pub fn new(message: String) -> Self {
+        Self { message }
+    }
+
+    pub fn get_message(&self) -> String {
+        self.message.clone()
+    }
+}
+
+// Test CASE 3: separate class name and export name
+#[derive(Clone)]
+pub struct Case3Class {
+    data: i32,
+}
+
+#[neon::export(class(name = "InternalClassName"), name = "ExternalExportName")]
+impl Case3Class {
+    pub fn new(data: i32) -> Self {
+        Self { data }
+    }
+
+    pub fn get_data(&self) -> i32 {
+        self.data
     }
 }
 

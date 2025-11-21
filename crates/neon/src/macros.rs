@@ -564,7 +564,7 @@
 /// }
 ///
 /// // Export as "Point" instead of "InternalPoint"
-/// #[neon::export(class, name = "Point")]
+/// #[neon::export(class(name = "Point"))]
 /// impl InternalPoint {
 ///     pub fn new(x: f64, y: f64) -> Self {
 ///         Self { x, y }
@@ -572,6 +572,24 @@
 ///
 ///     pub fn distance_from_origin(&self) -> f64 {
 ///         (self.x * self.x + self.y * self.y).sqrt()
+///     }
+/// }
+/// ```
+///
+/// It's also possible to distinguish between the class name and export name:
+///
+/// ```
+/// # use neon::prelude::*;
+/// pub struct RustPoint {
+///     x: f64,
+///     y: f64,
+/// }
+///
+/// // Export as "Point" but with Point.name === "NeonPoint"
+/// #[neon::export(class(name = "NeonPoint"), name = "Point"))]
+/// impl RustPoint {
+///     pub fn new(x: f64, y: f64) -> Self {
+///         Self { x, y }
 ///     }
 /// }
 /// ```
