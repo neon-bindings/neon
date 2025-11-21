@@ -746,9 +746,9 @@ describe("constructor features", function () {
     });
 
     it("should provide correct cx.this() to constructor", () => {
-      const o = new Expando;
+      const o = new Expando();
       assert.strictEqual(o.expando(), 42);
-    })
+    });
   });
 
   describe("JSON support", function () {
