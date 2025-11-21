@@ -491,7 +491,9 @@ impl Secret {
             let secret_str: String = js_result.to_string(cx)?.value(cx);
             return Ok(Self { value: secret_str });
         }
-        Ok(Self { value: "default_secret".to_string() })
+        Ok(Self {
+            value: "default_secret".to_string(),
+        })
     }
 
     pub fn reveal(&self) -> String {
@@ -527,5 +529,30 @@ impl Argv {
 
     pub fn get(&self, index: u32) -> Option<String> {
         self.args.get(index as usize).cloned()
+    }
+}
+
+const CAROUSEL_MESSAGES: [&str; 5] = [
+    "Welcome to the Neon Carousel!",
+    "Enjoy seamless Rust and JavaScript integration.",
+    "Experience high performance with native modules.",
+    "Build robust applications with ease.",
+    "Thank you for using Neon!",
+];
+
+pub struct Carousel {
+    state: u32,
+}
+
+#[neon::class]
+impl Carousel {
+    pub fn new() -> Self {
+        Self { state: 0 }
+    }
+
+    pub fn next(&mut self) -> String {
+        let message = CAROUSEL_MESSAGES[self.state as usize];
+        self.state = (self.state + 1) % CAROUSEL_MESSAGES.len() as u32;
+        message.to_string()
     }
 }

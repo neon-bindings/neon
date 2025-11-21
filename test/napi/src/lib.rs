@@ -469,6 +469,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_value("Argv", argv_constructor)?;
     let secret_constructor = js::class::Secret::constructor(&mut cx)?;
     cx.export_value("Secret", secret_constructor)?;
+    let carousel_constructor = js::class::Carousel::constructor(&mut cx)?;
+    cx.export_value("Carousel", carousel_constructor)?;
 
     Ok(())
 }

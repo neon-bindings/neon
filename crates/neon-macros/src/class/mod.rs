@@ -726,11 +726,7 @@ fn generate_constructor_wrapper(
     let arg_locals = &ctor_locals[param_offset..];
 
     // Generate the arguments tuple extraction
-    let args_extract = if arg_locals.is_empty() {
-        quote::quote! {
-            let this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
-        }
-    } else {
+    let args_extract = {
         // Wrap arguments in Json() if needed for deserialization
         let tuple_fields = arg_locals.iter().map(|name| {
             if meta.json {

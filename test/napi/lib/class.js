@@ -682,8 +682,36 @@ describe("classes", function () {
 });
 
 describe("constructor features", function () {
-  const { FallibleCounter, ContextCounter, JsonConfig, ValidatedConfig, Argv } =
-    addon;
+  const {
+    FallibleCounter,
+    ContextCounter,
+    JsonConfig,
+    ValidatedConfig,
+    Argv,
+    Secret,
+    Carousel,
+  } = addon;
+
+  describe("nullary constructor", function () {
+    it("should support nullary constructors", () => {
+      const carousel = new Carousel();
+      assert.strictEqual(carousel.next(), "Welcome to the Neon Carousel!");
+      assert.strictEqual(
+        carousel.next(),
+        "Enjoy seamless Rust and JavaScript integration."
+      );
+      assert.strictEqual(
+        carousel.next(),
+        "Experience high performance with native modules."
+      );
+      assert.strictEqual(
+        carousel.next(),
+        "Build robust applications with ease."
+      );
+      assert.strictEqual(carousel.next(), "Thank you for using Neon!");
+      assert.strictEqual(carousel.next(), "Welcome to the Neon Carousel!");
+    });
+  });
 
   describe("Result return types", function () {
     it("should create instance when constructor succeeds", () => {
@@ -743,10 +771,13 @@ describe("constructor features", function () {
 
   describe("Combined features: context + Result", function () {
     it("should propagate errors with nullable JSON array", () => {
-      const Secret = addon.Secret;
-      assert.throws(() => new Secret(
-        () => { throw new Error("Access denied"); },
-      ), /Access denied/);
+      assert.throws(
+        () =>
+          new Secret(() => {
+            throw new Error("Access denied");
+          }),
+        /Access denied/
+      );
     });
   });
 
