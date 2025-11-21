@@ -556,3 +556,21 @@ impl Carousel {
         message.to_string()
     }
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct Expando;
+
+#[neon::class]
+impl Expando {
+    pub fn new(cx: &mut FunctionContext) -> NeonResult<Self> {
+        let this: Handle<JsObject> = cx.this()?;
+        this.prop(cx, "__weirdNeonExpandoKey__").set(42)?;
+        Ok(Self)
+    }
+
+    pub fn expando(self, cx: &mut FunctionContext) -> NeonResult<i32> {
+        let this: Handle<JsObject> = cx.this()?;
+        let value: Handle<JsNumber> = this.prop(cx, "__weirdNeonExpandoKey__").get()?;
+        Ok(value.value(cx) as i32)
+    }
+}

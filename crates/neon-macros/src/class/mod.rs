@@ -1129,7 +1129,7 @@ pub(crate) fn class(
   function $makeExternal() {{
     class {class_name} {{
       constructor({ctor_param_list}) {{
-        wrap(this{ctor_arg_list});
+        wrap.call(this, this{ctor_arg_list});
       }}
     }}
     const prototype = {class_name}.prototype;{prototype_patches}

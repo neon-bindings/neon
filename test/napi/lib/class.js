@@ -690,6 +690,7 @@ describe("constructor features", function () {
     Argv,
     Secret,
     Carousel,
+    Expando,
   } = addon;
 
   describe("nullary constructor", function () {
@@ -743,6 +744,11 @@ describe("constructor features", function () {
       assert.strictEqual(counter1.get(), 10);
       assert.strictEqual(counter2.get(), 20);
     });
+
+    it("should provide correct cx.this() to constructor", () => {
+      const o = new Expando;
+      assert.strictEqual(o.expando(), 42);
+    })
   });
 
   describe("JSON support", function () {
