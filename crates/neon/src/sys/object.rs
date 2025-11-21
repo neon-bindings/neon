@@ -1,7 +1,5 @@
 use std::mem::MaybeUninit;
 
-use crate::sys::error::is_throwing;
-
 use super::{
     bindings as napi,
     raw::{Env, Local},
@@ -33,20 +31,16 @@ pub unsafe fn seal(env: Env, obj: Local) -> Result<(), napi::Status> {
 pub unsafe fn get_own_property_names(out: &mut Local, env: Env, object: Local) -> bool {
     let mut property_names = MaybeUninit::uninit();
 
-    if napi::get_all_property_names(
+    match napi::get_all_property_names(
         env,
         object,
         napi::KeyCollectionMode::OwnOnly,
         napi::KeyFilter::ALL_PROPERTIES | napi::KeyFilter::SKIP_SYMBOLS,
         napi::KeyConversion::NumbersToStrings,
         property_names.as_mut_ptr(),
-    ).is_err() {
-        // Use is_throwing() instead of checking for PendingException because we have sometimes
-        // seen other error return values (e.g. GenericFailure) when there is an exception pending.
-        if is_throwing(env) {
-            return false;
-        }
-        panic!("Failed to get all property names");
+    ) {
+        Err(napi::Status::PendingException) => return false,
+        status => status.unwrap(),
     }
 
     *out = property_names.assume_init();
@@ -87,23 +81,15 @@ pub unsafe fn get_string(
 
     // Not using `crate::string::new()` because it requires a _reference_ to a Local,
     // while we only have uninitialized memory.
-    if napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()).is_err() {
-        // Use is_throwing() instead of checking for PendingException because we have sometimes
-        // seen other error return values (e.g. GenericFailure) when there is an exception pending.
-        if is_throwing(env) {
-            return false;
-        }
-        panic!("Failed to create string for object key");
+    match napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()) {
+        Err(napi::Status::PendingException) => return false,
+        status => status.unwrap(),
     }
 
     // Not using napi_get_named_property() because the `key` may not be null terminated.
-    if napi::get_property(env, object, key_val.assume_init(), out as *mut _).is_err() {
-        // Use is_throwing() instead of checking for PendingException because we have sometimes
-        // seen other error return values (e.g. GenericFailure) when there is an exception pending.
-        if is_throwing(env) {
-            return false;
-        }
-        panic!("Failed to get object property");
+    match napi::get_property(env, object, key_val.assume_init(), out as *mut _) {
+        Err(napi::Status::PendingException) => return false,
+        status => status.unwrap(),
     }
 
     true
@@ -127,24 +113,20 @@ pub unsafe fn set_string(
 
     *out = true;
 
-    if napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()).is_err() {
-        // Use is_throwing() instead of checking for PendingException because we have sometimes
-        // seen other error return values (e.g. GenericFailure) when there is an exception pending.
-        if is_throwing(env) {
+    match napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()) {
+        Err(napi::Status::PendingException) => {
             *out = false;
             return false;
         }
-        panic!("Failed to create string for object key");
+        status => status.unwrap(),
     }
 
-    if napi::set_property(env, object, key_val.assume_init(), val).is_err() {
-        // Use is_throwing() instead of checking for PendingException because we have sometimes
-        // seen other error return values (e.g. GenericFailure) when there is an exception pending.
-        if is_throwing(env) {
+    match napi::set_property(env, object, key_val.assume_init(), val) {
+        Err(napi::Status::PendingException) => {
             *out = false;
             return false;
         }
-        panic!("Failed to set object property");
+        status => status.unwrap(),
     }
 
     true

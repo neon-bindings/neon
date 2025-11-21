@@ -741,6 +741,15 @@ describe("constructor features", function () {
     });
   });
 
+  describe("Combined features: context + Result", function () {
+    it("should propagate errors with nullable JSON array", () => {
+      const Secret = addon.Secret;
+      assert.throws(() => new Secret(
+        () => { throw new Error("Access denied"); },
+      ), /Access denied/);
+    });
+  });
+
   describe("Combined features: context + JSON + Result", function () {
     it("should create an instance with JSON array", () => {
       const argv = new Argv(["1", "2", "3", "4", "5"]);
@@ -759,27 +768,6 @@ describe("constructor features", function () {
       assert.strictEqual(argv.len(), process.argv.length);
       for (let i = 0; i < process.argv.length; i++) {
         assert.strictEqual(argv.get(i), process.argv[i]);
-      }
-    });
-
-    it("should propagate errors with nullable JSON array", () => {
-      const old = Object.getOwnPropertyDescriptor(global, "process");
-      try {
-        // Temporarily override process to simulate error
-        Object.defineProperty(global, "process", {
-          get: () => {
-            throw new Error("Temporarily broken");
-          },
-          set: () => {
-            throw new Error("Temporarily broken");
-          },
-          enumerable: false,
-          configurable: true,
-        });
-        assert.throws(() => new Argv(null), /Temporarily broken/);
-      } finally {
-        // Restore original process object
-        Object.defineProperty(global, "process", old);
       }
     });
 

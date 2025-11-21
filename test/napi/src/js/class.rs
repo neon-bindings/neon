@@ -474,6 +474,31 @@ impl ValidatedConfig {
     }
 }
 
+pub struct Secret {
+    pub value: String,
+}
+
+#[neon::class]
+impl Secret {
+    pub fn new(cx: &mut Cx, init: Handle<JsValue>) -> NeonResult<Self> {
+        if let Ok(js_str) = init.downcast::<JsString, _>(cx) {
+            let secret_str: String = js_str.value(cx);
+            return Ok(Self { value: secret_str });
+        }
+        if let Ok(js_thunk) = init.downcast::<JsFunction, _>(cx) {
+            let this = cx.undefined();
+            let js_result: Handle<JsValue> = js_thunk.call(cx, this, vec![])?;
+            let secret_str: String = js_result.to_string(cx)?.value(cx);
+            return Ok(Self { value: secret_str });
+        }
+        Ok(Self { value: "default_secret".to_string() })
+    }
+
+    pub fn reveal(&self) -> String {
+        self.value.clone()
+    }
+}
+
 pub struct Argv {
     pub args: Vec<String>,
 }

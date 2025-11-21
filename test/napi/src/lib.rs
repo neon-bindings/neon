@@ -467,6 +467,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_value("ValidatedConfig", validated_config_constructor)?;
     let argv_constructor = js::class::Argv::constructor(&mut cx)?;
     cx.export_value("Argv", argv_constructor)?;
+    let secret_constructor = js::class::Secret::constructor(&mut cx)?;
+    cx.export_value("Secret", secret_constructor)?;
 
     Ok(())
 }
