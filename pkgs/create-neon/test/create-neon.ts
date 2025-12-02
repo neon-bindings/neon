@@ -58,6 +58,7 @@ describe("Project creation", () => {
         "keywords:": "",
         "author:": "",
         "license:": "",
+        "?type": "",
         "Is this OK?": "",
       });
     } catch (error: any) {
@@ -98,6 +99,7 @@ describe("Project creation", () => {
         "keywords:": "",
         "author:": '"Dave Herman" <dherman@example.com>',
         "license:": "",
+        "?type": "",
         "Is this OK?": "",
       });
     } catch (error) {
@@ -137,6 +139,7 @@ describe("Project creation", () => {
         "keywords:": "",
         "author:": "",
         "license:": "",
+        "?type": "",
         "Is this OK?": "",
       });
     } catch (error: any) {
@@ -169,6 +172,7 @@ describe("Project creation", () => {
         "keywords:": "",
         "author:": "",
         "license:": "",
+        "?type": "",
         "Is this OK?": "",
       });
     } catch (error: any) {
@@ -208,6 +212,7 @@ describe("Project creation", () => {
         "keywords:": "",
         "author:": "",
         "license:": "",
+        "?type": "",
         "Is this OK?": "",
       });
     } catch (error: any) {
