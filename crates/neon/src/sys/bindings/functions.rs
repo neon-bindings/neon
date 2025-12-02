@@ -270,6 +270,7 @@ mod napi1 {
 
             fn unwrap(env: Env, js_object: Value, result: *mut *mut c_void) -> Status;
 
+            #[cfg(feature = "napi-8")]
             fn remove_wrap(env: Env, js_object: Value, result: *mut *mut c_void) -> Status;
         }
     );

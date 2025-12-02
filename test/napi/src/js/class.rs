@@ -9,9 +9,7 @@ fn wrap_string(cx: &mut Cx, o: Handle<JsObject>, s: String) -> NeonResult<()> {
 
 #[neon::export]
 fn unwrap_string(cx: &mut Cx, o: Handle<JsObject>) -> NeonResult<String> {
-    neon::macro_internal::object::unwrap(cx, o)?
-        .map(String::clone)
-        .or_throw(cx)
+    neon::macro_internal::object::unwrap(cx, o)?.cloned().or_throw(cx)
 }
 
 #[derive(Debug, Clone)]
@@ -161,6 +159,7 @@ impl StringBuffer {
         self.buffer.push_str(&s);
     }
 
+    #[allow(clippy::inherent_to_string)]
     pub fn to_string(&self) -> String {
         self.buffer.clone()
     }

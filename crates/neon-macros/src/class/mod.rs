@@ -124,10 +124,11 @@ fn generate_method_wrapper(
                 }
                 ParamKind::Value => {
                     // For value parameters, use existing logic with JSON wrapping if needed
-                    let field = meta
-                        .json
-                        .then(|| quote::quote!(neon::types::extract::Json(#name)))
-                        .unwrap_or_else(|| quote::quote!(#name));
+                    let field = if meta.json {
+                        quote::quote!(neon::types::extract::Json(#name))
+                    } else {
+                        quote::quote!(#name)
+                    };
                     (field, None)
                 }
             }
@@ -712,15 +713,6 @@ fn generate_constructor_wrapper(
     // Check for context parameter in constructor using same heuristic as export functions
     let has_context = check_constructor_context(meta, sig)?;
 
-    // Generate context extraction if needed
-    let context_extract = if has_context {
-        quote::quote! {
-            // Context is part of FunctionContext, already available as `cx`
-        }
-    } else {
-        quote::quote!()
-    };
-
     // Determine which parameters are actual constructor arguments (skip context if present)
     let param_offset = if has_context { 1 } else { 0 };
     let arg_locals = &ctor_locals[param_offset..];
@@ -768,7 +760,6 @@ fn generate_constructor_wrapper(
 
     // Generate the full wrapper
     Ok(quote::quote! {
-        #context_extract
         #args_extract
         #ctor_call
         neon::object::wrap(&mut cx, this, std::cell::RefCell::new(instance))?.or_throw(&mut cx)?;
@@ -885,7 +876,7 @@ pub(crate) fn class_with_name(
                         }
                         found_neon_attr = true;
                         let parser = meta::Parser(meta);
-                        let tokens = tokens.clone().into();
+                        let tokens = tokens.clone();
                         match syn::parse::Parser::parse2(parser, tokens) {
                             Ok(parsed_meta) => meta = parsed_meta,
                             Err(err) => return err.to_compile_error().into(),

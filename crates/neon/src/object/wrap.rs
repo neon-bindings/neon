@@ -26,6 +26,7 @@ impl WrapError {
         Self(WrapErrorType::AlreadyWrapped)
     }
 
+    #[cfg(feature = "napi-8")]
     fn not_wrapped() -> Self {
         Self(WrapErrorType::NotWrapped)
     }
@@ -78,6 +79,7 @@ impl<T> ResultExt<T> for Result<T, WrapError> {
 enum WrapErrorType {
     ObjectExpected,
     AlreadyWrapped,
+    #[cfg(feature = "napi-8")]
     NotWrapped,
     WrongType(&'static str),
     #[cfg(feature = "napi-8")]
@@ -99,10 +101,11 @@ impl fmt::Display for WrapErrorType {
         match self {
             Self::ObjectExpected => write!(f, "object expected"),
             Self::AlreadyWrapped => write!(f, "non-class instance expected"),
+            #[cfg(feature = "napi-8")]
             Self::NotWrapped => write!(f, "class instance expected"),
             Self::WrongType(expected) => {
                 let target_type_name =
-                    ref_cell_target_type_name(*expected).unwrap_or(expected.to_string());
+                    ref_cell_target_type_name(expected).unwrap_or(expected.to_string());
                 write!(f, "expected instance of {}", target_type_name)
             }
             #[cfg(feature = "napi-8")]

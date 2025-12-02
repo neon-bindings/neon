@@ -36,9 +36,11 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
 
     // Generate the tuple fields used to destructure `cx.args()`. Wrap in `Json` if necessary.
     let tuple_fields = args.clone().map(|name| {
-        meta.json
-            .then(|| quote::quote!(neon::types::extract::Json(#name)))
-            .unwrap_or_else(|| quote::quote!(#name))
+        if meta.json {
+            quote::quote!(neon::types::extract::Json(#name))
+        } else {
+            quote::quote!(#name)
+        }
     });
 
     // Tag whether we should JSON wrap results
