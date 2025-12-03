@@ -1,0 +1,18 @@
+error: Expected a context argument after `&self` when using `#[neon(context)]`. Add a parameter like `cx: &mut FunctionContext` or remove the `context` attribute.
+ --> tests/fail/class-missing-forced-context.rs:6:15
+  |
+6 |     fn method(&self) {}
+  |               ^
+
+error[E0277]: the trait bound `Example: Default` is not satisfied
+ --> tests/fail/class-missing-forced-context.rs:3:1
+  |
+3 | #[neon::class]
+  | ^^^^^^^^^^^^^^ the trait `Default` is not implemented for `Example`
+  |
+  = note: this error originates in the attribute macro `neon::class` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider annotating `Example` with `#[derive(Default)]`
+  |
+1 + #[derive(Default)]
+2 | struct Example;
+  |

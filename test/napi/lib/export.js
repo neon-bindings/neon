@@ -5,6 +5,7 @@ const addon = require("..");
 describe("neon::export macro", () => {
   describe("globals", globals);
   describe("functions", functions);
+  describe("classes", classes);
 });
 
 function globals() {
@@ -116,5 +117,93 @@ function functions() {
     assert.strictEqual(addon.addU32(0, 42), 42);
     assert.strictEqual(addon.toU32(Infinity), 0);
     assert.strictEqual(addon.toU32(-Infinity), 0);
+  });
+}
+
+function classes() {
+  it("can create and use exported class", () => {
+    const ExportedPoint = addon.ExportedPoint;
+
+    // Test that the class was exported
+    assert.strictEqual(typeof ExportedPoint, "function");
+
+    // Test const properties
+    assert.strictEqual(ExportedPoint.ORIGIN_X, 0.0);
+    assert.strictEqual(ExportedPoint.ORIGIN_Y, 0.0);
+
+    // Test class instantiation and methods
+    const point1 = new ExportedPoint(3, 4);
+    const point2 = new ExportedPoint(0, 0);
+
+    assert.strictEqual(point1.x(), 3);
+    assert.strictEqual(point1.y(), 4);
+    assert.strictEqual(point2.x(), 0);
+    assert.strictEqual(point2.y(), 0);
+
+    // Test distance calculation
+    assert.strictEqual(point1.distance(point2), 5); // 3-4-5 triangle
+  });
+
+  it('can use custom export name - CASE 1: class, name = "..."', () => {
+    const RenamedClass = addon.RenamedClass;
+
+    // Test that the class was exported with custom name
+    assert.strictEqual(typeof RenamedClass, "function");
+
+    // Test that the original name is not exported
+    assert.strictEqual(addon.CustomNamedClass, undefined);
+
+    // Test class functionality
+    const instance = new RenamedClass("test value");
+    assert.strictEqual(instance.getValue(), "test value");
+
+    // Test that the class name itself is RenamedClass
+    assert.strictEqual(RenamedClass.name, "RenamedClass");
+  });
+
+  it('CASE 2: class(name = "...") - parenthesized syntax', () => {
+    const ParenRenamedClass = addon.ParenRenamedClass;
+
+    // Test that the class was exported with the name from class(name = "...")
+    assert.strictEqual(typeof ParenRenamedClass, "function");
+
+    // Test that the original Rust name is not exported
+    assert.strictEqual(addon.Case2Class, undefined);
+
+    // Test class functionality
+    const instance = new ParenRenamedClass("hello");
+    assert.strictEqual(instance.getMessage(), "hello");
+
+    // Test that the JavaScript class name is ParenRenamedClass
+    assert.strictEqual(ParenRenamedClass.name, "ParenRenamedClass");
+  });
+
+  it('CASE 3: class(name = "Internal"), name = "External" - separate names', () => {
+    const ExternalExportName = addon.ExternalExportName;
+
+    // Test that the class was exported with the outer name
+    assert.strictEqual(typeof ExternalExportName, "function");
+
+    // Test that the Rust name is not exported
+    assert.strictEqual(addon.Case3Class, undefined);
+
+    // Test that the inner class name is not directly exported
+    assert.strictEqual(addon.InternalClassName, undefined);
+
+    // Test class functionality
+    const instance = new ExternalExportName(42);
+    assert.strictEqual(instance.getData(), 42);
+
+    // Test that the JavaScript class name is the inner name (InternalClassName)
+    // but the export binding is the outer name (ExternalExportName)
+    assert.strictEqual(ExternalExportName.name, "InternalClassName");
+  });
+
+  it("can export async fn with JSON", async () => {
+    const input = [1, 2, 3, 4, 5];
+    const result = await addon.exportAsyncJsonTest(input);
+
+    // Should multiply each element by 3
+    assert.deepStrictEqual(result, [3, 6, 9, 12, 15]);
   });
 }

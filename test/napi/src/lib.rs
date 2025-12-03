@@ -1,4 +1,4 @@
-use neon::prelude::*;
+use neon::{object::Class, prelude::*};
 use once_cell::sync::OnceCell;
 use tokio::runtime::Runtime;
 
@@ -11,6 +11,7 @@ mod js {
     pub mod arrays;
     pub mod bigint;
     pub mod boxed;
+    pub mod class;
     pub mod coercions;
     pub mod container;
     pub mod date;
@@ -444,6 +445,34 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         "extract_single_add_one",
         js::extract::extract_single_add_one,
     )?;
+
+    // Classes
+    let class_constructor = js::class::Message::constructor(&mut cx)?;
+    cx.export_value("Message", class_constructor)?;
+    let point_constructor = js::class::Point::constructor(&mut cx)?;
+    cx.export_value("Point", point_constructor)?;
+    let string_buffer_constructor = js::class::StringBuffer::constructor(&mut cx)?;
+    cx.export_value("StringBuffer", string_buffer_constructor)?;
+    let async_class_constructor = js::class::AsyncClass::constructor(&mut cx)?;
+    cx.export_value("AsyncClass", async_class_constructor)?;
+
+    // Test constructor features
+    let fallible_counter_constructor = js::class::FallibleCounter::constructor(&mut cx)?;
+    cx.export_value("FallibleCounter", fallible_counter_constructor)?;
+    let context_counter_constructor = js::class::ContextCounter::constructor(&mut cx)?;
+    cx.export_value("ContextCounter", context_counter_constructor)?;
+    let json_config_constructor = js::class::JsonConfig::constructor(&mut cx)?;
+    cx.export_value("JsonConfig", json_config_constructor)?;
+    let validated_config_constructor = js::class::ValidatedConfig::constructor(&mut cx)?;
+    cx.export_value("ValidatedConfig", validated_config_constructor)?;
+    let argv_constructor = js::class::Argv::constructor(&mut cx)?;
+    cx.export_value("Argv", argv_constructor)?;
+    let secret_constructor = js::class::Secret::constructor(&mut cx)?;
+    cx.export_value("Secret", secret_constructor)?;
+    let carousel_constructor = js::class::Carousel::constructor(&mut cx)?;
+    cx.export_value("Carousel", carousel_constructor)?;
+    let expando_constructor = js::class::Expando::constructor(&mut cx)?;
+    cx.export_value("Expando", expando_constructor)?;
 
     Ok(())
 }

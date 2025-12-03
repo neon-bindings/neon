@@ -7,6 +7,10 @@ import * as fs from "node:fs/promises";
 
 export function readChunks(input: Readable): Readable {
   let output = new PassThrough({ objectMode: true });
+
+  // Raise the default limit on listeners to avoid warnings.
+  output.setMaxListeners(20);
+
   let decoder = new StringDecoder("utf8");
   input.on("data", (data) => {
     output.write(decoder.write(data));

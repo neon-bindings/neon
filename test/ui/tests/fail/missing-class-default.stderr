@@ -1,0 +1,12 @@
+error[E0277]: the trait bound `Point: Default` is not satisfied
+ --> tests/fail/missing-class-default.rs:6:1
+  |
+6 | #[neon::class]
+  | ^^^^^^^^^^^^^^ the trait `Default` is not implemented for `Point`
+  |
+  = note: this error originates in the attribute macro `neon::class` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider annotating `Point` with `#[derive(Default)]`
+  |
+1 + #[derive(Default)]
+2 | struct Point {
+  |

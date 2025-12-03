@@ -136,3 +136,92 @@ fn to_i32(n: i32) -> i32 {
 fn to_u32(n: u32) -> u32 {
     n
 }
+
+// Test the new #[neon::export(class)] shorthand syntax
+#[derive(Clone)]
+pub struct ExportedPoint {
+    x: f64,
+    y: f64,
+}
+
+#[neon::export(class)]
+impl ExportedPoint {
+    const ORIGIN_X: f64 = 0.0;
+    const ORIGIN_Y: f64 = 0.0;
+
+    pub fn new(x: f64, y: f64) -> Self {
+        Self { x, y }
+    }
+
+    pub fn x(&self) -> f64 {
+        self.x
+    }
+
+    pub fn y(&self) -> f64 {
+        self.y
+    }
+
+    pub fn distance(&self, other: Self) -> f64 {
+        let dx = self.x - other.x();
+        let dy = self.y - other.y();
+        (dx * dx + dy * dy).sqrt()
+    }
+}
+
+// Test the shorthand syntax with custom name (CASE 1: both names use outer name)
+#[derive(Clone)]
+pub struct CustomNamedClass {
+    value: String,
+}
+
+#[neon::export(class, name = "RenamedClass")]
+impl CustomNamedClass {
+    pub fn new(value: String) -> Self {
+        Self { value }
+    }
+
+    pub fn get_value(&self) -> String {
+        self.value.clone()
+    }
+}
+
+// Test CASE 2: class(name = "...") syntax - both class and export use same name
+#[derive(Clone)]
+pub struct Case2Class {
+    message: String,
+}
+
+#[neon::export(class(name = "ParenRenamedClass"))]
+impl Case2Class {
+    pub fn new(message: String) -> Self {
+        Self { message }
+    }
+
+    pub fn get_message(&self) -> String {
+        self.message.clone()
+    }
+}
+
+// Test CASE 3: separate class name and export name
+#[derive(Clone)]
+pub struct Case3Class {
+    data: i32,
+}
+
+#[neon::export(class(name = "InternalClassName"), name = "ExternalExportName")]
+impl Case3Class {
+    pub fn new(data: i32) -> Self {
+        Self { data }
+    }
+
+    pub fn get_data(&self) -> i32 {
+        self.data
+    }
+}
+
+// Test async fn + JSON with export macro (compare to class limitation)
+#[neon::export(json)]
+pub async fn export_async_json_test(data: Vec<i32>) -> Vec<i32> {
+    // Simulate async work with JSON serialization
+    data.into_iter().map(|x| x * 3).collect()
+}

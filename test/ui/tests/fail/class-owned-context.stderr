@@ -1,0 +1,18 @@
+error: Context parameters must be a `&mut` reference. Try `&mut FunctionContext` or `&mut Cx`.
+ --> tests/fail/class-owned-context.rs:7:27
+  |
+7 |     fn method(&self, _cx: FunctionContext) {}
+  |                           ^^^^^^^^^^^^^^^
+
+error[E0277]: the trait bound `Example: Default` is not satisfied
+ --> tests/fail/class-owned-context.rs:5:1
+  |
+5 | #[neon::class]
+  | ^^^^^^^^^^^^^^ the trait `Default` is not implemented for `Example`
+  |
+  = note: this error originates in the attribute macro `neon::class` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider annotating `Example` with `#[derive(Default)]`
+  |
+3 + #[derive(Default)]
+4 | struct Example;
+  |

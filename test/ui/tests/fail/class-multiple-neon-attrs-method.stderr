@@ -1,0 +1,5 @@
+error: multiple #[neon(...)] attributes on class method are not allowed
+ --> tests/fail/class-multiple-neon-attrs-method.rs:6:7
+  |
+6 |     #[neon(task)]
+  |       ^^^^^^^^^^

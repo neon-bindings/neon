@@ -1,0 +1,5 @@
+error: `neon::class` can only contain `const` and `fn` items.
+ --> tests/fail/class-invalid-item-type.rs:5:5
+  |
+5 |     type AssocType = i32;
+  |     ^^^^

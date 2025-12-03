@@ -32,6 +32,9 @@ class LinesBuffer {
     this.buffer = this.buffer.concat(lines);
   }
 
+  // Finds and removes lines from the buffer up to and including
+  // the first line that satisfies the predicate p.
+  // Returns the extracted lines, or null if no such line exists.
   find(p: (s: string) => boolean): string[] | null {
     let index = this.buffer.findIndex(p);
     if (index === -1) {
@@ -45,26 +48,120 @@ class LinesBuffer {
   }
 }
 
-async function* run(
-  script: Record<string, string>,
-  stdin: Writable,
-  stdout: Readable
-) {
-  let lines = new LinesBuffer();
+interface Pattern {
+  expect(session: Session): AsyncGenerator<string[]>;
+}
 
-  let keys = Object.keys(script);
-  let i = 0;
-  for await (let chunk of readChunks(stdout)) {
-    lines.add(splitLines(chunk));
-    let found = lines.find((line) => line.startsWith(keys[i]));
-    if (found) {
-      stdin.write(script[keys[i]] + "\n");
-      yield found;
-      i++;
-      if (i >= keys.length) {
-        break;
+type QA = { q: string; a: string };
+
+class ExpectLine implements Pattern {
+  optional: QA[];
+  required: QA;
+
+  constructor(optional: QA[], required: QA) {
+    this.optional = optional;
+    this.required = required;
+  }
+
+  async *expect(session: Session): AsyncGenerator<string[]> {
+    // Use a wrapper stream so that early exit from the for-await loop doesn't
+    // cancel the underlying stream.
+    let stdout = Readable.toWeb(session.stdout).values({ preventCancel: true });
+
+    for await (let chunk of stdout) {
+      session.buffer.add(splitLines(chunk));
+
+      let maxFound = -1;
+
+      // Check for optional lines
+      for (let i = 0; i < this.optional.length; i++) {
+        let found = session.buffer.find((line) =>
+          line.startsWith(this.optional[i].q)
+        );
+        if (found) {
+          session.stdin.write(this.optional[i].a + "\n");
+          maxFound = i;
+          yield found;
+        }
+      }
+
+      // Remove from queue any lines that were found
+      this.optional.splice(0, maxFound + 1);
+
+      // Check for required line
+      let found = session.buffer.find((line) =>
+        line.startsWith(this.required.q)
+      );
+      if (found) {
+        session.stdin.write(this.required.a + "\n");
+        yield found;
+        return;
       }
     }
+  }
+}
+
+// We don't currently have any scripts that end with an optional line, but if we did we'd need this class.
+class ExpectEOF implements Pattern {
+  optional: QA[];
+
+  constructor(optional: QA[]) {
+    this.optional = optional;
+    throw new Error("Class not implemented.");
+  }
+
+  async *expect(session: Session): AsyncGenerator<string[]> {
+    throw new Error("Method not implemented.");
+  }
+}
+
+class Script {
+  clauses: Pattern[];
+
+  constructor(src: Record<string, string>) {
+    this.clauses = [];
+
+    let keys = Object.keys(src);
+    let i = 0;
+    let optional: QA[] = [];
+
+    while (i < keys.length) {
+      if (keys[i].startsWith("?")) {
+        // Collect optional lines
+        optional.push({ q: keys[i].substring(1).trim(), a: src[keys[i]] });
+      } else {
+        // Collect required line
+        this.clauses.push(
+          new ExpectLine(optional, { q: keys[i], a: src[keys[i]] })
+        );
+        optional = [];
+      }
+      i++;
+    }
+
+    if (optional.length > 0) {
+      this.clauses.push(new ExpectEOF(optional));
+    }
+  }
+
+  async *run(session: Session): AsyncGenerator<string[]> {
+    for (let clause of this.clauses) {
+      for await (let lines of clause.expect(session)) {
+        yield lines;
+      }
+    }
+  }
+}
+
+class Session {
+  buffer: LinesBuffer;
+  stdin: Writable;
+  stdout: Readable;
+
+  constructor(stdin: Writable, stdout: Readable) {
+    this.buffer = new LinesBuffer();
+    this.stdin = stdin;
+    this.stdout = readChunks(stdout);
   }
 }
 
@@ -81,10 +178,12 @@ function exit(child: ChildProcess): Promise<number | null> {
 
 export default async function expect(
   child: ChildProcess,
-  script: Record<string, string>
+  src: Record<string, string>
 ): Promise<void> {
   let output: string[][] = [];
-  for await (let lines of run(script, child.stdin!, child.stdout!)) {
+  let script = new Script(src);
+  let session = new Session(child.stdin!, child.stdout!);
+  for await (let lines of script.run(session)) {
     output.push(lines);
   }
   let stderr = await readStream(child.stderr!);

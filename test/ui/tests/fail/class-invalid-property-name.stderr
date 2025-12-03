@@ -1,0 +1,5 @@
+error: '123invalid' is not a valid JavaScript identifier
+ --> tests/fail/class-invalid-property-name.rs:5:19
+  |
+5 |     #[neon(name = "123invalid")]
+  |                   ^^^^^^^^^^^^

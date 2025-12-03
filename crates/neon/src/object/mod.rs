@@ -51,6 +51,16 @@ use crate::{
 #[cfg(feature = "napi-6")]
 use crate::{result::JsResult, types::JsArray};
 
+#[cfg(feature = "napi-6")]
+pub use self::class::Class;
+
+#[doc(hidden)]
+pub use self::wrap::{unwrap, wrap};
+
+#[cfg(feature = "napi-6")]
+pub(crate) mod class;
+pub(crate) mod wrap;
+
 /// A property key in a JavaScript object.
 pub trait PropertyKey: Copy {
     unsafe fn get_from<'c, C: Context<'c>>(
@@ -115,7 +125,7 @@ impl<'a, K: Value> PropertyKey for Handle<'a, K> {
     }
 }
 
-impl<'a> PropertyKey for &'a str {
+impl PropertyKey for &str {
     unsafe fn get_from<'c, C: Context<'c>>(
         self,
         cx: &mut C,

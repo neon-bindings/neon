@@ -12,10 +12,11 @@ pub(super) fn export(meta: meta::Meta, name: &syn::Ident, expr: Box<syn::Expr>) 
         .unwrap_or_else(|| quote::quote!(stringify!(#name)));
 
     // If `json` is enabled, wrap the value in `Json` before `TryIntoJs` is called
-    let value = meta
-        .json
-        .then(|| quote::quote!(neon::types::extract::Json(&#name)))
-        .unwrap_or_else(|| quote::quote!(#name));
+    let value = if meta.json {
+        quote::quote!(neon::types::extract::Json(&#name))
+    } else {
+        quote::quote!(#name)
+    };
 
     // Generate the function that is registered to create the global on addon initialization.
     // Braces are included to prevent names from polluting user code.

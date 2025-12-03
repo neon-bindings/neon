@@ -1,0 +1,5 @@
+error: Only one `finalize` method is allowed in a class.
+ --> tests/fail/class-multiple-finalizers.rs:6:5
+  |
+6 |     fn finalize<'a, C: neon::context::Context<'a>>(self, _cx: &mut C) {}
+  |     ^^

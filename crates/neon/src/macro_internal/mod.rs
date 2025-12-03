@@ -17,6 +17,10 @@ use crate::types::extract::Json;
 #[cfg(all(feature = "napi-6", feature = "futures"))]
 pub use self::futures::*;
 
+pub mod object {
+    pub use crate::object::wrap::{unwrap, wrap};
+}
+
 #[cfg(all(feature = "napi-6", feature = "futures"))]
 mod futures;
 
@@ -110,4 +114,27 @@ impl<Tag> NeonMarker<Tag, NeonResultTag> {
             Err(err) => err.try_into_js(cx).and_then(|err| cx.throw(err)),
         }
     }
+}
+
+#[cfg(feature = "napi-6")]
+pub use crate::object::class::new_class_metadata;
+
+#[cfg(feature = "napi-6")]
+pub use crate::types_impl::extract::private::Sealed;
+
+#[cfg(feature = "napi-6")]
+pub use crate::object::wrap::WrapError;
+
+#[cfg(feature = "napi-6")]
+pub use crate::object::class::ClassInternal;
+
+#[cfg(feature = "napi-6")]
+pub use crate::object::class::{ClassMetadata, RootClassMetadata};
+
+#[cfg(feature = "napi-6")]
+pub fn internal_constructor<'cx, T: crate::object::Class>(
+    cx: &mut Cx<'cx>,
+) -> NeonResult<Handle<'cx, crate::types::JsFunction>> {
+    let class_instance = T::local(cx)?;
+    Ok(class_instance.internal_constructor())
 }
