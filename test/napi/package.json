@@ -7,7 +7,7 @@
   "scripts": {
     "install": "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
     "mocha": "mocha",
-    "test": "mocha --v8-expose-gc --timeout 5000 --recursive lib"
+    "test": "mocha --exit --v8-expose-gc --timeout 5000 --recursive lib"
   },
   "devDependencies": {
     "cargo-cp-artifact": "^0.1.9",
