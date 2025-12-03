@@ -210,7 +210,6 @@ describe("Instance-local storage", () => {
     const worker = new Worker(__filename, {
       workerData: "notify_when_startup_complete",
     });
-    after(() => worker.terminate());
 
     worker.once("message", async () => {
       await worker.terminate();
