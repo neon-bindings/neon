@@ -2,6 +2,15 @@
 
 `0.1.9` supports a [breaking change in `cargo`](https://github.com/rust-lang/cargo/issues/13867) that converts artifact names from `kebab-case` to `snake_case`.
 
+# Version 1.2.0-alpha.0
+
+### New Features
+
+* [Class macro](https://docs.rs/neon/1/neon/attr.class)
+* [impl TryFromJs for i32 and u32](https://github.com/neon-bindings/neon/pull/1107)
+* [impl TryIntoJs for LazyLock](https://github.com/neon-bindings/neon/pull/1111)
+* [`Deferred::settle()` and `Deferred::try_settle()`](https://github.com/neon-bindings/neon/pull/1120)
+
 # Version 1.1.0
 
 ## Continued Commitment to Compatibility
