@@ -1,4 +1,4 @@
-# <img src="doc/neon.png" alt="neon" width="100%" />
+# <img src="https://raw.githubusercontent.com/neon-bindings/neon/refs/heads/main/doc/neon.png" alt="neon" width="100%" />
 
 [![Cargo](https://img.shields.io/crates/v/neon.svg)](https://crates.io/crates/neon)
 [![Test Status](https://github.com/neon-bindings/neon/workflows/CI/badge.svg)](https://github.com/neon-bindings/neon/actions?query=workflow%3A%22CI%22)
