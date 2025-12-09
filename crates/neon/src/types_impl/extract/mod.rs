@@ -107,6 +107,7 @@ use crate::{
 };
 
 pub use self::{
+    array::{Array, ArrayError},
     boxed::Boxed,
     buffer::{
         ArrayBuffer, BigInt64Array, BigUint64Array, Buffer, Float32Array, Float64Array, Int16Array,
@@ -124,6 +125,7 @@ pub use self::json::Json;
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub mod json;
 
+mod array;
 mod boxed;
 mod buffer;
 mod container;
