@@ -49,15 +49,21 @@ describe("classes", function () {
     const Message = addon.Message;
     const message = new Message("test");
 
-    // Method fn.name should be the method name
     assert.strictEqual(message.read.name, "read");
     assert.strictEqual(message.append.name, "append");
     assert.strictEqual(message.concat.name, "concat");
 
-    // util.inspect() should show "[Function: <name>]"
     assert.strictEqual(util.inspect(message.read), "[Function: read]");
     assert.strictEqual(util.inspect(message.append), "[Function: append]");
     assert.strictEqual(util.inspect(message.concat), "[Function: concat]");
+
+    assert.strictEqual(message.read.toString(), "function read() { [native code] }");
+    assert.strictEqual(message.append.toString(), "function append() { [native code] }");
+    assert.strictEqual(message.concat.toString(), "function concat() { [native code] }");
+
+    assert.strictEqual("[object Function]", Object.prototype.toString.call(message.read));
+    assert.strictEqual("[object Function]", Object.prototype.toString.call(message.append));
+    assert.strictEqual("[object Function]", Object.prototype.toString.call(message.concat));
   });
 
   it("can mutate a Message with &mut self", function () {
