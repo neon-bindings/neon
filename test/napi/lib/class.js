@@ -44,6 +44,22 @@ describe("classes", function () {
     );
   });
 
+  it("class methods have normal-looking function names", function () {
+    const util = require("util");
+    const Message = addon.Message;
+    const message = new Message("test");
+
+    // Method fn.name should be the method name
+    assert.strictEqual(message.read.name, "read");
+    assert.strictEqual(message.append.name, "append");
+    assert.strictEqual(message.concat.name, "concat");
+
+    // util.inspect() should show "[Function: <name>]"
+    assert.strictEqual(util.inspect(message.read), "[Function: read]");
+    assert.strictEqual(util.inspect(message.append), "[Function: append]");
+    assert.strictEqual(util.inspect(message.concat), "[Function: concat]");
+  });
+
   it("can mutate a Message with &mut self", function () {
     const Message = addon.Message;
 

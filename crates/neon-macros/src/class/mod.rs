@@ -72,6 +72,7 @@ fn generate_method_wrapper(
     }
 
     let name = &sig.ident;
+    let name_str = &name.to_string()[..];
     let is_mut = is_receiver_mutable(sig);
 
     // Check for context parameter and generate context extraction/argument
@@ -199,7 +200,7 @@ fn generate_method_wrapper(
             };
 
             quote::quote! {
-                JsFunction::new(cx, |mut cx| {
+                JsFunction::with_name(cx, #name_str, |mut cx| {
                     use neon::result::ResultExt;
 
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
@@ -236,7 +237,7 @@ fn generate_method_wrapper(
         }
         meta::Kind::AsyncFn => {
             quote::quote! {
-                JsFunction::new(cx, |mut cx| {
+                JsFunction::with_name(cx, #name_str, |mut cx| {
                     use neon::result::ResultExt;
 
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
@@ -269,7 +270,7 @@ fn generate_method_wrapper(
         }
         meta::Kind::Task => {
             quote::quote! {
-                JsFunction::new(cx, |mut cx| {
+                JsFunction::with_name(cx, #name_str, |mut cx| {
                     use neon::result::ResultExt;
 
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
@@ -315,7 +316,7 @@ fn generate_method_wrapper(
             };
 
             quote::quote! {
-                JsFunction::new(cx, |mut cx| {
+                JsFunction::with_name(cx, #name_str, |mut cx| {
                     use neon::result::ResultExt;
 
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
