@@ -71,7 +71,12 @@ fn generate_method_wrapper(
         return err.into_compile_error();
     }
 
-    let name = &sig.ident;
+    let internal_name = &sig.ident;
+    let external_name_string = match &meta.name {
+        Some(name) => name.value(),
+        None => crate::name::to_camel_case(&internal_name.to_string()),
+    };
+    let external_name_str = &external_name_string[..];
     let is_mut = is_receiver_mutable(sig);
 
     // Check for context parameter and generate context extraction/argument
@@ -199,7 +204,7 @@ fn generate_method_wrapper(
             };
 
             quote::quote! {
-                JsFunction::new(cx, |mut cx| {
+                JsFunction::with_name(cx, #external_name_str, |mut cx| {
                     use neon::result::ResultExt;
 
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
@@ -224,7 +229,7 @@ fn generate_method_wrapper(
                     #borrow_call
 
                     // Call the method with &self or &mut self - developer controls cloning in their impl
-                    let fut = instance.#name(#context_arg #this_arg #(#args),*);
+                    let fut = instance.#internal_name(#context_arg #this_arg #(#args),*);
                     // Always use NeonValueTag for Future conversion, JSON only applies to final result
                     let fut = {
                         use neon::macro_internal::{ToNeonMarker, NeonValueTag};
@@ -236,7 +241,7 @@ fn generate_method_wrapper(
         }
         meta::Kind::AsyncFn => {
             quote::quote! {
-                JsFunction::new(cx, |mut cx| {
+                JsFunction::with_name(cx, #external_name_str, |mut cx| {
                     use neon::result::ResultExt;
 
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
@@ -261,7 +266,7 @@ fn generate_method_wrapper(
                     let instance_clone = instance_cell.borrow().clone();
 
                     // Call the async fn method - it takes self by value to produce 'static Future
-                    let fut = instance_clone.#name(#context_arg #this_arg #(#args),*);
+                    let fut = instance_clone.#internal_name(#context_arg #this_arg #(#args),*);
 
                     neon::macro_internal::spawn(&mut cx, fut, |mut cx, res| #result_extract)
                 })
@@ -269,7 +274,7 @@ fn generate_method_wrapper(
         }
         meta::Kind::Task => {
             quote::quote! {
-                JsFunction::new(cx, |mut cx| {
+                JsFunction::with_name(cx, #external_name_str, |mut cx| {
                     use neon::result::ResultExt;
 
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
@@ -294,7 +299,7 @@ fn generate_method_wrapper(
                     #(#ref_guards)*
 
                     let promise = neon::context::Context::task(&mut cx, move || {
-                        instance_clone.#name(#context_arg #this_arg #(#args),*)
+                        instance_clone.#internal_name(#context_arg #this_arg #(#args),*)
                     })
                     .promise(|mut cx, res| #result_extract);
                     Ok(promise.upcast::<neon::types::JsValue>())
@@ -315,7 +320,7 @@ fn generate_method_wrapper(
             };
 
             quote::quote! {
-                JsFunction::new(cx, |mut cx| {
+                JsFunction::with_name(cx, #external_name_str, |mut cx| {
                     use neon::result::ResultExt;
 
                     let js_this: neon::handle::Handle<neon::types::JsObject> = cx.this()?;
@@ -339,7 +344,7 @@ fn generate_method_wrapper(
                     // Borrow from RefCell
                     #borrow_call
 
-                    let res = instance.#name(#context_arg #this_arg #(#args),*);
+                    let res = instance.#internal_name(#context_arg #this_arg #(#args),*);
                     #result_extract
                 })
             }

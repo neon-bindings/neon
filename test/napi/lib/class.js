@@ -44,6 +44,67 @@ describe("classes", function () {
     );
   });
 
+  it("class methods have normal-looking function names", function () {
+    const util = require("util");
+    const Message = addon.Message;
+    const message = new Message("test");
+    const StringBuffer = addon.StringBuffer;
+    const buffer = new StringBuffer();
+
+    assert.strictEqual(message.read.name, "read");
+    assert.strictEqual(message.append.name, "append");
+    assert.strictEqual(message.concat.name, "concat");
+    assert.strictEqual(buffer.includes.name, "includes");
+    assert.strictEqual(buffer.trimStart.name, "trimStart");
+    assert.strictEqual(buffer.trimEnd.name, "trimEnd");
+
+    assert.strictEqual(util.inspect(message.read), "[Function: read]");
+    assert.strictEqual(util.inspect(message.append), "[Function: append]");
+    assert.strictEqual(util.inspect(message.concat), "[Function: concat]");
+    assert.strictEqual(util.inspect(buffer.includes), "[Function: includes]");
+    assert.strictEqual(util.inspect(buffer.trimStart), "[Function: trimStart]");
+    assert.strictEqual(util.inspect(buffer.trimEnd), "[Function: trimEnd]");
+
+    assert.strictEqual(
+      message.read.toString(),
+      "function read() { [native code] }"
+    );
+    assert.strictEqual(
+      message.append.toString(),
+      "function append() { [native code] }"
+    );
+    assert.strictEqual(
+      message.concat.toString(),
+      "function concat() { [native code] }"
+    );
+
+    assert.strictEqual(
+      "[object Function]",
+      Object.prototype.toString.call(message.read)
+    );
+    assert.strictEqual(
+      "[object Function]",
+      Object.prototype.toString.call(message.append)
+    );
+    assert.strictEqual(
+      "[object Function]",
+      Object.prototype.toString.call(message.concat)
+    );
+
+    assert.strictEqual(
+      buffer.includes.toString(),
+      "function includes() { [native code] }"
+    );
+    assert.strictEqual(
+      buffer.trimStart.toString(),
+      "function trimStart() { [native code] }"
+    );
+    assert.strictEqual(
+      buffer.trimEnd.toString(),
+      "function trimEnd() { [native code] }"
+    );
+  });
+
   it("can mutate a Message with &mut self", function () {
     const Message = addon.Message;
 
