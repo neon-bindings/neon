@@ -56,12 +56,14 @@ describe("classes", function () {
     assert.strictEqual(message.concat.name, "concat");
     assert.strictEqual(buffer.includes.name, "includes");
     assert.strictEqual(buffer.trimStart.name, "trimStart");
+    assert.strictEqual(buffer.trimEnd.name, "trimEnd");
 
     assert.strictEqual(util.inspect(message.read), "[Function: read]");
     assert.strictEqual(util.inspect(message.append), "[Function: append]");
     assert.strictEqual(util.inspect(message.concat), "[Function: concat]");
     assert.strictEqual(util.inspect(buffer.includes), "[Function: includes]");
     assert.strictEqual(util.inspect(buffer.trimStart), "[Function: trimStart]");
+    assert.strictEqual(util.inspect(buffer.trimEnd), "[Function: trimEnd]");
 
     assert.strictEqual(
       message.read.toString(),
@@ -96,6 +98,10 @@ describe("classes", function () {
     assert.strictEqual(
       buffer.trimStart.toString(),
       "function trimStart() { [native code] }"
+    );
+    assert.strictEqual(
+      buffer.trimEnd.toString(),
+      "function trimEnd() { [native code] }"
     );
   });
 

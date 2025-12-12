@@ -74,7 +74,7 @@ fn generate_method_wrapper(
     let internal_name = &sig.ident;
     let external_name_string = match &meta.name {
         Some(name) => name.value(),
-        None => internal_name.to_string(),
+        None => crate::name::to_camel_case(&internal_name.to_string()),
     };
     let external_name_str = &external_name_string[..];
     let is_mut = is_receiver_mutable(sig);
