@@ -57,13 +57,31 @@ describe("classes", function () {
     assert.strictEqual(util.inspect(message.append), "[Function: append]");
     assert.strictEqual(util.inspect(message.concat), "[Function: concat]");
 
-    assert.strictEqual(message.read.toString(), "function read() { [native code] }");
-    assert.strictEqual(message.append.toString(), "function append() { [native code] }");
-    assert.strictEqual(message.concat.toString(), "function concat() { [native code] }");
+    assert.strictEqual(
+      message.read.toString(),
+      "function read() { [native code] }"
+    );
+    assert.strictEqual(
+      message.append.toString(),
+      "function append() { [native code] }"
+    );
+    assert.strictEqual(
+      message.concat.toString(),
+      "function concat() { [native code] }"
+    );
 
-    assert.strictEqual("[object Function]", Object.prototype.toString.call(message.read));
-    assert.strictEqual("[object Function]", Object.prototype.toString.call(message.append));
-    assert.strictEqual("[object Function]", Object.prototype.toString.call(message.concat));
+    assert.strictEqual(
+      "[object Function]",
+      Object.prototype.toString.call(message.read)
+    );
+    assert.strictEqual(
+      "[object Function]",
+      Object.prototype.toString.call(message.append)
+    );
+    assert.strictEqual(
+      "[object Function]",
+      Object.prototype.toString.call(message.concat)
+    );
   });
 
   it("can mutate a Message with &mut self", function () {
