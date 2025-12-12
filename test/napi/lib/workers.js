@@ -105,7 +105,7 @@ describe("Worker / Root Tagging Tests", () => {
   describe("Multi-Threaded", () => {
     it("should fail to use `get_and_replace`", (cb) => {
       const worker = new Worker(__filename);
-      after(() => worker.terminate());
+      worker.unref();
 
       worker.once("message", (message) => {
         assert.ok(/wrong module/.test(message));
@@ -117,7 +117,7 @@ describe("Worker / Root Tagging Tests", () => {
 
     it("should fail to use `get_or_init`", (cb) => {
       const worker = new Worker(__filename);
-      after(() => worker.terminate());
+      worker.unref();
 
       worker.once("message", (message) => {
         assert.ok(/wrong module/.test(message));
@@ -129,7 +129,7 @@ describe("Worker / Root Tagging Tests", () => {
 
     it("should fail to use `get_or_init`", (cb) => {
       const worker = new Worker(__filename);
-      after(() => worker.terminate());
+      worker.unref();
 
       worker.once("message", (message) => {
         assert.ok(/wrong module/.test(message));
@@ -192,7 +192,7 @@ describe("Instance-local storage", () => {
     assert(!Number.isNaN(mainThreadId));
 
     const worker = new Worker(__filename);
-    after(() => worker.terminate());
+    worker.unref();
 
     worker.once("message", (message) => {
       assert.strictEqual(typeof message, "number");
@@ -211,8 +211,9 @@ describe("Instance-local storage", () => {
       workerData: "notify_when_startup_complete",
     });
 
+    worker.unref();
+
     worker.once("message", async () => {
-      await worker.terminate();
       setTimeout(cb, 200);
     });
   });

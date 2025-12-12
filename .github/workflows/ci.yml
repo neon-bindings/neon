@@ -40,7 +40,7 @@ jobs:
             echo "rust_toolchain=$PARTIAL_RUST_TOOLCHAINS" >> $GITHUB_OUTPUT
           fi
 
-  build:
+  node:
     needs: matrix
     runs-on: ${{ matrix.os }}
     strategy:
@@ -120,3 +120,33 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: neon-bindings/neon
           files: target/codecov.json
+
+  bun:
+    needs: matrix
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        rust-toolchain: ${{fromJson(needs.matrix.outputs.rust_toolchain)}}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Use Rust ${{ matrix.rust-toolchain }}
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust-toolchain }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: convert lockfile
+        run: bun install --lockfile-only
+
+      - name: bun install
+        run: bun ci
+
+      - name: test
+        working-directory: ./test/napi
+        run: bun run test:bun
