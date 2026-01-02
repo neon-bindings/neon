@@ -138,6 +138,11 @@ pub fn extract_single_add_one(mut cx: FunctionContext) -> JsResult<JsNumber> {
     Ok(cx.number(n + 1.0))
 }
 
+#[neon::export(json)]
+pub fn extract_json_option(maybe_x: Option<f64>) -> Option<f64> {
+    maybe_x
+}
+
 #[neon::export]
 pub fn extract_either(either: Either<String, f64>) -> String {
     match either {

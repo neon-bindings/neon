@@ -23,7 +23,7 @@ use crate::{
     result::{JsResult, NeonResult},
     types::{
         extract::{private, TryFromJs, TryIntoJs},
-        JsError, JsFunction, JsObject, JsString, JsValue,
+        JsError, JsFunction, JsObject, JsValue,
     },
 };
 
@@ -50,13 +50,6 @@ fn json_stringify<'cx>(cx: &mut Cx<'cx>) -> JsResult<'cx, JsFunction> {
     STRINGIFY
         .get_or_try_init(cx, |cx| global_json_stringify(cx).map(|f| f.root(cx)))
         .map(|f| f.to_inner(cx))
-}
-
-fn stringify(cx: &mut Cx, v: Handle<JsValue>) -> NeonResult<String> {
-    json_stringify(cx)?
-        .call(cx, v, [v])?
-        .downcast_or_throw::<JsString, _>(cx)
-        .map(|s| s.value(cx))
 }
 
 fn global_json_parse<'cx>(cx: &mut Cx<'cx>) -> JsResult<'cx, JsFunction> {
@@ -97,9 +90,14 @@ where
         cx: &mut Cx<'cx>,
         v: Handle<'cx, JsValue>,
     ) -> NeonResult<Result<Self, Self::Error>> {
-        Ok(serde_json::from_str(&stringify(cx, v)?)
-            .map(Json)
-            .map_err(Error))
+        let s = json_stringify(cx)?.call(cx, v, [v])?;
+        let res = match String::try_from_js(cx, s)? {
+            Ok(s) => serde_json::from_str(&s),
+            // If the type was not a `string`, it must be `undefined`
+            Err(_) => T::deserialize(serde::de::value::UnitDeserializer::new()),
+        };
+
+        Ok(res.map(Json).map_err(Error))
     }
 }
 
