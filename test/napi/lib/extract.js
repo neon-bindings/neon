@@ -73,6 +73,9 @@ describe("Extractors", () => {
   it("JSON", () => {
     assert.strictEqual(addon.extract_json_sum([1, 2, 3, 4]), 10);
     assert.strictEqual(addon.extract_json_sum([8, 16, 18]), 42);
+    assert.strictEqual(addon.extractJsonOption(42), 42);
+    assert.strictEqual(addon.extractJsonOption(null), null);
+    assert.strictEqual(addon.extractJsonOption(), null);
   });
 
   it("Either", () => {
