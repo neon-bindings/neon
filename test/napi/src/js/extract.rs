@@ -1,5 +1,6 @@
 use either::Either;
 use neon::{prelude::*, types::extract::*};
+use std::collections::HashSet;
 
 pub fn extract_values(mut cx: FunctionContext) -> JsResult<JsArray> {
     #[allow(clippy::type_complexity)]
@@ -195,4 +196,19 @@ fn sleep_with(n: f64) -> impl for<'cx> TryIntoJs<'cx> {
 // Ensure that `With` can be used Rust data synchronously
 fn sleep_with_sync(n: f64) -> impl for<'cx> TryIntoJs<'cx> {
     sleep_with(n)
+}
+
+#[neon::export]
+fn extract_array_vec(Array(arr): Array<Vec<f64>>) -> Array<Vec<f64>> {
+    Array(arr)
+}
+
+#[neon::export]
+fn extract_array_double(Array(arr): Array<Vec<f64>>) -> Array<impl Iterator<Item = f64>> {
+    Array(arr.into_iter().map(|x| x * 2.0))
+}
+
+#[neon::export]
+fn extract_array_dedupe(set: Array<HashSet<String>>) -> Array<HashSet<String>> {
+    set
 }

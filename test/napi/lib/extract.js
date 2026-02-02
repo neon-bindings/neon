@@ -100,4 +100,13 @@ describe("Extractors", () => {
     assert.strictEqual(await addon.sleepWith(1.5), 1.5);
     assert.strictEqual(await addon.sleepWithSync(1.5), 1.5);
   });
+
+  it("Array", () => {
+    assert.deepStrictEqual(addon.extractArrayVec([1, 2, 3]), [1, 2, 3]);
+    assert.deepStrictEqual(addon.extractArrayDouble([1, 2, 3]), [2, 4, 6]);
+    assert.deepStrictEqual(
+      addon.extractArrayDedupe(["a", "a", "b", "c", "c"]).sort(),
+      ["a", "b", "c"]
+    );
+  });
 });
