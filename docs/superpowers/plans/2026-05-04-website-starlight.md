@@ -245,7 +245,8 @@ fn main() {
 
     let mut entries = Vec::new();
     if docs_root.is_dir() {
-        for entry in WalkDir::new(&docs_root).into_iter().filter_map(Result::ok) {
+        for entry in WalkDir::new(&docs_root) {
+            let entry = entry.expect("walkdir error in src/content/docs/");
             let path = entry.path();
             if !path.is_file() {
                 continue;
