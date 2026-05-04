@@ -1,0 +1,37 @@
+<section class="tiles">
+  <div class="tile">
+    <h3>Simple tooling</h3>
+    <p>No build scripts. No finicky system dependencies. Just Node and Rust.</p>
+  </div>
+  <div class="tile">
+    <h3>Guaranteed safety</h3>
+    <p>If a Neon module compiles, it is guaranteed by the Rust compiler to be memory-safe.</p>
+  </div>
+  <div class="tile">
+    <h3>Easy parallelism</h3>
+    <p>Safely run multiple threads — without data races.</p>
+  </div>
+</section>
+
+<style>
+  .tiles {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: 1fr;
+    padding: 2rem 0;
+  }
+  @media (min-width: 720px) {
+    .tiles {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  .tile h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+  }
+  .tile p {
+    margin: 0;
+    color: var(--sl-color-gray-2);
+    line-height: 1.5;
+  }
+</style>

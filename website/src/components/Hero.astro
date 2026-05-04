@@ -1,0 +1,72 @@
+---
+import CodeCompare from "./CodeCompare.astro";
+---
+
+<section class="hero">
+  <div class="hero-text">
+    <img src="/logo.png" alt="Neon" class="logo" />
+    <h1>Neon</h1>
+    <p class="tagline">Write Node addons in Rust.</p>
+    <p class="subline">Safe, fast, parallel.</p>
+    <div class="ctas">
+      <a class="cta primary" href="/tutorials/first-module/">Get started</a>
+      <a class="cta secondary" href="/api/neon/">API reference</a>
+    </div>
+  </div>
+  <div class="hero-code">
+    <CodeCompare />
+  </div>
+</section>
+
+<style>
+  .hero {
+    display: grid;
+    gap: 2rem;
+    align-items: center;
+    padding: 2rem 0;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 960px) {
+    .hero {
+      grid-template-columns: 1fr 1.2fr;
+    }
+  }
+  .logo {
+    width: 4rem;
+    height: auto;
+  }
+  h1 {
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    margin: 0.5rem 0;
+  }
+  .tagline {
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+    margin: 0.25rem 0;
+  }
+  .subline {
+    font-size: 1rem;
+    color: var(--sl-color-gray-3);
+    margin: 0 0 1.5rem 0;
+  }
+  .ctas {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .cta {
+    display: inline-block;
+    padding: 0.6rem 1.1rem;
+    border-radius: 0.4rem;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .cta.primary {
+    background: var(--sl-color-accent);
+    color: var(--sl-color-accent-high);
+  }
+  .cta.secondary {
+    background: transparent;
+    color: var(--sl-color-text);
+    border: 1px solid var(--sl-color-gray-5);
+  }
+</style>

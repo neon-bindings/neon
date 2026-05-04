@@ -1,0 +1,50 @@
+---
+import { Code } from "@astrojs/starlight/components";
+
+const js = `// JavaScript
+const URL = "https://api.example.com/echo";
+
+export async function echo(text) {
+  const res = await fetch(URL, {
+    method: "POST",
+    body: text,
+  });
+  return await res.text();
+}
+`;
+
+const rust = `// Rust + Neon
+const URL: &str = "https://api.example.com/echo";
+
+#[neon::export]
+async fn echo(text: String) -> Result<String, Error> {
+    let res = reqwest::Client::new().post(URL).body(text).send().await?;
+    Ok(res.text().await?)
+}
+`;
+---
+
+<div class="code-compare">
+  <div class="panel">
+    <Code code={js} lang="js" />
+  </div>
+  <div class="panel">
+    <Code code={rust} lang="rust" />
+  </div>
+</div>
+
+<style>
+  .code-compare {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 640px) {
+    .code-compare {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .panel {
+    min-width: 0;
+  }
+</style>

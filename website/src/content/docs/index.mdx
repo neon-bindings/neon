@@ -2,18 +2,25 @@
 title: Neon
 description: Write Node addons in Rust.
 template: splash
+hero:
+  tagline: ""
 ---
 
-# Neon
+import Hero from "../../components/Hero.astro";
+import FeatureTiles from "../../components/FeatureTiles.astro";
 
-Write Node addons in Rust. Safe, fast, parallel.
+<Hero />
 
-This is a placeholder landing page. The real one is built in a later task.
+<FeatureTiles />
 
 ```rust
 # use neon::prelude::*;
+# use neon::types::extract::{with, Error, TryIntoJs};
+# async fn fetch_user(_id: u64) -> Result<String, Error> { Ok(String::new()) }
 #[neon::export]
-fn hello() -> &'static str {
-    "Hello from Neon"
+async fn load_user(id: f64) -> impl for<'cx> TryIntoJs<'cx> {
+    println!("Hello from the JavaScript main thread!");
+    let user = fetch_user(id as u64).await;
+    with(move |cx| user.try_into_js(cx))
 }
 ```
