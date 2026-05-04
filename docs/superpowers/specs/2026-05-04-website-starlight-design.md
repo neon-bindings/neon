@@ -1,18 +1,18 @@
 # Neon docs site — Starlight rebuild
 
 Date: 2026-05-04
-Status: Approved (pending user review of this written spec)
+Status: Approved
 
 ## Goal
 
-Replace the existing Neon docs site at [https://neon-rs.dev](https://neon-rs.dev) (currently
-`[neon-bindings/website](https://github.com/neon-bindings/website)`, a Docusaurus
+Replace the existing Neon docs site at <https://neon-rs.dev> (currently
+[`neon-bindings/website`](https://github.com/neon-bindings/website), a Docusaurus
 project) with a brand-new Starlight site that lives in this monorepo at
 `website/`. The new site exemplifies modern Neon (1.2+: `#[neon::export]`,
 `#[neon::class]`, async exports), follows
 [Diátaxis](https://diataxis.fr/) for information architecture, and verifies
-every Rust code sample with `cargo test` doctests so the site can never silently
-drift from the API it documents.
+every Rust code sample with `cargo test` doctests so the site can never
+silently drift from the API it documents.
 
 ## Non-goals
 
@@ -20,38 +20,35 @@ drift from the API it documents.
 - Internationalization (i18n / Crowdin). Not in v1.
 - A blog. Not in v1.
 - Migration guides for older Neon versions on the new site. Existing
-`doc/MIGRATION_GUIDE_*.md` files stay where they are.
+  `doc/MIGRATION_GUIDE_*.md` files stay where they are.
 - How-to guides for Electron- or Bun-specific projects in v1.
 - Testing or showcasing community-built Neon modules.
 
 ## Audience & framing
 
-The landing page is **product-first**, not audience-segmented. A visitor sees
+The landing page is product-first, not audience-segmented. A visitor sees
 what Neon is and what code looks like, then self-routes into the appropriate
 Diátaxis quadrant. There is no "I'm coming from Rust" / "I'm coming from
 Node" split.
 
-Inside the docs, content assumes a reader comfortable with at least one of Rust
-or Node and willing to learn the other. We do not teach Rust or Node from
-scratch.
+Inside the docs, content assumes a reader comfortable with at least one of
+Rust or Node and willing to learn the other. We do not teach Rust or Node
+from scratch.
 
 ### Linking out
 
 When a Neon page touches a concept that has authoritative documentation
 elsewhere — Rust language features, the Rust Book, the Rust standard library,
-Node-API, Node.js docs, MDN, the [tokio docs](https://docs.rs/tokio/latest/tokio/), `serde`, etc. — we link to it
-inline rather than re-explaining it. The bar is "would a curious reader benefit
-from one click to a deeper source?" If yes, link.
+Node-API, Node.js docs, MDN, the tokio docs, `serde`, etc. — we link to it
+inline rather than re-explaining it. The bar is "would a curious reader
+benefit from one click to a deeper source?" If yes, link.
 
 Examples of where this applies:
 
-- `Result`, `?`, lifetimes, traits, async — link to [the Rust Book](https://doc.rust-lang.org/book/) or
-`[std`'s rustdoc](https://doc.rust-lang.org/std/).
-- `serde::Serialize`, `tokio::spawn`, `CancellationToken` — link to the
-upstream crate docs.
-- `Promise`, `AbortController`, Buffer, async iterators — link to MDN or
-Node.js docs.
-- Node-API — link to [https://nodejs.org/api/n-api.html](https://nodejs.org/api/n-api.html).
+- `Result`, `?`, lifetimes, traits, async — link to <https://doc.rust-lang.org/book/> or <https://doc.rust-lang.org/std/>.
+- `serde::Serialize`, `tokio::spawn`, `CancellationToken` — link to the upstream crate docs on docs.rs.
+- `Promise`, `AbortController`, Buffer, async iterators — link to MDN or Node.js docs.
+- Node-API — link to <https://nodejs.org/api/n-api.html>.
 
 Tutorials should link sparingly (don't break the reader's flow); how-to and
 explanation pages should link liberally; reference pages link wherever a term
@@ -64,17 +61,13 @@ Top-level sidebar groups, in order:
 ### Getting started
 
 - Install (toolchain, `npm init neon@latest`).
-- Quickstart (a few minutes; produces a runnable hello-world without explaining
-why).
+- Quickstart (a few minutes; produces a runnable hello-world without explaining why).
 
 ### Tutorials (learning-oriented, linear)
 
-1. **Your first Neon module.** Install toolchain → `npm init neon` → export a
-  function with `#[neon::export]` → call it from JS → run it.
-2. **Concurrency with the libuv thread pool.** Convert a CPU-bound function to
-  `#[neon::export(task)]`, await the resulting Promise from JS.
-3. **Async functions with tokio.** Register a global executor, write
-  `async fn`, return a Promise.
+1. Your first Neon module. Install toolchain → `npm init neon` → export a function with `#[neon::export]` → call it from JS → run it.
+2. Concurrency with the libuv thread pool. Convert a CPU-bound function to `#[neon::export(task)]`, await the resulting Promise from JS.
+3. Async functions with tokio. Register a global executor, write `async fn`, return a Promise.
 
 ### How-to guides (task-oriented, recipes)
 
@@ -83,11 +76,9 @@ why).
 - Define a class with `#[neon::class]`.
 - Run blocking work on the libuv pool (`#[neon::export(task)]`).
 - Run an `async fn` and return a Promise.
-- Run synchronous setup on the JS main thread before async work
-(`#[neon::export(async)]` returning `impl Future`).
+- Run synchronous setup on the JS main thread before async work (`#[neon::export(async)]` returning `impl Future`).
 - Run code on the JS main thread *after* async work (`extract::with`).
-- Cancel async work with `AbortController` (mirrors
-`[neon-bindings/examples` PR #104](https://github.com/neon-bindings/examples/pull/104)).
+- Cancel async work with `AbortController` (mirrors the example in <https://github.com/neon-bindings/examples/pull/104>).
 - Stream data between Rust and JS.
 - Throw and catch JS errors from Rust (including `extract::Error` + `?`).
 - Rename exports / customize the JS-facing name.
@@ -107,7 +98,7 @@ why).
 - Threading and lifecycle (`Channel`, `Root`, `Deferred`).
 - How `#[neon::export]` works under the hood.
 - Error-handling philosophy (Rust `Result` ↔ JS exceptions).
-- The Neon type hierarchy (`JsValue`, `JsObject`, `JsFunction`, etc.). This should have a diagram (e.g., mermaid).
+- The Neon type hierarchy (`JsValue`, `JsObject`, `JsFunction`, etc.). This page should include a Mermaid diagram of the hierarchy.
 - Lifetimes in Neon (handle lifetimes, the `'cx` lifetime, why they exist).
 - When to reach for Neon (and when not to).
 
@@ -121,31 +112,22 @@ why).
 
 ### Repository layout
 
-```
-website/
-├── Cargo.toml          # rustc-side: makes `website` a workspace member
-├── build.rs            # walks src/content/docs/ and emits doctests to OUT_DIR
-├── package.json        # Astro/Starlight site (incl. prebuild → cargo doc)
-├── astro.config.mjs    # Starlight config + remark plugin
-├── strip-hidden-rust-lines.mjs  # remark plugin (hidden-line stripping)
-├── netlify.toml        # build command, publish dir, Rust toolchain pin
-├── public/             # static assets (logo, favicon, copied rustdoc HTML)
-└── src/
-    ├── content/
-    │   ├── config.ts   # Starlight content collections schema
-    │   └── docs/       # all markdown — single source of truth for site & doctests
-    │       ├── index.mdx
-    │       ├── getting-started/
-    │       ├── tutorials/
-    │       ├── how-to/
-    │       ├── reference/
-    │       └── explanation/
-    └── components/     # custom landing-page components
-```
+The `website/` directory holds:
 
-The `website/` directory is **simultaneously** an Astro project (consumed by
-Node tooling) and a Cargo crate (consumed by `cargo test` for doctests). The
-two views overlap on `src/content/docs/`, which is the source of truth for both.
+- `Cargo.toml` — makes `website` a workspace member; declares the `neon` path dep.
+- `build.rs` — walks `src/content/docs/` and emits doctests to `OUT_DIR`.
+- `package.json` — Astro/Starlight site, including the `prebuild` script that runs `cargo doc`.
+- `astro.config.mjs` — Starlight config and remark plugin registration.
+- `strip-hidden-rust-lines.mjs` — the remark plugin that hides `#`-prefixed lines from rendered Rust fences.
+- `netlify.toml` — build command, publish dir, Rust toolchain pin.
+- `public/` — static assets (logo, favicon). Rustdoc HTML is copied here at build time.
+- `src/content/config.ts` — Starlight content collections schema.
+- `src/content/docs/` — all markdown. Single source of truth for both the rendered site and the doctest harness. Subdirectories: `index.mdx`, `getting-started/`, `tutorials/`, `how-to/`, `reference/`, `explanation/`.
+- `src/components/` — custom landing-page components.
+
+The `website/` directory is simultaneously an Astro project (consumed by Node
+tooling) and a Cargo crate (consumed by `cargo test` for doctests). The two
+views overlap on `src/content/docs/`, which is the source of truth for both.
 
 ### Workspace registration
 
@@ -156,53 +138,37 @@ already uses npm workspaces; we add `"website"` to its `workspaces` array.
 
 `website/build.rs` runs at `cargo build` / `cargo test` time and:
 
-1. Walks `website/src/content/docs/` recursively, collecting every `.md` and
-  `.mdx` file.
-2. For each file, emits a `pub mod __doctest_<sanitized_path> { #![doc = include_str!("…")] }`
-  stub into a generated file at `$OUT_DIR/doctests.rs`.
-3. Emits `cargo:rerun-if-changed` for the docs root and for every collected
-  markdown file (so cargo re-runs the build script when files are added,
-   removed, or modified).
+1. Walks `website/src/content/docs/` recursively, collecting every `.md` and `.mdx` file.
+2. For each file, emits a `pub mod __doctest_<sanitized_path> { #![doc = include_str!("…")] }` stub into a generated file at `$OUT_DIR/doctests.rs`.
+3. Emits `cargo:rerun-if-changed` for the docs root and for every collected markdown file.
 
-`website/src/lib.rs` (or `src/main.rs`) is one line:
-`include!(concat!(env!("OUT_DIR"), "/doctests.rs"));`
+`website/src/lib.rs` is one line: `include!(concat!(env!("OUT_DIR"), "/doctests.rs"));`.
 
-Generated artifacts live exclusively under `$OUT_DIR` (which cargo places under
-`target/`). Nothing generated is committed to the repo.
+Generated artifacts live exclusively under `$OUT_DIR` (which cargo places
+under `target/`). Nothing generated is committed to the repo.
 
 `website/Cargo.toml` declares a dependency on `neon` via relative path. The
 exact feature set is deferred to implementation, but the baseline matches the
 existing `cargo neon-test` alias in `.cargo/config.toml`
 (`napi-experimental,external-buffers,serde,tokio`) since samples cover
-`Json<T>`, async/tokio, and other features that require those flags. The
-implementation plan should pin the feature set explicitly and document why.
+`Json<T>`, async/tokio, and other features that require those flags.
 
 #### Interaction with `cargo neon-test`
 
 Adding `website` to the root workspace means `cargo neon-test --all` (and the
-existing CI matrix) will pick it up automatically and run its doctests on every
-supported platform. This is intentional — Neon API changes that break samples
-should fail the existing CI matrix, not just the website workflow. The
-website-specific workflow (described below) still runs `cargo test -p website`
-explicitly, but treats it as a fast pre-flight on a single platform; the
-matrix is the authoritative cross-platform check.
+existing CI matrix) will pick it up automatically and run its doctests on
+every supported platform. This is intentional — Neon API changes that break
+samples should fail the existing CI matrix, not just the website workflow.
+The website-specific workflow still runs `cargo test -p website` explicitly,
+but treats it as a fast pre-flight on a single platform; the matrix is the
+authoritative cross-platform check.
 
 #### Sample conventions
 
-- **Every Rust sample is wrapped in `#[neon::export]`** (or another
-`#[neon::export(...)]` flavor — `task`, `async`, `class`, etc.). This means
-rustdoc compiles each sample but does not invoke the function from its
-synthesized `fn main`, giving us compile-checking without needing a Node
-runtime.
-- **Hidden lines** (`#`-prefixed) are used freely for `use` statements, helper
-bindings, and other setup that should compile but not appear on the page.
-- **The only fence we recognize is plain ````rust`.** No `rust,no_run`,
-`rust,ignore`, etc. If a sample needs to compile but appear different on the
-rendered page, authors do that with hidden lines, not info-string flags. If
-this constraint becomes a problem we revisit it; the simplicity is worth it
-for v1.
-- **Pure-Rust runnable samples** (rare) can include an explicit `fn main() { … }`
-inside the fence; rustdoc will then run it.
+- Every Rust sample is wrapped in `#[neon::export]` (or another `#[neon::export(...)]` flavor — `task`, `async`, `class`, etc.). This means rustdoc compiles each sample but does not invoke the function from its synthesized `fn main`, giving us compile-checking without needing a Node runtime.
+- Hidden lines (`#`-prefixed) are used freely for `use` statements, helper bindings, and other setup that should compile but not appear on the page.
+- The only fence we recognize is plain ` ```rust `. No `rust,no_run`, `rust,ignore`, etc. If a sample needs to compile but appear different on the rendered page, authors do that with hidden lines, not info-string flags. If this constraint becomes a problem we revisit it; the simplicity is worth it for v1.
+- Pure-Rust runnable samples (rare) can include an explicit `fn main() { … }` inside the fence; rustdoc will then run it.
 
 ### Hidden-line remark plugin
 
@@ -210,15 +176,13 @@ inside the fence; rustdoc will then run it.
 `astro.config.mjs`. It mirrors rustdoc's hidden-line convention exactly:
 
 - Walks `code` nodes whose `lang === 'rust'`.
-- Removes lines whose first non-whitespace character is `#` followed by a
-space, *or* a `#` at end-of-line.
-- Replaces `##` at the start of a line with a literal `#` in the rendered
-output.
+- Removes lines whose first non-whitespace character is `#` followed by a space, *or* a `#` at end-of-line.
+- Replaces `##` at the start of a line with a literal `#` in the rendered output.
 - Leaves all other code blocks (and rendered Markdown) untouched.
 
-This plugin runs only on rendered output. It does not touch the on-disk markdown
-that the doctest harness consumes; rustdoc applies its own (identical) hidden-
-line rules when compiling.
+This plugin runs only on rendered output. It does not touch the on-disk
+markdown that the doctest harness consumes; rustdoc applies its own
+(identical) hidden-line rules when compiling.
 
 No separate test for the plugin in v1.
 
@@ -228,111 +192,66 @@ There is no published `starlight-rustdoc` npm plugin (we checked the official
 Starlight plugin registry; the closest analogues are `starlight-typedoc` for
 TypeScript and `starlight-openapi`). Building one would require walking
 nightly-only rustdoc JSON and re-rendering into Markdown — too much work for
-v1. Instead we mount `cargo doc`'s self-contained HTML output as static assets,
-the same approach used by `ratatui.rs`, `tokio.rs`, and most other
+v1. Instead we mount `cargo doc`'s self-contained HTML output as static
+assets, the same approach used by `ratatui.rs`, `tokio.rs`, and most other
 Rust-project sites.
 
-- `package.json` defines a `prebuild` script that runs
-  `cargo doc -p neon --no-deps` and then copies `target/doc/` into
-  `website/public/api/` (or equivalent location served by Astro). The exact
-  copy command (`cp -r`, `rsync`, a small Node script) is an implementation
-  detail; what matters is that `dist/api/neon/index.html` exists after
-  `npm run build`.
-- `"build"` is the Astro build, which transitively runs `prebuild`.
-  Netlify and CI both run `npm run build`.
-- Rustdoc's own sidebar, navigation, and search continue to work as-is at
-  `/api/`. The visual transition between Starlight UI (at `/`, `/tutorials/`,
-  etc.) and rustdoc UI (at `/api/`) is a minor UX seam we accept.
-- Pagefind (Starlight's search) does not index `/api/`. Rustdoc has its own
-  in-tree search; users searching API symbols use that. We may revisit
-  unified search post-v1.
-- The site always reflects the in-tree `neon` crate. Historical versions are
-  served by docs.rs; we don't replicate that here.
-- Local dev (`npm run dev`) does *not* rebuild rustdoc on Rust source changes.
-  Contributors run `cargo doc -p neon --no-deps` once locally, or whenever
-  they need updated API docs.
+- `package.json` defines a `prebuild` script that runs `cargo doc -p neon --no-deps` and then copies `target/doc/` into `website/public/api/`. The exact copy command (`cp -r`, `rsync`, a small Node script) is an implementation detail; what matters is that `dist/api/neon/index.html` exists after `npm run build`.
+- `"build"` is the Astro build, which transitively runs `prebuild`. Netlify and CI both run `npm run build`.
+- Rustdoc's own sidebar, navigation, and search continue to work as-is at `/api/`. The visual transition between Starlight UI and rustdoc UI is a minor seam we accept.
+- Pagefind (Starlight's search) does not index `/api/`. Rustdoc has its own in-tree search; users searching API symbols use that. We may revisit unified search post-v1.
+- The site always reflects the in-tree `neon` crate. Historical versions are served by docs.rs; we don't replicate that here.
+- Local dev (`npm run dev`) does *not* rebuild rustdoc on Rust source changes. Contributors run `cargo doc -p neon --no-deps` once locally.
 
 ### Visual design
 
-- **Doc pages** use Starlight's default template and theme, with the brand
-accent set to Neon's existing green and the existing lightning-bolt logo
-(`doc/neon.png`) used for the header logo and favicon.
-- **Landing page** uses Starlight's `splash` template with custom layout. See
-the next section for the structure.
-- **Search** uses Starlight's built-in Pagefind. No third-party service.
-- **Sidebar** mirrors Diátaxis quadrants in the order listed under
-"Information architecture" above. The Reference group's "API reference" is
-a single external-style link to `/api/neon/`, not an expandable tree.
+- Doc pages use Starlight's default template and theme, with the brand accent set to Neon's existing green and the existing lightning-bolt logo (`doc/neon.png`) used for the header logo and favicon.
+- Landing page uses Starlight's `splash` template with custom layout. See the next section.
+- Search uses Starlight's built-in Pagefind. No third-party service.
+- Sidebar mirrors the Diátaxis quadrants in the order listed under "Information architecture" above. The Reference group's "API reference" is a single external-style link to `/api/neon/`, not an expandable tree.
 
 ### Landing page layout
 
-Single page (`src/content/docs/index.mdx` plus components in `src/components/`),
-top-to-bottom:
+Single page (`src/content/docs/index.mdx` plus components in
+`src/components/`), top-to-bottom:
 
-1. **Hero**, two-column.
-  - Left: logo + wordmark, tagline **"Write Node addons in Rust"**, sub-line
-   **"Safe, fast, parallel."**, two CTAs ("Get started" → first-module
-   tutorial; "API reference" → `/api/neon/`).
-  - Right: side-by-side JS + Rust code comparison showing the same small
-  async function in both languages, using `#[neon::export]` on the Rust
-  side. Stacked vertically on narrow viewports.
-2. **Three-tile grid.** Headers preserved from the existing site:
-  - **Simple tooling.** No build scripts. No finicky system dependencies.
-   Just Node and Rust.
-  - **Guaranteed safety.** If a Neon module compiles, it is guaranteed by
-  the Rust compiler to be memory-safe.
-  - **Easy parallelism.** Safely run multiple threads — without data races.
-3. **A code block** showing the `#[neon::export(async)]` synchronous-setup-
-  then-async pattern. No heading, no caption — the code stands alone.
-4. **Footer.** Standard Starlight footer with GitHub, Slack, license links.
-  No "who's using Neon" section in v1.
+1. Hero, two-column. Left column: logo + wordmark, tagline "Write Node addons in Rust", sub-line "Safe, fast, parallel.", two CTAs ("Get started" → first-module tutorial; "API reference" → `/api/neon/`). Right column: side-by-side JS + Rust code comparison showing the same small async function in both languages, using `#[neon::export]` on the Rust side. Stacked vertically on narrow viewports.
+2. Three-tile grid. Headers preserved from the existing site: "Simple tooling" (No build scripts. No finicky system dependencies. Just Node and Rust.); "Guaranteed safety" (If a Neon module compiles, it is guaranteed by the Rust compiler to be memory-safe.); "Easy parallelism" (Safely run multiple threads — without data races.).
+3. A code block showing the `#[neon::export(async)]` synchronous-setup-then-async pattern. No heading, no caption — the code stands alone.
+4. Footer. Standard Starlight footer with GitHub, Slack, license links. No "who's using Neon" section in v1.
 
 ## CI & deployment
 
 ### Workflow
 
-A new `.github/workflows/website.yml` runs on:
-
-- `push` to `main`
-- `pull_request` against `main`
-
-…with path filters limiting it to changes under `website/`**, `crates/neon/**`,
-or `crates/neon-macros/**` (since either crate's API can break samples or
-rustdoc).
+A new `.github/workflows/website.yml` runs on `push` to `main` and
+`pull_request` against `main`, with path filters limiting it to changes
+under `website/**`, `crates/neon/**`, or `crates/neon-macros/**` (since
+either crate's API can break samples or rustdoc).
 
 Jobs:
 
-1. **doctests**: `cargo test -p website`. Verifies every Rust sample compiles
-  against the in-tree `neon` crate.
-2. **build**: `npm ci && npm run build` inside `website/`. Verifies the site
-  builds end-to-end (including `cargo doc`). Uploads the `dist/` artifact
-   for inspection if needed.
+1. doctests — `cargo test -p website`. Verifies every Rust sample compiles against the in-tree `neon` crate.
+2. build — `npm ci && npm run build` inside `website/`. Verifies the site builds end-to-end (including `cargo doc`). Uploads the `dist/` artifact for inspection if needed.
 
-The `doctests` job becomes a required check on PRs that match the path filters.
-This is intentional: if a Neon API change breaks a documented sample, the PR
-is blocked until samples are updated.
+The `doctests` job becomes a required check on PRs that match the path
+filters. This is intentional: if a Neon API change breaks a documented
+sample, the PR is blocked until samples are updated.
 
 ### Netlify
 
-- `netlify.toml` sets `base = "website"`, `command = "npm run build"`,
-`publish = "website/dist"`.
-- Rust toolchain is provisioned via Netlify's `RUST_VERSION` env var (or a
-`rustup` invocation in a build hook if the env var route doesn't pin
-precisely enough).
-- Deploy previews per PR are enabled by Netlify's GitHub integration. The PR
-comment with the preview URL is automatic; nothing to wire up beyond
-Netlify project settings.
+- `netlify.toml` sets `base = "website"`, `command = "npm run build"`, `publish = "website/dist"`.
+- Rust toolchain is provisioned via Netlify's `RUST_VERSION` env var (or a `rustup` invocation in a build hook if the env var route doesn't pin precisely enough).
+- Deploy previews per PR are enabled by Netlify's GitHub integration. The PR comment with the preview URL is automatic; nothing to wire up beyond Netlify project settings.
 
 ## Open questions for implementation
 
 These weren't decided during brainstorming but don't block writing the spec.
 The plan should resolve them:
 
-- Exact `neon` feature set for the doctest crate. Baseline is
-  `napi-experimental,external-buffers,serde,tokio` (matches `cargo neon-test`).
+- Exact `neon` feature set for the doctest crate. Baseline is `napi-experimental,external-buffers,serde,tokio` (matches `cargo neon-test`).
 - Mechanism for copying rustdoc HTML into `public/` (cp/rsync/Node script).
-- Whether to add a sidebar item linking out to `/api/neon/` or rely on a top
-  nav link.
+- Whether to add a sidebar item linking out to `/api/neon/` or rely on a top nav link.
 - Exact sample for the hero JS/Rust comparison and the section-3 code block.
 
 ## Out of scope (revisit post-launch)
@@ -344,4 +263,3 @@ The plan should resolve them:
 - i18n.
 - Community-built modules showcase.
 - Custom search beyond Pagefind.
-
