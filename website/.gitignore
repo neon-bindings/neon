@@ -1,0 +1,11 @@
+# Astro / Node
+node_modules/
+dist/
+.astro/
+.netlify/
+
+# Rust
+target/
+
+# Editor / OS
+.DS_Store

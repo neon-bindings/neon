@@ -1,0 +1,20 @@
+[package]
+name = "website"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Doctest harness for the Neon docs site (https://neon-rs.dev)."
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+neon = { path = "../crates/neon", default-features = false, features = [
+    "napi-experimental",
+    "external-buffers",
+    "serde",
+    "tokio",
+] }
+
+[build-dependencies]
+walkdir = "2"
