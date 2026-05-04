@@ -9,3 +9,11 @@ template: splash
 Write Node addons in Rust. Safe, fast, parallel.
 
 This is a placeholder landing page. The real one is built in a later task.
+
+```rust
+# use neon::prelude::*;
+#[neon::export]
+fn hello() -> &'static str {
+    "Hello from Neon"
+}
+```

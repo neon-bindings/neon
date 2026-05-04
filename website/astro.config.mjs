@@ -1,8 +1,12 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
+import { remarkStripHiddenRustLines } from "./strip-hidden-rust-lines.mjs";
 
 export default defineConfig({
   site: "https://neon-rs.dev",
+  markdown: {
+    remarkPlugins: [remarkStripHiddenRustLines],
+  },
   integrations: [
     starlight({
       title: "Neon",
