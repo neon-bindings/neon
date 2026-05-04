@@ -223,7 +223,7 @@ After this phase, dropping a markdown file with a ` ```rust ` fence into `websit
 
 - Modify: `website/build.rs`
 - Create: `website/src/content/docs/.gitkeep` (so the directory exists at git checkout time)
-- Create: `website/src/content/docs/_smoke.md` (a tiny smoke-test markdown file with one passing doctest)
+- Create: `website/src/content/docs/smoke.md` (a tiny smoke-test markdown file with one passing doctest)
 
 - [ ] **Step 1: Replace `website/build.rs` with the real implementation.** This walks `src/content/docs/`, sanitizes each path into a Rust-safe module name, and emits one `pub mod` per file containing `#![doc = include_str!("…")]`.
 
@@ -284,7 +284,7 @@ fn main() {
 }
 
 fn sanitize_module_name(rel: &Path) -> String {
-    let mut s = String::from("doc_");
+    let mut s = String::from("doc");
     for component in rel.with_extension("").components() {
         if let std::path::Component::Normal(part) = component {
             s.push('_');
@@ -305,11 +305,11 @@ A few notes for the implementer:
 
 - We use `walkdir` (already in `[build-dependencies]`) rather than `std::fs::read_dir` recursion so symlinks and platform quirks are handled correctly.
 - `include_str!` resolves relative to the *generated file*, which lives in `OUT_DIR`. That's somewhere weird like `target/debug/build/website-xxx/out/`, so we use absolute paths to avoid any chance of path-resolution ambiguity.
-- `sanitize_module_name` is intentionally simple: it lowercases, replaces non-alphanumeric with `_`, and prefixes `doc_` to avoid leading-digit identifiers.
+- `sanitize_module_name` is intentionally simple: it lowercases, replaces non-alphanumeric with `_`, and prefixes `doc` (no trailing underscore) so the loop's leading separator yields a clean `doc_<first>` snake_case module without a double-underscore prefix.
 
 - [ ] **Step 2: Create `website/src/content/docs/.gitkeep`** so the directory exists in git even before any markdown is added. Empty file.
 
-- [ ] **Step 3: Write a smoke-test markdown file** to verify the harness end-to-end. Create `website/src/content/docs/_smoke.md`:
+- [ ] **Step 3: Write a smoke-test markdown file** to verify the harness end-to-end. Create `website/src/content/docs/smoke.md`:
 
 ````markdown
 # Smoke test
@@ -332,7 +332,7 @@ The `# use neon::prelude::*;` line is a hidden line — rustdoc strips it from t
 Run: `cargo build -p website`
 
 Run: `cat target/debug/build/website-*/out/doctests.rs`
-Expected: contains a line like `#[doc = include_str!("/Users/.../website/src/content/docs/_smoke.md")]\npub mod doc__smoke {}`.
+Expected: contains a line like `#[doc = include_str!("/Users/.../website/src/content/docs/smoke.md")]\npub mod doc_smoke {}`.
 
 - [ ] **Step 5: Verify the doctest actually runs and passes.**
 
@@ -341,13 +341,13 @@ Expected: `test result: ok. 1 passed; 0 failed; ...`. The `1` is the smoke test.
 
 - [ ] **Step 6: Verify the build script reruns when the markdown changes.**
 
-Run: `touch website/src/content/docs/_smoke.md && cargo build -p website -v 2>&1 | grep -E "Compiling website|Fresh website" | head -2`
+Run: `touch website/src/content/docs/smoke.md && cargo build -p website -v 2>&1 | grep -E "Compiling website|Fresh website" | head -2`
 
 Expected: shows `Compiling website` (not `Fresh website`), proving the build script ran again. (If you see `Fresh`, the rerun-if-changed logic is broken.)
 
 - [ ] **Step 7: Verify deliberate breakage fails the doctest.** This is a cheap correctness check that the harness actually catches errors, not just compiles trivially.
 
-Edit `website/src/content/docs/_smoke.md` and change `"Hello from a doctest"` to a syntax error like `"Hello`.
+Edit `website/src/content/docs/smoke.md` and change `"Hello from a doctest"` to a syntax error like `"Hello`.
 
 Run: `cargo test -p website --doc`
 Expected: FAIL with a Rust compile error.
@@ -443,8 +443,8 @@ git commit -m "feat(website): install Astro + Starlight"
 - Create: `website/astro.config.mjs`
 - Create: `website/tsconfig.json`
 - Create: `website/src/content.config.ts`
-- Create: `website/src/content/docs/index.mdx` (placeholder, replaces `_smoke.md`)
-- Delete: `website/src/content/docs/_smoke.md`
+- Create: `website/src/content/docs/index.mdx` (placeholder, replaces `smoke.md`)
+- Delete: `website/src/content/docs/smoke.md`
 
 - [ ] **Step 1: Create `website/astro.config.mjs`** with the minimum config needed for Starlight to start.
 
@@ -517,7 +517,7 @@ export const collections = {
 };
 ```
 
-- [ ] **Step 5: Replace the smoke-test markdown with a placeholder index.** Delete `website/src/content/docs/_smoke.md`. Create `website/src/content/docs/index.mdx`:
+- [ ] **Step 5: Replace the smoke-test markdown with a placeholder index.** Delete `website/src/content/docs/smoke.md`. Create `website/src/content/docs/index.mdx`:
 
 ```mdx
 ---
