@@ -21,7 +21,14 @@ export default defineConfig({
       ],
       sidebar: [
         { label: "Getting started", autogenerate: { directory: "getting-started" } },
-        { label: "Tutorials", autogenerate: { directory: "tutorials" } },
+        {
+          label: "Tutorials",
+          items: [
+            { label: "Your first Neon module", link: "/tutorials/first-module/" },
+            { label: "Concurrency with the libuv pool", link: "/tutorials/concurrency-libuv/" },
+            { label: "Async functions with tokio", link: "/tutorials/async-tokio/" },
+          ],
+        },
         { label: "How-to guides", autogenerate: { directory: "how-to" } },
         {
           label: "Reference",
@@ -32,6 +39,8 @@ export default defineConfig({
           ],
         },
         { label: "Explanation", autogenerate: { directory: "explanation" } },
+        { label: "Changelog", link: "/changelog/" },
+        { label: "Contributing", link: "/contributing/" },
       ],
     }),
   ],
