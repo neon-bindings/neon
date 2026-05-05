@@ -68,11 +68,11 @@ you've used X before…*. Avoid lecturing; show the code, then explain.
 
 ## 3a. Linking conventions
 
-**Every prose mention of a named item links to its canonical reference
-the first time it appears on a page.** A mention is "prose" if the
-reader could click on it; mentions inside fenced code blocks are never
-linked. After the first link on a page, repeats may stay plain to keep
-the prose readable — when in doubt, link it.
+**Every prose mention of a named item links to its canonical
+reference.** A mention is "prose" if the reader could click on it;
+mentions inside fenced code blocks are never linked. Link every
+occurrence, not just the first — readers land mid-page from search and
+deep links.
 
 ### Items in the `neon` crate
 

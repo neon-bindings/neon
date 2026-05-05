@@ -98,10 +98,8 @@ my-project/
 The default `src/lib.rs` exports a tiny `hello` function so you can
 verify the build works end-to-end:
 
-<!-- The build comment below is illustrative; this snippet is not run as a
-     doctest because it shows the scaffolded library code in isolation. -->
-
 ```rust
+# assert_eq!(hello("world".into()), "hello world");
 #[neon::export]
 fn hello(name: String) -> String {
     format!("hello {name}")

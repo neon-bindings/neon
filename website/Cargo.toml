@@ -15,6 +15,7 @@ neon = { path = "../crates/neon", default-features = false, features = [
     "serde",
     "tokio",
 ] }
+either = "1"
 
 [build-dependencies]
 walkdir = "2"

@@ -27,7 +27,7 @@ Open `src/lib.rs`. The scaffolder dropped in a `hello` function as a
 placeholder — replace it with something a little more interesting:
 
 ```rust
-# fn main() {}
+# assert_eq!(add(2.0, 3.0), 5.0);
 #[neon::export]
 fn add(a: f64, b: f64) -> f64 {
     a + b
