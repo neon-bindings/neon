@@ -1,0 +1,127 @@
+---
+// Live stats banner.
+//
+// Renders three live badges from https://badges.ws/ at the bottom of
+// the home page: GitHub stars, latest crate version, and total
+// crates.io downloads. All three are server-rendered live by
+// badges.ws, so we don't need a build-time fetch step.
+//
+// Each badge uses a different value color for visual variety:
+//   - stars      : badges.ws's native blue (the /github/stars
+//                  integration locks the value color and ignores
+//                  ?color, so this is what we get)
+//   - crates.io  : Neon brand pink, overridden via ?color
+//   - downloads  : badges.ws's native green
+// Labels, icons, corners, and style are kept consistent across the trio.
+
+const labelColor = "0A1638"; // --neon-night
+const cratesPink = "FF6A8E"; // --neon-pink
+
+function badgeUrl(path: string, params: Record<string, string>): string {
+  const u = new URL(`https://badges.ws/${path}`);
+  for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
+  return u.toString();
+}
+
+const common = {
+  labelColor,
+  radius: "8",
+  style: "flat",
+  iconColor: "ffffff",
+};
+
+const badges = [
+  {
+    href: "https://github.com/neon-bindings/neon",
+    src: badgeUrl("github/stars/neon-bindings/neon", {
+      ...common,
+      icon: "github",
+    }),
+    alt: "GitHub stars",
+  },
+  {
+    href: "https://crates.io/crates/neon",
+    src: badgeUrl("crates/v/neon", {
+      ...common,
+      icon: "rust",
+      color: cratesPink,
+    }),
+    alt: "Latest neon crate version",
+  },
+  {
+    href: "https://crates.io/crates/neon",
+    src: badgeUrl("crates/dt/neon", {
+      ...common,
+      icon: "rust",
+    }),
+    alt: "neon crate downloads",
+  },
+];
+---
+
+<section class="stats not-content" aria-label="Project stats">
+  <ul>
+    {
+      badges.map((badge) => (
+        <li>
+          <a href={badge.href} target="_blank" rel="noopener noreferrer">
+            <img src={badge.src} alt={badge.alt} loading="lazy" decoding="async" />
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<style>
+  .stats {
+    /* Full-bleed tinted band that breaks out of the content column
+     * and extends to the viewport edges, anchoring the badges as a
+     * clear "stats footer" beneath the rest of the home page. */
+    width: 100vw;
+    margin-top: 3rem;
+    margin-left: 50%;
+    transform: translateX(-50%);
+    padding: 3rem 1rem;
+    display: flex;
+    justify-content: center;
+    background: var(--sl-color-gray-7, var(--sl-color-bg-nav));
+    border-top: 1px solid var(--sl-color-gray-5);
+    border-bottom: 1px solid var(--sl-color-gray-5);
+  }
+  @media (min-width: 1024px) {
+    .stats {
+      margin-top: 3rem;
+      padding: 4rem 1rem;
+    }
+  }
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 1.25rem;
+    justify-content: center;
+    align-items: center;
+  }
+  li {
+    margin: 0;
+    padding: 0;
+  }
+  a {
+    display: inline-flex;
+    transition: transform 120ms ease;
+    text-decoration: none;
+  }
+  a:hover {
+    transform: translateY(-1px);
+  }
+  img {
+    display: block;
+    /* badges.ws doesn't expose a scale param; we upscale in CSS to
+     * roughly 1.4x the native ~20px height for a comfortable read. */
+    height: 1.75rem;
+    width: auto;
+  }
+</style>
