@@ -1,0 +1,20 @@
+[build]
+  base = "website"
+  # The whole pipeline runs on nightly: the prebuild step calls
+  # `cargo +nightly neon-doc` to match the rustdoc that ships on
+  # docs.rs (which requires nightly because of `--cfg docsrs` and
+  # the `feature(doc_cfg)` attributes in the neon crate).
+  # `rustup toolchain install nightly --profile minimal` is
+  # idempotent and gets cached by Netlify on subsequent builds.
+  command = "rustup toolchain install nightly --profile minimal && npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Node 24 is the active LTS as of 2026; npm 11 ships with it.
+  NODE_VERSION = "24"
+
+[[headers]]
+  # Long cache for hashed Astro assets.
+  for = "/_astro/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

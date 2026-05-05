@@ -1,6 +1,14 @@
 // Astro prebuild orchestrator: regenerate rustdoc and copy it into
 // public/api/ unless SKIP_RUSTDOC is set. Use SKIP_RUSTDOC=1 npm run build
 // for a fast Astro-only iteration; CI and Netlify always rebuild.
+//
+// The actual rustdoc build is delegated to the `cargo neon-doc`
+// workspace alias defined in .cargo/config.toml at the repo root.
+// That alias drives the same feature set and `--cfg docsrs` flag that
+// docs.rs uses, so the rustdoc we ship matches what users see on
+// docs.rs. The alias requires nightly Rust because `--cfg docsrs`
+// enables the unstable `feature(doc_cfg)` attributes used throughout
+// the neon crate, hence the explicit `+nightly` toolchain selector.
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -19,24 +27,16 @@ if (process.env.SKIP_RUSTDOC) {
         `populate it.`,
     );
   } else {
-    console.log("[prebuild] SKIP_RUSTDOC set; skipping cargo doc.");
+    console.log("[prebuild] SKIP_RUSTDOC set; skipping cargo neon-doc.");
   }
   process.exit(0);
 }
 
-console.log("[prebuild] Running cargo doc -p neon --no-deps...");
-const cargo = spawnSync(
-  "cargo",
-  [
-    "doc",
-    "-p",
-    "neon",
-    "--no-deps",
-    "--manifest-path",
-    resolve(repoRoot, "Cargo.toml"),
-  ],
-  { stdio: "inherit" },
-);
+console.log("[prebuild] Running cargo +nightly neon-doc...");
+const cargo = spawnSync("cargo", ["+nightly", "neon-doc"], {
+  cwd: repoRoot,
+  stdio: "inherit",
+});
 if (cargo.status !== 0) {
   process.exit(cargo.status ?? 1);
 }
