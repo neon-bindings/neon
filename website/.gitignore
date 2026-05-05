@@ -9,3 +9,6 @@ target/
 
 # Editor / OS
 .DS_Store
+
+# Generated rustdoc HTML (copied from target/doc by prebuild)
+public/api/
