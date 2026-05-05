@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "prebuild": "cargo doc -p neon --no-deps --manifest-path ../Cargo.toml && node scripts/copy-rustdoc.mjs",
+    "prebuild": "node scripts/prebuild.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
