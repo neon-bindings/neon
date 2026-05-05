@@ -4,10 +4,10 @@ import { Code } from "@astrojs/starlight/components";
 const js = `// JavaScript
 const URL = "https://httpbin.org/json";
 
-async function fetch_json() {
+/** @export */
+export async function fetch_json() {
   return (await fetch(URL)).json();
 }
-module.exports = fetch_json;
 `;
 
 const rust = `// Neon
@@ -33,12 +33,12 @@ async fn fetch_json() -> Result<serde_json::Value, Error> {
 
 <style>
   .code-compare-section {
-    padding: 3.5rem 0 2rem;
+    padding: 3.5rem 0 0;
     text-align: left;
   }
   @media (min-width: 1024px) {
     .code-compare-section {
-      padding: 4.5rem 0 2.5rem;
+      padding: 4.5rem 0 0;
     }
   }
   /* Break out of Starlight's narrow .sl-container so we can show the

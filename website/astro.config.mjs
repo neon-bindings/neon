@@ -13,7 +13,7 @@ export default defineConfig({
       description: "Write Node addons in Rust.",
       logo: {
         src: "./public/logo-mark.png",
-        replacesTitle: false,
+        replacesTitle: true,
       },
       favicon: "/favicon.svg",
       head: [

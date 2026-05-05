@@ -1,17 +1,17 @@
 <section class="tiles not-content">
   <article class="tile">
     <div class="icon-frame">
-      <img src="/icon-hammer.svg" alt="" aria-hidden="true" class="icon" />
-    </div>
-    <h2>Simple tooling.</h2>
-    <p>No build scripts. No finicky system dependencies. Just Node and Rust.</p>
-  </article>
-  <article class="tile">
-    <div class="icon-frame">
       <img src="/icon-checkmark.svg" alt="" aria-hidden="true" class="icon" />
     </div>
     <h2>Guaranteed safety.</h2>
     <p>If a Neon module compiles, it is guaranteed by the Rust compiler to be memory-safe.</p>
+  </article>
+  <article class="tile">
+    <div class="icon-frame">
+      <img src="/icon-bolt.svg" alt="" aria-hidden="true" class="icon" />
+    </div>
+    <h2>Native speed.</h2>
+    <p>Optimized, native libraries built by the Rust compiler and called directly from JavaScript.</p>
   </article>
   <article class="tile">
     <div class="icon-frame">
@@ -27,9 +27,17 @@
     display: grid;
     gap: 2rem;
     grid-template-columns: 1fr;
-    padding: 4rem 0 2rem;
+    /* Match the top-of-code spacing (~88px in dev) so the gap above the
+     * code samples mirrors the gap below them. The horizontal gap drops
+     * a bit on narrow viewports. */
+    padding: 3.5rem 0 2rem;
     max-width: 72rem;
     margin: 0 auto;
+  }
+  @media (min-width: 1024px) {
+    .tiles {
+      padding: 5.5rem 0 3rem;
+    }
   }
   @media (min-width: 800px) {
     .tiles {

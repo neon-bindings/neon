@@ -43,19 +43,25 @@
   --neon-feature-heading: var(--neon-navy);
 }
 
-/* Header brand: the "N" mark icon beside the "Neon" wordmark text.
- * Use a neutral text color (not the pink accent) so the wordmark
- * doesn't fight with the pink "Get started" CTA below it. */
+/* Header brand mark.
+ * The header logo is just the pink "N" mark; replacesTitle is true
+ * so there's no sibling text. The "N" is a single solid shape and
+ * scales down cleanly. */
 header.header .site-title img {
   height: 1.75rem;
   width: auto;
 }
-header.header .site-title {
-  gap: 0.5rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--sl-color-white);
+
+/* Header social icons (GitHub, Slack).
+ * Starlight defaults these to var(--sl-color-text-accent), which we
+ * have repointed to the brand pink — that's too loud for the chrome.
+ * Use a neutral gray that matches the rest of the header text and
+ * lifts to white on hover. */
+header.header .social-icons a,
+.social-icons a {
+  color: var(--sl-color-gray-3);
 }
-header.header .site-title:hover {
+header.header .social-icons a:hover,
+.social-icons a:hover {
   color: var(--sl-color-white);
 }
