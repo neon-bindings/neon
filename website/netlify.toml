@@ -1,0 +1,17 @@
+[build]
+  base = "website"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_VERSION = "10"
+  # Provision Rust on Netlify's Ubuntu image. RUST_VERSION is honored by
+  # Netlify's build image when present.
+  RUST_VERSION = "stable"
+
+[[headers]]
+  # Long cache for hashed Astro assets.
+  for = "/_astro/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
