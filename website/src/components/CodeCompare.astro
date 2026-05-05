@@ -2,49 +2,86 @@
 import { Code } from "@astrojs/starlight/components";
 
 const js = `// JavaScript
-const URL = "https://api.example.com/echo";
+const URL = "https://httpbin.org/json";
 
-export async function echo(text) {
-  const res = await fetch(URL, {
-    method: "POST",
-    body: text,
-  });
-  return await res.text();
+async function fetch_json() {
+  return (await fetch(URL)).json();
 }
+module.exports = fetch_json;
 `;
 
-const rust = `// Rust + Neon
-const URL: &str = "https://api.example.com/echo";
+const rust = `// Neon
+const URL: &str = "https://httpbin.org/json";
 
-#[neon::export]
-async fn echo(text: String) -> Result<String, Error> {
-    let res = reqwest::Client::new().post(URL).body(text).send().await?;
-    Ok(res.text().await?)
+#[neon::export(json)]
+async fn fetch_json() -> Result<serde_json::Value, Error> {
+    Ok(reqwest::get(URL).await?.json().await?)
 }
 `;
 ---
 
-<div class="code-compare">
-  <div class="panel">
-    <Code code={js} lang="js" />
+<section class="code-compare-section not-content">
+  <div class="code-compare">
+    <div class="panel">
+      <Code code={js} lang="js" />
+    </div>
+    <div class="panel">
+      <Code code={rust} lang="rust" />
+    </div>
   </div>
-  <div class="panel">
-    <Code code={rust} lang="rust" />
-  </div>
-</div>
+</section>
 
 <style>
+  .code-compare-section {
+    padding: 3.5rem 0 2rem;
+    text-align: left;
+  }
+  @media (min-width: 1024px) {
+    .code-compare-section {
+      padding: 4.5rem 0 2.5rem;
+    }
+  }
+  /* Break out of Starlight's narrow .sl-container so we can show the
+   * full URL strings without truncation. We use a viewport-anchored
+   * negative margin and clamp the result so it never exceeds 80rem. */
   .code-compare {
     display: grid;
     gap: 1rem;
     grid-template-columns: 1fr;
+    width: min(calc(100vw - 2rem), 80rem);
+    margin-left: 50%;
+    transform: translateX(-50%);
   }
-  @media (min-width: 640px) {
+  @media (min-width: 800px) {
     .code-compare {
       grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      width: min(calc(100vw - 4rem), 80rem);
     }
   }
   .panel {
     min-width: 0;
+    display: flex;
+  }
+  .panel :global(.expressive-code),
+  .panel :global(figure.frame) {
+    margin: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .panel :global(pre) {
+    margin: 0;
+    flex: 1;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    overflow-x: auto;
+  }
+  .panel :global(pre > code) {
+    padding-block: 1rem;
+  }
+  /* Drop the empty caption Expressive Code adds for unnamed code blocks. */
+  .panel :global(figcaption.header) {
+    display: none;
   }
 </style>

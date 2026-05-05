@@ -12,9 +12,21 @@ export default defineConfig({
       title: "Neon",
       description: "Write Node addons in Rust.",
       logo: {
-        src: "./public/logo.png",
+        src: "./public/logo-mark.png",
         replacesTitle: false,
       },
+      favicon: "/favicon.svg",
+      head: [
+        {
+          tag: "link",
+          attrs: {
+            rel: "apple-touch-icon",
+            sizes: "180x180",
+            href: "/logo.png",
+          },
+        },
+      ],
+      customCss: ["./src/styles/neon.css"],
       social: [
         { icon: "github", label: "GitHub", href: "https://github.com/neon-bindings/neon" },
         { icon: "slack", label: "Slack", href: "https://rust-bindings.slack.com" },

@@ -1,0 +1,61 @@
+/* Neon brand theme — applied on top of Starlight's default theme.
+ *
+ * Brand palette:
+ *   --neon-pink:     #FF6A8E   (the iconic neon-tube pink-coral, used on the logo, primary CTA)
+ *   --neon-cyan:     #8DE1FC   (sub-headings, feature icons, secondary highlights)
+ *   --neon-navy:     #021C4B   (deep accent, button text on pink)
+ *   --neon-night:    #001624   (dark-mode canvas accent)
+ *
+ * The Starlight `--sl-color-accent-*` ladder is overridden so the in-built
+ * accent (used for links, focus rings, the primary "next" button in the
+ * sidebar, etc.) becomes the Neon pink instead of the default purple.
+ */
+:root {
+  --neon-pink: #ff6a8e;
+  --neon-cyan: #8de1fc;
+  --neon-navy: #021c4b;
+  --neon-night: #001624;
+}
+
+/* Dark mode (default for Starlight) */
+:root[data-theme="dark"] {
+  /* Accent ladder: Starlight uses these for links and active states. */
+  --sl-color-accent-low: #3a0e1a;
+  --sl-color-accent: #ff6a8e;
+  --sl-color-accent-high: #ffb3c4;
+
+  /* Subtle warmth in the dark canvas — pulls toward navy rather than pure black. */
+  --sl-color-bg: #0a0f1c;
+  --sl-color-bg-nav: #0a0f1c;
+  --sl-color-bg-sidebar: #0a0f1c;
+
+  /* Feature-tile heading uses cyan in dark mode (matches the SVG icon color). */
+  --neon-feature-heading: var(--neon-cyan);
+}
+
+/* Light mode */
+:root[data-theme="light"] {
+  --sl-color-accent-low: #ffe4eb;
+  --sl-color-accent: #d63864;
+  --sl-color-accent-high: #8a1f3d;
+
+  /* In light mode, feature-tile headings go to the deep navy for contrast. */
+  --neon-feature-heading: var(--neon-navy);
+}
+
+/* Header brand: the "N" mark icon beside the "Neon" wordmark text.
+ * Use a neutral text color (not the pink accent) so the wordmark
+ * doesn't fight with the pink "Get started" CTA below it. */
+header.header .site-title img {
+  height: 1.75rem;
+  width: auto;
+}
+header.header .site-title {
+  gap: 0.5rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--sl-color-white);
+}
+header.header .site-title:hover {
+  color: var(--sl-color-white);
+}

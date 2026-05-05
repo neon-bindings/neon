@@ -1,72 +1,86 @@
----
-import CodeCompare from "./CodeCompare.astro";
----
-
 <section class="hero">
-  <div class="hero-text">
-    <img src="/logo.png" alt="Neon" class="logo" />
-    <h1>Neon</h1>
-    <p class="tagline">Write Node addons in Rust.</p>
-    <p class="subline">Safe, fast, parallel.</p>
-    <div class="ctas">
-      <a class="cta primary" href="/tutorials/first-module/">Get started</a>
-      <a class="cta secondary" href="/api/neon/">API reference</a>
-    </div>
-  </div>
-  <div class="hero-code">
-    <CodeCompare />
+  <img src="/logo-wordmark.svg" alt="Neon" class="wordmark" />
+  <h1>Write Node addons in Rust.</h1>
+  <p class="subline">Safe, fast, parallel.</p>
+  <div class="ctas">
+    <a class="cta primary" href="/getting-started/quickstart/">Get started</a>
+    <a class="cta secondary" href="/api/neon/">API reference</a>
   </div>
 </section>
 
 <style>
   .hero {
-    display: grid;
-    gap: 2rem;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    padding: 2rem 0;
-    grid-template-columns: 1fr;
+    text-align: center;
+    padding: 3.5rem 1rem 0;
+    max-width: 56rem;
+    margin: 0 auto;
   }
-  @media (min-width: 960px) {
+  @media (min-width: 1024px) {
     .hero {
-      grid-template-columns: 1fr 1.2fr;
+      padding: 5rem 1rem 0;
     }
   }
-  .logo {
-    width: 4rem;
+  .wordmark {
+    width: clamp(11rem, 24vw, 16rem);
     height: auto;
+    display: block;
+    margin: 0 0 2rem;
   }
   h1 {
-    font-size: clamp(2rem, 6vw, 3.5rem);
-    margin: 0.5rem 0;
-  }
-  .tagline {
-    font-size: clamp(1.25rem, 3vw, 1.75rem);
-    margin: 0.25rem 0;
+    font-size: clamp(2.25rem, 5vw, 3.5rem);
+    line-height: 1.05;
+    margin: 0 0 0.75rem 0;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    border: 0;
+    color: var(--sl-color-white);
   }
   .subline {
-    font-size: 1rem;
-    color: var(--sl-color-gray-3);
-    margin: 0 0 1.5rem 0;
+    font-size: clamp(1.125rem, 2vw, 1.4rem);
+    margin: 0 0 2rem 0;
+    color: var(--sl-color-gray-2);
+    font-weight: 500;
   }
   .ctas {
     display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
+    justify-content: center;
   }
   .cta {
     display: inline-block;
-    padding: 0.6rem 1.1rem;
-    border-radius: 0.4rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
     text-decoration: none;
     font-weight: 600;
+    font-size: 1rem;
+    transition:
+      transform 120ms ease,
+      box-shadow 120ms ease,
+      border-color 120ms ease,
+      color 120ms ease;
+  }
+  .cta:hover {
+    transform: translateY(-1px);
   }
   .cta.primary {
-    background: var(--sl-color-accent);
-    color: var(--sl-color-accent-high);
+    background: var(--neon-pink, #ff6a8e);
+    color: #021c4b;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05);
+  }
+  .cta.primary:hover {
+    box-shadow: 0 6px 18px rgba(255, 106, 142, 0.4);
   }
   .cta.secondary {
     background: transparent;
     color: var(--sl-color-text);
     border: 1px solid var(--sl-color-gray-5);
+  }
+  .cta.secondary:hover {
+    border-color: var(--neon-cyan, #8de1fc);
+    color: var(--neon-cyan, #8de1fc);
   }
 </style>

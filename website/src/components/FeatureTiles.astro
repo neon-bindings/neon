@@ -1,37 +1,76 @@
-<section class="tiles">
-  <div class="tile">
-    <h3>Simple tooling</h3>
+<section class="tiles not-content">
+  <article class="tile">
+    <div class="icon-frame">
+      <img src="/icon-hammer.svg" alt="" aria-hidden="true" class="icon" />
+    </div>
+    <h2>Simple tooling.</h2>
     <p>No build scripts. No finicky system dependencies. Just Node and Rust.</p>
-  </div>
-  <div class="tile">
-    <h3>Guaranteed safety</h3>
+  </article>
+  <article class="tile">
+    <div class="icon-frame">
+      <img src="/icon-checkmark.svg" alt="" aria-hidden="true" class="icon" />
+    </div>
+    <h2>Guaranteed safety.</h2>
     <p>If a Neon module compiles, it is guaranteed by the Rust compiler to be memory-safe.</p>
-  </div>
-  <div class="tile">
-    <h3>Easy parallelism</h3>
-    <p>Safely run multiple threads — without data races.</p>
-  </div>
+  </article>
+  <article class="tile">
+    <div class="icon-frame">
+      <img src="/icon-fork.svg" alt="" aria-hidden="true" class="icon" />
+    </div>
+    <h2>Easy parallelism.</h2>
+    <p>Safely run multiple threads &mdash; without data races.</p>
+  </article>
 </section>
 
 <style>
   .tiles {
     display: grid;
-    gap: 1.25rem;
+    gap: 2rem;
     grid-template-columns: 1fr;
-    padding: 2rem 0;
+    padding: 4rem 0 2rem;
+    max-width: 72rem;
+    margin: 0 auto;
   }
-  @media (min-width: 720px) {
+  @media (min-width: 800px) {
     .tiles {
       grid-template-columns: repeat(3, 1fr);
+      gap: 3rem;
     }
   }
-  .tile h3 {
+  .tile {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  /* Fixed-height frame keeps all three headings on the same baseline
+   * regardless of each SVG's intrinsic padding. */
+  .icon-frame {
+    height: 3.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0 1rem;
+  }
+  .icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    display: block;
+  }
+  .tile h2 {
     margin: 0 0 0.5rem 0;
-    font-size: 1.1rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    font-family:
+      "Comfortaa", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+      sans-serif;
+    color: var(--neon-feature-heading, var(--sl-color-white));
+    border: 0;
   }
   .tile p {
     margin: 0;
     color: var(--sl-color-gray-2);
-    line-height: 1.5;
+    line-height: 1.6;
+    font-size: 0.95rem;
   }
 </style>
