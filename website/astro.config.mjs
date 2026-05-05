@@ -41,7 +41,11 @@ export default defineConfig({
             { label: "Async functions with tokio", link: "/tutorials/async-tokio/" },
           ],
         },
-        { label: "How-to guides", autogenerate: { directory: "how-to" } },
+        {
+          label: "How-to guides",
+          collapsed: true,
+          autogenerate: { directory: "how-to" },
+        },
         {
           label: "Reference",
           items: [
