@@ -66,6 +66,83 @@ you've used X before…*. Avoid lecturing; show the code, then explain.
   (compatibility, low-level escape hatches), but the docs are about
   Neon, not the underlying engine.
 
+## 3a. Linking conventions
+
+**Every prose mention of a named item links to its canonical reference
+the first time it appears on a page.** A mention is "prose" if the
+reader could click on it; mentions inside fenced code blocks are never
+linked. After the first link on a page, repeats may stay plain to keep
+the prose readable — when in doubt, link it.
+
+### Items in the `neon` crate
+
+Link to the matching rustdoc page on the same site under `/api/neon/`.
+URL patterns follow rustdoc's conventions:
+
+| Item kind | Example | URL pattern |
+|---|---|---|
+| Attribute macro | `#[neon::export]` | `/api/neon/attr.export.html` |
+| Function macro | `register_module!` | `/api/neon/macro.register_module.html` |
+| Struct | `Cx` | `/api/neon/context/struct.Cx.html` |
+| Trait | `TryFromJs` | `/api/neon/types/extract/trait.TryFromJs.html` |
+| Function | `set_global_executor` | `/api/neon/fn.set_global_executor.html` |
+| Module | `extract` | `/api/neon/types/extract/index.html` |
+
+The dev-server proxy and the production build both serve `/api/...`
+from the live rustdoc, so these links are always valid.
+
+### Node.js APIs
+
+Link to the official [Node.js documentation](https://nodejs.org/api/).
+Useful anchor points:
+
+| Topic | URL |
+|---|---|
+| `require()` | `https://nodejs.org/api/modules.html#requireid` |
+| `module.exports` | `https://nodejs.org/api/modules.html#moduleexports` |
+| ESM `import` | `https://nodejs.org/api/esm.html` |
+| `Buffer` | `https://nodejs.org/api/buffer.html#class-buffer` |
+| `process` | `https://nodejs.org/api/process.html` |
+| Worker threads | `https://nodejs.org/api/worker_threads.html` |
+| Streams | `https://nodejs.org/api/stream.html` |
+| Node-API version matrix | `https://nodejs.org/api/n-api.html#node-api-version-matrix` |
+
+Always link the **stable** docs (`https://nodejs.org/api/...`), not a
+specific version (`/docs/v20.x/api/...`).
+
+### Web platform / JavaScript language APIs
+
+Link to [MDN](https://developer.mozilla.org/) for anything that's part
+of the web platform or the JavaScript language itself rather than
+Node.js-specific.
+
+| Topic | URL |
+|---|---|
+| `Promise` | `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise` |
+| `AbortController` | `https://developer.mozilla.org/en-US/docs/Web/API/AbortController` |
+| `AbortSignal` | `https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal` |
+| `fetch` | `https://developer.mozilla.org/en-US/docs/Web/API/Window/fetch` |
+| `ArrayBuffer` | `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer` |
+| Typed arrays | `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray` |
+| `async function` | `https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function` |
+
+Rule of thumb: if it's available across browsers and Node, link MDN.
+If it's a Node-only API or a Node-specific behavior of a cross-runtime
+API, link Node.js.
+
+### Rust ecosystem
+
+Link to canonical sources for the Rust language and ecosystem:
+
+| Source | When |
+|---|---|
+| The Rust Book (`https://doc.rust-lang.org/book/`) | Language concepts the reader may need to brush up on. |
+| The standard library (`https://doc.rust-lang.org/std/`) | `std` types and traits. |
+| docs.rs (`https://docs.rs/<crate>/`) | Third-party crates (`tokio`, `serde`, `either`). |
+
+Never copy reference material from any of these into our docs — link
+out instead.
+
 ## 4. Diátaxis discipline
 
 | Category | Reader's intent | Voice | Length |
