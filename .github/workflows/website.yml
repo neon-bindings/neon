@@ -1,5 +1,11 @@
 name: Website
 
+# Doctests for the website's code samples. The site itself is built
+# and deployed by Netlify on every push and PR; this workflow only
+# guards the executable Rust snippets in website/src/content/docs/**
+# so a busted example fails the PR check before Netlify ships a green
+# preview.
+
 on:
   push:
     branches:
@@ -25,9 +31,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Nightly matches the rest of the pipeline (the prebuild runs
-      # `cargo +nightly neon-doc` to mirror docs.rs), so doctests run
-      # against the same toolchain users see on docs.rs.
+      # Nightly matches what Netlify and docs.rs use, so doctests run
+      # against the same toolchain readers see in the published API
+      # docs.
       - name: Use Rust nightly
         uses: dtolnay/rust-toolchain@nightly
 
@@ -36,37 +42,3 @@ jobs:
 
       - name: Run website doctests
         run: cargo test -p website --doc
-
-  build:
-    name: Build site
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      # The Astro prebuild runs `cargo +nightly neon-doc` to produce
-      # the same rustdoc as docs.rs, which requires nightly because of
-      # the `--cfg docsrs` feature gates in the neon crate.
-      - name: Use Rust nightly
-        uses: dtolnay/rust-toolchain@nightly
-
-      - name: Rust cache
-        uses: Swatinem/rust-cache@v2
-
-      - name: Use Node 24
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24.x
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit --no-fund
-
-      - name: Build website
-        run: npm run build --workspace=@neon-rs/website
-
-      - name: Upload built site
-        uses: actions/upload-artifact@v4
-        with:
-          name: website-dist
-          path: website/dist
-          retention-days: 7
