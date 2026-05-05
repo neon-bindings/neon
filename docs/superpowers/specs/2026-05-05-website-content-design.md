@@ -1,0 +1,239 @@
+# Website content — design spec
+
+**Date:** 2026-05-05
+**Status:** draft, awaiting approval
+**Prereq:** `2026-05-04-website-starlight-design.md` (the structural site
+already exists; this spec covers writing the actual page content for it)
+
+## 1. Goal
+
+The website at `website/` ships with thirty placeholder pages — one
+per section of the documentation site. Each placeholder has a real
+title, a `description`, a `Status: skeleton` banner, and a one-paragraph
+summary of what the finished page is meant to cover. **None of them have
+real content.**
+
+This spec defines how we turn those thirty placeholders into a complete,
+coherent, testable documentation site.
+
+## 2. Source of truth
+
+All code samples must compile as Rust doctests via the existing
+`website/build.rs` harness (`cargo test --doc -p website`). To keep
+them honest:
+
+- **API surface:** the local `crates/neon` source in this repo. The
+  manifest there reads `1.1.1` but the code is effectively v1.2 — that's
+  what readers running `cargo add neon` from `main` will get. Our docs
+  target this repo's `HEAD`.
+- **Idiomatic patterns:** the [neon-bindings/examples](https://github.com/neon-bindings/examples)
+  repository, especially [PR #104](https://github.com/neon-bindings/examples/pull/104).
+- **Crate-level reference:** `cargo doc -p neon` output, mounted at
+  `/api/` on the site.
+
+Things confirmed about the API while drafting this spec:
+
+- `#[neon::export]` accepts `task`, `async`, `name`, `json`, `context`,
+  `this`, applied to functions, consts/statics, and `impl` blocks
+  (`#[neon::export(class)]`).
+- `#[neon::class]` is real and implemented in this repo.
+- Async exports require `set_global_executor` (or the
+  `tokio-rt-multi-thread` feature that auto-wires Tokio at module load).
+- **No AbortController helper exists** — that how-to documents *manual*
+  JS interop, not a built-in API.
+- **No streams helper exists** — same caveat.
+- MSRV per README is **Rust 1.65**.
+- Default Node-API feature is `napi-8`, with `napi-1` … `napi-7` and
+  `napi-experimental` available.
+
+## 3. Audience and tone
+
+**Audience:** experienced JavaScript / Node.js developers, comfortable
+shipping npm packages, with at least passing familiarity with Rust
+syntax (or willing to read the linked Rust Book chapters). They are not
+all systems programmers.
+
+**Tone:** [react.dev](https://react.dev/)-style — friendly,
+illustrative, direct, second-person ("you"). Short paragraphs, plenty
+of inline code, occasional callouts that say *notice that…* or *if
+you've used X before…*. Avoid lecturing; show the code, then explain.
+
+**Non-goals:**
+
+- Not a Rust tutorial. Link to the Rust Book where it makes sense.
+- Not a Node.js tutorial. Assume `npm`, `package.json`, and ESM.
+- Not Node-API documentation. Mention NAPI when it's relevant
+  (compatibility, low-level escape hatches), but the docs are about
+  Neon, not the underlying engine.
+
+## 4. Diátaxis discipline
+
+| Category | Reader's intent | Voice | Length |
+|---|---|---|---|
+| **Getting started** | "I want to be running in five minutes." | Imperative. Just the steps. | Short (300–500 words). |
+| **Tutorials** | "Teach me a new capability by building something." | Story-shaped. Fully runnable from start to finish. Progressive. | Long (1200–2000 words). |
+| **How-to guides** | "I have a specific problem. How do I solve it?" | Problem → working solution → "why this works" footer. Self-contained, no narrative. | Medium (500–900 words). |
+| **Reference** | "What does this thing accept? What does it return?" | Tables, lists, declarative. No motivation. | Whatever the table needs. |
+| **Explanation** | "Help me understand what's happening underneath." | Conceptual essay. Diagrams welcome. Code as illustration, not as recipe. | Medium–long (700–1500 words). |
+
+Each finished page should feel like it belongs to exactly one of these
+buckets. If a how-to is becoming a tutorial, split it. If a reference
+page is becoming an essay, move the essay to *Explanation*.
+
+## 5. Page-by-page plan
+
+Pages are listed in the order I'll write them. Each entry has:
+
+- **Slug** — the file path under `src/content/docs/`.
+- **Working title** — the current title; we'll review for clarity at the
+  end of each section, per "titles after content" decision.
+- **Bucket** — Diátaxis category.
+- **Goal** — what the reader walks away knowing.
+- **Notes** — content I already know I want to include, or warnings.
+
+The order is **spine-first**: install → first module → core
+explanations → how-tos → reference. Each batch becomes its own commit.
+
+### Batch 1 — Getting started (the spine)
+
+| # | Slug | Bucket | Goal | Notes |
+|---|---|---|---|---|
+| 1 | `getting-started/install.md` | Getting started | Reader has Rust + Node ready and can run `npm init neon@latest`. | Cover toolchain prereqs (rustup, supported Node versions, platform build tools), then scaffold step. Cross-link to *Supported platforms* reference. |
+| 2 | `getting-started/quickstart.md` | Getting started | Reader has a working Neon module they can call from JS in <5 minutes. | Minimal walkthrough: scaffold → edit one Rust function → build → require from Node. Defers explanations to the *first-module* tutorial. |
+
+### Batch 2 — Tutorials
+
+Each tutorial is fully runnable, end-to-end, and exercised by doctests.
+
+| # | Slug | Bucket | Goal | Notes |
+|---|---|---|---|---|
+| 3 | `tutorials/first-module.md` | Tutorial | Reader builds a small but complete Neon module from scratch and understands every line. | Expand on quickstart — same project, but every concept explained. Introduce `#[neon::export]`, args, return types, and the `npm` build script. |
+| 4 | `tutorials/concurrency-libuv.md` | Tutorial | Reader takes a CPU-bound function and moves it onto the libuv worker pool. | Build a small fibonacci-style example. Show before/after blocking. Cover the `task` flavor of `#[neon::export]`. Cross-link to the *Run blocking work on the libuv pool* how-to. |
+| 5 | `tutorials/async-tokio.md` | Tutorial | Reader registers a Tokio runtime and writes async functions returning Promises. | Cover both `tokio-rt-multi-thread` (auto-init) and explicit `set_global_executor`. Build a small `fetch_json`-style example. Cross-link to *Export async functions* how-to. |
+
+### Batch 3 — Explanation foundations
+
+These come before the bulk of how-tos because how-tos lean on the
+mental model these pages establish.
+
+| # | Slug | Bucket | Goal | Notes |
+|---|---|---|---|---|
+| 6 | `explanation/what-is-neon.md` | Explanation | Reader understands what Neon is, what it competes with (NAPI, WASM, neon-bindings/n-api), and where it sits. | High-level intro. Mention Node-API. Compare/contrast WASM. |
+| 7 | `explanation/when-to-use.md` | Explanation | Reader can decide whether Neon is the right tool for their problem. | Honest pros/cons. CPU work, existing Rust libs, hard real-time → yes. Pure JS port → no. WASM → sometimes. |
+| 8 | `explanation/type-hierarchy.md` | Explanation | Reader understands the `Value` / `Object` trait hierarchy and how concrete `Js*` types relate. | Mermaid diagram. Reference `crates/neon/src/types_docs.rs` which already has prose. |
+| 9 | `explanation/lifetimes.md` | Explanation | Reader understands why `Handle<'cx, T>` carries a lifetime and what it protects against. | Compare/contrast with raw NAPI. Show the "use-after-scope" bug it rules out. |
+| 10 | `explanation/threading-lifecycle.md` | Explanation | Reader understands `Channel`, `Root`, `Deferred`, and how they cooperate. | Diagram showing main thread → worker thread → main thread round-trip. |
+| 11 | `explanation/error-handling.md` | Explanation | Reader understands the model: Rust `Result` ↔ JS exceptions, `extract::Error`, `try_catch`. | Pairs with the *errors* how-to; this page is the why, the how-to is the recipe. |
+| 12 | `explanation/export-internals.md` | Explanation | Reader understands what `#[neon::export]` actually does at compile time. | Show generated code (cargo expand–style sketch). Talk about `EXPORTS`, `MAIN`, `linkme`. Aimed at curious power users; OK to be longer. |
+
+### Batch 4 — How-to guides (core)
+
+The reader-most-likely-to-need-it ordering, not alphabetical.
+
+| # | Slug | Bucket | Goal | Notes |
+|---|---|---|---|---|
+| 13 | `how-to/common-types.md` | How-to | Reader can pass numbers, strings, arrays, objects, buffers across the boundary using `#[neon::export]`. | The "I just want to write a function" page. Cross-link to *serde-json*, *classes*, *streaming* for more advanced shapes. |
+| 14 | `how-to/serde-json.md` | How-to | Reader can move structured data using `Json<T>` and the `json` shorthand. | Mention `serde` feature flag. |
+| 15 | `how-to/errors.md` | How-to | Reader can throw, catch, and use `extract::Error` with `?`. | Pairs with explanation/error-handling. Recipe-style. |
+| 16 | `how-to/cx-access.md` | How-to | Reader can reach `Cx` / `FunctionContext` from inside an exported function. | Show the `context` flavor of `#[neon::export]`. |
+| 17 | `how-to/rename-exports.md` | How-to | Reader can give an exported function a JS name that differs from its Rust identifier. | Short page. `#[neon::export(name = "...")]`. Default snake → camel rule. |
+| 18 | `how-to/this-methods.md` | How-to | Reader can write a Neon function that behaves as a method on a `this`. | `#[neon::export(this)]`. |
+| 19 | `how-to/classes.md` | How-to | Reader can expose a Rust struct as a JS class with `#[neon::class]`. | Show the macro on `impl`, methods, the implicit `RefCell` wrap. |
+
+### Batch 5 — How-to guides (async/threading)
+
+| # | Slug | Bucket | Goal | Notes |
+|---|---|---|---|---|
+| 20 | `how-to/async-fn.md` | How-to | Reader can export an `async fn` that returns a Promise. | Both auto-init Tokio and explicit `set_global_executor`. Pairs with *async-tokio* tutorial; this page is the no-narrative recipe. |
+| 21 | `how-to/sync-setup-async.md` | How-to | Reader can do main-thread setup before async work. | Already has a real code sample inherited from the homepage. Build the page around it. |
+| 22 | `how-to/main-thread-after-async.md` | How-to | Reader can hop back to the main thread with `extract::with`. | Cross-link the previous two pages. |
+| 23 | `how-to/blocking-libuv.md` | How-to | Reader can offload sync work to the libuv pool with `#[neon::export(task)]`. | Recipe form of the *concurrency-libuv* tutorial. |
+| 24 | `how-to/abort-controller.md` | How-to | Reader can wire a JS AbortController/AbortSignal into a Tokio `CancellationToken`. | **No first-class API exists.** Document the manual interop pattern from PR #104, with a clear note that this is application-level glue. |
+| 25 | `how-to/streaming.md` | How-to | Reader can stream data between Rust and JS in either direction. | **No first-class API.** Document manual interop using callbacks / async iterators / Channel. May be the longest how-to since there's no shorthand. |
+| 26 | `how-to/prebuilt-binaries.md` | How-to | Reader can publish prebuilt platform binaries to npm. | Likely cross-link the `@neon-rs/load` package and CI patterns. May need exploration. |
+
+### Batch 6 — Reference, changelog, contributing
+
+| # | Slug | Bucket | Goal | Notes |
+|---|---|---|---|---|
+| 27 | `reference/supported-platforms.md` | Reference | Reader can answer "does Neon work on X?" in <30 seconds. | OS × arch matrix, Node versions, NAPI feature flags, MSRV (1.65). |
+| 28 | `reference/cli.md` | Reference | Reader has a complete reference for `create-neon` and `cargo-cp-artifact`. | Flags, args, exit codes. Source: `crates/create-neon/`, `crates/cargo-cp-artifact/`. |
+| 29 | `changelog.md` | Reference | Reader sees latest releases with deep links to RELEASES.md. | Inline the most recent release notes; link out for full history. |
+| 30 | `contributing.md` | Reference | Reader knows how to file an issue, send a PR, or join the Slack. | Slack invite, link to `CONTRIBUTING.md`, mention the doctest harness so doc PRs are easy. |
+
+## 6. Title cleanup pass
+
+Per "titles after content" decision, we re-read each finished page in
+its section and propose any title changes that make titles sharper or
+more parallel. Examples I already suspect we'll want:
+
+- `cx-access.md` → "Get a `Cx` inside an exported function" (clearer
+  than "Access Cx from an exported function")
+- `sync-setup-async.md` → "Sync setup, then async work"
+- `main-thread-after-async.md` → "Return to the main thread after `await`"
+
+For each section as we finish it, we propose renames inline; you
+approve; the renames roll up into the final
+`chore(website): clean up titles` commit listed in §9.
+
+## 7. Validation
+
+Per the "per-page" decision: after writing each page, run
+
+```bash
+SKIP_RUSTDOC=1 cargo test --doc -p website
+```
+
+and the page must be green before moving on to the next.
+
+After each batch, also run `SKIP_RUSTDOC=1 npm run build --workspace=@neon-rs/website`
+to make sure Astro and Starlight are happy too (broken cross-links,
+malformed frontmatter, etc.).
+
+## 8. Banner discipline
+
+While writing, the placeholder
+
+```
+:::caution[Status: skeleton]
+This page is a placeholder. Content forthcoming.
+:::
+```
+
+is replaced with a "draft" banner
+
+```
+:::note[Draft]
+This page is a draft pending review.
+:::
+```
+
+When the user has reviewed and approved a page, the draft banner is
+removed entirely. The site never ships a page with no banner *and* no
+real content.
+
+## 9. Commit cadence
+
+One commit per batch. Commit message format follows the existing
+`feat(website): ...` prefix on this branch:
+
+- `feat(website): write Getting Started pages`
+- `feat(website): write Tutorials`
+- `feat(website): write Explanation foundations`
+- `feat(website): write How-to guides (core)`
+- `feat(website): write How-to guides (async + threading)`
+- `feat(website): write Reference, Changelog, and Contributing`
+- `chore(website): clean up titles across docs sections` (final pass)
+
+## 10. Out of scope
+
+- New pages beyond the existing thirty. If during writing we discover a
+  topic that needs its own page, we add a tracking note here and address
+  it in a follow-up.
+- Diagrams in non-Mermaid formats. Mermaid is enough for the type
+  hierarchy and threading-lifecycle pages; anything more complex is
+  out of scope for this pass.
+- Reference auto-generation. The rustdoc API reference at `/api/` is
+  already generated separately and is out of scope here.
+- Translating any existing content from `neon-rs.dev`. The old site has
+  some prose worth mining for inspiration, but we are writing fresh.
