@@ -1,0 +1,66 @@
+name: Website
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "website/**"
+      - "crates/neon/**"
+      - "crates/neon-macros/**"
+      - ".github/workflows/website.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "website/**"
+      - "crates/neon/**"
+      - "crates/neon-macros/**"
+      - ".github/workflows/website.yml"
+
+jobs:
+  doctests:
+    name: Doctests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run website doctests
+        run: cargo test -p website --doc
+
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Build website
+        run: npm run build --workspace=@neon-rs/website
+
+      - name: Upload built site
+        uses: actions/upload-artifact@v4
+        with:
+          name: website-dist
+          path: website/dist
+          retention-days: 7
