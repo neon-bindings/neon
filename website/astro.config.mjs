@@ -40,8 +40,8 @@ export default defineConfig({
         {
           label: "Tutorials",
           items: [
-            { label: "Your first Neon module", link: "/tutorials/first-module/" },
-            { label: "Concurrency with the libuv pool", link: "/tutorials/concurrency-libuv/" },
+            { label: "Your first Neon addon", link: "/tutorials/first-module/" },
+            { label: "Move work off the main thread", link: "/tutorials/move-work-off-the-main-thread/" },
             { label: "Async functions with tokio", link: "/tutorials/async-tokio/" },
           ],
         },

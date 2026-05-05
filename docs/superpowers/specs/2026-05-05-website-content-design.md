@@ -66,6 +66,25 @@ you've used X before…*. Avoid lecturing; show the code, then explain.
   (compatibility, low-level escape hatches), but the docs are about
   Neon, not the underlying engine.
 
+**Terminology:** call the thing we're building a Neon **addon**, not
+a Neon module. This mirrors Node's own term for native binaries
+([Node-API addons](https://nodejs.org/api/n-api.html)) and avoids the
+collision with JavaScript modules (the `.mjs` / `.cjs` files that
+load the addon). "Addon-load time," "addon init," "the addon's
+exports" — never "module-load time" or "module init." The word
+"module" stays reserved for genuine JavaScript-module concepts (a
+`.mjs` file, `module.exports`, `import`).
+
+**JavaScript example style:** load addons with CommonJS
+[`require()`](https://nodejs.org/api/modules.html#requireid), not ESM
+`import`. Node's
+[ESM addon support](https://nodejs.org/api/addons.html#loading-addons-using-import)
+is gated behind `--experimental-addon-modules`, so
+`import addon from "./index.node"` does *not* work out of the box.
+Use `.cjs` filenames for runnable JavaScript snippets that load an
+addon, and wrap top-level `await` in an async IIFE since `.cjs` is
+synchronous.
+
 ## 3a. Linking conventions
 
 **Every prose mention of a named item links to its canonical
@@ -176,7 +195,7 @@ explanations → how-tos → reference. Each batch becomes its own commit.
 | # | Slug | Bucket | Goal | Notes |
 |---|---|---|---|---|
 | 1 | `getting-started/install.md` | Getting started | Reader has Rust + Node ready and can run `npm init neon@latest`. | Cover toolchain prereqs (rustup, supported Node versions, platform build tools), then scaffold step. Cross-link to *Supported platforms* reference. |
-| 2 | `getting-started/quickstart.md` | Getting started | Reader has a working Neon module they can call from JS in <5 minutes. | Minimal walkthrough: scaffold → edit one Rust function → build → require from Node. Defers explanations to the *first-module* tutorial. |
+| 2 | `getting-started/quickstart.md` | Getting started | Reader has a working Neon addon they can call from JS in <5 minutes. | Minimal walkthrough: scaffold → edit one Rust function → build → require from Node. Defers explanations to the *first-module* tutorial. |
 
 ### Batch 2 — Tutorials
 
@@ -184,8 +203,8 @@ Each tutorial is fully runnable, end-to-end, and exercised by doctests.
 
 | # | Slug | Bucket | Goal | Notes |
 |---|---|---|---|---|
-| 3 | `tutorials/first-module.md` | Tutorial | Reader builds a small but complete Neon module from scratch and understands every line. | Expand on quickstart — same project, but every concept explained. Introduce `#[neon::export]`, args, return types, and the `npm` build script. |
-| 4 | `tutorials/concurrency-libuv.md` | Tutorial | Reader takes a CPU-bound function and moves it onto the libuv worker pool. | Build a small fibonacci-style example. Show before/after blocking. Cover the `task` flavor of `#[neon::export]`. Cross-link to the *Run blocking work on the libuv pool* how-to. |
+| 3 | `tutorials/first-module.md` | Tutorial | Reader builds a small but complete Neon addon from scratch and understands every line. | Expand on quickstart — same project, but every concept explained. Introduce `#[neon::export]`, args, return types, and the `npm` build script. |
+| 4 | `tutorials/move-work-off-the-main-thread.md` | Tutorial | Reader takes a CPU-bound function and moves it onto Node's worker pool. | Build a small fibonacci-style example. Show before/after blocking. Cover the `task` flavor of `#[neon::export]`. Cross-link to the *Run blocking work on the worker pool* how-to. |
 | 5 | `tutorials/async-tokio.md` | Tutorial | Reader registers a Tokio runtime and writes async functions returning Promises. | Cover both `tokio-rt-multi-thread` (auto-init) and explicit `set_global_executor`. Build a small `fetch_json`-style example. Cross-link to *Export async functions* how-to. |
 
 ### Batch 3 — Explanation foundations

@@ -1,16 +1,16 @@
 ---
-title: Your first Neon module
-description: Build a small Neon module from scratch — strings in and out, collections, and error handling, all wired up to JavaScript.
+title: Your first Neon addon
+description: Build a small Neon addon from scratch — strings in and out, collections, and error handling, all wired up to JavaScript.
 ---
 
 The [Quickstart](/getting-started/quickstart/) gets you to "a Rust
 function called from Node.js" in five minutes. This tutorial picks up
 from there and walks through building a small but realistic Neon
-module — a URL-safe slug generator — exercising the patterns you'll
+addon — a URL-safe slug generator — exercising the patterns you'll
 use in nearly every real project: string arguments, collection
 arguments, and fallible functions that throw on error.
 
-By the end, you'll have a module with several exported Rust functions
+By the end, you'll have an addon with several exported Rust functions
 that JavaScript can call directly, and you'll understand what each
 piece of [`#[neon::export]`](/api/neon/attr.export.html) is doing for
 you.
@@ -27,7 +27,7 @@ example because:
 - It's easy to extend with more interesting types like `Vec<String>`
   and fallible variants without the example getting unwieldy.
 
-The finished module exports:
+The finished addon exports:
 
 ```js
 slugify("Hello, World!")          // => "hello-world"
@@ -92,7 +92,7 @@ npm run build
 ```
 
 ```js
-import addon from "./index.node";
+const addon = require("./index.node");
 
 console.log(addon.slugify("Hello, World!"));
 // => "hello-world"
@@ -107,11 +107,11 @@ A few things worth noticing:
   [`TryIntoJs`](/api/neon/types/extract/trait.TryIntoJs.html) traits
   handle the conversions automatically — you'll see this same pattern
   for every primitive and collection type.
-- There's no module init code anywhere. The
+- There's no addon init code anywhere. The
   [`#[neon::export]`](/api/neon/attr.export.html) attribute registers
-  the function with the module on its own; you only need to write a
+  the function with the addon on its own; you only need to write a
   [`#[neon::main]`](/api/neon/attr.main.html) entry point if you want
-  to do extra work at module-load time (initializing a logger,
+  to do extra work at addon-load time (initializing a logger,
   registering an executor, etc.).
 - The exported JavaScript name is `slugify`, the same as the Rust
   identifier. If you wanted a different JS-side name (`slugify` →
@@ -310,12 +310,11 @@ functions, callable from Node.js. Here's the short version of what
   converts the Rust value back to a JS value. For
   `Result<T, Error>`, the wrapper unwraps `Ok` into a JS value and
   turns `Err` into a thrown exception.
-- **Module registration.** Every
+- **Addon registration.** Every
   [`#[neon::export]`](/api/neon/attr.export.html) registers itself with
-  the crate's module init, so the resulting `index.node` exposes every
+  the addon's init code, so the resulting `index.node` exposes every
   annotated function on the object you
-  [`require()`](https://nodejs.org/api/modules.html#requireid) or
-  [`import`](https://nodejs.org/api/esm.html).
+  [`require()`](https://nodejs.org/api/modules.html#requireid).
 - **JavaScript naming.** `snake_case` Rust identifiers become `camelCase`
   JS names by default; `name = "..."` overrides that.
 
@@ -324,7 +323,7 @@ For a longer look at the macro internals, see
 
 ## Where next
 
-- [Concurrency with the libuv pool](/tutorials/concurrency-libuv/) —
+- [Move work off the main thread](/tutorials/move-work-off-the-main-thread/) —
   move CPU-bound work off the JavaScript main thread.
 - [Async functions with tokio](/tutorials/async-tokio/) — `async fn`
   exports that return Promises.

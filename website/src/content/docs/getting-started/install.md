@@ -3,7 +3,7 @@ title: Prerequisites
 description: Set up Node.js, Rust, and your platform's build tools, then scaffold a new project with npm init neon@latest.
 ---
 
-To build and run a Neon module you need three things on your machine:
+To build and run a Neon addon you need three things on your machine:
 **Node.js**, the **Rust toolchain**, and your platform's standard
 **build tools**. These are the same tools every Rust and Node.js
 developer keeps installed; if you have either ecosystem set up already,
@@ -107,7 +107,7 @@ fn hello(name: String) -> String {
 ```
 
 `cd` into the project, install the npm dependencies, and build the
-native module:
+native addon:
 
 ```sh
 cd my-project
