@@ -40,9 +40,9 @@ export default defineConfig({
         {
           label: "Tutorials",
           items: [
-            { label: "Your first Neon addon", link: "/tutorials/first-module/" },
+            { label: "Your first Neon addon", link: "/tutorials/first-addon/" },
             { label: "Move work off the main thread", link: "/tutorials/move-work-off-the-main-thread/" },
-            { label: "Async functions with tokio", link: "/tutorials/async-tokio/" },
+            { label: "Build a SQLite addon", link: "/tutorials/build-a-database-addon/" },
           ],
         },
         {

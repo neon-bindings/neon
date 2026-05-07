@@ -325,8 +325,8 @@ For a longer look at the macro internals, see
 
 - [Move work off the main thread](/tutorials/move-work-off-the-main-thread/) —
   move CPU-bound work off the JavaScript main thread.
-- [Async functions with tokio](/tutorials/async-tokio/) — `async fn`
-  exports that return Promises.
+- [Build a SQLite addon](/tutorials/build-a-database-addon/) — `async fn`
+  exports that return Promises, plus `#[neon::class]` for stateful handles.
 - [Pass common types between Rust and JavaScript](/how-to/common-types/)
   — the rest of the conversion vocabulary (numbers, buffers, objects).
 - [Throw and catch JavaScript errors from Rust](/how-to/errors/) —

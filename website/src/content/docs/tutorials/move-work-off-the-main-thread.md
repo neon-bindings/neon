@@ -200,7 +200,7 @@ HTTP service, reading a file — you want an `async fn` instead, paired
 with an async runtime like
 [tokio](https://docs.rs/tokio/latest/tokio/). That's the topic of the
 next tutorial,
-[Async functions with tokio](/tutorials/async-tokio/).
+[Build a SQLite addon](/tutorials/build-a-database-addon/).
 
 A rough decision tree:
 
@@ -212,8 +212,8 @@ A rough decision tree:
 
 ## Where next
 
-- [Async functions with tokio](/tutorials/async-tokio/) — for
-  I/O-bound work that wants to `.await`.
+- [Build a SQLite addon](/tutorials/build-a-database-addon/) — for
+  I/O-bound work that wants to `.await`, paired with `#[neon::class]`.
 - [Run blocking work on the libuv pool](/how-to/blocking-libuv/) —
   recipe form of this tutorial, including how to use
   `Channel::send_blocking` directly when `(task)` isn't enough.

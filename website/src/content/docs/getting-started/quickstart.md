@@ -7,7 +7,7 @@ This page gets you from zero to a Rust function called from Node.js in
 about five minutes. It assumes you've already
 [installed the prerequisites](/getting-started/install/). For a slower
 walkthrough that explains what each piece is doing, see
-[Your first Neon addon](/tutorials/first-module/).
+[Your first Neon addon](/tutorials/first-addon/).
 
 ## Scaffold the project
 
@@ -87,7 +87,7 @@ process without you writing a single line of glue.
 
 ## Where next
 
-- [Your first Neon addon](/tutorials/first-module/) — the same
+- [Your first Neon addon](/tutorials/first-addon/) — the same
   project, expanded with explanation and a few extra patterns.
 - [Pass common types between Rust and JavaScript](/how-to/common-types/)
   — strings, arrays, objects, buffers, and how each one looks on both
