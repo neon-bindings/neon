@@ -17,10 +17,11 @@ neon = { path = "../crates/neon", default-features = false, features = [
 ] }
 either = "1"
 blake3 = "1"
-serde_json = "1"
+serde = { version = "1", features = ["derive"] }
 sqlx = { version = "0.8", default-features = false, features = [
     "runtime-tokio",
     "sqlite",
+    "macros",
 ] }
 tokio = { version = "1", features = ["rt-multi-thread"] }
 

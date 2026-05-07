@@ -1739,7 +1739,7 @@ dependencies = [
  "blake3",
  "either",
  "neon",
- "serde_json",
+ "serde",
  "sqlx",
  "tokio",
  "walkdir",
