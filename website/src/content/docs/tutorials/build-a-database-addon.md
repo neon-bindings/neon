@@ -1,5 +1,5 @@
 ---
-title: Build a SQLite addon
+title: Build a database addon
 description: Wrap a SQLite connection pool as a JavaScript class with `#[neon::class]`, then expose async methods backed by Tokio so queries return Promises and never block the event loop.
 ---
 

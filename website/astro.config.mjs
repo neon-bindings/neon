@@ -42,7 +42,7 @@ export default defineConfig({
           items: [
             { label: "Your first Neon addon", link: "/tutorials/first-addon/" },
             { label: "Move work off the main thread", link: "/tutorials/move-work-off-the-main-thread/" },
-            { label: "Build a SQLite addon", link: "/tutorials/build-a-database-addon/" },
+            { label: "Build a database addon", link: "/tutorials/build-a-database-addon/" },
           ],
         },
         {

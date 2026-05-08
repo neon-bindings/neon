@@ -200,7 +200,7 @@ HTTP service, reading a file — you want an `async fn` instead, paired
 with an async runtime like
 [tokio](https://docs.rs/tokio/latest/tokio/). That's the topic of the
 next tutorial,
-[Build a SQLite addon](/tutorials/build-a-database-addon/).
+[Build a database addon](/tutorials/build-a-database-addon/).
 
 A rough decision tree:
 
