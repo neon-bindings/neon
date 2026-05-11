@@ -1,0 +1,8 @@
+error: lifetime may not live long enough
+  --> tests/fail/scoped-cx-escape.rs:15:64
+   |
+15 |     let _escaped: ScopedCx<'_, '_> = cx.execute_scoped(|inner| inner);
+   |                                                         ------ ^^^^^ returning this value requires that `'1` must outlive `'2`
+   |                                                         |    |
+   |                                                         |    return type of closure is ScopedCx<'_, '2>
+   |                                                         has type `ScopedCx<'_, '1>`
