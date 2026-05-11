@@ -49,7 +49,7 @@ cd first-neon
 The `--app` flag tells [`create-neon`](/reference/cli/) to scaffold a
 small standalone application (rather than a publishable library — we
 cover that in
-[Publish prebuilt binaries to npm](/how-to/prebuilt-binaries/) later).
+[Publish your addon to npm](/tutorials/publish-your-addon-to-npm/) later).
 You'll get a project layout like this:
 
 ```text

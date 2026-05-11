@@ -7,12 +7,15 @@
  *   - Lines starting with `##` are unescaped to a literal `#`.
  *   - Other lines pass through unchanged.
  *
- * Applies only to fences whose language is exactly `rust`.
+ * Applies to fences whose language is `rust` or `rust,<attr>` (e.g.
+ * `rust,compile_fail`, `rust,ignore`, `rust,no_run`, `rust,should_panic`).
+ * The trailing attributes are rustdoc directives and don't change the
+ * fact that the body is Rust.
  */
 export function remarkStripHiddenRustLines() {
   return (tree) => {
     visit(tree, "code", (node) => {
-      if (node.lang !== "rust") return;
+      if (!isRustFence(node.lang)) return;
       const lines = node.value.split("\n");
       const out = [];
       for (const line of lines) {
@@ -31,6 +34,12 @@ export function remarkStripHiddenRustLines() {
       node.value = out.join("\n");
     });
   };
+}
+
+function isRustFence(lang) {
+  if (typeof lang !== "string") return false;
+  if (lang === "rust") return true;
+  return lang.startsWith("rust,");
 }
 
 // Inline visit() to avoid adding a dependency for ~10 lines.

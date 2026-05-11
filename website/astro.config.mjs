@@ -1,5 +1,6 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
+import mermaid from "astro-mermaid";
 import { remarkStripHiddenRustLines } from "./strip-hidden-rust-lines.mjs";
 import { rustdocDevPlugin } from "./scripts/rustdoc-dev-plugin.mjs";
 
@@ -12,9 +13,24 @@ export default defineConfig({
     plugins: [rustdocDevPlugin()],
   },
   integrations: [
+    mermaid({ theme: "neutral", autoTheme: true }),
     starlight({
       title: "Neon",
       description: "Write Node addons in Rust.",
+      expressiveCode: {
+        shiki: {
+          // Map rustdoc fence attributes (compile_fail, ignore, no_run,
+          // should_panic) to the `rust` highlighter. The doctest harness
+          // still sees the full attribute string; this only governs how
+          // expressive-code looks up a syntax for highlighting.
+          langAlias: {
+            "rust,compile_fail": "rust",
+            "rust,ignore": "rust",
+            "rust,no_run": "rust",
+            "rust,should_panic": "rust",
+          },
+        },
+      },
       logo: {
         src: "./public/logo-mark.png",
         replacesTitle: true,
@@ -43,6 +59,7 @@ export default defineConfig({
             { label: "Your first Neon addon", link: "/tutorials/first-addon/" },
             { label: "Move work off the main thread", link: "/tutorials/move-work-off-the-main-thread/" },
             { label: "Build a database addon", link: "/tutorials/build-a-database-addon/" },
+            { label: "Publish your addon to npm", link: "/tutorials/publish-your-addon-to-npm/" },
           ],
         },
         {
