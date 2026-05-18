@@ -1,0 +1,11 @@
+error[E0521]: borrowed data escapes outside of closure
+  --> tests/fail/compute-scoped-leak.rs:19:9
+   |
+15 |     let mut leaked: Option<Handle<JsNumber>> = None;
+   |         ---------- `leaked` declared here, outside of the closure body
+16 |
+17 |     let _: Handle<JsNumber> = cx.compute_scoped(|mut inner_cx| {
+   |                                                  ------------ `inner_cx` is a reference that is only valid in the closure body
+18 |         let v = inner_cx.number(42);
+19 |         leaked = Some(v);
+   |         ^^^^^^^^^^^^^^^^ `inner_cx` escapes the closure body here

@@ -27,11 +27,3 @@ note: required by a bound in `neon::macro_internal::spawn`
    |     F: Future + Send + 'static,
    |        ^^^^^^ required by this bound in `spawn`
    = note: this error originates in the attribute macro `neon::class` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error[E0282]: type annotations needed
- --> tests/fail/class-async-context-ref.rs:5:1
-  |
-5 | #[neon::class]
-  | ^^^^^^^^^^^^^^ cannot infer type
-  |
-  = note: this error originates in the attribute macro `neon::class` (in Nightly builds, run with -Z macro-backtrace for more info)
