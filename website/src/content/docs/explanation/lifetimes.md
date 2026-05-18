@@ -91,15 +91,22 @@ fn build_then_escape<'cx>(
 }
 ```
 
-Without `'cx`, this would compile and `temp` would dangle: the inner
-scope drops the moment the closure returns, the engine is told the
-handles inside it are no longer needed, and the caller would be left
-holding a reference to a freed value.
+The closure parameter `inner` here isn't a regular
+[`Cx`](/api/neon/context/struct.Cx.html); it's a
+[`ScopedCx`](/api/neon/context/struct.ScopedCx.html) — a context
+flavor that exists specifically to enforce a tighter lifetime
+relationship between the inner and outer scopes. That's what catches
+the escape attempt.
 
-The borrow checker sees that the returned handle borrows from
-`inner`, and `inner` doesn't outlive the closure. **The bug becomes
-a compile-time error.** You can't ship the broken version even if
-you wanted to.
+Without that constraint, this would compile and `temp` would dangle:
+the inner scope drops the moment the closure returns, the engine is
+told the handles inside it are no longer needed, and the caller would
+be left holding a reference to a freed value.
+
+With it, the borrow checker sees that the returned handle borrows
+from `inner`, and `inner` doesn't outlive the closure. **The bug
+becomes a compile-time error.** You can't ship the broken version
+even if you wanted to.
 
 When you genuinely *do* need a result to outlive an inner scope, Neon
 provides
