@@ -33,19 +33,19 @@
     "neon"
   ],
   "devDependencies": {
-    "@tsconfig/node18": "^18.2.2",
+    "@tsconfig/node24": "^24.0.4",
     "@types/chai": "^4.3.11",
     "@types/command-line-args": "^5.2.3",
     "@types/command-line-usage": "^5.0.4",
     "@types/handlebars-helpers": "^0.5.6",
     "@types/mocha": "^10.0.6",
-    "@types/node": "^20.10.1",
+    "@types/node": "^24.13.2",
     "chai": "^4.3.10",
     "execa": "^8.0.1",
-    "mocha": "^10.2.0",
+    "mocha": "^11.7.6",
     "stream-to-string": "^1.2.1",
     "toml": "^3.0.0",
-    "typescript": "^5.3.2"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "@neon-rs/manifest": "^0.2.1",
