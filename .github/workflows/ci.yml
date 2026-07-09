@@ -139,7 +139,7 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          bun-version: canary
 
       - name: convert lockfile
         run: bun install --lockfile-only
