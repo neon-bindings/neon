@@ -36,8 +36,11 @@ aquamarine = { version = "0.3.2", optional = true }
 easy-cast = { version = "0.5.2", optional = true }
 doc-comment = { version = "0.3.3", optional = true }
 send_wrapper = "0.6.0"
-serde = { version = "1.0.197", optional = true }
+serde = { version = "1.0.197", optional = true, features = ["derive"] }
 serde_json = { version = "1.0.114", optional = true }
+chrono = { version = "0.4", optional = true, default-features = false }
+uuid = { version = "1", optional = true }
+ordermap = { version = "1", optional = true }
 
 [dependencies.tokio]
 version = "1.34.0"
@@ -50,6 +53,21 @@ default = ["napi-8"]
 
 # Enable extracting values by serializing to JSON
 serde = ["dep:serde", "dep:serde_json"]
+
+# Enable TypeScript type declaration generation (derive macros, ecosystem impls).
+# The core TypeScript trait and generate() function are always available.
+# `neon-macros/typescript` makes the export/class macros emit type metadata;
+# without it they emit none, so there is no code-size cost when this is off.
+typescript = ["serde", "neon-macros/typescript"]
+
+# TypeScript impls for chrono date/time types (DateTime, NaiveDate, etc. → string)
+typescript-chrono = ["typescript", "dep:chrono"]
+
+# TypeScript impl for uuid::Uuid (→ string)
+typescript-uuid = ["typescript", "dep:uuid"]
+
+# TypeScript impl for ordermap::OrderMap<K, V> (→ Record<K, V>)
+typescript-ordermap = ["typescript", "dep:ordermap"]
 
 # Enable the creation of external binary buffers. This is disabled by default
 # since these APIs fail at runtime in environments that enable the V8 memory
