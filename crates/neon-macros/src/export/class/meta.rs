@@ -7,6 +7,14 @@ pub(crate) struct Meta {
     pub class_name: Option<String>,
     /// Name for the module export binding
     pub export_name: Option<String>,
+    /// Skip emitting TypeScript metadata for this class
+    pub ts_skip: bool,
+    /// Override the class name in TypeScript output (without affecting JS)
+    pub ts_name: Option<String>,
+    /// Require all referenced types to implement `TypeScript` (no fallback to "any")
+    pub ts_strict: bool,
+    /// Omit the constructor from the generated TypeScript class declaration
+    pub ts_no_constructor: bool,
 }
 
 impl Parse for Meta {
@@ -37,6 +45,20 @@ impl Parse for Meta {
                         let name_value: syn::LitStr = content.parse()?;
                         meta.class_name = Some(name_value.value());
                     }
+                    "ts_skip" => {
+                        meta.ts_skip = true;
+                    }
+                    "ts_strict" => {
+                        meta.ts_strict = true;
+                    }
+                    "ts_no_constructor" => {
+                        meta.ts_no_constructor = true;
+                    }
+                    "ts_name" => {
+                        content.parse::<syn::Token![=]>()?;
+                        let value: syn::LitStr = content.parse()?;
+                        meta.ts_name = Some(value.value());
+                    }
                     _ => {
                         return Err(syn::Error::new(
                             name_token.span(),
@@ -63,6 +85,20 @@ impl Parse for Meta {
                         input.parse::<syn::Token![=]>()?;
                         let name_value: syn::LitStr = input.parse()?;
                         meta.export_name = Some(name_value.value());
+                    }
+                    "ts_skip" => {
+                        meta.ts_skip = true;
+                    }
+                    "ts_strict" => {
+                        meta.ts_strict = true;
+                    }
+                    "ts_no_constructor" => {
+                        meta.ts_no_constructor = true;
+                    }
+                    "ts_name" => {
+                        input.parse::<syn::Token![=]>()?;
+                        let value: syn::LitStr = input.parse()?;
+                        meta.ts_name = Some(value.value());
                     }
                     _ => {
                         return Err(syn::Error::new(
