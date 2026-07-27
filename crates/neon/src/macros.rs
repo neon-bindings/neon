@@ -990,3 +990,22 @@ pub use neon_macros::main;
 /// }
 /// ```
 pub use neon_macros::export;
+
+/// Derive the [`TypeScript`](crate::typescript::TypeScript) trait for a struct or enum.
+///
+/// Generates a `TypeScript` implementation that produces type declarations
+/// matching the type's serde JSON serialization format. Reads `#[serde(...)]`
+/// attributes to produce correct field names, optional markers, and enum
+/// tag shapes.
+///
+/// # Example
+///
+/// ```ignore
+/// #[derive(Serialize, Deserialize, neon::TypeScript)]
+/// #[serde(rename_all = "camelCase")]
+/// struct SearchResult {
+///     doc_id: u32,
+///     score: f64,
+/// }
+/// ```
+pub use neon_macros::TypeScript;
