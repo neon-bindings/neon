@@ -124,6 +124,105 @@ pub(crate) fn is_valid_js_identifier(name: &str) -> bool {
     )
 }
 
+/// Check if a type contains features that prevent it from being used in a
+/// static metadata entry (`impl Trait`, `Self`, or unsized slices).
+/// Non-`'static` lifetimes are rewritten by `substitute_lifetimes_with_static`,
+/// not flagged here.
+pub(crate) fn type_needs_fallback(ty: &syn::Type) -> bool {
+    use syn::visit::Visit;
+
+    struct Checker {
+        needs_fallback: bool,
+    }
+
+    impl<'ast> Visit<'ast> for Checker {
+        fn visit_type_impl_trait(&mut self, _: &'ast syn::TypeImplTrait) {
+            self.needs_fallback = true;
+        }
+
+        fn visit_path_segment(&mut self, seg: &'ast syn::PathSegment) {
+            if seg.ident == "Self" {
+                self.needs_fallback = true;
+            }
+            syn::visit::visit_path_segment(self, seg);
+        }
+
+        fn visit_type_slice(&mut self, _: &'ast syn::TypeSlice) {
+            // [T] is unsized and can't impl TypeScript
+            self.needs_fallback = true;
+        }
+    }
+
+    let mut checker = Checker {
+        needs_fallback: false,
+    };
+    checker.visit_type(ty);
+    checker.needs_fallback
+}
+
+/// Rewrite all non-`'static` lifetimes in a type to `'static`, so the type can
+/// be used as a type parameter in a `static fn` metadata closure. Returns a
+/// new owned `Type`.
+pub(crate) fn substitute_lifetimes_with_static(ty: &syn::Type) -> syn::Type {
+    use syn::visit_mut::VisitMut;
+
+    struct Rewriter;
+
+    impl VisitMut for Rewriter {
+        fn visit_lifetime_mut(&mut self, lt: &mut syn::Lifetime) {
+            lt.ident = syn::Ident::new("static", lt.ident.span());
+        }
+
+        fn visit_type_reference_mut(&mut self, r: &mut syn::TypeReference) {
+            if r.lifetime.is_none() {
+                r.lifetime = Some(syn::Lifetime::new(
+                    "'static",
+                    proc_macro2::Span::call_site(),
+                ));
+            }
+            syn::visit_mut::visit_type_reference_mut(self, r);
+        }
+    }
+
+    let mut out = ty.clone();
+    Rewriter.visit_type_mut(&mut out);
+    out
+}
+
+/// Replace `Self` with the concrete class name in a type, so it can be used
+/// in a static context. Returns `None` if no replacement was needed.
+pub(crate) fn replace_self_in_type(ty: &syn::Type, class_ident: &syn::Ident) -> Option<syn::Type> {
+    use syn::visit_mut::VisitMut;
+
+    struct Replacer<'a> {
+        class_ident: &'a syn::Ident,
+        replaced: bool,
+    }
+
+    impl<'a> VisitMut for Replacer<'a> {
+        fn visit_path_segment_mut(&mut self, seg: &mut syn::PathSegment) {
+            if seg.ident == "Self" {
+                seg.ident = self.class_ident.clone();
+                self.replaced = true;
+            }
+            syn::visit_mut::visit_path_segment_mut(self, seg);
+        }
+    }
+
+    let mut ty = ty.clone();
+    let mut replacer = Replacer {
+        class_ident,
+        replaced: false,
+    };
+    replacer.visit_type_mut(&mut ty);
+
+    if replacer.replaced {
+        Some(ty)
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod test {
     #[test]
