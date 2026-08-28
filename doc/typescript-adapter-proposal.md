@@ -209,6 +209,29 @@ motivation, and makes AST fidelity a single well-tested parser rather than two
 code paths. The tradeoff to weigh: (b) means the AST is only ever as good as the
 parser, so any type expression the parser cannot structure becomes a `Raw` node.
 
+**Data point — the AST is currently unused in practice.** The
+[dogfooding PR](https://github.com/dherman/tantivy/pull/3) consumes only the
+`.d.ts` *string* (`Symbol.for("neon:types")`); it never touches `generate_ast()`
+or `Symbol.for("neon:types-ast")`. And its `extract-types.cjs` then does its own
+line-indentation and `declare module "./load.cjs" { … }` wrapping in JavaScript —
+exactly the transforms the structured AST (and the `generate_with({ module })`
+module-scoping helper) were meant to make unnecessary. `generate_ast()` was
+justified by round-1 dogfooding feedback ("structured output, not a single
+string"), but the actual dogfooding went back to the string plus manual munging.
+
+Two implications:
+
+- It reinforces **(b)**: the one real consumer doesn't use the AST, so there is
+  little reason to let it inflate the minimal contract crate.
+- It raises a sharper question for a v1: **should `generate_ast()` ship at all
+  yet, or be deferred?** Carrying an unused, semver-affecting API surface from
+  day one is a cost. A defensible v1 is string-only, plus wiring the
+  *module-scoped* string into the auto-attach (a `Symbol.for("neon:types")` that
+  is already module-wrapped, or a second symbol for it) so the extract script can
+  drop its hand-rolled indent-and-wrap — which is the transform the dogfooding
+  actually needs. The structured AST can then be added later, if and when a
+  concrete consumer materializes, without having committed to it prematurely.
+
 ### 2. What should `Option<T>` mean, and how do we keep it consistent?
 
 **Background — what serde actually does.**
