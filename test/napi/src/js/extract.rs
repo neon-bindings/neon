@@ -198,6 +198,52 @@ fn sleep_with_sync(n: f64) -> impl for<'cx> TryIntoJs<'cx> {
     sleep_with(n)
 }
 
+#[neon::export(task)]
+// Ensure that `with!` converts a bare (non-JavaScript) value with `TryIntoJs`;
+// the macro is in scope from the `neon::types::extract::*` glob import
+fn with_macro_bare_value(n: f64) -> impl for<'cx> TryIntoJs<'cx> {
+    with!(move |_| n)
+}
+
+#[neon::export]
+// Ensure that a `with!` body can evaluate to a JavaScript value and that the
+// macro can be invoked through the `extract` module re-export
+fn with_macro_js_string(s: String) -> impl for<'cx> TryIntoJs<'cx> {
+    neon::types::extract::with!(move |cx| cx.string(format!("{s}!")))
+}
+
+// Ensure that the non-`move` arms of `with!` can be evaluated at runtime by
+// consuming the wrapped closures before the captured variable goes out of scope
+pub fn with_macro_non_move(mut cx: FunctionContext) -> JsResult<JsArray> {
+    let (n,): (f64,) = cx.args()?;
+
+    let ident = with!(|cx| cx.number(n));
+    let underscore = with!(|_| n * 2.0);
+
+    let ident = ident.try_into_js(&mut cx)?;
+    let underscore = underscore.try_into_js(&mut cx)?;
+
+    let arr = cx.empty_array();
+
+    arr.set(&mut cx, 0, ident)?;
+    arr.set(&mut cx, 1, underscore)?;
+
+    Ok(arr)
+}
+
+#[neon::export]
+// Ensure that a fallible `with!` body can use `?` and pin the error type with
+// `NeonResult::Ok`; an `Err` becomes a JavaScript exception
+fn with_macro_fallible(n: f64) -> impl for<'cx> TryIntoJs<'cx> {
+    with!(move |cx| {
+        if n < 0.0 {
+            cx.throw_range_error::<_, ()>("expected non-negative number")?;
+        }
+
+        NeonResult::Ok(n * 2.0)
+    })
+}
+
 #[neon::export]
 fn extract_array_vec(Array(arr): Array<Vec<f64>>) -> Array<Vec<f64>> {
     Array(arr)

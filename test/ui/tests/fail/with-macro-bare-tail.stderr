@@ -1,0 +1,12 @@
+error[E0277]: the `?` operator can only be used in a closure that returns `Result` or `Option` (or another type that implements `FromResidual`)
+ --> tests/fail/with-macro-bare-tail.rs:12:46
+  |
+ 9 | /     neon::types::extract::with!(move |cx| {
+10 | |         let sum = nums.into_iter().sum::<f64>();
+11 | |
+12 | |         cx.global::<JsFunction>("parseFloat")?;
+   | |                                              ^ cannot use the `?` operator in a closure that returns `f64`
+13 | |
+14 | |         sum
+15 | |     })
+   | |______- this function should return `Result` or `Option` to accept `?`

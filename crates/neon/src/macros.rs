@@ -848,7 +848,7 @@ pub use neon_macros::main;
 /// ```
 ///
 /// If work needs to be performed on the JavaScript main thread _after_ the asynchronous operation,
-/// the [`With`](crate::types::extract::With) extractor can be used to execute a closure before returning.
+/// the [`with!`](crate::types::extract::with!) macro can be used to execute a closure before returning.
 ///
 /// ```
 /// # #[cfg(all(feature = "napi-6", feature = "futures"))]
@@ -858,10 +858,10 @@ pub use neon_macros::main;
 /// async fn add(a: f64, b: f64) -> impl for<'cx> TryIntoJs<'cx> {
 ///     let sum = a + b;
 ///
-///     extract::with(move |cx| {
+///     extract::with!(move |_| {
 ///         println!("Hello from the JavaScript main thread!");
 ///
-///         sum.try_into_js(cx)
+///         sum
 ///     })
 /// }
 /// # }

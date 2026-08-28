@@ -445,6 +445,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         "extract_single_add_one",
         js::extract::extract_single_add_one,
     )?;
+    cx.export_function("with_macro_non_move", js::extract::with_macro_non_move)?;
 
     // Classes
     let class_constructor = js::class::Message::constructor(&mut cx)?;
