@@ -232,15 +232,15 @@ pub fn with_macro_non_move(mut cx: FunctionContext) -> JsResult<JsArray> {
 }
 
 #[neon::export]
-// Ensure that a fallible `with!` body can use `?` and pin the error type with
-// `NeonResult::Ok`; an `Err` becomes a JavaScript exception
+// Ensure that a fallible `with!` body can use `?` with a return type annotation
+// naming the error type; an `Err` becomes a JavaScript exception
 fn with_macro_fallible(n: f64) -> impl for<'cx> TryIntoJs<'cx> {
-    with!(move |cx| {
+    with!(move |cx| -> NeonResult<_> {
         if n < 0.0 {
             cx.throw_range_error::<_, ()>("expected non-negative number")?;
         }
 
-        NeonResult::Ok(n * 2.0)
+        Ok(n * 2.0)
     })
 }
 

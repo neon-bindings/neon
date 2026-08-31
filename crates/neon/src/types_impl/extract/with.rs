@@ -49,10 +49,8 @@ where
 /// variables it captures (`sum` above) and is required when the closure outlives the
 /// enclosing function, as it does when returned from an exported function.
 ///
-/// Fallible bodies may use `?`. Because the body is a closure with no declared return
-/// type, a bare `Ok(..)` tail leaves the `Result`'s error type ambiguous; writing it as
-/// [`NeonResult::Ok(..)`](crate::result::NeonResult) supplies the error type
-/// ([`Throw`](crate::result::Throw)) while the success type is still inferred:
+/// Fallible bodies may use `?`. Annotate the closure's return type to name the error
+/// type:
 ///
 /// ```
 /// # use neon::{prelude::*, types::extract::{self, TryIntoJs}};
@@ -64,13 +62,13 @@ where
 ///     let sum = nums.into_iter().sum::<f64>();
 ///     let log = format!("sum took {} ms", start.elapsed().as_millis());
 ///
-///     extract::with!(move |cx| {
+///     extract::with!(move |cx| -> NeonResult<_> {
 ///         cx.global::<JsObject>("console")?
 ///             .method(cx, "log")?
 ///             .arg(&log)?
 ///             .exec()?;
 ///
-///         NeonResult::Ok(sum)
+///         Ok(sum)
 ///     })
 /// }
 /// ```
@@ -101,6 +99,30 @@ macro_rules! __with {
     (|_| $body:expr) => {
         $crate::types::extract::with(|__cx| {
             let __v = (|| $body)();
+            $crate::types::extract::TryIntoJs::try_into_js(__v, __cx)
+        })
+    };
+    (move |$cx:ident| -> $ret:ty $body:block) => {
+        $crate::types::extract::with(move |$cx| {
+            let __v = (|| -> $ret { $body })();
+            $crate::types::extract::TryIntoJs::try_into_js(__v, $cx)
+        })
+    };
+    (|$cx:ident| -> $ret:ty $body:block) => {
+        $crate::types::extract::with(|$cx| {
+            let __v = (|| -> $ret { $body })();
+            $crate::types::extract::TryIntoJs::try_into_js(__v, $cx)
+        })
+    };
+    (move |_| -> $ret:ty $body:block) => {
+        $crate::types::extract::with(move |__cx| {
+            let __v = (|| -> $ret { $body })();
+            $crate::types::extract::TryIntoJs::try_into_js(__v, __cx)
+        })
+    };
+    (|_| -> $ret:ty $body:block) => {
+        $crate::types::extract::with(|__cx| {
+            let __v = (|| -> $ret { $body })();
             $crate::types::extract::TryIntoJs::try_into_js(__v, __cx)
         })
     };
