@@ -134,7 +134,7 @@ reconciliation logic (a few dozen lines and a couple of policy constants):
 - Configure large ints to `number` (ts-rs defaults `u64`/`i64` to `bigint`, but
   serde_json emits JSON numbers). Confirmed fixable via `Config::with_large_int`.
 - Decide the `Option` representation (see Open Question 2).
-- Optional cosmetic normalization (see Open Question 4).
+- Optional cosmetic normalization (see Open Question 3).
 
 This is a *fixed* surface — it does not grow when serde adds an attribute. The
 treadmill is gone.
@@ -264,7 +264,7 @@ is the real problem to resolve. Options: align Neon's built-ins to ts-rs's
 `T | null`; post-process/configure the adapter to emit `T | undefined | null`; or
 declare it explicit adapter policy and document the difference.
 
-### 4. Do we normalize bridged output styling, or accept each provider's idiom?
+### 3. Do we normalize bridged output styling, or accept each provider's idiom?
 
 **Background.** The spike showed ts-rs renders semantically-identical TypeScript
 in a different *style* than Neon's hand-written impls: `Array<string>` vs
