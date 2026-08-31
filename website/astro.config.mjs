@@ -52,8 +52,16 @@ export default defineConfig({
       ],
       customCss: ["./src/styles/neon.css"],
       social: [
-        { icon: "github", label: "GitHub", href: "https://github.com/neon-bindings/neon" },
-        { icon: "slack", label: "Slack", href: "https://rust-bindings.slack.com" },
+        {
+          icon: "github",
+          label: "GitHub",
+          href: "https://github.com/neon-bindings/neon",
+        },
+        {
+          icon: "slack",
+          label: "Slack",
+          href: "https://rust-bindings.slack.com",
+        },
       ],
       sidebar: [
         {
@@ -64,9 +72,18 @@ export default defineConfig({
           label: "Tutorials",
           items: [
             { label: "Your first Neon addon", link: "/tutorials/first-addon/" },
-            { label: "Move work off the main thread", link: "/tutorials/move-work-off-the-main-thread/" },
-            { label: "Build a database addon", link: "/tutorials/build-a-database-addon/" },
-            { label: "Publish your addon to npm", link: "/tutorials/publish-your-addon-to-npm/" },
+            {
+              label: "Move work off the main thread",
+              link: "/tutorials/move-work-off-the-main-thread/",
+            },
+            {
+              label: "Build a database addon",
+              link: "/tutorials/build-a-database-addon/",
+            },
+            {
+              label: "Publish your addon to npm",
+              link: "/tutorials/publish-your-addon-to-npm/",
+            },
           ],
         },
         {
@@ -77,8 +94,15 @@ export default defineConfig({
         {
           label: "Reference",
           items: [
-            { label: "API reference", link: "/api/neon/", attrs: { target: "_blank" } },
-            { label: "Supported platforms", link: "/reference/supported-platforms/" },
+            {
+              label: "API reference",
+              link: "/api/neon/",
+              attrs: { target: "_blank" },
+            },
+            {
+              label: "Supported platforms",
+              link: "/reference/supported-platforms/",
+            },
             { label: "CLI reference", link: "/reference/cli/" },
           ],
         },

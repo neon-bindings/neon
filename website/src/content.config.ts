@@ -20,7 +20,7 @@ export const collections = {
           status: z.enum(["draft", "todo"]).optional(),
         }),
       })(context).transform((data) =>
-        data.status ? { ...data, draft: true } : data,
+        data.status ? { ...data, draft: true } : data
       ),
   }),
 };

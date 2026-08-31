@@ -23,8 +23,8 @@ type SidebarLink = Extract<SidebarEntry, { type: "link" }>;
 // Page slug -> `status` front matter, for every flagged page.
 const statuses = new Map(
   (await getCollection("docs", ({ data }) => data.status !== undefined)).map(
-    (entry) => [entry.id === "index" ? "" : entry.id, entry.data.status!],
-  ),
+    (entry) => [entry.id === "index" ? "" : entry.id, entry.data.status!]
+  )
 );
 
 const BADGES = {
@@ -46,7 +46,7 @@ function prune(entries: SidebarEntry[]): SidebarEntry[] {
 
 function flatten(entries: SidebarEntry[]): SidebarLink[] {
   return entries.flatMap((entry) =>
-    entry.type === "link" ? entry : flatten(entry.entries),
+    entry.type === "link" ? entry : flatten(entry.entries)
   );
 }
 
