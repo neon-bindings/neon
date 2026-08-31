@@ -45,8 +45,14 @@ where
 /// }
 /// ```
 ///
-/// Fallible bodies may use `?`. Write a wrapped tail value as
-/// [`NeonResult::Ok(..)`](crate::result::NeonResult) so the error type is known:
+/// Ordinary closure capture rules apply: `move` gives the closure ownership of the
+/// variables it captures (`sum` above) and is required when the closure outlives the
+/// enclosing function, as it does when returned from an exported function.
+///
+/// Fallible bodies may use `?`. Because the body is a closure with no declared return
+/// type, a bare `Ok(..)` tail leaves the `Result`'s error type ambiguous; writing it as
+/// [`NeonResult::Ok(..)`](crate::result::NeonResult) supplies the error type
+/// ([`Throw`](crate::result::Throw)) while the success type is still inferred:
 ///
 /// ```
 /// # use neon::{prelude::*, types::extract::{self, TryIntoJs}};
