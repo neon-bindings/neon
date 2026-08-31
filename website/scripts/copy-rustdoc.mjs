@@ -6,9 +6,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..");
 
 // Honor CARGO_TARGET_DIR so this works under sandboxed/CI environments
-// that redirect cargo output (e.g. Cursor's local sandbox).
+// that redirect cargo output (e.g. Cursor's local sandbox). A relative
+// value resolves against the repo root, where prebuild.mjs runs cargo.
 const targetDir = process.env.CARGO_TARGET_DIR
-  ? resolve(process.env.CARGO_TARGET_DIR)
+  ? resolve(repoRoot, process.env.CARGO_TARGET_DIR)
   : resolve(repoRoot, "target");
 const src = resolve(targetDir, "doc");
 const dst = resolve(here, "..", "public", "api");

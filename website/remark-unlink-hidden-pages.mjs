@@ -19,14 +19,20 @@ function hiddenRoutes() {
   })) {
     if (!entry.isFile() || !/\.mdx?$/.test(entry.name)) continue;
     const path = join(entry.parentPath, entry.name);
-    const frontmatter = readFileSync(path, "utf8").match(/^---\n(.*?)\n---\n/s);
-    if (!frontmatter || !/^status: (draft|todo)$/m.test(frontmatter[1]))
+    const frontmatter = readFileSync(path, "utf8").match(
+      /^---\r?\n(.*?)\r?\n---(\r?\n|$)/s
+    );
+    if (
+      !frontmatter ||
+      !/^status:\s*["']?(draft|todo)["']?\s*$/m.test(frontmatter[1])
+    )
       continue;
-    const slug = relative(DOCS_ROOT, path)
+    const parts = relative(DOCS_ROOT, path)
       .replace(/\.mdx?$/, "")
-      .split(sep)
-      .join("/");
-    hidden.add(slug === "index" ? "/" : `/${slug}/`);
+      .split(sep);
+    // index.md routes as its parent directory.
+    if (parts[parts.length - 1] === "index") parts.pop();
+    hidden.add(parts.length === 0 ? "/" : `/${parts.join("/")}/`);
   }
   return hidden;
 }

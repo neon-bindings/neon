@@ -6,3 +6,4 @@ node_modules/
 target/
 artifacts.json
 **/.astro/
+website/public/api/

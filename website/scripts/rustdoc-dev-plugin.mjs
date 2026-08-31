@@ -16,7 +16,7 @@
 
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
-import { extname, resolve } from "node:path";
+import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
@@ -53,16 +53,21 @@ export function rustdocDevPlugin() {
         // We only handle /api/* requests.
         if (!pathname.startsWith("/api/")) return next();
 
-        // Resolve to a path under target/doc. Reject anything that
-        // tries to escape the rustdoc tree (defense in depth — the
-        // dev server only runs locally, but no reason to be sloppy).
-        const rel = decodeURIComponent(pathname.slice("/api/".length));
-        const filePath = resolve(rustdocRoot, rel);
-        if (!filePath.startsWith(rustdocRoot)) {
-          return next();
-        }
-
         try {
+          // Resolve to a path under target/doc. Reject anything that
+          // tries to escape the rustdoc tree (defense in depth — the
+          // dev server only runs locally, but no reason to be sloppy).
+          // decodeURIComponent throws on malformed input, so it lives
+          // inside the try.
+          const rel = decodeURIComponent(pathname.slice("/api/".length));
+          const filePath = resolve(rustdocRoot, rel);
+          if (
+            filePath !== rustdocRoot &&
+            !filePath.startsWith(rustdocRoot + sep)
+          ) {
+            return next();
+          }
+
           const stats = await stat(filePath);
           let target = filePath;
           if (stats.isDirectory()) {
@@ -70,7 +75,8 @@ export function rustdocDevPlugin() {
             target = resolve(filePath, "index.html");
             await stat(target);
           }
-          const mime = MIME_TYPES[extname(target).toLowerCase()] ??
+          const mime =
+            MIME_TYPES[extname(target).toLowerCase()] ??
             "application/octet-stream";
           res.statusCode = 200;
           res.setHeader("content-type", mime);

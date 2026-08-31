@@ -24,7 +24,7 @@ if (process.env.SKIP_RUSTDOC) {
     console.error(
       `[prebuild] SKIP_RUSTDOC is set but ${apiDir} does not exist; ` +
         `Astro will build without /api/. Run once without SKIP_RUSTDOC to ` +
-        `populate it.`,
+        `populate it.`
     );
   } else {
     console.log("[prebuild] SKIP_RUSTDOC set; skipping cargo neon-doc.");

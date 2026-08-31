@@ -1,4 +1,5 @@
 import { defineConfig } from "astro/config";
+import { unified } from "@astrojs/markdown-remark";
 import starlight from "@astrojs/starlight";
 import mermaid from "astro-mermaid";
 import { remarkStripHiddenRustLines } from "./strip-hidden-rust-lines.mjs";
@@ -8,7 +9,10 @@ import { rustdocDevPlugin } from "./scripts/rustdoc-dev-plugin.mjs";
 export default defineConfig({
   site: "https://neon-rs.dev",
   markdown: {
-    remarkPlugins: [remarkStripHiddenRustLines, remarkUnlinkHiddenPages],
+    // `markdown.remarkPlugins` is deprecated as of Astro 7.
+    processor: unified({
+      remarkPlugins: [remarkStripHiddenRustLines, remarkUnlinkHiddenPages],
+    }),
   },
   vite: {
     plugins: [rustdocDevPlugin()],
