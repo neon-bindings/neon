@@ -1,0 +1,14 @@
+error[E0506]: cannot assign to `n` because it is borrowed
+  --> tests/fail/with-macro-non-move-capture.rs:14:5
+   |
+12 |     let w = neon::types::extract::with!(|cx| cx.number(n));
+   |             ----------------------------------------------
+   |             |                                          |
+   |             |                                          borrow occurs due to use in closure
+   |             `n` is borrowed here
+13 |
+14 |     n = 2.0;
+   |     ^^^^^^^ `n` is assigned to here but it was already borrowed
+15 |
+16 |     w.try_into_js(&mut cx)
+   |     - borrow later used here
