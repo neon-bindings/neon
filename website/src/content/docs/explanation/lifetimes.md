@@ -1,11 +1,8 @@
 ---
 title: Context lifetimes
 description: Why Neon handles carry a 'cx lifetime, what it represents, the use-after-scope bug it rules out, how to keep a value alive past the call with Root, and how Lock turns the same borrow rules into runtime checks for buffer bytes.
+status: draft
 ---
-
-:::note[Draft]
-This page is a draft pending review.
-:::
 
 The [type hierarchy](/explanation/type-hierarchy/) introduced
 [`Handle<'cx, T>`](/api/neon/handle/struct.Handle.html) as the way

@@ -1,11 +1,8 @@
 ---
 title: Synchronous setup before async work
 description: Use #[neon::export(async)] to do synchronous setup on the main thread, then return a Future for the async portion.
+status: todo
 ---
-
-:::caution[Status: skeleton]
-This page is a placeholder. Content forthcoming.
-:::
 
 This guide shows how to use `#[neon::export(async)]` on a function that runs synchronously to do setup on the JavaScript main thread (where it has access to `Cx`) and then returns an `impl Future` for the asynchronous portion. This pattern is useful when you need to read JS values before kicking off background work.
 

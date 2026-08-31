@@ -1,11 +1,8 @@
 ---
 title: Threading and value lifecycle
 description: How Root, Channel, and Deferred coordinate JavaScript values across threads — the choreography behind async exports and the Move work off the main thread tutorial.
+status: draft
 ---
-
-:::note[Draft]
-This page is a draft pending review.
-:::
 
 JavaScript runs on a single thread. Neon code is Rust, so it can spawn
 background threads whenever you want — but the moment a Rust thread

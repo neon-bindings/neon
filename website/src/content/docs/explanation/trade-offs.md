@@ -1,11 +1,8 @@
 ---
 title: Neon trade-offs
 description: An honest accounting of the costs that come with shipping a Neon addon — boundary overhead, type-conversion choices, build and distribution complexity, and the cases where the costs don't pay off.
+status: draft
 ---
-
-:::note[Draft]
-This page is a draft pending review.
-:::
 
 [*What is Neon?*](/explanation/what-is-neon/) makes the case for
 using Neon. This page is the counterweight: the costs that come

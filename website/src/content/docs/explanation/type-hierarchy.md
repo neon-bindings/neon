@@ -1,11 +1,8 @@
 ---
 title: The Neon type hierarchy
 description: How Neon represents JavaScript values in Rust — handles, the Value/Object trait split, the concrete Js* types, and when you actually need to think about any of it.
+status: draft
 ---
-
-:::note[Draft]
-This page is a draft pending review.
-:::
 
 JavaScript is dynamically typed; Rust is statically typed. The
 [`#[neon::export]`](/api/neon/attr.export.html) macro converts

@@ -1,11 +1,8 @@
 ---
 title: What is Neon?
 description: A high-level introduction to Neon and its relationship to Node-API, plus how it compares to writing the same code in JavaScript or WebAssembly.
+status: draft
 ---
-
-:::note[Draft]
-This page is a draft pending review.
-:::
 
 Neon lets you write [Node.js](https://nodejs.org/) addons in
 [Rust](https://www.rust-lang.org/). You write a Rust function, mark

@@ -36,6 +36,9 @@ export default defineConfig({
         replacesTitle: true,
       },
       favicon: "/favicon.svg",
+      // Hides `status: draft | todo` pages from the production sidebar and
+      // badges them in dev. See src/route-data.ts.
+      routeMiddleware: "./src/route-data.ts",
       head: [
         {
           tag: "link",
