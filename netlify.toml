@@ -1,22 +1,30 @@
 [build]
-  base = "website"
+  # Build from the repository root (Netlify's documented setup for npm
+  # workspaces): the dependency install runs at the workspace root
+  # against the single root package-lock.json. Setting `base` to
+  # "website" instead made Netlify install website/ as a standalone
+  # project with no lockfile at all.
+  #
   # The whole pipeline runs on nightly: the prebuild step calls
   # `cargo +nightly neon-doc` to match the rustdoc that ships on
   # docs.rs (which requires nightly because of `--cfg docsrs` and
   # the `feature(doc_cfg)` attributes in the neon crate).
   # `rustup toolchain install nightly --profile minimal` is
   # idempotent and gets cached by Netlify on subsequent builds.
-  command = "rustup toolchain install nightly --profile minimal && npm run build"
-  publish = "dist"
-  # With `base = "website"`, Netlify's default ignore rule would skip
-  # deploys for commits that only touch the crates — but /api/ is rendered
-  # from crates/neon sources, so those commits must redeploy too. Paths are
-  # relative to the base directory.
-  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- . ../crates ../Cargo.toml ../Cargo.lock ../.cargo ../netlify.toml"
+  command = "rustup toolchain install nightly --profile minimal && npm run build --workspace=website"
+  publish = "website/dist"
+  # Skip deploys unless something the site is built from changed. /api/
+  # is rendered from crates/neon sources, so crate commits must
+  # redeploy too.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- website crates Cargo.toml Cargo.lock .cargo netlify.toml package.json package-lock.json"
 
 [build.environment]
   # Node 24 is the active LTS as of 2026; npm 11 ships with it.
   NODE_VERSION = "24"
+  # The root workspace install includes the test workspaces; skip their
+  # large binary downloads, which the website build never needs.
+  ELECTRON_SKIP_BINARY_DOWNLOAD = "1"
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
 
 [[headers]]
   # Long cache for hashed Astro assets.
