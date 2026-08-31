@@ -78,7 +78,10 @@ pub trait TypeScript {
 }
 ```
 
-No derive, no serde parsing, no attribute logic lives here. That is the point.
+No derive, no serde parsing, no attribute logic — and no AST — lives here. The
+structured AST (where wanted) is produced in `neon` by parsing these strings, so
+the contract crate stays string-only (see Alternatives Considered §1). That is
+the point: this crate is small enough to be trivially stable.
 
 ### The adapter is a bridge derive, not a boundary wrapper
 
@@ -126,15 +129,21 @@ fn search(q: String) -> SearchResult { /* … */ }   // Json extraction unchange
 
 ### Adapter responsibilities (the small, bounded surface Neon keeps)
 
-The adapter is not a transparent pass-through. ts-rs is faithful to the *Rust
-type*; Neon's boundary is faithful to *what serde_json actually serializes*.
-Those differ in a few fixed places, so each adapter carries a little
-reconciliation logic (a few dozen lines and a couple of policy constants):
+ts-rs is faithful to the *Rust type*; Neon's boundary is faithful to *what
+serde_json actually serializes*. Those differ in essentially one fixed place, so
+the adapter carries a tiny bit of reconciliation:
 
 - Configure large ints to `number` (ts-rs defaults `u64`/`i64` to `bigint`, but
   serde_json emits JSON numbers). Confirmed fixable via `Config::with_large_int`.
-- Decide the `Option` representation (see Open Question 2).
-- Optional cosmetic normalization (see Open Question 3).
+
+That is nearly the whole list. Two things the adapter deliberately does **not**
+do (see Alternatives Considered §2 and §3):
+
+- It does **not** add `Option` leniency. Optionality is expressed by the user with
+  standard serde attributes (`skip_serializing_if` + `default`), which ts-rs
+  already honors; the adapter passes it through unchanged.
+- It does **not** normalize output styling; bridged types render in their
+  provider's idiom.
 
 This is a *fixed* surface — it does not grow when serde adds an attribute. The
 treadmill is gone.
@@ -144,8 +153,11 @@ treadmill is gone.
 - **Remove:** `crates/neon-macros/src/typescript/*` (structs / enums / attrs /
   rename — the derive + serde parsing), ~1,500 lines and the churniest code.
 - **Keep:** the trait + built-in impls (moved into `neon-typescript`), the
-  boundary impls, `generate()` / `generate_ast()` / parser, auto-attach, and the
-  `#[neon::export]` / class metadata macros.
+  boundary impls, `generate()` + the string→AST parser, auto-attach, and the
+  `#[neon::export]` / class metadata macros. The structured AST is generated in
+  `neon` by parsing strings (Alternatives Considered §1). Whether `generate_ast()`
+  ships in v1 at all is worth revisiting separately, since the dogfooding consumes
+  only the string form (see §1).
 - **Add:** the `neon-typescript` and `neon-ts-rs` crates.
 
 The PR shrinks and loses its riskiest code, but the type-provider half is
@@ -164,137 +176,114 @@ output against `serde_json`'s actual serialization:
 | internally-tagged enum | `{"kind":"circle",…}` | `{ "kind": "circle", … }` | match |
 | `Vec<String>` | `["a"]` | `Array<string>` | match (cosmetic) |
 | `u64` | `42` (JSON number) | `bigint` (default) | **mismatch — configurable** |
-| `Option<u32>` | key present, `null` | `number \| null` | differs from Neon's `T \| undefined \| null` |
+| `Option<u32>` | key present, `null` | `number \| null` | accepted; leniency is user opt-in via serde (§2) |
 
 The design works end-to-end (~40 lines of adapter), the flat-declaration
 assembly works via ts-rs's `TypeVisitor`, and the one sharp fidelity gotcha
 (large ints) is fixable via ts-rs `Config`.
 
-## Open questions
+## Alternatives Considered
 
-### 1. Where does the structured AST live?
+Three design questions came up while working through this proposal. Each is
+resolved below, with the alternatives we weighed and why we chose what we chose.
 
-**Background.** The feature produces two outputs: a `.d.ts` *string* (via
-`generate()`) and a *structured AST* (via `generate_ast()` — TSESTree-shaped,
-serde-serializable, for programmatic transforms). The AST is possible because
-each type can expose a structured node (`ts_type_ast()`) in addition to its
-string (`ts_type()`). Neon's built-in impls produce native structured nodes; a
-string→AST parser exists as a fallback for anything that only produces strings.
+### 1. Where the structured AST lives — string-only trait, parse in `neon`
 
-**Why the adapter forces a decision.** Bridged types (ts-rs/specta) naturally
-produce only *strings* — ts-rs hands you `"Array<string>"` and declaration
-strings, not Neon AST nodes. (specta has its own IR we could map, but that is
-real per-adapter work, and ts-rs gives strings regardless.) So the structured
-AST for any bridged type can only come from *parsing its string*. Given that,
-where should the AST machinery live?
+**Decision.** The trait is string-only (`ts_type` + `ts_collect`). The structured
+AST (where wanted) is produced in `neon` by running the string→AST parser over
+those strings. The AST node types and parser stay out of `neon-typescript`.
 
-- **(a) Keep `ts_type_ast()` in the trait**, with a default that parses
-  `ts_type()`. Built-ins override it for exact structured output; bridged types
-  use the parse default. *Cost:* the AST node types **and the parser** must live
-  in `neon-typescript` (the contract crate), because the trait method returns AST
-  nodes and defaults to parsing. That inflates the crate we most want to keep
-  tiny and stable, and ties its semver to the AST representation.
-- **(b) Keep the trait string-only** (`ts_type` + `ts_collect`) and generate the
-  AST entirely inside `neon` by parsing the strings. *Cost:* every type's AST is
-  parser-derived — even built-ins lose their "native" structured nodes and go
-  through the parser like everything else. In exchange, `neon-typescript` stays
-  minimal, and AST behavior is *uniform* (everything parsed) rather than
-  "built-ins native, bridged parsed."
+**Why the question arises.** The feature produces two outputs: a `.d.ts` *string*
+(`generate()`) and a *structured AST* (`generate_ast()` — TSESTree-shaped, for
+programmatic transforms). Bridged types (ts-rs/specta) naturally produce only
+*strings*, so the AST for any bridged type can only come from *parsing its
+string* anyway.
 
-**Lean: (b).** Since bridged types are parser-sourced no matter what, having
-built-ins be specially native buys inconsistency, not much fidelity — the parser
-already handles the built-in shapes (primitives, arrays, unions, records, tuples,
-literals) correctly. (b) keeps the contract crate small, which is the whole
-motivation, and makes AST fidelity a single well-tested parser rather than two
-code paths. The tradeoff to weigh: (b) means the AST is only ever as good as the
-parser, so any type expression the parser cannot structure becomes a `Raw` node.
+**Alternative rejected — put `ts_type_ast()` in the trait**, with a parse-based
+default that built-ins override for native structured nodes. This would drag the
+AST node types **and the parser** into `neon-typescript`, inflating the crate we
+most want to keep minimal and tying its semver to the AST representation. And
+since bridged types are parser-sourced regardless, making built-ins specially
+native buys inconsistency ("built-ins native, bridged parsed"), not much
+fidelity — the parser already handles the built-in shapes (primitives, arrays,
+unions, records, tuples, literals) correctly.
 
-**Data point — the AST is currently unused in practice.** The
+**Consequence.** AST behavior is uniform (everything parsed by one well-tested
+parser) and the contract crate stays tiny. The tradeoff: the AST is only ever as
+good as the parser — any expression it cannot structure becomes a `Raw` node.
+
+**Related scoping note (not part of this decision).** The
 [dogfooding PR](https://github.com/dherman/tantivy/pull/3) consumes only the
-`.d.ts` *string* (`Symbol.for("neon:types")`); it never touches `generate_ast()`
-or `Symbol.for("neon:types-ast")`. And its `extract-types.cjs` then does its own
-line-indentation and `declare module "./load.cjs" { … }` wrapping in JavaScript —
-exactly the transforms the structured AST (and the `generate_with({ module })`
-module-scoping helper) were meant to make unnecessary. `generate_ast()` was
-justified by round-1 dogfooding feedback ("structured output, not a single
-string"), but the actual dogfooding went back to the string plus manual munging.
+string (`Symbol.for("neon:types")`) and never touches `generate_ast()` /
+`Symbol.for("neon:types-ast")`; its `extract-types.cjs` hand-rolls the
+`declare module "./load.cjs" { … }` wrap and indentation that the AST and
+`generate_with({ module })` were meant to obviate. So the AST is currently unused
+in practice, which argues for **deferring `generate_ast()` from v1** and instead
+wiring the *module-scoped* string into the auto-attach (the transform the
+dogfooding actually needs). That is a scoping call separate from the trait-shape
+decision above, recorded here for follow-up.
 
-Two implications:
+### 2. `Option` leniency — user-expressible via serde, adapter passes through
 
-- It reinforces **(b)**: the one real consumer doesn't use the AST, so there is
-  little reason to let it inflate the minimal contract crate.
-- It raises a sharper question for a v1: **should `generate_ast()` ship at all
-  yet, or be deferred?** Carrying an unused, semver-affecting API surface from
-  day one is a cost. A defensible v1 is string-only, plus wiring the
-  *module-scoped* string into the auto-attach (a `Symbol.for("neon:types")` that
-  is already module-wrapped, or a second symbol for it) so the extract script can
-  drop its hand-rolled indent-and-wrap — which is the transform the dogfooding
-  actually needs. The structured AST can then be added later, if and when a
-  concrete consumer materializes, without having committed to it prematurely.
+**Decision.** The adapter owns no `Option`/leniency policy. Optionality is
+expressed by the user with standard serde attributes and passed through
+faithfully by whatever generator produced it.
 
-### 2. What should `Option<T>` mean, and how do we keep it consistent?
+**Why this works (spike evidence).** ts-rs already reflects serde's optionality
+in the type, and it does so *accurately* — a field is marked TypeScript-optional
+(`?`) exactly when it can be absent in **both** directions:
 
-**Background — what serde actually does.**
-- Default `Option<T>` (no `skip_serializing_if`): `Some(x)` serializes to
-  `"field": x`; `None` serializes to `"field": null`. **The key is always
-  present.** So the observed JSON shape is `field: T | null`.
-- With `#[serde(skip_serializing_if = "Option::is_none")]`: `None` omits the key
-  entirely, so the shape is `field?: T` (key may be absent).
+| Field attributes | serde output when `None` | ts-rs type |
+|---|---|---|
+| plain `Option<T>` | `"f": null` (present) | `f: T \| null` |
+| `skip_serializing_if = "Option::is_none"` | key omitted | `f: T \| null` (still required) |
+| `skip_serializing_if` **+** `default` | key omitted | `f?: T \| null` |
+| `default` only | `"f": null` (present) | `f: T \| null` |
 
-**Where the two crates differ.**
-- **Neon's current impl:** `Option<T>` → `T | undefined | null`. That union was
-  chosen for *deserialization leniency* (both JS `undefined` and `null`
-  deserialize to `None`). But for a value the addon *returns*, `undefined`
-  implies the key can be absent — which is only true under `skip_serializing_if`.
-  So for the common (default) case, `T | undefined | null` slightly overstates
-  optionality.
-- **ts-rs:** `Option<T>` → `T | null`, matching the default serialization (key
-  present, value possibly null), and handles `skip_serializing_if` separately by
-  making the field optional (`field?`).
+The idiomatic serde spelling of a fully optional field —
+`#[serde(skip_serializing_if = "Option::is_none", default)]` — yields
+`f?: T | null`, which accepts a value, `null`, `undefined`, *or* omission (the
+`?` already covers `undefined`, so no `| undefined` is needed) and is accurate in
+both directions. The user controls leniency; the adapter does nothing.
 
-**Why it matters.** Three things: (1) adopting ts-rs bridging changes `Option`
-output from `T | undefined | null` to `T | null` — a visible behavior change;
-(2) which is "correct" is direction-sensitive — for a *returned* value ts-rs's
-`T | null` is more accurate, while for a *parameter* the caller passes in,
-`undefined` leniency is often desirable; and most importantly (3) if Neon's
-built-in impls keep `T | undefined | null` while ts-rs-bridged types emit
-`T | null`, a single generated `.d.ts` will represent `Option` *inconsistently*
-depending on whether a type came from a built-in or a bridge. That inconsistency
-is the real problem to resolve. Options: align Neon's built-ins to ts-rs's
-`T | null`; post-process/configure the adapter to emit `T | undefined | null`; or
-declare it explicit adapter policy and document the difference.
+**Alternatives rejected.**
+- *Post-process in the adapter* to make every `Option` lenient (add `| undefined`,
+  or add `?` via a "nullable ⇒ optional" heuristic). This bakes a uniform policy
+  that is loose for return types, reintroduces an output-format transform in the
+  adapter, and — because ts-rs has already collapsed `Option` to a string —
+  cannot even distinguish an `Option` from any other nullable.
+- *Separate input/output types* (the precise fix for serde's serialize/deserialize
+  asymmetry). Correct in principle but a large feature; out of scope for now.
 
-### 3. Do we normalize bridged output styling, or accept each provider's idiom?
+**Consequence.** Leniency is opt-in, not automatic: a plain `Option<T>` renders as
+`T | null` (required key — conservative but honest; the runtime still accepts
+absent/null → `None`). Notably this is *more* correct than the in-PR derive, which
+marks a field optional on `default` alone even though such a field is still
+present-as-`null` in the output. Neon (and the adapters) stay entirely out of the
+leniency-policy business — squarely aligned with the minimal-trait direction.
 
-**Background.** The spike showed ts-rs renders semantically-identical TypeScript
-in a different *style* than Neon's hand-written impls: `Array<string>` vs
-`string[]`, quoted discriminant keys (`"kind"`), its own formatting for maps,
-etc. These are cosmetic — the types mean the same thing — but they mean a single
-generated `.d.ts` would mix styles: a function returning `Vec<String>` (a Neon
-built-in) shows `string[]`, while a field inside a bridged struct shows
-`Array<string>`.
+### 3. Bridged output styling — accept each provider's idiom
 
-**The choice.**
-- **(a) Normalize** bridged output to Neon's style — i.e. post-process the
-  strings ts-rs produces. *Cost:* fragile string munging, and it re-introduces
-  exactly the kind of "understand and rewrite the output format" logic we are
-  trying to stop owning — a small treadmill of its own.
-- **(b) Accept the mixed style** — each type renders in its provider's idiom
-  (consistent within a type, varying across the file). *Cost:* stylistic
-  inconsistency in the output, which some consumers may find untidy.
-- **(c) Adopt the provider's style wholesale** — not fully possible, since Neon's
-  own boundary types (`Handle`, `Boxed`, class output) are Neon-styled and stay
-  that way.
+**Decision.** Do not normalize. Bridged types render in their provider's style
+(`Array<string>`, quoted discriminant keys, its own map formatting), mixing with
+Neon's own style for its boundary types.
 
-**AST interaction.** Because bridged types are string-sourced, their AST nodes
-come from parsing ts-rs's strings — so `Array<string>` parses to a
-`TSTypeReference` to `Array<T>` rather than a `TSArrayType`, and any construct
-the parser cannot structure becomes a `Raw` node. So the styling choice also
-affects how uniform the *AST* is across built-in vs bridged types.
+**Why.** The alternatives are worse:
+- *Normalize* bridged output to Neon's style — fragile string-rewriting that
+  reintroduces exactly the "understand and rewrite the output format" ownership we
+  are trying to shed (a small treadmill of its own).
+- *Adopt the provider's style wholesale* — not possible, since Neon's own boundary
+  types (`Handle`, `Boxed`, class output) are Neon-styled and stay that way.
 
-**Lean: (b), accept the mixed idiom.** Normalizing fights the entire premise
-(don't own output-format logic). Document that bridged types render in their
-provider's idiom.
+Accepting the mixed idiom is the only option that keeps Neon out of output-format
+logic. The cost is cosmetic inconsistency across a generated file (consistent
+within any one type).
+
+**AST interaction.** Because bridged types are string-sourced (§1), their AST
+nodes come from parsing the provider's strings — `Array<string>` parses to a
+`TSTypeReference` rather than a `TSArrayType`, and anything the parser cannot
+structure becomes `Raw`. So the AST for bridged types is slightly less structured
+than for built-ins — consistent with §1's uniform, best-effort stance.
 
 ## Recommendation / next step
 
