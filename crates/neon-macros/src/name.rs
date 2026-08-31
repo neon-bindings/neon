@@ -53,6 +53,35 @@ pub(crate) fn to_camel_case(name: &str) -> String {
     out
 }
 
+/// Extract `#[neon(ts_type = "...")]` from attributes (e.g. on a function parameter).
+///
+/// Used by the export/class macros to let a caller override a single parameter's
+/// TypeScript type. For example, given
+///
+/// ```ignore
+/// #[neon::export]
+/// fn f(#[neon(ts_type = "ReadonlyArray<number>")] xs: Vec<f64>) -> f64 { ... }
+/// ```
+///
+/// this returns `Some("ReadonlyArray<number>")` for the `xs` parameter.
+pub(crate) fn extract_param_ts_type(attrs: &[syn::Attribute]) -> Option<String> {
+    let mut result = None;
+    for attr in attrs {
+        if !attr.path().is_ident("neon") {
+            continue;
+        }
+        let _ = attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("ts_type") {
+                if let Ok(value) = meta.value().and_then(|v| v.parse::<syn::LitStr>()) {
+                    result = Some(value.value());
+                }
+            }
+            Ok(())
+        });
+    }
+    result
+}
+
 // Validate JavaScript identifier names
 pub(crate) fn is_valid_js_identifier(name: &str) -> bool {
     if name.is_empty() {

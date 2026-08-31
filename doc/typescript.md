@@ -138,12 +138,19 @@ Four sources implement `TypeScript`, in order of how a type is resolved:
    of `K`, because JSON object keys are always strings; and `Option<T>` maps to
    `T | null` (matching serde's default serialization, where `None` becomes a
    present `null`), consistent with what the generators emit — see
-   [Alternatives considered §2](#alternatives-considered).
+   [Alternatives considered §2](#alternatives-considered). The **branded-box impls
+   for the smart pointers Neon auto-boxes** (`Arc<T>`, `Rc<T>`, `RefCell<T>`,
+   `Ref<T>`, `RefMut<T>`; see [Boxed types](#boxed-types)) also live here — the
+   orphan rule forbids implementing `TypeScript` for these foreign types anywhere
+   but the trait's own crate.
 
 2. **Boundary impls (in `neon`)** for Neon's own JS types: `Handle<'cx, JsBigInt>`
-   → `bigint`, `Handle<'cx, JsString>` → `string`, etc.; `Json<T>` delegating to
-   `T`; boxed smart pointers (see [Boxed types](#boxed-types)); and classes (see
-   [Class exports](#class-exports)).
+   → `bigint`, `Handle<'cx, JsString>` → `string`, etc.; the extractors; `Json<T>`
+   delegating to `T`; the `Boxed<T>` extractor (reusing the branded-box convention
+   from `neon-typescript`); and classes (see [Class exports](#class-exports)).
+   Foreign types that are neither std nor Neon-local (e.g. `serde_json::Value`,
+   `either::Either`) are *not* special-cased — they resolve to `any` through the
+   fallback below, which for `serde_json::Value` is exactly the intended result.
 
 3. **User data types**, via an adapter: the user derives the upstream generator's
    trait plus a trivial *bridge derive* that implements `neon-typescript`'s
@@ -327,9 +334,17 @@ const addon = require("./index.node");
 require("fs").writeFileSync("index.d.ts", addon[Symbol.for("neon:types")]);
 ```
 
-The module-scoped string is also exposed through auto-attach so a consumer that
-loads via a shim need not hand-wrap the output. (Auto-attach runs before
-user-defined exports, so it works even with a custom `#[neon::main]`.)
+Auto-attach only exposes the **flat** string. Module scoping needs the import path
+(`"./load.cjs"`), which is the consumer's choice and unknown to Neon at build time,
+so it can't be baked into the auto-attached value. A consumer who wants module-scoped
+output either calls `generate_with({ module: … })` from a Rust-side build step, or
+wraps the flat string themselves in `declare module "…" { … }`. (Auto-attach runs
+before user-defined exports, so it works even with a custom `#[neon::main]`.)
+
+> A future enhancement could auto-attach a *function*
+> `addon[Symbol.for("neon:types-module")]("./load.cjs")` that performs the wrapping
+> at extract time, giving module-scoped output without a Rust-side build step. Not
+> in this iteration.
 
 ### Escape-hatch attributes
 

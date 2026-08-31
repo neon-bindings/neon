@@ -55,10 +55,6 @@ impl<T: crate::typescript::TypeScript> TsProbe<T> {
         T::ts_type()
     }
 
-    pub fn ts_type_ast_of(&self) -> crate::typescript::TsType {
-        T::ts_type_ast()
-    }
-
     pub fn ts_collect_of(&self, decls: &mut std::collections::BTreeMap<String, String>) {
         T::ts_collect(decls);
     }
@@ -69,17 +65,12 @@ impl<T: crate::typescript::TypeScript> TsProbe<T> {
 /// then falls through to `&&TsProbe<T>` which matches this trait impl).
 pub trait TsFallback {
     fn ts_type_of(&self) -> std::borrow::Cow<'static, str>;
-    fn ts_type_ast_of(&self) -> crate::typescript::TsType;
     fn ts_collect_of(&self, decls: &mut std::collections::BTreeMap<String, String>);
 }
 
 impl<T> TsFallback for &TsProbe<T> {
     fn ts_type_of(&self) -> std::borrow::Cow<'static, str> {
         "any".into()
-    }
-
-    fn ts_type_ast_of(&self) -> crate::typescript::TsType {
-        crate::typescript::TsType::TSAnyKeyword
     }
 
     fn ts_collect_of(&self, _: &mut std::collections::BTreeMap<String, String>) {}

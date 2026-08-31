@@ -16,6 +16,9 @@ once_cell = "1.18.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1.34.0", features = ["rt-multi-thread"] }
+ts-rs = "12"
+neon-ts-rs = { path = "../../crates/neon-ts-rs" }
+neon-typescript = { path = "../../crates/neon-typescript" }
 
 [dependencies.neon]
 path = "../../crates/neon"

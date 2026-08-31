@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 // --- Stage 2: Derived types ---
 
-#[derive(Serialize, Deserialize, neon::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchResult {
     pub doc_id: u32,
@@ -17,7 +17,7 @@ pub struct SearchResult {
     pub highlights: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, neon::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Shape {
     Circle {
@@ -31,14 +31,10 @@ pub enum Shape {
     Point,
 }
 
-#[derive(Serialize, Deserialize, neon::TypeScript)]
-#[serde(transparent)]
-pub struct Wrapper(pub String);
-
-#[derive(Serialize, Deserialize, neon::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
 pub struct Config {
     pub name: String,
-    #[neon(ts_type = "Record<string, unknown>")]
+    #[ts(type = "Record<string, unknown>")]
     pub metadata: serde_json::Value,
 }
 
@@ -131,7 +127,7 @@ fn ts_get_config() -> Config {
 // --- Stage 4: Extended enum representations ---
 
 // Externally tagged enum (serde default)
-#[derive(Serialize, Deserialize, neon::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
 pub enum ExternalMsg {
     Quit,
     Echo(String),
@@ -139,7 +135,7 @@ pub enum ExternalMsg {
 }
 
 // Adjacently tagged enum
-#[derive(Serialize, Deserialize, neon::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
 #[serde(tag = "type", content = "data")]
 pub enum ApiResponse {
     Success(String),
@@ -148,7 +144,7 @@ pub enum ApiResponse {
 }
 
 // Untagged enum
-#[derive(Serialize, Deserialize, neon::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
 #[serde(untagged)]
 pub enum StringOrNumber {
     Str(String),
@@ -192,13 +188,13 @@ fn ts_get_any_value() -> serde_json::Value {
 // --- Stage 4b: Flatten and generics ---
 
 // Flatten: intersection types
-#[derive(Serialize, Deserialize, neon::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
 pub struct Pagination {
     pub page: u32,
     pub per_page: u32,
 }
 
-#[derive(Serialize, Deserialize, neon::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
 pub struct UserList {
     pub users: Vec<String>,
     #[serde(flatten)]
@@ -206,7 +202,7 @@ pub struct UserList {
 }
 
 // Generic struct
-#[derive(Serialize, Deserialize, neon::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
 pub struct Envelope<T> {
     pub data: T,
     pub timestamp: f64,

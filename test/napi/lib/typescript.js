@@ -45,9 +45,10 @@ describe("TypeScript declaration generation", () => {
   });
 
   it("declares ts_maybe_number with optional return", () => {
+    // Option<T> renders as `T | null` (Neon's neon-typescript mapping).
     assert.ok(
       declarations.includes(
-        "export declare function tsMaybeNumber(flag: boolean): number | undefined | null;"
+        "export declare function tsMaybeNumber(flag: boolean): number | null;"
       ),
       `Expected tsMaybeNumber declaration, got:\n${declarations}`
     );
@@ -122,46 +123,48 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
-  // Stage 2: Derived types
+  // Derived types (bridged from ts-rs via neon-ts-rs).
+  //
+  // ts-rs owns the exact serde-to-TypeScript rendering (tested in the ts-rs and
+  // neon-ts-rs crates), so these assertions only prove the bridge works
+  // end-to-end for a representative type. Note ts-rs emits `type X = { ... }`
+  // (comma-separated fields), uses `Array<T>` rather than `T[]`, and quotes
+  // discriminant keys.
 
-  it("derives interface for struct with rename_all", () => {
+  it("derives a type alias for a struct with rename_all", () => {
     assert.ok(
-      declarations.includes("interface SearchResult {"),
-      `Expected SearchResult interface, got:\n${declarations}`
+      declarations.includes("type SearchResult ="),
+      `Expected SearchResult type, got:\n${declarations}`
     );
+    // rename_all = "camelCase" is honored via serde-compat.
     assert.ok(
-      declarations.includes("  docId: number;"),
+      declarations.includes("docId: number"),
       `Expected camelCase field docId, got:\n${declarations}`
     );
+    // #[serde(skip)] field is omitted.
     assert.ok(
-      declarations.includes("  score: number;"),
-      `Expected score field, got:\n${declarations}`
-    );
-    assert.ok(
-      !declarations.includes("  internal:"),
+      !declarations.includes("internal:"),
       `Expected internal to be skipped, got:\n${declarations}`
     );
+    // Vec<String> renders as Array<string>.
     assert.ok(
-      declarations.includes("  highlights?: string[];"),
-      `Expected optional highlights field, got:\n${declarations}`
+      declarations.includes("highlights: Array<string>"),
+      `Expected highlights: Array<string>, got:\n${declarations}`
     );
   });
 
-  it("derives discriminated union for internally tagged enum", () => {
+  it("derives a discriminated union for an internally tagged enum", () => {
     assert.ok(
       declarations.includes("type Shape ="),
       `Expected Shape type, got:\n${declarations}`
     );
+    // ts-rs quotes the discriminant key.
     assert.ok(
-      declarations.includes('kind: "circle"'),
+      declarations.includes('"kind": "circle"'),
       `Expected circle variant, got:\n${declarations}`
     );
     assert.ok(
-      declarations.includes('kind: "rectangle"'),
-      `Expected rectangle variant, got:\n${declarations}`
-    );
-    assert.ok(
-      declarations.includes('kind: "dot"'),
+      declarations.includes('"kind": "dot"'),
       `Expected renamed dot variant, got:\n${declarations}`
     );
     assert.ok(
@@ -170,19 +173,14 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
-  it("derives transparent struct as inner type", () => {
-    // Wrapper(String) with #[serde(transparent)] should not produce its own interface;
-    // functions using Json<Wrapper> should show "string" directly
-  });
-
-  it("supports #[neon(ts_type)] field override", () => {
+  it("supports #[ts(type = ...)] field override", () => {
     assert.ok(
-      declarations.includes("interface Config {"),
-      `Expected Config interface, got:\n${declarations}`
+      declarations.includes("type Config ="),
+      `Expected Config type, got:\n${declarations}`
     );
     assert.ok(
-      declarations.includes("  metadata: Record<string, unknown>;"),
-      `Expected ts_type override for metadata, got:\n${declarations}`
+      declarations.includes("metadata: Record<string, unknown>"),
+      `Expected ts(type) override for metadata, got:\n${declarations}`
     );
   });
 
@@ -205,59 +203,9 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
-  // Stage 4: Extended enum representations
-
-  it("derives externally tagged enum (serde default)", () => {
-    assert.ok(
-      declarations.includes("type ExternalMsg ="),
-      `Expected ExternalMsg type, got:\n${declarations}`
-    );
-    // Unit variant → string literal
-    assert.ok(
-      declarations.includes('"Quit"'),
-      `Expected "Quit" string literal, got:\n${declarations}`
-    );
-    // Newtype variant → { Echo: string }
-    assert.ok(
-      declarations.includes("{ Echo: string }"),
-      `Expected Echo newtype variant, got:\n${declarations}`
-    );
-    // Struct variant → { Move: { x: number; y: number; } }
-    assert.ok(
-      declarations.includes("{ Move: {"),
-      `Expected Move struct variant, got:\n${declarations}`
-    );
-    assert.ok(
-      declarations.includes("x: number;"),
-      `Expected x field in Move, got:\n${declarations}`
-    );
-  });
-
-  it("derives adjacently tagged enum", () => {
-    assert.ok(
-      declarations.includes("type ApiResponse ="),
-      `Expected ApiResponse type, got:\n${declarations}`
-    );
-    // Newtype → { type: "Success", data: string }
-    assert.ok(
-      declarations.includes('type: "Success"'),
-      `Expected Success variant, got:\n${declarations}`
-    );
-    assert.ok(
-      declarations.includes("data: string"),
-      `Expected data field for Success, got:\n${declarations}`
-    );
-    // Struct → { type: "Error", data: { code: number; ... } }
-    assert.ok(
-      declarations.includes('type: "Error"'),
-      `Expected Error variant, got:\n${declarations}`
-    );
-    // Unit → { type: "Loading" } (no data field)
-    assert.ok(
-      declarations.includes('type: "Loading"'),
-      `Expected Loading variant, got:\n${declarations}`
-    );
-  });
+  // Enum representations. The exhaustive per-tagging-mode assertions now live in
+  // the ts-rs / neon-ts-rs crates; here we keep one representative union plus a
+  // check that enums flow through function signatures.
 
   it("derives untagged enum as plain union", () => {
     assert.ok(
@@ -299,20 +247,22 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
-  // Stage 4b: Flatten and generics
+  // Flatten and generics.
 
-  it("generates intersection type for #[serde(flatten)]", () => {
+  it("inlines #[serde(flatten)] fields", () => {
+    // ts-rs inlines flattened fields into the type (rather than emitting a
+    // TypeScript intersection with a separate Pagination type).
     assert.ok(
-      declarations.includes("interface UserList {"),
-      `Expected UserList interface, got:\n${declarations}`
+      declarations.includes("type UserList ="),
+      `Expected UserList type, got:\n${declarations}`
     );
     assert.ok(
-      declarations.includes("} & Pagination"),
-      `Expected intersection with Pagination, got:\n${declarations}`
+      declarations.includes("users: Array<string>"),
+      `Expected users field, got:\n${declarations}`
     );
     assert.ok(
-      declarations.includes("interface Pagination {"),
-      `Expected Pagination interface, got:\n${declarations}`
+      declarations.includes("page: number"),
+      `Expected flattened page field, got:\n${declarations}`
     );
     assert.ok(
       declarations.includes(
@@ -322,17 +272,17 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
-  it("generates generic interface with type parameters", () => {
+  it("generates a generic type with type parameters", () => {
     assert.ok(
-      declarations.includes("interface Envelope<T> {"),
-      `Expected generic Envelope<T> interface, got:\n${declarations}`
+      declarations.includes("type Envelope<T> ="),
+      `Expected generic Envelope<T> type, got:\n${declarations}`
     );
     assert.ok(
-      declarations.includes("  data: T;"),
+      declarations.includes("data: T"),
       `Expected generic field data: T, got:\n${declarations}`
     );
     assert.ok(
-      declarations.includes("  timestamp: number;"),
+      declarations.includes("timestamp: number"),
       `Expected concrete field timestamp: number, got:\n${declarations}`
     );
   });
@@ -660,102 +610,15 @@ describe("TypeScript declaration generation", () => {
     assert.ok(fromSymbol.length > 0);
   });
 
-  describe("structured AST output", () => {
-    let ast;
-
-    before(() => {
-      ast = JSON.parse(addon[Symbol.for("neon:types-ast")]);
-    });
-
-    it('auto-attaches AST under Symbol.for("neon:types-ast")', () => {
-      assert.ok(Array.isArray(ast));
-      assert.ok(ast.length > 0);
-    });
-
-    it("emits TSDeclareFunction for exported functions", () => {
-      const fn = ast.find(
-        (d) => d.type === "TSDeclareFunction" && d.id.name === "tsAdd"
-      );
-      assert.ok(fn, "tsAdd not found");
-      assert.strictEqual(fn.params.length, 2);
-      assert.strictEqual(fn.params[0].name, "a");
-      assert.strictEqual(
-        fn.params[0].typeAnnotation.typeAnnotation.type,
-        "TSNumberKeyword"
-      );
-      assert.strictEqual(fn.returnType.typeAnnotation.type, "TSNumberKeyword");
-    });
-
-    it("emits ClassDeclaration for exported classes", () => {
-      const cls = ast.find(
-        (d) => d.type === "ClassDeclaration" && d.id.name === "Point"
-      );
-      assert.ok(cls, "Point class not found");
-      assert.strictEqual(cls.declare, true);
-      assert.ok(Array.isArray(cls.body.body));
-      const ctor = cls.body.body.find(
-        (m) => m.type === "MethodDefinition" && m.kind === "constructor"
-      );
-      assert.ok(ctor, "constructor not found");
-      assert.strictEqual(ctor.value.params.length, 2);
-    });
-
-    it('emits TSAnyKeyword for ts_returns="any" overrides', () => {
-      // Find a method with bigint return (ts_returns override)
-      const cls = ast.find(
-        (d) => d.type === "ClassDeclaration" && d.id.name === "PublicName"
-      );
-      const method = cls.body.body.find(
-        (m) => m.type === "MethodDefinition" && m.key.name === "tsMethodReturns"
-      );
-      assert.strictEqual(
-        method.value.returnType.typeAnnotation.type,
-        "TSBigIntKeyword"
-      );
-    });
-
-    it("emits TSArrayType for Vec<T> via parser", () => {
-      const fn = ast.find(
-        (d) => d.type === "TSDeclareFunction" && d.id.name === "tsParamOverride"
-      );
-      // ts_type override: "ReadonlyArray<number>" -> reference with type args
-      assert.strictEqual(
-        fn.params[0].typeAnnotation.typeAnnotation.type,
-        "TSTypeReference"
-      );
-      assert.strictEqual(
-        fn.params[0].typeAnnotation.typeAnnotation.typeName.name,
-        "ReadonlyArray"
-      );
-    });
-
-    it("wraps async returns in Promise reference", () => {
-      const fn = ast.find(
-        (d) => d.type === "TSDeclareFunction" && d.id.name === "tsAsyncAdd"
-      );
-      assert.strictEqual(fn.returnType.typeAnnotation.type, "TSTypeReference");
-      assert.strictEqual(fn.returnType.typeAnnotation.typeName.name, "Promise");
-    });
-
-    it("emits Raw nodes for collected interface/type-alias decls (transitional)", () => {
-      const raw = ast.find((d) => d.type === "Raw");
-      // Currently TSInterfaceDeclaration / TSTypeAliasDeclaration come through
-      // as Raw; future change will promote them.
-      assert.ok(raw, "expected at least one Raw decl");
-      assert.strictEqual(typeof raw.value, "string");
-    });
-  });
-
-  it("emits export keyword on type aliases and interfaces", () => {
-    // Find any non-class/non-function declaration line and verify export prefix.
-    // Spot-check with known types:
+  it("emits export keyword on type aliases", () => {
+    // Spot-check that collected declarations are exported.
     assert.ok(
-      declarations.includes("export interface SearchResult"),
-      `Expected export keyword on interface, got:\n${declarations}`
+      declarations.includes("export type SearchResult"),
+      `Expected export keyword on SearchResult, got:\n${declarations}`
     );
     assert.ok(
       declarations.includes("export type Shape"),
-      `Expected export keyword on type alias, got:\n${declarations}`
+      `Expected export keyword on Shape, got:\n${declarations}`
     );
   });
 });

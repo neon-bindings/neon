@@ -495,12 +495,11 @@ fn generate_ts_metadata(
             let name_str = param_name(&pat_type.pat, *i);
 
             // Per-param ts_type override
-            if let Some(override_ty) = crate::typescript::extract_param_ts_type(&pat_type.attrs) {
+            if let Some(override_ty) = crate::name::extract_param_ts_type(&pat_type.attrs) {
                 return quote::quote!(
                     neon::typescript::ParamMeta {
                         name: #name_str,
                         ts_type: || std::borrow::Cow::Borrowed(#override_ty),
-                        ts_type_ast: || neon::typescript::parse_type(#override_ty),
                         ts_collect: |_| {},
                     }
                 );
@@ -513,7 +512,6 @@ fn generate_ts_metadata(
                     neon::typescript::ParamMeta {
                         name: #name_str,
                         ts_type: || std::borrow::Cow::Borrowed("any"),
-                        ts_type_ast: || neon::typescript::TsType::TSAnyKeyword,
                         ts_collect: |_| {},
                     }
                 );
@@ -539,7 +537,6 @@ fn generate_ts_metadata(
                     neon::typescript::ParamMeta {
                         name: #name_str,
                         ts_type: || <#ts_ty as neon::typescript::TypeScript>::ts_type(),
-                        ts_type_ast: || <#ts_ty as neon::typescript::TypeScript>::ts_type_ast(),
                         ts_collect: |decls| <#ts_ty as neon::typescript::TypeScript>::ts_collect(decls),
                     }
                 )
@@ -551,11 +548,6 @@ fn generate_ts_metadata(
                             use neon::macro_internal::TsFallback as _;
                             let __probe = neon::macro_internal::TsProbe::<#ts_ty>(std::marker::PhantomData);
                             (&__probe).ts_type_of()
-                        },
-                        ts_type_ast: || {
-                            use neon::macro_internal::TsFallback as _;
-                            let __probe = neon::macro_internal::TsProbe::<#ts_ty>(std::marker::PhantomData);
-                            (&__probe).ts_type_ast_of()
                         },
                         ts_collect: |decls| {
                             use neon::macro_internal::TsFallback as _;
@@ -572,24 +564,19 @@ fn generate_ts_metadata(
     let meta_name = quote::format_ident!("__NEON_TS_META__{fn_name}");
 
     // Extract return type, using the probe for graceful fallback
-    let (ret_type_expr, ret_type_ast_expr, ret_collect_expr) = if let Some(override_ty) =
-        &meta.ts_returns
-    {
+    let (ret_type_expr, ret_collect_expr) = if let Some(override_ty) = &meta.ts_returns {
         (
             quote::quote!(|| std::borrow::Cow::Borrowed(#override_ty)),
-            quote::quote!(|| neon::typescript::parse_type(#override_ty)),
             quote::quote!(|_| {}),
         )
     } else {
         match &sig.output {
             syn::ReturnType::Default => (
                 quote::quote!(|| std::borrow::Cow::Borrowed("undefined")),
-                quote::quote!(|| neon::typescript::TsType::TSUndefinedKeyword),
                 quote::quote!(|_| {}),
             ),
             syn::ReturnType::Type(_, ty) if type_needs_fallback(ty) => (
                 quote::quote!(|| std::borrow::Cow::Borrowed("any")),
-                quote::quote!(|| neon::typescript::TsType::TSAnyKeyword),
                 quote::quote!(|_| {}),
             ),
             syn::ReturnType::Type(_, ty) => {
@@ -602,7 +589,6 @@ fn generate_ts_metadata(
                 if meta.ts_strict {
                     (
                         quote::quote!(|| <#ret_ty as neon::typescript::TypeScript>::ts_type()),
-                        quote::quote!(|| <#ret_ty as neon::typescript::TypeScript>::ts_type_ast()),
                         quote::quote!(|decls| <#ret_ty as neon::typescript::TypeScript>::ts_collect(decls)),
                     )
                 } else {
@@ -611,11 +597,6 @@ fn generate_ts_metadata(
                             use neon::macro_internal::TsFallback as _;
                             let __probe = neon::macro_internal::TsProbe::<#ret_ty>(std::marker::PhantomData);
                             (&__probe).ts_type_of()
-                        }),
-                        quote::quote!(|| {
-                            use neon::macro_internal::TsFallback as _;
-                            let __probe = neon::macro_internal::TsProbe::<#ret_ty>(std::marker::PhantomData);
-                            (&__probe).ts_type_ast_of()
                         }),
                         quote::quote!(|decls| {
                             use neon::macro_internal::TsFallback as _;
@@ -636,7 +617,6 @@ fn generate_ts_metadata(
                 name: #export_name,
                 params: &[#(#param_entries),*],
                 ret_type: #ret_type_expr,
-                ret_type_ast: #ret_type_ast_expr,
                 ret_collect: #ret_collect_expr,
                 is_async: #is_async,
             });

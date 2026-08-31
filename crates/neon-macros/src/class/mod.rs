@@ -1471,13 +1471,12 @@ fn generate_ts_class_metadata(
                         let ty = &pat_type.ty;
 
                         if let Some(override_ty) =
-                            crate::typescript::extract_param_ts_type(&pat_type.attrs)
+                            crate::name::extract_param_ts_type(&pat_type.attrs)
                         {
                             return Some(quote::quote!(
                                 neon::typescript::ParamMeta {
                                     name: #name_str,
                                     ts_type: || std::borrow::Cow::Borrowed(#override_ty),
-                                    ts_type_ast: || neon::typescript::parse_type(#override_ty),
                                     ts_collect: |_| {},
                                 }
                             ));
@@ -1488,7 +1487,6 @@ fn generate_ts_class_metadata(
                                 neon::typescript::ParamMeta {
                                     name: #name_str,
                                     ts_type: || std::borrow::Cow::Borrowed("any"),
-                                    ts_type_ast: || neon::typescript::TsType::TSAnyKeyword,
                                     ts_collect: |_| {},
                                 }
                             ));
@@ -1501,13 +1499,11 @@ fn generate_ts_class_metadata(
                             quote::quote!(#ty)
                         };
 
-                        let (ts_type_tok, ts_type_ast_tok, ts_collect_tok) =
-                            ts_type_tokens(&ts_ty, ctor_strict);
+                        let (ts_type_tok, ts_collect_tok) = ts_type_tokens(&ts_ty, ctor_strict);
                         Some(quote::quote!(
                             neon::typescript::ParamMeta {
                                 name: #name_str,
                                 ts_type: #ts_type_tok,
-                                ts_type_ast: #ts_type_ast_tok,
                                 ts_collect: #ts_collect_tok,
                             }
                         ))
@@ -1567,13 +1563,12 @@ fn generate_ts_class_metadata(
                             let name_str = ts_param_name(&pat_type.pat, i);
 
                             if let Some(override_ty) =
-                                crate::typescript::extract_param_ts_type(&pat_type.attrs)
+                                crate::name::extract_param_ts_type(&pat_type.attrs)
                             {
                                 return Some(quote::quote!(
                                     neon::typescript::ParamMeta {
                                         name: #name_str,
                                         ts_type: || std::borrow::Cow::Borrowed(#override_ty),
-                                        ts_type_ast: || neon::typescript::parse_type(#override_ty),
                                         ts_collect: |_| {},
                                     }
                                 ));
@@ -1586,7 +1581,7 @@ fn generate_ts_class_metadata(
                             };
 
                             {
-                                let (ts_type_tok, ts_type_ast_tok, ts_collect_tok) =
+                                let (ts_type_tok, ts_collect_tok) =
                                     match resolve_static_type(effective_ty, class_ident, meta.json)
                                     {
                                         Some(ts_ty) => ts_type_tokens(&ts_ty, method_strict),
@@ -1596,7 +1591,6 @@ fn generate_ts_class_metadata(
                                     neon::typescript::ParamMeta {
                                         name: #name_str,
                                         ts_type: #ts_type_tok,
-                                        ts_type_ast: #ts_type_ast_tok,
                                         ts_collect: #ts_collect_tok,
                                     }
                                 ))
@@ -1608,35 +1602,31 @@ fn generate_ts_class_metadata(
                 .collect();
 
             // Return type
-            let (ret_type_tok, ret_type_ast_tok, ret_collect_tok) =
-                if let Some(override_ty) = &meta.ts_returns {
-                    (
-                        quote::quote!(|| std::borrow::Cow::Borrowed(#override_ty)),
-                        quote::quote!(|| neon::typescript::parse_type(#override_ty)),
+            let (ret_type_tok, ret_collect_tok) = if let Some(override_ty) = &meta.ts_returns {
+                (
+                    quote::quote!(|| std::borrow::Cow::Borrowed(#override_ty)),
+                    quote::quote!(|_| {}),
+                )
+            } else {
+                match &f.sig.output {
+                    syn::ReturnType::Default => (
+                        quote::quote!(|| std::borrow::Cow::Borrowed("undefined")),
                         quote::quote!(|_| {}),
-                    )
-                } else {
-                    match &f.sig.output {
-                        syn::ReturnType::Default => (
-                            quote::quote!(|| std::borrow::Cow::Borrowed("undefined")),
-                            quote::quote!(|| neon::typescript::TsType::TSUndefinedKeyword),
-                            quote::quote!(|_| {}),
-                        ),
-                        syn::ReturnType::Type(_, ty) => {
-                            match resolve_static_type(ty, class_ident, meta.json) {
-                                Some(ts_ty) => ts_type_tokens(&ts_ty, method_strict),
-                                None => ts_fallback_tokens(),
-                            }
+                    ),
+                    syn::ReturnType::Type(_, ty) => {
+                        match resolve_static_type(ty, class_ident, meta.json) {
+                            Some(ts_ty) => ts_type_tokens(&ts_ty, method_strict),
+                            None => ts_fallback_tokens(),
                         }
                     }
-                };
+                }
+            };
 
             quote::quote!(
                 neon::typescript::MethodMeta {
                     name: #js_name,
                     params: &[#(#param_entries),*],
                     ret_type: #ret_type_tok,
-                    ret_type_ast: #ret_type_ast_tok,
                     ret_collect: #ret_collect_tok,
                     is_async: #is_async,
                 }
@@ -1674,7 +1664,7 @@ fn generate_ts_class_metadata(
                 (None, None) => const_name.to_string(),
             };
 
-            let (ts_type_expr, ts_type_ast_expr, ts_collect_expr) =
+            let (ts_type_expr, ts_collect_expr) =
                 match resolve_static_type(const_ty, class_ident, prop_meta.json) {
                     Some(ts_ty) => ts_type_tokens(&ts_ty, class_ts_strict),
                     None => ts_fallback_tokens(),
@@ -1684,7 +1674,6 @@ fn generate_ts_class_metadata(
                 neon::typescript::PropertyMeta {
                     name: #js_name,
                     ts_type: #ts_type_expr,
-                    ts_type_ast: #ts_type_ast_expr,
                     ts_collect: #ts_collect_expr,
                 }
             ))
@@ -1748,8 +1737,8 @@ fn resolve_static_type(
     Some(ts_ty)
 }
 
-/// Generate the `(ts_type, ts_type_ast, ts_collect)` closure token triples that
-/// populate a `ParamMeta` / `MethodMeta` field for the type `ts_ty`.
+/// Generate the `(ts_type, ts_collect)` closure token pairs that populate a
+/// `ParamMeta` / `MethodMeta` field for the type `ts_ty`.
 ///
 /// In **probe mode** (default) it emits the autoref-specialization dance: a
 /// `TsProbe::<ts_ty>` whose inherent method (real type info) is preferred, but
@@ -1760,11 +1749,10 @@ fn resolve_static_type(
 /// In **strict mode** (`ts_strict`) it calls the trait directly
 /// (`<ts_ty as TypeScript>::ts_type()`), so a missing impl is a compile error
 /// instead of a silent `"any"`.
-fn ts_type_tokens(ts_ty: &TokenStream, strict: bool) -> (TokenStream, TokenStream, TokenStream) {
+fn ts_type_tokens(ts_ty: &TokenStream, strict: bool) -> (TokenStream, TokenStream) {
     if strict {
         (
             quote::quote!(|| <#ts_ty as neon::typescript::TypeScript>::ts_type()),
-            quote::quote!(|| <#ts_ty as neon::typescript::TypeScript>::ts_type_ast()),
             quote::quote!(|decls| <#ts_ty as neon::typescript::TypeScript>::ts_collect(decls)),
         )
     } else {
@@ -1773,11 +1761,6 @@ fn ts_type_tokens(ts_ty: &TokenStream, strict: bool) -> (TokenStream, TokenStrea
                 use neon::macro_internal::TsFallback as _;
                 let __probe = neon::macro_internal::TsProbe::<#ts_ty>(std::marker::PhantomData);
                 (&__probe).ts_type_of()
-            }),
-            quote::quote!(|| {
-                use neon::macro_internal::TsFallback as _;
-                let __probe = neon::macro_internal::TsProbe::<#ts_ty>(std::marker::PhantomData);
-                (&__probe).ts_type_ast_of()
             }),
             quote::quote!(|decls| {
                 use neon::macro_internal::TsFallback as _;
@@ -1788,10 +1771,9 @@ fn ts_type_tokens(ts_ty: &TokenStream, strict: bool) -> (TokenStream, TokenStrea
     }
 }
 
-fn ts_fallback_tokens() -> (TokenStream, TokenStream, TokenStream) {
+fn ts_fallback_tokens() -> (TokenStream, TokenStream) {
     (
         quote::quote!(|| std::borrow::Cow::Borrowed("any")),
-        quote::quote!(|| neon::typescript::TsType::TSAnyKeyword),
         quote::quote!(|_| {}),
     )
 }

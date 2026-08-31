@@ -3,7 +3,6 @@
 mod class;
 mod export;
 pub(crate) mod name;
-mod typescript;
 
 #[proc_macro_attribute]
 pub fn main(
@@ -51,9 +50,4 @@ pub fn class(
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
     class::class(attr, item)
-}
-
-#[proc_macro_derive(TypeScript, attributes(neon))]
-pub fn derive_typescript(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    typescript::derive_typescript(input)
 }
