@@ -148,7 +148,9 @@ calling `addon.hash(buf)`:
 3. Resolves the `Promise` with the return value when the worker
    finishes.
 
-The JavaScript main thread is free the entire time.
+The JavaScript main thread is free while the hash runs (argument
+extraction — including the buffer copy into `Vec<u8>` — still happens
+on the main thread before the task is scheduled).
 
 ```js
 const addon = require("./index.node");
@@ -212,11 +214,12 @@ A rough decision tree:
 
 ## Where next
 
-- [Build a SQLite addon](/tutorials/build-a-database-addon/) — for
+- [Build a database addon](/tutorials/build-a-database-addon/) — for
   I/O-bound work that wants to `.await`, paired with `#[neon::class]`.
 - [Run blocking work on the libuv pool](/how-to/blocking-libuv/) —
   recipe form of this tutorial, including how to use
-  `Channel::send_blocking` directly when `(task)` isn't enough.
+  `Channel::send` and `JoinHandle::join` directly when `(task)`
+  isn't enough.
 - [Pass common types between Rust and JavaScript](/how-to/common-types/) —
   how [`Buffer`](https://nodejs.org/api/buffer.html#class-buffer),
   [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array),

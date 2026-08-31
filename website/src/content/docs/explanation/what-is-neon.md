@@ -66,9 +66,9 @@ concerned. That means:
 - **Native speed.** The Rust code runs as compiled machine code in
   the same process as your JavaScript. No IPC, no separate runtime to manage.
 - **Direct interop.** Rust functions accept JavaScript values
-  directly. Strings, numbers, arrays, buffers, even classes — they
-  cross the boundary as themselves, not as JSON or some other
-  encoded form. See the [type hierarchy](/explanation/type-hierarchy/)
+  directly. Strings, numbers, arrays, buffers, even classes — no
+  wire format required; values cross the boundary as live handles.
+  See the [type hierarchy](/explanation/type-hierarchy/)
   for the shape of the JS-value vocabulary.
 - **Promises, threads, and async.** Long-running work goes onto a
   worker thread or a [Tokio](https://docs.rs/tokio) runtime, and the
@@ -97,14 +97,14 @@ Neon is built on
 N-API), the stable C interface that Node exposes for native addons.
 Node-API is what makes a `.node` file work across Node versions
 without recompilation, and what lets the same addon work on Node,
-[Bun](https://bun.sh/), and [Electron](https://www.electronjs.org/).
+[Electron](https://www.electronjs.org/), and (experimentally)
+[Bun](https://bun.sh/).
 
 Neon wraps that C interface in a safe Rust API. You don't see
 Node-API directly unless you go looking for it, but it's the reason
-your addon doesn't break when Node ships a new major version. The
-[supported platforms reference](/reference/supported-platforms/)
-lists the Node-API levels Neon targets and the platforms each one
-covers.
+your addon doesn't break when Node ships a new major version. For
+the Node-API levels Neon targets and the platforms each one covers,
+see the [supported platforms reference](/reference/supported-platforms/).
 
 ## When Neon vs. JavaScript
 
@@ -125,9 +125,9 @@ Neon earns its keep when JavaScript hits a wall:
   shortest path to using it from Node. No glue, no shelling out, no
   porting.
 - **Memory-bound code.** Large buffers, zero-copy parsing, in-place
-  transformations — the kinds of patterns where you'd reach for a
-  `Buffer` or a typed array in JavaScript and immediately bump into
-  garbage-collection pauses.
+  transformations — the kinds of patterns where JavaScript gives you
+  little control over allocations and copies, and Rust gives you
+  exact control.
 
 For everything else — orchestrating HTTP calls, transforming JSON,
 gluing services together — JavaScript is the right tool.
@@ -157,7 +157,8 @@ Reach for **Neon** when:
 - You want to call existing Rust crates that depend on the standard
   library, on threading, on syscalls, or on platform-specific
   APIs — many of which don't compile to WASM unmodified.
-- You have CPU bound work that needs real threading and not just concurrency.
+- You have CPU-bound work that needs OS threads without special
+  builds and worker plumbing.
 
 A reasonable rule of thumb: if it could run in a browser tab, lean
 WASM; if it has to run in a server process and talk to the rest of

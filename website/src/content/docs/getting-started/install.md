@@ -35,8 +35,9 @@ If that prints a version, you're set.
 ## 2. Rust
 
 Install Rust through [`rustup`](https://rustup.rs/), the official
-toolchain installer. Neon requires **Rust 1.65 or newer** and is
-tested against the current stable, beta, and nightly channels.
+toolchain installer. Neon is tested against the current stable and
+nightly channels; scaffolded projects use the 2024 edition, which
+requires **Rust 1.85 or newer**.
 
 ```sh
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -88,6 +89,7 @@ project with everything wired together.
 
 ```text
 my-project/
+├── .gitignore
 ├── Cargo.toml          # Rust crate manifest
 ├── package.json        # npm package manifest
 ├── src/

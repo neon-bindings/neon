@@ -153,7 +153,7 @@ fn use_callback<'cx>(
     saved: &Root<JsFunction>,
 ) -> JsResult<'cx, JsValue> {
     let f: Handle<'cx, JsFunction> = saved.to_inner(cx);
-    f.call_with(cx).apply(cx)
+    f.bind(cx).call()
 }
 ```
 
@@ -176,9 +176,10 @@ compiler refuses to let a handle escape its scope. Rust's other
 borrow rule — *one mutable borrow or many immutable borrows, never
 both at once* — also applies to the bytes inside a JavaScript
 buffer, but here the picture is more subtle. Two
-[`Handle<JsArrayBuffer>`](/api/neon/types/struct.JsArrayBuffer.html)
-values can refer to the *same* underlying memory (one as a view of
-another, for example), so the compiler can't always prove from the
+buffer handles can refer to the *same* underlying memory (a
+[`JsTypedArray`](/api/neon/types/struct.JsTypedArray.html) view and
+the [`JsArrayBuffer`](/api/neon/types/struct.JsArrayBuffer.html) it
+wraps, for example), so the compiler can't always prove from the
 types alone that two borrows don't overlap.
 
 Neon's [`TypedArray`](/api/neon/types/buffer/trait.TypedArray.html)
@@ -214,14 +215,14 @@ gives you for any `&mut`: no aliasing, no overlap. The trade-off
 is reach: because the rule is enforced through `cx`, you can't have
 two such slices live at once.
 
-### Runtime: [`Lock`](/api/neon/types/buffer/struct.Lock.html), [`try_borrow`](/api/neon/types/buffer/trait.TypedArray.html#tymethod.try_borrow), and [`try_borrow_mut`](/api/neon/types/buffer/trait.TypedArray.html#tymethod.try_borrow_mut)
+### Runtime: [`Lock`](/api/neon/context/struct.Lock.html), [`try_borrow`](/api/neon/types/buffer/trait.TypedArray.html#tymethod.try_borrow), and [`try_borrow_mut`](/api/neon/types/buffer/trait.TypedArray.html#tymethod.try_borrow_mut)
 
 When the static checker is too strict — typically because you need
 to look at two regions of the same
 [`JsArrayBuffer`](/api/neon/types/struct.JsArrayBuffer.html), or
 hand a slice to code that also wants `cx` — Neon offers a runtime
 counterpart. A
-[`Lock`](/api/neon/types/buffer/struct.Lock.html) freezes the
+[`Lock`](/api/neon/context/struct.Lock.html) freezes the
 engine and keeps a ledger of which byte ranges are currently
 borrowed, mutably or immutably:
 
@@ -259,9 +260,9 @@ so the next borrow can succeed.
 
 ### Picking between them
 
-The two options are the same trade-off as
-[`Box<T>`](https://doc.rust-lang.org/std/boxed/struct.Box.html) vs.
-[`RefCell<T>`](https://doc.rust-lang.org/std/cell/struct.RefCell.html):
+The two options are the same trade-off as `&mut T` vs.
+[`RefCell<T>`](https://doc.rust-lang.org/std/cell/struct.RefCell.html)
+— compile-time borrows vs. runtime-checked borrows:
 
 - **Static borrow** — fastest, fewest moving parts, but the
   compiler decides what's allowed. Reach for
@@ -272,7 +273,7 @@ The two options are the same trade-off as
 - **Runtime borrow** — slightly more expensive (a small ledger
   check, plus the engine lock), but expressive enough to handle
   cases the static rules reject. Reach for
-  [`Lock`](/api/neon/types/buffer/struct.Lock.html) +
+  [`Lock`](/api/neon/context/struct.Lock.html) +
   [`try_borrow`](/api/neon/types/buffer/trait.TypedArray.html#tymethod.try_borrow)
   / [`try_borrow_mut`](/api/neon/types/buffer/trait.TypedArray.html#tymethod.try_borrow_mut)
   when you need overlap-checking the borrow checker can't do for

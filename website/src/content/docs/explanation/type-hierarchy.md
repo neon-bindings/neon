@@ -41,7 +41,10 @@ version.
 
 Every JavaScript value implements the
 [`Value`](/api/neon/types/trait.Value.html) trait. From there, the
-hierarchy splits into **object types** and **primitive types**:
+hierarchy splits into **object types** and **primitive types** (the
+diagrams show the most common types, not the full set — see the
+[`neon::types`](/api/neon/types/index.html) module for everything,
+including `JsBigInt` and `JsPromise`):
 
 ```mermaid
 flowchart LR
@@ -216,11 +219,12 @@ When the JS object becomes garbage, the Rust value's
 [`Drop`](https://doc.rust-lang.org/std/ops/trait.Drop.html) runs.
 The GC decides *when*; Rust's destructor decides *what happens*.
 
-[`#[neon::class]`](/api/neon/attr.class.html) builds on
-[`JsBox`](/api/neon/types/struct.JsBox.html) to generate a
-JavaScript class whose instances are
-[`JsBox`](/api/neon/types/struct.JsBox.html)-wrapped Rust values,
-with a constructor and methods that route through them. The [*Build a database addon* tutorial](/tutorials/build-a-database-addon/)
+[`#[neon::class]`](/api/neon/attr.class.html) applies the same idea —
+Rust data owned by a JavaScript object, dropped when the GC collects
+it — to generate a real JavaScript class. Instances are ordinary JS
+objects carrying your Rust value (via Node-API object wrapping rather
+than `JsBox`), with a constructor and methods that route through it.
+The [*Build a database addon* tutorial](/tutorials/build-a-database-addon/)
 walks through it end-to-end.
 
 ## Where to go next

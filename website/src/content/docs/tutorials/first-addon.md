@@ -42,18 +42,22 @@ If you haven't yet, install the prerequisites in
 [Prerequisites](/getting-started/install/). Then:
 
 ```sh
-npm init neon@latest --app first-neon
+npm init neon@latest -- --app first-neon
 cd first-neon
+npm install
 ```
 
 The `--app` flag tells [`create-neon`](/reference/cli/) to scaffold a
 small standalone application (rather than a publishable library — we
 cover that in
 [Publish your addon to npm](/tutorials/publish-your-addon-to-npm/) later).
-You'll get a project layout like this:
+The extra `--` is what makes `npm init` forward the flag to
+create-neon instead of swallowing it. You'll get a project layout
+like this:
 
 ```text
 first-neon/
+├── .gitignore
 ├── Cargo.toml          # Rust crate manifest
 ├── package.json        # npm scripts and devDependencies
 ├── src/
@@ -85,7 +89,8 @@ fn slugify(input: String) -> String {
 }
 ```
 
-Then build and call it:
+Then build it, and call it from a small script — create `example.cjs`
+next to `package.json`:
 
 ```sh
 npm run build
@@ -100,6 +105,13 @@ console.log(addon.slugify("  Lots__of---spaces  "));
 // => "lots-of-spaces"
 ```
 
+```sh
+node example.cjs
+```
+
+The JavaScript snippets in the rest of this tutorial build on
+`example.cjs` the same way.
+
 A few things worth noticing:
 
 - The Rust function takes `String` and returns `String`. Neon's
@@ -112,7 +124,9 @@ A few things worth noticing:
   the function with the addon on its own; you only need to write a
   [`#[neon::main]`](/api/neon/attr.main.html) entry point if you want
   to do extra work at addon-load time (initializing a logger,
-  registering an executor, etc.).
+  registering an executor, etc.). Note that a custom `main` *replaces*
+  the default init, so it must call
+  `neon::registered().export(&mut cx)?` itself to keep the exports.
 - The exported JavaScript name is `slugify`, the same as the Rust
   identifier. If you wanted a different JS-side name (`slugify` →
   `toSlug`, say), see
@@ -185,11 +199,15 @@ The idiomatic way to fail from a Neon function is to return a
 [`TryIntoJs`](/api/neon/types/extract/trait.TryIntoJs.html). The
 [`Error`](/api/neon/types/extract/struct.Error.html) type from
 [`neon::types::extract`](/api/neon/types/extract/index.html) is the
-default choice — it converts a wide range of Rust error types into
-the appropriate JavaScript exception
-([`Error`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error),
-[`TypeError`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypeError),
-[`RangeError`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RangeError)).
+default choice — it converts a wide range of Rust error types into a
+JavaScript
+[`Error`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error),
+with `Error::type_error` and `Error::range_error` constructors for
+when you want a
+[`TypeError`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypeError)
+or
+[`RangeError`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RangeError)
+instead.
 
 Add a strict variant:
 
@@ -228,7 +246,9 @@ console.log(addon.slugifyStrict(42));           // throws TypeError: expected st
 
 The throw lands as a real JavaScript
 [`Error`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error)
-you can `try`/`catch` — no special bridging required.
+you can `try`/`catch` — no special bridging required. (Run verbatim,
+the first throwing line ends the script — try them one at a time, or
+wrap them in `try`/`catch`.)
 
 For the full picture — including how to throw specific JavaScript
 error subclasses and how to catch JS-thrown errors from inside Rust —
@@ -243,8 +263,25 @@ overloading, but the
 [`Either`](https://docs.rs/either/latest/either/enum.Either.html) type
 gets you close.
 
+`Either` comes from the [`either`](https://docs.rs/either) crate
+(Neon ships the
+[`TryFromJs`](/api/neon/types/extract/trait.TryFromJs.html)/[`TryIntoJs`](/api/neon/types/extract/trait.TryIntoJs.html)
+impls for it), so add the dependency first:
+
+```sh
+cargo add either
+```
+
 Let's rewrite `slugify` to accept either shape and delegate to
-`slugify_strict` or `slugify_all` based on what came in:
+`slugify_strict` or `slugify_all` based on what came in. First make
+room for the new export with a mechanical refactor: rename the
+original `slugify` to `slugify_one` and drop its `#[neon::export]`
+(it becomes a private helper — JavaScript callers get the new
+overloaded `slugify` instead), then update the two call sites:
+`slugify_all` maps over `slugify_one`, and `slugify_strict` calls
+`slugify_one(input)`.
+
+Now add the new export:
 
 ```rust
 # assert!(matches!(slugify(Either::Left("Hello".into())).unwrap(), Either::Left(s) if s == "hello"));
@@ -269,8 +306,8 @@ Let's rewrite `slugify` to accept either shape and delegate to
 # fn slugify_all(Array(inputs): Array<Vec<String>>) -> Array<Vec<String>> {
 #   Array(inputs.into_iter().map(slugify_one).collect())
 # }
+# use neon::types::extract::{Array, Error};
 use either::Either;
-use neon::types::extract::{Array, Error};
 
 #[neon::export]
 fn slugify(

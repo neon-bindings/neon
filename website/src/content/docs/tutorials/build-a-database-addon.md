@@ -30,17 +30,17 @@ By the end you'll have an addon with a `Database` class:
 ```js
 const db = await Database.connect(":memory:");
 await db.execute("INSERT INTO users (name) VALUES ('alice'), ('bob')");
-const rows = await db.query("SELECT id, name FROM users ORDER BY id");
+const rows = await db.users();
 console.log(rows); // [{ id: 1, name: 'alice' }, { id: 2, name: 'bob' }]
 ```
 
 We'll get there in five steps:
 
 1. Wrap a SQLite connection pool as a class with a synchronous constructor.
-2. Add a `query` method that returns JavaScript objects.
+2. Add a typed `users` query method that returns JavaScript objects.
 3. Add a `transfer` method that runs a multi-statement transaction.
-4. Create an async [`connect`](https://docs.rs/sqlx/latest/sqlx/struct.Pool.html#method.connect)
-   factory function that runs schema migrations.
+4. Create an async `connect` factory function that runs schema
+   migrations.
 5. Add `connect` as a static method on the class using `#[neon::main]`.
 
 ## Dependencies
@@ -53,10 +53,11 @@ when the addon loads:
 ```toml
 [dependencies]
 neon = { version = "1", features = ["tokio", "serde"] }
-serde_json = "1"
+serde = { version = "1", features = ["derive"] }
 sqlx = { version = "0.8", default-features = false, features = [
     "runtime-tokio",
     "sqlite",
+    "macros",
 ] }
 ```
 
@@ -142,26 +143,40 @@ That's enough to drive the addon from JavaScript. Save this as
 ```js
 const { Database } = require("./index.node");
 
-const db = new Database(":memory:");
+(async () => {
+  const db = new Database(":memory:");
 
-await db.execute(`
-  CREATE TABLE users (
-    id INTEGER PRIMARY KEY,
-    name TEXT
-  )
-`);
+  await db.execute(`
+    CREATE TABLE users (
+      id INTEGER PRIMARY KEY,
+      name TEXT
+    )
+  `);
 
-const inserted = await db.execute(`
-  INSERT INTO users (name)
-  VALUES ('alice'), ('bob')
-`);
+  const inserted = await db.execute(`
+    INSERT INTO users (name)
+    VALUES ('alice'), ('bob')
+  `);
 
-console.log(`inserted ${inserted} rows`); // => "inserted 2 rows"
+  console.log(`inserted ${inserted} rows`); // => "inserted 2 rows"
+})();
 ```
 
-Build with `npm run build` and run with `node example.cjs`. The
-two `await`s are not cosmetic: while sqlx is waiting on SQLite, the
-JavaScript main thread is run other work.
+Build with `npm run build` and run with `node example.cjs`. (The
+`await`s need an `async` wrapper because CommonJS scripts don't
+support top-level `await`.) The `await`s are not cosmetic: while sqlx
+is waiting on SQLite, the JavaScript main thread is free to run other
+work.
+
+:::note[`:memory:` and connection pools]
+Each pooled connection to `:memory:` opens its *own* empty in-memory
+database, and the pool creates connections lazily. These examples run
+their statements sequentially, so a single connection is ever created
+and everything works. If you run concurrent queries against
+`:memory:` — or rely on it living past an idle timeout — cap the pool
+with `SqlitePoolOptions::new().max_connections(1)`, or just use a
+file path.
+:::
 
 ## Step 2 — Returning a typed result set
 
@@ -217,7 +232,7 @@ What's new:
   and **[`query_as::<_, User>`](https://docs.rs/sqlx/latest/sqlx/fn.query_as.html)**
   are the sqlx side of the bridge: the derive matches column names to
   field names, and `query_as` runs the SQL and produces `Vec<User>`.
-  Schema mismatches surface as a clean SQLite error at runtime,
+  Schema mismatches surface as a clean runtime error,
   before any JS sees a malformed object.
 
 Now in JavaScript, the result is `User[]` with no surprises:
@@ -247,13 +262,29 @@ another, all-or-nothing. SQLite makes this easy with
 sqlx exposes them through [`Pool::begin`](https://docs.rs/sqlx/latest/sqlx/struct.Pool.html#method.begin):
 
 ```rust
-# use neon::types::extract::Error;
+# use neon::types::extract::{Error, Json};
+# use serde::Serialize;
 # use sqlx::sqlite::SqlitePool;
 # #[derive(Clone)]
 # struct Database { pool: SqlitePool }
+#[derive(Serialize, sqlx::FromRow)]
+struct Account {
+    id: i64,
+    balance: i64,
+}
+
 #[neon::export(class)]
 impl Database {
 #   pub fn new(_path: String) -> Result<Self, Error> { unimplemented!() }
+    async fn accounts(self) -> Result<Json<Vec<Account>>, Error> {
+        let accounts =
+            sqlx::query_as::<_, Account>("SELECT id, balance FROM accounts ORDER BY id")
+                .fetch_all(&self.pool)
+                .await?;
+
+        Ok(Json(accounts))
+    }
+
     async fn transfer(
         self,
         from: f64,
@@ -289,8 +320,8 @@ A few notes:
 - **`tx.commit().await`** is the thing that durably
   applies the changes. If `transfer` returns early — because either
   `UPDATE` fails, or because the `?` operator propagates an error —
-  the transaction is dropped without committing, and SQLite rolls it
-  back automatically.
+  the transaction is dropped without committing, and sqlx issues the
+  `ROLLBACK` automatically when the dropped transaction is cleaned up.
 - **`?` parameters and `.bind`** are sqlx's parameterised query API,
   the right way to pass user input into SQL. We didn't use them in
   earlier examples because the SQL was hard-coded; for anything
@@ -301,26 +332,27 @@ From JavaScript:
 ```js
 const { Database } = require("./index.node");
 
+(async () => {
+  const db = new Database(":memory:");
 
-const db = new Database(":memory:");
+  await db.execute(`
+    CREATE TABLE accounts (
+      id INTEGER PRIMARY KEY,
+      balance INTEGER
+    );
+  `);
 
-await db.execute(`
-  CREATE TABLE accounts (
-    id INTEGER PRIMARY KEY,
-    balance INTEGER
-  );
-`);
+  await db.execute(`
+    INSERT INTO accounts
+    VALUES (1, 100), (2, 0)
+  `);
 
-await db.execute(`
-  INSERT INTO accounts
-  VALUES (1, 100), (2, 0)
-`);
+  await db.transfer(1, 2, 30);
 
-await db.transfer(1, 2, 30);
+  const balances = await db.accounts();
 
-const balances = await db.query("SELECT * FROM accounts ORDER BY id");
-
-console.log(balances); // => [ { id: 1, balance: 70 }, { id: 2, balance: 30 } ]
+  console.log(balances); // => [ { id: 1, balance: 70 }, { id: 2, balance: 30 } ]
+})();
 ```
 
 ## Step 4 — Move schema setup into Rust
@@ -334,7 +366,7 @@ We would like to create tables when the class is constructed. Open
 the database, run the migration, hand back a ready-to-use instance.
 But there's a snag: opening a real connection is async (the database
 file might not exist, or might need its journal recovered), and
-[constructors can't be async](https://github.com/rust-lang/rfcs/issues/2906)
+constructors can't be async
 in Rust **or** in JavaScript. Trying to mark `new` as `async fn` in a
 `#[neon::class]` impl won't compile.
 
@@ -344,7 +376,7 @@ from a Neon-exported function automatically constructs a JS class instance
 for it, so the JS-side experience is identical to `new` — except this time it
 returns a [`Promise`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise).
 
-Replace the body of `new` with an error and add a `connect` next to the `impl`:
+Replace `new` with a zero-argument version that always errors, and add a `connect` free function next to the `impl`:
 
 ```rust
 # use neon::types::extract::Error;
@@ -412,11 +444,13 @@ The JavaScript flow now looks like:
 ```js
 const addon = require("./index.node");
 
-const db = await addon.connect(":memory:");
-await db.execute("INSERT INTO users (name) VALUES ('alice')");
+(async () => {
+  const db = await addon.connect(":memory:");
+  await db.execute("INSERT INTO users (name) VALUES ('alice')");
 
-console.log(await db.query("SELECT * FROM users"));
-// => [ { id: 1, name: 'alice' } ]
+  console.log(await db.users());
+  // => [ { id: 1, name: 'alice' } ]
+})();
 ```
 
 The `users` table is already there — `connect` made sure of it.
@@ -498,7 +532,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 What this does:
 
 - **`#[neon::main]`** registers a function to run when Node loads the
-  addon. There can be at most one in a crate, and providing one
+  addon. There can be at most one per addon, and providing one
   replaces Neon's default startup logic — so we have to do everything
   Neon would normally do for us by hand.
 - **The `RUNTIME` static + `set_global_executor`** registers a tokio
@@ -534,11 +568,13 @@ JavaScript users now have a clean, symmetric API:
 ```js
 const { Database } = require("./index.node");
 
-const db = await Database.connect(":memory:");
-await db.execute("INSERT INTO users (name) VALUES ('alice')");
+(async () => {
+  const db = await Database.connect(":memory:");
+  await db.execute("INSERT INTO users (name) VALUES ('alice')");
 
-console.log(await db.query("SELECT * FROM users"));
-// => [ { id: 1, name: 'alice' } ]
+  console.log(await db.users());
+  // => [ { id: 1, name: 'alice' } ]
+})();
 ```
 
 `new Database(...)` still throws (Step 4's leftover guard), and
@@ -553,7 +589,7 @@ console.log(await db.query("SELECT * FROM users"));
   to be `Clone`. They run on the tokio runtime registered by the
   `tokio` feature flag and resolve a JS `Promise` with their result.
 - **Returning a class type from a Neon-exported function** constructs
-  a JS instance for you, which is the useful for async
+  a JS instance for you, which is useful for async
   constructors and factories.
 - **`#[neon::main]`** runs once at addon load. It's the place to wire
   up things that don't fit a single `#[neon::export]`.

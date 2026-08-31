@@ -19,7 +19,7 @@ npm install
 
 `create-neon` asks a few questions (license, author, etc.); the
 defaults are fine. When it's done you'll have a Rust crate, a
-`package.json`, and an empty Node addon ready to compile.
+`package.json`, and a starter Node addon ready to compile.
 
 ## Write a Rust function
 
@@ -48,8 +48,10 @@ npm run build
 ```
 
 That compiles the Rust crate to `index.node` next to your
-`package.json`. The build script is regular `cargo build` underneath —
-no Neon-specific tooling required.
+`package.json`. The build script is regular `cargo build` underneath,
+plus a small `neon dist` step (from the scaffolded
+[`@neon-rs/cli`](https://www.npmjs.com/package/@neon-rs/cli)
+devDependency) that copies the built library to `index.node`.
 
 ## Call it from Node
 
@@ -78,7 +80,7 @@ process without you writing a single line of glue.
   [`TryFromJs`](/api/neon/types/extract/trait.TryFromJs.html)), and
   converted the return value back into a JS number (via
   [`TryIntoJs`](/api/neon/types/extract/trait.TryIntoJs.html)).
-- `npm run build` compiled the crate as a `cdylib` and renamed the
+- `npm run build` compiled the crate as a `cdylib` and copied the
   output to `index.node`, the file extension Node looks for in native
   addons.
 - Loading `./index.node` from a JS module evaluated the Rust crate's

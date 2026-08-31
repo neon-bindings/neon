@@ -39,9 +39,10 @@ Cross cheaply:
 - **[`Buffer`](https://nodejs.org/api/buffer.html#class-buffer),
   [`ArrayBuffer`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/ArrayBuffer),
   and [typed arrays](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray).**
-  Neon hands you a view into the underlying memory; the bytes don't
-  move. For numeric data, `Float64Array` is dramatically cheaper than
-  `Array<number>`.
+  Borrowing through a handle is a view into the underlying memory —
+  the bytes don't move — and extracting into an owned `Vec<u8>` is a
+  single bulk copy. For numeric data, `Float64Array` is dramatically
+  cheaper than `Array<number>` either way.
 
 Cost real work:
 
@@ -52,12 +53,13 @@ Cost real work:
 
 For structured data, **prefer
 [`Json<T>`](/api/neon/types/extract/struct.Json.html) over walking
-objects and arrays by hand.** It looks like the slow option — every
-value is serialized to a JSON string on one side and parsed back on
-the other — but in practice that single round-trip through
+objects and arrays by hand** (enable Neon's `serde` feature). It
+looks like the slow option — every value is serialized to a JSON
+string on one side and parsed back on the other — but in practice
+that single round-trip through
 [`JSON.stringify`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify)
 and [`JSON.parse`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse)
-is **typically faster** than reading or building the equivalent
+is **often faster** than reading or building the equivalent
 shape one property at a time.
 
 ## Build complexity
@@ -102,10 +104,10 @@ not the JS call site that produced it. In practice:
   [*Throw and catch errors*](/how-to/errors/) how-to covers the
   recipe for adding the context you need on the way out.
 - **Profilers don't see both sides at once.** Node's inspector
-  profiles V8, not native code; OS-level profilers like `perf` see
-  Rust frames but lose JavaScript context.
-- **Logging is the workhorse.** Most teams add structured
-  logging on both sides of the boundary and correlate by hand.
+  profiles V8, and native frames show up opaquely at best; OS-level
+  profilers like `perf` see Rust frames but lose JavaScript context.
+- **Logging is the workhorse.** Structured logging on both sides of
+  the boundary, correlated by hand, fills the gap.
 
 ## Supply-chain and binary size
 
@@ -129,7 +131,8 @@ few kilobytes.
 - **A library that only exists in Rust.** Yes — Neon's clearest win.
 - **CPU-bound work that blocks the event loop.** Yes — see
   [*Move work off the main thread*](/tutorials/move-work-off-the-main-thread/).
-- **Memory-heavy data manipulation.**  Yes, with typed arrays to avoid the copy.
+- **Memory-heavy data manipulation.** Yes, with typed arrays —
+  borrowed in place to avoid even the bulk copy.
 
 The pattern is the same in every case: cross the boundary
 deliberately, do meaningful work on the Rust side, and pick the

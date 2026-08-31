@@ -78,8 +78,8 @@ designed for this: each addon *instance* gets its own slot, which
 matters because Node's [`worker_threads`](https://nodejs.org/api/worker_threads.html)
 can instantiate the same addon multiple times in a single process,
 and a [`Root`](/api/neon/handle/struct.Root.html) is only valid in
-the JS thread it was rooted on. A plain `static Root<_>` (or
-[`OnceLock<Root<_>>`](https://doc.rust-lang.org/std/sync/struct.OnceLock.html))
+the JS thread it was rooted on. A
+[`static OnceLock<Root<_>>`](https://doc.rust-lang.org/std/sync/struct.OnceLock.html)
 would compile, but cross-worker access would panic on `into_inner`.
 [`std::thread_local!`](https://doc.rust-lang.org/std/macro.thread_local.html)
 is also the wrong choice here — JS threads aren't guaranteed to be
@@ -249,7 +249,8 @@ always need all three:
   anything.
 - **[`Deferred`](/api/neon/types/struct.Deferred.html) +
   [`Channel`](/api/neon/event/struct.Channel.html)** — single-shot
-  async result. The most common case, and what most macros generate.
+  async result. The most common case, and what the async export
+  flavors generate.
 - **All three** — async result that also needs to call into a
   user-supplied JS callback during the work, not just at the end.
 
@@ -264,18 +265,19 @@ This page is the choreography. The
 [`#[neon::export]`](/api/neon/attr.export.html) macros (in their
 various flavors —
 [`async fn`](/how-to/async-fn/), [`(async) impl Future`](/how-to/sync-setup-async/),
-and the [`task`](/how-to/blocking-work/) flavor for the worker
+and the [`task`](/how-to/blocking-libuv/) flavor for the worker
 pool) hide the choreography by generating the
-[`Channel`](/api/neon/event/struct.Channel.html) +
-[`Deferred`](/api/neon/types/struct.Deferred.html) +
-[`Root`](/api/neon/handle/struct.Root.html) plumbing for you.
+[`Deferred`](/api/neon/types/struct.Deferred.html) plumbing for you —
+the async flavors settle it through a
+[`Channel`](/api/neon/event/struct.Channel.html), while `task`
+settles it from the worker pool's completion callback.
 Knowing what each piece does makes it much easier to read the
 expansion when you hit something the macros don't cover and need to
 drop down to the primitives directly.
 
 The [*Move work off the main thread*](/tutorials/move-work-off-the-main-thread/)
 tutorial is the runnable end-to-end version of the diagram above,
-with [`#[neon::export(task)]`](/how-to/blocking-work/) doing the
+with [`#[neon::export(task)]`](/how-to/blocking-libuv/) doing the
 plumbing. The [*Build a database addon*](/tutorials/build-a-database-addon/)
 tutorial does the same with `async fn` exports.
 
