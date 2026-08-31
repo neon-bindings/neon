@@ -60,6 +60,34 @@ The load-bearing property: the volatile dependency is only ever referenced by an
 adapter crate whose entire job is to track it. Neon's own crates never depend on
 ts-rs or specta.
 
+### Repository layout and versioning
+
+**Decision.**
+
+- **`neon-typescript`** lives in the main neon monorepo — it is part of neon's
+  own stable contract and evolves with neon.
+- The **adapter crates** (`neon-ts-rs`, `neon-specta`, …) live in a **separate
+  repository**, versioned **independently**, each tracking its upstream crate's
+  major (e.g. `neon-ts-rs 12.x` for ts-rs 12; a new major when ts-rs 13 breaks the
+  `TS` trait). This keeps neon core from ever moving for an upstream bump,
+  physically isolates the release churn (especially specta's RC-chasing) from
+  neon's repo and CI, and keeps ts-rs/specta out of neon's build graph. It matches
+  the precedent of `tauri-specta`, which is its own repo distinct from both specta
+  and tauri.
+- **Hard rule:** adapters version and release on their own line — never
+  lockstepped to neon, regardless of repo layout.
+
+**Caveat for this PR.** To validate the full end-to-end experience *before* the
+adapter has its own repo, this PR includes an **initial, temporary `neon-ts-rs`
+crate in-tree**. The dogfooding PR
+([dherman/tantivy#3](https://github.com/dherman/tantivy/pull/3)) consumes it via a
+**git dependency**, exercising the real `#[derive(ts_rs::TS)]` + bridge derive +
+`#[neon::export]` path against a real library. This temporarily pulls ts-rs into
+the workspace build — a deliberate, short-lived exception. Once validated,
+`neon-ts-rs` is **extracted to its own repository** and published to crates.io,
+and the dogfooding git dependency becomes a normal versioned dependency.
+`neon-specta` is not part of this PR and starts life in the separate repo.
+
 ### The minimal trait
 
 ```rust
@@ -160,7 +188,10 @@ treadmill is gone.
   (Alternatives Considered §1) — v1 ships the `.d.ts` string only. Instead, wire
   the module-scoped string into the auto-attach so the dogfooding can drop its
   hand-rolled `declare module` wrap.
-- **Add:** the `neon-typescript` and `neon-ts-rs` crates.
+- **Add:** the `neon-typescript` crate (permanent, in-repo) and an initial
+  `neon-ts-rs` crate (temporary, in-tree for end-to-end validation via the
+  dogfooding git dependency; to be extracted to its own repo before release — see
+  Repository layout and versioning).
 
 The PR shrinks and loses its riskiest code, but the type-provider half is
 genuinely reworked — this is a real redirection, not a tweak.
@@ -296,7 +327,11 @@ than for built-ins — consistent with §1's uniform, best-effort stance.
 
 ## Recommendation / next step
 
-If this shape looks right, the natural next step is a small two-crate skeleton
-(`neon-typescript` trait + `neon-ts-rs` bridge derive) wired to one real
-`#[neon::export]` in the test addon, to confirm the derive hygiene and the
-`Json<T>` + bridge interaction end-to-end before reworking the PR.
+Build the two-crate skeleton — `neon-typescript` (trait + built-ins) and an
+initial in-tree `neon-ts-rs` (bridge derive + collection helper) — wired to one
+real `#[neon::export]` in the test addon to confirm the derive hygiene and the
+`Json<T>` + bridge interaction. Then point the dogfooding PR
+([dherman/tantivy#3](https://github.com/dherman/tantivy/pull/3)) at `neon-ts-rs`
+via a git dependency for a full end-to-end validation against a real library.
+Once that holds up, rework this PR (drop the derive, land the crates) and, before
+release, extract `neon-ts-rs` to its own repository.
