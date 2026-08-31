@@ -52,7 +52,10 @@ export default defineConfig({
         { icon: "slack", label: "Slack", href: "https://rust-bindings.slack.com" },
       ],
       sidebar: [
-        { label: "Getting started", autogenerate: { directory: "getting-started" } },
+        {
+          label: "Getting started",
+          items: [{ autogenerate: { directory: "getting-started" } }],
+        },
         {
           label: "Tutorials",
           items: [
@@ -65,7 +68,7 @@ export default defineConfig({
         {
           label: "How-to guides",
           collapsed: true,
-          autogenerate: { directory: "how-to" },
+          items: [{ autogenerate: { directory: "how-to" } }],
         },
         {
           label: "Reference",
@@ -75,7 +78,10 @@ export default defineConfig({
             { label: "CLI reference", link: "/reference/cli/" },
           ],
         },
-        { label: "Explanation", autogenerate: { directory: "explanation" } },
+        {
+          label: "Explanation",
+          items: [{ autogenerate: { directory: "explanation" } }],
+        },
         { label: "Changelog", link: "/changelog/" },
         { label: "Contributing", link: "/contributing/" },
       ],
