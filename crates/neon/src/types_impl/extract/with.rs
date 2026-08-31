@@ -75,51 +75,65 @@ where
 // `macro_rules!` macros cannot cross crate boundaries without `#[macro_export]`,
 // which always exports at the crate root. Export under a hidden internal name;
 // the `extract` module re-exports it as `with!`.
+//
+// The eight arms permute three axes that must be distinguished syntactically:
+// `move` vs borrowing capture, a named context parameter vs `_` (bound internally
+// as a hygienic `__cx` so the injected conversion can still use it), and an
+// optional return type annotation (forwarded to the body's own scope, where `?`
+// resolves).
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __with {
+    // with!(move |cx| body)
     (move |$cx:ident| $body:expr) => {
         $crate::types::extract::with(move |$cx| {
             let __v = (|| $body)();
             $crate::types::extract::TryIntoJs::try_into_js(__v, $cx)
         })
     };
+    // with!(|cx| body)
     (|$cx:ident| $body:expr) => {
         $crate::types::extract::with(|$cx| {
             let __v = (|| $body)();
             $crate::types::extract::TryIntoJs::try_into_js(__v, $cx)
         })
     };
+    // with!(move |_| body)
     (move |_| $body:expr) => {
         $crate::types::extract::with(move |__cx| {
             let __v = (|| $body)();
             $crate::types::extract::TryIntoJs::try_into_js(__v, __cx)
         })
     };
+    // with!(|_| body)
     (|_| $body:expr) => {
         $crate::types::extract::with(|__cx| {
             let __v = (|| $body)();
             $crate::types::extract::TryIntoJs::try_into_js(__v, __cx)
         })
     };
+    // with!(move |cx| -> Ty { body })
     (move |$cx:ident| -> $ret:ty $body:block) => {
         $crate::types::extract::with(move |$cx| {
             let __v = (|| -> $ret { $body })();
             $crate::types::extract::TryIntoJs::try_into_js(__v, $cx)
         })
     };
+    // with!(|cx| -> Ty { body })
     (|$cx:ident| -> $ret:ty $body:block) => {
         $crate::types::extract::with(|$cx| {
             let __v = (|| -> $ret { $body })();
             $crate::types::extract::TryIntoJs::try_into_js(__v, $cx)
         })
     };
+    // with!(move |_| -> Ty { body })
     (move |_| -> $ret:ty $body:block) => {
         $crate::types::extract::with(move |__cx| {
             let __v = (|| -> $ret { $body })();
             $crate::types::extract::TryIntoJs::try_into_js(__v, __cx)
         })
     };
+    // with!(|_| -> Ty { body })
     (|_| -> $ret:ty $body:block) => {
         $crate::types::extract::with(|__cx| {
             let __v = (|| -> $ret { $body })();
