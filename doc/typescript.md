@@ -2,11 +2,12 @@
 
 ## Status
 
-This is the agreed design. It is presented here as a single coherent design, not
-as a change-set. (The current PR still contains an earlier in-tree implementation
-that owned a serde-aware derive macro; it is being reworked to the design below,
-in which type information for user data types comes from third-party generators
-rather than a Neon-owned derive.)
+This is the agreed design, and the PR now implements it. It is presented here as a
+single coherent design, not as a change-set. Type information for user data types
+comes from third-party generators (via an adapter) rather than a Neon-owned derive;
+the earlier in-tree serde-aware derive macro has been removed. The ts-rs adapter
+(`neon-ts-rs`) currently lives in-tree for end-to-end dogfooding and will move to
+its own repository before release (see [Crate & repository layout](#crate--repository-layout)).
 
 ## Motivation
 
