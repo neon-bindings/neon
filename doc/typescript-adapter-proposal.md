@@ -44,9 +44,10 @@ neon-typescript          the stable contract: the `TypeScript` trait plus
   on serde, ts-rs, specta, or `neon`. This is the contract everything binds to,
   so it is deliberately minimal and semver-stable.
 - **`neon`** — depends on `neon-typescript`. Adds impls for its own boundary
-  types (`Handle<Js*>`, `Boxed`, `Json<T>`), the `generate()` / `generate_ast()`
-  machinery, the auto-attach, and the `#[neon::export]` / class metadata macros.
-  Re-exports the trait as `neon::typescript::TypeScript`.
+  types (`Handle<Js*>`, `Boxed`, `Json<T>`), the `generate()` (string) machinery,
+  the auto-attach, and the `#[neon::export]` / class metadata macros. Re-exports
+  the trait as `neon::typescript::TypeScript`. (Structured AST / `generate_ast()`
+  is deferred from v1 — see Alternatives Considered §1.)
 - **`neon-ts-rs`** — a small adapter. Provides a *bridge derive* and a runtime
   collection helper. Depends on `neon-typescript` and references `ts-rs` in the
   code it generates — **not on `neon`**. Its version tracks ts-rs: `neon-ts-rs`
@@ -153,11 +154,12 @@ treadmill is gone.
 - **Remove:** `crates/neon-macros/src/typescript/*` (structs / enums / attrs /
   rename — the derive + serde parsing), ~1,500 lines and the churniest code.
 - **Keep:** the trait + built-in impls (moved into `neon-typescript`), the
-  boundary impls, `generate()` + the string→AST parser, auto-attach, and the
-  `#[neon::export]` / class metadata macros. The structured AST is generated in
-  `neon` by parsing strings (Alternatives Considered §1). Whether `generate_ast()`
-  ships in v1 at all is worth revisiting separately, since the dogfooding consumes
-  only the string form (see §1).
+  boundary impls, `generate()` (string output), auto-attach, and the
+  `#[neon::export]` / class metadata macros.
+- **Defer from v1:** `generate_ast()` and the string→AST parser that backs it
+  (Alternatives Considered §1) — v1 ships the `.d.ts` string only. Instead, wire
+  the module-scoped string into the auto-attach so the dogfooding can drop its
+  hand-rolled `declare module` wrap.
 - **Add:** the `neon-typescript` and `neon-ts-rs` crates.
 
 The PR shrinks and loses its riskiest code, but the type-provider half is
@@ -187,11 +189,13 @@ assembly works via ts-rs's `TypeVisitor`, and the one sharp fidelity gotcha
 Three design questions came up while working through this proposal. Each is
 resolved below, with the alternatives we weighed and why we chose what we chose.
 
-### 1. Where the structured AST lives — string-only trait, parse in `neon`
+### 1. Structured AST — string-only trait, and `generate_ast()` deferred from v1
 
-**Decision.** The trait is string-only (`ts_type` + `ts_collect`). The structured
-AST (where wanted) is produced in `neon` by running the string→AST parser over
-those strings. The AST node types and parser stay out of `neon-typescript`.
+**Decision.** Two parts. (1) The trait is string-only (`ts_type` + `ts_collect`) —
+no `ts_type_ast()`. (2) **`generate_ast()` and the string→AST parser are deferred
+from v1**; v1 ships the `.d.ts` string only. If and when a structured AST is added
+later, it is produced in `neon` by parsing the strings — the AST node types and
+parser live in `neon`, never in `neon-typescript`.
 
 **Why the question arises.** The feature produces two outputs: a `.d.ts` *string*
 (`generate()`) and a *structured AST* (`generate_ast()` — TSESTree-shaped, for
@@ -208,20 +212,25 @@ native buys inconsistency ("built-ins native, bridged parsed"), not much
 fidelity — the parser already handles the built-in shapes (primitives, arrays,
 unions, records, tuples, literals) correctly.
 
-**Consequence.** AST behavior is uniform (everything parsed by one well-tested
-parser) and the contract crate stays tiny. The tradeoff: the AST is only ever as
-good as the parser — any expression it cannot structure becomes a `Raw` node.
+**Consequence for the trait shape.** Keeping the trait string-only keeps the
+contract crate tiny regardless of whether the AST ever ships. When the AST *is*
+added, it will be uniform (everything parsed by one well-tested parser); the
+tradeoff at that point is that the AST is only ever as good as the parser — any
+expression it cannot structure becomes a `Raw` node.
 
-**Related scoping note (not part of this decision).** The
+**Why defer the AST from v1.** The
 [dogfooding PR](https://github.com/dherman/tantivy/pull/3) consumes only the
 string (`Symbol.for("neon:types")`) and never touches `generate_ast()` /
 `Symbol.for("neon:types-ast")`; its `extract-types.cjs` hand-rolls the
 `declare module "./load.cjs" { … }` wrap and indentation that the AST and
-`generate_with({ module })` were meant to obviate. So the AST is currently unused
-in practice, which argues for **deferring `generate_ast()` from v1** and instead
-wiring the *module-scoped* string into the auto-attach (the transform the
-dogfooding actually needs). That is a scoping call separate from the trait-shape
-decision above, recorded here for follow-up.
+`generate_with({ module })` were meant to obviate. So the structured AST is
+unused in practice, and shipping an unused, semver-affecting API (plus the
+hand-rolled parser that backs it) from day one is a cost with no current payoff.
+The transform the dogfooding actually needs is the *module-scoped string* — v1
+wires that into the auto-attach (a module-wrapped `Symbol.for("neon:types")`, or a
+second symbol) so the extract script can drop its hand-rolled wrap. The structured
+AST can be added later, if and when a concrete consumer materializes, without
+having committed to it prematurely.
 
 ### 2. `Option` leniency — user-expressible via serde, adapter passes through
 
