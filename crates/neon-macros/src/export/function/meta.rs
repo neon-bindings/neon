@@ -1,18 +1,37 @@
+/// Parsed contents of a `#[neon::export(...)]` attribute on a function, e.g.
+/// `#[neon::export(name = "add", json, ts_returns = "bigint")]`.
 #[derive(Default)]
 pub(crate) struct Meta {
+    /// Sync vs `async`/task — determines whether the TS return is `Promise<T>`.
     pub(super) kind: Kind,
+    /// `name = "..."` — the JavaScript export name (also the TS declaration name).
     pub(super) name: Option<syn::LitStr>,
+    /// `json` — arguments/return are (de)serialized via `Json<T>`.
     pub(super) json: bool,
+    /// `context` — force-pass the `Cx`/`Channel` first argument.
     pub(super) context: bool,
+    /// `this` — bind the receiver as JS `this`.
     pub(super) this: bool,
+    /// `ts_skip` — omit this export from the generated `.d.ts`.
+    pub(super) ts_skip: bool,
+    /// `ts_strict` — error (instead of falling back to `any`) if a referenced
+    /// type doesn't implement `TypeScript`.
+    pub(super) ts_strict: bool,
+    /// `ts_returns = "..."` — override the inferred TS return type with a literal.
+    pub(super) ts_returns: Option<String>,
 }
 
+/// How the exported function is invoked, which drives the TS return shape.
 #[derive(Default)]
 pub(super) enum Kind {
+    /// `#[neon::export(async)]` on a sync fn returning a future → `Promise<T>`.
     Async,
+    /// A plain `async fn` → `Promise<T>`.
     AsyncFn,
+    /// An ordinary synchronous export → `T`.
     #[default]
     Normal,
+    /// `#[neon::export(task)]` runs on the libuv pool → `Promise<T>`.
     Task,
 }
 
@@ -100,6 +119,21 @@ impl syn::parse::Parser for Parser {
 
             if meta.path.is_ident("task") {
                 return attr.make_task(meta);
+            }
+
+            if meta.path.is_ident("ts_skip") {
+                attr.ts_skip = true;
+                return Ok(());
+            }
+
+            if meta.path.is_ident("ts_strict") {
+                attr.ts_strict = true;
+                return Ok(());
+            }
+
+            if meta.path.is_ident("ts_returns") {
+                attr.ts_returns = Some(meta.value()?.parse::<syn::LitStr>()?.value());
+                return Ok(());
             }
 
             Err(meta.error("unsupported property"))

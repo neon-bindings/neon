@@ -1,6 +1,6 @@
 mod meta;
 
-use super::name::is_valid_js_identifier;
+use super::name::{is_valid_js_identifier, replace_self_in_type, type_needs_fallback};
 use proc_macro2::TokenStream;
 use syn::{spanned::Spanned, Ident, ImplItemFn, Type};
 
@@ -822,14 +822,30 @@ pub(crate) fn class(
     _attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-    class_with_name(_attr, item, None)
+    class_with_options(_attr, item, ClassOptions::default())
 }
 
-pub(crate) fn class_with_name(
+#[derive(Default)]
+pub(crate) struct ClassOptions {
+    pub custom_class_name: Option<String>,
+    pub ts_skip: bool,
+    pub ts_name: Option<String>,
+    pub ts_strict: bool,
+    pub ts_no_constructor: bool,
+}
+
+pub(crate) fn class_with_options(
     _attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
-    custom_class_name: Option<String>,
+    options: ClassOptions,
 ) -> proc_macro::TokenStream {
+    let ClassOptions {
+        custom_class_name,
+        ts_skip,
+        ts_name,
+        ts_strict,
+        ts_no_constructor,
+    } = options;
     let mut impl_block = syn::parse_macro_input!(item as syn::ItemImpl);
 
     // Parse the item as an implementation block
@@ -1378,6 +1394,30 @@ pub(crate) fn class_with_name(
         }
     }
 
+    // --- TypeScript metadata generation ---
+    // Only emit when the `typescript` feature is enabled (via
+    // `neon/typescript` -> `neon-macros/typescript`). When off, no metadata
+    // statics or TypeScript impls are emitted for the class, so there is zero
+    // TypeScript-related cost. `cfg!` is resolved at neon-macros compile time;
+    // Cargo unifies the feature across the build graph.
+    let ts_metadata = if cfg!(feature = "typescript") {
+        let ts_class_name = ts_name.as_deref().unwrap_or(&class_name);
+        generate_ts_class_metadata(
+            &class_ident,
+            ts_class_name,
+            constructor.as_ref(),
+            ctor_meta.as_ref(),
+            &fns,
+            &method_metas,
+            &consts,
+            ts_skip,
+            ts_strict,
+            ts_no_constructor,
+        )
+    } else {
+        proc_macro2::TokenStream::new()
+    };
+
     quote::quote! {
         #impl_block
         #impl_class_internal
@@ -1388,6 +1428,379 @@ pub(crate) fn class_with_name(
         #impl_try_into_js
         #impl_try_from_js_ref
         #impl_try_from_js_ref_mut
+        #ts_metadata
     }
     .into()
+}
+
+#[allow(clippy::too_many_arguments)]
+fn generate_ts_class_metadata(
+    class_ident: &syn::Ident,
+    class_name: &str,
+    constructor: Option<&ImplItemFn>,
+    ctor_meta: Option<&meta::Meta>,
+    methods: &[ImplItemFn],
+    method_metas: &[meta::Meta],
+    consts: &[syn::ImplItemConst],
+    ts_skip_class_meta: bool,
+    class_ts_strict: bool,
+    class_ts_no_constructor: bool,
+) -> TokenStream {
+    let meta_name = quote::format_ident!("__NEON_TS_CLASS_META__{class_ident}");
+
+    // --- Constructor params ---
+    let ctor_tokens = if class_ts_no_constructor {
+        quote::quote!(None)
+    } else if let (Some(ctor), Some(ctor_meta)) = (constructor, ctor_meta) {
+        if ctor_meta.ts_skip {
+            quote::quote!(None)
+        } else {
+            let ctor_strict = class_ts_strict || ctor_meta.ts_strict;
+            let has_context = check_constructor_context(ctor_meta, &ctor.sig).unwrap_or(false);
+            let skip = if has_context { 1 } else { 0 };
+
+            let param_entries: Vec<TokenStream> = ctor
+                .sig
+                .inputs
+                .iter()
+                .skip(skip)
+                .enumerate()
+                .filter_map(|(i, arg)| match arg {
+                    syn::FnArg::Typed(pat_type) => {
+                        let name_str = ts_param_name(&pat_type.pat, i);
+                        let ty = &pat_type.ty;
+
+                        if let Some(override_ty) =
+                            crate::name::extract_param_ts_type(&pat_type.attrs)
+                        {
+                            return Some(quote::quote!(
+                                neon::typescript::ParamMeta {
+                                    name: #name_str,
+                                    ts_type: || std::borrow::Cow::Borrowed(#override_ty),
+                                    ts_collect: |_| {},
+                                }
+                            ));
+                        }
+
+                        if type_needs_fallback(ty) {
+                            return Some(quote::quote!(
+                                neon::typescript::ParamMeta {
+                                    name: #name_str,
+                                    ts_type: || std::borrow::Cow::Borrowed("any"),
+                                    ts_collect: |_| {},
+                                }
+                            ));
+                        }
+
+                        let ty = crate::name::substitute_lifetimes_with_static(ty);
+                        // Probe the TypeScript boundary (payload) type; `Json<T>`
+                        // is probed as its payload `T` (see the function macro).
+                        let boundary_ty = if ctor_meta.json {
+                            ty.clone()
+                        } else {
+                            crate::name::strip_outer_json(&ty)
+                        };
+                        let ts_ty = quote::quote!(#boundary_ty);
+
+                        let (ts_type_tok, ts_collect_tok) = ts_type_tokens(&ts_ty, ctor_strict);
+                        Some(quote::quote!(
+                            neon::typescript::ParamMeta {
+                                name: #name_str,
+                                ts_type: #ts_type_tok,
+                                ts_collect: #ts_collect_tok,
+                            }
+                        ))
+                    }
+                    _ => None,
+                })
+                .collect();
+
+            quote::quote!(Some(neon::typescript::ConstructorMeta {
+                params: &[#(#param_entries),*],
+            }))
+        }
+    } else {
+        quote::quote!(None)
+    };
+
+    // --- Methods ---
+    let method_entries: Vec<TokenStream> = methods
+        .iter()
+        .zip(method_metas.iter())
+        .filter(|(_, meta)| !meta.ts_skip)
+        .map(|(f, meta)| {
+            let fn_name = &f.sig.ident;
+            let js_name = match (&meta.ts_name, &meta.name) {
+                (Some(name), _) => name.clone(),
+                (None, Some(name)) => name.value(),
+                (None, None) => crate::name::to_camel_case(&fn_name.to_string()),
+            };
+
+            let is_async = matches!(
+                meta.kind,
+                meta::Kind::Task | meta::Kind::AsyncFn | meta::Kind::Async
+            );
+
+            // Skip &self, optional context/channel, optional this
+            let has_context = match meta.kind {
+                meta::Kind::Async | meta::Kind::Normal => {
+                    check_context(meta, &f.sig).unwrap_or(false)
+                }
+                meta::Kind::AsyncFn | meta::Kind::Task => {
+                    check_channel(meta, &f.sig).unwrap_or(false)
+                }
+            };
+            let has_this = check_this(meta, &f.sig, has_context);
+            let skip = 1 + (has_context as usize) + (has_this as usize);
+            let method_strict = class_ts_strict || meta.ts_strict;
+
+            let param_entries: Vec<TokenStream> = f
+                .sig
+                .inputs
+                .iter()
+                .skip(skip)
+                .enumerate()
+                .filter_map(|(i, arg)| {
+                    match arg {
+                        syn::FnArg::Typed(pat_type) => {
+                            let name_str = ts_param_name(&pat_type.pat, i);
+
+                            if let Some(override_ty) =
+                                crate::name::extract_param_ts_type(&pat_type.attrs)
+                            {
+                                return Some(quote::quote!(
+                                    neon::typescript::ParamMeta {
+                                        name: #name_str,
+                                        ts_type: || std::borrow::Cow::Borrowed(#override_ty),
+                                        ts_collect: |_| {},
+                                    }
+                                ));
+                            }
+
+                            // For reference params (&OtherClass), extract the inner type
+                            let effective_ty = match &*pat_type.ty {
+                                syn::Type::Reference(r) => &*r.elem,
+                                other => other,
+                            };
+
+                            {
+                                let (ts_type_tok, ts_collect_tok) =
+                                    match resolve_static_type(effective_ty, class_ident, meta.json)
+                                    {
+                                        Some(ts_ty) => ts_type_tokens(&ts_ty, method_strict),
+                                        None => ts_fallback_tokens(),
+                                    };
+                                Some(quote::quote!(
+                                    neon::typescript::ParamMeta {
+                                        name: #name_str,
+                                        ts_type: #ts_type_tok,
+                                        ts_collect: #ts_collect_tok,
+                                    }
+                                ))
+                            }
+                        }
+                        _ => None,
+                    }
+                })
+                .collect();
+
+            // Return type
+            let (ret_type_tok, ret_collect_tok) = if let Some(override_ty) = &meta.ts_returns {
+                (
+                    quote::quote!(|| std::borrow::Cow::Borrowed(#override_ty)),
+                    quote::quote!(|_| {}),
+                )
+            } else {
+                match &f.sig.output {
+                    syn::ReturnType::Default => (
+                        quote::quote!(|| std::borrow::Cow::Borrowed("undefined")),
+                        quote::quote!(|_| {}),
+                    ),
+                    syn::ReturnType::Type(_, ty) => {
+                        match resolve_static_type(ty, class_ident, meta.json) {
+                            Some(ts_ty) => ts_type_tokens(&ts_ty, method_strict),
+                            None => ts_fallback_tokens(),
+                        }
+                    }
+                }
+            };
+
+            quote::quote!(
+                neon::typescript::MethodMeta {
+                    name: #js_name,
+                    params: &[#(#param_entries),*],
+                    ret_type: #ret_type_tok,
+                    ret_collect: #ret_collect_tok,
+                    is_async: #is_async,
+                }
+            )
+        })
+        .collect();
+
+    // --- Static properties ---
+    let property_entries: Vec<TokenStream> = consts
+        .iter()
+        .filter_map(|const_item| {
+            let const_name = &const_item.ident;
+            let const_ty = &const_item.ty;
+
+            // Parse property meta to get the JS name and json flag
+            let mut prop_meta = meta::PropertyMeta::default();
+            for attr in &const_item.attrs {
+                if let syn::Meta::List(syn::MetaList { path, tokens, .. }) = &attr.meta {
+                    if path.is_ident("neon") {
+                        let parser = meta::PropertyParser;
+                        if let Ok(parsed) = syn::parse::Parser::parse2(parser, tokens.clone()) {
+                            prop_meta = parsed;
+                        }
+                    }
+                }
+            }
+
+            if prop_meta.ts_skip {
+                return None;
+            }
+
+            let js_name = match (&prop_meta.ts_name, &prop_meta.name) {
+                (Some(name), _) => name.clone(),
+                (None, Some(name)) => name.value(),
+                (None, None) => const_name.to_string(),
+            };
+
+            let (ts_type_expr, ts_collect_expr) =
+                match resolve_static_type(const_ty, class_ident, prop_meta.json) {
+                    Some(ts_ty) => ts_type_tokens(&ts_ty, class_ts_strict),
+                    None => ts_fallback_tokens(),
+                };
+
+            Some(quote::quote!(
+                neon::typescript::PropertyMeta {
+                    name: #js_name,
+                    ts_type: #ts_type_expr,
+                    ts_collect: #ts_collect_expr,
+                }
+            ))
+        })
+        .collect();
+
+    let class_meta_decl = if ts_skip_class_meta {
+        quote::quote!()
+    } else {
+        quote::quote! {
+            #[neon::macro_internal::linkme::distributed_slice(neon::macro_internal::TYPE_METADATA)]
+            #[linkme(crate = neon::macro_internal::linkme)]
+            static #meta_name: neon::typescript::ExportMeta =
+                neon::typescript::ExportMeta::Class(neon::typescript::ClassMeta {
+                    name: #class_name,
+                    constructor: #ctor_tokens,
+                    methods: &[#(#method_entries),*],
+                    static_properties: &[#(#property_entries),*],
+                });
+        }
+    };
+
+    quote::quote! {
+        impl neon::typescript::TypeScript for #class_ident {
+            fn ts_type() -> std::borrow::Cow<'static, str> {
+                std::borrow::Cow::Borrowed(#class_name)
+            }
+        }
+
+        #class_meta_decl
+    }
+}
+
+/// Resolve a type for use in a static metadata entry.
+/// Replaces `Self` with the class ident, then checks for fallback.
+/// Returns the resolved type token stream, or None if fallback to "any" is needed
+/// (for syntactically unresolvable types like `impl Trait`).
+fn resolve_static_type(
+    ty: &syn::Type,
+    class_ident: &syn::Ident,
+    json: bool,
+) -> Option<TokenStream> {
+    // First, replace Self with the concrete class name
+    let resolved = replace_self_in_type(ty, class_ident).unwrap_or_else(|| ty.clone());
+
+    // Then check if the resolved type still needs fallback
+    if type_needs_fallback(&resolved) {
+        return None;
+    }
+
+    // Rewrite non-static lifetimes to 'static so the type can be used as a
+    // TsProbe type parameter in static metadata.
+    let resolved = crate::name::substitute_lifetimes_with_static(&resolved);
+
+    // Probe the TypeScript boundary (payload) type; `Json<T>` is probed as its
+    // payload `T` (see the function macro for the rationale).
+    let boundary_ty = if json {
+        resolved
+    } else {
+        crate::name::strip_outer_json(&resolved)
+    };
+
+    Some(quote::quote!(#boundary_ty))
+}
+
+/// Generate the `(ts_type, ts_collect)` closure token pairs that populate a
+/// `ParamMeta` / `MethodMeta` field for the type `ts_ty`.
+///
+/// In **probe mode** (default) it emits the autoref-specialization dance: a
+/// `TsProbe::<ts_ty>` whose inherent method (real type info) is preferred, but
+/// which falls back through the `TsFallback` trait to `"any"` when `ts_ty`
+/// doesn't implement `TypeScript`. For example, with `ts_ty = f64` it resolves
+/// to `"number"`; with an un-impl'd type it resolves to `"any"` — no compile error.
+///
+/// In **strict mode** (`ts_strict`) it emits the same probe but *without* the
+/// rung-3 `TsFallback` import, so a type resolving via rung 1 or rung 2 (an
+/// adapter's `TypeScriptExt`) compiles while a rung-3 type is a compile error
+/// instead of a silent `"any"`.
+fn ts_type_tokens(ts_ty: &TokenStream, strict: bool) -> (TokenStream, TokenStream) {
+    if strict {
+        (
+            quote::quote!(|| {
+                let __probe = neon::macro_internal::TsProbe::<#ts_ty>(std::marker::PhantomData);
+                (&__probe).ts_type_of()
+            }),
+            quote::quote!(|decls| {
+                let __probe = neon::macro_internal::TsProbe::<#ts_ty>(std::marker::PhantomData);
+                (&__probe).ts_collect_of(decls)
+            }),
+        )
+    } else {
+        (
+            quote::quote!(|| {
+                use neon::macro_internal::TsFallback as _;
+                let __probe = neon::macro_internal::TsProbe::<#ts_ty>(std::marker::PhantomData);
+                (&__probe).ts_type_of()
+            }),
+            quote::quote!(|decls| {
+                use neon::macro_internal::TsFallback as _;
+                let __probe = neon::macro_internal::TsProbe::<#ts_ty>(std::marker::PhantomData);
+                (&__probe).ts_collect_of(decls)
+            }),
+        )
+    }
+}
+
+fn ts_fallback_tokens() -> (TokenStream, TokenStream) {
+    (
+        quote::quote!(|| std::borrow::Cow::Borrowed("any")),
+        quote::quote!(|_| {}),
+    )
+}
+
+/// Extract the parameter name from a pattern for TypeScript metadata.
+fn ts_param_name(pat: &syn::Pat, index: usize) -> String {
+    match pat {
+        syn::Pat::Ident(ident) => crate::name::to_camel_case(&ident.ident.to_string()),
+        syn::Pat::TupleStruct(ts) => {
+            if let Some(inner) = ts.elems.first() {
+                ts_param_name(inner, index)
+            } else {
+                format!("arg{index}")
+            }
+        }
+        _ => format!("arg{index}"),
+    }
 }
