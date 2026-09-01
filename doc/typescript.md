@@ -238,7 +238,7 @@ orphan rule bars anyone from implementing ts-rs's trait for Neon's `Json`). So a
 `T`'s — so this leaves rung-1 output identical for every existing case while making a
 foreign payload (e.g. `IndexMap<String, User>`) reachable by rung 2.
 
-Now `Json<OrderMap<String, Field>>` at a boundary — a foreign type with no
+Now `Json<IndexMap<String, Field>>` at a boundary — a foreign type with no
 `TypeScript` impl — resolves via rung 2 through ts-rs (at *the user's* ts-rs version),
 rather than falling to `any`. This is the only place the gap can be closed: the bridge
 derive reaches only user-owned types, and both the adapter and the user are
@@ -482,9 +482,14 @@ impl neon_typescript::TypeScript for MyType {
 `neon_ts_rs::ts_type` / `ts_collect` delegate to `<Self as ts_rs::TS>`, assembling
 a flat declaration set via ts-rs's `TypeVisitor`. This bridge derive is *trivial*:
 it reads none of the type's fields or serde attributes — it emits a fixed
-delegation. All serde understanding stays in ts-rs. Because the generated impl
-references only `neon-typescript` + `ts-rs`, the adapter never depends on `neon`,
-and extraction stays the user's ordinary `Json<T>`.
+delegation. All serde understanding stays in ts-rs. The generated impl names the
+trait through a hidden re-export in the adapter (`::neon_ts_rs::__private::TypeScript`)
+and otherwise uses only fully-qualified `::std` / `::ts_rs` paths, so a consumer
+depends on just `neon` + `neon-ts-rs` (+ `ts-rs`) — never on `neon-typescript`
+directly, which stays a pure implementation detail. (This is the serde-derive
+convention: the derive references its own crate's re-exports, not the underlying
+contract crate.) The adapter never depends on `neon`, and extraction stays the
+user's ordinary `Json<T>`.
 
 ### What the user writes
 
@@ -509,20 +514,27 @@ fn search(q: String) -> SearchResult { /* … */ }   // Json extraction unchange
 Nothing above is needed at the *boundary* as long as the outermost type has a
 `TypeScript` impl (a user type via the bridge, a std type, a class). The one case
 that needs the adapter is a **foreign type used directly at a boundary** — e.g.
-returning `Json<OrderMap<String, Field>>` rather than wrapping it in a named struct.
+returning `Json<IndexMap<String, Field>>` rather than wrapping it in a named struct.
 There, add the adapter's boundary rung to scope in that module:
 
 ```rust
 use neon_ts_rs::TypeScriptExt as _;   // once per module with such exports
 
 #[neon::export]
-fn fields(&self) -> Json<OrderMap<String, FieldDescriptor>> { /* … */ }
+fn fields(&self) -> Json<IndexMap<String, FieldDescriptor>> { /* … */ }
 ```
 
-The `OrderMap` then renders through ts-rs (enable ts-rs's own `indexmap`-style
-feature for the type) at your pinned ts-rs version, and the types reachable through
-it stay in the output. Pair it with `#[neon::export(ts_strict)]` so a forgotten
-import surfaces as a compile error rather than a silent `any`. See
+The `IndexMap` then renders through ts-rs (enable ts-rs's own `indexmap-impl`
+feature) at your pinned ts-rs version, and the types reachable through it stay in
+the output. Pair it with `#[neon::export(ts_strict)]` so a forgotten import surfaces
+as a compile error rather than a silent `any`.
+
+**The rung's reach is exactly the generator's type coverage.** Rung 2 fires only
+when `T: ts_rs::TS` holds, so a foreign type ts-rs doesn't implement still falls to
+`any`. In practice, reach for a generator-supported type: e.g. ts-rs 12 ships
+`indexmap-impl` but has no `ordermap` impl, so `IndexMap` works at a boundary while
+`ordermap::OrderMap` (insertion-ordered identically, and a thin layer over `IndexMap`)
+does not — swap to `IndexMap` rather than debugging a silent `any`. See
 [Graceful fallback](#graceful-fallback-for-missing-impls) for the mechanism, and
 [Alternatives considered §4–5](#alternatives-considered) for why this beats
 Neon-owned per-crate impls or a per-boundary wrapper.
@@ -686,7 +698,7 @@ within any one type.
 
 **4. Foreign types at a boundary — an adapter rung, not Neon-owned batteries or a
 per-boundary wrapper.** A foreign, non-std type used as the *outermost* type at a
-`Json<T>` boundary (e.g. `Json<OrderMap<String, Field>>`) has no `TypeScript` impl:
+`Json<T>` boundary (e.g. `Json<IndexMap<String, Field>>`) has no `TypeScript` impl:
 the orphan rule bars both the adapter and the user from writing one for a foreign
 type, and the bridge derive reaches only user-owned types. Left alone it falls to
 `any` — and because collection recurses only through *typed* components, every type

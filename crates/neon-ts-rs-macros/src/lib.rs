@@ -24,7 +24,7 @@ pub fn derive_typescript(input: TokenStream) -> TokenStream {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let expanded = quote! {
-        impl #impl_generics ::neon_typescript::TypeScript for #name #ty_generics #where_clause {
+        impl #impl_generics ::neon_ts_rs::__private::TypeScript for #name #ty_generics #where_clause {
             fn ts_type() -> ::std::borrow::Cow<'static, str> {
                 ::neon_ts_rs::ts_type::<Self>()
             }

@@ -19,7 +19,6 @@ tokio = { version = "1.34.0", features = ["rt-multi-thread"] }
 ts-rs = { version = "12", features = ["indexmap-impl"] }
 indexmap = { version = "2", features = ["serde"] }
 neon-ts-rs = { path = "../../crates/neon-ts-rs" }
-neon-typescript = { path = "../../crates/neon-typescript" }
 
 [dependencies.neon]
 path = "../../crates/neon"

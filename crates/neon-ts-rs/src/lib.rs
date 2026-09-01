@@ -11,6 +11,15 @@ use ts_rs::{Config, TypeVisitor, TS};
 
 pub use neon_ts_rs_macros::TypeScript;
 
+/// Implementation detail for the `TypeScript` bridge derive. Re-exports the
+/// paths the generated impl references, so a consumer only needs `neon-ts-rs`
+/// (and `ts-rs`) in scope — never a direct dependency on `neon-typescript`.
+/// Not public API; do not use directly.
+#[doc(hidden)]
+pub mod __private {
+    pub use neon_typescript::TypeScript;
+}
+
 fn cfg() -> Config {
     // ts-rs defaults u64/i64 to `bigint`, but serde_json emits JSON numbers,
     // so map large ints to `number` to match the JSON boundary.

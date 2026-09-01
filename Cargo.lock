@@ -376,7 +376,6 @@ dependencies = [
  "indexmap",
  "neon",
  "neon-ts-rs",
- "neon-typescript",
  "num-bigint-dig",
  "once_cell",
  "serde",
