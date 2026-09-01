@@ -157,11 +157,12 @@ Four sources implement `TypeScript`, in order of how a type is resolved:
    delegating to `T`; the `Boxed<T>` extractor (reusing the branded-box convention
    from `neon-typescript`); and classes (see [Class exports](#class-exports)).
    Foreign types that are neither std nor Neon-local (e.g. `IndexMap`,
-   `chrono::DateTime`, `serde_json::Value`) are *not* special-cased here. Instead
-   they resolve through the **adapter rung** of the fallback ladder below — the
-   generator already knows how to render them — so Neon owns no per-crate impls.
-   A type the generator doesn't cover falls through to `any` (which for
-   `serde_json::Value` is exactly the intended result).
+   `chrono::DateTime`, `serde_json::Value`) are *not* special-cased here. Instead,
+   when the adapter's `TypeScriptExt` is in scope, they are described by the
+   generator (see [Graceful fallback](#graceful-fallback-for-missing-impls) below
+   for how), so Neon owns no per-crate impls. A type the generator doesn't cover
+   falls through to `any` (which for `serde_json::Value` is exactly the intended
+   result).
 
 3. **User data types**, via an adapter: the user derives the upstream generator's
    trait plus a trivial *bridge derive* that implements `neon-typescript`'s
@@ -176,6 +177,11 @@ Four sources implement `TypeScript`, in order of how a type is resolved:
 Enabling the `typescript` feature must never force a `TypeScript` impl on every
 type in every export — a user typing part of their API should not be blocked by an
 export that uses an opaque or un-annotated type. Such types simply appear as `any`.
+
+> The "rung" vocabulary below is internal mechanism, for maintainers. Users never
+> encounter it: the entire user-facing surface is one import,
+> `use neon_ts_rs::TypeScriptExt as _;`, explained in plain terms under
+> [Type providers](#type-providers).
 
 This is achieved with an **autoref-specialization probe** in the macro-generated
 metadata, so the macros never emit a hard `<T as TypeScript>::ts_type()` bound.
@@ -515,10 +521,12 @@ Nothing above is needed at the *boundary* as long as the outermost type has a
 `TypeScript` impl (a user type via the bridge, a std type, a class). The one case
 that needs the adapter is a **foreign type used directly at a boundary** — e.g.
 returning `Json<IndexMap<String, Field>>` rather than wrapping it in a named struct.
-There, add the adapter's boundary rung to scope in that module:
+There, import `TypeScriptExt` in that module — it lets ts-rs describe foreign types
+at your boundaries, so they are typed instead of falling back to `any`:
 
 ```rust
-use neon_ts_rs::TypeScriptExt as _;   // once per module with such exports
+// Let ts-rs describe foreign types (e.g. IndexMap) used directly at a boundary.
+use neon_ts_rs::TypeScriptExt as _;   // once per module that exports such types
 
 #[neon::export]
 fn fields(&self) -> Json<IndexMap<String, FieldDescriptor>> { /* … */ }
@@ -529,9 +537,9 @@ feature) at your pinned ts-rs version, and the types reachable through it stay i
 the output. Pair it with `#[neon::export(ts_strict)]` so a forgotten import surfaces
 as a compile error rather than a silent `any`.
 
-**The rung's reach is exactly the generator's type coverage.** Rung 2 fires only
-when `T: ts_rs::TS` holds, so a foreign type ts-rs doesn't implement still falls to
-`any`. In practice, reach for a generator-supported type: e.g. ts-rs 12 ships
+**Its reach is exactly the generator's type coverage.** `TypeScriptExt` only covers
+a foreign type that ts-rs itself implements; a foreign type ts-rs doesn't know still
+types as `any`. In practice, reach for a generator-supported type: e.g. ts-rs 12 ships
 `indexmap-impl` but has no `ordermap` impl, so `IndexMap` works at a boundary while
 `ordermap::OrderMap` (insertion-ordered identically, and a thin layer over `IndexMap`)
 does not — swap to `IndexMap` rather than debugging a silent `any`. See

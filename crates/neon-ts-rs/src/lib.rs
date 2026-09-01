@@ -26,19 +26,34 @@ fn cfg() -> Config {
     Config::default().with_large_int("number")
 }
 
-/// Rung 2 of the probe ladder (see `neon_typescript::TsProbe`). Resolves any
-/// `T: ts_rs::TS` used as the outermost type at a boundary through ts-rs, so a
-/// foreign type (e.g. `IndexMap<String, User>`) that has no `TypeScript` impl
-/// does not degrade to `"any"`. Implemented for the *bare* probe (Self =
-/// `TsProbe<T>`), the same method-resolution candidate as the inherent rung-1
-/// method — so rung 1 wins whenever it applies (inherent outranks trait) and
-/// this catches the rest. Only visible when brought into scope:
-/// `use neon_ts_rs::TypeScriptExt as _;`.
+/// Extends Neon's TypeScript output to cover **foreign types at an export
+/// boundary** — types from other crates that you didn't define (e.g.
+/// [`IndexMap`](https://docs.rs/indexmap)), used directly as a parameter or
+/// return type.
+///
+/// Types you define are covered by `#[derive(neon_ts_rs::TypeScript)]`. A
+/// foreign type can't carry a derive you didn't write, so without this it types
+/// as `any`. Bringing this trait into scope lets ts-rs describe any foreign type
+/// it understands, so the value is typed instead of silently becoming `any`:
+///
+/// ```ignore
+/// use neon_ts_rs::TypeScriptExt as _;   // once per module that exports such types
+/// ```
+///
+/// You never call its methods — the import alone turns the coverage on. Pair it
+/// with `#[neon::export(ts_strict)]` to make an uncovered foreign type a compile
+/// error instead of a silent `any`. Its reach is exactly what ts-rs supports:
+/// a foreign type ts-rs doesn't implement still types as `any`.
 pub trait TypeScriptExt {
     fn ts_type_of(&self) -> Cow<'static, str>;
     fn ts_collect_of(&self, decls: &mut BTreeMap<String, String>);
 }
 
+// Mechanism (maintainers): this is the ts-rs tier of the boundary type probe in
+// `neon_typescript::TsProbe`. Implemented for the *bare* probe (`Self =
+// TsProbe<T>`), it shares the same method-resolution candidate as the probe's
+// inherent `TypeScript` method, so a native `TypeScript` impl still wins and this
+// only catches genuinely-foreign payloads. Invisible unless imported into scope.
 impl<T: TS + 'static> TypeScriptExt for neon_typescript::TsProbe<T> {
     fn ts_type_of(&self) -> Cow<'static, str> {
         ts_type::<T>()
