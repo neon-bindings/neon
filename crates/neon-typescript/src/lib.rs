@@ -5,6 +5,7 @@ use std::borrow::Cow;
 use std::cell::{Ref, RefCell, RefMut};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::hash::Hash;
+use std::marker::PhantomData;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -30,6 +31,54 @@ pub trait TypeScript {
                 .or_insert_with(|| d.into_owned());
         }
     }
+}
+
+// ——— TypeScript autoref specialization probe ———
+//
+// This enables macro-generated metadata to gracefully handle types that don't
+// implement `TypeScript`. Method resolution is a three-rung ladder tried
+// most-specific first (see `doc/typescript.md`):
+//
+//   Rung 1: inherent method on `TsProbe<T>` (requires `T: TypeScript`).
+//   Rung 2: an adapter's trait `impl … for TsProbe<T>` (e.g. `neon-ts-rs`'s
+//           `TypeScriptExt`), only visible when that trait is `use`d in scope.
+//   Rung 3: the `TsFallback` trait impl for `&TsProbe<T>`, reached via autoref
+//           for all `T`, yielding `"any"`.
+//
+// The probe lives here (not in `neon`) so an adapter crate can hang rung 2 on it.
+//
+// Usage in macro-generated code:
+//   let __probe = TsProbe::<SomeType>(PhantomData);
+//   (&__probe).ts_type_of()
+
+/// Compile-time probe for whether a type implements `TypeScript`.
+pub struct TsProbe<T>(pub PhantomData<T>);
+
+// Higher priority: inherent method, available only when T: TypeScript
+impl<T: TypeScript> TsProbe<T> {
+    pub fn ts_type_of(&self) -> Cow<'static, str> {
+        T::ts_type()
+    }
+
+    pub fn ts_collect_of(&self, decls: &mut BTreeMap<String, String>) {
+        T::ts_collect(decls);
+    }
+}
+
+/// Lower-priority fallback for types that don't implement `TypeScript`.
+/// Reached via autoref (`(&probe).method()` resolves to `&TsProbe<T>` first,
+/// then falls through to `&&TsProbe<T>` which matches this trait impl).
+pub trait TsFallback {
+    fn ts_type_of(&self) -> Cow<'static, str>;
+    fn ts_collect_of(&self, decls: &mut BTreeMap<String, String>);
+}
+
+impl<T> TsFallback for &TsProbe<T> {
+    fn ts_type_of(&self) -> Cow<'static, str> {
+        "any".into()
+    }
+
+    fn ts_collect_of(&self, _: &mut BTreeMap<String, String>) {}
 }
 
 // ——— Primitive impls ———

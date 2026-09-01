@@ -1,6 +1,9 @@
 // Test module for TypeScript declaration generation.
 // These exports exist solely to verify .d.ts output.
 
+use indexmap::IndexMap;
+use neon::types::extract::Json;
+use neon_ts_rs::TypeScriptExt as _;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -306,6 +309,24 @@ fn ts_get_point() -> GeoPoint {
         lat: 37.5,
         lng: -122.3,
     }
+}
+
+// --- Foreign type used directly at a Json<T> boundary ---
+//
+// `IndexMap` has no `neon_typescript::TypeScript` impl, only `ts_rs::TS`. Using
+// it as the outermost type at a `Json<T>` boundary would degrade to `any` (and
+// drop `FieldDescriptor`) without the adapter's `TypeScriptExt` boundary rung
+// (brought into scope by `use neon_ts_rs::TypeScriptExt as _;` above). This
+// exercises rung 2 of the probe ladder.
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
+pub struct FieldDescriptor {
+    pub name: String,
+    pub required: bool,
+}
+
+#[neon::export]
+fn ts_index_map() -> Json<IndexMap<String, FieldDescriptor>> {
+    unimplemented!()
 }
 
 // --- New attributes: ts_skip, ts_name, ts_returns, per-param ts_type ---

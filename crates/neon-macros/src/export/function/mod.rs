@@ -521,23 +521,38 @@ fn generate_ts_metadata(
             // as a TsProbe type parameter in static metadata.
             let ty = crate::name::substitute_lifetimes_with_static(&pat_type.ty);
 
-            // If json mode, the actual extraction type is Json<T>, so TS type comes from
-            // Json<T> which delegates to T. We wrap the type accordingly.
-            let ts_ty = if meta.json {
-                quote::quote!(neon::types::extract::Json<#ty>)
+            // Probe the TypeScript *boundary* type. `Json<T>` is transparent at
+            // the JSON boundary (its TS shape is exactly `T`'s), so we probe the
+            // payload `T` directly: json mode's payload is the bare `#ty`, and an
+            // explicit `Json<Inner>` is unwrapped to `Inner`. This keeps rung-1
+            // results identical while letting an adapter's rung-2 `TypeScriptExt`
+            // resolve a foreign payload (e.g. `IndexMap<..>`) that a `Json<..>`
+            // probe could never reach.
+            let boundary_ty = if meta.json {
+                ty.clone()
             } else {
-                quote::quote!(#ty)
+                crate::name::strip_outer_json(&ty)
             };
+            let ts_ty = quote::quote!(#boundary_ty);
 
             // Use the autoref specialization probe by default (types without
             // TypeScript impls silently fall back to "any"). In strict mode,
             // call the trait directly — missing impl is a compile error.
             if meta.ts_strict {
+                // Strict: probe with no `TsFallback` import, so rung 1 or rung 2
+                // (an adapter's `TypeScriptExt`) compile while a rung-3 type is a
+                // compile error at the signature.
                 quote::quote!(
                     neon::typescript::ParamMeta {
                         name: #name_str,
-                        ts_type: || <#ts_ty as neon::typescript::TypeScript>::ts_type(),
-                        ts_collect: |decls| <#ts_ty as neon::typescript::TypeScript>::ts_collect(decls),
+                        ts_type: || {
+                            let __probe = neon::macro_internal::TsProbe::<#ts_ty>(std::marker::PhantomData);
+                            (&__probe).ts_type_of()
+                        },
+                        ts_collect: |decls| {
+                            let __probe = neon::macro_internal::TsProbe::<#ts_ty>(std::marker::PhantomData);
+                            (&__probe).ts_collect_of(decls)
+                        },
                     }
                 )
             } else {
@@ -581,15 +596,25 @@ fn generate_ts_metadata(
             ),
             syn::ReturnType::Type(_, ty) => {
                 let ty = crate::name::substitute_lifetimes_with_static(ty);
-                let ret_ty = if meta.json {
-                    quote::quote!(neon::types::extract::Json<#ty>)
+                // Probe the TypeScript boundary (payload) type; see the param
+                // handling above for why `Json<T>` is probed as its payload `T`.
+                let boundary_ty = if meta.json {
+                    ty.clone()
                 } else {
-                    quote::quote!(#ty)
+                    crate::name::strip_outer_json(&ty)
                 };
+                let ret_ty = quote::quote!(#boundary_ty);
                 if meta.ts_strict {
+                    // Strict: probe with no `TsFallback` import (rung 1 or 2 only).
                     (
-                        quote::quote!(|| <#ret_ty as neon::typescript::TypeScript>::ts_type()),
-                        quote::quote!(|decls| <#ret_ty as neon::typescript::TypeScript>::ts_collect(decls)),
+                        quote::quote!(|| {
+                            let __probe = neon::macro_internal::TsProbe::<#ret_ty>(std::marker::PhantomData);
+                            (&__probe).ts_type_of()
+                        }),
+                        quote::quote!(|decls| {
+                            let __probe = neon::macro_internal::TsProbe::<#ret_ty>(std::marker::PhantomData);
+                            (&__probe).ts_collect_of(decls)
+                        }),
                     )
                 } else {
                     (

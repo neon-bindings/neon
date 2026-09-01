@@ -193,7 +193,7 @@ impl<T: TypeScript> TsProbe<T> {
 
 // Rung 3 (fallback): reached via autoref for ALL T.
 pub trait TsFallback { fn ts_type_of(&self) -> Cow<'static, str>; }
-impl<T> TsFallback for &&TsProbe<T> {
+impl<T> TsFallback for &TsProbe<T> {
     fn ts_type_of(&self) -> Cow<'static, str> { "any".into() }
 }
 ```
@@ -206,16 +206,37 @@ matches; the type becomes `"any"`, with no viral bounds and no compile error.
 used at a boundary resolve through the generator instead of degrading to `any`. It
 is provided by the adapter, because the orphan rule bars anyone but the trait's own
 crate from implementing `TypeScript` for a foreign type — and `neon-typescript` can't
-name `ts_rs::TS`. So the adapter defines its own trait and hangs it on the probe:
+name `ts_rs::TS`. So the adapter defines its own trait and implements it for the
+*bare* probe:
 
 ```rust
-// In neon-ts-rs. A new, adapter-local trait, so implementing it for foreign
-// types is orphan-legal ("you can always implement your own trait").
+// In neon-ts-rs. A new, adapter-local trait, so implementing it for a foreign
+// type (TsProbe is defined in neon-typescript) is orphan-legal ("you can always
+// implement your own trait").
 pub trait TypeScriptExt { fn ts_type_of(&self) -> Cow<'static, str>; }
-impl<T: ts_rs::TS> TypeScriptExt for &TsProbe<T> {
+impl<T: ts_rs::TS> TypeScriptExt for TsProbe<T> {
     fn ts_type_of(&self) -> Cow<'static, str> { neon_ts_rs::ts_type::<T>() }
 }
 ```
+
+The `&`-levels are what order the rungs. The call site is unchanged from the
+two-rung probe — `(&__probe).ts_type_of()` — so the receiver has type `&TsProbe<T>`.
+Rung 2's method receiver is *also* `&TsProbe<T>` (`&self` on `impl … for TsProbe<T>`),
+the same candidate as rung 1's inherent method; since inherent methods outrank trait
+methods at the same candidate, rung 1 wins whenever it applies and rung 2 catches the
+rest. Rung 3's receiver is one autoref deeper (`&&TsProbe<T>`, from `impl … for
+&TsProbe<T>`), so it is reached only after both. The probe *call shape* is therefore
+unchanged (`(&__probe).ts_type_of()`); the rung's wiring is just (a) relocating
+`TsProbe`/`TsFallback` into `neon-typescript` so the adapter can name them, and
+(b) probing the payload of a `Json` boundary, below.
+
+**Probing through `Json`.** Data crosses the boundary as `Json<T>`, but rung 2 fires
+on the *bare* foreign type: `Json<Foreign>: ts_rs::TS` is false and unfixable (the
+orphan rule bars anyone from implementing ts-rs's trait for Neon's `Json`). So at a
+`Json` boundary the macro instantiates the probe with the payload `T`, not the
+`Json<T>` wrapper. `Json<T>` is transparent for TypeScript — its TS shape is exactly
+`T`'s — so this leaves rung-1 output identical for every existing case while making a
+foreign payload (e.g. `IndexMap<String, User>`) reachable by rung 2.
 
 Now `Json<OrderMap<String, Field>>` at a boundary — a foreign type with no
 `TypeScript` impl — resolves via rung 2 through ts-rs (at *the user's* ts-rs version),
@@ -243,9 +264,11 @@ the name never appears anywhere but the import, and the methods are consumed onl
 macro-generated code. If the import is absent (or the user uses no adapter),
 resolution simply skips rung 2 and behaves exactly as the two-rung ladder did:
 real-or-`any`. Its one hazard — forget the import and a boundary silently becomes
-`any` again — is covered by `#[neon::export(ts_strict)]`, which turns a fallen-through
-boundary into a compile error at the signature (see
-[Escape-hatch attributes](#escape-hatch-attributes)); pairing the import with
+`any` again — is covered by `#[neon::export(ts_strict)]`, which emits the same probe
+call but *omits* the rung-3 `TsFallback` import, so a type that resolves via rung 1 or
+rung 2 compiles while one that would hit rung 3 is a compile error at the signature
+(naming both the `TypeScript` and `ts_rs::TS` bounds it failed). See
+[Escape-hatch attributes](#escape-hatch-attributes); pairing the import with
 `ts_strict` is the recommended posture for JSON-heavy addons.
 
 ### Metadata collection
@@ -732,11 +755,16 @@ trait plus its upstream.
 3. Rework this PR: drop the in-tree serde-aware derive, land `neon-typescript` and
    the retained Neon-side machinery (metadata collection, `generate()`, boundary and
    built-in impls, class exports, escape-hatch attributes, auto-attach, feature-gating).
-4. Wire the boundary rung: relocate `TsProbe`/`TsFallback` into `neon-typescript` so
-   an adapter can extend the ladder, add the extra autoref level to the macro-emitted
-   probe call, and add the `TypeScriptExt` rung to `neon-ts-rs`. Validate that a bare
-   foreign type at a boundary (e.g. an ordered map) resolves through ts-rs with the
-   per-module `use neon_ts_rs::TypeScriptExt as _;`, and that omitting it under
-   `ts_strict` is a compile error rather than a silent `any`.
+4. Wire the boundary rung: relocate `TsProbe`/`TsFallback` into `neon-typescript`
+   (re-exported from `neon::macro_internal`) so an adapter can name them, add the
+   `TypeScriptExt` rung (`impl<T: ts_rs::TS> TypeScriptExt for TsProbe<T>`) to
+   `neon-ts-rs`, and switch `ts_strict` to emit the probe without the `TsFallback`
+   import. The probe *call shape* is unchanged, but the macro now instantiates it with
+   the payload of a `Json` boundary (rung 2 fires on the bare foreign type, and
+   `Json<Foreign>: ts_rs::TS` is unfixable). Validate that a bare foreign type at a
+   boundary (e.g. an ordered/indexed map) resolves through ts-rs with the per-module
+   `use neon_ts_rs::TypeScriptExt as _;` — including that the *value* type stays in the
+   output — and that omitting the import under `ts_strict` is a compile error rather
+   than a silent `any`.
 5. Before release, extract `neon-ts-rs` to its own repository and publish it; the
    dogfooding git dependency becomes a normal versioned dependency.

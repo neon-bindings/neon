@@ -506,6 +506,35 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
+  it("resolves a foreign map at a Json boundary through ts-rs (rung 2)", () => {
+    // IndexMap has no `neon_typescript::TypeScript` impl, only `ts_rs::TS`.
+    // With `use neon_ts_rs::TypeScriptExt as _;` in scope, the boundary rung
+    // renders it through ts-rs (a mapped type over FieldDescriptor) instead of
+    // degrading to `any`.
+    assert.ok(
+      declarations.includes("tsIndexMap()"),
+      `Expected tsIndexMap declaration, got:\n${declarations}`
+    );
+    assert.ok(
+      declarations.includes("FieldDescriptor") &&
+        /tsIndexMap\(\):[^;]*FieldDescriptor/.test(declarations),
+      `Expected tsIndexMap to reference FieldDescriptor (not any), got:\n${declarations}`
+    );
+    assert.ok(
+      !/tsIndexMap\(\): any/.test(declarations),
+      `tsIndexMap must not degrade to any, got:\n${declarations}`
+    );
+  });
+
+  it("keeps a type reachable only through a foreign boundary map (regression)", () => {
+    // The core regression: the type referenced only via the IndexMap value must
+    // not vanish from the output. Its declaration must be collected.
+    assert.ok(
+      /(interface|type) FieldDescriptor\b/.test(declarations),
+      `Expected FieldDescriptor declaration, got:\n${declarations}`
+    );
+  });
+
   it("ts_strict on a function compiles (impls present, no fallback)", () => {
     assert.ok(
       declarations.includes(

@@ -37,44 +37,11 @@ pub static TYPE_METADATA: [crate::typescript::ExportMeta];
 
 // ——— TypeScript autoref specialization probe ———
 //
-// This enables macro-generated metadata to gracefully handle types that don't
-// implement `TypeScript`. Method resolution prefers the inherent impl (which
-// requires `T: TypeScript`) over the trait impl (which works for all `T` via
-// autoref). Types with impls get real type info; types without get `"any"`.
-//
-// Usage in macro-generated code:
-//   let __probe = TsProbe::<SomeType>(PhantomData);
-//   (&__probe).ts_type_of()
-
-/// Compile-time probe for whether a type implements `TypeScript`.
-pub struct TsProbe<T>(pub PhantomData<T>);
-
-// Higher priority: inherent method, available only when T: TypeScript
-impl<T: crate::typescript::TypeScript> TsProbe<T> {
-    pub fn ts_type_of(&self) -> std::borrow::Cow<'static, str> {
-        T::ts_type()
-    }
-
-    pub fn ts_collect_of(&self, decls: &mut std::collections::BTreeMap<String, String>) {
-        T::ts_collect(decls);
-    }
-}
-
-/// Lower-priority fallback for types that don't implement `TypeScript`.
-/// Reached via autoref (`(&probe).method()` resolves to `&TsProbe<T>` first,
-/// then falls through to `&&TsProbe<T>` which matches this trait impl).
-pub trait TsFallback {
-    fn ts_type_of(&self) -> std::borrow::Cow<'static, str>;
-    fn ts_collect_of(&self, decls: &mut std::collections::BTreeMap<String, String>);
-}
-
-impl<T> TsFallback for &TsProbe<T> {
-    fn ts_type_of(&self) -> std::borrow::Cow<'static, str> {
-        "any".into()
-    }
-
-    fn ts_collect_of(&self, _: &mut std::collections::BTreeMap<String, String>) {}
-}
+// The probe (`TsProbe`, its inherent impl, `TsFallback`, and its impl) lives in
+// `neon-typescript` so an adapter crate can hang an extra resolution rung on it.
+// The macros emit `neon::macro_internal::{TsProbe, TsFallback}`, so re-export
+// them here to keep those paths stable. See `neon_typescript` for details.
+pub use neon_typescript::{TsFallback, TsProbe};
 
 // Wrapper for the value type and return type tags
 pub struct NeonMarker<Tag, Return>(PhantomData<Tag>, PhantomData<Return>);

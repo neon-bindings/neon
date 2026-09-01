@@ -189,6 +189,30 @@ pub(crate) fn type_needs_fallback(ty: &syn::Type) -> bool {
     checker.needs_fallback
 }
 
+/// If `ty` is an outer `Json<Inner>` (from `neon::types::extract`), return
+/// `Inner`; otherwise return `ty` unchanged. Used to pick the TypeScript
+/// *boundary* type for the probe: `Json<T>` is transparent at the JSON boundary
+/// (its TS shape is exactly `T`'s), so probing `T` directly gives the same rung-1
+/// result while also letting an adapter's rung-2 `TypeScriptExt` resolve a
+/// *foreign* payload `T` (e.g. `IndexMap<..>`) that `Json<T>` itself could never
+/// reach (`Json` is neither `TypeScript` nor `ts_rs::TS`).
+pub(crate) fn strip_outer_json(ty: &syn::Type) -> syn::Type {
+    if let syn::Type::Path(type_path) = ty {
+        if type_path.qself.is_none() {
+            if let Some(seg) = type_path.path.segments.last() {
+                if seg.ident == "Json" {
+                    if let syn::PathArguments::AngleBracketed(args) = &seg.arguments {
+                        if let Some(syn::GenericArgument::Type(inner)) = args.args.first() {
+                            return inner.clone();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    ty.clone()
+}
+
 /// Rewrite all non-`'static` lifetimes in a type to `'static`, so the type can
 /// be used as a type parameter in a `static fn` metadata closure. Returns a
 /// new owned `Type`.

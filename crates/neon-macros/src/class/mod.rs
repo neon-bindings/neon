@@ -1493,11 +1493,14 @@ fn generate_ts_class_metadata(
                         }
 
                         let ty = crate::name::substitute_lifetimes_with_static(ty);
-                        let ts_ty = if ctor_meta.json {
-                            quote::quote!(neon::types::extract::Json<#ty>)
+                        // Probe the TypeScript boundary (payload) type; `Json<T>`
+                        // is probed as its payload `T` (see the function macro).
+                        let boundary_ty = if ctor_meta.json {
+                            ty.clone()
                         } else {
-                            quote::quote!(#ty)
+                            crate::name::strip_outer_json(&ty)
                         };
+                        let ts_ty = quote::quote!(#boundary_ty);
 
                         let (ts_type_tok, ts_collect_tok) = ts_type_tokens(&ts_ty, ctor_strict);
                         Some(quote::quote!(
@@ -1728,13 +1731,15 @@ fn resolve_static_type(
     // TsProbe type parameter in static metadata.
     let resolved = crate::name::substitute_lifetimes_with_static(&resolved);
 
-    let ts_ty = if json {
-        quote::quote!(neon::types::extract::Json<#resolved>)
+    // Probe the TypeScript boundary (payload) type; `Json<T>` is probed as its
+    // payload `T` (see the function macro for the rationale).
+    let boundary_ty = if json {
+        resolved
     } else {
-        quote::quote!(#resolved)
+        crate::name::strip_outer_json(&resolved)
     };
 
-    Some(ts_ty)
+    Some(quote::quote!(#boundary_ty))
 }
 
 /// Generate the `(ts_type, ts_collect)` closure token pairs that populate a
@@ -1746,14 +1751,21 @@ fn resolve_static_type(
 /// doesn't implement `TypeScript`. For example, with `ts_ty = f64` it resolves
 /// to `"number"`; with an un-impl'd type it resolves to `"any"` — no compile error.
 ///
-/// In **strict mode** (`ts_strict`) it calls the trait directly
-/// (`<ts_ty as TypeScript>::ts_type()`), so a missing impl is a compile error
+/// In **strict mode** (`ts_strict`) it emits the same probe but *without* the
+/// rung-3 `TsFallback` import, so a type resolving via rung 1 or rung 2 (an
+/// adapter's `TypeScriptExt`) compiles while a rung-3 type is a compile error
 /// instead of a silent `"any"`.
 fn ts_type_tokens(ts_ty: &TokenStream, strict: bool) -> (TokenStream, TokenStream) {
     if strict {
         (
-            quote::quote!(|| <#ts_ty as neon::typescript::TypeScript>::ts_type()),
-            quote::quote!(|decls| <#ts_ty as neon::typescript::TypeScript>::ts_collect(decls)),
+            quote::quote!(|| {
+                let __probe = neon::macro_internal::TsProbe::<#ts_ty>(std::marker::PhantomData);
+                (&__probe).ts_type_of()
+            }),
+            quote::quote!(|decls| {
+                let __probe = neon::macro_internal::TsProbe::<#ts_ty>(std::marker::PhantomData);
+                (&__probe).ts_collect_of(decls)
+            }),
         )
     } else {
         (

@@ -17,6 +17,29 @@ fn cfg() -> Config {
     Config::default().with_large_int("number")
 }
 
+/// Rung 2 of the probe ladder (see `neon_typescript::TsProbe`). Resolves any
+/// `T: ts_rs::TS` used as the outermost type at a boundary through ts-rs, so a
+/// foreign type (e.g. `IndexMap<String, User>`) that has no `TypeScript` impl
+/// does not degrade to `"any"`. Implemented for the *bare* probe (Self =
+/// `TsProbe<T>`), the same method-resolution candidate as the inherent rung-1
+/// method — so rung 1 wins whenever it applies (inherent outranks trait) and
+/// this catches the rest. Only visible when brought into scope:
+/// `use neon_ts_rs::TypeScriptExt as _;`.
+pub trait TypeScriptExt {
+    fn ts_type_of(&self) -> Cow<'static, str>;
+    fn ts_collect_of(&self, decls: &mut BTreeMap<String, String>);
+}
+
+impl<T: TS + 'static> TypeScriptExt for neon_typescript::TsProbe<T> {
+    fn ts_type_of(&self) -> Cow<'static, str> {
+        ts_type::<T>()
+    }
+
+    fn ts_collect_of(&self, decls: &mut BTreeMap<String, String>) {
+        ts_collect::<T>(decls)
+    }
+}
+
 /// The TypeScript type expression for `T` (e.g. "SearchResult", "Array<string>").
 pub fn ts_type<T: TS + 'static + ?Sized>() -> Cow<'static, str> {
     Cow::Owned(<T as TS>::name(&cfg()))
@@ -31,10 +54,18 @@ pub fn ts_collect<T: TS + 'static + ?Sized>(decls: &mut BTreeMap<String, String>
     }
     impl TypeVisitor for Collector<'_> {
         fn visit<U: TS + 'static + ?Sized>(&mut self) {
-            // Inline types (primitives, Vec, Option, …) have no output_path;
-            // don't declare them, but recurse to reach named types inside.
+            // Inline types (primitives, Vec, Option, maps, …) have no
+            // output_path; don't declare them, but recurse to reach named types
+            // inside. For maps and similar containers, the value/key types are
+            // reached only through `visit_generics` (ts-rs's `visit_dependencies`
+            // for e.g. `HashMap<K, V>` recurses into `V`'s *dependencies* but
+            // never visits `V` itself), so we must traverse both. This matters
+            // when such a container is the *outermost* type at a boundary (via
+            // the `TypeScriptExt` rung): there is no enclosing derived type to
+            // register the value type for us.
             if <U as TS>::output_path().is_none() {
                 <U as TS>::visit_dependencies(self);
+                <U as TS>::visit_generics(self);
                 return;
             }
             let key = <U as TS>::ident(&self.cfg);
