@@ -2,12 +2,17 @@
 
 ## Status
 
-This is the agreed design, and the PR now implements it. It is presented here as a
-single coherent design, not as a change-set. Type information for user data types
-comes from third-party generators (via an adapter) rather than a Neon-owned derive;
-the earlier in-tree serde-aware derive macro has been removed. The ts-rs adapter
-(`neon-ts-rs`) currently lives in-tree for end-to-end dogfooding and will move to
-its own repository before release (see [Crate & repository layout](#crate--repository-layout)).
+This is the agreed design, presented as a single coherent design rather than a
+change-set. Type information for user data types comes from third-party generators
+(via an adapter) rather than a Neon-owned derive; the earlier in-tree serde-aware
+derive macro has been removed. The PR implements the adapter-based core (the minimal
+trait, built-in impls, bridge derive, `generate()`, auto-attach). The one piece still
+being wired up is the adapter-provided **boundary rung** (`TypeScriptExt`) that lets a
+*foreign* type used at a `Json` boundary resolve through the generator instead of
+degrading to `any` — see [Graceful fallback](#graceful-fallback-for-missing-impls).
+The ts-rs adapter (`neon-ts-rs`) currently lives in-tree for end-to-end dogfooding and
+will move to its own repository before release (see
+[Crate & repository layout](#crate--repository-layout)).
 
 ## Motivation
 
@@ -52,12 +57,14 @@ Responsibility splits cleanly in two:
   pointers, `Json<T>`, classes) and for std/core types. This is stable, small, and
   squarely Neon's domain.
 
-- **Type information for user data types comes from a third-party generator**
-  (ts-rs or specta), reached through a thin *adapter*. Neon does **not** own a
-  serde-aware derive macro. Understanding serde's serialization (renames, enum
-  tagging, flatten, optionality, generics) is an open-ended maintenance treadmill
-  that tracks the evolution of serde and Rust; a mature crate like ts-rs already
-  owns it. See [Design rationale](#design-rationale) for why.
+- **Type information for user data types (and other foreign types) comes from a
+  third-party generator** (ts-rs or specta), reached through a thin *adapter*. Neon
+  does **not** own a serde-aware derive macro. Understanding serde's serialization
+  (renames, enum tagging, flatten, optionality, generics) is an open-ended
+  maintenance treadmill that tracks the evolution of serde and Rust; a mature crate
+  like ts-rs already owns it. The same adapter also lets foreign types (e.g. ordered
+  maps, dates) resolve through the generator at a boundary, so Neon owns no per-crate
+  type mappings. See [Design rationale](#design-rationale) for why.
 
 The crate picture:
 
@@ -149,9 +156,12 @@ Four sources implement `TypeScript`, in order of how a type is resolved:
    → `bigint`, `Handle<'cx, JsString>` → `string`, etc.; the extractors; `Json<T>`
    delegating to `T`; the `Boxed<T>` extractor (reusing the branded-box convention
    from `neon-typescript`); and classes (see [Class exports](#class-exports)).
-   Foreign types that are neither std nor Neon-local (e.g. `serde_json::Value`,
-   `either::Either`) are *not* special-cased — they resolve to `any` through the
-   fallback below, which for `serde_json::Value` is exactly the intended result.
+   Foreign types that are neither std nor Neon-local (e.g. `IndexMap`,
+   `chrono::DateTime`, `serde_json::Value`) are *not* special-cased here. Instead
+   they resolve through the **adapter rung** of the fallback ladder below — the
+   generator already knows how to render them — so Neon owns no per-crate impls.
+   A type the generator doesn't cover falls through to `any` (which for
+   `serde_json::Value` is exactly the intended result).
 
 3. **User data types**, via an adapter: the user derives the upstream generator's
    trait plus a trivial *bridge derive* that implements `neon-typescript`'s
@@ -168,30 +178,75 @@ type in every export — a user typing part of their API should not be blocked b
 export that uses an opaque or un-annotated type. Such types simply appear as `any`.
 
 This is achieved with an **autoref-specialization probe** in the macro-generated
-metadata, so the macros never emit a hard `<T as TypeScript>::ts_type()` bound:
+metadata, so the macros never emit a hard `<T as TypeScript>::ts_type()` bound.
+Resolution is a **three-rung ladder**, tried most-specific first:
 
 ```rust
-// In neon::macro_internal — always available.
+// In neon-typescript — always available. (It lives here, not in `neon`, so that
+// an adapter crate can hang its own rung on it; see below.)
 pub struct TsProbe<T>(pub PhantomData<T>);
 
-// Higher priority: inherent method, available only when T: TypeScript.
+// Rung 1 (most specific): inherent method, available only when T: TypeScript.
 impl<T: TypeScript> TsProbe<T> {
     pub fn ts_type_of(&self) -> Cow<'static, str> { T::ts_type() }
 }
 
-// Lower priority: reached via autoref for ALL T.
+// Rung 3 (fallback): reached via autoref for ALL T.
 pub trait TsFallback { fn ts_type_of(&self) -> Cow<'static, str>; }
-impl<T> TsFallback for &TsProbe<T> {
+impl<T> TsFallback for &&TsProbe<T> {
     fn ts_type_of(&self) -> Cow<'static, str> { "any".into() }
 }
 ```
 
-Method resolution prefers the inherent method (exact `&TsProbe<T>`); if
-`T: TypeScript`, it returns the real type, otherwise it falls through the autoref
-to the trait impl and returns `"any"`. So annotated types get accurate output,
-un-annotated types silently become `any`, and there are no viral bounds or compile
-errors. `#[neon::export(ts_strict)]` opts out of the fallback (see
-[Escape-hatch attributes](#escape-hatch-attributes)).
+**Rung 1** — the type has a `TypeScript` impl (a built-in, a boundary impl, a
+class, or a user type via the bridge derive). Real type info. **Rung 3** — nothing
+matches; the type becomes `"any"`, with no viral bounds and no compile error.
+
+**Rung 2 (the adapter rung)** sits between them and is what lets a *foreign* type
+used at a boundary resolve through the generator instead of degrading to `any`. It
+is provided by the adapter, because the orphan rule bars anyone but the trait's own
+crate from implementing `TypeScript` for a foreign type — and `neon-typescript` can't
+name `ts_rs::TS`. So the adapter defines its own trait and hangs it on the probe:
+
+```rust
+// In neon-ts-rs. A new, adapter-local trait, so implementing it for foreign
+// types is orphan-legal ("you can always implement your own trait").
+pub trait TypeScriptExt { fn ts_type_of(&self) -> Cow<'static, str>; }
+impl<T: ts_rs::TS> TypeScriptExt for &TsProbe<T> {
+    fn ts_type_of(&self) -> Cow<'static, str> { neon_ts_rs::ts_type::<T>() }
+}
+```
+
+Now `Json<OrderMap<String, Field>>` at a boundary — a foreign type with no
+`TypeScript` impl — resolves via rung 2 through ts-rs (at *the user's* ts-rs version),
+rather than falling to `any`. This is the only place the gap can be closed: the bridge
+derive reaches only user-owned types, and both the adapter and the user are
+orphan-barred from implementing `TypeScript` on a foreign type directly. (Foreign
+types *nested inside* a user type never hit the gap — the bridge delegates the whole
+type to ts-rs, whose visitor already handles them. The rung is specifically for a
+foreign type used as the *outermost* type at a boundary.)
+
+**Opting the rung into scope.** Autoref-specialization dispatches on an *unqualified*
+method call, and for a *trait* method that only resolves if the trait is `use`d in
+scope. Rung 1 is an inherent method (found via the fully-qualified `TsProbe` path — no
+import), and rung 3's `TsFallback` lives in a crate the macro knows, so the macro
+brings it into scope itself (`use … as _;`). It cannot do that for rung 2's trait,
+because it doesn't know which adapter the user chose. So the user brings it in, once
+per module that has exports:
+
+```rust
+use neon_ts_rs::TypeScriptExt as _;   // "this adapter provides TS for extra types"
+```
+
+This is the ordinary anonymous-extension-trait idiom (`use std::io::Write as _;`) —
+the name never appears anywhere but the import, and the methods are consumed only by
+macro-generated code. If the import is absent (or the user uses no adapter),
+resolution simply skips rung 2 and behaves exactly as the two-rung ladder did:
+real-or-`any`. Its one hazard — forget the import and a boundary silently becomes
+`any` again — is covered by `#[neon::export(ts_strict)]`, which turns a fallen-through
+boundary into a compile error at the signature (see
+[Escape-hatch attributes](#escape-hatch-attributes)); pairing the import with
+`ts_strict` is the recommended posture for JSON-heavy addons.
 
 ### Metadata collection
 
@@ -428,6 +483,27 @@ fn search(q: String) -> SearchResult { /* … */ }   // Json extraction unchange
 - **neither** — hand-write `impl TypeScript` (see
   [Where type information comes from](#where-type-information-comes-from)).
 
+Nothing above is needed at the *boundary* as long as the outermost type has a
+`TypeScript` impl (a user type via the bridge, a std type, a class). The one case
+that needs the adapter is a **foreign type used directly at a boundary** — e.g.
+returning `Json<OrderMap<String, Field>>` rather than wrapping it in a named struct.
+There, add the adapter's boundary rung to scope in that module:
+
+```rust
+use neon_ts_rs::TypeScriptExt as _;   // once per module with such exports
+
+#[neon::export]
+fn fields(&self) -> Json<OrderMap<String, FieldDescriptor>> { /* … */ }
+```
+
+The `OrderMap` then renders through ts-rs (enable ts-rs's own `indexmap`-style
+feature for the type) at your pinned ts-rs version, and the types reachable through
+it stay in the output. Pair it with `#[neon::export(ts_strict)]` so a forgotten
+import surfaces as a compile error rather than a silent `any`. See
+[Graceful fallback](#graceful-fallback-for-missing-impls) for the mechanism, and
+[Alternatives considered §4–5](#alternatives-considered) for why this beats
+Neon-owned per-crate impls or a per-boundary wrapper.
+
 ### Adapter responsibilities
 
 The generators are faithful to the *Rust type*; Neon's boundary is faithful to
@@ -585,6 +661,65 @@ and adopting the provider's style wholesale (impossible — Neon's own boundary 
 stay Neon-styled). The cost is cosmetic inconsistency across a file, consistent
 within any one type.
 
+**4. Foreign types at a boundary — an adapter rung, not Neon-owned batteries or a
+per-boundary wrapper.** A foreign, non-std type used as the *outermost* type at a
+`Json<T>` boundary (e.g. `Json<OrderMap<String, Field>>`) has no `TypeScript` impl:
+the orphan rule bars both the adapter and the user from writing one for a foreign
+type, and the bridge derive reaches only user-owned types. Left alone it falls to
+`any` — and because collection recurses only through *typed* components, every type
+reachable *only* through it silently vanishes from the output, turning graceful
+degradation into a downstream `tsc` break located far from its cause. *Decision:*
+close it with the adapter-provided `TypeScriptExt` rung (see
+[Graceful fallback](#graceful-fallback-for-missing-impls)), which resolves any
+`T: ts_rs::TS` through the generator at the user's own version. *Rejected — feature-
+gated built-in impls in `neon-typescript`* (`typescript-indexmap`, `typescript-chrono`,
+…, each mapping a foreign type to TS): the trait's crate is the only orphan-legal home
+for such a generic impl, but putting it there re-couples the foreign crate's *version*
+to `neon-typescript`'s declared range and silently fails to apply across a semver-major
+bump (the impl is then for a different type) — exactly the per-crate maintenance surface
+the adapter design sheds, reintroduced one crate at a time. The rung subsumes it for
+anything the generator supports. *Rejected — an explicit per-boundary wrapper* (a
+generic `TsRs<T>` / `JsonTs<T>` the user wraps around foreign types in each signature):
+always correct and version-safe, but it leaks into every affected signature (plus
+body wrap/unwrap), forces the user to track which types need wrapping, and recurs with
+every new foreign boundary — the ongoing cost the feature exists to remove. A
+hand-written `impl TypeScript` on a local newtype remains the last-resort escape for
+types the generator can't describe at all.
+
+**5. Bringing the rung into scope — a per-module import named `TypeScriptExt`.** For
+the rung to dispatch, its trait must be in lexical scope at each `#[neon::export]`
+site (autoref specialization resolves on an unqualified call, which only sees imported
+traits), and it must be defined in the adapter (orphan-legality). Rust scope is
+per-module, so the cost is one anonymous import per exporting module:
+`use neon_ts_rs::TypeScriptExt as _;` — the same `use … as _` idiom Neon's macros
+already emit internally for their own rungs. *Rejected — a Cargo feature that
+auto-wires the rung* (`neon = { features = ["ts-rs"] }`, macro emits the import for
+you): zero source overhead, but it forces `neon` to take an optional dependency on a
+*specific* adapter, inverting the dependency arrow the crate split establishes and —
+decisively — not scaling to third-party adapters `neon` ships no knowledge of.
+(Proc-macros also can't carry a crate-level "which adapter" choice across invocations,
+so a configure-once-in-code form isn't available.) *Rejected — a per-item attribute*
+(`#[neon_ts_rs::export]` or an extra marker per export): per-boundary overhead, no
+better than the wrapper it replaces. *Rejected — overloading the name `TypeScript`*
+so one `use neon_ts_rs::TypeScript;` pulls in both the bridge derive (macro namespace)
+and the rung trait (type namespace), à la `use serde::Serialize;`: maximally terse,
+but `neon_ts_rs::TypeScript`-the-trait would be a *different* trait from the protocol
+trait `neon_typescript::TypeScript`, so a bound `T: neon_ts_rs::TypeScript` would
+silently mean the wrong thing — serde's overload works because its trait and derive
+are two faces of one concept; ours would be two concepts sharing a name. The distinct
+`TypeScriptExt` keeps a two-name import (collapsible to one `use` clause) at the cost
+of one extra listed item. The name reads as "this adapter provides TypeScript
+conversions for additional (foreign) types."
+
+**6. Collapsing `neon-typescript` into `neon`.** Considered dropping the standalone
+contract crate and defining the trait in `neon` directly. *Rejected:* it relieves no
+orphan-rule constraint (a foreign-type impl must live in the trait's crate either way,
+and the adapter rung still needs a shared `TsProbe` to hang on — which is exactly why
+`TsProbe` lives in `neon-typescript`), and it *worsens* versioning — adapters would
+pin a `neon` version instead of a tiny, semver-stable contract crate, recoupling
+adapter releases to neon's. The split is what lets an adapter depend only on the stable
+trait plus its upstream.
+
 ## Implementation plan
 
 1. Build the two-crate skeleton — `neon-typescript` (trait + built-ins) and an
@@ -597,5 +732,11 @@ within any one type.
 3. Rework this PR: drop the in-tree serde-aware derive, land `neon-typescript` and
    the retained Neon-side machinery (metadata collection, `generate()`, boundary and
    built-in impls, class exports, escape-hatch attributes, auto-attach, feature-gating).
-4. Before release, extract `neon-ts-rs` to its own repository and publish it; the
+4. Wire the boundary rung: relocate `TsProbe`/`TsFallback` into `neon-typescript` so
+   an adapter can extend the ladder, add the extra autoref level to the macro-emitted
+   probe call, and add the `TypeScriptExt` rung to `neon-ts-rs`. Validate that a bare
+   foreign type at a boundary (e.g. an ordered map) resolves through ts-rs with the
+   per-module `use neon_ts_rs::TypeScriptExt as _;`, and that omitting it under
+   `ts_strict` is a compile error rather than a silent `any`.
+5. Before release, extract `neon-ts-rs` to its own repository and publish it; the
    dogfooding git dependency becomes a normal versioned dependency.
