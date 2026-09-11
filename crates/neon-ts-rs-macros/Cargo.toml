@@ -1,0 +1,15 @@
+[package]
+name = "neon-ts-rs-macros"
+version = "0.1.0"
+edition = "2021"
+license = "MIT/Apache-2.0"
+description = "Bridge derive for using ts-rs types with Neon TypeScript generation"
+repository = "https://github.com/neon-bindings/neon"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["full"] }

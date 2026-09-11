@@ -53,6 +53,35 @@ pub(crate) fn to_camel_case(name: &str) -> String {
     out
 }
 
+/// Extract `#[neon(ts_type = "...")]` from attributes (e.g. on a function parameter).
+///
+/// Used by the export/class macros to let a caller override a single parameter's
+/// TypeScript type. For example, given
+///
+/// ```ignore
+/// #[neon::export]
+/// fn f(#[neon(ts_type = "ReadonlyArray<number>")] xs: Vec<f64>) -> f64 { ... }
+/// ```
+///
+/// this returns `Some("ReadonlyArray<number>")` for the `xs` parameter.
+pub(crate) fn extract_param_ts_type(attrs: &[syn::Attribute]) -> Option<String> {
+    let mut result = None;
+    for attr in attrs {
+        if !attr.path().is_ident("neon") {
+            continue;
+        }
+        let _ = attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("ts_type") {
+                if let Ok(value) = meta.value().and_then(|v| v.parse::<syn::LitStr>()) {
+                    result = Some(value.value());
+                }
+            }
+            Ok(())
+        });
+    }
+    result
+}
+
 // Validate JavaScript identifier names
 pub(crate) fn is_valid_js_identifier(name: &str) -> bool {
     if name.is_empty() {
@@ -122,6 +151,129 @@ pub(crate) fn is_valid_js_identifier(name: &str) -> bool {
             | "protected"
             | "public"
     )
+}
+
+/// Check if a type contains features that prevent it from being used in a
+/// static metadata entry (`impl Trait`, `Self`, or unsized slices).
+/// Non-`'static` lifetimes are rewritten by `substitute_lifetimes_with_static`,
+/// not flagged here.
+pub(crate) fn type_needs_fallback(ty: &syn::Type) -> bool {
+    use syn::visit::Visit;
+
+    struct Checker {
+        needs_fallback: bool,
+    }
+
+    impl<'ast> Visit<'ast> for Checker {
+        fn visit_type_impl_trait(&mut self, _: &'ast syn::TypeImplTrait) {
+            self.needs_fallback = true;
+        }
+
+        fn visit_path_segment(&mut self, seg: &'ast syn::PathSegment) {
+            if seg.ident == "Self" {
+                self.needs_fallback = true;
+            }
+            syn::visit::visit_path_segment(self, seg);
+        }
+
+        fn visit_type_slice(&mut self, _: &'ast syn::TypeSlice) {
+            // [T] is unsized and can't impl TypeScript
+            self.needs_fallback = true;
+        }
+    }
+
+    let mut checker = Checker {
+        needs_fallback: false,
+    };
+    checker.visit_type(ty);
+    checker.needs_fallback
+}
+
+/// If `ty` is an outer `Json<Inner>` (from `neon::types::extract`), return
+/// `Inner`; otherwise return `ty` unchanged. Used to pick the TypeScript
+/// *boundary* type for the probe: `Json<T>` is transparent at the JSON boundary
+/// (its TS shape is exactly `T`'s), so probing `T` directly gives the same rung-1
+/// result while also letting an adapter's rung-2 `TypeScriptExt` resolve a
+/// *foreign* payload `T` (e.g. `IndexMap<..>`) that `Json<T>` itself could never
+/// reach (`Json` is neither `TypeScript` nor `ts_rs::TS`).
+pub(crate) fn strip_outer_json(ty: &syn::Type) -> syn::Type {
+    if let syn::Type::Path(type_path) = ty {
+        if type_path.qself.is_none() {
+            if let Some(seg) = type_path.path.segments.last() {
+                if seg.ident == "Json" {
+                    if let syn::PathArguments::AngleBracketed(args) = &seg.arguments {
+                        if let Some(syn::GenericArgument::Type(inner)) = args.args.first() {
+                            return inner.clone();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    ty.clone()
+}
+
+/// Rewrite all non-`'static` lifetimes in a type to `'static`, so the type can
+/// be used as a type parameter in a `static fn` metadata closure. Returns a
+/// new owned `Type`.
+pub(crate) fn substitute_lifetimes_with_static(ty: &syn::Type) -> syn::Type {
+    use syn::visit_mut::VisitMut;
+
+    struct Rewriter;
+
+    impl VisitMut for Rewriter {
+        fn visit_lifetime_mut(&mut self, lt: &mut syn::Lifetime) {
+            lt.ident = syn::Ident::new("static", lt.ident.span());
+        }
+
+        fn visit_type_reference_mut(&mut self, r: &mut syn::TypeReference) {
+            if r.lifetime.is_none() {
+                r.lifetime = Some(syn::Lifetime::new(
+                    "'static",
+                    proc_macro2::Span::call_site(),
+                ));
+            }
+            syn::visit_mut::visit_type_reference_mut(self, r);
+        }
+    }
+
+    let mut out = ty.clone();
+    Rewriter.visit_type_mut(&mut out);
+    out
+}
+
+/// Replace `Self` with the concrete class name in a type, so it can be used
+/// in a static context. Returns `None` if no replacement was needed.
+pub(crate) fn replace_self_in_type(ty: &syn::Type, class_ident: &syn::Ident) -> Option<syn::Type> {
+    use syn::visit_mut::VisitMut;
+
+    struct Replacer<'a> {
+        class_ident: &'a syn::Ident,
+        replaced: bool,
+    }
+
+    impl<'a> VisitMut for Replacer<'a> {
+        fn visit_path_segment_mut(&mut self, seg: &mut syn::PathSegment) {
+            if seg.ident == "Self" {
+                seg.ident = self.class_ident.clone();
+                self.replaced = true;
+            }
+            syn::visit_mut::visit_path_segment_mut(self, seg);
+        }
+    }
+
+    let mut ty = ty.clone();
+    let mut replacer = Replacer {
+        class_ident,
+        replaced: false,
+    };
+    replacer.visit_type_mut(&mut ty);
+
+    if replacer.replaced {
+        Some(ty)
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]
