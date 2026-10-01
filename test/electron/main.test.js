@@ -1,18 +1,17 @@
 "use strict";
 
-const assert = require("assert");
 const path = require("path");
 
 const { _electron: electron } = require("playwright");
-const { test } = require("@playwright/test");
+const { test, expect } = require("@playwright/test");
 
 test("greeting", async () => {
   const app = await electron.launch({
     args: [path.join(__dirname, "main.js")],
   });
   const page = await app.firstWindow();
-  const header = page.locator("#greeting");
-  const text = await header.textContent();
 
-  assert.strictEqual(text, "Hello, World!");
+  // `preload.js` fills in the greeting on `DOMContentLoaded`, which may not
+  // have fired yet; `toHaveText` retries until it does.
+  await expect(page.locator("#greeting")).toHaveText("Hello, World!");
 });
