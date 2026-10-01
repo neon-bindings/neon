@@ -5,15 +5,7 @@ error[E0277]: the trait bound `Point: Clone` is not satisfied
     | ^^^^^^^^^^^^^^ the trait `Clone` is not implemented for `Point`
     |
     = help: the following other types implement trait `FromArgs<'cx>`:
-              ()
-              (T1, T2)
-              (T1, T2, T3)
-              (T1, T2, T3, T4)
-              (T1, T2, T3, T4, T5)
-              (T1, T2, T3, T4, T5, T6)
-              (T1, T2, T3, T4, T5, T6, T7)
-              (T1, T2, T3, T4, T5, T6, T7, T8)
-            and $N others
+              (T₁, T₂, …, Tₙ) up to tuples of arity 32
 note: required for `Point` to implement `TryFromJs<'_>`
    --> tests/fail/missing-class-clone.rs:6:1
     |
