@@ -1,0 +1,15 @@
+[package]
+name = "neon-ts-rs"
+version = "0.1.0"
+edition = "2021"
+license = "MIT/Apache-2.0"
+description = "ts-rs adapter for Neon TypeScript declaration generation"
+repository = "https://github.com/neon-bindings/neon"
+
+[dependencies]
+neon-typescript = { path = "../neon-typescript" }
+neon-ts-rs-macros = { path = "../neon-ts-rs-macros" }
+ts-rs = "12"
+
+[dev-dependencies]
+serde = { version = "1", features = ["derive"] }
