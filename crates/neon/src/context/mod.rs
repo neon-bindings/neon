@@ -107,7 +107,7 @@
 //!     let iterator = cx.argument::<JsObject>(0)?;         // iterator object
 //!     let next: Handle<JsFunction> =                      // iterator's `next` method
 //!         iterator.prop(&mut cx, "next").get()?;
-//!     let mut numbers = vec![];                           // results vector
+//!     let mut numbers: Vec<f64> = vec![];                 // results vector
 //!     let mut done = false;                               // loop controller
 //!
 //!     while !done {
