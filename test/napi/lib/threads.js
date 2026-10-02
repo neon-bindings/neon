@@ -1,10 +1,13 @@
 const addon = require("..");
 const assert = require("chai").assert;
 
-(function () {
-  // These tests require GC exposed to shutdown properly; skip if it is not
-  return typeof global.gc === "function" ? describe : describe.skip;
-})()("sync", function () {
+describe("sync", function () {
+  before(function () {
+    if (!global.gc) {
+      this.skip();
+    }
+  });
+
   let unhandledRejectionListeners = [];
 
   beforeEach(() => {

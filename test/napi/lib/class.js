@@ -50,6 +50,8 @@ describe("classes", function () {
     const message = new Message("test");
     const StringBuffer = addon.StringBuffer;
     const buffer = new StringBuffer();
+    const normalizeFn = (f) =>
+      f.toString().replace(/\{\s+(\[native code\])\s+\}/, "{ $1 }");
 
     assert.strictEqual(message.read.name, "read");
     assert.strictEqual(message.append.name, "append");
@@ -66,15 +68,15 @@ describe("classes", function () {
     assert.strictEqual(util.inspect(buffer.trimEnd), "[Function: trimEnd]");
 
     assert.strictEqual(
-      message.read.toString(),
+      normalizeFn(message.read),
       "function read() { [native code] }"
     );
     assert.strictEqual(
-      message.append.toString(),
+      normalizeFn(message.append),
       "function append() { [native code] }"
     );
     assert.strictEqual(
-      message.concat.toString(),
+      normalizeFn(message.concat),
       "function concat() { [native code] }"
     );
 
@@ -92,15 +94,15 @@ describe("classes", function () {
     );
 
     assert.strictEqual(
-      buffer.includes.toString(),
+      normalizeFn(buffer.includes),
       "function includes() { [native code] }"
     );
     assert.strictEqual(
-      buffer.trimStart.toString(),
+      normalizeFn(buffer.trimStart),
       "function trimStart() { [native code] }"
     );
     assert.strictEqual(
-      buffer.trimEnd.toString(),
+      normalizeFn(buffer.trimEnd),
       "function trimEnd() { [native code] }"
     );
   });
