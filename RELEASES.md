@@ -10,6 +10,19 @@ Our strong commitment to compatibility since the 1.0 release remains unchanged. 
 that has not yet stabilized is published under feature flags, so the only breaking changes that we
 expect to publish are those that affect the unstable features, or, as always, safety bugfixes.
 
+## Version 1.1.2
+
+### Bugfixes
+
+* Fix unsoundness in `execute_scoped` and `compute_scoped` that allowed handles to escape their scope (https://github.com/neon-bindings/neon/pull/1139)
+* Fix memory leak of async work and threadsafe functions in release builds (https://github.com/neon-bindings/neon/pull/1145)
+
+### Breaking Changes
+
+As a safety bugfix, the closures passed to `execute_scoped` and `compute_scoped` now receive a
+`ScopedCx<'outer, 'inner>` instead of a `Cx<'inner>`, and `ExecuteContext` and `ComputeContext`
+take a second lifetime parameter. Most callers compile unchanged because `ScopedCx` derefs to `Cx`.
+
 ## Version 1.1.1
 
 Hotfix for Node-API versions lower than 5 (https://github.com/neon-bindings/neon/pull/1106).
