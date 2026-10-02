@@ -11,7 +11,8 @@
   "workspaces": [
     "pkgs/*",
     "test/*",
-    "bench"
+    "bench",
+    "website"
   ],
   "devDependencies": {
     "prettier": "^2.7.1"
