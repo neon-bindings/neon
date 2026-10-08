@@ -65,4 +65,22 @@ suite.add("JsFunction::bind", () => {
   addon.callCallbackWithBind(triple);
 });
 
+const point = { alpha: 1, beta: 2, gamma: 3, delta: 4 };
+
+suite.add("Object::prop get (&str)", () => {
+  addon.propGetStr(point);
+});
+
+suite.add("Object::prop get (property_key)", () => {
+  addon.propGetKey(point);
+});
+
+suite.add("Object::prop set (&str)", () => {
+  addon.propSetStr();
+});
+
+suite.add("Object::prop set (property_key)", () => {
+  addon.propSetKey();
+});
+
 suite.run();

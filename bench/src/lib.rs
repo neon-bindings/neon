@@ -42,6 +42,67 @@ fn call_callback_with_bind(mut cx: FunctionContext) -> JsResult<JsValue> {
         .call()
 }
 
+const KEYS: [&str; 4] = ["alpha", "beta", "gamma", "delta"];
+const ITERATIONS: usize = 100;
+
+#[neon::export]
+fn prop_get_str<'cx>(cx: &mut Cx<'cx>, obj: Handle<'cx, JsObject>) -> NeonResult<f64> {
+    let mut sum = 0.0;
+
+    for _ in 0..ITERATIONS {
+        for key in KEYS {
+            sum += obj.prop(cx, key).get::<f64>()?;
+        }
+    }
+
+    Ok(sum)
+}
+
+#[neon::export]
+fn prop_get_key<'cx>(cx: &mut Cx<'cx>, obj: Handle<'cx, JsObject>) -> NeonResult<f64> {
+    let keys = KEYS.map(|key| cx.property_key(key));
+    let mut sum = 0.0;
+
+    for _ in 0..ITERATIONS {
+        for key in keys {
+            sum += obj.prop(cx, key).get::<f64>()?;
+        }
+    }
+
+    Ok(sum)
+}
+
+#[neon::export]
+fn prop_set_str<'cx>(cx: &mut Cx<'cx>) -> JsResult<'cx, JsObject> {
+    let mut obj = cx.empty_object();
+
+    for i in 0..ITERATIONS {
+        obj = cx.empty_object();
+
+        for key in KEYS {
+            obj.prop(cx, key).set(i as f64)?;
+        }
+    }
+
+    Ok(obj)
+}
+
+#[neon::export]
+fn prop_set_key<'cx>(cx: &mut Cx<'cx>) -> JsResult<'cx, JsObject> {
+    let keys = KEYS.map(|key| cx.property_key(key));
+    let mut obj = cx.empty_object();
+
+    for i in 0..ITERATIONS {
+        obj = cx.empty_object();
+
+        for key in keys {
+            obj.prop(cx, key).set(i as f64)?;
+        }
+    }
+
+    Ok(obj)
+}
+
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
     // Export all macro-registered exports

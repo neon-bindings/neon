@@ -15,3 +15,10 @@ To run the benchmarks, run:
 ```sh
 $ npm run benchmark
 ```
+
+To compare against a build with Node-API 10 (e.g. interned property keys), run:
+
+```sh
+$ npm run build -- --features=napi-10
+$ npm run benchmark
+```
