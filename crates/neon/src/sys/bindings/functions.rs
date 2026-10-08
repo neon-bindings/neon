@@ -425,7 +425,100 @@ mod napi8 {
     );
 }
 
+#[cfg(all(feature = "napi-9", feature = "sys"))]
+mod napi9 {
+    use super::super::types::*;
+    use std::os::raw::c_char;
+
+    generate!(
+        #[cfg_attr(docsrs, doc(cfg(feature = "napi-9")))]
+        extern "C" {
+            fn symbol_for(
+                env: Env,
+                utf8description: *const c_char,
+                length: usize,
+                result: *mut Value,
+            ) -> Status;
+
+            fn create_syntax_error(env: Env, code: Value, msg: Value, result: *mut Value)
+                -> Status;
+
+            fn throw_syntax_error(env: Env, code: *const c_char, msg: *const c_char) -> Status;
+
+            fn get_module_file_name(env: Env, result: *mut *const c_char) -> Status;
+        }
+    );
+}
+
+#[cfg(feature = "napi-10")]
+mod napi10 {
+    use super::super::types::*;
+    use std::os::raw::{c_char, c_void};
+
+    generate!(
+        #[cfg_attr(docsrs, doc(cfg(feature = "napi-10")))]
+        extern "C" {
+            #[cfg(feature = "sys")]
+            fn create_external_string_latin1(
+                env: Env,
+                str: *mut c_char,
+                length: usize,
+                finalize_callback: Finalize,
+                finalize_hint: *mut c_void,
+                result: *mut Value,
+                copied: *mut bool,
+            ) -> Status;
+
+            #[cfg(feature = "sys")]
+            fn create_external_string_utf16(
+                env: Env,
+                str: *mut u16,
+                length: usize,
+                finalize_callback: Finalize,
+                finalize_hint: *mut c_void,
+                result: *mut Value,
+                copied: *mut bool,
+            ) -> Status;
+
+            #[cfg(feature = "sys")]
+            fn create_property_key_latin1(
+                env: Env,
+                str: *const c_char,
+                length: usize,
+                result: *mut Value,
+            ) -> Status;
+
+            // Used internally for property keys, see `sys::string::new_property_key`.
+            fn create_property_key_utf8(
+                env: Env,
+                str: *const c_char,
+                length: usize,
+                result: *mut Value,
+            ) -> Status;
+
+            #[cfg(feature = "sys")]
+            fn create_property_key_utf16(
+                env: Env,
+                str: *const u16,
+                length: usize,
+                result: *mut Value,
+            ) -> Status;
+
+            #[cfg(feature = "sys")]
+            fn create_buffer_from_arraybuffer(
+                env: Env,
+                arraybuffer: Value,
+                byte_offset: usize,
+                byte_length: usize,
+                result: *mut Value,
+            ) -> Status;
+        }
+    );
+}
+
 pub use napi1::*;
+#[cfg(feature = "napi-10")]
+pub use napi10::*;
 #[cfg(feature = "napi-4")]
 pub use napi4::*;
 #[cfg(feature = "napi-5")]
@@ -434,6 +527,8 @@ pub use napi5::*;
 pub use napi6::*;
 #[cfg(feature = "napi-8")]
 pub use napi8::*;
+#[cfg(all(feature = "napi-9", feature = "sys"))]
+pub use napi9::*;
 
 use super::{Env, Status};
 
@@ -458,6 +553,8 @@ pub(crate) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
     let actual_version = get_version(&host, env).expect("Failed to find N-API version");
 
     let expected_version = match () {
+        _ if cfg!(feature = "napi-10") => 10,
+        _ if cfg!(feature = "napi-9") => 9,
         _ if cfg!(feature = "napi-8") => 8,
         _ if cfg!(feature = "napi-7") => 7,
         _ if cfg!(feature = "napi-6") => 6,
@@ -485,6 +582,12 @@ pub(crate) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
 
     #[cfg(feature = "napi-8")]
     napi8::load(&host);
+
+    #[cfg(all(feature = "napi-9", feature = "sys"))]
+    napi9::load(&host);
+
+    #[cfg(feature = "napi-10")]
+    napi10::load(&host);
 
     Ok(())
 }

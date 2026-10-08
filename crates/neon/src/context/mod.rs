@@ -558,6 +558,13 @@ pub trait Context<'a>: ContextInternal<'a> {
         JsString::try_new(self, s)
     }
 
+    /// Convenience method for creating a `JsString` intended to be used as a property key.
+    ///
+    /// See [`JsString::property_key`].
+    fn property_key<S: AsRef<str>>(&mut self, s: S) -> Handle<'a, JsString> {
+        JsString::property_key(self, s)
+    }
+
     /// Convenience method for creating a `JsNull` value.
     fn null(&mut self) -> Handle<'a, JsNull> {
         JsNull::new(self)

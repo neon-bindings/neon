@@ -21,6 +21,36 @@ macro_rules! napi_name {
     (typeof_value) => {
         "napi_typeof"
     };
+    (symbol_for) => {
+        "node_api_symbol_for"
+    };
+    (create_syntax_error) => {
+        "node_api_create_syntax_error"
+    };
+    (throw_syntax_error) => {
+        "node_api_throw_syntax_error"
+    };
+    (get_module_file_name) => {
+        "node_api_get_module_file_name"
+    };
+    (create_external_string_latin1) => {
+        "node_api_create_external_string_latin1"
+    };
+    (create_external_string_utf16) => {
+        "node_api_create_external_string_utf16"
+    };
+    (create_property_key_latin1) => {
+        "node_api_create_property_key_latin1"
+    };
+    (create_property_key_utf8) => {
+        "node_api_create_property_key_utf8"
+    };
+    (create_property_key_utf16) => {
+        "node_api_create_property_key_utf16"
+    };
+    (create_buffer_from_arraybuffer) => {
+        "node_api_create_buffer_from_arraybuffer"
+    };
     // Default case: Stringify the identifier and prefix with `napi_`
     ($name:ident) => {
         concat!("napi_", stringify!($name))

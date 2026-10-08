@@ -211,7 +211,8 @@ fn feature_matrix() {
 
     // N.B.: Only versions that are used are included in order to keep the set
     // of permutations as small as possible.
-    const NODE_API_VERSIONS: &[&str] = &["napi-1", "napi-4", "napi-5", "napi-6", "napi-8"];
+    const NODE_API_VERSIONS: &[&str] =
+        &["napi-1", "napi-4", "napi-5", "napi-6", "napi-8", "napi-10"];
 
     const FEATURES: &[&str] = &["external-buffers", "futures", "serde", "tokio", "tokio-rt"];
 

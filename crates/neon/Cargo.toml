@@ -86,8 +86,10 @@ napi-5 = ["napi-4"]
 napi-6 = ["napi-5"]
 napi-7 = ["napi-6"]
 napi-8 = ["napi-7", "getrandom"]
-napi-latest = ["napi-8"]
-napi-experimental = ["napi-8"]
+napi-9 = ["napi-8"]
+napi-10 = ["napi-9"]
+napi-latest = ["napi-10"]
+napi-experimental = ["napi-10"]
 
 # Enables the optional dependencies that are only used for generating the API docs.
 doc-dependencies = ["doc-comment", "aquamarine", "easy-cast"]

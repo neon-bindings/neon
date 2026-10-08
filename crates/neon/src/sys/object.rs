@@ -81,7 +81,7 @@ pub unsafe fn get_string(
 
     // Not using `crate::string::new()` because it requires a _reference_ to a Local,
     // while we only have uninitialized memory.
-    match napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()) {
+    match super::string::property_key_utf8(env, key, len, key_val.as_mut_ptr()) {
         Err(napi::Status::PendingException) => return false,
         status => status.unwrap(),
     }
@@ -113,7 +113,7 @@ pub unsafe fn set_string(
 
     *out = true;
 
-    match napi::create_string_utf8(env, key as *const _, len as usize, key_val.as_mut_ptr()) {
+    match super::string::property_key_utf8(env, key, len, key_val.as_mut_ptr()) {
         Err(napi::Status::PendingException) => {
             *out = false;
             return false;
