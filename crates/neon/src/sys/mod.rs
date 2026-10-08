@@ -18,7 +18,7 @@
 //! ```rust,no_run
 //! # #[cfg(feature = "sys")]
 //! # {
-//! # let env = std::ptr::null_mut().cast();
+//! # let env: neon::sys::bindings::Env = std::ptr::null_mut();
 //! unsafe { neon::sys::setup(env); }
 //! # }
 //! ```
@@ -52,10 +52,10 @@
 //! ```rust,no_run
 //! # #[cfg(feature = "sys")]
 //! # {
-//! # let env = std::ptr::null_mut().cast();
+//! # let env: neon::sys::bindings::Env = std::ptr::null_mut();
 //! use neon::{context::Cx, prelude::*, sys::bindings};
 //!
-//! let cx = unsafe {
+//! let mut cx = unsafe {
 //!     neon::sys::setup(env);
 //!
 //!     Cx::from_raw(env)
