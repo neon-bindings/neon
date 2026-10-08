@@ -11,6 +11,33 @@ pub unsafe fn new(out: &mut Local, env: Env, data: *const u8, len: i32) -> bool 
     status.is_ok()
 }
 
+/// Creates a string suitable for use as a property key. With Node-API 10 the string is
+/// internalized, which lets the engine look up properties faster; otherwise this is
+/// equivalent to [`new`].
+pub unsafe fn new_property_key(out: &mut Local, env: Env, data: *const u8, len: i32) -> bool {
+    property_key_utf8(env, data, len, out).is_ok()
+}
+
+#[cfg(feature = "napi-10")]
+pub(super) unsafe fn property_key_utf8(
+    env: Env,
+    data: *const u8,
+    len: i32,
+    out: *mut Local,
+) -> Result<(), napi::Status> {
+    napi::create_property_key_utf8(env, data as *const _, len as usize, out)
+}
+
+#[cfg(not(feature = "napi-10"))]
+pub(super) unsafe fn property_key_utf8(
+    env: Env,
+    data: *const u8,
+    len: i32,
+    out: *mut Local,
+) -> Result<(), napi::Status> {
+    napi::create_string_utf8(env, data as *const _, len as usize, out)
+}
+
 pub unsafe fn utf8_len(env: Env, value: Local) -> usize {
     let mut len = MaybeUninit::uninit();
     napi::get_value_string_utf8(env, value, ptr::null_mut(), 0, len.as_mut_ptr()).unwrap();

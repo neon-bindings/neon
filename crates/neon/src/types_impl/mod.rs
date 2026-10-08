@@ -664,7 +664,48 @@ impl JsString {
         }
     }
 
+    /// Creates a `JsString` intended to be used as a property key.
+    ///
+    /// With the `napi-10` feature the string is internalized by the JavaScript engine,
+    /// which makes property lookups with it faster. Without it, this is equivalent to
+    /// [`JsString::new`]. Create the key once and reuse the handle when accessing the
+    /// same property many times.
+    ///
+    /// If the string exceeds the limits of the JS engine, this method panics.
+    ///
+    /// ```
+    /// # use neon::prelude::*;
+    /// # fn sum_x<'cx>(cx: &mut Cx<'cx>, points: Vec<Handle<'cx, JsObject>>) -> NeonResult<f64> {
+    /// let x = JsString::property_key(cx, "x");
+    /// let mut sum = 0.0;
+    ///
+    /// for point in points {
+    ///     sum += point.prop(cx, x).get::<f64>()?;
+    /// }
+    /// # Ok(sum)
+    /// # }
+    /// ```
+    ///
+    /// **See also:** [`Context::property_key`]
+    pub fn property_key<'a, C: Context<'a>, S: AsRef<str>>(
+        cx: &mut C,
+        val: S,
+    ) -> Handle<'a, JsString> {
+        let val = val.as_ref();
+
+        JsString::new_with(cx.env(), val, sys::string::new_property_key)
+            .unwrap_or_else(|| panic!("{}", StringOverflow(val.len())))
+    }
+
     pub(crate) fn new_internal<'a>(env: Env, val: &str) -> Option<Handle<'a, JsString>> {
+        JsString::new_with(env, val, sys::string::new)
+    }
+
+    fn new_with<'a>(
+        env: Env,
+        val: &str,
+        create: unsafe fn(&mut raw::Local, raw::Env, *const u8, i32) -> bool,
+    ) -> Option<Handle<'a, JsString>> {
         let (ptr, len) = if let Some(small) = Utf8::from(val).into_small() {
             small.lower()
         } else {
@@ -673,7 +714,7 @@ impl JsString {
 
         unsafe {
             let mut local: raw::Local = std::mem::zeroed();
-            if sys::string::new(&mut local, env.to_raw(), ptr, len) {
+            if create(&mut local, env.to_raw(), ptr, len) {
                 Some(Handle::new_internal(JsString(local)))
             } else {
                 None

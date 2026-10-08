@@ -450,7 +450,7 @@ mod napi9 {
     );
 }
 
-#[cfg(all(feature = "napi-10", feature = "sys"))]
+#[cfg(feature = "napi-10")]
 mod napi10 {
     use super::super::types::*;
     use std::os::raw::{c_char, c_void};
@@ -458,6 +458,7 @@ mod napi10 {
     generate!(
         #[cfg_attr(docsrs, doc(cfg(feature = "napi-10")))]
         extern "C" {
+            #[cfg(feature = "sys")]
             fn create_external_string_latin1(
                 env: Env,
                 str: *mut c_char,
@@ -468,6 +469,7 @@ mod napi10 {
                 copied: *mut bool,
             ) -> Status;
 
+            #[cfg(feature = "sys")]
             fn create_external_string_utf16(
                 env: Env,
                 str: *mut u16,
@@ -478,6 +480,7 @@ mod napi10 {
                 copied: *mut bool,
             ) -> Status;
 
+            #[cfg(feature = "sys")]
             fn create_property_key_latin1(
                 env: Env,
                 str: *const c_char,
@@ -485,6 +488,7 @@ mod napi10 {
                 result: *mut Value,
             ) -> Status;
 
+            // Used internally for property keys, see `sys::string::new_property_key`.
             fn create_property_key_utf8(
                 env: Env,
                 str: *const c_char,
@@ -492,6 +496,7 @@ mod napi10 {
                 result: *mut Value,
             ) -> Status;
 
+            #[cfg(feature = "sys")]
             fn create_property_key_utf16(
                 env: Env,
                 str: *const u16,
@@ -499,6 +504,7 @@ mod napi10 {
                 result: *mut Value,
             ) -> Status;
 
+            #[cfg(feature = "sys")]
             fn create_buffer_from_arraybuffer(
                 env: Env,
                 arraybuffer: Value,
@@ -511,7 +517,7 @@ mod napi10 {
 }
 
 pub use napi1::*;
-#[cfg(all(feature = "napi-10", feature = "sys"))]
+#[cfg(feature = "napi-10")]
 pub use napi10::*;
 #[cfg(feature = "napi-4")]
 pub use napi4::*;
@@ -580,7 +586,7 @@ pub(crate) unsafe fn load(env: Env) -> Result<(), libloading::Error> {
     #[cfg(all(feature = "napi-9", feature = "sys"))]
     napi9::load(&host);
 
-    #[cfg(all(feature = "napi-10", feature = "sys"))]
+    #[cfg(feature = "napi-10")]
     napi10::load(&host);
 
     Ok(())
