@@ -1,0 +1,44 @@
+name: Website
+
+# Doctests for the website's code samples. The site itself is built
+# and deployed by Netlify on every push and PR; this workflow only
+# guards the executable Rust snippets in website/src/content/docs/**
+# so a busted example fails the PR check before Netlify ships a green
+# preview.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "website/**"
+      - "crates/neon/**"
+      - "crates/neon-macros/**"
+      - ".github/workflows/website.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "website/**"
+      - "crates/neon/**"
+      - "crates/neon-macros/**"
+      - ".github/workflows/website.yml"
+
+jobs:
+  doctests:
+    name: Doctests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Nightly matches what Netlify and docs.rs use, so doctests run
+      # against the same toolchain readers see in the published API
+      # docs.
+      - name: Use Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run website doctests
+        run: cargo test -p website --doc

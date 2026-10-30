@@ -1,0 +1,29 @@
+[package]
+name = "website"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Doctest harness for the Neon docs site (https://neon-rs.dev)."
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+neon = { path = "../crates/neon", default-features = false, features = [
+    "napi-experimental",
+    "external-buffers",
+    "serde",
+    "tokio",
+] }
+either = "1"
+blake3 = "1"
+serde = { version = "1", features = ["derive"] }
+sqlx = { version = "0.8", default-features = false, features = [
+    "runtime-tokio",
+    "sqlite",
+    "macros",
+] }
+tokio = { version = "1", features = ["rt-multi-thread"] }
+
+[build-dependencies]
+walkdir = "2"

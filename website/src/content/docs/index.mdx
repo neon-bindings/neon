@@ -1,0 +1,28 @@
+---
+title: Neon — Write Node addons in Rust
+description: Write Node addons in Rust. Safe, fast, parallel.
+template: splash
+pagefind: false
+tableOfContents: false
+head:
+  - tag: style
+    content: |
+      /* Hide the auto-rendered Starlight page title on the home splash;
+         our <Hero /> component supplies the visible H1.
+         The h1#_top sits inside the first .content-panel; hide that
+         whole panel so it doesn't reserve vertical space. */
+      main > .content-panel:first-of-type:has(h1#_top) { display: none; }
+---
+
+import Hero from "../../components/Hero.astro";
+import CodeCompare from "../../components/CodeCompare.astro";
+import FeatureTiles from "../../components/FeatureTiles.astro";
+import Stats from "../../components/Stats.astro";
+
+<Hero />
+
+<CodeCompare />
+
+<FeatureTiles />
+
+<Stats />

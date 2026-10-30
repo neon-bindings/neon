@@ -4,6 +4,7 @@ members = [
     "crates/*",
     "test/*",
     "bench",
+    "website",
 ]
 
 [profile.release]
