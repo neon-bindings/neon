@@ -32,6 +32,17 @@ pub static EXPORTS: [for<'cx> fn(&mut ModuleContext<'cx>) -> NeonResult<Export<'
 #[linkme::distributed_slice]
 pub static MAIN: [for<'cx> fn(ModuleContext<'cx>) -> NeonResult<()>];
 
+#[linkme::distributed_slice]
+pub static TYPE_METADATA: [crate::typescript::ExportMeta];
+
+// ——— TypeScript autoref specialization probe ———
+//
+// The probe (`TsProbe`, its inherent impl, `TsFallback`, and its impl) lives in
+// `neon-typescript` so an adapter crate can hang an extra resolution rung on it.
+// The macros emit `neon::macro_internal::{TsProbe, TsFallback}`, so re-export
+// them here to keep those paths stable. See `neon_typescript` for details.
+pub use neon_typescript::{TsFallback, TsProbe};
+
 // Wrapper for the value type and return type tags
 pub struct NeonMarker<Tag, Return>(PhantomData<Tag>, PhantomData<Return>);
 

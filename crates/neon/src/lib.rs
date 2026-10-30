@@ -92,6 +92,7 @@ mod sys;
 #[cfg_attr(docsrs, doc(cfg(feature = "napi-6")))]
 #[cfg(feature = "napi-6")]
 pub mod thread;
+pub mod typescript;
 // To use the #[aquamarine] attribute on the top-level neon::types module docs, we have to
 // use this hack so we can keep the module docs in a separate file.
 // See: https://github.com/mersinvald/aquamarine/issues/5#issuecomment-1168816499

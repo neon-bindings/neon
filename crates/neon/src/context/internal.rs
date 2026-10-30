@@ -65,6 +65,11 @@ fn init(cx: ModuleContext) -> NeonResult<()> {
         panic!("The `neon::main` macro must only be used once");
     }
 
+    #[cfg(feature = "typescript")]
+    let mut cx = cx;
+    #[cfg(feature = "typescript")]
+    crate::typescript::attach_to_module(&mut cx)?;
+
     if let Some(main) = crate::macro_internal::MAIN.first() {
         main(cx)
     } else {

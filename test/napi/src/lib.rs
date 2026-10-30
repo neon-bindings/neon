@@ -26,6 +26,7 @@ mod js {
     pub mod threads;
     pub mod typedarrays;
     pub mod types;
+    pub mod typescript;
     pub mod workers;
 }
 

@@ -39,8 +39,18 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemImpl) -> proc_macro::Toke
 
     // Generate the class using the existing class implementation
     let class_input: proc_macro::TokenStream = quote!(#input).into();
-    let class_output =
-        crate::class::class_with_name(proc_macro::TokenStream::new(), class_input, js_class_name);
+    let class_options = crate::class::ClassOptions {
+        custom_class_name: js_class_name,
+        ts_skip: meta.ts_skip,
+        ts_name: meta.ts_name,
+        ts_strict: meta.ts_strict,
+        ts_no_constructor: meta.ts_no_constructor,
+    };
+    let class_output = crate::class::class_with_options(
+        proc_macro::TokenStream::new(),
+        class_input,
+        class_options,
+    );
     let class_tokens: TokenStream = class_output.into();
 
     // Use the determined export name
