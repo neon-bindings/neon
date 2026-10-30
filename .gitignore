@@ -9,6 +9,7 @@ wip
 # Node
 **/node_modules
 npm-debug.log
+bun.lock
 
 # JS build
 **/build

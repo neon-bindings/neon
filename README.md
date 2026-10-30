@@ -45,9 +45,9 @@ using a different version of Node and believe it should be supported, let us kno
 
 Older Node version support (minimum v10) may require lower Node-API versions. See the Node [version support matrix](https://nodejs.org/api/n-api.html#node-api-version-matrix) for more details.
 
-### Bun (experimental)
+### Bun
 
-[Bun](https://bun.sh/) is an alternate JavaScript runtime that targets Node compatibility. In many cases Neon modules will work in bun; however, at the time of this writing, some Node-API functions are [not implemented](https://github.com/oven-sh/bun/issues/158).
+[Bun](https://bun.sh/) is an alternate JavaScript runtime that targets Node compatibility. Bun is supported and tested in CI. For details on compatibility see the [Bun support tracking issue](https://github.com/neon-bindings/neon/issues/1128).
 
 ### Rust
 

@@ -6,7 +6,7 @@
   "author": "The Neon Community",
   "license": "MIT",
   "scripts": {
-    "install": "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
+    "install": "cargo-cp-artifact -ac electron-tests index.node -- cargo build --message-format=json-render-diagnostics",
     "start": "electron .",
     "test": "playwright test"
   },
