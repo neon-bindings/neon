@@ -3,8 +3,8 @@ use once_cell::sync::OnceCell;
 use tokio::runtime::Runtime;
 
 use crate::js::{
-    arrays::*, boxed::*, coercions::*, date::*, errors::*, functions::*, numbers::*, objects::*,
-    strings::*, threads::*, typedarrays::*, types::*,
+    arrays::*, boxed::*, coercions::*, date::*, errors::*, functions::*, node::*, numbers::*,
+    objects::*, strings::*, threads::*, typedarrays::*, types::*,
 };
 
 mod js {
@@ -20,6 +20,7 @@ mod js {
     pub mod extract;
     pub mod functions;
     pub mod futures;
+    pub mod node;
     pub mod numbers;
     pub mod objects;
     pub mod strings;
@@ -474,6 +475,9 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_value("Carousel", carousel_constructor)?;
     let expando_constructor = js::class::Expando::constructor(&mut cx)?;
     cx.export_value("Expando", expando_constructor)?;
+
+    cx.export_function("call_console_log_and_error", call_console_log_and_error)?;
+    cx.export_function("get_node_version", get_node_version)?;
 
     Ok(())
 }
