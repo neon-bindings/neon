@@ -43,7 +43,6 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemImpl) -> proc_macro::Toke
         custom_class_name: js_class_name,
         ts_skip: meta.ts_skip,
         ts_name: meta.ts_name,
-        ts_strict: meta.ts_strict,
         ts_no_constructor: meta.ts_no_constructor,
     };
     let class_output = crate::class::class_with_options(

@@ -44,14 +44,61 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
-  it("declares ts_maybe_number with optional return", () => {
-    // Option<T> renders as `T | null` (Neon's neon-typescript mapping).
+  // The same Rust type gets a different TypeScript type depending on which
+  // conversion runs at that position, and each declaration must match what the
+  // runtime actually does.
+
+  it("declares a bare Option return as T | undefined", () => {
     assert.ok(
       declarations.includes(
-        "export declare function tsMaybeNumber(flag: boolean): number | null;"
+        "export declare function tsMaybeNumber(flag: boolean): number | undefined;"
       ),
       `Expected tsMaybeNumber declaration, got:\n${declarations}`
     );
+    assert.strictEqual(addon.tsMaybeNumber(false), undefined);
+    assert.strictEqual(addon.tsMaybeNumber(true), 42);
+  });
+
+  it("declares a bare Option argument as T | null | undefined", () => {
+    assert.ok(
+      declarations.includes(
+        "export declare function tsOptionalArg(x: number | null | undefined): number;"
+      ),
+      `Expected tsOptionalArg declaration, got:\n${declarations}`
+    );
+    assert.strictEqual(addon.tsOptionalArg(undefined), -1);
+    assert.strictEqual(addon.tsOptionalArg(null), -1);
+    assert.strictEqual(addon.tsOptionalArg(3), 3);
+  });
+
+  it("declares an Option through JSON as T | null", () => {
+    assert.ok(
+      declarations.includes(
+        "export declare function tsJsonMaybeNumber(flag: boolean): number | null;"
+      ),
+      `Expected tsJsonMaybeNumber declaration, got:\n${declarations}`
+    );
+    assert.strictEqual(addon.tsJsonMaybeNumber(false), null);
+  });
+
+  it("declares a bare Vec<f64> as Float64Array", () => {
+    assert.ok(
+      declarations.includes(
+        "export declare function tsTypedArray(xs: Float64Array): Float64Array;"
+      ),
+      `Expected tsTypedArray declaration, got:\n${declarations}`
+    );
+    const out = addon.tsTypedArray(new Float64Array([1, 2]));
+    assert.ok(out instanceof Float64Array);
+    assert.deepStrictEqual(Array.from(out), [2, 4]);
+  });
+
+  it("declares a JSON unit return as null", () => {
+    assert.ok(
+      declarations.includes("export declare function tsJsonUnit(): null;"),
+      `Expected tsJsonUnit declaration, got:\n${declarations}`
+    );
+    assert.strictEqual(addon.tsJsonUnit(), null);
   });
 
   it("declares ts_async_add as returning Promise", () => {
@@ -85,10 +132,14 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
+  // Boxed values are branded by the Rust type inside the `JsBox`: a bare
+  // `Arc<Database>` boxes `Arc<Database>`, while `Boxed<Database>` boxes
+  // `Database`, so the two are (correctly) not interchangeable.
+
   it("declares ts_create_db with opaque return type", () => {
     assert.ok(
       declarations.includes(
-        "export declare function tsCreateDb(): BoxedDatabase;"
+        "export declare function tsCreateDb(): BoxedArcDatabase;"
       ),
       `Expected tsCreateDb declaration, got:\n${declarations}`
     );
@@ -97,10 +148,23 @@ describe("TypeScript declaration generation", () => {
   it("declares ts_query_db with opaque parameter", () => {
     assert.ok(
       declarations.includes(
-        "export declare function tsQueryDb(_db: BoxedDatabase, _query: string): string;"
+        "export declare function tsQueryDb(_db: BoxedArcDatabase, _query: string): string;"
       ),
       `Expected tsQueryDb declaration, got:\n${declarations}`
     );
+    // The value returned by tsCreateDb is accepted by tsQueryDb.
+    assert.strictEqual(addon.tsQueryDb(addon.tsCreateDb(), "q"), "");
+  });
+
+  it("brands Boxed<T> differently from Arc<T>", () => {
+    assert.ok(
+      declarations.includes(
+        "export declare function tsCreateBoxedDb(): BoxedDatabase;"
+      ),
+      `Expected tsCreateBoxedDb declaration, got:\n${declarations}`
+    );
+    // The two boxes really are different types at runtime.
+    assert.throws(() => addon.tsQueryDb(addon.tsCreateBoxedDb(), "q"));
   });
 
   it("declares ts_no_args_or_return as void", () => {
@@ -118,7 +182,15 @@ describe("TypeScript declaration generation", () => {
       `Expected __neon_tag symbol, got:\n${declarations}`
     );
     assert.ok(
-      declarations.includes("interface BoxedDatabase"),
+      declarations.includes(
+        "interface BoxedArcDatabase { readonly [__neon_tag]: 'Arc<Database>' }"
+      ),
+      `Expected BoxedArcDatabase interface, got:\n${declarations}`
+    );
+    assert.ok(
+      declarations.includes(
+        "interface BoxedDatabase { readonly [__neon_tag]: 'Database' }"
+      ),
       `Expected BoxedDatabase interface, got:\n${declarations}`
     );
   });
@@ -240,10 +312,20 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
-  it("maps serde_json::Value to any", () => {
+  it("maps a type with no known TypeScript type to unknown", () => {
+    // serde_json::Value has no `TsJson` impl (and isn't covered by ts-rs here).
     assert.ok(
-      declarations.includes("export declare function tsGetAnyValue(): any;"),
-      `Expected tsGetAnyValue returning any, got:\n${declarations}`
+      declarations.includes(
+        "export declare function tsGetAnyValue(): unknown;"
+      ),
+      `Expected tsGetAnyValue returning unknown, got:\n${declarations}`
+    );
+  });
+
+  it("never emits any", () => {
+    assert.ok(
+      !/\bany\b/.test(declarations),
+      `Expected no \`any\` in the output, got:\n${declarations}`
     );
   });
 
@@ -489,9 +571,9 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
-  it("collects ts_decl interface from a manual TypeScript impl", () => {
-    // GeoPoint has a manual `impl TypeScript` whose `ts_decl()` returns a
-    // full interface body. The generator should pick it up via ts_collect.
+  it("collects the declaration from a manual TsJson impl", () => {
+    // GeoPoint has a manual `impl TsJson` whose `ts_json_decl()` returns a
+    // full interface body. The generator should pick it up via ts_json_collect.
     assert.ok(
       declarations.includes("export interface GeoPoint {"),
       `Expected GeoPoint interface, got:\n${declarations}`
@@ -506,11 +588,10 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
-  it("resolves a foreign map at a Json boundary through ts-rs (rung 2)", () => {
-    // IndexMap has no `neon_typescript::TypeScript` impl, only `ts_rs::TS`.
-    // With `use neon_ts_rs::TypeScriptExt as _;` in scope, the boundary rung
-    // renders it through ts-rs (a mapped type over FieldDescriptor) instead of
-    // degrading to `any`.
+  it("resolves a foreign JSON payload through ts-rs (TsJsonExt)", () => {
+    // IndexMap has no `TsJson` impl, only `ts_rs::TS`. With
+    // `use neon_ts_rs::TsJsonExt as _;` in scope, it renders through ts-rs (a
+    // mapped type over FieldDescriptor) instead of falling back to `unknown`.
     assert.ok(
       declarations.includes("tsIndexMap()"),
       `Expected tsIndexMap declaration, got:\n${declarations}`
@@ -518,12 +599,26 @@ describe("TypeScript declaration generation", () => {
     assert.ok(
       declarations.includes("FieldDescriptor") &&
         /tsIndexMap\(\):[^;]*FieldDescriptor/.test(declarations),
-      `Expected tsIndexMap to reference FieldDescriptor (not any), got:\n${declarations}`
+      `Expected tsIndexMap to reference FieldDescriptor (not unknown), got:\n${declarations}`
     );
-    assert.ok(
-      !/tsIndexMap\(\): any/.test(declarations),
-      `tsIndexMap must not degrade to any, got:\n${declarations}`
-    );
+  });
+
+  it("declares only the Ok type of a returned Result", () => {
+    // The Err is thrown, so the declaration is the Ok type, not ts-rs's serde
+    // shape for Result (`{ Ok: T } | { Err: E }`). This holds through JSON and
+    // for a bare Result wrapping a Json payload.
+    for (const name of ["tsJsonFallible", "tsBareFallibleJson"]) {
+      const decl = declarations
+        .split("\n")
+        .find((line) => line.includes(`function ${name}(`));
+      assert.ok(decl, `Expected ${name} declaration, got:\n${declarations}`);
+      assert.ok(
+        decl.includes("FieldDescriptor") && !decl.includes("Ok"),
+        `Expected ${name} to declare the Ok payload, got: ${decl}`
+      );
+    }
+    assert.throws(() => addon.tsJsonFallible(), /nope/);
+    assert.throws(() => addon.tsBareFallibleJson(), /nope/);
   });
 
   it("keeps a type reachable only through a foreign boundary map (regression)", () => {
@@ -532,15 +627,6 @@ describe("TypeScript declaration generation", () => {
     assert.ok(
       /(interface|type) FieldDescriptor\b/.test(declarations),
       `Expected FieldDescriptor declaration, got:\n${declarations}`
-    );
-  });
-
-  it("ts_strict on a function compiles (impls present, no fallback)", () => {
-    assert.ok(
-      declarations.includes(
-        "tsStrictFunction(name: string, count: number): number"
-      ),
-      `Expected tsStrictFunction signature, got:\n${declarations}`
     );
   });
 
@@ -572,33 +658,6 @@ describe("TypeScript declaration generation", () => {
       match[1].includes("ping("),
       `Expected ping method preserved, got:\n${match[1]}`
     );
-  });
-
-  describe("module scoping", () => {
-    it("wraps output in declare module when module option is set", () => {
-      const wrapped = addon.tsGenerateModuleWrapped("./load.cjs");
-      assert.ok(
-        wrapped.includes('declare module "./load.cjs" {'),
-        `Expected module wrapping, got:\n${wrapped}`
-      );
-      assert.ok(
-        wrapped.trimEnd().endsWith("}"),
-        `Expected closing brace, got end:\n${wrapped.slice(-100)}`
-      );
-      // Body should be indented
-      assert.ok(
-        /\n  export declare function /.test(wrapped),
-        `Expected indented body, got:\n${wrapped.slice(0, 500)}`
-      );
-    });
-
-    it("keeps the file header above the module wrapper", () => {
-      const wrapped = addon.tsGenerateModuleWrapped("foo");
-      assert.ok(
-        wrapped.startsWith("// Auto-generated by Neon. Do not edit.\n"),
-        `Expected header at top, got:\n${wrapped.slice(0, 100)}`
-      );
-    });
   });
 
   it("applies ts_returns override on methods", () => {
@@ -649,5 +708,48 @@ describe("TypeScript declaration generation", () => {
       declarations.includes("export type Shape"),
       `Expected export keyword on Shape, got:\n${declarations}`
     );
+  });
+
+  // Every declaration above is checked by substring; this checks that the
+  // whole file is valid TypeScript, so one bad declaration can't hide behind
+  // the others.
+  it("typechecks with tsc --noEmit --strict", function () {
+    this.timeout(60000);
+    const fs = require("fs");
+    const os = require("os");
+    const path = require("path");
+    const { execFileSync } = require("child_process");
+
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "neon-dts-"));
+    const file = path.join(dir, "index.d.ts");
+    fs.writeFileSync(file, declarations);
+
+    const tsc = require.resolve("typescript/bin/tsc");
+    const typeRoots = path.dirname(
+      path.dirname(require.resolve("@types/node/package.json"))
+    );
+    try {
+      execFileSync(
+        process.execPath,
+        [
+          tsc,
+          "--noEmit",
+          "--strict",
+          "--typeRoots",
+          typeRoots,
+          "--types",
+          "node",
+          file,
+        ],
+        { encoding: "utf8" }
+      );
+    } catch (e) {
+      assert.fail(
+        `tsc rejected the generated declarations:\n${e.stdout}${e.stderr}\n` +
+          `--- declarations ---\n${declarations}`
+      );
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

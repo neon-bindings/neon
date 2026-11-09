@@ -1,5 +1,5 @@
-//! The `neon_ts_rs::TypeScript` bridge derive. Generates a
-//! `neon_typescript::TypeScript` impl for a user type by delegating to the
+//! The `neon_ts_rs::TsJson` bridge derive. Generates a
+//! `neon_typescript::TsJson` impl for a user type by delegating to the
 //! type's `ts_rs::TS` impl (via the runtime helpers in `neon-ts-rs`). Reads
 //! nothing about the type's fields or serde attributes.
 
@@ -7,8 +7,8 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, parse_quote, DeriveInput, GenericParam};
 
-#[proc_macro_derive(TypeScript)]
-pub fn derive_typescript(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(TsJson)]
+pub fn derive_ts_json(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
 
@@ -24,12 +24,12 @@ pub fn derive_typescript(input: TokenStream) -> TokenStream {
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let expanded = quote! {
-        impl #impl_generics ::neon_ts_rs::__private::TypeScript for #name #ty_generics #where_clause {
-            fn ts_type() -> ::std::borrow::Cow<'static, str> {
-                ::neon_ts_rs::ts_type::<Self>()
+        impl #impl_generics ::neon_ts_rs::__private::TsJson for #name #ty_generics #where_clause {
+            fn ts_json() -> ::std::borrow::Cow<'static, str> {
+                ::neon_ts_rs::ts_json::<Self>()
             }
-            fn ts_collect(decls: &mut ::std::collections::BTreeMap<::std::string::String, ::std::string::String>) {
-                ::neon_ts_rs::ts_collect::<Self>(decls)
+            fn ts_json_collect(decls: &mut ::std::collections::BTreeMap<::std::string::String, ::std::string::String>) {
+                ::neon_ts_rs::ts_json_collect::<Self>(decls)
             }
         }
     };

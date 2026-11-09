@@ -434,8 +434,6 @@ fn param_name(pat: &syn::Pat, index: usize) -> String {
     }
 }
 
-use crate::name::type_needs_fallback;
-
 // Generate TypeScript metadata for a function export.
 //
 // Emits a `static` registered into the `TYPE_METADATA` distributed slice, which
@@ -454,9 +452,10 @@ use crate::name::type_needs_fallback;
 //       ..
 //   })
 //
-// where each `ts_type` closure resolves the TS type at runtime (via the probe,
-// so a type without a `TypeScript` impl becomes `"any"` rather than a compile
-// error — unless `ts_strict` is set). Returns empty tokens when `ts_skip` is set.
+// where each `ts_type` closure resolves the TS type at runtime through the probe
+// for the conversion used at that position (see `crate::ts`), so a type with no
+// known TypeScript type becomes `unknown` rather than a compile error. Returns
+// empty tokens when `ts_skip` is set.
 fn generate_ts_metadata(
     meta: &meta::Meta,
     sig: &syn::Signature,
@@ -464,6 +463,8 @@ fn generate_ts_metadata(
     has_context: bool,
     has_this: bool,
 ) -> proc_macro2::TokenStream {
+    use crate::ts::{boundary, literal, unit_return, Position};
+
     if meta.ts_skip {
         return proc_macro2::TokenStream::new();
     }
@@ -477,8 +478,7 @@ fn generate_ts_metadata(
         _ => 1,
     };
 
-    // Collect parameter metadata
-    let user_params: Vec<_> = sig
+    let param_entries: Vec<proc_macro2::TokenStream> = sig
         .inputs
         .iter()
         .skip(skip)
@@ -487,158 +487,39 @@ fn generate_ts_metadata(
             syn::FnArg::Typed(pat_type) => Some((i, pat_type)),
             _ => None,
         })
-        .collect();
-
-    let param_entries: Vec<proc_macro2::TokenStream> = user_params
-        .iter()
         .map(|(i, pat_type)| {
-            let name_str = param_name(&pat_type.pat, *i);
+            let name_str = param_name(&pat_type.pat, i);
 
-            // Per-param ts_type override
-            if let Some(override_ty) = crate::name::extract_param_ts_type(&pat_type.attrs) {
-                return quote::quote!(
-                    neon::typescript::ParamMeta {
-                        name: #name_str,
-                        ts_type: || std::borrow::Cow::Borrowed(#override_ty),
-                        ts_collect: |_| {},
-                    }
-                );
-            }
-
-            // If the type has impl Trait, Self, or unsized slices, fall back
-            // to `any`. Non-`'static` lifetimes are handled by substitution below.
-            if type_needs_fallback(&pat_type.ty) {
-                return quote::quote!(
-                    neon::typescript::ParamMeta {
-                        name: #name_str,
-                        ts_type: || std::borrow::Cow::Borrowed("any"),
-                        ts_collect: |_| {},
-                    }
-                );
-            }
-
-            // Rewrite non-static lifetimes to 'static so the type can be used
-            // as a TsProbe type parameter in static metadata.
-            let ty = crate::name::substitute_lifetimes_with_static(&pat_type.ty);
-
-            // Probe the TypeScript *boundary* type. `Json<T>` is transparent at
-            // the JSON boundary (its TS shape is exactly `T`'s), so we probe the
-            // payload `T` directly: json mode's payload is the bare `#ty`, and an
-            // explicit `Json<Inner>` is unwrapped to `Inner`. This keeps rung-1
-            // results identical while letting an adapter's rung-2 `TypeScriptExt`
-            // resolve a foreign payload (e.g. `IndexMap<..>`) that a `Json<..>`
-            // probe could never reach.
-            let boundary_ty = if meta.json {
-                ty.clone()
-            } else {
-                crate::name::strip_outer_json(&ty)
+            // A per-param `#[neon(ts_type = "...")]` override wins.
+            let (ts_type, ts_collect) = match crate::name::extract_param_ts_type(&pat_type.attrs) {
+                Some(override_ty) => literal(&override_ty),
+                None => boundary(&pat_type.ty, meta.json, Position::Param),
             };
-            let ts_ty = quote::quote!(#boundary_ty);
 
-            // Use the autoref specialization probe by default (types without
-            // TypeScript impls silently fall back to "any"). In strict mode,
-            // call the trait directly — missing impl is a compile error.
-            if meta.ts_strict {
-                // Strict: probe with no `TsFallback` import, so rung 1 or rung 2
-                // (an adapter's `TypeScriptExt`) compile while a rung-3 type is a
-                // compile error at the signature.
-                quote::quote!(
-                    neon::typescript::ParamMeta {
-                        name: #name_str,
-                        ts_type: || {
-                            let __probe = neon::macro_internal::TsProbe::<#ts_ty>(std::marker::PhantomData);
-                            (&__probe).ts_type_of()
-                        },
-                        ts_collect: |decls| {
-                            let __probe = neon::macro_internal::TsProbe::<#ts_ty>(std::marker::PhantomData);
-                            (&__probe).ts_collect_of(decls)
-                        },
-                    }
-                )
-            } else {
-                quote::quote!(
-                    neon::typescript::ParamMeta {
-                        name: #name_str,
-                        ts_type: || {
-                            use neon::macro_internal::TsFallback as _;
-                            let __probe = neon::macro_internal::TsProbe::<#ts_ty>(std::marker::PhantomData);
-                            (&__probe).ts_type_of()
-                        },
-                        ts_collect: |decls| {
-                            use neon::macro_internal::TsFallback as _;
-                            let __probe = neon::macro_internal::TsProbe::<#ts_ty>(std::marker::PhantomData);
-                            (&__probe).ts_collect_of(decls)
-                        },
-                    }
-                )
-            }
+            quote::quote!(
+                neon::macro_internal::ParamMeta {
+                    name: #name_str,
+                    ts_type: #ts_type,
+                    ts_collect: #ts_collect,
+                }
+            )
         })
         .collect();
 
     let is_async = matches!(meta.kind, Kind::Task | Kind::AsyncFn | Kind::Async);
     let meta_name = quote::format_ident!("__NEON_TS_META__{fn_name}");
 
-    // Extract return type, using the probe for graceful fallback
-    let (ret_type_expr, ret_collect_expr) = if let Some(override_ty) = &meta.ts_returns {
-        (
-            quote::quote!(|| std::borrow::Cow::Borrowed(#override_ty)),
-            quote::quote!(|_| {}),
-        )
-    } else {
-        match &sig.output {
-            syn::ReturnType::Default => (
-                quote::quote!(|| std::borrow::Cow::Borrowed("undefined")),
-                quote::quote!(|_| {}),
-            ),
-            syn::ReturnType::Type(_, ty) if type_needs_fallback(ty) => (
-                quote::quote!(|| std::borrow::Cow::Borrowed("any")),
-                quote::quote!(|_| {}),
-            ),
-            syn::ReturnType::Type(_, ty) => {
-                let ty = crate::name::substitute_lifetimes_with_static(ty);
-                // Probe the TypeScript boundary (payload) type; see the param
-                // handling above for why `Json<T>` is probed as its payload `T`.
-                let boundary_ty = if meta.json {
-                    ty.clone()
-                } else {
-                    crate::name::strip_outer_json(&ty)
-                };
-                let ret_ty = quote::quote!(#boundary_ty);
-                if meta.ts_strict {
-                    // Strict: probe with no `TsFallback` import (rung 1 or 2 only).
-                    (
-                        quote::quote!(|| {
-                            let __probe = neon::macro_internal::TsProbe::<#ret_ty>(std::marker::PhantomData);
-                            (&__probe).ts_type_of()
-                        }),
-                        quote::quote!(|decls| {
-                            let __probe = neon::macro_internal::TsProbe::<#ret_ty>(std::marker::PhantomData);
-                            (&__probe).ts_collect_of(decls)
-                        }),
-                    )
-                } else {
-                    (
-                        quote::quote!(|| {
-                            use neon::macro_internal::TsFallback as _;
-                            let __probe = neon::macro_internal::TsProbe::<#ret_ty>(std::marker::PhantomData);
-                            (&__probe).ts_type_of()
-                        }),
-                        quote::quote!(|decls| {
-                            use neon::macro_internal::TsFallback as _;
-                            let __probe = neon::macro_internal::TsProbe::<#ret_ty>(std::marker::PhantomData);
-                            (&__probe).ts_collect_of(decls)
-                        }),
-                    )
-                }
-            }
-        }
+    let (ret_type_expr, ret_collect_expr) = match (&meta.ts_returns, &sig.output) {
+        (Some(override_ty), _) => literal(override_ty),
+        (None, syn::ReturnType::Default) => unit_return(meta.json),
+        (None, syn::ReturnType::Type(_, ty)) => boundary(ty, meta.json, Position::Return),
     };
 
     quote::quote!({
         #[neon::macro_internal::linkme::distributed_slice(neon::macro_internal::TYPE_METADATA)]
         #[linkme(crate = neon::macro_internal::linkme)]
-        static #meta_name: neon::typescript::ExportMeta =
-            neon::typescript::ExportMeta::Function(neon::typescript::FunctionMeta {
+        static #meta_name: neon::macro_internal::ExportMeta =
+            neon::macro_internal::ExportMeta::Function(neon::macro_internal::FunctionMeta {
                 name: #export_name,
                 params: &[#(#param_entries),*],
                 ret_type: #ret_type_expr,

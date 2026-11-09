@@ -2,9 +2,9 @@
 
 use std::collections::BTreeMap;
 
-use neon_typescript::TypeScript;
+use neon_typescript::TsJson;
 
-#[derive(serde::Serialize, serde::Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
+#[derive(serde::Serialize, serde::Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
 #[serde(rename_all = "camelCase")]
 struct SearchResult {
     doc_id: u32,
@@ -13,14 +13,14 @@ struct SearchResult {
 }
 
 #[test]
-fn ts_type_is_type_name() {
-    assert_eq!(<SearchResult as TypeScript>::ts_type(), "SearchResult",);
+fn ts_json_is_type_name() {
+    assert_eq!(<SearchResult as TsJson>::ts_json(), "SearchResult");
 }
 
 #[test]
-fn ts_collect_produces_camel_case_decl() {
+fn ts_json_collect_produces_camel_case_decl() {
     let mut decls: BTreeMap<String, String> = BTreeMap::new();
-    <SearchResult as TypeScript>::ts_collect(&mut decls);
+    <SearchResult as TsJson>::ts_json_collect(&mut decls);
 
     let decl = decls
         .get("SearchResult")
@@ -33,7 +33,7 @@ fn ts_collect_produces_camel_case_decl() {
 }
 
 // A generic type to exercise the derive's generics handling.
-#[derive(serde::Serialize, serde::Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
+#[derive(serde::Serialize, serde::Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
 struct Wrapper<T: ts_rs::TS> {
     inner: T,
 }
@@ -41,7 +41,7 @@ struct Wrapper<T: ts_rs::TS> {
 #[test]
 fn generic_type_compiles_and_collects() {
     let mut decls: BTreeMap<String, String> = BTreeMap::new();
-    <Wrapper<SearchResult> as TypeScript>::ts_collect(&mut decls);
+    <Wrapper<SearchResult> as TsJson>::ts_json_collect(&mut decls);
     assert!(decls.contains_key("Wrapper"));
     // The transitive dependency should be collected too.
     assert!(decls.contains_key("SearchResult"));

@@ -11,8 +11,6 @@ pub(crate) struct Meta {
     pub ts_skip: bool,
     /// Override the class name in TypeScript output (without affecting JS)
     pub ts_name: Option<String>,
-    /// Require all referenced types to implement `TypeScript` (no fallback to "any")
-    pub ts_strict: bool,
     /// Omit the constructor from the generated TypeScript class declaration
     pub ts_no_constructor: bool,
 }
@@ -47,9 +45,6 @@ impl Parse for Meta {
                     }
                     "ts_skip" => {
                         meta.ts_skip = true;
-                    }
-                    "ts_strict" => {
-                        meta.ts_strict = true;
                     }
                     "ts_no_constructor" => {
                         meta.ts_no_constructor = true;
@@ -88,9 +83,6 @@ impl Parse for Meta {
                     }
                     "ts_skip" => {
                         meta.ts_skip = true;
-                    }
-                    "ts_strict" => {
-                        meta.ts_strict = true;
                     }
                     "ts_no_constructor" => {
                         meta.ts_no_constructor = true;

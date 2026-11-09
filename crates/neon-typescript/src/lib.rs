@@ -1,98 +1,117 @@
-//! The `TypeScript` trait: Neon's minimal, stable contract for mapping a Rust
-//! type to its TypeScript representation. Deliberately tiny and dependency-free.
+//! The `TsJson` trait: Neon's minimal, stable contract for describing the
+//! TypeScript type of a Rust value **as serialized to JSON** by serde_json.
+//! Deliberately tiny and dependency-free.
+//!
+//! This is the trait third-party generator adapters (e.g. `neon-ts-rs`)
+//! implement. It describes only the JSON boundary (`Json<T>` and
+//! `#[neon::export(json)]`); the TypeScript types of Neon's own bare
+//! conversions (`TryFromJs` / `TryIntoJs`) are described by separate traits in
+//! `neon` itself.
 
 use std::borrow::Cow;
-use std::cell::{Ref, RefCell, RefMut};
+use std::cell::RefCell;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::hash::Hash;
 use std::marker::PhantomData;
 use std::rc::Rc;
 use std::sync::Arc;
 
-/// A Rust type with a known TypeScript representation.
-pub trait TypeScript {
-    /// The TypeScript type *expression* for this type (e.g. `"number"`,
-    /// `"string[]"`, `"SearchResult"`).
-    fn ts_type() -> Cow<'static, str>;
+/// A Rust type whose serde_json serialization has a known TypeScript type.
+pub trait TsJson {
+    /// The TypeScript type *expression* for this type's JSON representation
+    /// (e.g. `"number"`, `"string[]"`, `"SearchResult"`).
+    fn ts_json() -> Cow<'static, str>;
 
-    /// An optional top-level declaration this type needs (an interface, type
-    /// alias, or `declare class`). `None` for primitives.
-    fn ts_decl() -> Option<Cow<'static, str>> {
+    /// An optional top-level declaration this type needs (an interface or type
+    /// alias). `None` for primitives.
+    fn ts_json_decl() -> Option<Cow<'static, str>> {
         None
     }
 
     /// Add this type's own declaration plus its transitive declarations to
     /// `decls`, keyed by name for dedup. Composite types override this to also
     /// collect from their component types.
-    fn ts_collect(decls: &mut BTreeMap<String, String>) {
-        if let Some(d) = Self::ts_decl() {
+    fn ts_json_collect(decls: &mut BTreeMap<String, String>) {
+        if let Some(d) = Self::ts_json_decl() {
             decls
-                .entry(Self::ts_type().into_owned())
+                .entry(Self::ts_json().into_owned())
                 .or_insert_with(|| d.into_owned());
         }
     }
 }
 
-// ——— TypeScript autoref specialization probe ———
+/// Wrap a union type in parentheses when it's used as an array element:
+/// `(Foo | Bar)[]`, not `Foo | Bar[]`.
+pub fn array_of(inner: &str) -> String {
+    if inner.contains(" | ") {
+        format!("({inner})[]")
+    } else {
+        format!("{inner}[]")
+    }
+}
+
+// ——— JSON autoref specialization probe ———
 //
-// This enables macro-generated metadata to gracefully handle types that don't
-// implement `TypeScript`. Method resolution is a three-rung ladder tried
+// This lets macro-generated metadata gracefully handle JSON payload types that
+// don't implement `TsJson`. Method resolution is a three-rung ladder tried
 // most-specific first (see `doc/typescript.md`):
 //
-//   Rung 1: inherent method on `TsProbe<T>` (requires `T: TypeScript`).
-//   Rung 2: an adapter's trait `impl … for TsProbe<T>` (e.g. `neon-ts-rs`'s
-//           `TypeScriptExt`), only visible when that trait is `use`d in scope.
-//   Rung 3: the `TsFallback` trait impl for `&TsProbe<T>`, reached via autoref
-//           for all `T`, yielding `"any"`.
+//   Rung 1: inherent method on `TsJsonProbe<T>` (requires `T: TsJson`).
+//   Rung 2: an adapter's trait `impl … for TsJsonProbe<T>` (e.g. `neon-ts-rs`'s
+//           `TsJsonExt`), only visible when that trait is `use`d in scope.
+//   Rung 3: the `TsJsonFallback` trait impl for `&TsJsonProbe<T>`, reached via
+//           autoref for all `T`, yielding `"unknown"`.
 //
 // The probe lives here (not in `neon`) so an adapter crate can hang rung 2 on it.
 //
 // Usage in macro-generated code:
-//   let __probe = TsProbe::<SomeType>(PhantomData);
-//   (&__probe).ts_type_of()
+//   let __probe = TsJsonProbe::<SomeType>(PhantomData);
+//   (&__probe).ts_json_of()
 
-/// Compile-time probe for whether a type implements `TypeScript`.
-pub struct TsProbe<T>(pub PhantomData<T>);
+/// Compile-time probe for whether a JSON payload type implements `TsJson`.
+pub struct TsJsonProbe<T>(pub PhantomData<T>);
 
-// Higher priority: inherent method, available only when T: TypeScript
-impl<T: TypeScript> TsProbe<T> {
-    pub fn ts_type_of(&self) -> Cow<'static, str> {
-        T::ts_type()
+// Higher priority: inherent method, available only when T: TsJson
+impl<T: TsJson> TsJsonProbe<T> {
+    pub fn ts_json_of(&self) -> Cow<'static, str> {
+        T::ts_json()
     }
 
-    pub fn ts_collect_of(&self, decls: &mut BTreeMap<String, String>) {
-        T::ts_collect(decls);
+    pub fn ts_json_collect_of(&self, decls: &mut BTreeMap<String, String>) {
+        T::ts_json_collect(decls);
     }
 }
 
-/// Lower-priority fallback for types that don't implement `TypeScript`.
-/// Reached via autoref (`(&probe).method()` resolves to `&TsProbe<T>` first,
-/// then falls through to `&&TsProbe<T>` which matches this trait impl).
-pub trait TsFallback {
-    fn ts_type_of(&self) -> Cow<'static, str>;
-    fn ts_collect_of(&self, decls: &mut BTreeMap<String, String>);
+/// Lower-priority fallback for JSON payload types with no known TypeScript
+/// type. Reached via autoref (`(&probe).method()` resolves to `&TsJsonProbe<T>`
+/// first, then falls through to `&&TsJsonProbe<T>`, which matches this impl).
+pub trait TsJsonFallback {
+    fn ts_json_of(&self) -> Cow<'static, str>;
+    fn ts_json_collect_of(&self, decls: &mut BTreeMap<String, String>);
 }
 
-impl<T> TsFallback for &TsProbe<T> {
-    fn ts_type_of(&self) -> Cow<'static, str> {
-        "any".into()
+impl<T> TsJsonFallback for &TsJsonProbe<T> {
+    fn ts_json_of(&self) -> Cow<'static, str> {
+        "unknown".into()
     }
 
-    fn ts_collect_of(&self, _: &mut BTreeMap<String, String>) {}
+    fn ts_json_collect_of(&self, _: &mut BTreeMap<String, String>) {}
 }
 
 // ——— Primitive impls ———
 
 macro_rules! ts_primitive {
     ($ty:ty, $ts:literal) => {
-        impl TypeScript for $ty {
-            fn ts_type() -> Cow<'static, str> {
+        impl TsJson for $ty {
+            fn ts_json() -> Cow<'static, str> {
                 $ts.into()
             }
         }
     };
 }
 
+// serde_json emits every Rust number type (including 64-bit integers) as a
+// JSON number.
 ts_primitive!(f64, "number");
 ts_primitive!(f32, "number");
 ts_primitive!(i64, "number");
@@ -108,54 +127,49 @@ ts_primitive!(usize, "number");
 ts_primitive!(String, "string");
 ts_primitive!(&str, "string");
 ts_primitive!(bool, "boolean");
-ts_primitive!((), "undefined");
+// serde_json serializes `()` as `null`.
+ts_primitive!((), "null");
 
 // ——— Wrapper impls ———
 
-impl<T: TypeScript> TypeScript for Option<T> {
-    fn ts_type() -> Cow<'static, str> {
-        let inner = T::ts_type();
-        format!("{inner} | null").into()
+// serde_json serializes `None` as a present `null`.
+impl<T: TsJson> TsJson for Option<T> {
+    fn ts_json() -> Cow<'static, str> {
+        format!("{} | null", T::ts_json()).into()
     }
 
-    fn ts_collect(decls: &mut BTreeMap<String, String>) {
-        T::ts_collect(decls);
-    }
-}
-
-impl<T: TypeScript> TypeScript for Vec<T> {
-    fn ts_type() -> Cow<'static, str> {
-        let inner = T::ts_type();
-        // Wrap union types in parens: (Foo | Bar)[] not Foo | Bar[]
-        if inner.contains(" | ") {
-            format!("({inner})[]").into()
-        } else {
-            format!("{inner}[]").into()
-        }
-    }
-
-    fn ts_collect(decls: &mut BTreeMap<String, String>) {
-        T::ts_collect(decls);
+    fn ts_json_collect(decls: &mut BTreeMap<String, String>) {
+        T::ts_json_collect(decls);
     }
 }
 
-impl<T: TypeScript + Eq + Hash> TypeScript for HashSet<T> {
-    fn ts_type() -> Cow<'static, str> {
-        Vec::<T>::ts_type()
+impl<T: TsJson> TsJson for Vec<T> {
+    fn ts_json() -> Cow<'static, str> {
+        array_of(&T::ts_json()).into()
     }
 
-    fn ts_collect(decls: &mut BTreeMap<String, String>) {
-        T::ts_collect(decls);
+    fn ts_json_collect(decls: &mut BTreeMap<String, String>) {
+        T::ts_json_collect(decls);
     }
 }
 
-impl<T: TypeScript + Ord> TypeScript for BTreeSet<T> {
-    fn ts_type() -> Cow<'static, str> {
-        Vec::<T>::ts_type()
+impl<T: TsJson + Eq + Hash> TsJson for HashSet<T> {
+    fn ts_json() -> Cow<'static, str> {
+        Vec::<T>::ts_json()
     }
 
-    fn ts_collect(decls: &mut BTreeMap<String, String>) {
-        T::ts_collect(decls);
+    fn ts_json_collect(decls: &mut BTreeMap<String, String>) {
+        T::ts_json_collect(decls);
+    }
+}
+
+impl<T: TsJson + Ord> TsJson for BTreeSet<T> {
+    fn ts_json() -> Cow<'static, str> {
+        Vec::<T>::ts_json()
+    }
+
+    fn ts_json_collect(decls: &mut BTreeMap<String, String>) {
+        T::ts_json_collect(decls);
     }
 }
 
@@ -166,179 +180,102 @@ impl<T: TypeScript + Ord> TypeScript for BTreeSet<T> {
 // `Record<number, V>` would be misleading (the runtime keys are strings), and
 // non-primitive `K` would produce invalid TypeScript (`Record` keys must be
 // `string | number | symbol`).
-impl<K: TypeScript, V: TypeScript> TypeScript for HashMap<K, V> {
-    fn ts_type() -> Cow<'static, str> {
-        let v = V::ts_type();
-        format!("Record<string, {v}>").into()
+impl<K: TsJson, V: TsJson> TsJson for HashMap<K, V> {
+    fn ts_json() -> Cow<'static, str> {
+        format!("Record<string, {}>", V::ts_json()).into()
     }
 
-    fn ts_collect(decls: &mut BTreeMap<String, String>) {
-        V::ts_collect(decls);
+    fn ts_json_collect(decls: &mut BTreeMap<String, String>) {
+        V::ts_json_collect(decls);
     }
 }
 
-impl<K: TypeScript + Ord, V: TypeScript> TypeScript for BTreeMap<K, V> {
-    fn ts_type() -> Cow<'static, str> {
-        let v = V::ts_type();
-        format!("Record<string, {v}>").into()
+impl<K: TsJson + Ord, V: TsJson> TsJson for BTreeMap<K, V> {
+    fn ts_json() -> Cow<'static, str> {
+        format!("Record<string, {}>", V::ts_json()).into()
     }
 
-    fn ts_collect(decls: &mut BTreeMap<String, String>) {
-        V::ts_collect(decls);
+    fn ts_json_collect(decls: &mut BTreeMap<String, String>) {
+        V::ts_json_collect(decls);
     }
 }
 
-impl<T: TypeScript, E> TypeScript for Result<T, E> {
-    fn ts_type() -> Cow<'static, str> {
-        T::ts_type()
+// As *data* inside a JSON payload, serde serializes `Result` as an externally
+// tagged enum. (A `Result` *returned* from an export is control flow, not data:
+// the macro peels it before consulting this trait, because the `Err` is thrown.)
+impl<T: TsJson, E: TsJson> TsJson for Result<T, E> {
+    fn ts_json() -> Cow<'static, str> {
+        format!("{{ Ok: {} }} | {{ Err: {} }}", T::ts_json(), E::ts_json()).into()
     }
 
-    fn ts_collect(decls: &mut BTreeMap<String, String>) {
-        T::ts_collect(decls);
+    fn ts_json_collect(decls: &mut BTreeMap<String, String>) {
+        T::ts_json_collect(decls);
+        E::ts_json_collect(decls);
     }
 }
 
-impl<T: TypeScript> TypeScript for Box<T> {
-    fn ts_type() -> Cow<'static, str> {
-        T::ts_type()
-    }
+// serde serializes these wrappers transparently, as their inner value. (`Arc`
+// and `Rc` require serde's `rc` feature.)
+macro_rules! ts_transparent {
+    ($($ty:ty),* $(,)?) => {$(
+        impl<T: TsJson> TsJson for $ty {
+            fn ts_json() -> Cow<'static, str> {
+                T::ts_json()
+            }
 
-    fn ts_collect(decls: &mut BTreeMap<String, String>) {
-        T::ts_collect(decls);
-    }
+            fn ts_json_collect(decls: &mut BTreeMap<String, String>) {
+                T::ts_json_collect(decls);
+            }
+        }
+    )*};
 }
+
+ts_transparent!(Box<T>, Arc<T>, Rc<T>, RefCell<T>);
 
 // ——— References ———
 
-impl<T: TypeScript> TypeScript for &T {
-    fn ts_type() -> Cow<'static, str> {
-        T::ts_type()
+impl<T: TsJson + ?Sized> TsJson for &T {
+    fn ts_json() -> Cow<'static, str> {
+        T::ts_json()
     }
 
-    fn ts_collect(decls: &mut BTreeMap<String, String>) {
-        T::ts_collect(decls);
+    fn ts_json_collect(decls: &mut BTreeMap<String, String>) {
+        T::ts_json_collect(decls);
     }
 }
 
-impl<T: TypeScript> TypeScript for &mut T {
-    fn ts_type() -> Cow<'static, str> {
-        T::ts_type()
+impl<T: TsJson + ?Sized> TsJson for &mut T {
+    fn ts_json() -> Cow<'static, str> {
+        T::ts_json()
     }
 
-    fn ts_collect(decls: &mut BTreeMap<String, String>) {
-        T::ts_collect(decls);
+    fn ts_json_collect(decls: &mut BTreeMap<String, String>) {
+        T::ts_json_collect(decls);
     }
 }
 
 // ——— Tuples ———
 
-impl<A: TypeScript, B: TypeScript> TypeScript for (A, B) {
-    fn ts_type() -> Cow<'static, str> {
-        let a = A::ts_type();
-        let b = B::ts_type();
-        format!("[{a}, {b}]").into()
+impl<A: TsJson, B: TsJson> TsJson for (A, B) {
+    fn ts_json() -> Cow<'static, str> {
+        format!("[{}, {}]", A::ts_json(), B::ts_json()).into()
     }
 
-    fn ts_collect(decls: &mut BTreeMap<String, String>) {
-        A::ts_collect(decls);
-        B::ts_collect(decls);
+    fn ts_json_collect(decls: &mut BTreeMap<String, String>) {
+        A::ts_json_collect(decls);
+        B::ts_json_collect(decls);
     }
 }
 
-impl<A: TypeScript, B: TypeScript, C: TypeScript> TypeScript for (A, B, C) {
-    fn ts_type() -> Cow<'static, str> {
-        let a = A::ts_type();
-        let b = B::ts_type();
-        let c = C::ts_type();
-        format!("[{a}, {b}, {c}]").into()
+impl<A: TsJson, B: TsJson, C: TsJson> TsJson for (A, B, C) {
+    fn ts_json() -> Cow<'static, str> {
+        format!("[{}, {}, {}]", A::ts_json(), B::ts_json(), C::ts_json()).into()
     }
 
-    fn ts_collect(decls: &mut BTreeMap<String, String>) {
-        A::ts_collect(decls);
-        B::ts_collect(decls);
-        C::ts_collect(decls);
-    }
-}
-
-// ——— Opaque boxed (smart-pointer) types ———
-//
-// Neon boxes smart pointers (`Arc<T>`, `Rc<T>`, `RefCell<T>`, `Ref<T>`,
-// `RefMut<T>`) into opaque JavaScript values. The matching TypeScript is a
-// *branded interface* so that distinct boxed types are not interchangeable.
-// These impls live here (rather than in `neon`) because the orphan rule forbids
-// implementing `TypeScript` for these foreign types outside the trait's crate.
-// The branded-interface convention is shared with `neon`'s own `Boxed<T>` type
-// via the public helpers below. The brand value carries the inner type's
-// identity; the interface name is synthesized as `Boxed` + a sanitized identifier
-// (so a composed inner type like `string | null` still yields a valid name).
-
-/// Reduce an arbitrary TypeScript type expression to an identifier-safe string
-/// (ASCII alphanumerics and `_`), used to synthesize the `Boxed{...}` name.
-pub fn sanitize_identifier(s: &str) -> String {
-    let mut out: String = s
-        .chars()
-        .filter(|c| c.is_ascii_alphanumeric() || *c == '_')
-        .collect();
-    if out.chars().next().is_some_and(|c| c.is_ascii_digit()) {
-        out.insert(0, '_');
-    }
-    out
-}
-
-/// The synthesized `Boxed{Inner}` type name for a boxed `T`.
-pub fn boxed_ts_type<T: TypeScript>() -> Cow<'static, str> {
-    format!("Boxed{}", sanitize_identifier(&T::ts_type())).into()
-}
-
-/// The branded-interface declaration for a boxed `T`.
-pub fn boxed_ts_decl<T: TypeScript>() -> Option<Cow<'static, str>> {
-    let inner = T::ts_type();
-    let boxed = format!("Boxed{}", sanitize_identifier(&inner));
-    Some(format!("interface {boxed} {{ readonly [__neon_tag]: '{inner}' }}").into())
-}
-
-/// Collect the branded-interface declaration for a boxed `T`.
-pub fn boxed_ts_collect<T: TypeScript>(decls: &mut BTreeMap<String, String>) {
-    if let Some(d) = boxed_ts_decl::<T>() {
-        decls
-            .entry(boxed_ts_type::<T>().into_owned())
-            .or_insert_with(|| d.into_owned());
-    }
-}
-
-macro_rules! ts_boxed {
-    ($($ty:ty),* $(,)?) => {$(
-        impl<T: TypeScript> TypeScript for $ty {
-            fn ts_type() -> Cow<'static, str> { boxed_ts_type::<T>() }
-            fn ts_decl() -> Option<Cow<'static, str>> { boxed_ts_decl::<T>() }
-            fn ts_collect(decls: &mut BTreeMap<String, String>) { boxed_ts_collect::<T>(decls) }
-        }
-    )*};
-}
-
-ts_boxed!(Arc<T>, Rc<T>, RefCell<T>);
-
-impl<'a, T: TypeScript> TypeScript for Ref<'a, T> {
-    fn ts_type() -> Cow<'static, str> {
-        boxed_ts_type::<T>()
-    }
-    fn ts_decl() -> Option<Cow<'static, str>> {
-        boxed_ts_decl::<T>()
-    }
-    fn ts_collect(decls: &mut BTreeMap<String, String>) {
-        boxed_ts_collect::<T>(decls)
-    }
-}
-
-impl<'a, T: TypeScript> TypeScript for RefMut<'a, T> {
-    fn ts_type() -> Cow<'static, str> {
-        boxed_ts_type::<T>()
-    }
-    fn ts_decl() -> Option<Cow<'static, str>> {
-        boxed_ts_decl::<T>()
-    }
-    fn ts_collect(decls: &mut BTreeMap<String, String>) {
-        boxed_ts_collect::<T>(decls)
+    fn ts_json_collect(decls: &mut BTreeMap<String, String>) {
+        A::ts_json_collect(decls);
+        B::ts_json_collect(decls);
+        C::ts_json_collect(decls);
     }
 }
 
@@ -347,75 +284,79 @@ mod tests {
     use super::*;
 
     #[test]
-    fn sanitize_identifier_strips_invalid_chars() {
-        assert_eq!(sanitize_identifier("Database"), "Database");
-        assert_eq!(sanitize_identifier("string | null"), "stringnull");
-        assert_eq!(sanitize_identifier("number[]"), "number");
-        assert_eq!(sanitize_identifier("3d"), "_3d");
-    }
-
-    #[test]
-    fn arc_produces_branded_boxed_type() {
-        assert_eq!(<Arc<String>>::ts_type(), "Boxedstring");
-        // Composed inner types still yield a valid identifier.
-        assert_eq!(<Arc<Option<String>>>::ts_type(), "Boxedstringnull");
-        let decl = <Arc<Option<String>>>::ts_decl().unwrap();
-        assert!(decl.contains("__neon_tag]: 'string | null'"), "{decl}");
-    }
-
-    #[test]
     fn primitives() {
-        assert_eq!(f64::ts_type(), "number");
-        assert_eq!(u8::ts_type(), "number");
-        assert_eq!(isize::ts_type(), "number");
-        assert_eq!(String::ts_type(), "string");
-        assert_eq!(<&str>::ts_type(), "string");
-        assert_eq!(bool::ts_type(), "boolean");
-        assert_eq!(<()>::ts_type(), "undefined");
+        assert_eq!(f64::ts_json(), "number");
+        assert_eq!(u8::ts_json(), "number");
+        assert_eq!(i64::ts_json(), "number");
+        assert_eq!(String::ts_json(), "string");
+        assert_eq!(<&str>::ts_json(), "string");
+        assert_eq!(bool::ts_json(), "boolean");
+    }
+
+    #[test]
+    fn unit_is_null() {
+        assert_eq!(<()>::ts_json(), "null");
     }
 
     #[test]
     fn option_maps_to_null_union() {
-        assert_eq!(<Option<f64>>::ts_type(), "number | null");
+        assert_eq!(<Option<f64>>::ts_json(), "number | null");
     }
 
     #[test]
     fn vec_and_sets() {
-        assert_eq!(<Vec<String>>::ts_type(), "string[]");
-        assert_eq!(<HashSet<u32>>::ts_type(), "number[]");
-        assert_eq!(<BTreeSet<bool>>::ts_type(), "boolean[]");
+        assert_eq!(<Vec<String>>::ts_json(), "string[]");
+        assert_eq!(<HashSet<u32>>::ts_json(), "number[]");
+        assert_eq!(<BTreeSet<bool>>::ts_json(), "boolean[]");
         // Union inner types get wrapped in parens.
-        assert_eq!(<Vec<Option<f64>>>::ts_type(), "(number | null)[]");
+        assert_eq!(<Vec<Option<f64>>>::ts_json(), "(number | null)[]");
     }
 
     #[test]
     fn maps_ignore_key_type() {
-        assert_eq!(<HashMap<String, f64>>::ts_type(), "Record<string, number>");
-        assert_eq!(<HashMap<u32, f64>>::ts_type(), "Record<string, number>");
+        assert_eq!(<HashMap<String, f64>>::ts_json(), "Record<string, number>");
+        assert_eq!(<HashMap<u32, f64>>::ts_json(), "Record<string, number>");
         assert_eq!(
-            <BTreeMap<String, String>>::ts_type(),
+            <BTreeMap<String, String>>::ts_json(),
             "Record<string, string>"
         );
     }
 
     #[test]
     fn tuples() {
-        assert_eq!(<(f64, String)>::ts_type(), "[number, string]");
+        assert_eq!(<(f64, String)>::ts_json(), "[number, string]");
         assert_eq!(
-            <(f64, String, bool)>::ts_type(),
+            <(f64, String, bool)>::ts_json(),
             "[number, string, boolean]"
         );
     }
 
     #[test]
-    fn result_delegates_to_ok() {
-        assert_eq!(<Result<String, ()>>::ts_type(), "string");
+    fn result_as_data_is_externally_tagged() {
+        assert_eq!(
+            <Result<String, u32>>::ts_json(),
+            "{ Ok: string } | { Err: number }"
+        );
     }
 
     #[test]
-    fn box_and_refs_delegate() {
-        assert_eq!(<Box<f64>>::ts_type(), "number");
-        assert_eq!(<&f64>::ts_type(), "number");
-        assert_eq!(<&mut String>::ts_type(), "string");
+    fn transparent_wrappers_delegate() {
+        assert_eq!(<Box<f64>>::ts_json(), "number");
+        assert_eq!(<Arc<String>>::ts_json(), "string");
+        assert_eq!(<Rc<Vec<u32>>>::ts_json(), "number[]");
+        assert_eq!(<RefCell<bool>>::ts_json(), "boolean");
+        assert_eq!(<&f64>::ts_json(), "number");
+        assert_eq!(<&mut String>::ts_json(), "string");
+    }
+
+    // The `(&probe)` borrow mirrors the macro-emitted call shape.
+    #[allow(clippy::needless_borrow)]
+    #[test]
+    fn probe_falls_back_to_unknown() {
+        struct NoImpl;
+        let probe = TsJsonProbe::<NoImpl>(PhantomData);
+        assert_eq!((&probe).ts_json_of(), "unknown");
+        let probe = TsJsonProbe::<f64>(PhantomData);
+        assert_eq!((&probe).ts_json_of(), "number");
     }
 }

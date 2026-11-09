@@ -14,9 +14,6 @@ pub(crate) struct Meta {
     pub(super) this: bool,
     /// `ts_skip` — omit this export from the generated `.d.ts`.
     pub(super) ts_skip: bool,
-    /// `ts_strict` — error (instead of falling back to `any`) if a referenced
-    /// type doesn't implement `TypeScript`.
-    pub(super) ts_strict: bool,
     /// `ts_returns = "..."` — override the inferred TS return type with a literal.
     pub(super) ts_returns: Option<String>,
 }
@@ -123,11 +120,6 @@ impl syn::parse::Parser for Parser {
 
             if meta.path.is_ident("ts_skip") {
                 attr.ts_skip = true;
-                return Ok(());
-            }
-
-            if meta.path.is_ident("ts_strict") {
-                attr.ts_strict = true;
                 return Ok(());
             }
 

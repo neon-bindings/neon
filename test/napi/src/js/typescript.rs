@@ -3,13 +3,14 @@
 
 use indexmap::IndexMap;
 use neon::types::extract::Json;
-use neon_ts_rs::TypeScriptExt as _;
+use neon::types::extract::{Array, Boxed};
+use neon_ts_rs::TsJsonExt as _;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 // --- Stage 2: Derived types ---
 
-#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
 #[serde(rename_all = "camelCase")]
 pub struct SearchResult {
     pub doc_id: u32,
@@ -20,7 +21,7 @@ pub struct SearchResult {
     pub highlights: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Shape {
     Circle {
@@ -34,21 +35,18 @@ pub enum Shape {
     Point,
 }
 
-#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
 pub struct Config {
     pub name: String,
     #[ts(type = "Record<string, unknown>")]
     pub metadata: serde_json::Value,
 }
 
-// A simple opaque type
+// A simple opaque type. Boxed values are branded by the Rust type inside the
+// `JsBox`, so no TypeScript impl is needed.
 pub struct Database;
 
-impl neon::typescript::TypeScript for Database {
-    fn ts_type() -> std::borrow::Cow<'static, str> {
-        "Database".into()
-    }
-}
+impl neon::types::Finalize for Database {}
 
 #[neon::export]
 fn ts_add(a: f64, b: f64) -> f64 {
@@ -65,10 +63,33 @@ fn ts_is_even(n: f64) -> bool {
     (n as i64) % 2 == 0
 }
 
+// Bare `Option`: `TryIntoJs` produces `undefined` for `None`, and `TryFromJs`
+// accepts `null` or `undefined`.
 #[neon::export]
 fn ts_maybe_number(flag: bool) -> Option<f64> {
     flag.then_some(42.0)
 }
+
+#[neon::export]
+fn ts_optional_arg(x: Option<f64>) -> f64 {
+    x.unwrap_or(-1.0)
+}
+
+// The same `Option` through JSON: serde_json produces `null` for `None`.
+#[neon::export(json)]
+fn ts_json_maybe_number(flag: bool) -> Option<f64> {
+    flag.then_some(42.0)
+}
+
+// A bare `Vec<f64>` is a `Float64Array` in both directions.
+#[neon::export]
+fn ts_typed_array(xs: Vec<f64>) -> Vec<f64> {
+    xs.into_iter().map(|x| x * 2.0).collect()
+}
+
+// The JSON path serializes the implicit `()` to `null`.
+#[neon::export(json)]
+fn ts_json_unit() {}
 
 #[neon::export(task)]
 fn ts_async_add(a: f64, b: f64) -> f64 {
@@ -93,6 +114,12 @@ fn ts_create_db() -> Arc<Database> {
 #[neon::export]
 fn ts_query_db(_db: Arc<Database>, _query: String) -> String {
     String::new()
+}
+
+// `Boxed<T>` boxes `T` itself, so it gets a different brand than `Arc<T>`.
+#[neon::export]
+fn ts_create_boxed_db() -> Boxed<Database> {
+    Boxed(Database)
 }
 
 #[neon::export]
@@ -130,7 +157,7 @@ fn ts_get_config() -> Config {
 // --- Stage 4: Extended enum representations ---
 
 // Externally tagged enum (serde default)
-#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
 pub enum ExternalMsg {
     Quit,
     Echo(String),
@@ -138,7 +165,7 @@ pub enum ExternalMsg {
 }
 
 // Adjacently tagged enum
-#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
 #[serde(tag = "type", content = "data")]
 pub enum ApiResponse {
     Success(String),
@@ -147,7 +174,7 @@ pub enum ApiResponse {
 }
 
 // Untagged enum
-#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
 #[serde(untagged)]
 pub enum StringOrNumber {
     Str(String),
@@ -191,13 +218,13 @@ fn ts_get_any_value() -> serde_json::Value {
 // --- Stage 4b: Flatten and generics ---
 
 // Flatten: intersection types
-#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
 pub struct Pagination {
     pub page: u32,
     pub per_page: u32,
 }
 
-#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
 pub struct UserList {
     pub users: Vec<String>,
     #[serde(flatten)]
@@ -205,7 +232,7 @@ pub struct UserList {
 }
 
 // Generic struct
-#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
 pub struct Envelope<T> {
     pub data: T,
     pub timestamp: f64,
@@ -270,18 +297,18 @@ fn ts_get_nested() -> std::collections::HashMap<String, Vec<f64>> {
     std::collections::HashMap::new()
 }
 
-// Manual `TypeScript` impl with a custom `ts_decl` (not just a name): exercises
-// the trait's default `ts_collect` and the generator's interface-dedup path.
+// Manual `TsJson` impl with a custom `ts_json_decl` (not just a name): exercises
+// the trait's default `ts_json_collect` and the generator's interface-dedup path.
 pub struct GeoPoint {
     pub lat: f64,
     pub lng: f64,
 }
 
-impl neon::typescript::TypeScript for GeoPoint {
-    fn ts_type() -> std::borrow::Cow<'static, str> {
+impl neon::typescript::TsJson for GeoPoint {
+    fn ts_json() -> std::borrow::Cow<'static, str> {
         "GeoPoint".into()
     }
-    fn ts_decl() -> Option<std::borrow::Cow<'static, str>> {
+    fn ts_json_decl() -> Option<std::borrow::Cow<'static, str>> {
         Some("interface GeoPoint {\n  lat: number;\n  lng: number;\n}".into())
     }
 }
@@ -311,14 +338,12 @@ fn ts_get_point() -> GeoPoint {
     }
 }
 
-// --- Foreign type used directly at a Json<T> boundary ---
+// --- Foreign type as a JSON payload ---
 //
-// `IndexMap` has no `neon_typescript::TypeScript` impl, only `ts_rs::TS`. Using
-// it as the outermost type at a `Json<T>` boundary would degrade to `any` (and
-// drop `FieldDescriptor`) without the adapter's `TypeScriptExt` boundary rung
-// (brought into scope by `use neon_ts_rs::TypeScriptExt as _;` above). This
-// exercises rung 2 of the probe ladder.
-#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TypeScript)]
+// `IndexMap` has no `TsJson` impl, only `ts_rs::TS`. As a JSON payload it would
+// fall back to `unknown` (and drop `FieldDescriptor`) without the adapter's
+// `TsJsonExt` (brought into scope by `use neon_ts_rs::TsJsonExt as _;` above).
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
 pub struct FieldDescriptor {
     pub name: String,
     pub required: bool,
@@ -327,6 +352,18 @@ pub struct FieldDescriptor {
 #[neon::export]
 fn ts_index_map() -> Json<IndexMap<String, FieldDescriptor>> {
     unimplemented!()
+}
+
+// A returned `Result` is control flow: the `Err` is thrown, so only the `Ok`
+// type is declared (not ts-rs's serde shape `{ Ok: T } | { Err: E }`).
+#[neon::export(json)]
+fn ts_json_fallible() -> Result<IndexMap<String, FieldDescriptor>, String> {
+    Err("nope".into())
+}
+
+#[neon::export]
+fn ts_bare_fallible_json() -> Result<Json<IndexMap<String, FieldDescriptor>>, String> {
+    Err("nope".into())
 }
 
 // --- New attributes: ts_skip, ts_name, ts_returns, per-param ts_type ---
@@ -354,20 +391,6 @@ fn ts_handle_string_return<'cx>(
 ) -> neon::result::JsResult<'cx, neon::types::JsString> {
     use neon::context::Context;
     Ok(cx.string("hi"))
-}
-
-// Exposes generate_with() so the JS tests can assert module-wrapping behavior.
-#[neon::export(ts_skip)]
-fn ts_generate_module_wrapped(module: String) -> String {
-    neon::typescript::generate_with(neon::typescript::GenerateOptions {
-        module: Some(module),
-    })
-}
-
-// Strict mode: types all impl TypeScript, so compile succeeds.
-#[neon::export(ts_strict)]
-fn ts_strict_function(name: String, count: f64) -> f64 {
-    name.len() as f64 + count
 }
 
 // Class with ts_no_constructor: emits class declaration without constructor.
@@ -400,8 +423,8 @@ impl CtorSkipped {
 }
 
 #[neon::export]
-fn ts_param_override(#[neon(ts_type = "ReadonlyArray<number>")] xs: Vec<f64>) -> f64 {
-    xs.iter().sum()
+fn ts_param_override(#[neon(ts_type = "ReadonlyArray<number>")] xs: Array<Vec<f64>>) -> f64 {
+    xs.0.iter().sum()
 }
 
 pub struct Hidden;
