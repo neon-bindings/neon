@@ -746,6 +746,20 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
+  it("emits functions and classes in a deterministic (sorted) order", () => {
+    for (const kind of ["function", "class"]) {
+      const re = new RegExp(`^export declare ${kind} (\\w+)`, "gm");
+      const names = [...declarations.matchAll(re)].map((m) => m[1]);
+      assert.ok(names.length > 1, `Expected several ${kind} declarations`);
+      const sorted = [...names].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+      assert.deepStrictEqual(
+        names,
+        sorted,
+        `Expected ${kind}s in sorted order`
+      );
+    }
+  });
+
   it('auto-attaches declarations under Symbol.for("neon:types")', () => {
     const fromSymbol = addon[Symbol.for("neon:types")];
     assert.strictEqual(typeof fromSymbol, "string");
