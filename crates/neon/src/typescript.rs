@@ -679,10 +679,8 @@ pub fn generate() -> String {
                 let params: Vec<String> = func
                     .params
                     .iter()
-                    .map(|p| {
-                        let ts = (p.ts_type)();
-                        format!("{}: {ts}", p.name)
-                    })
+                    .enumerate()
+                    .map(|(i, p)| format!("{}: {}", param_name(p.name, i), (p.ts_type)()))
                     .collect();
 
                 // Normalize unit returns to `void` first, then wrap in Promise
@@ -696,11 +694,8 @@ pub fn generate() -> String {
                     ret.to_string()
                 };
 
-                functions.push(format!(
-                    "export declare function {}({}): {ret};",
-                    func.name,
-                    params.join(", "),
-                ));
+                let signature = format!("({}): {ret};", params.join(", "));
+                functions.push(export_function(func.name, &signature));
             }
             ExportMeta::Class(class) => {
                 // Collect type declarations from all parts of the class
@@ -730,10 +725,8 @@ pub fn generate() -> String {
                     let params: Vec<String> = ctor
                         .params
                         .iter()
-                        .map(|p| {
-                            let ts = (p.ts_type)();
-                            format!("{}: {ts}", p.name)
-                        })
+                        .enumerate()
+                        .map(|(i, p)| format!("{}: {}", param_name(p.name, i), (p.ts_type)()))
                         .collect();
                     s.push_str(&format!("  constructor({});\n", params.join(", ")));
                 }
@@ -741,7 +734,11 @@ pub fn generate() -> String {
                 // Static properties
                 for prop in class.static_properties.iter() {
                     let ts = (prop.ts_type)();
-                    s.push_str(&format!("  static readonly {}: {};\n", prop.name, ts));
+                    s.push_str(&format!(
+                        "  static readonly {}: {};\n",
+                        property_name(prop.name),
+                        ts
+                    ));
                 }
 
                 // Methods
@@ -749,10 +746,8 @@ pub fn generate() -> String {
                     let params: Vec<String> = method
                         .params
                         .iter()
-                        .map(|p| {
-                            let ts = (p.ts_type)();
-                            format!("{}: {ts}", p.name)
-                        })
+                        .enumerate()
+                        .map(|(i, p)| format!("{}: {}", param_name(p.name, i), (p.ts_type)()))
                         .collect();
                     // Normalize unit returns to `void` before wrapping in
                     // Promise (async unit → `Promise<void>`, not
@@ -766,7 +761,7 @@ pub fn generate() -> String {
                     };
                     s.push_str(&format!(
                         "  {}({}): {};\n",
-                        method.name,
+                        property_name(method.name),
                         params.join(", "),
                         ret_str
                     ));
@@ -837,6 +832,116 @@ pub fn generate() -> String {
     output
 }
 
+// ——— Names ———
+//
+// Export, parameter, and member names come from Rust identifiers or from
+// user-supplied strings (`name = "..."`), and one invalid name would make the
+// whole file unparseable. These helpers make every emitted name valid.
+
+/// Words that can't be used as a binding name (a function or parameter name)
+/// in a TypeScript module, which is always strict mode.
+const RESERVED_WORDS: &[&str] = &[
+    "await",
+    "break",
+    "case",
+    "catch",
+    "class",
+    "const",
+    "continue",
+    "debugger",
+    "default",
+    "delete",
+    "do",
+    "else",
+    "enum",
+    "export",
+    "extends",
+    "false",
+    "finally",
+    "for",
+    "function",
+    "if",
+    "implements",
+    "import",
+    "in",
+    "instanceof",
+    "interface",
+    "let",
+    "new",
+    "null",
+    "package",
+    "private",
+    "protected",
+    "public",
+    "return",
+    "static",
+    "super",
+    "switch",
+    "this",
+    "throw",
+    "true",
+    "try",
+    "typeof",
+    "var",
+    "void",
+    "while",
+    "with",
+    "yield",
+];
+
+/// Whether `name` is an *IdentifierName*: usable as a property name or in an
+/// export specifier, though possibly a reserved word.
+fn is_identifier_name(name: &str) -> bool {
+    let mut chars = name.chars();
+    chars
+        .next()
+        .is_some_and(|c| c.is_alphabetic() || c == '_' || c == '$')
+        && chars.all(|c| c.is_alphanumeric() || c == '_' || c == '$')
+}
+
+/// Whether `name` can be used as a binding name (an identifier that isn't a
+/// reserved word).
+fn is_binding_name(name: &str) -> bool {
+    is_identifier_name(name) && !RESERVED_WORDS.contains(&name)
+}
+
+/// A valid parameter name: a raw identifier's `r#` prefix is dropped, and a
+/// reserved word gets a trailing `_` (parameter names have no runtime meaning).
+fn param_name(name: &str, index: usize) -> String {
+    let name = name.strip_prefix("r#").unwrap_or(name);
+    if is_binding_name(name) {
+        name.to_string()
+    } else if is_identifier_name(name) {
+        format!("{name}_")
+    } else {
+        format!("arg{index}")
+    }
+}
+
+/// A method or property name, quoted if it isn't an identifier name.
+fn property_name(name: &str) -> String {
+    if is_identifier_name(name) {
+        name.to_string()
+    } else {
+        format!("{name:?}")
+    }
+}
+
+/// Declare an exported function. A reserved word can't be a function's own
+/// name, but can be an export name, so declare it under an internal name and
+/// re-export it. A name that isn't an identifier at all can't be exported
+/// without string export names (TypeScript 5.6+), so it's left out.
+fn export_function(name: &str, signature: &str) -> String {
+    if is_binding_name(name) {
+        format!("export declare function {name}{signature}")
+    } else if is_identifier_name(name) {
+        let local = format!("__neon_export_{name}");
+        format!("declare function {local}{signature}\nexport {{ {local} as {name} }};")
+    } else {
+        format!("// neon: omitted export {name:?}, which is not a valid TypeScript identifier")
+    }
+}
+
 /// Whether `haystack` contains `word` as a whole identifier (so `ArrayBuffer`
 /// doesn't count as `Buffer`).
 fn contains_word(haystack: &str, word: &str) -> bool {
@@ -885,6 +990,24 @@ mod tests {
     use super::*;
 
     struct Database;
+
+    #[test]
+    fn names_are_made_valid() {
+        assert_eq!(param_name("query", 0), "query");
+        assert_eq!(param_name("r#type", 0), "type");
+        assert_eq!(param_name("r#in", 0), "in_");
+        assert_eq!(property_name("delete"), "delete");
+        assert_eq!(property_name("two words"), "\"two words\"");
+        assert_eq!(
+            export_function("tsAdd", "(): void;"),
+            "export declare function tsAdd(): void;"
+        );
+        assert_eq!(
+            export_function("delete", "(): void;"),
+            "declare function __neon_export_delete(): void;\nexport { __neon_export_delete as delete };"
+        );
+        assert!(export_function("my-func", "(): void;").starts_with("// neon: omitted"));
+    }
 
     #[test]
     fn contains_word_matches_whole_identifiers() {

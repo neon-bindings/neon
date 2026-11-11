@@ -511,10 +511,37 @@ impl ParamOverrides {
     pub fn sum(&self, #[neon(ts_type = "ReadonlyArray<number>")] xs: Array<Vec<f64>>) -> f64 {
         xs.0.iter().sum()
     }
+
+    // A member name that isn't an identifier is quoted. (`ts_name` only affects
+    // the declaration; a runtime method name must be a JS identifier.)
+    #[neon(ts_name = "two words")]
+    pub fn two_words(&self) -> f64 {
+        2.0
+    }
 }
 
 // A Node `Buffer`, which needs Node's types: the output references them itself.
 #[neon::export]
 fn ts_echo_buffer(b: Buffer<Vec<u8>>) -> Buffer<Vec<u8>> {
     b
+}
+
+// Names that aren't valid TypeScript identifiers must not break the file.
+
+// A reserved word: declared under an internal name and re-exported as `delete`.
+#[neon::export(name = "delete")]
+fn ts_delete() -> f64 {
+    1.0
+}
+
+// Not an identifier at all: omitted from the declarations (with a comment).
+#[neon::export(name = "my-func")]
+fn ts_dash() -> f64 {
+    2.0
+}
+
+// Raw identifiers and reserved words as parameter names.
+#[neon::export]
+fn ts_keyword_params(r#type: String, r#in: f64) -> f64 {
+    r#type.len() as f64 + r#in
 }

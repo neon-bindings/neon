@@ -489,6 +489,14 @@ export declare function commit(index: BoxedArcIndex): Promise<void>;
 export declare class Point { /* … */ }
 ```
 
+**Names.** Every emitted name is made valid TypeScript, so one unusual name can't
+make the whole file unparseable: a raw identifier's `r#` prefix is dropped from
+parameter names and a reserved word gets a trailing `_` (`r#in` → `in_`); a function
+exported under a reserved word (`name = "delete"`) is declared under an internal name
+and re-exported (`export { __neon_export_delete as delete };`); a member name that
+isn't an identifier is quoted; and an export whose name isn't an identifier at all is
+omitted with a comment (exporting it would need TypeScript 5.6's string export names).
+
 **Auto-attach.** When the `typescript` feature is on, Neon attaches the generated
 declarations to the addon's module exports under `Symbol.for("neon:types")` during
 module init, so a small Node script can extract them without a Rust-side shim:

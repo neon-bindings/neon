@@ -759,6 +759,44 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
+  it("re-exports a function whose name is a reserved word", () => {
+    assert.ok(
+      declarations.includes(
+        "declare function __neon_export_delete(): number;"
+      ) && declarations.includes("export { __neon_export_delete as delete };"),
+      `Expected an aliased delete export, got:\n${declarations}`
+    );
+    assert.ok(
+      !declarations.includes("export declare function delete("),
+      `Expected no invalid 'function delete' declaration, got:\n${declarations}`
+    );
+    assert.strictEqual(addon.delete(), 1);
+  });
+
+  it("omits an export whose name is not an identifier", () => {
+    assert.ok(
+      declarations.includes('// neon: omitted export "my-func"'),
+      `Expected my-func to be omitted with a comment, got:\n${declarations}`
+    );
+    assert.strictEqual(addon["my-func"](), 2);
+  });
+
+  it("makes raw-identifier and reserved-word parameter names valid", () => {
+    assert.ok(
+      declarations.includes(
+        "export declare function tsKeywordParams(type: string, in_: number): number;"
+      ),
+      `Expected repaired parameter names, got:\n${declarations}`
+    );
+  });
+
+  it("quotes a method name that is not an identifier", () => {
+    assert.ok(
+      declarations.includes('  "two words"(): number;'),
+      `Expected a quoted method name, got:\n${declarations}`
+    );
+  });
+
   it("emits functions and classes in a deterministic (sorted) order", () => {
     for (const kind of ["function", "class"]) {
       const re = new RegExp(`^export declare ${kind} (\\w+)`, "gm");
