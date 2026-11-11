@@ -475,3 +475,19 @@ fn ts_tree() -> TreeNode {
         children: vec![],
     }
 }
+
+// Per-parameter `#[neon(ts_type = "...")]` overrides on a class constructor and
+// method (these used to fail to compile: the class macro left the attribute on
+// the re-emitted parameters).
+pub struct ParamOverrides;
+
+#[neon::export(class)]
+impl ParamOverrides {
+    pub fn new(#[neon(ts_type = "number | undefined")] _seed: Option<f64>) -> Self {
+        ParamOverrides
+    }
+
+    pub fn sum(&self, #[neon(ts_type = "ReadonlyArray<number>")] xs: Array<Vec<f64>>) -> f64 {
+        xs.0.iter().sum()
+    }
+}

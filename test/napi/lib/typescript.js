@@ -685,6 +685,22 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
+  it("applies per-param ts_type overrides on class constructors and methods", () => {
+    const match = declarations.match(
+      /export declare class ParamOverrides \{([\s\S]*?)\}/
+    );
+    assert.ok(match, `Expected ParamOverrides class, got:\n${declarations}`);
+    assert.ok(
+      match[1].includes("constructor(_seed: number | undefined);"),
+      `Expected constructor override, got:\n${match[1]}`
+    );
+    assert.ok(
+      match[1].includes("sum(xs: ReadonlyArray<number>): number;"),
+      `Expected method override, got:\n${match[1]}`
+    );
+    assert.strictEqual(new addon.ParamOverrides().sum([1, 2, 3]), 6);
+  });
+
   it("applies ts_name to classes", () => {
     assert.ok(
       declarations.includes("declare class PublicName"),

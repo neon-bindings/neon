@@ -1375,13 +1375,20 @@ pub(crate) fn class_with_options(
         }
     };
 
-    // Remove #[neon(...)] attributes from methods and const items in the impl block
+    // Remove #[neon(...)] attributes from methods, their parameters, and const
+    // items in the impl block. (They've already been read from `fns`,
+    // `constructor`, and `consts`, which are separate copies.)
     for item in &mut impl_block.items {
         match item {
             syn::ImplItem::Fn(f) => {
                 f.attrs.retain(
                     |attr| !matches!(&attr.meta, syn::Meta::List(list) if list.path.is_ident("neon")),
                 );
+                for input in &mut f.sig.inputs {
+                    if let syn::FnArg::Typed(pat_type) = input {
+                        pat_type.attrs.retain(|attr| !attr.path().is_ident("neon"));
+                    }
+                }
             }
             syn::ImplItem::Const(c) => {
                 c.attrs.retain(
