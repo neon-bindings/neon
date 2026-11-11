@@ -9,6 +9,19 @@ describe("TypeScript declaration generation", () => {
     declarations = addon[Symbol.for("neon:types")];
   });
 
+  it("references Node's types when it uses Buffer", () => {
+    assert.ok(
+      declarations.includes(
+        "export declare function tsEchoBuffer(b: Buffer): Buffer;"
+      ),
+      `Expected tsEchoBuffer declaration, got:\n${declarations}`
+    );
+    assert.ok(
+      declarations.includes('/// <reference types="node" />'),
+      `Expected a reference to Node's types, got:\n${declarations}`
+    );
+  });
+
   it("generates valid declaration output", () => {
     assert.ok(typeof declarations === "string");
     assert.ok(declarations.length > 0);
@@ -789,28 +802,29 @@ describe("TypeScript declaration generation", () => {
     const { execFileSync } = require("child_process");
 
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "neon-dts-"));
-    const file = path.join(dir, "index.d.ts");
-    fs.writeFileSync(file, declarations);
+    fs.writeFileSync(path.join(dir, "index.d.ts"), declarations);
 
-    const tsc = require.resolve("typescript/bin/tsc");
+    // `"types": []` keeps tsc from loading every installed @types package, so
+    // Node's types are available only if the file references them itself.
     const typeRoots = path.dirname(
       path.dirname(require.resolve("@types/node/package.json"))
     );
+    fs.writeFileSync(
+      path.join(dir, "tsconfig.json"),
+      JSON.stringify({
+        compilerOptions: {
+          strict: true,
+          noEmit: true,
+          types: [],
+          typeRoots: [typeRoots],
+        },
+        files: ["index.d.ts"],
+      })
+    );
+
+    const tsc = require.resolve("typescript/bin/tsc");
     try {
-      execFileSync(
-        process.execPath,
-        [
-          tsc,
-          "--noEmit",
-          "--strict",
-          "--typeRoots",
-          typeRoots,
-          "--types",
-          "node",
-          file,
-        ],
-        { encoding: "utf8" }
-      );
+      execFileSync(process.execPath, [tsc, "-p", dir], { encoding: "utf8" });
     } catch (e) {
       assert.fail(
         `tsc rejected the generated declarations:\n${e.stdout}${e.stderr}\n` +

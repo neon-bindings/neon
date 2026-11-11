@@ -3,7 +3,7 @@
 
 use indexmap::IndexMap;
 use neon::types::extract::Json;
-use neon::types::extract::{Array, Boxed};
+use neon::types::extract::{Array, Boxed, Buffer};
 use neon_ts_rs::TsJsonExt as _;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -511,4 +511,10 @@ impl ParamOverrides {
     pub fn sum(&self, #[neon(ts_type = "ReadonlyArray<number>")] xs: Array<Vec<f64>>) -> f64 {
         xs.0.iter().sum()
     }
+}
+
+// A Node `Buffer`, which needs Node's types: the output references them itself.
+#[neon::export]
+fn ts_echo_buffer(b: Buffer<Vec<u8>>) -> Buffer<Vec<u8>> {
+    b
 }
