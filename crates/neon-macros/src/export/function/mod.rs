@@ -156,9 +156,13 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
 
     // Strip #[neon(...)] from parameter attributes (consumed by the macro,
     // not valid Rust if left on the emitted function signature). Must happen
-    // after `generate_ts_metadata` so attribute extraction sees them.
+    // after `generate_ts_metadata` so attribute extraction sees them. They're
+    // checked first, so an unsupported or misspelled one is an error.
     for arg in sig.inputs.iter_mut() {
         if let syn::FnArg::Typed(pat_type) = arg {
+            if let Err(err) = crate::name::validate_param_attrs(&pat_type.attrs) {
+                return err.into_compile_error().into();
+            }
             pat_type.attrs.retain(|a| !a.path().is_ident("neon"));
         }
     }

@@ -82,6 +82,22 @@ pub(crate) fn extract_param_ts_type(attrs: &[syn::Attribute]) -> Option<String> 
     result
 }
 
+/// Check a parameter's `#[neon(...)]` attributes, which are stripped from the
+/// emitted signature. Only `ts_type = "..."` is supported; anything else (e.g. a
+/// misspelling) is an error rather than a silent no-op.
+pub(crate) fn validate_param_attrs(attrs: &[syn::Attribute]) -> syn::Result<()> {
+    for attr in attrs.iter().filter(|attr| attr.path().is_ident("neon")) {
+        attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("ts_type") {
+                meta.value()?.parse::<syn::LitStr>()?;
+                return Ok(());
+            }
+            Err(meta.error("unsupported parameter property; expected `ts_type = \"...\"`"))
+        })?;
+    }
+    Ok(())
+}
+
 // Validate JavaScript identifier names
 pub(crate) fn is_valid_js_identifier(name: &str) -> bool {
     if name.is_empty() {

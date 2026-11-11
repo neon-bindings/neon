@@ -1390,6 +1390,9 @@ pub(crate) fn class_with_options(
                 );
                 for input in &mut f.sig.inputs {
                     if let syn::FnArg::Typed(pat_type) = input {
+                        if let Err(err) = crate::name::validate_param_attrs(&pat_type.attrs) {
+                            return err.into_compile_error().into();
+                        }
                         pat_type.attrs.retain(|attr| !attr.path().is_ident("neon"));
                     }
                 }
