@@ -21,6 +21,13 @@ pub fn derive_ts_json(input: TokenStream) -> TokenStream {
             type_param.bounds.push(parse_quote!('static));
         }
     }
+    // The delegated helpers require `Self: 'static`. For a lifetime-parameterized
+    // type this makes the impl apply to its `'static` instantiation, which is
+    // what the export macros probe (they rewrite lifetimes to `'static`).
+    generics
+        .make_where_clause()
+        .predicates
+        .push(parse_quote!(Self: 'static));
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let expanded = quote! {

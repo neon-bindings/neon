@@ -111,3 +111,19 @@ fn every_generic_instantiation_collects_its_arguments() {
         assert!(decls.contains_key(name), "missing {name}: {decls:?}");
     }
 }
+
+// A lifetime-parameterized type (e.g. one borrowing a `&'a str`). The bridge
+// applies to its `'static` instantiation, which is what the export macros
+// probe (they rewrite lifetimes to `'static`).
+#[derive(serde::Serialize, ts_rs::TS, neon_ts_rs::TsJson)]
+struct Borrowed<'a> {
+    name: &'a str,
+}
+
+#[test]
+fn lifetime_parameterized_type_bridges() {
+    assert_eq!(<Borrowed<'static> as TsJson>::ts_json(), "Borrowed");
+    let mut decls: BTreeMap<String, String> = BTreeMap::new();
+    <Borrowed<'static> as TsJson>::ts_json_collect(&mut decls);
+    assert!(decls["Borrowed"].contains("name: string"), "{decls:?}");
+}
