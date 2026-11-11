@@ -46,3 +46,68 @@ fn generic_type_compiles_and_collects() {
     // The transitive dependency should be collected too.
     assert!(decls.contains_key("SearchResult"));
 }
+
+// Recursive types must not send the collector into infinite recursion (it
+// would overflow the stack at addon load, since generation runs at module init).
+#[derive(serde::Serialize, serde::Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
+struct TreeNode {
+    label: String,
+    children: Vec<TreeNode>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
+struct Ping {
+    pong: Option<Box<Pong>>,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
+struct Pong {
+    ping: Option<Box<Ping>>,
+}
+
+#[test]
+fn recursive_types_terminate() {
+    let mut decls: BTreeMap<String, String> = BTreeMap::new();
+    <TreeNode as TsJson>::ts_json_collect(&mut decls);
+    assert!(decls.contains_key("TreeNode"));
+
+    let mut decls: BTreeMap<String, String> = BTreeMap::new();
+    <Ping as TsJson>::ts_json_collect(&mut decls);
+    assert!(decls.contains_key("Ping"));
+    assert!(decls.contains_key("Pong"));
+}
+
+// Each instantiation of a generic type must contribute its own arguments, even
+// once the generic declaration itself has been collected.
+#[derive(serde::Serialize, serde::Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
+struct Pair<A: ts_rs::TS, B: ts_rs::TS> {
+    a: A,
+    b: B,
+}
+
+#[derive(serde::Serialize, serde::Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
+struct Inner1 {
+    x: u32,
+}
+#[derive(serde::Serialize, serde::Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
+struct Inner2 {
+    x: u32,
+}
+#[derive(serde::Serialize, serde::Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
+struct Inner3 {
+    x: u32,
+}
+#[derive(serde::Serialize, serde::Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
+struct Inner4 {
+    x: u32,
+}
+
+#[test]
+fn every_generic_instantiation_collects_its_arguments() {
+    let mut decls: BTreeMap<String, String> = BTreeMap::new();
+    <Pair<Inner1, Inner2> as TsJson>::ts_json_collect(&mut decls);
+    <Pair<Inner3, Inner4> as TsJson>::ts_json_collect(&mut decls);
+    for name in ["Pair", "Inner1", "Inner2", "Inner3", "Inner4"] {
+        assert!(decls.contains_key(name), "missing {name}: {decls:?}");
+    }
+}

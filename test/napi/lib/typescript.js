@@ -630,6 +630,17 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
+  it("declares a recursive type (and loading the addon didn't overflow)", () => {
+    assert.ok(
+      /type TreeNode = \{[^}]*children: Array<TreeNode>/.test(declarations),
+      `Expected recursive TreeNode declaration, got:\n${declarations}`
+    );
+    assert.ok(
+      declarations.includes("export declare function tsTree(): TreeNode;"),
+      `Expected tsTree declaration, got:\n${declarations}`
+    );
+  });
+
   it("ts_no_constructor omits the constructor", () => {
     const match = declarations.match(
       /export declare class NoCtor \{([\s\S]*?)\}/

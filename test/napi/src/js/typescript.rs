@@ -459,3 +459,19 @@ impl Renamed {
         0.0
     }
 }
+
+// A recursive type at a JSON boundary. Declarations are generated at module
+// init, so a collector that recursed forever here would crash `require()`.
+#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
+pub struct TreeNode {
+    pub label: String,
+    pub children: Vec<TreeNode>,
+}
+
+#[neon::export(json)]
+fn ts_tree() -> TreeNode {
+    TreeNode {
+        label: "root".into(),
+        children: vec![],
+    }
+}
