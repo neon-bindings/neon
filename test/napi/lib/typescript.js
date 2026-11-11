@@ -526,6 +526,23 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
+  it("does not wrap a ts_returns override in Promise again", () => {
+    assert.ok(
+      declarations.includes(
+        "export declare function tsTaskReturnsOverride(): Promise<bigint>;"
+      ),
+      `Expected tsTaskReturnsOverride(): Promise<bigint>, got:\n${declarations}`
+    );
+    assert.ok(
+      declarations.includes("  later(): Promise<bigint>;"),
+      `Expected later(): Promise<bigint>, got:\n${declarations}`
+    );
+    assert.ok(
+      !declarations.includes("Promise<Promise<"),
+      `Expected no double-wrapped Promise, got:\n${declarations}`
+    );
+  });
+
   it("maps Handle<JsBigInt> to bigint", () => {
     assert.ok(
       declarations.includes("tsBigintReturn(): bigint"),

@@ -1508,10 +1508,13 @@ fn generate_ts_class_metadata(
                 (None, None) => crate::name::to_camel_case(&fn_name.to_string()),
             };
 
-            let is_async = matches!(
-                meta.kind,
-                meta::Kind::Task | meta::Kind::AsyncFn | meta::Kind::Async
-            );
+            // `ts_returns` is the declared return type exactly as written, so it
+            // isn't wrapped in `Promise<…>` again for an async method.
+            let is_async = meta.ts_returns.is_none()
+                && matches!(
+                    meta.kind,
+                    meta::Kind::Task | meta::Kind::AsyncFn | meta::Kind::Async
+                );
 
             // Skip &self, optional context/channel, optional this
             let has_context = match meta.kind {

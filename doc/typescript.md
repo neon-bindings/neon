@@ -515,7 +515,9 @@ The codegen handles common cases; a few per-item overrides cover the ragged edge
 - `#[neon(ts_name = "...")]` — rename in TS output without changing the Rust type
   or JS export name.
 - `#[neon::export(ts_returns = "...")]` (also on methods) — override the inferred
-  return type with a literal TS string (e.g. for a type Neon can't infer).
+  return type with a literal TS string (e.g. for a type Neon can't infer). It's the
+  declared return type exactly as written, so an async or task export writes the
+  `Promise<…>` itself.
 - `#[neon(ts_type = "...")]` on an individual function/method parameter — override
   that parameter's inferred type.
 - `#[neon::export(class, ts_no_constructor)]` — declare the class's constructor as

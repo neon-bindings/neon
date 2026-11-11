@@ -378,6 +378,13 @@ fn ts_returns_override() -> f64 {
     42.0
 }
 
+// `ts_returns` is the whole declared return type, so an async export writes the
+// `Promise` itself (and it isn't wrapped again).
+#[neon::export(task, ts_returns = "Promise<bigint>")]
+fn ts_task_returns_override() -> f64 {
+    42.0
+}
+
 #[neon::export]
 fn ts_bigint_return<'cx>(
     cx: &mut neon::context::FunctionContext<'cx>,
@@ -487,10 +494,16 @@ fn ts_tree() -> TreeNode {
 // Per-parameter `#[neon(ts_type = "...")]` overrides on a class constructor and
 // method (these used to fail to compile: the class macro left the attribute on
 // the re-emitted parameters).
+#[derive(Clone)]
 pub struct ParamOverrides;
 
 #[neon::export(class)]
 impl ParamOverrides {
+    #[neon(task, ts_returns = "Promise<bigint>")]
+    pub fn later(self) -> f64 {
+        0.0
+    }
+
     pub fn new(#[neon(ts_type = "number | undefined")] _seed: Option<f64>) -> Self {
         ParamOverrides
     }

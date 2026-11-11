@@ -506,7 +506,10 @@ fn generate_ts_metadata(
         })
         .collect();
 
-    let is_async = matches!(meta.kind, Kind::Task | Kind::AsyncFn | Kind::Async);
+    // `ts_returns` is the declared return type exactly as written, so it isn't
+    // wrapped in `Promise<…>` again for an async export.
+    let is_async =
+        meta.ts_returns.is_none() && matches!(meta.kind, Kind::Task | Kind::AsyncFn | Kind::Async);
     let meta_name = quote::format_ident!("__NEON_TS_META__{fn_name}");
 
     let (ret_type_expr, ret_collect_expr) = match (&meta.ts_returns, &sig.output) {
