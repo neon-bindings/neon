@@ -1601,6 +1601,11 @@ fn generate_ts_class_metadata(
         })
         .collect();
 
+    // `ts_no_constructor` and `ts_skip` on `fn new` hide the constructor; declare
+    // it private rather than omitting it (which would mean a public one).
+    let private_constructor =
+        class_ts_no_constructor || ctor_meta.is_some_and(|ctor_meta| ctor_meta.ts_skip);
+
     let class_meta_decl = if ts_skip_class_meta {
         quote::quote!()
     } else {
@@ -1611,6 +1616,7 @@ fn generate_ts_class_metadata(
                 neon::macro_internal::ExportMeta::Class(neon::macro_internal::ClassMeta {
                     name: #class_name,
                     constructor: #ctor_tokens,
+                    private_constructor: #private_constructor,
                     methods: &[#(#method_entries),*],
                     static_properties: &[#(#property_entries),*],
                 });

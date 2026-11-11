@@ -721,8 +721,12 @@ pub fn generate() -> String {
 
                 let mut s = format!("export declare class {} {{\n", class.name);
 
-                // Constructor
-                if let Some(ctor) = &class.constructor {
+                // Constructor. A class with no declared constructor gets an
+                // implicit public `constructor()` in TypeScript, so a hidden
+                // constructor must be declared private.
+                if class.private_constructor {
+                    s.push_str("  private constructor();\n");
+                } else if let Some(ctor) = &class.constructor {
                     let params: Vec<String> = ctor
                         .params
                         .iter()

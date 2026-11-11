@@ -641,14 +641,17 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
-  it("ts_no_constructor omits the constructor", () => {
+  // A class with no declared constructor gets an implicit *public*
+  // `constructor()` in TypeScript, so a hidden constructor is declared private.
+
+  it("ts_no_constructor declares a private constructor", () => {
     const match = declarations.match(
       /export declare class NoCtor \{([\s\S]*?)\}/
     );
     assert.ok(match, "Expected NoCtor class declaration");
     assert.ok(
-      !match[1].includes("constructor("),
-      `Expected no constructor, got:\n${match[1]}`
+      match[1].includes("  private constructor();"),
+      `Expected a private constructor, got:\n${match[1]}`
     );
     assert.ok(
       match[1].includes("ping("),
@@ -656,14 +659,14 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
-  it("ts_skip on fn new omits the constructor", () => {
+  it("ts_skip on fn new declares a private constructor", () => {
     const match = declarations.match(
       /export declare class CtorSkipped \{([\s\S]*?)\}/
     );
     assert.ok(match, "Expected CtorSkipped class declaration");
     assert.ok(
-      !match[1].includes("constructor("),
-      `Expected no constructor, got:\n${match[1]}`
+      match[1].includes("  private constructor();"),
+      `Expected a private constructor, got:\n${match[1]}`
     );
     assert.ok(
       match[1].includes("ping("),

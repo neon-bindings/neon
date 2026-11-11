@@ -508,7 +508,8 @@ needs it can wrap the flat output themselves.
 The codegen handles common cases; a few per-item overrides cover the ragged edges:
 
 - `#[neon(ts_skip)]` — exclude an item from the `.d.ts`. Works on functions,
-  classes, methods, static properties, and the `fn new` constructor. Skipping a
+  classes, methods, static properties, and the `fn new` constructor (which is then
+  declared `private constructor();`, as with `ts_no_constructor`). Skipping a
   class omits its `declare class`, but exports that reference it still name it, so
   skip only classes no other export mentions.
 - `#[neon(ts_name = "...")]` — rename in TS output without changing the Rust type
@@ -517,8 +518,10 @@ The codegen handles common cases; a few per-item overrides cover the ragged edge
   return type with a literal TS string (e.g. for a type Neon can't infer).
 - `#[neon(ts_type = "...")]` on an individual function/method parameter — override
   that parameter's inferred type.
-- `#[neon::export(class, ts_no_constructor)]` — emit a `declare class` with no
-  `constructor`, for classes only constructed via factory methods elsewhere.
+- `#[neon::export(class, ts_no_constructor)]` — declare the class's constructor as
+  `private constructor();`, for classes only constructed via factory methods
+  elsewhere. (Omitting the constructor instead would make TypeScript assume an
+  implicit public `constructor()`.)
 
 A deliberate `unknown` is written with these overrides (`ts_returns = "unknown"`),
 which keeps it distinguishable from a type Neon simply couldn't describe.

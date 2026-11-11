@@ -112,8 +112,12 @@ pub struct PropertyMeta {
 pub struct ClassMeta {
     /// The JavaScript class name.
     pub name: &'static str,
-    /// Constructor metadata (None if no public constructor).
+    /// Constructor metadata (None if there is no constructor to declare).
     pub constructor: Option<ConstructorMeta>,
+    /// Whether to declare `private constructor();`, for a class whose
+    /// constructor is deliberately hidden (so TypeScript doesn't assume an
+    /// implicit public `constructor()`).
+    pub private_constructor: bool,
     /// Instance methods.
     pub methods: &'static [MethodMeta],
     /// Static readonly properties.
