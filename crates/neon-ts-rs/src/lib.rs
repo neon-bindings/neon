@@ -55,7 +55,7 @@ pub trait TsJsonExt {
 // TsJsonProbe<T>`), it shares the same method-resolution candidate as the
 // probe's inherent `TsJson` method, so a native `TsJson` impl still wins and
 // this only catches genuinely-foreign payloads. Invisible unless imported.
-impl<T: TS + 'static> TsJsonExt for neon_typescript::TsJsonProbe<T> {
+impl<T: TS + 'static + ?Sized> TsJsonExt for neon_typescript::TsJsonProbe<T> {
     fn ts_json_of(&self) -> Cow<'static, str> {
         ts_json::<T>()
     }

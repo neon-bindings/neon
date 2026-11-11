@@ -82,6 +82,15 @@ pub(crate) fn boundary(ty: &syn::Type, json: bool, position: Position) -> TsToke
     }
 }
 
+/// Tokens describing an exported `const` or `static` of type `ty`.
+///
+/// Its value is converted like a return value. A `LazyLock<T>` converts
+/// through the value it holds, so describe `T`.
+pub(crate) fn global(ty: &syn::Type, json: bool) -> TsTokens {
+    let ty = first_type_arg(ty, &["LazyLock"]).unwrap_or_else(|| ty.clone());
+    boundary(&ty, json, Position::Return)
+}
+
 /// The JSON probe: `TsJson`, then an adapter's `TsJsonExt`, then `unknown`.
 fn json_probe(ty: &syn::Type) -> TsTokens {
     (

@@ -128,12 +128,24 @@ pub struct ClassMeta {
     pub static_properties: &'static [PropertyMeta],
 }
 
+/// Metadata for an exported `const` or `static`.
+pub struct GlobalMeta {
+    /// The JavaScript export name.
+    pub name: &'static str,
+    /// Returns the TypeScript type expression for the value.
+    pub ts_type: fn() -> std::borrow::Cow<'static, str>,
+    /// Collects type declarations needed by the value.
+    pub ts_collect: fn(&mut std::collections::BTreeMap<String, String>),
+}
+
 /// Metadata for an exported item.
 pub enum ExportMeta {
     /// A function export.
     Function(FunctionMeta),
     /// A class export.
     Class(ClassMeta),
+    /// A `const` or `static` export.
+    Global(GlobalMeta),
 }
 
 // Wrapper for the value type and return type tags

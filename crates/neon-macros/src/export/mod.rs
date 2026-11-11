@@ -24,7 +24,7 @@ pub(crate) fn export(
         syn::Item::Const(mut item) => {
             let meta = syn::parse_macro_input!(attr with global::meta::Parser);
 
-            item.expr = global::export(meta, &item.ident, item.expr);
+            item.expr = global::export(meta, &item.ident, &item.ty, item.expr);
 
             quote::quote!(#item).into()
         }
@@ -33,7 +33,7 @@ pub(crate) fn export(
         syn::Item::Static(mut item) => {
             let meta = syn::parse_macro_input!(attr with global::meta::Parser);
 
-            item.expr = global::export(meta, &item.ident, item.expr);
+            item.expr = global::export(meta, &item.ident, &item.ty, item.expr);
 
             quote::quote!(#item).into()
         }

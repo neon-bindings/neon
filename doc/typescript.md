@@ -189,6 +189,10 @@ For each argument and return type, the macro decides which trait to consult:
 A function or method with no declared return type is `void` on the bare path and
 `null` on the JSON path (serde_json serializes the implicit `()` to `null`).
 
+An exported `const` or `static` is converted like a return value and declared
+`export declare const NAME: T;`. A `LazyLock<T>` converts through the value it holds,
+so it's described as `T`.
+
 ### Where type information comes from
 
 **JSON shapes (`TsJson`):**

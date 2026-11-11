@@ -822,6 +822,26 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
+  it("declares exported consts and statics", () => {
+    // Fixtures in export.rs: a const, statics (including a `LazyLock`, which
+    // converts through the value it holds), and JSON-exported slices.
+    for (const decl of [
+      "export declare const NUMBER: number;",
+      "export declare const STRING: string;",
+      "export declare const LAZY_LOCK_HELLO: string;",
+      "export declare const renamedString: string;",
+      "export declare const MESSAGES: string[];",
+      "export declare const renamedMessages: string[];",
+    ]) {
+      assert.ok(
+        declarations.includes(decl),
+        `Expected ${decl}, got:\n${declarations}`
+      );
+    }
+    assert.strictEqual(addon.LAZY_LOCK_HELLO, "Hello, Neon!");
+    assert.deepStrictEqual(addon.MESSAGES, ["hello", "neon"]);
+  });
+
   it("emits functions and classes in a deterministic (sorted) order", () => {
     for (const kind of ["function", "class"]) {
       const re = new RegExp(`^export declare ${kind} (\\w+)`, "gm");

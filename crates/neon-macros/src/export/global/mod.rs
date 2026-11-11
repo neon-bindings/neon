@@ -1,13 +1,19 @@
 pub(crate) mod meta;
 
 // Create a new block expression for the RHS of an assignment
-pub(super) fn export(meta: meta::Meta, name: &syn::Ident, expr: Box<syn::Expr>) -> Box<syn::Expr> {
+pub(super) fn export(
+    meta: meta::Meta,
+    name: &syn::Ident,
+    ty: &syn::Type,
+    expr: Box<syn::Expr>,
+) -> Box<syn::Expr> {
     // Name for the registered create function
     let create_name = quote::format_ident!("__NEON_EXPORT_CREATE__{name}");
 
     // Default export name as identity unless a name is provided
     let export_name = meta
         .name
+        .as_ref()
         .map(|name| quote::quote!(#name))
         .unwrap_or_else(|| quote::quote!(stringify!(#name)));
 
@@ -42,9 +48,34 @@ pub(super) fn export(meta: meta::Meta, name: &syn::Ident, expr: Box<syn::Expr>) 
         }
     });
 
+    // TypeScript metadata, emitted only with the `typescript` feature (see the
+    // function macro).
+    let ts_meta = if cfg!(feature = "typescript") {
+        let export_name_str = meta
+            .name
+            .as_ref()
+            .map(|name| name.value())
+            .unwrap_or_else(|| name.to_string());
+        let meta_name = quote::format_ident!("__NEON_TS_GLOBAL_META__{name}");
+        let (ts_type, ts_collect) = crate::ts::global(ty, meta.json);
+        quote::quote!({
+            #[neon::macro_internal::linkme::distributed_slice(neon::macro_internal::TYPE_METADATA)]
+            #[linkme(crate = neon::macro_internal::linkme)]
+            static #meta_name: neon::macro_internal::ExportMeta =
+                neon::macro_internal::ExportMeta::Global(neon::macro_internal::GlobalMeta {
+                    name: #export_name_str,
+                    ts_type: #ts_type,
+                    ts_collect: #ts_collect,
+                });
+        })
+    } else {
+        proc_macro2::TokenStream::new()
+    };
+
     // Create a block to hold the original expression and the registered crate function
     let expr = quote::quote!({
         #create_fn
+        #ts_meta
         #expr
     });
 

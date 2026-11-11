@@ -69,10 +69,10 @@ pub fn array_of(inner: &str) -> String {
 //   (&__probe).ts_json_of()
 
 /// Compile-time probe for whether a JSON payload type implements `TsJson`.
-pub struct TsJsonProbe<T>(pub PhantomData<T>);
+pub struct TsJsonProbe<T: ?Sized>(pub PhantomData<T>);
 
 // Higher priority: inherent method, available only when T: TsJson
-impl<T: TsJson> TsJsonProbe<T> {
+impl<T: TsJson + ?Sized> TsJsonProbe<T> {
     pub fn ts_json_of(&self) -> Cow<'static, str> {
         T::ts_json()
     }
@@ -90,7 +90,7 @@ pub trait TsJsonFallback {
     fn ts_json_collect_of(&self, decls: &mut BTreeMap<String, String>);
 }
 
-impl<T> TsJsonFallback for &TsJsonProbe<T> {
+impl<T: ?Sized> TsJsonFallback for &TsJsonProbe<T> {
     fn ts_json_of(&self) -> Cow<'static, str> {
         "unknown".into()
     }
@@ -125,7 +125,7 @@ ts_primitive!(u16, "number");
 ts_primitive!(u8, "number");
 ts_primitive!(usize, "number");
 ts_primitive!(String, "string");
-ts_primitive!(&str, "string");
+ts_primitive!(str, "string");
 ts_primitive!(bool, "boolean");
 // serde_json serializes `()` as `null`.
 ts_primitive!((), "null");
@@ -144,6 +144,17 @@ impl<T: TsJson> TsJson for Option<T> {
 }
 
 impl<T: TsJson> TsJson for Vec<T> {
+    fn ts_json() -> Cow<'static, str> {
+        array_of(&T::ts_json()).into()
+    }
+
+    fn ts_json_collect(decls: &mut BTreeMap<String, String>) {
+        T::ts_json_collect(decls);
+    }
+}
+
+// serde serializes a slice (e.g. a `&[T]` static) as an array.
+impl<T: TsJson> TsJson for [T] {
     fn ts_json() -> Cow<'static, str> {
         array_of(&T::ts_json()).into()
     }
@@ -290,6 +301,7 @@ mod tests {
         assert_eq!(i64::ts_json(), "number");
         assert_eq!(String::ts_json(), "string");
         assert_eq!(<&str>::ts_json(), "string");
+        assert_eq!(<&[&str]>::ts_json(), "string[]");
         assert_eq!(bool::ts_json(), "boolean");
     }
 

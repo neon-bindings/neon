@@ -154,7 +154,8 @@ pub(crate) fn is_valid_js_identifier(name: &str) -> bool {
 }
 
 /// Check if a type contains features that prevent it from being used in a
-/// static metadata entry (`impl Trait`, `Self`, or unsized slices).
+/// static metadata entry (`impl Trait` or `Self`). (Unsized types like `[T]`
+/// are fine: the probes accept `?Sized` type parameters.)
 /// Non-`'static` lifetimes are rewritten by `substitute_lifetimes_with_static`,
 /// not flagged here.
 pub(crate) fn type_needs_fallback(ty: &syn::Type) -> bool {
@@ -174,11 +175,6 @@ pub(crate) fn type_needs_fallback(ty: &syn::Type) -> bool {
                 self.needs_fallback = true;
             }
             syn::visit::visit_path_segment(self, seg);
-        }
-
-        fn visit_type_slice(&mut self, _: &'ast syn::TypeSlice) {
-            // [T] is unsized and can't impl TypeScript
-            self.needs_fallback = true;
         }
     }
 
