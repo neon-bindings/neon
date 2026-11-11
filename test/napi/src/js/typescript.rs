@@ -436,6 +436,14 @@ impl Hidden {
     }
 }
 
+// References a skipped class: there's no `declare class Hidden` to point to, so
+// this must declare `unknown` (naming `Hidden` would make the whole file fail
+// to typecheck).
+#[neon::export]
+fn ts_make_hidden() -> Hidden {
+    Hidden
+}
+
 pub struct Renamed;
 
 #[neon::export(class, ts_name = "PublicName")]

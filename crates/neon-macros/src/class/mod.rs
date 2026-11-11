@@ -1624,17 +1624,25 @@ fn generate_ts_class_metadata(
     };
 
     // A class instance crosses the boundary through the class's own bare
-    // conversions, in both directions, and is declared by its class name.
+    // conversions, in both directions, and is declared by its class name. A
+    // skipped class has no declaration for a reference to point to, so other
+    // exports declare it `unknown` instead of naming a type that doesn't exist.
+    let ts_class_type = if ts_skip_class_meta {
+        "unknown"
+    } else {
+        class_name
+    };
+
     quote::quote! {
         impl neon::macro_internal::TsFromJs for #class_ident {
             fn ts_from_js() -> std::borrow::Cow<'static, str> {
-                std::borrow::Cow::Borrowed(#class_name)
+                std::borrow::Cow::Borrowed(#ts_class_type)
             }
         }
 
         impl neon::macro_internal::TsIntoJs for #class_ident {
             fn ts_into_js() -> std::borrow::Cow<'static, str> {
-                std::borrow::Cow::Borrowed(#class_name)
+                std::borrow::Cow::Borrowed(#ts_class_type)
             }
         }
 

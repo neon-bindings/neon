@@ -505,6 +505,13 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
+  it("declares references to a ts_skip-marked class as unknown", () => {
+    assert.ok(
+      declarations.includes("export declare function tsMakeHidden(): unknown;"),
+      `Expected tsMakeHidden to return unknown, got:\n${declarations}`
+    );
+  });
+
   it("hides ts_skip-marked methods", () => {
     assert.ok(
       !declarations.includes("tsInternalMethod"),

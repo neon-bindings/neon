@@ -510,8 +510,8 @@ The codegen handles common cases; a few per-item overrides cover the ragged edge
 - `#[neon(ts_skip)]` — exclude an item from the `.d.ts`. Works on functions,
   classes, methods, static properties, and the `fn new` constructor (which is then
   declared `private constructor();`, as with `ts_no_constructor`). Skipping a
-  class omits its `declare class`, but exports that reference it still name it, so
-  skip only classes no other export mentions.
+  class omits its `declare class`, so other exports that use the class declare it
+  as `unknown`.
 - `#[neon(ts_name = "...")]` — rename in TS output without changing the Rust type
   or JS export name.
 - `#[neon::export(ts_returns = "...")]` (also on methods) — override the inferred
