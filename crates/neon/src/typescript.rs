@@ -871,7 +871,10 @@ pub(crate) fn attach_to_module<'cx>(
     let types_key_arg = Handle::upcast::<JsValue>(&types_key);
     let types_symbol: Handle<JsValue> =
         symbol_for.call(cx, Handle::upcast::<JsValue>(&symbol_fn), [types_key_arg])?;
-    let dts_str = cx.string(generate());
+    // The output depends only on the binary, so generate it once per process
+    // even when the addon is loaded repeatedly (e.g. by worker threads).
+    static DTS: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    let dts_str = cx.string(DTS.get_or_init(generate));
     exports.set(cx, types_symbol, dts_str)?;
 
     Ok(())

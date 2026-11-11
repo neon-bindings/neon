@@ -773,6 +773,22 @@ describe("TypeScript declaration generation", () => {
     }
   });
 
+  it("still loads the addon if attaching declarations fails", () => {
+    // Attaching uses `Symbol.for`; breaking it must not break `require()`.
+    const { execFileSync } = require("child_process");
+    const out = execFileSync(
+      process.execPath,
+      [
+        "-e",
+        `Symbol.for = () => { throw new Error("boom"); };
+         const addon = require(${JSON.stringify(require.resolve(".."))});
+         console.log(typeof addon.tsAdd);`,
+      ],
+      { encoding: "utf8" }
+    );
+    assert.strictEqual(out.trim(), "function");
+  });
+
   it('auto-attaches declarations under Symbol.for("neon:types")', () => {
     const fromSymbol = addon[Symbol.for("neon:types")];
     assert.strictEqual(typeof fromSymbol, "string");
