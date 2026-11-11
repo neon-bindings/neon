@@ -110,8 +110,12 @@ pub struct PropertyMeta {
 
 /// Metadata for an exported class.
 pub struct ClassMeta {
-    /// The JavaScript class name.
+    /// The class name used in TypeScript.
     pub name: &'static str,
+    /// The module export binding, if the class is exported by
+    /// `#[neon::export(class)]`. `None` (a bare `#[neon::class]`) assumes the
+    /// class is exported under `name`.
+    pub export_name: Option<&'static str>,
     /// Constructor metadata (None if there is no constructor to declare).
     pub constructor: Option<ConstructorMeta>,
     /// Whether to declare `private constructor();`, for a class whose

@@ -455,6 +455,10 @@ fn` and `#[neon(task)]` methods return `Promise<T>`; a fallible constructor
 Class members follow the same position rules as functions (methods marked
 `#[neon(json)]` use JSON shapes).
 
+The declaration is exported under the class's actual module binding. When that
+differs from the class name (`#[neon::export(class(name = "X"), name = "Y")]`), the
+class is declared as `X` and re-exported: `export { X as Y };`.
+
 A class instance crosses the boundary through the class's own bare conversions, so
 the class macro implements `TsFromJs` and `TsIntoJs` for the class type, both
 returning the class name. Classes therefore appear by name when used as parameter or

@@ -828,6 +828,9 @@ pub(crate) fn class(
 #[derive(Default)]
 pub(crate) struct ClassOptions {
     pub custom_class_name: Option<String>,
+    /// The module export binding, when the class is exported by
+    /// `#[neon::export(class)]` (which may differ from the class name).
+    pub export_name: Option<String>,
     pub ts_skip: bool,
     pub ts_name: Option<String>,
     pub ts_no_constructor: bool,
@@ -840,6 +843,7 @@ pub(crate) fn class_with_options(
 ) -> proc_macro::TokenStream {
     let ClassOptions {
         custom_class_name,
+        export_name,
         ts_skip,
         ts_name,
         ts_no_constructor,
@@ -1410,6 +1414,7 @@ pub(crate) fn class_with_options(
         generate_ts_class_metadata(
             &class_ident,
             ts_class_name,
+            export_name.as_deref(),
             constructor.as_ref(),
             ctor_meta.as_ref(),
             &fns,
@@ -1441,6 +1446,7 @@ pub(crate) fn class_with_options(
 fn generate_ts_class_metadata(
     class_ident: &syn::Ident,
     class_name: &str,
+    export_name: Option<&str>,
     constructor: Option<&ImplItemFn>,
     ctor_meta: Option<&meta::Meta>,
     methods: &[ImplItemFn],
@@ -1609,6 +1615,11 @@ fn generate_ts_class_metadata(
     let private_constructor =
         class_ts_no_constructor || ctor_meta.is_some_and(|ctor_meta| ctor_meta.ts_skip);
 
+    let export_name_tokens = match export_name {
+        Some(name) => quote::quote!(Some(#name)),
+        None => quote::quote!(None),
+    };
+
     let class_meta_decl = if ts_skip_class_meta {
         quote::quote!()
     } else {
@@ -1618,6 +1629,7 @@ fn generate_ts_class_metadata(
             static #meta_name: neon::macro_internal::ExportMeta =
                 neon::macro_internal::ExportMeta::Class(neon::macro_internal::ClassMeta {
                     name: #class_name,
+                    export_name: #export_name_tokens,
                     constructor: #ctor_tokens,
                     private_constructor: #private_constructor,
                     methods: &[#(#method_entries),*],

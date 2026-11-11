@@ -714,7 +714,15 @@ pub fn generate() -> String {
                     (prop.ts_collect)(&mut decls);
                 }
 
-                let mut s = format!("export declare class {} {{\n", class.name);
+                // Declare the class under its TypeScript name and export it
+                // under its actual module binding, which can differ (e.g.
+                // `#[neon::export(class(name = "X"), name = "Y")]`).
+                let binding = class.export_name.unwrap_or(class.name);
+                let mut s = if binding == class.name {
+                    format!("export declare class {} {{\n", class.name)
+                } else {
+                    format!("declare class {} {{\n", class.name)
+                };
 
                 // Constructor. A class with no declared constructor gets an
                 // implicit public `constructor()` in TypeScript, so a hidden
@@ -768,6 +776,15 @@ pub fn generate() -> String {
                 }
 
                 s.push('}');
+                if binding != class.name {
+                    if is_identifier_name(binding) {
+                        s.push_str(&format!("\nexport {{ {} as {binding} }};", class.name));
+                    } else {
+                        s.push_str(&format!(
+                            "\n// neon: omitted export {binding:?}, which is not a valid TypeScript identifier"
+                        ));
+                    }
+                }
                 classes.push(s);
             }
         }

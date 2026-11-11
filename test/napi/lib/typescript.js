@@ -741,7 +741,7 @@ describe("TypeScript declaration generation", () => {
     assert.strictEqual(new addon.ParamOverrides().sum([1, 2, 3]), 6);
   });
 
-  it("applies ts_name to classes", () => {
+  it("applies ts_name to classes, exported under the real binding", () => {
     assert.ok(
       declarations.includes("declare class PublicName"),
       `Expected renamed class PublicName, got:\n${declarations}`
@@ -750,6 +750,31 @@ describe("TypeScript declaration generation", () => {
       !/declare class Renamed\s/.test(declarations),
       `Expected original Rust name not in output, got:\n${declarations}`
     );
+    // The runtime export binding is still `Renamed`.
+    assert.ok(
+      declarations.includes("export { PublicName as Renamed };"),
+      `Expected PublicName exported as Renamed, got:\n${declarations}`
+    );
+    assert.strictEqual(typeof addon.Renamed, "function");
+  });
+
+  it("exports a class under its export binding when it differs from the class name", () => {
+    assert.ok(
+      /^declare class InternalClassName \{/m.test(declarations),
+      `Expected a non-exported InternalClassName declaration, got:\n${declarations}`
+    );
+    assert.ok(
+      declarations.includes(
+        "export { InternalClassName as ExternalExportName };"
+      ),
+      `Expected InternalClassName exported as ExternalExportName, got:\n${declarations}`
+    );
+    assert.ok(
+      !/export declare class InternalClassName\b/.test(declarations),
+      `Expected no export named InternalClassName, got:\n${declarations}`
+    );
+    assert.strictEqual(typeof addon.ExternalExportName, "function");
+    assert.strictEqual(addon.InternalClassName, undefined);
   });
 
   it("applies ts_name to methods", () => {

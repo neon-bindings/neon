@@ -41,6 +41,7 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemImpl) -> proc_macro::Toke
     let class_input: proc_macro::TokenStream = quote!(#input).into();
     let class_options = crate::class::ClassOptions {
         custom_class_name: js_class_name,
+        export_name: Some(export_name.clone()),
         ts_skip: meta.ts_skip,
         ts_name: meta.ts_name,
         ts_no_constructor: meta.ts_no_constructor,
