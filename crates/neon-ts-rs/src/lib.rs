@@ -4,6 +4,22 @@
 //! Users derive both `ts_rs::TS` and `neon_ts_rs::TsJson` on their types.
 //! The bridge derive (re-exported here) generates an impl that delegates to the
 //! runtime helpers below.
+//!
+//! # Pitfall: `skip_serializing_if` without `default`
+//!
+//! ts-rs leaves a field with only `#[serde(skip_serializing_if = "...")]`
+//! *required* in its output, but serde_json omits the key, so a returned
+//! object can lack a field its declaration says is present. Add
+//! `#[serde(default)]` (declared `field?: T | null`) or `#[ts(optional)]`
+//! (declared `field?: T`) alongside it:
+//!
+//! ```ignore
+//! #[derive(serde::Serialize, ts_rs::TS, neon_ts_rs::TsJson)]
+//! struct Hit {
+//!     #[serde(skip_serializing_if = "Option::is_none", default)]
+//!     score: Option<f64>,
+//! }
+//! ```
 
 use std::any::TypeId;
 use std::borrow::Cow;
@@ -65,7 +81,7 @@ impl<T: TS + 'static + ?Sized> TsJsonExt for neon_typescript::TsJsonProbe<T> {
     }
 }
 
-/// The TypeScript type expression for `T` (e.g. "SearchResult", "Array<string>").
+/// The TypeScript type expression for `T` (e.g. `SearchResult`, `Array<string>`).
 pub fn ts_json<T: TS + 'static + ?Sized>() -> Cow<'static, str> {
     Cow::Owned(<T as TS>::name(&cfg()))
 }

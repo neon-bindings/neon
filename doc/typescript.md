@@ -45,6 +45,27 @@ foundation.
 
 The guiding principle is that **every declaration describes what actually happens
 at runtime**, and where Neon can't know, it says `unknown` rather than guessing.
+Precisely:
+
+- **A return type includes every value the function can produce.** It may be
+  wider, but it never promises something that doesn't happen. A return type
+  narrower than the runtime is a bug.
+- **An argument type matches what the runtime accepts, except where documented.**
+  It's wider where TypeScript can't express the exact set or Neon can't know it
+  (`object` admits functions; a type with no known TypeScript type is `unknown`),
+  so `tsc` misses some invalid calls. It's narrower only for JSON arguments, which
+  are declared with the shape serde emits although serde may accept more on input
+  (`#[serde(alias)]`, for example; see
+  [Alternatives considered §9](#alternatives-considered)), so an unusual but valid
+  call may need a cast. Any other mismatch is a bug.
+
+The documented cases are `object` (in
+[Where type information comes from](#where-type-information-comes-from)), map keys
+(in [Serde fidelity](#serde-fidelity-is-the-generators-concern)), and §9. One known
+return-type mismatch comes from ts-rs rather than Neon: a field with
+`skip_serializing_if` but no `default` is declared required though it may be
+omitted. Adding a serde or ts-rs attribute fixes it (see
+[Serde fidelity](#serde-fidelity-is-the-generators-concern)).
 
 Every value that crosses a Neon export boundary goes through one of two
 conversions, and the same Rust type can look different in each:
@@ -250,6 +271,14 @@ conversion:
 
 Because the conversions are sealed, this table is closed: every bare conversion has a
 shape, and a test can check that none is missing.
+
+`Handle<JsObject>` is declared `object`, which is slightly wider than the runtime:
+Neon's downcast rejects functions (their N-API type is `function`, not `object`),
+but TypeScript's `object` includes them. TypeScript can't express "an object but not
+a function": `Record<string, unknown>` would reject class instances, which are valid,
+and tricks like `object & { call?: never }` reject real objects with a `call`
+property. So a function passed where a `JsObject` is expected type-checks and throws.
+As a return type, `object` is simply wider than what's produced, which is safe.
 
 ### Graceful fallback: `unknown`
 
@@ -721,6 +750,30 @@ expressed with standard serde attributes.** ts-rs marks a field TypeScript-optio
 `f?: T | null` (accepts a value, `null`, `undefined`, or omission). A plain
 `Option<T>` renders as `T | null` (present, maybe null). Neon owns no optionality
 policy.
+
+**Pitfall: `skip_serializing_if` without `default`.** On its own,
+`#[serde(skip_serializing_if = "...")]` leaves the field *required* in ts-rs's output
+(`opt: number | null`, or `tags: Array<string>` with `Vec::is_empty`), while
+serde_json omits the key, so a returned object can lack a field its declaration
+says is present. This is a deliberate ts-rs choice (see ts-rs issue #394): one
+declaration has to serve both directions, and serde still requires the field when
+deserializing a non-`Option` type. Add `#[serde(default)]` (giving `f?: T | null`)
+or `#[ts(optional)]` (giving `f?: T`) alongside it. Neon can't fix this in the
+adapter, which sees only ts-rs's output, not the serde attributes. (Unlike ts-rs,
+Neon knows each position's direction, so it could in principle do better, but only
+if `TsJson` had separate input and output types; see
+[Alternatives considered §9](#alternatives-considered).)
+
+**Map keys.** JSON object keys are always strings. Neon's built-in `TsJson` for maps
+ignores the key type and declares `Record<string, V>`. ts-rs describes a map by its
+key type instead: `HashMap<u32, V>` becomes `{ [key in number]: V }`, and an enum
+key becomes `{ [key in Color]?: V }`. Both are sound. A number index signature is
+TypeScript's own model for an object whose keys are numeric strings (it's how arrays
+are typed): `m[7]` and `m["7"]` both type-check, and only indexing with an arbitrary
+`string` (say, from `Object.keys`) needs a cast, as with an array. The built-in form
+is wider; matching ts-rs would need the built-in impl to know how the key type
+renders, and a non-primitive key would produce invalid TypeScript, which is why it
+ignores the key.
 
 ## Crate & repository layout
 
