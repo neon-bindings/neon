@@ -26,11 +26,16 @@ pub fn main(
         }
     });
 
+    // Splice the body's statements rather than the block itself: nesting the
+    // user's `{ ... }` as the tail expression trips `unused_braces` on one-line
+    // bodies, reported against the user's own code.
+    let stmts = &block.stmts;
+
     quote::quote!(
         #(#attrs) *
         #vis #sig {
             #export_fn
-            #block
+            #(#stmts)*
         }
     )
     .into()
