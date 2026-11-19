@@ -832,7 +832,6 @@ pub(crate) struct ClassOptions {
     /// `#[neon::export(class)]` (which may differ from the class name).
     pub export_name: Option<String>,
     pub ts_skip: bool,
-    pub ts_name: Option<String>,
     pub ts_no_constructor: bool,
 }
 
@@ -845,7 +844,6 @@ pub(crate) fn class_with_options(
         custom_class_name,
         export_name,
         ts_skip,
-        ts_name,
         ts_no_constructor,
     } = options;
     let mut impl_block = syn::parse_macro_input!(item as syn::ItemImpl);
@@ -1446,10 +1444,9 @@ pub(crate) fn class_with_options(
     // TypeScript-related cost. `cfg!` is resolved at neon-macros compile time;
     // Cargo unifies the feature across the build graph.
     let ts_metadata = if cfg!(feature = "typescript") {
-        let ts_class_name = ts_name.as_deref().unwrap_or(&class_name);
         generate_ts_class_metadata(
             &class_ident,
-            ts_class_name,
+            &class_name,
             export_name.as_deref(),
             constructor.as_ref(),
             ctor_meta.as_ref(),
@@ -1544,10 +1541,9 @@ fn generate_ts_class_metadata(
         .filter(|(_, meta)| !meta.ts_skip)
         .map(|(f, meta)| {
             let fn_name = &f.sig.ident;
-            let js_name = match (&meta.ts_name, &meta.name) {
-                (Some(name), _) => name.clone(),
-                (None, Some(name)) => name.value(),
-                (None, None) => crate::name::to_camel_case(&fn_name.to_string()),
+            let js_name = match &meta.name {
+                Some(name) => name.value(),
+                None => crate::name::to_camel_case(&fn_name.to_string()),
             };
 
             // `ts_returns` is the declared return type exactly as written, so it
@@ -1626,10 +1622,9 @@ fn generate_ts_class_metadata(
                 return None;
             }
 
-            let js_name = match (&prop_meta.ts_name, &prop_meta.name) {
-                (Some(name), _) => name.clone(),
-                (None, Some(name)) => name.value(),
-                (None, None) => const_name.to_string(),
+            let js_name = match &prop_meta.name {
+                Some(name) => name.value(),
+                None => const_name.to_string(),
             };
 
             // A static property's value is converted to JS like a return value.

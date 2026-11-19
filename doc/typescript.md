@@ -528,8 +528,6 @@ The codegen handles common cases; a few per-item overrides cover the ragged edge
   declared `private constructor();`, as with `ts_no_constructor`). Skipping a
   class omits its `declare class`, so other exports that use the class declare it
   as `unknown`.
-- `#[neon(ts_name = "...")]` — rename in TS output without changing the Rust type
-  or JS export name.
 - `#[neon::export(ts_returns = "...")]` (also on methods) — override the inferred
   return type with a literal TS string (e.g. for a type Neon can't infer). It's the
   declared return type exactly as written, so an async or task export writes the
@@ -928,6 +926,18 @@ hard to read (an E0599 in macro-generated code that
 permanently, and a follow-up that reports `unknown`s **at generation time** with
 messages Neon controls (see [Follow-up work](#follow-up-work)), where whoever
 generates the `.d.ts` decides whether they're fatal.
+
+**12. No TypeScript-only renaming.** An earlier version had a `ts_name` attribute
+that renamed a function, class, method, or property in the declarations only. Every
+use of it declared a name that doesn't exist at runtime and hid the one that does:
+`ts_name = "publicName"` on a method made `obj.publicName()` type-check and throw,
+and `obj.realName()` a type error. That breaks the guiding principle that
+declarations describe what happens at runtime. *Decision:* there is no
+declaration-only rename. To change a name, change the runtime name, with
+`name = "..."` on the export or method or `class(name = "...")` on a class, and the
+declarations follow it. To rename a JSON data type, rename it in its generator (for
+ts-rs, `#[ts(rename = "...")]`), which also changes nothing at runtime, since a data
+type's name never appears there.
 
 ## Implementation plan
 

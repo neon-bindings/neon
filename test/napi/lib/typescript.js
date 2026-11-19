@@ -741,21 +741,17 @@ describe("TypeScript declaration generation", () => {
     assert.strictEqual(new addon.ParamOverrides().sum([1, 2, 3]), 6);
   });
 
-  it("applies ts_name to classes, exported under the real binding", () => {
+  it("declares a class renamed at runtime under its runtime name", () => {
     assert.ok(
-      declarations.includes("declare class PublicName"),
+      declarations.includes("export declare class PublicName {"),
       `Expected renamed class PublicName, got:\n${declarations}`
     );
     assert.ok(
-      !/declare class Renamed\s/.test(declarations),
-      `Expected original Rust name not in output, got:\n${declarations}`
+      !/\bRenamed\b/.test(declarations),
+      `Expected the Rust name not in output, got:\n${declarations}`
     );
-    // The runtime export binding is still `Renamed`.
-    assert.ok(
-      declarations.includes("export { PublicName as Renamed };"),
-      `Expected PublicName exported as Renamed, got:\n${declarations}`
-    );
-    assert.strictEqual(typeof addon.Renamed, "function");
+    assert.strictEqual(typeof addon.PublicName, "function");
+    assert.strictEqual(addon.PublicName.name, "PublicName");
   });
 
   it("exports a class under its export binding when it differs from the class name", () => {
@@ -777,11 +773,12 @@ describe("TypeScript declaration generation", () => {
     assert.strictEqual(addon.InternalClassName, undefined);
   });
 
-  it("applies ts_name to methods", () => {
+  it("declares a method renamed at runtime under its runtime name", () => {
     assert.ok(
       declarations.includes("publicName(): string"),
       `Expected renamed method publicName, got:\n${declarations}`
     );
+    assert.strictEqual(new addon.PublicName().publicName(), "ok");
   });
 
   it("re-exports a function whose name is a reserved word", () => {

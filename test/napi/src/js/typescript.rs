@@ -366,7 +366,7 @@ fn ts_bare_fallible_json() -> Result<Json<IndexMap<String, FieldDescriptor>>, St
     Err("nope".into())
 }
 
-// --- New attributes: ts_skip, ts_name, ts_returns, per-param ts_type ---
+// --- Attributes: ts_skip, ts_returns, per-param ts_type ---
 
 #[neon::export(ts_skip)]
 fn ts_skipped_function() -> String {
@@ -453,7 +453,8 @@ fn ts_make_hidden() -> Hidden {
 
 pub struct Renamed;
 
-#[neon::export(class, ts_name = "PublicName")]
+// Renamed at runtime: the declarations use the runtime names.
+#[neon::export(class, name = "PublicName")]
 impl Renamed {
     pub fn new() -> Self {
         Renamed
@@ -464,7 +465,7 @@ impl Renamed {
         0.0
     }
 
-    #[neon(ts_name = "publicName")]
+    #[neon(name = "publicName")]
     pub fn ts_renamed_method(&self) -> String {
         "ok".into()
     }

@@ -9,8 +9,6 @@ pub(crate) struct Meta {
     pub export_name: Option<syn::LitStr>,
     /// Skip emitting TypeScript metadata for this class
     pub ts_skip: bool,
-    /// Override the class name in TypeScript output (without affecting JS)
-    pub ts_name: Option<String>,
     /// Omit the constructor from the generated TypeScript class declaration
     pub ts_no_constructor: bool,
 }
@@ -49,11 +47,6 @@ impl Parse for Meta {
                     "ts_no_constructor" => {
                         meta.ts_no_constructor = true;
                     }
-                    "ts_name" => {
-                        content.parse::<syn::Token![=]>()?;
-                        let value: syn::LitStr = content.parse()?;
-                        meta.ts_name = Some(value.value());
-                    }
                     _ => {
                         return Err(syn::Error::new(
                             name_token.span(),
@@ -86,11 +79,6 @@ impl Parse for Meta {
                     }
                     "ts_no_constructor" => {
                         meta.ts_no_constructor = true;
-                    }
-                    "ts_name" => {
-                        input.parse::<syn::Token![=]>()?;
-                        let value: syn::LitStr = input.parse()?;
-                        meta.ts_name = Some(value.value());
                     }
                     _ => {
                         return Err(syn::Error::new(
