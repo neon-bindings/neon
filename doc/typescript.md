@@ -609,9 +609,9 @@ Each check follows TypeScript's declaration spaces: a type alias or interface
 declares a type, a function or `const` declares a value, and a class declares both.
 A type and a value can share a name (`type Config` and `function Config` are both
 valid), so only two types or two values under one name collide. Collected
-declarations are added with `neon_typescript::insert_decl`, which keeps a
-declaration reached twice once but records a *different* declaration under a taken
-name as a conflict. Box brands drop module paths, so they also record which payload
+declarations are added with `neon_typescript::insert_decl`. If the same type is
+reached from two places, its identical declaration is stored once; if a *different*
+declaration arrives under a name that's already taken, it's recorded as a conflict. Box brands drop module paths, so they also record which payload
 type owns each brand; otherwise `a::Database` and `b::Database` would produce
 identical brands and silently become interchangeable.
 
