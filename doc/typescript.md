@@ -566,6 +566,20 @@ isn't an identifier (`#[neon(name = "two words")]`) is quoted; and an export who
 name isn't an identifier at all is omitted with a comment (exporting it would need
 TypeScript 5.6's string export names).
 
+**Optional arguments.** A trailing parameter whose type has an `undefined` member is
+declared optional, with `undefined` dropped from the union: a bare `Option<T>`
+argument is `options?: T | null` rather than `options: T | null | undefined`. N-API
+fills a missing argument with `undefined`, so the runtime can't tell an omitted
+argument from an explicit `undefined`, and anything that accepts one accepts the
+other. Without the `?`, TypeScript would still require the argument, and
+`f(a, b)` would be a TS2554 error though it works. Only a *trailing* run is optional,
+because TypeScript doesn't allow a required parameter after an optional one; an
+`Option` argument followed by a required one keeps `| undefined`. The rule reads the
+declared type, so it also applies to `ts_type` overrides (`"number | undefined"`
+becomes `x?: number`). It doesn't apply to `unknown`, which admits `undefined` only
+implicitly, or to JSON arguments, whose declared shape (`T | null`) has no
+`undefined` member.
+
 **Collisions.** Two different items declared under one name can't both be right:
 `a::Config` and `b::Config` would get one declaration, silently mistyping every use
 of the other; a data type and a class with the same name make the file invalid
@@ -1036,7 +1050,9 @@ format-neutral data model. *Rejected — spelled-out (`TypeScriptJson`, …) or
 `…Shape` names:* longer, or not obviously about TypeScript.
 
 **9. Not splitting `TsJson` by direction.** serde can accept more than it emits
-(`#[serde(default)]`, aliases, missing `Option` fields), so in principle a JSON
+(`#[serde(default)]`, aliases, missing `Option` fields; and Neon's `Json` extractor
+deserializes an omitted argument, `undefined`, as a unit, so a `Json<Option<T>>`
+argument can be omitted though it's declared `T | null`), so in principle a JSON
 argument and a JSON return have different types. *Decision:* one JSON shape. Those
 differences come from the user's serde attributes, which only the generator sees, and
 the generators produce a single type; splitting the trait would just make adapters

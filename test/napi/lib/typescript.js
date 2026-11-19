@@ -72,16 +72,40 @@ describe("TypeScript declaration generation", () => {
     assert.strictEqual(addon.tsMaybeNumber(true), 42);
   });
 
-  it("declares a bare Option argument as T | null | undefined", () => {
+  it("declares a trailing bare Option argument as optional", () => {
+    // An omitted argument reaches Neon as `undefined`, so it can be left out.
     assert.ok(
       declarations.includes(
-        "export declare function tsOptionalArg(x: number | null | undefined): number;"
+        "export declare function tsOptionalArg(x?: number | null): number;"
       ),
       `Expected tsOptionalArg declaration, got:\n${declarations}`
     );
+    assert.strictEqual(addon.tsOptionalArg(), -1);
     assert.strictEqual(addon.tsOptionalArg(undefined), -1);
     assert.strictEqual(addon.tsOptionalArg(null), -1);
     assert.strictEqual(addon.tsOptionalArg(3), 3);
+  });
+
+  it("keeps an Option argument before a required one as T | null | undefined", () => {
+    assert.ok(
+      declarations.includes(
+        "export declare function tsOptionalThenRequired(x: number | null | undefined, y: number): number;"
+      ),
+      `Expected tsOptionalThenRequired declaration, got:\n${declarations}`
+    );
+    assert.strictEqual(addon.tsOptionalThenRequired(undefined, 2), 2);
+  });
+
+  it("keeps a Json<Option<T>> argument required", () => {
+    assert.ok(
+      declarations.includes(
+        "export declare function tsJsonOptionalArg(x: number | null): number;"
+      ),
+      `Expected tsJsonOptionalArg declaration, got:\n${declarations}`
+    );
+    assert.strictEqual(addon.tsJsonOptionalArg(null), -1);
+    // Narrower than the runtime, which also accepts an omitted argument.
+    assert.strictEqual(addon.tsJsonOptionalArg(), -1);
   });
 
   it("declares an Option through JSON as T | null", () => {
@@ -755,7 +779,7 @@ describe("TypeScript declaration generation", () => {
     );
     assert.ok(match, `Expected ParamOverrides class, got:\n${declarations}`);
     assert.ok(
-      match[1].includes("constructor(_seed: number | undefined);"),
+      match[1].includes("constructor(_seed?: number);"),
       `Expected constructor override, got:\n${match[1]}`
     );
     assert.ok(
@@ -810,7 +834,7 @@ describe("TypeScript declaration generation", () => {
     // `neon_ts_rs::prelude::*`.
     assert.ok(
       declarations.includes(
-        "export declare function tsPreludeOptional(options: PreludeOptions | null | undefined): PreludeOptions | undefined;"
+        "export declare function tsPreludeOptional(options?: PreludeOptions | null): PreludeOptions | undefined;"
       ),
       `Expected tsPreludeOptional declaration, got:\n${declarations}`
     );
@@ -823,7 +847,7 @@ describe("TypeScript declaration generation", () => {
     assert.deepStrictEqual(addon.tsPreludeOptional({ maxHits: 3 }), {
       maxHits: 3,
     });
-    assert.strictEqual(addon.tsPreludeOptional(undefined), undefined);
+    assert.strictEqual(addon.tsPreludeOptional(), undefined);
   });
 
   it("re-exports a function whose name is a reserved word", () => {
@@ -997,17 +1021,20 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
-  it("only lets consumers import what Neon exports", function () {
+  it("only lets consumers import what Neon exports, and omit optional arguments", function () {
     this.timeout(60000);
     // A class Neon exports can be imported; a bare `#[neon::class]` (which
     // Neon doesn't export) can't, though exports that use it still type-check.
     assert.strictEqual(
       tsc({
         "ok.ts": [
-          'import { createPointFromRust, PublicName } from "./index";',
+          'import { createPointFromRust, PublicName, tsOptionalArg, ParamOverrides } from "./index";',
           "const p = createPointFromRust(1, 2);",
           "const n: number = p.x();",
           "const c: PublicName = new PublicName();",
+          // Trailing optional arguments can be omitted (no TS2554).
+          "const m: number = tsOptionalArg();",
+          "const o: ParamOverrides = new ParamOverrides();",
         ].join("\n"),
       }),
       null

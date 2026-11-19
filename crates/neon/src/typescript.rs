@@ -736,12 +736,7 @@ fn render<'a>(metas: impl IntoIterator<Item = &'a ExportMeta>) -> Result<String,
                 (func.ret_collect)(&mut decls);
 
                 // Build function signature
-                let params: Vec<String> = func
-                    .params
-                    .iter()
-                    .enumerate()
-                    .map(|(i, p)| format!("{}: {}", param_name(p.name, i), (p.ts_type)()))
-                    .collect();
+                let params = render_params(func.params);
 
                 // Normalize unit returns to `void` first, then wrap in Promise
                 // so async unit returns become `Promise<void>`, not
@@ -754,7 +749,7 @@ fn render<'a>(metas: impl IntoIterator<Item = &'a ExportMeta>) -> Result<String,
                     ret.to_string()
                 };
 
-                let signature = format!("({}): {ret};", params.join(", "));
+                let signature = format!("({params}): {ret};");
                 functions.push(export_function(func.name, &signature));
                 declare_export(
                     &mut locals,
@@ -826,13 +821,8 @@ fn render<'a>(metas: impl IntoIterator<Item = &'a ExportMeta>) -> Result<String,
                 if class.private_constructor {
                     s.push_str("  private constructor();\n");
                 } else if let Some(ctor) = &class.constructor {
-                    let params: Vec<String> = ctor
-                        .params
-                        .iter()
-                        .enumerate()
-                        .map(|(i, p)| format!("{}: {}", param_name(p.name, i), (p.ts_type)()))
-                        .collect();
-                    s.push_str(&format!("  constructor({});\n", params.join(", ")));
+                    let params = render_params(ctor.params);
+                    s.push_str(&format!("  constructor({params});\n"));
                 }
 
                 // Static properties
@@ -847,12 +837,7 @@ fn render<'a>(metas: impl IntoIterator<Item = &'a ExportMeta>) -> Result<String,
 
                 // Methods
                 for method in class.methods.iter() {
-                    let params: Vec<String> = method
-                        .params
-                        .iter()
-                        .enumerate()
-                        .map(|(i, p)| format!("{}: {}", param_name(p.name, i), (p.ts_type)()))
-                        .collect();
+                    let params = render_params(method.params);
                     // Normalize unit returns to `void` before wrapping in
                     // Promise (async unit → `Promise<void>`, not
                     // `Promise<undefined>`).
@@ -864,10 +849,8 @@ fn render<'a>(metas: impl IntoIterator<Item = &'a ExportMeta>) -> Result<String,
                         ret.to_string()
                     };
                     s.push_str(&format!(
-                        "  {}({}): {};\n",
-                        property_name(method.name),
-                        params.join(", "),
-                        ret_str
+                        "  {}({params}): {ret_str};\n",
+                        property_name(method.name)
                     ));
                 }
 
@@ -1196,6 +1179,84 @@ fn param_name(name: &str, index: usize) -> String {
     }
 }
 
+/// A parameter list. A trailing run of parameters whose types accept
+/// `undefined` is declared optional (`options?: T`), since an omitted argument
+/// reaches Neon as `undefined`: N-API fills missing arguments with it. Only a
+/// trailing run, because TypeScript doesn't allow a required parameter after
+/// an optional one.
+fn render_params(params: &[crate::macro_internal::ParamMeta]) -> String {
+    let types: Vec<Cow<'static, str>> = params.iter().map(|p| (p.ts_type)()).collect();
+    let optional_from = types
+        .iter()
+        .rposition(|ty| without_undefined(ty).is_none())
+        .map_or(0, |last_required| last_required + 1);
+
+    params
+        .iter()
+        .zip(&types)
+        .enumerate()
+        .map(|(i, (p, ty))| {
+            let name = param_name(p.name, i);
+            match without_undefined(ty).filter(|_| i >= optional_from) {
+                Some(rest) => format!("{name}?: {rest}"),
+                None => format!("{name}: {ty}"),
+            }
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+/// If the type `ty` is a union with an `undefined` member, the union without
+/// it (`undefined` alone stays `undefined`). `None` otherwise, including for
+/// `unknown` and `any`: those admit `undefined` only implicitly, which doesn't
+/// mean the runtime accepts it.
+fn without_undefined(ty: &str) -> Option<String> {
+    let members = union_members(ty);
+    if !members.contains(&"undefined") {
+        return None;
+    }
+    let rest: Vec<&str> = members.into_iter().filter(|m| *m != "undefined").collect();
+    Some(if rest.is_empty() {
+        "undefined".to_string()
+    } else {
+        rest.join(" | ")
+    })
+}
+
+/// The top-level members of a union type, so `Array<A | B> | undefined` is
+/// `["Array<A | B>", "undefined"]`. Brackets and string literals are skipped
+/// over, and the `>` of a function type's `=>` doesn't close a bracket.
+fn union_members(ty: &str) -> Vec<&str> {
+    let mut members = Vec::new();
+    let mut depth = 0usize;
+    let mut quote: Option<char> = None;
+    let mut start = 0;
+    let mut prev = '\0';
+    for (i, c) in ty.char_indices() {
+        match quote {
+            Some(q) => {
+                if c == q && prev != '\\' {
+                    quote = None;
+                }
+            }
+            None => match c {
+                '"' | '\'' | '`' => quote = Some(c),
+                '(' | '[' | '{' | '<' => depth += 1,
+                '>' if prev == '=' => {}
+                ')' | ']' | '}' | '>' => depth = depth.saturating_sub(1),
+                '|' if depth == 0 => {
+                    members.push(ty[start..i].trim());
+                    start = i + 1;
+                }
+                _ => {}
+            },
+        }
+        prev = c;
+    }
+    members.push(ty[start..].trim());
+    members
+}
+
 /// A method or property name, quoted if it isn't an identifier name.
 fn property_name(name: &str) -> String {
     if is_identifier_name(name) {
@@ -1308,7 +1369,7 @@ fn throw_generate_error(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::macro_internal::{ClassMeta, FunctionMeta};
+    use crate::macro_internal::{ClassMeta, FunctionMeta, ParamMeta};
 
     struct Database;
 
@@ -1478,6 +1539,72 @@ mod tests {
         assert!(message.starts_with("Neon can't generate TypeScript declarations"));
         assert_eq!(message.matches("\n  - ").count(), 3, "{message}");
         assert!(message.contains("#[ts(rename"), "{message}");
+    }
+
+    #[test]
+    fn union_members_split_only_at_the_top_level() {
+        assert_eq!(union_members("number"), ["number"]);
+        assert_eq!(
+            union_members("Array<A | B> | null | undefined"),
+            ["Array<A | B>", "null", "undefined"]
+        );
+        assert_eq!(
+            union_members("{ a: \"x | y\" } | undefined"),
+            ["{ a: \"x | y\" }", "undefined"]
+        );
+        assert_eq!(
+            union_members("((a: number) => A | B) | undefined"),
+            ["((a: number) => A | B)", "undefined"]
+        );
+    }
+
+    #[test]
+    fn without_undefined_needs_an_explicit_member() {
+        assert_eq!(
+            without_undefined("T | null | undefined").as_deref(),
+            Some("T | null")
+        );
+        assert_eq!(without_undefined("undefined").as_deref(), Some("undefined"));
+        assert_eq!(without_undefined("T | null"), None);
+        assert_eq!(without_undefined("unknown"), None);
+        assert_eq!(without_undefined("Array<T | undefined>"), None);
+    }
+
+    fn optional_number() -> Cow<'static, str> {
+        "number | null | undefined".into()
+    }
+
+    fn string() -> Cow<'static, str> {
+        "string".into()
+    }
+
+    const fn param(name: &'static str, ts_type: fn() -> Cow<'static, str>) -> ParamMeta {
+        ParamMeta {
+            name,
+            ts_type,
+            ts_collect: nothing,
+        }
+    }
+
+    #[test]
+    fn trailing_undefined_params_are_optional() {
+        let params = [
+            param("a", optional_number),
+            param("b", string),
+            param("c", optional_number),
+            param("d", optional_number),
+        ];
+        // `a` is followed by a required parameter, so it can't be optional.
+        assert_eq!(
+            render_params(&params),
+            "a: number | null | undefined, b: string, c?: number | null, d?: number | null"
+        );
+        assert_eq!(render_params(&params[..1]), "a?: number | null");
+        assert_eq!(
+            render_params(&params[..2]),
+            "a: number | null | undefined, b: string"
+        );
+        assert_eq!(render_params(&[]), "");
     }
 
     #[test]
