@@ -101,6 +101,22 @@ describe("Extractors", () => {
     assert.strictEqual(await addon.sleepWithSync(1.5), 1.5);
   });
 
+  it("with! macro", async () => {
+    assert.strictEqual(await addon.withMacroBareValue(42), 42);
+    assert.strictEqual(addon.withMacroJsString("neon"), "neon!");
+    assert.strictEqual(addon.withMacroFallible(2), 4);
+    assert.deepStrictEqual(addon.with_macro_non_move(21), [21, 42]);
+    assert.throws(
+      () => addon.withMacroFallible(-1),
+      (err) => {
+        assert.ok(err instanceof RangeError);
+        assert.match(err.message, /expected non-negative number/);
+
+        return true;
+      }
+    );
+  });
+
   it("Array", () => {
     assert.deepStrictEqual(addon.extractArrayVec([1, 2, 3]), [1, 2, 3]);
     assert.deepStrictEqual(addon.extractArrayDouble([1, 2, 3]), [2, 4, 6]);

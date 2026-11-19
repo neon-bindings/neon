@@ -12,12 +12,45 @@ struct With<F>(pub F);
 /// Useful for executing arbitrary code on the main thread before returning from a
 /// function exported with [`neon::export`](crate::export).
 ///
-/// **Note:** The return type is [`JsResult`]. If you need to return a non-JavaScript type,
-/// call [`TryIntoJs::try_into_js`].
+/// The closure must return [`JsResult`]. Prefer the
+/// [`with!`](crate::types::extract::with!) macro, which accepts a body of any type that
+/// implements [`TryIntoJs`] and converts it automatically.
+pub fn with<V, F>(f: F) -> impl for<'cx> TryIntoJs<'cx, Value = V>
+where
+    V: Value,
+    for<'cx> F: FnOnce(&mut Cx<'cx>) -> JsResult<'cx, V>,
+{
+    With(f)
+}
+
+/// Wraps a closure that will be lazily evaluated when
+/// [`TryIntoJs::try_into_js`](crate::types::extract::TryIntoJs::try_into_js) is called.
 ///
-/// _See [`With`](With#Example) for example usage._
+/// Useful for executing arbitrary code on the main thread before returning from a
+/// function exported with [`neon::export`](crate::export).
+///
+/// The value of the body is converted with
+/// [`TryIntoJs`](crate::types::extract::TryIntoJs), following the same rules as the
+/// return value of an exported function — e.g., `Err` becomes a JavaScript exception.
 ///
 /// ## Example
+///
+/// ```
+/// # use neon::{prelude::*, types::extract::{self, TryIntoJs}};
+/// #[neon::export(task)]
+/// fn sum(nums: Vec<f64>) -> impl for<'cx> TryIntoJs<'cx> {
+///     let sum = nums.into_iter().sum::<f64>();
+///
+///     extract::with!(move |cx| cx.number(sum))
+/// }
+/// ```
+///
+/// Ordinary closure capture rules apply: `move` gives the closure ownership of the
+/// variables it captures (`sum` above) and is required when the closure outlives the
+/// enclosing function, as it does when returned from an exported function.
+///
+/// Fallible bodies may use `?`. Annotate the closure's return type to name the error
+/// type:
 ///
 /// ```
 /// # use neon::{prelude::*, types::extract::{self, TryIntoJs}};
@@ -29,22 +62,84 @@ struct With<F>(pub F);
 ///     let sum = nums.into_iter().sum::<f64>();
 ///     let log = format!("sum took {} ms", start.elapsed().as_millis());
 ///
-///     extract::with(move |cx| -> NeonResult<_> {
+///     extract::with!(move |cx| -> NeonResult<_> {
 ///         cx.global::<JsObject>("console")?
 ///             .method(cx, "log")?
 ///             .arg(&log)?
 ///             .exec()?;
 ///
-///         sum.try_into_js(cx)
+///         Ok(sum)
 ///     })
 /// }
 /// ```
-pub fn with<V, F>(f: F) -> impl for<'cx> TryIntoJs<'cx, Value = V>
-where
-    V: Value,
-    for<'cx> F: FnOnce(&mut Cx<'cx>) -> JsResult<'cx, V>,
-{
-    With(f)
+// `macro_rules!` macros cannot cross crate boundaries without `#[macro_export]`,
+// which always exports at the crate root. Export under a hidden internal name;
+// the `extract` module re-exports it as `with!`.
+//
+// The eight arms permute three axes that must be distinguished syntactically:
+// `move` vs borrowing capture, a named context parameter vs `_` (bound internally
+// as a hygienic `__cx` so the injected conversion can still use it), and an
+// optional return type annotation (forwarded to the body's own scope, where `?`
+// resolves).
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __with {
+    // with!(move |cx| body)
+    (move |$cx:ident| $body:expr) => {
+        $crate::types::extract::with(move |$cx| {
+            let __v = (|| $body)();
+            $crate::types::extract::TryIntoJs::try_into_js(__v, $cx)
+        })
+    };
+    // with!(|cx| body)
+    (|$cx:ident| $body:expr) => {
+        $crate::types::extract::with(|$cx| {
+            let __v = (|| $body)();
+            $crate::types::extract::TryIntoJs::try_into_js(__v, $cx)
+        })
+    };
+    // with!(move |_| body)
+    (move |_| $body:expr) => {
+        $crate::types::extract::with(move |__cx| {
+            let __v = (|| $body)();
+            $crate::types::extract::TryIntoJs::try_into_js(__v, __cx)
+        })
+    };
+    // with!(|_| body)
+    (|_| $body:expr) => {
+        $crate::types::extract::with(|__cx| {
+            let __v = (|| $body)();
+            $crate::types::extract::TryIntoJs::try_into_js(__v, __cx)
+        })
+    };
+    // with!(move |cx| -> Ty { body })
+    (move |$cx:ident| -> $ret:ty $body:block) => {
+        $crate::types::extract::with(move |$cx| {
+            let __v = (|| -> $ret { $body })();
+            $crate::types::extract::TryIntoJs::try_into_js(__v, $cx)
+        })
+    };
+    // with!(|cx| -> Ty { body })
+    (|$cx:ident| -> $ret:ty $body:block) => {
+        $crate::types::extract::with(|$cx| {
+            let __v = (|| -> $ret { $body })();
+            $crate::types::extract::TryIntoJs::try_into_js(__v, $cx)
+        })
+    };
+    // with!(move |_| -> Ty { body })
+    (move |_| -> $ret:ty $body:block) => {
+        $crate::types::extract::with(move |__cx| {
+            let __v = (|| -> $ret { $body })();
+            $crate::types::extract::TryIntoJs::try_into_js(__v, __cx)
+        })
+    };
+    // with!(|_| -> Ty { body })
+    (|_| -> $ret:ty $body:block) => {
+        $crate::types::extract::with(|__cx| {
+            let __v = (|| -> $ret { $body })();
+            $crate::types::extract::TryIntoJs::try_into_js(__v, __cx)
+        })
+    };
 }
 
 impl<'cx, O, F> TryIntoJs<'cx> for With<F>

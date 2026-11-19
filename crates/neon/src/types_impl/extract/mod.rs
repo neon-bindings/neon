@@ -117,6 +117,12 @@ pub use self::{
     with::with,
 };
 
+// The `with!` macro is exported at the crate root under a hidden name (macros cannot
+// cross crate boundaries otherwise); re-export it here as its public path. Macros are
+// in a separate namespace, so this does not conflict with the `with` function.
+#[doc(inline)]
+pub use crate::__with as with;
+
 #[cfg(feature = "serde")]
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub use self::json::Json;

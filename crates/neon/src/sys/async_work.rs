@@ -150,7 +150,8 @@ unsafe extern "C" fn call_complete<I, O, D>(env: Env, status: napi::Status, data
         ..
     } = *Box::<Data<I, O, D>>::from_raw(data.cast());
 
-    debug_assert_eq!(napi::delete_async_work(env, work), Ok(()));
+    let delete_status = napi::delete_async_work(env, work);
+    debug_assert_eq!(delete_status, Ok(()));
 
     BOUNDARY.catch_failure(env, None, move |env| {
         // `unwrap` is okay because `call_complete` should be called exactly once

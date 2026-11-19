@@ -204,13 +204,11 @@ use crate::lifecycle::InstanceData;
 /// An execution context of a task completion callback.
 pub type TaskContext<'cx> = Cx<'cx>;
 
-#[doc(hidden)]
 /// An execution context of a scope created by [`Context::execute_scoped()`](Context::execute_scoped).
-pub type ExecuteContext<'cx> = Cx<'cx>;
+pub type ExecuteContext<'outer, 'inner> = ScopedCx<'outer, 'inner>;
 
-#[doc(hidden)]
 /// An execution context of a scope created by [`Context::compute_scoped()`](Context::compute_scoped).
-pub type ComputeContext<'cx> = Cx<'cx>;
+pub type ComputeContext<'outer, 'inner> = ScopedCx<'outer, 'inner>;
 
 #[doc(hidden)]
 /// A view of the JS engine in the context of a finalize method on garbage collection
@@ -283,6 +281,93 @@ impl<'cx> From<ModuleContext<'cx>> for Cx<'cx> {
         cx.cx
     }
 }
+
+/// A temporary execution context created by [`Context::execute_scoped()`] or
+/// [`Context::compute_scoped()`].
+///
+/// `ScopedCx` carries two lifetimes:
+///
+/// * `'outer` &mdash; the lifetime of the surrounding [`Context`] that created the
+///   temporary scope. Handles brought in from the outer scope (e.g. captured by
+///   the closure) carry this lifetime and remain valid for the entire enclosing
+///   computation.
+/// * `'inner` &mdash; the lifetime of this temporary scope. New handles allocated
+///   through this context carry `'inner` and are released as soon as the scope
+///   ends. Because the closure passed to `execute_scoped`/`compute_scoped` is
+///   required to be valid [for every choice][hrtb] of `'inner`, the type system
+///   prevents an inner-scope handle from escaping into outer state through a
+///   captured `&mut`.
+///
+/// The implicit bound `'outer: 'inner` carried by `ScopedCx` allows existing
+/// outer-scope handles to be used freely inside the temporary scope via the
+/// usual covariance of [`Handle`].
+///
+/// [hrtb]: https://doc.rust-lang.org/nomicon/hrtb.html
+pub struct ScopedCx<'outer, 'inner> {
+    cx: Cx<'inner>,
+    // Encodes the implicit bound `'outer: 'inner` without imposing it on the
+    // (universally quantified) HRTB used by the trait methods that introduce
+    // this type.
+    _outer: PhantomData<&'inner &'outer ()>,
+}
+
+impl<'outer, 'inner> ScopedCx<'outer, 'inner> {
+    /// Constructs a `ScopedCx` for an already-open inner handle scope.
+    ///
+    /// # Safety
+    ///
+    /// All of the following must hold when this constructor is called:
+    ///
+    /// * `env` must point to a Node-API environment that is live on the
+    ///   current thread.
+    /// * A Node-API [`HandleScope`] (or [`EscapableHandleScope`]) must be
+    ///   currently open for `env` and must outlive every use of the returned
+    ///   [`ScopedCx`]. In practice this means the constructor must be called
+    ///   immediately after opening such a scope, and the scope must be kept
+    ///   alive across all subsequent uses of the returned value.
+    /// * The caller-chosen lifetime `'inner` must not be longer than the
+    ///   actually-open inner scope; the [`ScopedCx`] (and every [`Handle`]
+    ///   derived from it) must be dropped before the inner scope is closed.
+    /// * The caller-chosen lifetime `'outer` must correspond to an
+    ///   actually-enclosing context's scope, and must satisfy
+    ///   `'outer: 'inner` (this is enforced structurally by the type's
+    ///   phantom data).
+    ///
+    /// Violating any of these invariants permits handles whose backing N-API
+    /// values have been released, which is undefined behavior.
+    unsafe fn new(env: Env) -> Self {
+        Self {
+            cx: Cx::new(env),
+            _outer: PhantomData,
+        }
+    }
+}
+
+impl<'outer, 'inner> Deref for ScopedCx<'outer, 'inner> {
+    type Target = Cx<'inner>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.cx
+    }
+}
+
+impl<'outer, 'inner> DerefMut for ScopedCx<'outer, 'inner> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.cx
+    }
+}
+
+impl<'outer, 'inner> ContextInternal<'inner> for ScopedCx<'outer, 'inner> {
+    fn cx(&self) -> &Cx<'inner> {
+        &self.cx
+    }
+
+    fn cx_mut(&mut self) -> &mut Cx<'inner> {
+        &mut self.cx
+    }
+}
+
+impl<'outer, 'inner> Context<'inner> for ScopedCx<'outer, 'inner> {}
 
 #[repr(C)]
 pub(crate) struct CallbackInfo<'cx> {
@@ -380,14 +465,24 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape.
     ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
-    fn execute_scoped<'b, T, F>(&mut self, f: F) -> T
+    ///
+    /// The closure receives a [`ScopedCx`] whose inner lifetime `'b` is bound
+    /// by a higher-ranked trait bound. This ensures that any handle allocated
+    /// inside the scope is tied to the temporary [`HandleScope`] and cannot
+    /// escape into the surrounding context.
+    fn execute_scoped<T, F>(&mut self, f: F) -> T
     where
-        'a: 'b,
-        F: FnOnce(Cx<'b>) -> T,
+        F: for<'b> FnOnce(ScopedCx<'a, 'b>) -> T,
     {
         let env = self.env();
         let scope = unsafe { HandleScope::new(env.to_raw()) };
-        let result = f(Cx::new(env));
+        // SAFETY: `scope` is an `HandleScope` we just opened for `env` and
+        // hold (via the `drop(scope)` below) across the call to `f`. The
+        // inferred `'b` is bounded by the borrow of `scope` that the
+        // closure transitively performs through the `ScopedCx`, so it
+        // cannot outlive the open scope. `'a` is the enclosing context's
+        // lifetime, which (by `Context<'a>`) outlives `'b`.
+        let result = f(unsafe { ScopedCx::new(env) });
 
         drop(scope);
 
@@ -399,15 +494,27 @@ pub trait Context<'a>: ContextInternal<'a> {
     /// Handles created in the new scope are kept alive only for the duration of the computation and cannot escape, with the exception of the result value, which is rooted in the outer context.
     ///
     /// This method can be useful for limiting the life of temporary values created during long-running computations, to prevent leaks.
-    fn compute_scoped<'b, V, F>(&mut self, f: F) -> JsResult<'a, V>
+    ///
+    /// The closure receives a [`ScopedCx`] whose inner lifetime `'b` is bound
+    /// by a higher-ranked trait bound. Only the returned [`Handle`] escapes
+    /// the temporary scope; it is rooted in the outer context via the
+    /// underlying [`EscapableHandleScope`]. Any other inner-scope handle is
+    /// prevented from leaking into the surrounding context by the type system.
+    fn compute_scoped<V, F>(&mut self, f: F) -> JsResult<'a, V>
     where
-        'a: 'b,
         V: Value,
-        F: FnOnce(Cx<'b>) -> JsResult<'b, V>,
+        F: for<'b> FnOnce(ScopedCx<'a, 'b>) -> JsResult<'b, V>,
     {
         let env = self.env();
         let scope = unsafe { EscapableHandleScope::new(env.to_raw()) };
-        let cx = Cx::new(env);
+        // SAFETY: `scope` is an `EscapableHandleScope` we just opened for
+        // `env` and hold across the call to `f` and the subsequent
+        // `scope.escape(...)`. The inferred `'b` is bounded by the borrow
+        // of `scope` that the closure transitively performs through the
+        // `ScopedCx`, so it cannot outlive the open scope. `'a` is the
+        // enclosing context's lifetime, which (by `Context<'a>`) outlives
+        // `'b`.
+        let cx = unsafe { ScopedCx::new(env) };
 
         let escapee = unsafe { scope.escape(f(cx)?.to_local()) };
 
