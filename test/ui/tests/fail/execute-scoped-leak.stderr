@@ -5,6 +5,6 @@ error[E0521]: borrowed data escapes outside of closure
    |         ---------- `leaked` declared here, outside of the closure body
 18 |
 19 |     cx.execute_scoped(|mut inner_cx| {
-   |                        ------------ `inner_cx` is a reference that is only valid in the closure body
+   |                        ------------ `inner_cx` is only valid in the closure body
 20 |         leaked = Some(inner_cx.number(42));
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `inner_cx` escapes the closure body here

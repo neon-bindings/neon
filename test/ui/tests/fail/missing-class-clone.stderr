@@ -17,8 +17,9 @@ note: required for `Point` to implement `TryFromJs<'_>`
 note: required by a bound in `FunctionContext::<'cx>::args`
    --> $WORKSPACE/crates/neon/src/context/mod.rs
     |
+    | impl<'cx> FunctionContext<'cx> {
+...
     |     pub fn args<T>(&mut self) -> NeonResult<T>
-    |            ---- required by a bound in this associated function
     |     where
     |         T: FromArgs<'cx>,
     |            ^^^^^^^^^^^^^ required by this bound in `FunctionContext::<'cx>::args`
