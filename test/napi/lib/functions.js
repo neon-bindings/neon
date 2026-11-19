@@ -104,6 +104,11 @@ describe("JsFunction", function () {
   });
 
   it("bind a strict JsFunction to a number", function () {
+    // https://github.com/neon-bindings/neon/issues/1128#usestrict
+    if (process.versions.bun) {
+      return this.skip();
+    }
+
     assert.isTrue(isStrict(STRICT));
 
     // strict mode functions are allowed to have a primitive this binding
@@ -154,6 +159,11 @@ describe("JsFunction", function () {
   });
 
   it("call a JsFunction with the default this", function () {
+    // https://github.com/neon-bindings/neon/issues/1128#usestrict
+    if (process.versions.bun) {
+      return this.skip();
+    }
+
     addon.call_js_function_with_implicit_this(function () {
       "use strict"; // ensure the undefined this isn't replaced with the global object
       assert.strictEqual(this, undefined);
@@ -161,6 +171,11 @@ describe("JsFunction", function () {
   });
 
   it("exec a JsFunction with the default this", function () {
+    // https://github.com/neon-bindings/neon/issues/1128#usestrict
+    if (process.versions.bun) {
+      return this.skip();
+    }
+
     addon.exec_js_function_with_implicit_this(function () {
       "use strict"; // ensure the undefined this isn't replaced with the global object
       assert.strictEqual(this, undefined);
@@ -349,19 +364,20 @@ describe("JsFunction", function () {
     assert.strictEqual(addon.count_called() + 1, addon.count_called());
   });
 
-  (global.gc ? it : it.skip)(
-    "should drop function when going out of scope",
-    function (cb) {
-      // Run from an `IIFE` to ensure that `f` is out of scope and eligible for garbage
-      // collection when `global.gc()` is executed.
-      (() => {
-        const msg = "Hello, World!";
-        const f = addon.caller_with_drop_callback(() => msg, cb);
-
-        assert.strictEqual(f(), msg);
-      })();
-
-      global.gc();
+  it("should drop function when going out of scope", function (cb) {
+    if (!global.gc) {
+      return this.skip();
     }
-  );
+
+    // Run from an `IIFE` to ensure that `f` is out of scope and eligible for garbage
+    // collection when `global.gc()` is executed.
+    (() => {
+      const msg = "Hello, World!";
+      const f = addon.caller_with_drop_callback(() => msg, cb);
+
+      assert.strictEqual(f(), msg);
+    })();
+
+    global.gc();
+  });
 });

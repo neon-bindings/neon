@@ -314,6 +314,11 @@ describe("Typed arrays", function () {
   });
 
   it("correctly constructs a view over a slice of a buffer", function () {
+    // https://github.com/neon-bindings/neon/issues/1128#byteoffset
+    if (process.versions.bun) {
+      return this.skip();
+    }
+
     var buf = new ArrayBuffer(128);
 
     var a = addon.return_uint32array_from_arraybuffer_region(buf, 16, 4);
@@ -457,6 +462,11 @@ describe("Typed arrays", function () {
   }
 
   it("provides correct metadata when detaching a typed array's buffer", function () {
+    // https://github.com/neon-bindings/neon/issues/1128#detach
+    if (process.versions.bun) {
+      return this.skip();
+    }
+
     var buf = new ArrayBuffer(16);
     var arr = new Uint32Array(buf, 4, 2);
     var buf = arr.buffer;
@@ -492,16 +502,31 @@ describe("Typed arrays", function () {
   });
 
   it("provides correct metadata when detaching an escaped typed array's buffer", function () {
+    // https://github.com/neon-bindings/neon/issues/1128#detach
+    if (process.versions.bun) {
+      return this.skip();
+    }
+
     var buf = new ArrayBuffer(16);
     testDetach(new Uint32Array(buf, 4, 2), addon.detach_and_escape, 8, 2, 4);
   });
 
   it("provides correct metadata when detaching a casted typed array's buffer", function () {
+    // https://github.com/neon-bindings/neon/issues/1128#detach
+    if (process.versions.bun) {
+      return this.skip();
+    }
+
     var buf = new ArrayBuffer(16);
     testDetach(new Uint32Array(buf, 4, 2), addon.detach_and_cast, 8, 2, 4);
   });
 
   it("provides correct metadata when detaching an un-rooted typed array's buffer", function () {
+    // https://github.com/neon-bindings/neon/issues/1128#detach
+    if (process.versions.bun) {
+      return this.skip();
+    }
+
     var buf = new ArrayBuffer(16);
     testDetach(new Uint32Array(buf, 4, 2), addon.detach_and_unroot, 8, 2, 4);
   });
