@@ -576,3 +576,23 @@ fn ts_dash() -> f64 {
 fn ts_keyword_params(r#type: String, r#in: f64) -> f64 {
     r#type.len() as f64 + r#in
 }
+
+// A module whose only TypeScript-related import is the `neon_ts_rs` prelude.
+// Its type derives only ts-rs's `TS`, and appears as `Option<Json<T>>`, which
+// the macros look through so the prelude's `TsJsonExt` can describe it.
+mod prelude_only {
+    use neon::types::extract::Json;
+    use neon_ts_rs::prelude::*;
+    use serde::{Deserialize, Serialize};
+
+    #[derive(Serialize, Deserialize, TS)]
+    #[serde(rename_all = "camelCase")]
+    pub struct PreludeOptions {
+        pub max_hits: u32,
+    }
+
+    #[neon::export]
+    fn ts_prelude_optional(options: Option<Json<PreludeOptions>>) -> Option<Json<PreludeOptions>> {
+        options
+    }
+}

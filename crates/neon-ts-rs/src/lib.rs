@@ -1,9 +1,24 @@
 //! ts-rs adapter for Neon. Bridges `ts_rs::TS` to `neon_typescript::TsJson`,
 //! the TypeScript type of a value serialized to JSON.
 //!
-//! Users derive both `ts_rs::TS` and `neon_ts_rs::TsJson` on their types.
-//! The bridge derive (re-exported here) generates an impl that delegates to the
-//! runtime helpers below.
+//! Import the [`prelude`] in each module with exports, and derive ts-rs's
+//! `TS` on your types:
+//!
+//! ```ignore
+//! use neon_ts_rs::prelude::*;
+//!
+//! #[derive(serde::Serialize, serde::Deserialize, TS)]
+//! struct Options { limit: u32 }
+//!
+//! #[neon::export]
+//! fn search(query: String, options: Option<Json<Options>>) -> Json<Vec<String>> { /* … */ }
+//! ```
+//!
+//! That covers every JSON position: `Json<T>`, `Option<Json<T>>`, and
+//! `#[neon::export(json)]`. The [`TsJson`](macro@TsJson) bridge derive, which
+//! generates a `neon_typescript::TsJson` impl that delegates to the runtime
+//! helpers below, is only needed for a `Json<T>` nested inside some other bare
+//! type (say, `Either<Json<A>, Json<B>>`).
 //!
 //! # Pitfall: `skip_serializing_if` without `default`
 //!
@@ -29,6 +44,36 @@ use ts_rs::{Config, TypeVisitor, TS};
 
 pub use neon_ts_rs_macros::TsJson;
 
+/// Everything a module needs to give its exports TypeScript types through
+/// ts-rs, in one import:
+///
+/// ```ignore
+/// use neon_ts_rs::prelude::*;
+///
+/// #[derive(serde::Serialize, TS)]
+/// struct SearchHit {
+///     id: u32,
+///     score: f64,
+/// }
+///
+/// #[neon::export(json)]
+/// fn search(query: String) -> Vec<SearchHit> { /* … */ }
+/// ```
+///
+/// It brings in:
+///
+/// - ts-rs's `TS` derive, which describes your types.
+/// - [`TsJsonExt`], anonymously, which lets Neon describe any ts-rs type in a
+///   JSON position (`Json<T>`, `Option<Json<T>>`, or `#[neon::export(json)]`),
+///   including types from other crates.
+/// - The [`TsJson`](macro@TsJson) derive, for the rare position the above
+///   doesn't reach: a `Json<T>` nested inside some other bare type.
+pub mod prelude {
+    pub use crate::TsJson;
+    pub use crate::TsJsonExt as _;
+    pub use ts_rs::TS;
+}
+
 /// Implementation detail for the `TsJson` bridge derive. Re-exports the paths
 /// the generated impl references, so a consumer only needs `neon-ts-rs` (and
 /// `ts-rs`) in scope — never a direct dependency on `neon-typescript`.
@@ -44,23 +89,24 @@ fn cfg() -> Config {
     Config::default().with_large_int("number")
 }
 
-/// Extends Neon's TypeScript output to cover **foreign types in a JSON payload**
-/// — types from other crates that you didn't define (e.g.
-/// [`IndexMap`](https://docs.rs/indexmap)), used directly as the payload of a
-/// `Json<T>` argument or return value, or of a `#[neon::export(json)]` function.
+/// Lets Neon describe **any ts-rs type in a JSON position**: the payload of a
+/// `Json<T>` or `Option<Json<T>>` argument or return value, or of a
+/// `#[neon::export(json)]` function. That includes your own types (with just
+/// `#[derive(TS)]`) and types from other crates (e.g.
+/// [`IndexMap`](https://docs.rs/indexmap)), which can't carry a derive you
+/// didn't write.
 ///
-/// Types you define are covered by `#[derive(neon_ts_rs::TsJson)]`. A foreign
-/// type can't carry a derive you didn't write, so without this it types as
-/// `unknown`. Bringing this trait into scope lets ts-rs describe any foreign
-/// type it understands, so the value gets its real type instead:
+/// It's included in the [`prelude`], which is the usual way to bring it in. On
+/// its own:
 ///
 /// ```ignore
-/// use neon_ts_rs::TsJsonExt as _;   // once per module that exports such types
+/// use neon_ts_rs::TsJsonExt as _;   // once per module with exports
 /// ```
 ///
-/// You never call its methods — the import alone turns the coverage on. Its
-/// reach is exactly what ts-rs supports: a foreign type ts-rs doesn't implement
-/// still types as `unknown`.
+/// You never call its methods: the import alone turns the coverage on. Without
+/// it, a type that only implements `ts_rs::TS` is declared `unknown`. Its reach
+/// is exactly what ts-rs supports: a foreign type ts-rs doesn't implement is
+/// still `unknown`.
 pub trait TsJsonExt {
     fn ts_json_of(&self) -> Cow<'static, str>;
     fn ts_json_collect_of(&self, decls: &mut BTreeMap<String, String>);

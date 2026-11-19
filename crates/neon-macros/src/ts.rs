@@ -74,6 +74,20 @@ pub(crate) fn boundary(ty: &syn::Type, json: bool, position: Position) -> TsToke
         return json_probe(&payload);
     }
 
+    // Likewise for `Option<Json<T>>`, the usual way to write an optional JSON
+    // argument. Without this, the payload would be described by the bare
+    // `Option` and `Json` impls, which can't consult an adapter, so a type with
+    // only a generator impl (e.g. `ts_rs::TS`) would be `unknown`. The shape is
+    // the same as those impls produce: the bare `Option` around the payload's
+    // JSON type.
+    if let Some(payload) = first_type_arg(&ty, &["Option"]).and_then(|inner| outer_json(&inner)) {
+        let suffix = match position {
+            Position::Param => " | null | undefined",
+            Position::Return => " | undefined",
+        };
+        return optional(json_probe(&payload), suffix);
+    }
+
     match position {
         // Reference arguments (`&Class`, `&RefCell<T>`) are extracted from the
         // referent's JS value, so describe the referent.
@@ -89,6 +103,17 @@ pub(crate) fn boundary(ty: &syn::Type, json: bool, position: Position) -> TsToke
 pub(crate) fn global(ty: &syn::Type, json: bool) -> TsTokens {
     let ty = first_type_arg(ty, &["LazyLock"]).unwrap_or_else(|| ty.clone());
     boundary(&ty, json, Position::Return)
+}
+
+/// `tokens`' type followed by `suffix` (e.g. `" | undefined"`).
+fn optional((ts_type, ts_collect): TsTokens, suffix: &str) -> TsTokens {
+    (
+        quote::quote!(|| {
+            let __inner: std::borrow::Cow<'static, str> = (#ts_type)();
+            std::borrow::Cow::Owned(format!("{}{}", __inner, #suffix))
+        }),
+        ts_collect,
+    )
 }
 
 /// The JSON probe: `TsJson`, then an adapter's `TsJsonExt`, then `unknown`.

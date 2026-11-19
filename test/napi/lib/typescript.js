@@ -805,6 +805,27 @@ describe("TypeScript declaration generation", () => {
     assert.strictEqual(new addon.PublicName().publicName(), "ok");
   });
 
+  it("describes Option<Json<T>> through the prelude's ts-rs coverage", () => {
+    // `PreludeOptions` derives only ts-rs's `TS`, and its module imports only
+    // `neon_ts_rs::prelude::*`.
+    assert.ok(
+      declarations.includes(
+        "export declare function tsPreludeOptional(options: PreludeOptions | null | undefined): PreludeOptions | undefined;"
+      ),
+      `Expected tsPreludeOptional declaration, got:\n${declarations}`
+    );
+    assert.ok(
+      declarations.includes(
+        "export type PreludeOptions = { maxHits: number, };"
+      ),
+      `Expected PreludeOptions declaration, got:\n${declarations}`
+    );
+    assert.deepStrictEqual(addon.tsPreludeOptional({ maxHits: 3 }), {
+      maxHits: 3,
+    });
+    assert.strictEqual(addon.tsPreludeOptional(undefined), undefined);
+  });
+
   it("re-exports a function whose name is a reserved word", () => {
     assert.ok(
       declarations.includes(

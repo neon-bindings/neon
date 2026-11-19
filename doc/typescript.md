@@ -201,8 +201,16 @@ For each argument and return type, the macro decides which trait to consult:
    aliases like `anyhow::Result<T>` and `NeonResult<T>`). Async and task exports wrap
    the result in `Promise<…>`.
 2. **JSON positions** — the item is `#[neon::export(json)]`, or the type is a
-   top-level `Json<T>`. The payload `T` is described with `TsJson` (and the adapter's
-   `TsJsonExt`, if imported; see below).
+   top-level `Json<T>` or `Option<Json<T>>`. The payload `T` is described with
+   `TsJson` (and the adapter's `TsJsonExt`, if imported; see below). For
+   `Option<Json<T>>`, the usual way to write an optional JSON argument, the result
+   is wrapped the way the bare `Option` would wrap it: `T | null | undefined` as an
+   argument, `T | undefined` as a return. The macro looks through these wrappers
+   itself, rather than leaving them to the bare `Option` and `Json` impls, because
+   only a lookup at the export site can see the user's `TsJsonExt` import; without
+   it, a type that only implements `ts_rs::TS` would be `unknown`. A `Json<T>`
+   nested anywhere else (say, in an `Either`) goes through the bare impls, which
+   need a `TsJson` impl for `T`.
 3. **Bare positions** — everything else: `TsFromJs` for arguments (looking through
    a reference such as `&Class`, which is extracted from the referent's JS value),
    `TsIntoJs` for returns and static properties.
@@ -293,7 +301,7 @@ unsized slices). Being lenient by default is a deliberate, permanent commitment 
 
 > The "probe" and "rung" vocabulary below is internal mechanism, for maintainers.
 > Users never encounter it: the entire user-facing surface is one import,
-> `use neon_ts_rs::TsJsonExt as _;`, explained in plain terms under
+> `use neon_ts_rs::prelude::*;`, explained in plain terms under
 > [Type providers](#type-providers).
 
 The fallback is achieved with **autoref-specialization probes** in the
@@ -370,15 +378,15 @@ a newtype that derives `TsJson`, or set the type with `#[neon(ts_type = "...")]`
 path — no import), and rung 3's fallback lives in a crate the macro knows, so the
 macro brings it into scope itself (`use … as _;`). It cannot do that for rung 2's
 trait, because it doesn't know which adapter the user chose. So the user brings it
-in, once per module whose exports carry foreign JSON payloads:
+in, once per module with exports, usually through the adapter's prelude:
 
 ```rust
-use neon_ts_rs::TsJsonExt as _;
+use neon_ts_rs::prelude::*;   // includes `pub use TsJsonExt as _;`
 ```
 
-This is the ordinary anonymous-extension-trait idiom (`use std::io::Write as _;`) —
-the name never appears anywhere but the import, and the methods are consumed only by
-macro-generated code. If the import is absent (or the user uses no adapter),
+This is the ordinary anonymous-extension-trait idiom (`use std::io::Write as _;`),
+glob-imported: the name never appears in user code, and the methods are consumed
+only by macro-generated code. If the import is absent (or the user uses no adapter),
 resolution simply skips rung 2: real type or `unknown`.
 
 ### Metadata collection
@@ -672,8 +680,10 @@ references its own crate's re-exports, not the underlying contract crate.)
 ### What the user writes
 
 ```rust
-// ts-rs path: one extra derive, nothing at the export boundary.
-#[derive(Serialize, Deserialize, ts_rs::TS, neon_ts_rs::TsJson)]
+// ts-rs path: one import per module, and ts-rs's own derive.
+use neon_ts_rs::prelude::*;
+
+#[derive(Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 struct SearchResult { doc_id: u32, /* … */ }
 
@@ -681,8 +691,10 @@ struct SearchResult { doc_id: u32, /* … */ }
 fn search(q: String) -> SearchResult { /* … */ }   // Json extraction unchanged
 ```
 
-- **ts-rs user** — derive `ts_rs::TS` + `neon_ts_rs::TsJson`; the types are also
-  visible to any ts-rs tooling.
+- **ts-rs user** — import `neon_ts_rs::prelude::*` and derive `TS`; the types are
+  also visible to any ts-rs tooling. The prelude brings in `TS`, the `TsJsonExt`
+  rung (anonymously), and the `TsJson` bridge derive, which is only needed for a
+  `Json<T>` nested inside another bare type.
 - **specta user** — derive `specta::Type` + `neon_specta::TsJson`; the types plug
   into the specta/Tauri ecosystem, with the (less stable) specta dependency
   quarantined in its adapter crate.
@@ -693,16 +705,15 @@ Different types in one signature may use different adapters: each derive produce
 own `TsJson` impl, and Neon consumes only `TsJson`. (A single type can't use two
 bridge derives, since that would be two impls of `TsJson` for one type.)
 
-Nothing above is needed as long as the payload has a `TsJson` impl (a user type via
-the bridge, a std type). The one case that needs more is a **foreign type used
-directly as a JSON payload** — e.g. returning `Json<IndexMap<String, Field>>` rather
-than wrapping it in a named struct. There, import `TsJsonExt` in that module — it lets
-ts-rs describe foreign types in your JSON payloads, so they're typed instead of
-falling back to `unknown`:
+The prelude's `TsJsonExt` is what lets ts-rs describe a type in any JSON position
+(`Json<T>`, `Option<Json<T>>`, or `#[neon::export(json)]`) without a `TsJson` impl:
+the user's own `#[derive(TS)]` types, and **foreign types used directly as a JSON
+payload**, such as `Json<IndexMap<String, Field>>`, which can't carry a derive you
+didn't write. Without the import, such a type falls back to `unknown`. It can also be
+imported on its own:
 
 ```rust
-// Let ts-rs describe foreign types (e.g. IndexMap) in JSON payloads.
-use neon_ts_rs::TsJsonExt as _;   // once per module that exports such types
+use neon_ts_rs::TsJsonExt as _;   // once per module with exports
 
 #[neon::export]
 fn fields(&self) -> Json<IndexMap<String, FieldDescriptor>> { /* … */ }
@@ -824,7 +835,7 @@ return normalizes to `Promise<void>`.
 - **Generation-time reporting of `unknown`s.** Record each position that fell back
   to `unknown` (the export, the position, and the Rust type) and report them when the
   `.d.ts` is generated, with file/line and targeted advice (e.g. "add
-  `use neon_ts_rs::TsJsonExt as _;`"); a `--strict` mode would make them fatal in CI.
+  `use neon_ts_rs::prelude::*;`"); a `--strict` mode would make them fatal in CI.
   This needs no breaking changes, because the metadata types are internal and the
   fallback is Neon-owned. See [Alternatives considered §11](#alternatives-considered).
 - **Extract `neon-ts-rs`** to its own repository and publish it before release.
@@ -951,12 +962,19 @@ wrap/unwrap), forces the user to track which types need wrapping, and recurs wit
 every new foreign boundary. A hand-written `impl TsJson` on a local newtype remains
 the last-resort escape for types the generator can't describe at all.
 
-**5. Bringing the rung into scope — a per-module import named `TsJsonExt`.** For the
+**5. Bringing the rung into scope — a per-module prelude import.** For the
 rung to dispatch, its trait must be in lexical scope at each export site (autoref
 specialization resolves on an unqualified call, which only sees imported traits), and
 it must be defined in the adapter (orphan-legality). Rust scope is per-module, so the
-cost is one anonymous import per exporting module: `use neon_ts_rs::TsJsonExt as _;`
-— the same `use … as _` idiom Neon's macros already emit internally. *Rejected — a
+cost is one import per exporting module. *Decision:* the adapter offers a prelude,
+`use neon_ts_rs::prelude::*;`, which re-exports the rung trait anonymously
+(`pub use crate::TsJsonExt as _;`) along with the derives a user needs (ts-rs's `TS`
+and the `TsJson` bridge). It's the pattern Rust users know from `std::io::prelude`,
+an import whose point is to make things work rather than to name them, so it needs
+no explanatory comment at the use site. The trait can still be imported on its own,
+`use neon_ts_rs::TsJsonExt as _;` (the same `use … as _` idiom Neon's macros emit
+internally); dogfooding showed that line needed a comment to explain, since its
+name describes the mechanism rather than the effect. *Rejected — a
 Cargo feature that auto-wires the rung* (`neon = { features = ["ts-rs"] }`, macro
 emits the import for you): zero source overhead, but it forces `neon` to take an
 optional dependency on a *specific* adapter, inverting the dependency arrow the crate
@@ -971,7 +989,14 @@ derive (macro namespace) and the rung trait (type namespace), à la
 trait from the contract trait `neon_typescript::TsJson`, so a bound naming it would
 silently mean the wrong thing — serde's overload works because its trait and derive
 are two faces of one concept; ours would be two concepts sharing a name. `TsJsonExt`
-reads as "this adapter extends `TsJson` coverage to additional (foreign) types."
+reads as "this adapter extends `TsJson` coverage to additional types."
+
+Dogfooding also showed why the macro looks through `Option<Json<T>>` (see
+[Which conversion runs at a position](#which-conversion-runs-at-a-position)): with
+the rung reaching only a top-level `Json<T>`, the bridge derive was needed exactly
+for types used in `Option<Json<T>>`. That rule is too subtle to learn, so the
+dogfood derived `TsJson` on all 13 of its types, where 3 were needed. With the
+look-through, the prelude alone covers every type in it.
 
 **6. Collapsing `neon-typescript` into `neon`.** Considered dropping the standalone
 contract crate and defining `TsJson` in `neon` directly. *Rejected:* it relieves no
