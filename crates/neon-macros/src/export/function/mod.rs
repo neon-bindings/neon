@@ -139,12 +139,18 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
         }
     });
 
-    // Output the original function with the generated `create_fn` inside of it
+    // Output the original function with the generated `create_fn` inside of it.
+    // Splice the body's statements rather than the block itself: nesting the
+    // user's `{ ... }` as the tail expression trips `unused_braces` on one-line
+    // bodies, reported against the user's own code. `create_fn` is wrapped in
+    // its own block, so its names can't collide with the user's.
+    let stmts = &block.stmts;
+
     quote::quote!(
         #(#attrs) *
         #vis #sig {
             #create_fn
-            #block
+            #(#stmts)*
         }
     )
     .into()
