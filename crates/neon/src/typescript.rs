@@ -31,9 +31,13 @@
 //! `Symbol.for("neon:types")`. They can also be produced with [`generate`]:
 //!
 //! ```ignore
-//! let dts = neon::typescript::generate();
-//! std::fs::write("index.d.ts", dts).unwrap();
+//! let dts = neon::typescript::generate()?;
+//! std::fs::write("index.d.ts", dts)?;
 //! ```
+//!
+//! Generation fails if two different items would be declared under the same
+//! name (see [`generate`]). Reading `Symbol.for("neon:types")` then throws the
+//! error instead; loading the addon never fails.
 
 use std::borrow::Cow;
 use std::cell::{Ref, RefCell, RefMut};
@@ -412,8 +416,20 @@ fn boxed_collect<P: ?Sized>(decls: &mut BTreeMap<String, String>) {
     let short = short_type_name::<P>();
     let name = format!("Boxed{}", sanitize_identifier(&short));
     let decl = format!("interface {name} {{ readonly [__neon_tag]: '{short}' }}");
-    decls.entry(name).or_insert(decl);
+    neon_typescript::insert_decl(decls, name.clone(), decl);
+    // The brand drops module paths, so `a::Database` and `b::Database` would
+    // get identical declarations and silently become interchangeable. Record
+    // which payload type owns the brand, so that's reported as a conflict.
+    neon_typescript::insert_decl(
+        decls,
+        format!("{BRAND_OWNER_PREFIX}{name}"),
+        std::any::type_name::<P>().to_string(),
+    );
 }
+
+/// Records which boxed payload type a brand belongs to (see `boxed_collect`).
+/// Like every key starting with `!`, it's bookkeeping, not a declaration.
+const BRAND_OWNER_PREFIX: &str = "!brand:";
 
 /// Implement both bare traits as the brand for a `JsBox<$payload>`.
 macro_rules! ts_boxed {
@@ -653,21 +669,64 @@ impl<T: ?Sized> TsIntoJsFallback for &TsIntoJsProbe<T> {
 /// Returns a complete `.d.ts` file as a string. The output is CommonJS-style
 /// type declarations suitable for placing beside a `.node` binary module.
 ///
+/// # Errors
+///
+/// Fails if two different items would be declared under the same name, such
+/// as two data types both named `Config`, a data type and a class with the
+/// same name, or two exports with the same name. Any one declaration would be
+/// wrong (or the file invalid), so the error lists every collision instead.
+///
 /// # Example
 ///
 /// ```ignore
 /// fn main() {
-///     let dts = neon::typescript::generate();
+///     let dts = neon::typescript::generate().unwrap();
 ///     std::fs::write("index.d.ts", dts).unwrap();
 /// }
 /// ```
-pub fn generate() -> String {
+pub fn generate() -> Result<String, GenerateError> {
+    render(crate::macro_internal::TYPE_METADATA.iter())
+}
+
+/// Two or more items that would be declared under the same name; see
+/// [`generate`].
+#[derive(Debug, Clone)]
+pub struct GenerateError {
+    collisions: Vec<String>,
+}
+
+impl std::fmt::Display for GenerateError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(
+            f,
+            "Neon can't generate TypeScript declarations, because some names are declared more than once:"
+        )?;
+        for collision in &self.collisions {
+            writeln!(f, "  - {collision}")?;
+        }
+        write!(
+            f,
+            "Rename one item in each collision: a function, method, or export with \
+             `name = \"...\"`, a class with `class(name = \"...\")`, or a JSON data type in \
+             its generator (for ts-rs, `#[ts(rename = \"...\")]`)."
+        )
+    }
+}
+
+impl std::error::Error for GenerateError {}
+
+fn render<'a>(metas: impl IntoIterator<Item = &'a ExportMeta>) -> Result<String, GenerateError> {
     let mut decls: BTreeMap<String, String> = BTreeMap::new();
     let mut functions: Vec<String> = Vec::new();
     let mut classes: Vec<String> = Vec::new();
     let mut globals: Vec<String> = Vec::new();
 
-    for meta in crate::macro_internal::TYPE_METADATA.iter() {
+    // The names each item declares, inside the file (`locals`) and as module
+    // exports (`exports`), to detect collisions.
+    let mut locals = Scope::default();
+    let mut exports = Scope::default();
+
+    for meta in metas {
         match meta {
             ExportMeta::Function(func) => {
                 // Collect type declarations from params and return type
@@ -697,6 +756,12 @@ pub fn generate() -> String {
 
                 let signature = format!("({}): {ret};", params.join(", "));
                 functions.push(export_function(func.name, &signature));
+                declare_export(
+                    &mut locals,
+                    &mut exports,
+                    func.name,
+                    format!("function `{}`", func.name),
+                );
             }
             ExportMeta::Global(global) => {
                 (global.ts_collect)(&mut decls);
@@ -706,6 +771,12 @@ pub fn generate() -> String {
                     global.name,
                     &format!(": {ts};"),
                 ));
+                declare_export(
+                    &mut locals,
+                    &mut exports,
+                    global.name,
+                    format!("const `{}`", global.name),
+                );
             }
             ExportMeta::Class(class) => {
                 // Collect type declarations from all parts of the class
@@ -730,6 +801,19 @@ pub fn generate() -> String {
                 // `#[neon::class]` isn't exported by Neon (if user code exports
                 // it, Neon can't see under what name), so it's declared but not
                 // exported: other declarations can still refer to it.
+                let what = match class.export_name {
+                    Some(binding) if binding != class.name => {
+                        format!("class `{}` (exported as `{binding}`)", class.name)
+                    }
+                    _ => format!("class `{}`", class.name),
+                };
+                locals.declare(class.name, Space::Both, what.clone());
+                if let Some(binding) = class.export_name {
+                    if is_identifier_name(binding) {
+                        exports.declare(binding, Space::Both, what);
+                    }
+                }
+
                 let mut s = if class.export_name == Some(class.name) {
                     format!("export declare class {} {{\n", class.name)
                 } else {
@@ -802,6 +886,61 @@ pub fn generate() -> String {
         }
     }
 
+    // Keys starting with `!` are bookkeeping from `insert_decl` and
+    // `boxed_collect`, not declarations. Conflicting declarations under one
+    // name were recorded there.
+    let mut collisions: Vec<String> = Vec::new();
+    for (key, value) in &decls {
+        let Some(name) = key.strip_prefix(neon_typescript::CONFLICT_PREFIX) else {
+            continue;
+        };
+        let mut versions: Vec<&str> = value.split(neon_typescript::CONFLICT_SEPARATOR).collect();
+        versions.sort_unstable();
+        collisions.push(match name.strip_prefix(BRAND_OWNER_PREFIX) {
+            Some(brand) => format!(
+                "`{brand}` is the boxed type of more than one Rust type: {}",
+                list(versions.iter().map(|ty| format!("`{ty}`")))
+            ),
+            None => format!(
+                "two different types are both declared as `{name}`: {}",
+                list(
+                    versions
+                        .iter()
+                        .map(|decl| format!("`{}`", abbreviate(decl)))
+                )
+            ),
+        });
+    }
+    decls.retain(|key, _| !key.starts_with('!'));
+
+    let has_opaque = decls.keys().any(|k| k.starts_with("Boxed"));
+    for (name, decl) in &decls {
+        let what = format!("type `{name}`");
+        let space = decl_space(decl);
+        locals.declare(name, space, what.clone());
+        exports.declare(name, space, what);
+    }
+    if has_opaque {
+        let what = "Neon's `__neon_tag` brand symbol".to_string();
+        locals.declare("__neon_tag", Space::Value, what.clone());
+        exports.declare("__neon_tag", Space::Value, what);
+    }
+
+    // Report each set of colliding items once, under its export name if it
+    // has one (an exported function shows up in both scopes).
+    let mut reported = std::collections::BTreeSet::new();
+    for (name, mut items) in exports.collisions().chain(locals.collisions()) {
+        items.sort();
+        if reported.insert(items.clone()) {
+            collisions.push(format!("`{name}` is declared by {}", list(items)));
+        }
+    }
+
+    if !collisions.is_empty() {
+        collisions.sort();
+        return Err(GenerateError { collisions });
+    }
+
     // `TYPE_METADATA` is in link order, which can vary between builds; sort so
     // the output is deterministic. (Declarations are already ordered by name.)
     functions.sort();
@@ -824,7 +963,6 @@ pub fn generate() -> String {
     }
 
     // Emit the branding symbol if we have any opaque types
-    let has_opaque = decls.keys().any(|k| k.starts_with("Boxed"));
     if has_opaque {
         output.push('\n');
         output.push_str("export declare const __neon_tag: unique symbol;\n");
@@ -875,7 +1013,101 @@ pub fn generate() -> String {
     // exports) would still be importable.
     output.push_str("\nexport {};\n");
 
-    output
+    Ok(output)
+}
+
+// ——— Collisions ———
+//
+// TypeScript has two declaration spaces: a type alias or interface declares a
+// type, a function or `const` declares a value, and a class declares both. A
+// type and a value can share a name (`type Config` and `function Config` are
+// both fine); two types or two values can't.
+
+#[derive(Clone, Copy)]
+enum Space {
+    Type,
+    Value,
+    Both,
+}
+
+/// The items declaring each name in one scope, by declaration space.
+#[derive(Default)]
+struct Scope {
+    types: BTreeMap<String, Vec<String>>,
+    values: BTreeMap<String, Vec<String>>,
+}
+
+impl Scope {
+    fn declare(&mut self, name: &str, space: Space, what: String) {
+        if matches!(space, Space::Type | Space::Both) {
+            self.types
+                .entry(name.into())
+                .or_default()
+                .push(what.clone());
+        }
+        if matches!(space, Space::Value | Space::Both) {
+            self.values.entry(name.into()).or_default().push(what);
+        }
+    }
+
+    /// Each name declared by more than one item in the same space.
+    fn collisions(&self) -> impl Iterator<Item = (String, Vec<String>)> + '_ {
+        self.types
+            .iter()
+            .chain(&self.values)
+            .filter(|(_, items)| items.len() > 1)
+            .map(|(name, items)| (name.clone(), items.clone()))
+    }
+}
+
+/// Declare an exported function or `const`: its export name, and its name in
+/// the file (an internal name for a reserved word; see `export_declaration`).
+fn declare_export(locals: &mut Scope, exports: &mut Scope, name: &str, what: String) {
+    if is_binding_name(name) {
+        locals.declare(name, Space::Value, what.clone());
+    } else if is_identifier_name(name) {
+        locals.declare(&format!("__neon_export_{name}"), Space::Value, what.clone());
+    } else {
+        // Omitted from the output, so it can't collide there.
+        return;
+    }
+    exports.declare(name, Space::Value, what);
+}
+
+/// The declaration space of a collected declaration. Anything other than a
+/// type alias or interface (e.g. an `enum`) is assumed to declare both.
+fn decl_space(decl: &str) -> Space {
+    let decl = decl.trim_start();
+    let decl = decl.strip_prefix("export ").unwrap_or(decl);
+    let decl = decl.strip_prefix("declare ").unwrap_or(decl);
+    if decl.starts_with("type ") || decl.starts_with("interface ") {
+        Space::Type
+    } else {
+        Space::Both
+    }
+}
+
+/// `a and b`, or `a, b, and c`.
+fn list(items: impl IntoIterator<Item = String>) -> String {
+    let items: Vec<String> = items.into_iter().collect();
+    match items.as_slice() {
+        [] => String::new(),
+        [one] => one.clone(),
+        [a, b] => format!("{a} and {b}"),
+        [rest @ .., last] => format!("{}, and {last}", rest.join(", ")),
+    }
+}
+
+/// The first line of a declaration, shortened, for an error message.
+fn abbreviate(decl: &str) -> String {
+    const MAX: usize = 80;
+    let line = decl.lines().next().unwrap_or_default().trim();
+    if line.chars().count() > MAX || decl.lines().nth(1).is_some() {
+        let short: String = line.chars().take(MAX).collect();
+        format!("{short} …")
+    } else {
+        line.to_string()
+    }
 }
 
 // ——— Names ———
@@ -1004,12 +1236,20 @@ fn contains_word(haystack: &str, word: &str) -> bool {
     })
 }
 
+/// The generated declarations, or the collision report if generation failed.
+/// The output depends only on the binary, so it's generated once per process,
+/// even when the addon is loaded repeatedly (e.g. by worker threads).
+#[cfg(feature = "typescript")]
+static DTS: std::sync::OnceLock<Result<String, String>> = std::sync::OnceLock::new();
+
 /// Attach the generated TypeScript declarations to the module exports under
 /// `Symbol.for("neon:types")`. Called automatically during module init when
 /// the `typescript` feature is enabled.
 ///
 /// This lets tools (e.g. a `neon types` CLI, or a small Node script) extract
-/// the `.d.ts` text by loading the addon and reading the well-known symbol.
+/// the `.d.ts` text by loading the addon and reading the well-known symbol. If
+/// generation fails, reading the symbol throws the error instead, so the
+/// failure surfaces where the declarations are extracted, never at `require()`.
 #[cfg(feature = "typescript")]
 pub(crate) fn attach_to_module<'cx>(
     cx: &mut crate::context::ModuleContext<'cx>,
@@ -1022,25 +1262,230 @@ pub(crate) fn attach_to_module<'cx>(
 
     let exports = cx.exports_object()?;
 
-    // Attach .d.ts string under Symbol.for("neon:types")
     let types_key = cx.string("neon:types");
     let types_key_arg = Handle::upcast::<JsValue>(&types_key);
     let types_symbol: Handle<JsValue> =
         symbol_for.call(cx, Handle::upcast::<JsValue>(&symbol_fn), [types_key_arg])?;
-    // The output depends only on the binary, so generate it once per process
-    // even when the addon is loaded repeatedly (e.g. by worker threads).
-    static DTS: std::sync::OnceLock<String> = std::sync::OnceLock::new();
-    let dts_str = cx.string(DTS.get_or_init(generate));
-    exports.set(cx, types_symbol, dts_str)?;
+
+    match DTS.get_or_init(|| generate().map_err(|err| err.to_string())) {
+        Ok(dts) => {
+            let dts = cx.string(dts);
+            exports.set(cx, types_symbol, dts)?;
+        }
+        Err(_) => {
+            // Object.defineProperty(exports, symbol, { get: throwGenerateError })
+            // (`Object` is a function, so it doesn't downcast to `JsObject`.)
+            let object: Handle<JsFunction> = cx.global("Object")?;
+            let define_property: Handle<JsFunction> = object.get(cx, "defineProperty")?;
+            let getter = JsFunction::new(cx, throw_generate_error)?;
+            let descriptor = cx.empty_object();
+            descriptor.set(cx, "get", getter)?;
+            define_property.call(
+                cx,
+                object,
+                [exports.upcast(), types_symbol, descriptor.upcast()],
+            )?;
+        }
+    }
 
     Ok(())
+}
+
+/// The getter for `Symbol.for("neon:types")` when generation failed.
+#[cfg(feature = "typescript")]
+fn throw_generate_error(
+    mut cx: crate::context::FunctionContext,
+) -> crate::result::JsResult<crate::types::JsValue> {
+    use crate::context::Context;
+
+    let message = match DTS.get() {
+        Some(Err(message)) => message.as_str(),
+        _ => "Neon couldn't generate TypeScript declarations",
+    };
+    cx.throw_error(message)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::macro_internal::{ClassMeta, FunctionMeta};
 
     struct Database;
+
+    mod a {
+        pub struct Database;
+    }
+
+    mod b {
+        pub struct Database;
+    }
+
+    // ——— Collision fixtures ———
+
+    fn number() -> Cow<'static, str> {
+        "number".into()
+    }
+
+    fn nothing(_: &mut BTreeMap<String, String>) {}
+
+    fn config_a(decls: &mut BTreeMap<String, String>) {
+        neon_typescript::insert_decl(
+            decls,
+            "Config".into(),
+            "type Config = { a: number };".into(),
+        );
+    }
+
+    fn config_b(decls: &mut BTreeMap<String, String>) {
+        neon_typescript::insert_decl(
+            decls,
+            "Config".into(),
+            "type Config = { b: string };".into(),
+        );
+    }
+
+    fn boxed_a(decls: &mut BTreeMap<String, String>) {
+        <Boxed<a::Database>>::ts_into_js_collect(decls);
+    }
+
+    fn boxed_b(decls: &mut BTreeMap<String, String>) {
+        <Boxed<b::Database>>::ts_into_js_collect(decls);
+    }
+
+    const fn function(
+        name: &'static str,
+        ret_collect: fn(&mut BTreeMap<String, String>),
+    ) -> ExportMeta {
+        ExportMeta::Function(FunctionMeta {
+            name,
+            params: &[],
+            ret_type: number,
+            ret_collect,
+            is_async: false,
+        })
+    }
+
+    const fn class(name: &'static str, export_name: Option<&'static str>) -> ExportMeta {
+        ExportMeta::Class(ClassMeta {
+            name,
+            export_name,
+            constructor: None,
+            private_constructor: false,
+            methods: &[],
+            static_properties: &[],
+        })
+    }
+
+    fn collisions(metas: &[ExportMeta]) -> Vec<String> {
+        match render(metas) {
+            Ok(_) => Vec::new(),
+            Err(err) => err.collisions,
+        }
+    }
+
+    #[test]
+    fn distinct_names_dont_collide() {
+        let metas = [
+            function("open", config_a),
+            function("close", config_a),
+            class("Point", Some("Point")),
+        ];
+        assert_eq!(collisions(&metas), Vec::<String>::new());
+    }
+
+    #[test]
+    fn a_type_and_a_value_can_share_a_name() {
+        // `type Config` and `function Config` are both valid TypeScript.
+        let metas = [function("Config", config_a)];
+        assert_eq!(collisions(&metas), Vec::<String>::new());
+    }
+
+    #[test]
+    fn different_types_with_one_name_collide() {
+        let metas = [function("first", config_a), function("second", config_b)];
+        assert_eq!(
+            collisions(&metas),
+            ["two different types are both declared as `Config`: \
+              `type Config = { a: number };` and `type Config = { b: string };`"]
+        );
+    }
+
+    #[test]
+    fn a_type_and_a_class_with_one_name_collide() {
+        let metas = [function("load", config_a), class("Config", Some("Config"))];
+        assert_eq!(
+            collisions(&metas),
+            ["`Config` is declared by class `Config` and type `Config`"]
+        );
+    }
+
+    #[test]
+    fn duplicate_exports_collide() {
+        let metas = [function("parse", nothing), function("parse", nothing)];
+        assert_eq!(
+            collisions(&metas),
+            ["`parse` is declared by function `parse` and function `parse`"]
+        );
+        // A reserved word is declared under an internal name; it's reported
+        // once, under its export name.
+        let metas = [function("delete", nothing), function("delete", nothing)];
+        assert_eq!(
+            collisions(&metas),
+            ["`delete` is declared by function `delete` and function `delete`"]
+        );
+    }
+
+    #[test]
+    fn a_class_name_collides_with_an_export_of_that_name() {
+        // `declare class Foo` + `export { Foo as Bar }` + `function Foo`: the
+        // runtime exports (`Bar`, `Foo`) are distinct, but the file isn't valid.
+        let metas = [class("Foo", Some("Bar")), function("Foo", nothing)];
+        assert_eq!(
+            collisions(&metas),
+            ["`Foo` is declared by class `Foo` (exported as `Bar`) and function `Foo`"]
+        );
+        // So does a bare class, which is declared but not exported.
+        let metas = [class("Foo", None), function("Foo", nothing)];
+        assert_eq!(
+            collisions(&metas),
+            ["`Foo` is declared by class `Foo` and function `Foo`"]
+        );
+    }
+
+    #[test]
+    fn same_named_boxed_types_collide() {
+        let metas = [function("openA", boxed_a), function("openB", boxed_b)];
+        let a = std::any::type_name::<a::Database>();
+        let b = std::any::type_name::<b::Database>();
+        let (first, second) = if a < b { (a, b) } else { (b, a) };
+        assert_eq!(
+            collisions(&metas),
+            [format!(
+                "`BoxedDatabase` is the boxed type of more than one Rust type: \
+                 `{first}` and `{second}`"
+            )]
+        );
+    }
+
+    #[test]
+    fn the_error_lists_every_collision() {
+        let metas = [
+            function("parse", config_a),
+            function("parse", config_b),
+            class("Config", Some("Config")),
+        ];
+        let message = render(&metas).unwrap_err().to_string();
+        assert!(message.starts_with("Neon can't generate TypeScript declarations"));
+        assert_eq!(message.matches("\n  - ").count(), 3, "{message}");
+        assert!(message.contains("#[ts(rename"), "{message}");
+    }
+
+    #[test]
+    fn output_ends_with_an_export_statement() {
+        let output = render(&[class("Point", None)]).unwrap();
+        assert!(output.contains("\ndeclare class Point {\n"), "{output}");
+        assert!(output.ends_with("\nexport {};\n"), "{output}");
+    }
 
     #[test]
     fn names_are_made_valid() {

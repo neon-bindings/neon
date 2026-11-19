@@ -490,8 +490,8 @@ return types in other exports (not as opaque boxes).
 `neon::typescript` exposes:
 
 ```rust
-/// Render a complete `.d.ts` string.
-pub fn generate() -> String;
+/// Render a complete `.d.ts` string, or report name collisions.
+pub fn generate() -> Result<String, GenerateError>;
 ```
 
 (A structured-AST API, `generate_ast()`, is deferred — see
@@ -512,15 +512,52 @@ export declare function newSchema(schema: SchemaDescriptor): BoxedArcSchema;
 export declare function commit(index: BoxedArcIndex): Promise<void>;
 
 export declare class Point { /* … */ }
+
+export {};
 ```
+
+The trailing `export {};` matters: a `.d.ts` module implicitly exports every
+top-level declaration unless it contains an export statement, which would make a
+bare class (and the internal names behind aliased exports) importable.
 
 **Names.** Every emitted name is made valid TypeScript, so one unusual name can't
 make the whole file unparseable: a raw identifier's `r#` prefix is dropped from
 parameter names and a reserved word gets a trailing `_` (`r#in` → `in_`); a function
 exported under a reserved word (`name = "delete"`) is declared under an internal name
 and re-exported (`export { __neon_export_delete as delete };`); a member name that
-isn't an identifier (`#[neon(name = "two words")]`) is quoted; and an export whose name isn't an identifier at all is
-omitted with a comment (exporting it would need TypeScript 5.6's string export names).
+isn't an identifier (`#[neon(name = "two words")]`) is quoted; and an export whose
+name isn't an identifier at all is omitted with a comment (exporting it would need
+TypeScript 5.6's string export names).
+
+**Collisions.** Two different items declared under one name can't both be right:
+`a::Config` and `b::Config` would get one declaration, silently mistyping every use
+of the other; a data type and a class with the same name make the file invalid
+(TS2300); and two exports with the same name would read as overloads, though at
+runtime the last one replaces the first (#1152). Generation therefore checks two
+scopes:
+
+- **Export names,** what consumers import: functions, consts, exported class
+  bindings, and the collected declarations (which are all exported).
+- **Local names** inside the file: class declarations, collected declarations, the
+  internal names behind aliased exports, and `__neon_tag`.
+
+Each check follows TypeScript's declaration spaces: a type alias or interface
+declares a type, a function or `const` declares a value, and a class declares both.
+A type and a value can share a name (`type Config` and `function Config` are both
+valid), so only two types or two values under one name collide. Collected
+declarations are added with `neon_typescript::insert_decl`, which keeps a
+declaration reached twice once but records a *different* declaration under a taken
+name as a conflict. Box brands drop module paths, so they also record which payload
+type owns each brand; otherwise `a::Database` and `b::Database` would produce
+identical brands and silently become interchangeable.
+
+A collision makes `generate()` return an error that lists every collision, with how
+to rename (`name = "..."`, `class(name = "...")`, or the generator's rename, such as
+ts-rs's `#[ts(rename = "...")]`). Auto-attach never fails `require()`: on a
+collision, reading `Symbol.for("neon:types")` throws the error instead, so the
+failure surfaces where the declarations are extracted. Neon doesn't rename anything
+itself, since the types are written by name into other declarations, and a
+generated name would be an unpredictable part of the API.
 
 **Auto-attach.** When the `typescript` feature is on, Neon attaches the generated
 declarations to the addon's module exports under `Symbol.for("neon:types")` during
@@ -663,6 +700,9 @@ adapter carries a tiny bit of reconciliation:
 
 - Configure large ints to `number` (ts-rs defaults `u64`/`i64` to `bigint`, but
   serde_json emits JSON numbers). Fixable via ts-rs `Config::with_large_int`.
+- Add declarations with `neon_typescript::insert_decl`, so two different types
+  with the same name are reported (see [Collisions](#generation-and-output)) rather
+  than silently merged.
 
 That is nearly the whole list. The adapter deliberately does **not** add `Option`
 leniency (optionality is user-expressible via serde — see
@@ -735,6 +775,12 @@ return normalizes to `Promise<void>`.
   This needs no breaking changes, because the metadata types are internal and the
   fallback is Neon-owned. See [Alternatives considered §11](#alternatives-considered).
 - **Extract `neon-ts-rs`** to its own repository and publish it before release.
+- **Resolve local-name collisions automatically.** Some collisions are artifacts of
+  how the file is written, not of the user's API: a class declared as `Foo` and
+  exported as `Bar` collides with an exported function `Foo`, though the runtime
+  exports (`Bar` and `Foo`) are distinct. The generator could rename its internal
+  declaration instead of reporting it, but class names are already written into
+  other declarations as strings, so it would have to rewrite those references.
 
 ---
 

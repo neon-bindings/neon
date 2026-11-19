@@ -29,16 +29,51 @@ pub trait TsJson {
     }
 
     /// Add this type's own declaration plus its transitive declarations to
-    /// `decls`, keyed by name for dedup. Composite types override this to also
-    /// collect from their component types.
+    /// `decls`, keyed by name. Composite types override this to also collect
+    /// from their component types. Add each declaration with [`insert_decl`],
+    /// so two different types with the same name are reported rather than
+    /// silently merged.
     fn ts_json_collect(decls: &mut BTreeMap<String, String>) {
         if let Some(d) = Self::ts_json_decl() {
-            decls
-                .entry(Self::ts_json().into_owned())
-                .or_insert_with(|| d.into_owned());
+            insert_decl(decls, Self::ts_json().into_owned(), d.into_owned());
         }
     }
 }
+
+/// Add the declaration `decl`, named `name`, to `decls`.
+///
+/// The same declaration added twice (the same type reached from two places)
+/// is kept once. A *different* declaration under a name that's already taken
+/// means two different types have the same TypeScript name; keeping either
+/// would silently mistype every use of the other, so the conflict is recorded
+/// and Neon reports it when it generates the declarations.
+pub fn insert_decl(decls: &mut BTreeMap<String, String>, name: String, decl: String) {
+    match decls.get(&name) {
+        None => {
+            decls.insert(name, decl);
+        }
+        Some(existing) if *existing == decl => {}
+        Some(existing) => {
+            let existing = existing.clone();
+            let conflict = decls
+                .entry(format!("{CONFLICT_PREFIX}{name}"))
+                .or_insert(existing);
+            if !conflict.split(CONFLICT_SEPARATOR).any(|d| d == decl) {
+                conflict.push(CONFLICT_SEPARATOR);
+                conflict.push_str(&decl);
+            }
+        }
+    }
+}
+
+/// Implementation detail of [`insert_decl`]: conflicting declarations of
+/// `name` are recorded under `CONFLICT_PREFIX` + `name` (which can't be a
+/// TypeScript name), separated by `CONFLICT_SEPARATOR`.
+#[doc(hidden)]
+pub const CONFLICT_PREFIX: &str = "!conflict:";
+
+#[doc(hidden)]
+pub const CONFLICT_SEPARATOR: char = '\0';
 
 /// Wrap a union type in parentheses when it's used as an array element:
 /// `(Foo | Bar)[]`, not `Foo | Bar[]`.
@@ -293,6 +328,24 @@ impl<A: TsJson, B: TsJson, C: TsJson> TsJson for (A, B, C) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn insert_decl_records_conflicts() {
+        let mut decls = BTreeMap::new();
+        insert_decl(&mut decls, "A".into(), "type A = 1;".into());
+        // The same declaration again is kept once.
+        insert_decl(&mut decls, "A".into(), "type A = 1;".into());
+        assert_eq!(decls.len(), 1);
+
+        // A different one is recorded as a conflict, each version once.
+        insert_decl(&mut decls, "A".into(), "type A = 2;".into());
+        insert_decl(&mut decls, "A".into(), "type A = 2;".into());
+        assert_eq!(decls["A"], "type A = 1;");
+        assert_eq!(
+            decls[&format!("{CONFLICT_PREFIX}A")],
+            format!("type A = 1;{CONFLICT_SEPARATOR}type A = 2;")
+        );
+    }
 
     #[test]
     fn primitives() {

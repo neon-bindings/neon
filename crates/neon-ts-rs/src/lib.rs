@@ -100,10 +100,11 @@ pub fn ts_json_collect<T: TS + 'static + ?Sized>(decls: &mut BTreeMap<String, St
             // such a container is the *outermost* type of a JSON payload: there
             // is no enclosing derived type to register the value type for us.
             if <U as TS>::output_path().is_some() {
-                let key = <U as TS>::ident(&self.cfg);
-                if !self.decls.contains_key(&key) {
-                    self.decls.insert(key, <U as TS>::decl(&self.cfg));
-                }
+                neon_typescript::insert_decl(
+                    self.decls,
+                    <U as TS>::ident(&self.cfg),
+                    <U as TS>::decl(&self.cfg),
+                );
             }
             <U as TS>::visit_dependencies(self);
             <U as TS>::visit_generics(self);

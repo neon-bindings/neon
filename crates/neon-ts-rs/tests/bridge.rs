@@ -127,3 +127,40 @@ fn lifetime_parameterized_type_bridges() {
     <Borrowed<'static> as TsJson>::ts_json_collect(&mut decls);
     assert!(decls["Borrowed"].contains("name: string"), "{decls:?}");
 }
+
+// Two different types with the same TypeScript name, reached in one walk.
+mod first {
+    #[derive(serde::Serialize, ts_rs::TS)]
+    pub struct Config {
+        pub a: u32,
+    }
+}
+
+mod second {
+    #[derive(serde::Serialize, ts_rs::TS)]
+    pub struct Config {
+        pub b: String,
+    }
+}
+
+#[derive(serde::Serialize, ts_rs::TS, neon_ts_rs::TsJson)]
+struct BothConfigs {
+    first: first::Config,
+    second: second::Config,
+}
+
+#[test]
+fn same_named_types_are_recorded_as_a_conflict() {
+    let mut decls: BTreeMap<String, String> = BTreeMap::new();
+    <BothConfigs as TsJson>::ts_json_collect(&mut decls);
+
+    let conflict = decls
+        .get(&format!("{}Config", neon_typescript::CONFLICT_PREFIX))
+        .unwrap_or_else(|| panic!("expected a conflict for Config, got: {decls:#?}"));
+    let versions: Vec<&str> = conflict
+        .split(neon_typescript::CONFLICT_SEPARATOR)
+        .collect();
+    assert_eq!(versions.len(), 2, "{versions:#?}");
+    assert!(versions.iter().any(|d| d.contains("a: number")));
+    assert!(versions.iter().any(|d| d.contains("b: string")));
+}
