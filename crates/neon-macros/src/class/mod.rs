@@ -1,6 +1,6 @@
 mod meta;
 
-use super::name::is_valid_js_identifier;
+use super::name::{is_valid_js_identifier, replace_self_in_type};
 use proc_macro2::TokenStream;
 use syn::{spanned::Spanned, Ident, ImplItemFn, Type};
 
@@ -819,17 +819,57 @@ fn group_class_items(items: Vec<syn::ImplItem>) -> Result<ClassItems, syn::Error
 }
 
 pub(crate) fn class(
-    _attr: proc_macro::TokenStream,
+    attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-    class_with_name(_attr, item, None)
+    // A bare class isn't exported by the macro, so it only takes the
+    // TypeScript options. They're accepted whether or not the `typescript`
+    // feature is on, so turning the feature off never breaks a build.
+    let mut options = ClassOptions::default();
+    let parser = syn::meta::parser(|meta| {
+        if meta.path.is_ident("ts_skip") {
+            options.ts_skip = true;
+            Ok(())
+        } else if meta.path.is_ident("ts_no_constructor") {
+            options.ts_no_constructor = true;
+            Ok(())
+        } else if meta.path.is_ident("name") {
+            Err(meta.error(
+                "`#[neon::class]` doesn't export the class, so it has no name to set; \
+                 use `#[neon::export(class(name = \"...\"))]` to export a renamed class",
+            ))
+        } else {
+            Err(meta.error(
+                "unsupported `#[neon::class]` argument; expected `ts_skip` or `ts_no_constructor`",
+            ))
+        }
+    });
+    syn::parse_macro_input!(attr with parser);
+
+    class_with_options(proc_macro::TokenStream::new(), item, options)
 }
 
-pub(crate) fn class_with_name(
+#[derive(Default)]
+pub(crate) struct ClassOptions {
+    pub custom_class_name: Option<String>,
+    /// The module export binding, when the class is exported by
+    /// `#[neon::export(class)]` (which may differ from the class name).
+    pub export_name: Option<String>,
+    pub ts_skip: bool,
+    pub ts_no_constructor: bool,
+}
+
+pub(crate) fn class_with_options(
     _attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
-    custom_class_name: Option<String>,
+    options: ClassOptions,
 ) -> proc_macro::TokenStream {
+    let ClassOptions {
+        custom_class_name,
+        export_name,
+        ts_skip,
+        ts_no_constructor,
+    } = options;
     let mut impl_block = syn::parse_macro_input!(item as syn::ItemImpl);
 
     // Parse the item as an implementation block
@@ -983,6 +1023,7 @@ pub(crate) fn class_with_name(
     let mut prototype_patches = String::new();
     let method_ids = fns.iter().map(|f| f.sig.ident.clone()).collect::<Vec<_>>();
     let mut method_metas = Vec::new();
+    let mut method_js_names = std::collections::HashMap::new();
 
     for f in &fns {
         let fn_name = f.sig.ident.to_string();
@@ -1019,7 +1060,39 @@ pub(crate) fn class_with_name(
             Some(name) => name.value(),
             None => crate::name::to_camel_case(&fn_name),
         };
-        prototype_patches.push_str(&format!("\n    prototype.{js_name} = {fn_name}Method;"));
+
+        // A method name can be any string (it's quoted below), but a few would
+        // silently break the class, and a repeated name would silently replace
+        // the earlier method.
+        let name_span = match &parsed.name {
+            Some(name) => name.span(),
+            None => f.sig.ident.span(),
+        };
+        if js_name == "constructor" || js_name == "__proto__" {
+            return syn::Error::new(
+                name_span,
+                format!(
+                    "`{js_name}` can't be used as a method name: it would replace the class's own `{js_name}`"
+                ),
+            )
+            .to_compile_error()
+            .into();
+        }
+        if let Some(previous) = method_js_names.insert(js_name.clone(), fn_name.clone()) {
+            return syn::Error::new(
+                name_span,
+                format!(
+                    "duplicate method name `{js_name}`: `{previous}` and `{fn_name}` would both be `{js_name}` in JavaScript"
+                ),
+            )
+            .to_compile_error()
+            .into();
+        }
+
+        prototype_patches.push_str(&format!(
+            "\n    prototype[{}] = {fn_name}Method;",
+            crate::name::js_string_literal(&js_name)
+        ));
         method_metas.push(parsed);
     }
 
@@ -1361,13 +1434,23 @@ pub(crate) fn class_with_name(
         }
     };
 
-    // Remove #[neon(...)] attributes from methods and const items in the impl block
+    // Remove #[neon(...)] attributes from methods, their parameters, and const
+    // items in the impl block. (They've already been read from `fns`,
+    // `constructor`, and `consts`, which are separate copies.)
     for item in &mut impl_block.items {
         match item {
             syn::ImplItem::Fn(f) => {
                 f.attrs.retain(
                     |attr| !matches!(&attr.meta, syn::Meta::List(list) if list.path.is_ident("neon")),
                 );
+                for input in &mut f.sig.inputs {
+                    if let syn::FnArg::Typed(pat_type) = input {
+                        if let Err(err) = crate::name::validate_param_attrs(&pat_type.attrs) {
+                            return err.into_compile_error().into();
+                        }
+                        pat_type.attrs.retain(|attr| !attr.path().is_ident("neon"));
+                    }
+                }
             }
             syn::ImplItem::Const(c) => {
                 c.attrs.retain(
@@ -1377,6 +1460,29 @@ pub(crate) fn class_with_name(
             _ => {}
         }
     }
+
+    // --- TypeScript metadata generation ---
+    // Only emit when the `typescript` feature is enabled (via
+    // `neon/typescript` -> `neon-macros/typescript`). When off, no metadata
+    // statics or TypeScript impls are emitted for the class, so there is zero
+    // TypeScript-related cost. `cfg!` is resolved at neon-macros compile time;
+    // Cargo unifies the feature across the build graph.
+    let ts_metadata = if cfg!(feature = "typescript") {
+        generate_ts_class_metadata(
+            &class_ident,
+            &class_name,
+            export_name.as_deref(),
+            constructor.as_ref(),
+            ctor_meta.as_ref(),
+            &fns,
+            &method_metas,
+            &consts,
+            ts_skip,
+            ts_no_constructor,
+        )
+    } else {
+        proc_macro2::TokenStream::new()
+    };
 
     quote::quote! {
         #impl_block
@@ -1388,6 +1494,255 @@ pub(crate) fn class_with_name(
         #impl_try_into_js
         #impl_try_from_js_ref
         #impl_try_from_js_ref_mut
+        #ts_metadata
     }
     .into()
+}
+
+#[allow(clippy::too_many_arguments)]
+fn generate_ts_class_metadata(
+    class_ident: &syn::Ident,
+    class_name: &str,
+    export_name: Option<&str>,
+    constructor: Option<&ImplItemFn>,
+    ctor_meta: Option<&meta::Meta>,
+    methods: &[ImplItemFn],
+    method_metas: &[meta::Meta],
+    consts: &[syn::ImplItemConst],
+    ts_skip_class_meta: bool,
+    class_ts_no_constructor: bool,
+) -> TokenStream {
+    use crate::ts::{literal, unit_return, Position};
+
+    let meta_name = quote::format_ident!("__NEON_TS_CLASS_META__{class_ident}");
+
+    // A parameter entry: a per-param `#[neon(ts_type = "...")]` override wins;
+    // otherwise describe the boundary type (with `Self` resolved).
+    let param_entry = |i: usize, pat_type: &syn::PatType, json: bool| -> TokenStream {
+        let name_str = ts_param_name(&pat_type.pat, i);
+        let (ts_type, ts_collect) = match crate::name::extract_param_ts_type(&pat_type.attrs) {
+            Some(override_ty) => literal(&override_ty),
+            None => member_type(&pat_type.ty, class_ident, json, Position::Param),
+        };
+        quote::quote!(
+            neon::macro_internal::ParamMeta {
+                name: #name_str,
+                ts_type: #ts_type,
+                ts_collect: #ts_collect,
+            }
+        )
+    };
+
+    // --- Constructor params ---
+    let ctor_tokens = match (constructor, ctor_meta) {
+        (Some(ctor), Some(ctor_meta)) if !class_ts_no_constructor && !ctor_meta.ts_skip => {
+            let has_context = check_constructor_context(ctor_meta, &ctor.sig).unwrap_or(false);
+            let skip = if has_context { 1 } else { 0 };
+
+            let param_entries: Vec<TokenStream> = ctor
+                .sig
+                .inputs
+                .iter()
+                .skip(skip)
+                .enumerate()
+                .filter_map(|(i, arg)| match arg {
+                    syn::FnArg::Typed(pat_type) => Some(param_entry(i, pat_type, ctor_meta.json)),
+                    _ => None,
+                })
+                .collect();
+
+            quote::quote!(Some(neon::macro_internal::ConstructorMeta {
+                params: &[#(#param_entries),*],
+            }))
+        }
+        _ => quote::quote!(None),
+    };
+
+    // --- Methods ---
+    let method_entries: Vec<TokenStream> = methods
+        .iter()
+        .zip(method_metas.iter())
+        .filter(|(_, meta)| !meta.ts_skip)
+        .map(|(f, meta)| {
+            let fn_name = &f.sig.ident;
+            let js_name = match &meta.name {
+                Some(name) => name.value(),
+                None => crate::name::to_camel_case(&fn_name.to_string()),
+            };
+
+            // `ts_returns` is the declared return type exactly as written, so it
+            // isn't wrapped in `Promise<…>` again for an async method.
+            let is_async = meta.ts_returns.is_none()
+                && matches!(
+                    meta.kind,
+                    meta::Kind::Task | meta::Kind::AsyncFn | meta::Kind::Async
+                );
+
+            // Skip &self, optional context/channel, optional this
+            let has_context = match meta.kind {
+                meta::Kind::Async | meta::Kind::Normal => {
+                    check_context(meta, &f.sig).unwrap_or(false)
+                }
+                meta::Kind::AsyncFn | meta::Kind::Task => {
+                    check_channel(meta, &f.sig).unwrap_or(false)
+                }
+            };
+            let has_this = check_this(meta, &f.sig, has_context);
+            let skip = 1 + (has_context as usize) + (has_this as usize);
+
+            let param_entries: Vec<TokenStream> = f
+                .sig
+                .inputs
+                .iter()
+                .skip(skip)
+                .enumerate()
+                .filter_map(|(i, arg)| match arg {
+                    syn::FnArg::Typed(pat_type) => Some(param_entry(i, pat_type, meta.json)),
+                    _ => None,
+                })
+                .collect();
+
+            let (ret_type_tok, ret_collect_tok) = match (&meta.ts_returns, &f.sig.output) {
+                (Some(override_ty), _) => literal(override_ty),
+                (None, syn::ReturnType::Default) => unit_return(meta.json),
+                (None, syn::ReturnType::Type(_, ty)) => {
+                    member_type(ty, class_ident, meta.json, Position::Return)
+                }
+            };
+
+            quote::quote!(
+                neon::macro_internal::MethodMeta {
+                    name: #js_name,
+                    params: &[#(#param_entries),*],
+                    ret_type: #ret_type_tok,
+                    ret_collect: #ret_collect_tok,
+                    is_async: #is_async,
+                }
+            )
+        })
+        .collect();
+
+    // --- Static properties ---
+    let property_entries: Vec<TokenStream> = consts
+        .iter()
+        .filter_map(|const_item| {
+            let const_name = &const_item.ident;
+            let const_ty = &const_item.ty;
+
+            // Parse property meta to get the JS name and json flag
+            let mut prop_meta = meta::PropertyMeta::default();
+            for attr in &const_item.attrs {
+                if let syn::Meta::List(syn::MetaList { path, tokens, .. }) = &attr.meta {
+                    if path.is_ident("neon") {
+                        let parser = meta::PropertyParser;
+                        if let Ok(parsed) = syn::parse::Parser::parse2(parser, tokens.clone()) {
+                            prop_meta = parsed;
+                        }
+                    }
+                }
+            }
+
+            if prop_meta.ts_skip {
+                return None;
+            }
+
+            let js_name = match &prop_meta.name {
+                Some(name) => name.value(),
+                None => const_name.to_string(),
+            };
+
+            // A static property's value is converted to JS like a return value.
+            let (ts_type_expr, ts_collect_expr) =
+                member_type(const_ty, class_ident, prop_meta.json, Position::Return);
+
+            Some(quote::quote!(
+                neon::macro_internal::PropertyMeta {
+                    name: #js_name,
+                    ts_type: #ts_type_expr,
+                    ts_collect: #ts_collect_expr,
+                }
+            ))
+        })
+        .collect();
+
+    // `ts_no_constructor` and `ts_skip` on `fn new` hide the constructor; declare
+    // it private rather than omitting it (which would mean a public one).
+    let private_constructor =
+        class_ts_no_constructor || ctor_meta.is_some_and(|ctor_meta| ctor_meta.ts_skip);
+
+    let export_name_tokens = match export_name {
+        Some(name) => quote::quote!(Some(#name)),
+        None => quote::quote!(None),
+    };
+
+    let class_meta_decl = if ts_skip_class_meta {
+        quote::quote!()
+    } else {
+        quote::quote! {
+            #[neon::macro_internal::linkme::distributed_slice(neon::macro_internal::TYPE_METADATA)]
+            #[linkme(crate = neon::macro_internal::linkme)]
+            static #meta_name: neon::macro_internal::ExportMeta =
+                neon::macro_internal::ExportMeta::Class(neon::macro_internal::ClassMeta {
+                    name: #class_name,
+                    export_name: #export_name_tokens,
+                    constructor: #ctor_tokens,
+                    private_constructor: #private_constructor,
+                    methods: &[#(#method_entries),*],
+                    static_properties: &[#(#property_entries),*],
+                });
+        }
+    };
+
+    // A class instance crosses the boundary through the class's own bare
+    // conversions, in both directions, and is declared by its class name. A
+    // skipped class has no declaration for a reference to point to, so other
+    // exports declare it `unknown` instead of naming a type that doesn't exist.
+    let ts_class_type = if ts_skip_class_meta {
+        "unknown"
+    } else {
+        class_name
+    };
+
+    quote::quote! {
+        impl neon::macro_internal::TsFromJs for #class_ident {
+            fn ts_from_js() -> std::borrow::Cow<'static, str> {
+                std::borrow::Cow::Borrowed(#ts_class_type)
+            }
+        }
+
+        impl neon::macro_internal::TsIntoJs for #class_ident {
+            fn ts_into_js() -> std::borrow::Cow<'static, str> {
+                std::borrow::Cow::Borrowed(#ts_class_type)
+            }
+        }
+
+        #class_meta_decl
+    }
+}
+
+/// Describe a class member's argument or return type, after replacing `Self`
+/// with the class name so it can be used in a static metadata entry.
+fn member_type(
+    ty: &syn::Type,
+    class_ident: &syn::Ident,
+    json: bool,
+    position: crate::ts::Position,
+) -> crate::ts::TsTokens {
+    let resolved = replace_self_in_type(ty, class_ident).unwrap_or_else(|| ty.clone());
+    crate::ts::boundary(&resolved, json, position)
+}
+
+/// Extract the parameter name from a pattern for TypeScript metadata.
+fn ts_param_name(pat: &syn::Pat, index: usize) -> String {
+    match pat {
+        syn::Pat::Ident(ident) => crate::name::to_camel_case(&ident.ident.to_string()),
+        syn::Pat::TupleStruct(ts) => {
+            if let Some(inner) = ts.elems.first() {
+                ts_param_name(inner, index)
+            } else {
+                format!("arg{index}")
+            }
+        }
+        _ => format!("arg{index}"),
+    }
 }

@@ -53,23 +53,63 @@ pub(crate) fn to_camel_case(name: &str) -> String {
     out
 }
 
-// Validate JavaScript identifier names
-pub(crate) fn is_valid_js_identifier(name: &str) -> bool {
-    if name.is_empty() {
-        return false;
-    }
-
-    // Check first character (must be letter, $, or _)
-    let first_char = name.chars().next().unwrap();
-    if !first_char.is_ascii_alphabetic() && first_char != '$' && first_char != '_' {
-        return false;
-    }
-
-    // Check remaining characters (must be alphanumeric, $, or _)
-    for ch in name.chars().skip(1) {
-        if !ch.is_ascii_alphanumeric() && ch != '$' && ch != '_' {
-            return false;
+/// Extract `#[neon(ts_type = "...")]` from attributes (e.g. on a function parameter).
+///
+/// Used by the export/class macros to let a caller override a single parameter's
+/// TypeScript type. For example, given
+///
+/// ```ignore
+/// #[neon::export]
+/// fn f(#[neon(ts_type = "ReadonlyArray<number>")] xs: Vec<f64>) -> f64 { ... }
+/// ```
+///
+/// this returns `Some("ReadonlyArray<number>")` for the `xs` parameter.
+pub(crate) fn extract_param_ts_type(attrs: &[syn::Attribute]) -> Option<String> {
+    let mut result = None;
+    for attr in attrs {
+        if !attr.path().is_ident("neon") {
+            continue;
         }
+        let _ = attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("ts_type") {
+                if let Ok(value) = meta.value().and_then(|v| v.parse::<syn::LitStr>()) {
+                    result = Some(value.value());
+                }
+            }
+            Ok(())
+        });
+    }
+    result
+}
+
+/// Check a parameter's `#[neon(...)]` attributes, which are stripped from the
+/// emitted signature. Only `ts_type = "..."` is supported; anything else (e.g. a
+/// misspelling) is an error rather than a silent no-op.
+pub(crate) fn validate_param_attrs(attrs: &[syn::Attribute]) -> syn::Result<()> {
+    for attr in attrs.iter().filter(|attr| attr.path().is_ident("neon")) {
+        attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("ts_type") {
+                meta.value()?.parse::<syn::LitStr>()?;
+                return Ok(());
+            }
+            Err(meta.error("unsupported parameter property; expected `ts_type = \"...\"`"))
+        })?;
+    }
+    Ok(())
+}
+
+/// Whether `name` can be used as a JavaScript binding name: an identifier
+/// that isn't a reserved word.
+pub(crate) fn is_valid_js_identifier(name: &str) -> bool {
+    let mut chars = name.chars();
+
+    // First character: a letter, `$`, or `_`; then letters, digits, `$`, or `_`.
+    let valid_chars = chars
+        .next()
+        .is_some_and(|c| c.is_alphabetic() || c == '$' || c == '_')
+        && chars.all(|c| c.is_alphanumeric() || c == '$' || c == '_');
+    if !valid_chars {
+        return false;
     }
 
     // Check against JavaScript reserved words
@@ -122,6 +162,121 @@ pub(crate) fn is_valid_js_identifier(name: &str) -> bool {
             | "protected"
             | "public"
     )
+}
+
+/// `s` as a JavaScript string literal, for splicing into generated JS source.
+pub(crate) fn js_string_literal(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() + 2);
+    out.push('"');
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            // Control characters, and the two line terminators JS doesn't
+            // allow raw in a string literal before ES2019.
+            c if c.is_control() || c == '\u{2028}' || c == '\u{2029}' => {
+                out.push_str(&format!("\\u{:04x}", c as u32));
+            }
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
+
+/// Check if a type contains features that prevent it from being used in a
+/// static metadata entry (`impl Trait` or `Self`). (Unsized types like `[T]`
+/// are fine: the probes accept `?Sized` type parameters.)
+/// Non-`'static` lifetimes are rewritten by `substitute_lifetimes_with_static`,
+/// not flagged here.
+pub(crate) fn type_needs_fallback(ty: &syn::Type) -> bool {
+    use syn::visit::Visit;
+
+    struct Checker {
+        needs_fallback: bool,
+    }
+
+    impl<'ast> Visit<'ast> for Checker {
+        fn visit_type_impl_trait(&mut self, _: &'ast syn::TypeImplTrait) {
+            self.needs_fallback = true;
+        }
+
+        fn visit_path_segment(&mut self, seg: &'ast syn::PathSegment) {
+            if seg.ident == "Self" {
+                self.needs_fallback = true;
+            }
+            syn::visit::visit_path_segment(self, seg);
+        }
+    }
+
+    let mut checker = Checker {
+        needs_fallback: false,
+    };
+    checker.visit_type(ty);
+    checker.needs_fallback
+}
+
+/// Rewrite all non-`'static` lifetimes in a type to `'static`, so the type can
+/// be used as a type parameter in a `static fn` metadata closure. Returns a
+/// new owned `Type`.
+pub(crate) fn substitute_lifetimes_with_static(ty: &syn::Type) -> syn::Type {
+    use syn::visit_mut::VisitMut;
+
+    struct Rewriter;
+
+    impl VisitMut for Rewriter {
+        fn visit_lifetime_mut(&mut self, lt: &mut syn::Lifetime) {
+            lt.ident = syn::Ident::new("static", lt.ident.span());
+        }
+
+        fn visit_type_reference_mut(&mut self, r: &mut syn::TypeReference) {
+            if r.lifetime.is_none() {
+                r.lifetime = Some(syn::Lifetime::new(
+                    "'static",
+                    proc_macro2::Span::call_site(),
+                ));
+            }
+            syn::visit_mut::visit_type_reference_mut(self, r);
+        }
+    }
+
+    let mut out = ty.clone();
+    Rewriter.visit_type_mut(&mut out);
+    out
+}
+
+/// Replace `Self` with the concrete class name in a type, so it can be used
+/// in a static context. Returns `None` if no replacement was needed.
+pub(crate) fn replace_self_in_type(ty: &syn::Type, class_ident: &syn::Ident) -> Option<syn::Type> {
+    use syn::visit_mut::VisitMut;
+
+    struct Replacer<'a> {
+        class_ident: &'a syn::Ident,
+        replaced: bool,
+    }
+
+    impl<'a> VisitMut for Replacer<'a> {
+        fn visit_path_segment_mut(&mut self, seg: &mut syn::PathSegment) {
+            if seg.ident == "Self" {
+                seg.ident = self.class_ident.clone();
+                self.replaced = true;
+            }
+            syn::visit_mut::visit_path_segment_mut(self, seg);
+        }
+    }
+
+    let mut ty = ty.clone();
+    let mut replacer = Replacer {
+        class_ident,
+        replaced: false,
+    };
+    replacer.visit_type_mut(&mut ty);
+
+    if replacer.replaced {
+        Some(ty)
+    } else {
+        None
+    }
 }
 
 #[cfg(test)]

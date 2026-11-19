@@ -1,0 +1,5 @@
+error: class name `my-class` is not a valid JavaScript identifier (this `name` sets both the class name and the export name; use `class(name = "...")` to give the class a different name)
+ --> tests/fail/class-invalid-class-name.rs:4:30
+  |
+4 | #[neon::export(class, name = "my-class")]
+  |                              ^^^^^^^^^^

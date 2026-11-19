@@ -10,7 +10,14 @@ edition = "2021"
 [lib]
 proc-macro = true
 
+[features]
+# Enables emission of TypeScript metadata from the export/class macros. Neon
+# turns this on via its own `typescript` feature. When off, the macros emit no
+# metadata statics, so `#[neon::export]` has zero TypeScript-related code-size
+# cost in builds that don't use the feature.
+typescript = []
+
 [dependencies]
 proc-macro2 = "1.0.79"
 quote = "1.0.33"
-syn = { version = "2.0.57", features = ["full"] }
+syn = { version = "2.0.57", features = ["full", "visit", "visit-mut"] }

@@ -65,6 +65,17 @@ fn init(cx: ModuleContext) -> NeonResult<()> {
         panic!("The `neon::main` macro must only be used once");
     }
 
+    // Attaching the generated declarations is best-effort: it's a diagnostic
+    // feature, so a failure (e.g. a shadowed `Symbol` global) must not keep
+    // the addon from loading. Any exception it throws is caught and dropped.
+    #[cfg(feature = "typescript")]
+    let mut cx = cx;
+    #[cfg(feature = "typescript")]
+    {
+        use crate::context::Context;
+        let _ = cx.try_catch(crate::typescript::attach_to_module);
+    }
+
     if let Some(main) = crate::macro_internal::MAIN.first() {
         main(cx)
     } else {

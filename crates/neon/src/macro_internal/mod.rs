@@ -32,6 +32,122 @@ pub static EXPORTS: [for<'cx> fn(&mut ModuleContext<'cx>) -> NeonResult<Export<'
 #[linkme::distributed_slice]
 pub static MAIN: [for<'cx> fn(ModuleContext<'cx>) -> NeonResult<()>];
 
+#[linkme::distributed_slice]
+pub static TYPE_METADATA: [ExportMeta];
+
+// ——— TypeScript probes ———
+//
+// The macros resolve each argument and return type through one of three
+// autoref-specialization probes, chosen by the conversion used at that
+// position: JSON (`TsJsonProbe`, which lives in `neon-typescript` so adapters
+// can hang a rung on it), bare arguments (`TsFromJsProbe`), or bare returns
+// (`TsIntoJsProbe`). See `neon::typescript` for details.
+pub use crate::typescript::{
+    TsFromJs, TsFromJsFallback, TsFromJsProbe, TsIntoJs, TsIntoJsFallback, TsIntoJsProbe,
+};
+pub use neon_typescript::{TsJsonFallback, TsJsonProbe};
+
+// ——— TypeScript metadata ———
+//
+// Emitted by the `#[neon::export]` / class macros into `TYPE_METADATA` and read
+// by `neon::typescript::generate()`. These types are an implementation detail
+// shared by the macros and the generator, not part of Neon's public API, so
+// their shape can change in any release.
+
+/// Metadata for a single function parameter.
+pub struct ParamMeta {
+    /// The parameter name (used in the TypeScript declaration).
+    pub name: &'static str,
+    /// Returns the TypeScript type expression for this parameter.
+    pub ts_type: fn() -> std::borrow::Cow<'static, str>,
+    /// Collects type declarations needed by this parameter.
+    pub ts_collect: fn(&mut std::collections::BTreeMap<String, String>),
+}
+
+/// Metadata for an exported function.
+pub struct FunctionMeta {
+    /// The JavaScript export name.
+    pub name: &'static str,
+    /// Parameter metadata.
+    pub params: &'static [ParamMeta],
+    /// Returns the TypeScript type expression for the return type.
+    pub ret_type: fn() -> std::borrow::Cow<'static, str>,
+    /// Collects type declarations needed by the return type.
+    pub ret_collect: fn(&mut std::collections::BTreeMap<String, String>),
+    /// Whether the function returns a Promise.
+    pub is_async: bool,
+}
+
+/// Metadata for a class method.
+pub struct MethodMeta {
+    /// The JavaScript method name.
+    pub name: &'static str,
+    /// Parameter metadata.
+    pub params: &'static [ParamMeta],
+    /// Returns the TypeScript type expression for the return type.
+    pub ret_type: fn() -> std::borrow::Cow<'static, str>,
+    /// Collects type declarations needed by the return type.
+    pub ret_collect: fn(&mut std::collections::BTreeMap<String, String>),
+    /// Whether the method returns a Promise.
+    pub is_async: bool,
+}
+
+/// Metadata for a class constructor.
+pub struct ConstructorMeta {
+    /// Constructor parameter metadata.
+    pub params: &'static [ParamMeta],
+}
+
+/// Metadata for a static class property.
+pub struct PropertyMeta {
+    /// The JavaScript property name.
+    pub name: &'static str,
+    /// Returns the TypeScript type expression for this property.
+    pub ts_type: fn() -> std::borrow::Cow<'static, str>,
+    /// Collects type declarations needed by this property.
+    pub ts_collect: fn(&mut std::collections::BTreeMap<String, String>),
+}
+
+/// Metadata for an exported class.
+pub struct ClassMeta {
+    /// The class name used in TypeScript.
+    pub name: &'static str,
+    /// The module export binding, if the class is exported by
+    /// `#[neon::export(class)]`. `None` for a bare `#[neon::class]`, which Neon
+    /// doesn't export, so it's declared without `export`.
+    pub export_name: Option<&'static str>,
+    /// Constructor metadata (None if there is no constructor to declare).
+    pub constructor: Option<ConstructorMeta>,
+    /// Whether to declare `private constructor();`, for a class whose
+    /// constructor is deliberately hidden (so TypeScript doesn't assume an
+    /// implicit public `constructor()`).
+    pub private_constructor: bool,
+    /// Instance methods.
+    pub methods: &'static [MethodMeta],
+    /// Static readonly properties.
+    pub static_properties: &'static [PropertyMeta],
+}
+
+/// Metadata for an exported `const` or `static`.
+pub struct GlobalMeta {
+    /// The JavaScript export name.
+    pub name: &'static str,
+    /// Returns the TypeScript type expression for the value.
+    pub ts_type: fn() -> std::borrow::Cow<'static, str>,
+    /// Collects type declarations needed by the value.
+    pub ts_collect: fn(&mut std::collections::BTreeMap<String, String>),
+}
+
+/// Metadata for an exported item.
+pub enum ExportMeta {
+    /// A function export.
+    Function(FunctionMeta),
+    /// A class export.
+    Class(ClassMeta),
+    /// A `const` or `static` export.
+    Global(GlobalMeta),
+}
+
 // Wrapper for the value type and return type tags
 pub struct NeonMarker<Tag, Return>(PhantomData<Tag>, PhantomData<Return>);
 

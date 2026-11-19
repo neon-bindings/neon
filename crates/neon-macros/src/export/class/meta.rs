@@ -4,9 +4,13 @@ use syn::parse::{Parse, ParseStream};
 #[derive(Default)]
 pub(crate) struct Meta {
     /// Name for the JavaScript class itself (used in class definition)
-    pub class_name: Option<String>,
+    pub class_name: Option<syn::LitStr>,
     /// Name for the module export binding
-    pub export_name: Option<String>,
+    pub export_name: Option<syn::LitStr>,
+    /// Skip emitting TypeScript metadata for this class
+    pub ts_skip: bool,
+    /// Omit the constructor from the generated TypeScript class declaration
+    pub ts_no_constructor: bool,
 }
 
 impl Parse for Meta {
@@ -35,7 +39,13 @@ impl Parse for Meta {
                     "name" => {
                         content.parse::<syn::Token![=]>()?;
                         let name_value: syn::LitStr = content.parse()?;
-                        meta.class_name = Some(name_value.value());
+                        meta.class_name = Some(name_value);
+                    }
+                    "ts_skip" => {
+                        meta.ts_skip = true;
+                    }
+                    "ts_no_constructor" => {
+                        meta.ts_no_constructor = true;
                     }
                     _ => {
                         return Err(syn::Error::new(
@@ -62,7 +72,13 @@ impl Parse for Meta {
                     "name" => {
                         input.parse::<syn::Token![=]>()?;
                         let name_value: syn::LitStr = input.parse()?;
-                        meta.export_name = Some(name_value.value());
+                        meta.export_name = Some(name_value);
+                    }
+                    "ts_skip" => {
+                        meta.ts_skip = true;
+                    }
+                    "ts_no_constructor" => {
+                        meta.ts_no_constructor = true;
                     }
                     _ => {
                         return Err(syn::Error::new(

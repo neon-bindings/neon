@@ -8,7 +8,7 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
     let syn::ItemFn {
         attrs,
         vis,
-        sig,
+        mut sig,
         block,
     } = input;
 
@@ -109,14 +109,12 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
         }
     );
 
-    // Default export name as identity unless a name is provided
-    let export_name = meta
-        .name
-        .map(|name| quote::quote!(#name))
-        .unwrap_or_else(|| {
-            let name = crate::name::to_camel_case(&name.to_string());
-            quote::quote!(#name)
-        });
+    // Compute the export name string (used by the create function and TS metadata)
+    let export_name_str = match &meta.name {
+        Some(lit) => lit.value(),
+        None => crate::name::to_camel_case(&name.to_string()),
+    };
+    let export_name = quote::quote!(#export_name_str);
 
     // Generate the function that is registered to create the function on addon initialization.
     // Braces are included to prevent names from polluting user code.
@@ -139,11 +137,42 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
         }
     });
 
+    // Generate TypeScript metadata, but only when the `typescript` feature is
+    // enabled (via `neon/typescript` -> `neon-macros/typescript`). When off, we
+    // emit no metadata statics, so `#[neon::export]` has zero TypeScript-related
+    // cost. `cfg!` is evaluated when neon-macros is compiled; Cargo unifies the
+    // feature across the build graph.
+    let ts_meta = if cfg!(feature = "typescript") {
+        generate_ts_metadata(
+            &meta,
+            &sig,
+            &export_name_str,
+            context_arg.is_some(),
+            has_this,
+        )
+    } else {
+        proc_macro2::TokenStream::new()
+    };
+
+    // Strip #[neon(...)] from parameter attributes (consumed by the macro,
+    // not valid Rust if left on the emitted function signature). Must happen
+    // after `generate_ts_metadata` so attribute extraction sees them. They're
+    // checked first, so an unsupported or misspelled one is an error.
+    for arg in sig.inputs.iter_mut() {
+        if let syn::FnArg::Typed(pat_type) = arg {
+            if let Err(err) = crate::name::validate_param_attrs(&pat_type.attrs) {
+                return err.into_compile_error().into();
+            }
+            pat_type.attrs.retain(|a| !a.path().is_ident("neon"));
+        }
+    }
+
     // Output the original function with the generated `create_fn` inside of it
     quote::quote!(
         #(#attrs) *
         #vis #sig {
             #create_fn
+            #ts_meta
             #block
         }
     )
@@ -390,4 +419,119 @@ fn check_this(opts: &meta::Meta, sig: &syn::Signature, has_context: bool) -> boo
         syn::Pat::Ident(ident) => ident.ident == THIS,
         _ => false,
     }
+}
+
+// Extract the parameter name from a pattern
+fn param_name(pat: &syn::Pat, index: usize) -> String {
+    match pat {
+        // Simple identifier: `name: String`
+        syn::Pat::Ident(ident) => crate::name::to_camel_case(&ident.ident.to_string()),
+        // Tuple struct destructuring: `Json(data): Json<T>`
+        syn::Pat::TupleStruct(ts) => {
+            if let Some(inner) = ts.elems.first() {
+                param_name(inner, index)
+            } else {
+                format!("arg{index}")
+            }
+        }
+        _ => format!("arg{index}"),
+    }
+}
+
+// Generate TypeScript metadata for a function export.
+//
+// Emits a `static` registered into the `TYPE_METADATA` distributed slice, which
+// `neon::typescript::generate()` walks at runtime. For
+//
+//   #[neon::export]
+//   fn ts_add(a: f64, b: f64) -> f64 { a + b }
+//
+// the emitted metadata (roughly) is:
+//
+//   ExportMeta::Function(FunctionMeta {
+//       name: "tsAdd",
+//       params: &[ParamMeta { name: "a", ts_type: || ..f64.., .. }, /* b */],
+//       ret_type: || ..f64.. ,
+//       is_async: false,
+//       ..
+//   })
+//
+// where each `ts_type` closure resolves the TS type at runtime through the probe
+// for the conversion used at that position (see `crate::ts`), so a type with no
+// known TypeScript type becomes `unknown` rather than a compile error. Returns
+// empty tokens when `ts_skip` is set.
+fn generate_ts_metadata(
+    meta: &meta::Meta,
+    sig: &syn::Signature,
+    export_name: &str,
+    has_context: bool,
+    has_this: bool,
+) -> proc_macro2::TokenStream {
+    use crate::ts::{boundary, literal, unit_return, Position};
+
+    if meta.ts_skip {
+        return proc_macro2::TokenStream::new();
+    }
+
+    let fn_name = &sig.ident;
+
+    // Determine how many leading args to skip (context, this)
+    let skip = match (has_context, has_this) {
+        (true, true) => 2,
+        (false, false) => 0,
+        _ => 1,
+    };
+
+    let param_entries: Vec<proc_macro2::TokenStream> = sig
+        .inputs
+        .iter()
+        .skip(skip)
+        .enumerate()
+        .filter_map(|(i, arg)| match arg {
+            syn::FnArg::Typed(pat_type) => Some((i, pat_type)),
+            _ => None,
+        })
+        .map(|(i, pat_type)| {
+            let name_str = param_name(&pat_type.pat, i);
+
+            // A per-param `#[neon(ts_type = "...")]` override wins.
+            let (ts_type, ts_collect) = match crate::name::extract_param_ts_type(&pat_type.attrs) {
+                Some(override_ty) => literal(&override_ty),
+                None => boundary(&pat_type.ty, meta.json, Position::Param),
+            };
+
+            quote::quote!(
+                neon::macro_internal::ParamMeta {
+                    name: #name_str,
+                    ts_type: #ts_type,
+                    ts_collect: #ts_collect,
+                }
+            )
+        })
+        .collect();
+
+    // `ts_returns` is the declared return type exactly as written, so it isn't
+    // wrapped in `Promise<…>` again for an async export.
+    let is_async =
+        meta.ts_returns.is_none() && matches!(meta.kind, Kind::Task | Kind::AsyncFn | Kind::Async);
+    let meta_name = quote::format_ident!("__NEON_TS_META__{fn_name}");
+
+    let (ret_type_expr, ret_collect_expr) = match (&meta.ts_returns, &sig.output) {
+        (Some(override_ty), _) => literal(override_ty),
+        (None, syn::ReturnType::Default) => unit_return(meta.json),
+        (None, syn::ReturnType::Type(_, ty)) => boundary(ty, meta.json, Position::Return),
+    };
+
+    quote::quote!({
+        #[neon::macro_internal::linkme::distributed_slice(neon::macro_internal::TYPE_METADATA)]
+        #[linkme(crate = neon::macro_internal::linkme)]
+        static #meta_name: neon::macro_internal::ExportMeta =
+            neon::macro_internal::ExportMeta::Function(neon::macro_internal::FunctionMeta {
+                name: #export_name,
+                params: &[#(#param_entries),*],
+                ret_type: #ret_type_expr,
+                ret_collect: #ret_collect_expr,
+                is_async: #is_async,
+            });
+    })
 }

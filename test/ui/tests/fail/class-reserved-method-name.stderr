@@ -1,0 +1,5 @@
+error: `constructor` can't be used as a method name: it would replace the class's own `constructor`
+ --> tests/fail/class-reserved-method-name.rs:6:19
+  |
+6 |     #[neon(name = "constructor")]
+  |                   ^^^^^^^^^^^^^

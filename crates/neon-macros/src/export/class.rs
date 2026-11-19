@@ -17,30 +17,57 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemImpl) -> proc_macro::Toke
     // CASE 1: #[export(class, name = "X")] -> both class and export use "X"
     // CASE 2: #[export(class(name = "X"))] -> both class and export use "X"
     // CASE 3: #[export(class(name = "X"), name = "Y")] -> class uses "X", export uses "Y"
-    let (js_class_name, export_name) = match (meta.class_name, meta.export_name) {
+    let (js_class_name, export_name) = match (&meta.class_name, &meta.export_name) {
         // CASE 3: Both specified - use each for its purpose
-        (Some(class_name), Some(export_name)) => (Some(class_name), export_name),
+        (Some(class_name), Some(export_name)) => (Some(class_name), export_name.value()),
 
         // CASE 2: Only class name specified - use for both
-        (Some(class_name), None) => {
-            let export_name = class_name.clone();
-            (Some(class_name), export_name)
-        }
+        (Some(class_name), None) => (Some(class_name), class_name.value()),
 
         // CASE 1: Only export name specified - use for both
-        (None, Some(export_name)) => {
-            let class_name = export_name.clone();
-            (Some(class_name), export_name)
-        }
+        (None, Some(export_name)) => (Some(export_name), export_name.value()),
 
         // Default: No names specified - use Rust type name
         (None, None) => (None, rust_class_name.clone()),
     };
 
+    // The class name is a binding in the generated JavaScript (`class Name {}`),
+    // so it must be an identifier. The export name is only a property key, so
+    // it can be any string.
+    if let Some(class_name) = js_class_name {
+        if !crate::name::is_valid_js_identifier(&class_name.value()) {
+            let hint = if meta.class_name.is_none() {
+                " (this `name` sets both the class name and the export name; use \
+                 `class(name = \"...\")` to give the class a different name)"
+            } else {
+                ""
+            };
+            return syn::Error::new(
+                class_name.span(),
+                format!(
+                    "class name `{}` is not a valid JavaScript identifier{hint}",
+                    class_name.value()
+                ),
+            )
+            .into_compile_error()
+            .into();
+        }
+    }
+    let js_class_name = js_class_name.map(syn::LitStr::value);
+
     // Generate the class using the existing class implementation
     let class_input: proc_macro::TokenStream = quote!(#input).into();
-    let class_output =
-        crate::class::class_with_name(proc_macro::TokenStream::new(), class_input, js_class_name);
+    let class_options = crate::class::ClassOptions {
+        custom_class_name: js_class_name,
+        export_name: Some(export_name.clone()),
+        ts_skip: meta.ts_skip,
+        ts_no_constructor: meta.ts_no_constructor,
+    };
+    let class_output = crate::class::class_with_options(
+        proc_macro::TokenStream::new(),
+        class_input,
+        class_options,
+    );
     let class_tokens: TokenStream = class_output.into();
 
     // Use the determined export name

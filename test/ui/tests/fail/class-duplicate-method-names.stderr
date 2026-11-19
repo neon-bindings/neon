@@ -1,0 +1,5 @@
+error: duplicate method name `get`: `get_a` and `get_b` would both be `get` in JavaScript
+  --> tests/fail/class-duplicate-method-names.rs:11:19
+   |
+11 |     #[neon(name = "get")]
+   |                   ^^^^^

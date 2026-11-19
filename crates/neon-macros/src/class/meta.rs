@@ -5,6 +5,8 @@ pub(crate) struct Meta {
     pub(super) json: bool,
     pub(super) context: bool,
     pub(super) this: bool,
+    pub(super) ts_skip: bool,
+    pub(super) ts_returns: Option<String>,
 }
 
 #[derive(Default)]
@@ -21,6 +23,7 @@ pub(super) enum Kind {
 pub(crate) struct PropertyMeta {
     pub(super) name: Option<syn::LitStr>,
     pub(super) json: bool,
+    pub(super) ts_skip: bool,
 }
 
 pub(crate) struct PropertyParser;
@@ -38,6 +41,11 @@ impl syn::parse::Parser for PropertyParser {
 
             if meta.path.is_ident("json") {
                 attr.json = true;
+                return Ok(());
+            }
+
+            if meta.path.is_ident("ts_skip") {
+                attr.ts_skip = true;
                 return Ok(());
             }
 
@@ -100,6 +108,16 @@ impl syn::parse::Parser for Parser {
 
             if meta.path.is_ident("task") {
                 attr.kind = Kind::Task;
+                return Ok(());
+            }
+
+            if meta.path.is_ident("ts_skip") {
+                attr.ts_skip = true;
+                return Ok(());
+            }
+
+            if meta.path.is_ident("ts_returns") {
+                attr.ts_returns = Some(meta.value()?.parse::<syn::LitStr>()?.value());
                 return Ok(());
             }
 

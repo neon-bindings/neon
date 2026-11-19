@@ -1,0 +1,11 @@
+error: unsupported parameter property; expected `ts_type = "..."`
+ --> tests/fail/param-unsupported-property.rs:2:22
+  |
+2 | fn misspelled(#[neon(ts_typ = "number")] x: f64) -> f64 {
+  |                      ^^^^^^
+
+error: unsupported parameter property; expected `ts_type = "..."`
+  --> tests/fail/param-unsupported-property.rs:14:28
+   |
+14 |     fn scale(&self, #[neon(ts_typ = "number")] factor: f64) -> f64 {
+   |                            ^^^^^^
