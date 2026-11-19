@@ -459,9 +459,26 @@ fn` and `#[neon(task)]` methods return `Promise<T>`; a fallible constructor
 Class members follow the same position rules as functions (methods marked
 `#[neon(json)]` use JSON shapes).
 
-The declaration is exported under the class's actual module binding. When that
-differs from the class name (`#[neon::export(class(name = "X"), name = "Y")]`), the
-class is declared as `X` and re-exported: `export { X as Y };`.
+The declaration is exported under the class's actual module binding, following
+the same naming rules as the runtime (see PR #1117): a class is named by
+`class(name = "...")` and its export binding by the export's `name = "..."`. When the
+two differ (`#[neon::export(class(name = "X"), name = "Y")]`), the class is declared
+as `X` and re-exported: `export { X as Y };`.
+
+A bare `#[neon::class]` isn't exported by Neon. If user code exports it by hand
+(`cx.export_value("Point", Point::constructor(&mut cx)?)`), Neon can't see under
+what name, or whether it's exported at all. Mirroring JavaScript, where `class Point
+{}` and `export class Point {}` differ by exactly the `export`, it's declared without
+one: `declare class Point { … }`. Other exports can still refer to it (a function
+returning a `Point` is declared as returning `Point`), but consumers can't import it
+by name. To export a class with exact declarations, use `#[neon::export(class)]`.
+Because a `.d.ts` module implicitly exports every top-level declaration unless it
+contains an export statement, the generated file always ends with `export {};`.
+
+A bare class takes the class-level TypeScript options, `#[neon::class(ts_skip)]` and
+`#[neon::class(ts_no_constructor)]`, and rejects any other argument. Like every
+`ts_*` option, they're accepted whether or not the `typescript` feature is on, so
+turning the feature off never breaks a build.
 
 A class instance crosses the boundary through the class's own bare conversions, so
 the class macro implements `TsFromJs` and `TsIntoJs` for the class type, both
@@ -534,7 +551,8 @@ The codegen handles common cases; a few per-item overrides cover the ragged edge
   `Promise<…>` itself.
 - `#[neon(ts_type = "...")]` on an individual function/method parameter — override
   that parameter's inferred type.
-- `#[neon::export(class, ts_no_constructor)]` — declare the class's constructor as
+- `#[neon::export(class, ts_no_constructor)]` (or `#[neon::class(ts_no_constructor)]`)
+  — declare the class's constructor as
   `private constructor();`, for classes only constructed via factory methods
   elsewhere. (Omitting the constructor instead would make TypeScript assume an
   implicit public `constructor()`.)

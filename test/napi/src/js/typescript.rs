@@ -429,6 +429,34 @@ impl CtorSkipped {
     }
 }
 
+// Bare `#[neon::class]`es take the class-level TypeScript options. (Neither is
+// exported by Neon, so both are declared without `export`.)
+#[derive(Clone)]
+pub struct BareSkipped;
+
+#[neon::class(ts_skip)]
+impl BareSkipped {
+    pub fn new() -> Self {
+        BareSkipped
+    }
+}
+
+#[derive(Clone)]
+pub struct BareNoCtor;
+
+#[neon::class(ts_no_constructor)]
+impl BareNoCtor {
+    pub fn new() -> Self {
+        BareNoCtor
+    }
+}
+
+// Refer to both, so they'd be declared if they weren't skipped.
+#[neon::export]
+fn ts_bare_classes(_skipped: BareSkipped) -> BareNoCtor {
+    BareNoCtor
+}
+
 #[neon::export]
 fn ts_param_override(#[neon(ts_type = "ReadonlyArray<number>")] xs: Array<Vec<f64>>) -> f64 {
     xs.0.iter().sum()

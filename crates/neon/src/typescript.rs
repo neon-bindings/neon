@@ -724,11 +724,13 @@ pub fn generate() -> String {
                     (prop.ts_collect)(&mut decls);
                 }
 
-                // Declare the class under its TypeScript name and export it
-                // under its actual module binding, which can differ (e.g.
-                // `#[neon::export(class(name = "X"), name = "Y")]`).
-                let binding = class.export_name.unwrap_or(class.name);
-                let mut s = if binding == class.name {
+                // Declare the class under its class name, and export it under
+                // its actual module binding, which can differ (e.g.
+                // `#[neon::export(class(name = "X"), name = "Y")]`). A bare
+                // `#[neon::class]` isn't exported by Neon (if user code exports
+                // it, Neon can't see under what name), so it's declared but not
+                // exported: other declarations can still refer to it.
+                let mut s = if class.export_name == Some(class.name) {
                     format!("export declare class {} {{\n", class.name)
                 } else {
                     format!("declare class {} {{\n", class.name)
@@ -786,7 +788,7 @@ pub fn generate() -> String {
                 }
 
                 s.push('}');
-                if binding != class.name {
+                if let Some(binding) = class.export_name.filter(|b| *b != class.name) {
                     if is_identifier_name(binding) {
                         s.push_str(&format!("\nexport {{ {} as {binding} }};", class.name));
                     } else {
@@ -866,6 +868,12 @@ pub fn generate() -> String {
             output.push('\n');
         }
     }
+
+    // In a `.d.ts` module, every top-level declaration is implicitly exported
+    // unless the file has an export statement like this one. Without it, a
+    // class that Neon doesn't export (and the internal names behind aliased
+    // exports) would still be importable.
+    output.push_str("\nexport {};\n");
 
     output
 }

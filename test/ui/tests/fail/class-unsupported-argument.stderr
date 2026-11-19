@@ -1,0 +1,5 @@
+error: `#[neon::class]` doesn't export the class, so it has no name to set; use `#[neon::export(class(name = "..."))]` to export a renamed class
+ --> tests/fail/class-unsupported-argument.rs:4:15
+  |
+4 | #[neon::class(name = "Renamed")]
+  |               ^^^^

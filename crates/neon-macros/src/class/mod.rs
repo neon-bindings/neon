@@ -819,10 +819,34 @@ fn group_class_items(items: Vec<syn::ImplItem>) -> Result<ClassItems, syn::Error
 }
 
 pub(crate) fn class(
-    _attr: proc_macro::TokenStream,
+    attr: proc_macro::TokenStream,
     item: proc_macro::TokenStream,
 ) -> proc_macro::TokenStream {
-    class_with_options(_attr, item, ClassOptions::default())
+    // A bare class isn't exported by the macro, so it only takes the
+    // TypeScript options. They're accepted whether or not the `typescript`
+    // feature is on, so turning the feature off never breaks a build.
+    let mut options = ClassOptions::default();
+    let parser = syn::meta::parser(|meta| {
+        if meta.path.is_ident("ts_skip") {
+            options.ts_skip = true;
+            Ok(())
+        } else if meta.path.is_ident("ts_no_constructor") {
+            options.ts_no_constructor = true;
+            Ok(())
+        } else if meta.path.is_ident("name") {
+            Err(meta.error(
+                "`#[neon::class]` doesn't export the class, so it has no name to set; \
+                 use `#[neon::export(class(name = \"...\"))]` to export a renamed class",
+            ))
+        } else {
+            Err(meta.error(
+                "unsupported `#[neon::class]` argument; expected `ts_skip` or `ts_no_constructor`",
+            ))
+        }
+    });
+    syn::parse_macro_input!(attr with parser);
+
+    class_with_options(proc_macro::TokenStream::new(), item, options)
 }
 
 #[derive(Default)]

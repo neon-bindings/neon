@@ -400,9 +400,11 @@ describe("TypeScript declaration generation", () => {
   // Stage 3: Class exports
 
   it("generates declare class with constructor and methods", () => {
+    // `Point` is a bare `#[neon::class]`, exported by hand in `main`, which
+    // Neon can't see: it's declared, but not exported.
     assert.ok(
-      declarations.includes("export declare class Point {"),
-      `Expected Point class, got:\n${declarations}`
+      /^declare class Point \{/m.test(declarations),
+      `Expected a non-exported Point class, got:\n${declarations}`
     );
     assert.ok(
       declarations.includes("  constructor(x: number, y: number);"),
@@ -470,14 +472,12 @@ describe("TypeScript declaration generation", () => {
 
   it("generates class with no constructor for Default types", () => {
     assert.ok(
-      declarations.includes("export declare class StringBuffer {"),
+      /^declare class StringBuffer \{/m.test(declarations),
       `Expected StringBuffer class, got:\n${declarations}`
     );
     // StringBuffer uses Default, no constructor
     assert.ok(
-      !declarations.includes(
-        "export declare class StringBuffer {\n  constructor"
-      ),
+      !declarations.includes("declare class StringBuffer {\n  constructor"),
       `Expected no constructor for StringBuffer, got:\n${declarations}`
     );
   });
@@ -696,6 +696,30 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
+  it("takes ts_skip and ts_no_constructor on a bare class", () => {
+    assert.ok(
+      !declarations.includes("BareSkipped"),
+      `Expected BareSkipped to be skipped, got:\n${declarations}`
+    );
+    assert.ok(
+      declarations.includes(
+        "export declare function tsBareClasses(_skipped: unknown): BareNoCtor;"
+      ),
+      `Expected the skipped class referenced as unknown, got:\n${declarations}`
+    );
+    const match = declarations.match(
+      /^declare class BareNoCtor \{([\s\S]*?)\}/m
+    );
+    assert.ok(
+      match,
+      `Expected a non-exported BareNoCtor, got:\n${declarations}`
+    );
+    assert.ok(
+      match[1].includes("  private constructor();"),
+      `Expected a private constructor, got:\n${match[1]}`
+    );
+  });
+
   it("ts_skip on fn new declares a private constructor", () => {
     const match = declarations.match(
       /export declare class CtorSkipped \{([\s\S]*?)\}/
@@ -890,47 +914,87 @@ describe("TypeScript declaration generation", () => {
     );
   });
 
-  // Every declaration above is checked by substring; this checks that the
-  // whole file is valid TypeScript, so one bad declaration can't hide behind
-  // the others.
-  it("typechecks with tsc --noEmit --strict", function () {
-    this.timeout(60000);
+  // Type-check `files` (name → contents) alongside the generated declarations,
+  // saved as `index.d.ts`. Returns tsc's output, or `null` if it succeeded.
+  function tsc(files = {}) {
     const fs = require("fs");
     const os = require("os");
     const path = require("path");
     const { execFileSync } = require("child_process");
 
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "neon-dts-"));
-    fs.writeFileSync(path.join(dir, "index.d.ts"), declarations);
-
-    // `"types": []` keeps tsc from loading every installed @types package, so
-    // Node's types are available only if the file references them itself.
-    const typeRoots = path.dirname(
-      path.dirname(require.resolve("@types/node/package.json"))
-    );
-    fs.writeFileSync(
-      path.join(dir, "tsconfig.json"),
-      JSON.stringify({
-        compilerOptions: {
-          strict: true,
-          noEmit: true,
-          types: [],
-          typeRoots: [typeRoots],
-        },
-        files: ["index.d.ts"],
-      })
-    );
-
-    const tsc = require.resolve("typescript/bin/tsc");
     try {
-      execFileSync(process.execPath, [tsc, "-p", dir], { encoding: "utf8" });
-    } catch (e) {
-      assert.fail(
-        `tsc rejected the generated declarations:\n${e.stdout}${e.stderr}\n` +
-          `--- declarations ---\n${declarations}`
+      fs.writeFileSync(path.join(dir, "index.d.ts"), declarations);
+      for (const [name, contents] of Object.entries(files)) {
+        fs.writeFileSync(path.join(dir, name), contents);
+      }
+
+      // `"types": []` keeps tsc from loading every installed @types package,
+      // so Node's types are available only if the file references them itself.
+      const typeRoots = path.dirname(
+        path.dirname(require.resolve("@types/node/package.json"))
       );
+      fs.writeFileSync(
+        path.join(dir, "tsconfig.json"),
+        JSON.stringify({
+          compilerOptions: {
+            strict: true,
+            noEmit: true,
+            module: "commonjs",
+            types: [],
+            typeRoots: [typeRoots],
+          },
+          files: ["index.d.ts", ...Object.keys(files)],
+        })
+      );
+
+      const tscBin = require.resolve("typescript/bin/tsc");
+      try {
+        execFileSync(process.execPath, [tscBin, "-p", dir], {
+          encoding: "utf8",
+        });
+        return null;
+      } catch (e) {
+        return `${e.stdout}${e.stderr}`;
+      }
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
+  }
+
+  // Every declaration above is checked by substring; this checks that the
+  // whole file is valid TypeScript, so one bad declaration can't hide behind
+  // the others.
+  it("typechecks with tsc --noEmit --strict", function () {
+    this.timeout(60000);
+    const errors = tsc();
+    assert.strictEqual(
+      errors,
+      null,
+      `tsc rejected the generated declarations:\n${errors}\n` +
+        `--- declarations ---\n${declarations}`
+    );
+  });
+
+  it("only lets consumers import what Neon exports", function () {
+    this.timeout(60000);
+    // A class Neon exports can be imported; a bare `#[neon::class]` (which
+    // Neon doesn't export) can't, though exports that use it still type-check.
+    assert.strictEqual(
+      tsc({
+        "ok.ts": [
+          'import { createPointFromRust, PublicName } from "./index";',
+          "const p = createPointFromRust(1, 2);",
+          "const n: number = p.x();",
+          "const c: PublicName = new PublicName();",
+        ].join("\n"),
+      }),
+      null
+    );
+    const errors = tsc({ "bad.ts": 'import type { Point } from "./index";' });
+    assert.ok(
+      errors && errors.includes("TS2459"),
+      `Expected Point to be unexported (TS2459), got:\n${errors}`
+    );
   });
 });

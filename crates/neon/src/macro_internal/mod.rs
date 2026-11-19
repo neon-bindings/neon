@@ -113,8 +113,8 @@ pub struct ClassMeta {
     /// The class name used in TypeScript.
     pub name: &'static str,
     /// The module export binding, if the class is exported by
-    /// `#[neon::export(class)]`. `None` (a bare `#[neon::class]`) assumes the
-    /// class is exported under `name`.
+    /// `#[neon::export(class)]`. `None` for a bare `#[neon::class]`, which Neon
+    /// doesn't export, so it's declared without `export`.
     pub export_name: Option<&'static str>,
     /// Constructor metadata (None if there is no constructor to declare).
     pub constructor: Option<ConstructorMeta>,
