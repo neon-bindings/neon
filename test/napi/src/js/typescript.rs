@@ -15,7 +15,9 @@ use std::sync::Arc;
 pub struct SearchResult {
     pub doc_id: u32,
     pub score: f64,
+    // Exercises `#[serde(skip)]` (left out of the declaration); never read.
     #[serde(skip)]
+    #[allow(dead_code)]
     pub internal: Vec<u8>,
     #[serde(default)]
     pub highlights: Vec<String>,
