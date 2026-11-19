@@ -995,7 +995,7 @@ Dogfooding also showed why the macro looks through `Option<Json<T>>` (see
 [Which conversion runs at a position](#which-conversion-runs-at-a-position)): with
 the rung reaching only a top-level `Json<T>`, the bridge derive was needed exactly
 for types used in `Option<Json<T>>`. That rule is too subtle to learn, so the
-dogfood derived `TsJson` on all 13 of its types, where 3 were needed. With the
+dogfood derived `TsJson` on all 11 of its types, where 3 were needed. With the
 look-through, the prelude alone covers every type in it.
 
 **6. Collapsing `neon-typescript` into `neon`.** Considered dropping the standalone
