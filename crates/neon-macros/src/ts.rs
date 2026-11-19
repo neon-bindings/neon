@@ -64,14 +64,14 @@ pub(crate) fn boundary(ty: &syn::Type, json: bool, position: Position) -> TsToke
     };
 
     if json {
-        return json_probe(&ty);
+        return json_payload(&ty, position);
     }
 
     // Look through a top-level `Json<T>` so an adapter's `TsJsonExt` (which only
     // works at a concrete call site with the user's import in scope) can
     // describe a foreign payload.
     if let Some(payload) = outer_json(&ty) {
-        return json_probe(&payload);
+        return json_payload(&payload, position);
     }
 
     // Likewise for `Option<Json<T>>`, the usual way to write an optional JSON
@@ -103,6 +103,22 @@ pub(crate) fn boundary(ty: &syn::Type, json: bool, position: Position) -> TsToke
 pub(crate) fn global(ty: &syn::Type, json: bool) -> TsTokens {
     let ty = first_type_arg(ty, &["LazyLock"]).unwrap_or_else(|| ty.clone());
     boundary(&ty, json, Position::Return)
+}
+
+/// Tokens describing a JSON payload `ty` (of a `Json<T>`, or of any position in
+/// a `json` item).
+///
+/// An `Option<T>` argument also accepts `undefined`, and so an omitted
+/// argument: the `Json` extractor deserializes `undefined` as a unit, which
+/// `Option` reads as `None`. That's Neon's own behavior and serde's fixed
+/// `Option` impl, not something user attributes control, so it's declared
+/// (`T | null | undefined`, which a trailing parameter renders as `x?: T | null`).
+/// A returned `None` serializes to `null`, so returns keep the JSON shape.
+fn json_payload(ty: &syn::Type, position: Position) -> TsTokens {
+    match (position, first_type_arg(ty, &["Option"])) {
+        (Position::Param, Some(inner)) => optional(json_probe(&inner), " | null | undefined"),
+        _ => json_probe(ty),
+    }
 }
 
 /// `tokens`' type followed by `suffix` (e.g. `" | undefined"`).

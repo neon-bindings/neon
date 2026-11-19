@@ -83,12 +83,16 @@ fn ts_optional_then_required(x: Option<f64>, y: f64) -> f64 {
     x.unwrap_or(0.0) + y
 }
 
-// `Json<Option<T>>` is declared with the JSON shape, `T | null`, so it isn't
-// optional. (At runtime it also accepts an omitted argument: `Json` deserializes
-// `undefined` as a unit, which `Option` reads as `None`. Declaring JSON arguments
-// narrower than serde accepts is Alternatives considered §9.)
+// `Json<Option<T>>` also accepts an omitted argument: `Json` deserializes
+// `undefined` as a unit, which `Option` reads as `None`.
 #[neon::export]
 fn ts_json_optional_arg(Json(x): Json<Option<f64>>) -> f64 {
+    x.unwrap_or(-1.0)
+}
+
+// So does an `Option` argument of a `json` export, which is extracted the same way.
+#[neon::export(json)]
+fn ts_json_item_optional_arg(x: Option<f64>) -> f64 {
     x.unwrap_or(-1.0)
 }
 

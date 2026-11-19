@@ -211,6 +211,19 @@ For each argument and return type, the macro decides which trait to consult:
    it, a type that only implements `ts_rs::TS` would be `unknown`. A `Json<T>`
    nested anywhere else (say, in an `Either`) goes through the bare impls, which
    need a `TsJson` impl for `T`.
+
+   A JSON *argument* of type `Option<T>`, whether a top-level `Json<Option<T>>` or
+   an `Option<T>` parameter of a `json` item, is declared `T | null | undefined`
+   rather than the JSON shape `T | null`. The `Json` extractor runs
+   `JSON.stringify` on the argument, which returns `undefined` (not a string) for
+   `undefined`. The extractor then deserializes a unit, and serde's `Option`
+   reads a unit as `None`. Both facts are fixed (Neon's own extractor, and serde's
+   built-in `Option` impl), not something the user's serde attributes control, so
+   Neon can declare it for every `T`. With the
+   [optional-argument rule](#generation-and-output), a trailing one is
+   `options?: T | null`, the same as `Option<Json<T>>`, so the two spellings of an
+   optional JSON argument have identical declarations. Returns keep the JSON shape,
+   since a returned `None` serializes to `null`.
 3. **Bare positions** — everything else: `TsFromJs` for arguments (looking through
    a reference such as `&Class`, which is extracted from the referent's JS value),
    `TsIntoJs` for returns and static properties.
@@ -576,9 +589,9 @@ other. Without the `?`, TypeScript would still require the argument, and
 because TypeScript doesn't allow a required parameter after an optional one; an
 `Option` argument followed by a required one keeps `| undefined`. The rule reads the
 declared type, so it also applies to `ts_type` overrides (`"number | undefined"`
-becomes `x?: number`). It doesn't apply to `unknown`, which admits `undefined` only
-implicitly, or to JSON arguments, whose declared shape (`T | null`) has no
-`undefined` member.
+becomes `x?: number`), and to JSON `Option` arguments, which are declared with
+`undefined` (see [Which conversion runs at a position](#which-conversion-runs-at-a-position)).
+It doesn't apply to `unknown`, which admits `undefined` only implicitly.
 
 **Collisions.** Two different items declared under one name can't both be right:
 `a::Config` and `b::Config` would get one declaration, silently mistyping every use
@@ -1050,16 +1063,17 @@ format-neutral data model. *Rejected — spelled-out (`TypeScriptJson`, …) or
 `…Shape` names:* longer, or not obviously about TypeScript.
 
 **9. Not splitting `TsJson` by direction.** serde can accept more than it emits
-(`#[serde(default)]`, aliases, missing `Option` fields; and Neon's `Json` extractor
-deserializes an omitted argument, `undefined`, as a unit, so a `Json<Option<T>>`
-argument can be omitted though it's declared `T | null`), so in principle a JSON
+(`#[serde(default)]`, aliases, missing `Option` fields), so in principle a JSON
 argument and a JSON return have different types. *Decision:* one JSON shape. Those
 differences come from the user's serde attributes, which only the generator sees, and
 the generators produce a single type; splitting the trait would just make adapters
 fill two methods with the same string. Using the serialized shape for an input is the
 safe direction (it may reject some valid input, but never accepts invalid input). If a
 generator ever offers distinct input and output types, an input method defaulting to
-the output one could be added without breaking anyone.
+the output one could be added without breaking anyone. (One input difference is
+handled anyway, because it doesn't depend on user attributes: an `Option` JSON
+argument also accepts `undefined`; see
+[Which conversion runs at a position](#which-conversion-runs-at-a-position).)
 
 **10. Fallback type — `unknown`, not `any`.** *Decision:* a type with no known
 TypeScript type is declared `unknown`. An `unknown` return must be narrowed before

@@ -96,16 +96,24 @@ describe("TypeScript declaration generation", () => {
     assert.strictEqual(addon.tsOptionalThenRequired(undefined, 2), 2);
   });
 
-  it("keeps a Json<Option<T>> argument required", () => {
-    assert.ok(
-      declarations.includes(
-        "export declare function tsJsonOptionalArg(x: number | null): number;"
-      ),
-      `Expected tsJsonOptionalArg declaration, got:\n${declarations}`
-    );
-    assert.strictEqual(addon.tsJsonOptionalArg(null), -1);
-    // Narrower than the runtime, which also accepts an omitted argument.
-    assert.strictEqual(addon.tsJsonOptionalArg(), -1);
+  it("declares a trailing JSON Option argument as optional", () => {
+    // Both `Json<Option<T>>` and an `Option<T>` argument of a `json` export
+    // accept an omitted argument, so they're declared like a bare `Option`.
+    for (const [name, fn] of [
+      ["tsJsonOptionalArg", addon.tsJsonOptionalArg],
+      ["tsJsonItemOptionalArg", addon.tsJsonItemOptionalArg],
+    ]) {
+      assert.ok(
+        declarations.includes(
+          `export declare function ${name}(x?: number | null): number;`
+        ),
+        `Expected ${name} declaration, got:\n${declarations}`
+      );
+      assert.strictEqual(fn(), -1);
+      assert.strictEqual(fn(undefined), -1);
+      assert.strictEqual(fn(null), -1);
+      assert.strictEqual(fn(5), 5);
+    }
   });
 
   it("declares an Option through JSON as T | null", () => {
@@ -1028,12 +1036,13 @@ describe("TypeScript declaration generation", () => {
     assert.strictEqual(
       tsc({
         "ok.ts": [
-          'import { createPointFromRust, PublicName, tsOptionalArg, ParamOverrides } from "./index";',
+          'import { createPointFromRust, PublicName, tsOptionalArg, tsJsonOptionalArg, ParamOverrides } from "./index";',
           "const p = createPointFromRust(1, 2);",
           "const n: number = p.x();",
           "const c: PublicName = new PublicName();",
           // Trailing optional arguments can be omitted (no TS2554).
           "const m: number = tsOptionalArg();",
+          "const j: number = tsJsonOptionalArg();",
           "const o: ParamOverrides = new ParamOverrides();",
         ].join("\n"),
       }),
