@@ -512,9 +512,9 @@ impl ParamOverrides {
         xs.0.iter().sum()
     }
 
-    // A member name that isn't an identifier is quoted. (`ts_name` only affects
-    // the declaration; a runtime method name must be a JS identifier.)
-    #[neon(ts_name = "two words")]
+    // A method name that isn't an identifier: quoted in the generated JS and
+    // in the declaration.
+    #[neon(name = "two words")]
     pub fn two_words(&self) -> f64 {
         2.0
     }

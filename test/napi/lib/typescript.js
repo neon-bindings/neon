@@ -820,6 +820,9 @@ describe("TypeScript declaration generation", () => {
       declarations.includes('  "two words"(): number;'),
       `Expected a quoted method name, got:\n${declarations}`
     );
+    // The declared method exists at runtime under that name.
+    const instance = new addon.ParamOverrides(undefined);
+    assert.strictEqual(instance["two words"](), 2);
   });
 
   it("declares exported consts and statics", () => {

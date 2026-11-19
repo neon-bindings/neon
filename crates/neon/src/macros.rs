@@ -348,6 +348,11 @@
 /// }
 /// ```
 ///
+/// A method name can be any string, since JavaScript allows any string as a
+/// property name. It's a compile error for two methods to have the same name,
+/// or for a method to be named `constructor` or `__proto__` (either would
+/// replace part of the class itself).
+///
 /// #### Fallible Methods
 ///
 /// Methods can return `Result` types to throw JavaScript exceptions, just like
@@ -593,6 +598,9 @@
 ///     }
 /// }
 /// ```
+///
+/// The class name must be a valid JavaScript identifier, since it names the
+/// class in the generated JavaScript. The export name can be any string.
 ///
 /// ## Error Handling
 ///

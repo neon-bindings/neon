@@ -98,23 +98,18 @@ pub(crate) fn validate_param_attrs(attrs: &[syn::Attribute]) -> syn::Result<()> 
     Ok(())
 }
 
-// Validate JavaScript identifier names
+/// Whether `name` can be used as a JavaScript binding name: an identifier
+/// that isn't a reserved word.
 pub(crate) fn is_valid_js_identifier(name: &str) -> bool {
-    if name.is_empty() {
-        return false;
-    }
+    let mut chars = name.chars();
 
-    // Check first character (must be letter, $, or _)
-    let first_char = name.chars().next().unwrap();
-    if !first_char.is_ascii_alphabetic() && first_char != '$' && first_char != '_' {
+    // First character: a letter, `$`, or `_`; then letters, digits, `$`, or `_`.
+    let valid_chars = chars
+        .next()
+        .is_some_and(|c| c.is_alphabetic() || c == '$' || c == '_')
+        && chars.all(|c| c.is_alphanumeric() || c == '$' || c == '_');
+    if !valid_chars {
         return false;
-    }
-
-    // Check remaining characters (must be alphanumeric, $, or _)
-    for ch in name.chars().skip(1) {
-        if !ch.is_ascii_alphanumeric() && ch != '$' && ch != '_' {
-            return false;
-        }
     }
 
     // Check against JavaScript reserved words
@@ -167,6 +162,26 @@ pub(crate) fn is_valid_js_identifier(name: &str) -> bool {
             | "protected"
             | "public"
     )
+}
+
+/// `s` as a JavaScript string literal, for splicing into generated JS source.
+pub(crate) fn js_string_literal(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() + 2);
+    out.push('"');
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            // Control characters, and the two line terminators JS doesn't
+            // allow raw in a string literal before ES2019.
+            c if c.is_control() || c == '\u{2028}' || c == '\u{2029}' => {
+                out.push_str(&format!("\\u{:04x}", c as u32));
+            }
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
 }
 
 /// Check if a type contains features that prevent it from being used in a

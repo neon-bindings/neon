@@ -1001,6 +1001,7 @@ pub(crate) fn class_with_options(
     let mut prototype_patches = String::new();
     let method_ids = fns.iter().map(|f| f.sig.ident.clone()).collect::<Vec<_>>();
     let mut method_metas = Vec::new();
+    let mut method_js_names = std::collections::HashMap::new();
 
     for f in &fns {
         let fn_name = f.sig.ident.to_string();
@@ -1037,7 +1038,39 @@ pub(crate) fn class_with_options(
             Some(name) => name.value(),
             None => crate::name::to_camel_case(&fn_name),
         };
-        prototype_patches.push_str(&format!("\n    prototype.{js_name} = {fn_name}Method;"));
+
+        // A method name can be any string (it's quoted below), but a few would
+        // silently break the class, and a repeated name would silently replace
+        // the earlier method.
+        let name_span = match &parsed.name {
+            Some(name) => name.span(),
+            None => f.sig.ident.span(),
+        };
+        if js_name == "constructor" || js_name == "__proto__" {
+            return syn::Error::new(
+                name_span,
+                format!(
+                    "`{js_name}` can't be used as a method name: it would replace the class's own `{js_name}`"
+                ),
+            )
+            .to_compile_error()
+            .into();
+        }
+        if let Some(previous) = method_js_names.insert(js_name.clone(), fn_name.clone()) {
+            return syn::Error::new(
+                name_span,
+                format!(
+                    "duplicate method name `{js_name}`: `{previous}` and `{fn_name}` would both be `{js_name}` in JavaScript"
+                ),
+            )
+            .to_compile_error()
+            .into();
+        }
+
+        prototype_patches.push_str(&format!(
+            "\n    prototype[{}] = {fn_name}Method;",
+            crate::name::js_string_literal(&js_name)
+        ));
         method_metas.push(parsed);
     }
 
