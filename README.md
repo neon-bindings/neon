@@ -56,28 +56,11 @@ Neon supports Rust stable version 1.65 and higher. We test on the latest stable,
 ## A Taste...
 
 ```rust
-fn make_an_array(mut cx: FunctionContext) -> JsResult<JsArray> {
-    // Create some values:
-    let n = cx.number(9000);
-    let s = cx.string("hello");
-    let b = cx.boolean(true);
+const URL: &str = "https://jsonplaceholder.typicode.com/todos";
 
-    // Create a new array:
-    let array = cx.empty_array();
-
-    // Push the values into the array:
-    array.set(&mut cx, 0, n)?;
-    array.set(&mut cx, 1, s)?;
-    array.set(&mut cx, 2, b)?;
-
-    // Return the array:
-    Ok(array)
-}
-
-#[neon::main]
-fn main(mut cx: ModuleContext) -> NeonResult<()> {
-    cx.export_function("make_an_array", make_an_array)?;
-    Ok(())
+#[neon::export(json)]
+async fn todos() -> Result<serde_json::Value, Error> {
+    Ok(reqwest::get(URL).await?.json().await?)
 }
 ```
 
