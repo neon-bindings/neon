@@ -1,7 +1,12 @@
 pub(crate) mod meta;
 
 // Create a new block expression for the RHS of an assignment
-pub(super) fn export(meta: meta::Meta, name: &syn::Ident, expr: Box<syn::Expr>) -> Box<syn::Expr> {
+pub(super) fn export(
+    meta: meta::Meta,
+    kind: &str,
+    name: &syn::Ident,
+    expr: Box<syn::Expr>,
+) -> Box<syn::Expr> {
     // Name for the registered create function
     let create_name = quote::format_ident!("__NEON_EXPORT_CREATE__{name}");
 
@@ -10,6 +15,8 @@ pub(super) fn export(meta: meta::Meta, name: &syn::Ident, expr: Box<syn::Expr>) 
         .name
         .map(|name| quote::quote!(#name))
         .unwrap_or_else(|| quote::quote!(stringify!(#name)));
+
+    let export_info = super::export_info(kind, name, &export_name);
 
     // If `json` is enabled, wrap the value in `Json` before `TryIntoJs` is called
     let value = if meta.json {
@@ -26,6 +33,8 @@ pub(super) fn export(meta: meta::Meta, name: &syn::Ident, expr: Box<syn::Expr>) 
     // needing to adding a direct dependency on `linkme`. It is an undocumented feature.
     // https://github.com/dtolnay/linkme/issues/54
     let create_fn = quote::quote!({
+        #export_info
+
         #[doc(hidden)]
         #[neon::macro_internal::linkme::distributed_slice(neon::macro_internal::EXPORTS)]
         #[linkme(crate = neon::macro_internal::linkme)]

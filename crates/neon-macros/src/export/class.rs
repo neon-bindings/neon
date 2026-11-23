@@ -45,6 +45,7 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemImpl) -> proc_macro::Toke
 
     // Use the determined export name
     let export_name = quote!(#export_name);
+    let export_info = super::export_info("class", &class_ident, &export_name);
 
     // Create the export registration function
     let create_name = quote::format_ident!("__NEON_EXPORT_CREATE__{}", class_ident);
@@ -69,6 +70,7 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemImpl) -> proc_macro::Toke
     // Combine the class implementation with the export registration
     quote!(
         #class_tokens
+        #export_info
         #create_fn
     )
     .into()

@@ -118,10 +118,14 @@ pub(super) fn export(meta: meta::Meta, input: syn::ItemFn) -> proc_macro::TokenS
             quote::quote!(#name)
         });
 
+    let export_info = super::export_info("function", name, &export_name);
+
     // Generate the function that is registered to create the function on addon initialization.
     // Braces are included to prevent names from polluting user code.
     let create_name = quote::format_ident!("__NEON_EXPORT_CREATE__{name}");
     let create_fn = quote::quote!({
+        #export_info
+
         #[doc(hidden)]
         #[neon::macro_internal::linkme::distributed_slice(neon::macro_internal::EXPORTS)]
         #[linkme(crate = neon::macro_internal::linkme)]

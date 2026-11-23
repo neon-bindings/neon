@@ -1,0 +1,14 @@
+{
+  "name": "duplicate-exports",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Test that duplicate `#[neon::export]` names fail to load",
+  "license": "MIT",
+  "scripts": {
+    "install": "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
+    "test": "node test.js"
+  },
+  "devDependencies": {
+    "cargo-cp-artifact": "^0.1.9"
+  }
+}

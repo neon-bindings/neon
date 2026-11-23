@@ -1,0 +1,14 @@
+[package]
+name = "duplicate-exports"
+version = "0.1.0"
+description = "Test that duplicate `#[neon::export]` names fail to load"
+license = "MIT"
+edition = "2021"
+publish = false
+exclude = ["index.node"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies.neon]
+path = "../../crates/neon"
