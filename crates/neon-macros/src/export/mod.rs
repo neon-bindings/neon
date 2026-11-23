@@ -24,7 +24,7 @@ pub(crate) fn export(
         syn::Item::Const(mut item) => {
             let meta = syn::parse_macro_input!(attr with global::meta::Parser);
 
-            item.expr = global::export(meta, &item.ident, item.expr);
+            item.expr = global::export(meta, "const", &item.ident, item.expr);
 
             quote::quote!(#item).into()
         }
@@ -33,7 +33,7 @@ pub(crate) fn export(
         syn::Item::Static(mut item) => {
             let meta = syn::parse_macro_input!(attr with global::meta::Parser);
 
-            item.expr = global::export(meta, &item.ident, item.expr);
+            item.expr = global::export(meta, "static", &item.ident, item.expr);
 
             quote::quote!(#item).into()
         }
@@ -48,6 +48,29 @@ pub(crate) fn export(
         // Return an error span for all other types
         _ => unsupported(item),
     }
+}
+
+// Register a static description of an export in `EXPORT_INFO`, so duplicate
+// export names can be reported with the Rust items that export them. Emitted
+// as a statement, so it must be placed inside a block or at item level.
+fn export_info(
+    kind: &str,
+    ident: &syn::Ident,
+    export_name: &proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let info_name = quote::format_ident!("__NEON_EXPORT_INFO__{ident}");
+
+    quote::quote!(
+        #[doc(hidden)]
+        #[allow(non_upper_case_globals)]
+        #[neon::macro_internal::linkme::distributed_slice(neon::macro_internal::EXPORT_INFO)]
+        #[linkme(crate = neon::macro_internal::linkme)]
+        static #info_name: neon::macro_internal::ExportInfo = neon::macro_internal::ExportInfo {
+            name: #export_name,
+            kind: #kind,
+            rust_path: concat!(module_path!(), "::", stringify!(#ident)),
+        };
+    )
 }
 
 // Generate an error for unsupported item types

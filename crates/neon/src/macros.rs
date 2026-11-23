@@ -698,6 +698,10 @@ pub use neon_macros::main;
 /// static GREETING: &str = "Hello, Neon!";
 /// ```
 ///
+/// Each export must have a unique name, across all of the addon's exported
+/// constants, statics, functions and classes. If two items are exported under
+/// the same name, loading the addon fails with an error that names them.
+///
 /// ### JSON exports
 ///
 /// Complex values may be exported by automatically serializing to JSON and

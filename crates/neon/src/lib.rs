@@ -177,7 +177,18 @@ impl Exports {
     /// }
     /// # }
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Throws if two items are exported under the same JavaScript name, since
+    /// only one of them could be exported. The error names each duplicated
+    /// export and the Rust items that export it. Nothing is exported in that
+    /// case. (Iterating over the exports by hand, as above, skips this check.)
     pub fn export(self, cx: &mut ModuleContext) -> NeonResult<()> {
+        if let Some(message) = duplicate_exports() {
+            return crate::context::Context::throw_error(cx, message);
+        }
+
         for create in self {
             let (name, value) = create(cx)?;
 
@@ -203,6 +214,98 @@ impl IntoIterator for Exports {
 /// Access values exported with [`neon::export`](export)
 pub fn registered() -> Exports {
     Exports(())
+}
+
+/// The error message for duplicate export names, if there are any. Export
+/// names are static, so this is computed once per process, not on every load.
+fn duplicate_exports() -> Option<&'static str> {
+    static MESSAGE: std::sync::OnceLock<Option<String>> = std::sync::OnceLock::new();
+
+    MESSAGE
+        .get_or_init(|| duplicate_exports_message(&crate::macro_internal::EXPORT_INFO))
+        .as_deref()
+}
+
+fn duplicate_exports_message(infos: &[crate::macro_internal::ExportInfo]) -> Option<String> {
+    let mut infos = infos.iter().collect::<Vec<_>>();
+    infos.sort_by_key(|info| (info.name, info.rust_path, info.kind));
+
+    let duplicates = infos
+        .chunk_by(|a, b| a.name == b.name)
+        .filter(|group| group.len() > 1)
+        .map(|group| {
+            let items = group
+                .iter()
+                .map(|info| format!("{} `{}`", info.kind, info.rust_path))
+                .collect::<Vec<_>>();
+            let items = match items.split_last() {
+                Some((last, [first])) => format!("{first} and {last}"),
+                Some((last, rest)) => format!("{}, and {last}", rest.join(", ")),
+                None => unreachable!(),
+            };
+
+            format!("  - `{}` is exported by {items}\n", group[0].name)
+        })
+        .collect::<String>();
+
+    if duplicates.is_empty() {
+        return None;
+    }
+
+    Some(format!(
+        "Neon module exports more than one item under the same name, so only one of each \
+         could be exported:\n{duplicates}\
+         Rename all but one item in each with `#[neon::export(name = \"...\")]`."
+    ))
+}
+
+#[cfg(test)]
+mod duplicate_exports_tests {
+    use super::duplicate_exports_message;
+    use crate::macro_internal::ExportInfo;
+
+    fn info(name: &'static str, kind: &'static str, rust_path: &'static str) -> ExportInfo {
+        ExportInfo {
+            name,
+            kind,
+            rust_path,
+        }
+    }
+
+    #[test]
+    fn distinct_names_are_fine() {
+        let infos = [
+            info("parse", "function", "m::parse"),
+            info("version", "const", "m::VERSION"),
+        ];
+
+        assert_eq!(duplicate_exports_message(&infos), None);
+        assert_eq!(duplicate_exports_message(&[]), None);
+    }
+
+    #[test]
+    fn reports_every_duplicate_in_order() {
+        let infos = [
+            info("version", "function", "m::version"),
+            info("parse", "function", "m::v2::parse"),
+            info("greet", "function", "m::greet_b"),
+            info("parse", "function", "m::v1::parse"),
+            info("version", "const", "m::VERSION"),
+            info("greet", "function", "m::greet_a"),
+            info("greet", "class", "m::Greet"),
+            info("unique", "static", "m::UNIQUE"),
+        ];
+
+        assert_eq!(
+            duplicate_exports_message(&infos).unwrap(),
+            "Neon module exports more than one item under the same name, so only one of each \
+             could be exported:\n\
+             \x20 - `greet` is exported by class `m::Greet`, function `m::greet_a`, and function `m::greet_b`\n\
+             \x20 - `parse` is exported by function `m::v1::parse` and function `m::v2::parse`\n\
+             \x20 - `version` is exported by const `m::VERSION` and function `m::version`\n\
+             Rename all but one item in each with `#[neon::export(name = \"...\")]`."
+        );
+    }
 }
 
 #[test]

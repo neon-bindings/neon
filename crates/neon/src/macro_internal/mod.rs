@@ -29,6 +29,20 @@ type Export<'cx> = (&'static str, Handle<'cx, JsValue>);
 #[linkme::distributed_slice]
 pub static EXPORTS: [for<'cx> fn(&mut ModuleContext<'cx>) -> NeonResult<Export<'cx>>];
 
+/// Static description of an item registered in [`EXPORTS`], used to report
+/// duplicate export names. Entries aren't in the same order as `EXPORTS`.
+pub struct ExportInfo {
+    /// The JavaScript export name.
+    pub name: &'static str,
+    /// The kind of Rust item (`function`, `const`, `static` or `class`).
+    pub kind: &'static str,
+    /// The Rust item's path, e.g. `my_crate::v1::parse`.
+    pub rust_path: &'static str,
+}
+
+#[linkme::distributed_slice]
+pub static EXPORT_INFO: [ExportInfo];
+
 #[linkme::distributed_slice]
 pub static MAIN: [for<'cx> fn(ModuleContext<'cx>) -> NeonResult<()>];
 
